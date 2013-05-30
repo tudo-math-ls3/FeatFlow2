@@ -211,7 +211,6 @@
 module mhd_callback3d
 
 #include "../../flagship.h"
-#define MHD_NDIM 3
 #include "mhd.h"
 
 !$use omp_lib
@@ -382,78 +381,78 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Assemble skew-symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) = dscale *&
@@ -466,58 +465,58 @@ contains
       IDX3(DfluxesAtEdge,:,2,idx,_,_,_) = -IDX3(DfluxesAtEdge,:,1,idx,_,_,_)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) =  dscale *&
@@ -598,74 +597,74 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) =  dscale *&
@@ -749,133 +748,133 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -986,132 +985,132 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1224,132 +1223,132 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1490,132 +1489,132 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
       
       !-------------------------------------------------------------------------
@@ -1757,132 +1756,132 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1905,30 +1904,30 @@ contains
       ! -------------------------------------------------------------------------
       
       ! Compute the speed of the Alfven waves in x-direction
-      ca1i = abs(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca1j = abs(XMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca1i = abs(XMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca1j = abs(XMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of the Alfven waves in y-direction
-      ca2i = abs(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca2j = abs(YMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca2i = abs(YMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca2j = abs(YMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of the Alfven waves in z-direction
-      ca3i = abs(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca3j = abs(ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca3i = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca3j = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
       aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
-               PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)/&
-               DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+               PRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
+               DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
       aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
-               PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)/&
-               DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+               PRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
+               DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      astPow2i = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,1,idx,_,_,_)/&
-                 DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_) + aPow2i
-      astPow2j = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,2,idx,_,_,_)/&
-                 DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
+      astPow2i = MAGFIELDMAGNITUDE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
+                 DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_) + aPow2i
+      astPow2j = MAGFIELDMAGNITUDE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
+                 DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
       cf1i = sqrt(RCONST(0.5)*(astPow2i+&
@@ -2088,132 +2087,132 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      vi = YVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      wi = ZVELOCITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      vj = YVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      wj = ZVELOCITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute total pressures
-      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = TOTALPRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
-      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
+      qi = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi)
+      qj = MAG_DOT_VEL3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fxi,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fxj,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for y-direction
-      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fyi,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fyj,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute fluxes for z-direction
-      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
-      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
+      IDX1(Fzi,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)
 
-      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fzj,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,4) = INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,5) = INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,6) = INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,7) = INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fx_ij,8) = INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_XDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
       
       ! Compute flux difference for y-direction
-      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX1_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX2_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX3_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX5_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX6_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX7_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                      INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,1) = INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX1_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,2) = INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX2_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,3) = INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX3_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,4) = INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX4_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,5) = INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX5_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,6) = INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX6_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,7) = INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX7_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fy_ij,8) = INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                      INVISCIDFLUX8_YDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 
       ! Compute flux difference for z-direction
-      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX1_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX2_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX3_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX4_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX5_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX6_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX7_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
-      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
-                 INVISCIDFLUX8_ZDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,1) = INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX1_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,2) = INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX2_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,3) = INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX3_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,4) = INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX4_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,5) = INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX5_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,6) = INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX6_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,7) = INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX7_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
+      IDX1(Fz_ij,8) = INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,vi,wi,pi,qi)-&
+                 INVISCIDFLUX8_ZDIR3_3D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -2236,30 +2235,30 @@ contains
       ! -------------------------------------------------------------------------
       
       ! Compute the speed of the Alfven waves in x-direction
-      ca1i = abs(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca1j = abs(XMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca1i = abs(XMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca1j = abs(XMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of the Alfven waves in y-direction
-      ca2i = abs(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca2j = abs(YMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca2i = abs(YMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca2j = abs(YMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of the Alfven waves in z-direction
-      ca3i = abs(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,_,_,_))
-      ca3j = abs(ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,_,_,_))
+      ca3i = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,1,idx,_,_,_))
+      ca3j = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
       aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
-               PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)/&
-               DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+               PRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
+               DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
       aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
-               PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)/&
-               DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+               PRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
+               DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute auxiliary quantities
-      astPow2i = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,1,idx,_,_,_)/&
-                 DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_) + aPow2i
-      astPow2j = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,2,idx,_,_,_)/&
-                 DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
+      astPow2i = MAGFIELDMAGNITUDE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
+                 DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_) + aPow2i
+      astPow2j = MAGFIELDMAGNITUDE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
+                 DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
       cf1i = sqrt(RCONST(0.5)*(astPow2i+&

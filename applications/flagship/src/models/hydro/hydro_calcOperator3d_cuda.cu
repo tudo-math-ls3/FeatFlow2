@@ -1,15 +1,15 @@
 /*#############################################################################
- ******************************************************************************
- * <name> hydro_calcOperator3d_cuda </name>
- ******************************************************************************
- *
- * <purpose>
- * This file provides CUDA kernels to compute the operator for the low-order
- * scheme in 3D using different types if artificial viscosities.
- * </purpose>
- *
- *#############################################################################/
- */
+******************************************************************************
+* <name> hydro_calcOperator3d_cuda </name>
+******************************************************************************
+*
+* <purpose>
+* This file provides CUDA kernels to compute the operator for the low-order
+* scheme in 3D using different types if artificial viscosities.
+* </purpose>
+*
+*#############################################################################/
+*/
 
 #include <stdio.h>
 #include <cmath>
@@ -26,7 +26,6 @@
 #include "../../flagship.h"
 #include "../../cudaMacros.h"
 
-#define HYDRO_NDIM 3
 #include "hydro.h"
 
 // Defines for baseline implementation
@@ -93,57 +92,57 @@ namespace hydro3d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       IDX2(MatrixAtDiag,1,ipos,NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,2,ipos,NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,3,ipos,NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,4,ipos,NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,5,ipos,NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
 #else
       // Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
       IDX2(MatrixAtDiag,1,ipos,NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,2,ipos,NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,3,ipos,NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,4,ipos,NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
       IDX2(MatrixAtDiag,5,ipos,NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,_);
 #endif
     }
 
@@ -169,111 +168,111 @@ namespace hydro3d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(MatrixAtEdge,1,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,2,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,3,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,4,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,5,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,_);
 
       // Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       IDX3(MatrixAtEdge,1,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,2,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,3,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,4,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,5,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,_);
 #else
       // Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
       IDX3(MatrixAtEdge,1,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,2,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,3,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,4,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       IDX3(MatrixAtEdge,5,1,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,_);
       
       // Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
       IDX3(MatrixAtEdge,1,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX11_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,2,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX22_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,3,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX33_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,4,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX44_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,_);
       IDX3(MatrixAtEdge,5,2,ipos,NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,_);
+		INVISCIDFLUXJACOBIMATRIX55_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,_);
 #endif
     }
   };
@@ -305,258 +304,258 @@ namespace hydro3d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX2(MatrixAtDiag,1,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,2,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX21(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX21_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,3,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX31(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX31_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,4,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX41(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX41_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,5,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX51(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX51_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
 
       IDX2(MatrixAtDiag,6,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX12(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX12_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,7,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,8,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX32(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX32_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,9,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX42(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX42_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,10,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX52(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX52_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,11,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX13(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX13_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,12,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX23(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX23_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,13,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,14,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX43(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX43_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,15,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX53(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX53_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,16,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX14(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX14_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,17,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX24(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX24_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,18,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX34(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX34_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,19,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,20,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX54(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX54_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,21,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX15(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX15_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,22,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX25(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX25_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,23,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX35(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX35_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,24,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX45(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX45_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,25,ipos,NVAR3D*NVAR3D,neqsim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
 #else
       // Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX2(MatrixAtDiag,1,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,2,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX21(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX21_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,3,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX31(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX31_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,4,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX41(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX41_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,5,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX51(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX51_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,6,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX12(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX12_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,7,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,8,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX32(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX32_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,9,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX42(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX42_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,10,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX52(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX52_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,11,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX13(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX13_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,12,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX23(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX23_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,13,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,14,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX43(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX43_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,15,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX53(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX53_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,16,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX14(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX14_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,17,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX24(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX24_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,18,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX34(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX34_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,19,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,20,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX54(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX54_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,21,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX15(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX15_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,22,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX25(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX25_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,23,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX35(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX35_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,24,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX45(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX45_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
       IDX2(MatrixAtDiag,25,ipos,NVAR3D*NVAR3D,neqsim) = -
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
-								   IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,1,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,2,ieq,ncoeff,neq),
+                                      IDX2_COEFFSATDIAG(CoeffsAtDiag,3,ieq,ncoeff,neq),ui,vi,wi,Ei);
 #endif
     }
 
@@ -584,511 +583,511 @@ namespace hydro3d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       IDX3(MatrixAtEdge,1,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,2,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX21(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX21_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,3,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX31(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX31_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,4,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX41(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX41_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,5,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX51(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX51_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,6,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX12(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX12_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,7,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,8,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX32(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX32_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,9,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX42(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX42_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,10,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX52(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX52_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,11,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX13(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX13_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,12,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX23(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX23_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,13,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,14,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX43(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX43_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,15,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX53(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX53_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,16,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX14(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX14_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,17,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX24(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX24_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,18,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX34(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX34_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,19,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,20,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX54(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX54_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,21,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX15(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX15_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,22,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX25(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX25_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,23,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX35(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX35_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,24,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX45(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX45_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,25,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
 
       // Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       IDX3(MatrixAtEdge,1,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX11_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,2,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX21(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX21_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,3,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX31(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX31_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,4,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX41(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX41_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,5,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX51(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX51_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,6,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX12(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX12_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,7,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX22_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,8,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX32(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX32_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,9,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX42(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX42_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,10,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX52(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX52_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,11,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX13(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX13_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,12,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX23(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX23_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,13,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX33_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,14,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX43(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX43_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,15,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX53(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX53_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,16,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX14(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX14_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,17,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX24(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX24_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,18,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX34(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX34_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,19,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX44_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,20,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX54(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX54_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,21,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX15(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX15_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,22,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX25(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX25_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,23,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX35(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX35_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,24,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX45(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX45_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,25,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX55_3D(scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
 #else
       // Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
       IDX3(MatrixAtEdge,1,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX11_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,2,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX21(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX21_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,3,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX31(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX31_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,4,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX41(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX41_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,5,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX51(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX51_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,6,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX12(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX12_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,7,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX22_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,8,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX32(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX32_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,9,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX42(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX42_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,10,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX52(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX52_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,11,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX13(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX13_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,12,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX23(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX23_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,13,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX33_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,14,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX43(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX43_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,15,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX53(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX53_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,16,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX14(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX14_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,17,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX24(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX24_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,18,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX34(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX34_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,19,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX44_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,20,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX54(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX54_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,21,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX15(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX15_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,22,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX25(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX25_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,23,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX35(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX35_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,24,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX45(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX45_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
       IDX3(MatrixAtEdge,25,1,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,wj,Ej);
+		INVISCIDFLUXJACOBIMATRIX55_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),uj,vj,wj,Ej);
 
       // Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
       IDX3(MatrixAtEdge,1,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX11(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX11_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,2,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX21(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX21_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,3,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX31(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX31_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,4,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX41(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX41_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,5,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX51(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX51_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,6,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX12(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX12_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,7,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX22(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX22_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,8,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX32(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX32_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,9,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX42(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX42_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,10,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX52(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX52_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,11,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX13(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX13_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,12,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX23(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX23_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,13,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX33(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX33_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,14,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX43(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX43_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,15,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX53(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX53_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,16,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX14(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX14_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,17,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX24(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX24_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,18,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX34(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX34_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,19,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX44(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX44_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,20,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX54(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX54_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,21,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX15(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX15_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,22,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX25(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX25_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,23,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX35(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX35_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,24,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX45(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX45_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
       IDX3(MatrixAtEdge,25,2,ipos,NVAR3D*NVAR3D,(bstabilise ? 3 : 2),nedgesim) =
-		INVISCIDFLUXJACOBIMATRIX55(-scale,
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),
-								   IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),ui,vi,wi,Ei);
+		INVISCIDFLUXJACOBIMATRIX55_3D(-scale,
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),
+                                      IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),ui,vi,wi,Ei);
 #endif
     }
   };
@@ -1546,9 +1545,9 @@ namespace hydro3d_cuda
 		  gatherNodeData<true>(DataAtDiag,vec,ieq,neq);
 	
 		// Compute velocities
-		Tm ui = XVELOCITY2(DataAtDiag,IDX2,1,NVAR3D,1);
-		Tm vi = YVELOCITY2(DataAtDiag,IDX2,1,NVAR3D,1);
-		Tm wi = ZVELOCITY2(DataAtDiag,IDX2,1,NVAR3D,1);
+		Tm ui = XVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D,1);
+		Tm vi = YVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D,1);
+		Tm wi = ZVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D,1);
 	
 		// Compute Galerkin coefficient $K_ii$
 		InviscidFluxJacobiMatrix<SYSTEM_SEGREGATED>::
@@ -1606,10 +1605,10 @@ namespace hydro3d_cuda
 		  gatherNodeData<true>(DataAtDiag,vec,ieq,neq);
 	
 		// Compute velocities and energy
-		Tm ui = XVELOCITY2(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
-		Tm vi = YVELOCITY2(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
-		Tm wi = ZVELOCITY2(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
-		Tm Ei = SPECIFICTOTALENERGY2(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
+		Tm ui = XVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
+		Tm vi = YVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
+		Tm wi = ZVELOCITY2_3D(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
+		Tm Ei = SPECIFICTOTALENERGY2_3D(DataAtDiag,IDX2,1,NVAR3D*NVAR3D,1);
 	
 		// Compute Galerkin coefficient $K_ii$
 		InviscidFluxJacobiMatrix<SYSTEM_ALLCOUPLED>::
@@ -1672,13 +1671,13 @@ namespace hydro3d_cuda
 		  gatherEdgeData<true>(DataAtEdge,vec,i,j,neq);
 	
 		// Compute velocities
-		Tm ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		Tm vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		Tm wi = ZVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
+		Tm ui = XVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		Tm vi = YVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		Tm wi = ZVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
 	
-		Tm uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		Tm vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		Tm wj = ZVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
+		Tm uj = XVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		Tm vj = YVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		Tm wj = ZVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
 	
 		if (idissipation == DISSIPATION_ZERO) {
 	  
@@ -1768,17 +1767,17 @@ namespace hydro3d_cuda
 			gatherEdgeData<true>(DataAtEdge,vec,i,j,neq);
 	  
 		  // Compute velocities
-		  Tm ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  Tm vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  Tm wi = ZVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
+		  Tm ui = XVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  Tm vi = YVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  Tm wi = ZVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
 	  
-		  Tm uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		  Tm vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		  Tm wj = ZVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
+		  Tm uj = XVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		  Tm vj = YVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		  Tm wj = ZVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
 	  
 		  // Compute specific energies
-		  Tm Ei = SPECIFICTOTALENERGY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  Tm Ej = SPECIFICTOTALENERGY2(DataAtEdge,IDX2,2,NVAR3D,2);
+		  Tm Ei = SPECIFICTOTALENERGY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  Tm Ej = SPECIFICTOTALENERGY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
 	  
 		  if (idissipation == DISSIPATION_ZERO) {
 	    
@@ -2130,7 +2129,7 @@ namespace hydro3d_cuda
 		// CudaDMA implementation
 		hydro_calcMatrixMatD3d_cudaDMA
 		  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,
-		   compute_threads_per_cta,dma_threads_per_ld>
+          compute_threads_per_cta,dma_threads_per_ld>
 		  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vec, mat, scale,
@@ -2174,7 +2173,7 @@ namespace hydro3d_cuda
 		// CudaDMA implementation
 		hydro_calcMatrixMatD3d_cudaDMA
 		  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,
-		   compute_threads_per_cta,dma_threads_per_ld>
+          compute_threads_per_cta,dma_threads_per_ld>
 		  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vec, mat, scale,
@@ -2264,7 +2263,7 @@ namespace hydro3d_cuda
 		// CudaDMA implementation
 		hydro_calcMatrix3d_cudaDMA
 		  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,
-		   compute_threads_per_cta,dma_threads_per_ld>
+          compute_threads_per_cta,dma_threads_per_ld>
 		  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vec, mat, scale,
@@ -2303,7 +2302,7 @@ namespace hydro3d_cuda
 		// CudaDMA implementation
 		hydro_calcMatrix3d_cudaDMA
 		  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,
-		   compute_threads_per_cta,dma_threads_per_ld>
+          compute_threads_per_cta,dma_threads_per_ld>
 		  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vec, mat, scale,

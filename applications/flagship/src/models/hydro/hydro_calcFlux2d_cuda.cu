@@ -1,15 +1,15 @@
 /*#############################################################################
- ******************************************************************************
- * <name> hydro_calcFlux2d_cuda </name>
- ******************************************************************************
- *
- * <purpose>
- * This file provides CUDA kernels to compute the fluxes for the low-order
- * scheme in 2D using different types if artificial viscosities.
- * </purpose>
- *
- *#############################################################################
- */
+******************************************************************************
+* <name> hydro_calcFlux2d_cuda </name>
+******************************************************************************
+*
+* <purpose>
+* This file provides CUDA kernels to compute the fluxes for the low-order
+* scheme in 2D using different types if artificial viscosities.
+* </purpose>
+*
+*#############################################################################
+*/
 
 #include <stdio.h>
 #include <cmath>
@@ -26,7 +26,6 @@
 #include "../../flagship.h"
 #include "../../cudaMacros.h"
 
-#define HYDRO_NDIM 2
 #include "hydro.h"
 
 // Define CUDA kernel which does not make use of the CUDADMA library
@@ -170,53 +169,53 @@ namespace hydro2d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -225,53 +224,53 @@ namespace hydro2d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -299,53 +298,53 @@ namespace hydro2d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) = INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -354,53 +353,53 @@ namespace hydro2d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR2D,nedgesimDest) += INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -428,64 +427,64 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3t,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3t,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -495,64 +494,64 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3t,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3t,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fx_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -580,64 +579,64 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -647,64 +646,64 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fy_ij,1,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR2D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -804,25 +803,25 @@ namespace hydro2d_cuda
       // Flux component 1
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
 
       if (boverwrite) {
@@ -849,25 +848,25 @@ namespace hydro2d_cuda
       // Flux component 2
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       
       if (boverwrite) {
@@ -894,25 +893,25 @@ namespace hydro2d_cuda
       // Flux component 3
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       
       if (boverwrite) {
@@ -939,25 +938,25 @@ namespace hydro2d_cuda
       // Flux component 4
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj)
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+		   INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi));
       }
 
       if (boverwrite) {
@@ -990,280 +989,280 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		}
       }
@@ -1273,280 +1272,280 @@ namespace hydro2d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,uj,pj))
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*
+			   (INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc,vj,pj)));
 		  }
 		}
       }
@@ -1781,21 +1780,21 @@ namespace hydro2d_cuda
       Td ri,rj,hi,hj;
       if (btransposeSrc) {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		ri = DENSITY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		rj = DENSITY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
       }
       else {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		ri = DENSITY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		rj = DENSITY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
       }
     
       // Compute Roe mean values
@@ -1805,11 +1804,11 @@ namespace hydro2d_cuda
       Td H_ij = ROE_MEAN_VALUE(hi,hj,aux);
     
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[2];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
 
       // Compute auxiliary variables
       Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
@@ -1892,21 +1891,21 @@ namespace hydro2d_cuda
       Td ri,rj,hi,hj;
       if (btransposeSrc) {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		ri = DENSITY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		rj = DENSITY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
       }
       else {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		ri = DENSITY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		rj = DENSITY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
       }
     
       // Compute Roe mean values
@@ -1922,11 +1921,11 @@ namespace hydro2d_cuda
       Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
     
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[2];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
 
       // Compute scalar dissipation
       Td d_ij = ( abs(a[0]*u_ij) + abs(a[0])*c_ij +
@@ -2000,11 +1999,11 @@ namespace hydro2d_cuda
 							 Ti ncoeff)
     {
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[2];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1]);
     
       if (anorm > DBL_EPSILON) {
@@ -2016,21 +2015,21 @@ namespace hydro2d_cuda
 		Td ri,rj,hi,hj;
 		if (btransposeSrc) {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		  ri = DENSITY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		  rj = DENSITY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
 		}
 		else {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		  ri = DENSITY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		  rj = DENSITY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
 		}
       
 		// Compute Roe mean values
@@ -2150,11 +2149,11 @@ namespace hydro2d_cuda
 							 Ti ncoeff)
     {
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[2];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1]);
     
       if (anorm > DBL_EPSILON) {
@@ -2166,21 +2165,21 @@ namespace hydro2d_cuda
 		Td ri,rj,hi,hj;
 		if (btransposeSrc) {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		  ri = DENSITY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		  rj = DENSITY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
 		}
 		else {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		  ri = DENSITY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		  rj = DENSITY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc)+pj)/rj;
 		}
       
 		// Compute Roe mean values
@@ -2354,13 +2353,13 @@ namespace hydro2d_cuda
       Td Ei,Ej;
       if (btransposeSrc) {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
       }
       else {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
       }
     
       // Compute the speed of sound
@@ -2372,32 +2371,32 @@ namespace hydro2d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute scalar dissipation based on the skew-symmetric part
       // which does not include the symmetric boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*uj+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*vj)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),2))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*ui+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*vi)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),2))*ci );
+      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge))*uj+
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge))*vj)+
+					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge),2))*cj,
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge))*ui+
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge))*vi)+
+					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge),2))*ci );
 #else
       // Compute scalar dissipation
-      Td d_ij = max( abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*uj+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*vj)+
-					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),2))*cj,
-					 abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*ui+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*vi)+
-					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),2))*ci );
+      Td d_ij = max( abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*uj+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*vj)+
+					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge),2))*cj,
+					 abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*ui+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*vi)+
+					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge),2))*ci );
 #endif
     
       // Multiply the solution difference by the scalar dissipation
@@ -2470,13 +2469,13 @@ namespace hydro2d_cuda
       Td Ei,Ej;
       if (btransposeSrc) {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3T,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3T,2,iposSrc,NVAR2D,2,nedgesimSrc);
       }
       else {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3,1,iposSrc,NVAR2D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_2D(DataAtEdge,IDX3,2,iposSrc,NVAR2D,2,nedgesimSrc);
       }
     
       // Compute the speed of sound
@@ -2489,32 +2488,32 @@ namespace hydro2d_cuda
       // Compute scalar dissipation with dimensional splitting based on
       // the skew-symmetric part which does not include the symmetric
       // boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*uj)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*ui)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)))*ci )
-		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*vj)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)))*cj,
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*vi)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)))*ci );
+      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge))*uj)+
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)))*cj,
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge))*ui)+
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)))*ci )
+		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge))*vj)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)))*cj,
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge))*vi)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)))*ci );
 #else
       // Compute scalar dissipation with dimensional splitting
-      Td d_ij = max( abs(IDX3(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*uj)+
-					 abs(IDX3(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*cj,
-					 abs(IDX3(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*ui)+
-					 abs(IDX3(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*ci )
-		+ max( abs(IDX3(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*vj)+
-			   abs(IDX3(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*cj,
-			   abs(IDX3(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*vi)+
-			   abs(IDX3(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*ci );
+      Td d_ij = max( abs(IDX3(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*uj)+
+					 abs(IDX3(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge))*cj,
+					 abs(IDX3(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*ui)+
+					 abs(IDX3(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge))*ci )
+		+ max( abs(IDX3(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*vj)+
+			   abs(IDX3(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge))*cj,
+			   abs(IDX3(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*vi)+
+			   abs(IDX3(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge))*ci );
 #endif
     
       // Multiply the solution difference by the scalar dissipation
@@ -2620,10 +2619,10 @@ namespace hydro2d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
 
 #pragma unroll
@@ -2634,19 +2633,19 @@ namespace hydro2d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
 	
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR2D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
       }
     }
@@ -2673,30 +2672,30 @@ namespace hydro2d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR2D,2,nedgesimDest) = scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
     
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR2D,2,nedgesimDest) = -scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
       }
       else {
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR2D,2,nedgesimDest) += scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
     
 #pragma unroll
 		for (int i=1; i<=NVAR2D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR2D,2,nedgesimDest) -= scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR2D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR2D,nedgesimSrc));
       }
     }
@@ -2846,15 +2845,15 @@ namespace hydro2d_cuda
 			gatherEdgeData<true>(DataAtEdge,vecSrc,i,j,neq);
 	  
 		  // Compute velocities
-		  TdDest ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
-		  TdDest vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
+		  TdDest ui = XVELOCITY2_2D(DataAtEdge,IDX2,1,NVAR2D,2);
+		  TdDest vi = YVELOCITY2_2D(DataAtEdge,IDX2,1,NVAR2D,2);
 	  
-		  TdDest uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
-		  TdDest vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
+		  TdDest uj = XVELOCITY2_2D(DataAtEdge,IDX2,2,NVAR2D,2);
+		  TdDest vj = YVELOCITY2_2D(DataAtEdge,IDX2,2,NVAR2D,2);
 	  
 		  // Compute pressures
-		  TdDest pi = PRESSURE2(DataAtEdge,IDX2,1,NVAR2D,2);
-		  TdDest pj = PRESSURE2(DataAtEdge,IDX2,2,NVAR2D,2);
+		  TdDest pi = PRESSURE2_2D(DataAtEdge,IDX2,1,NVAR2D,2);
+		  TdDest pj = PRESSURE2_2D(DataAtEdge,IDX2,2,NVAR2D,2);
 	  
 		  // Local variables
 		  TdDest FluxAtEdge[2*NVAR2D];
@@ -2921,15 +2920,15 @@ namespace hydro2d_cuda
 			(s_DataAtEdge,vecSrc,(int)threadIdx.x+1,i,j,neq);
 	  
 		  // Compute velocities
-		  TdDest ui = XVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
-		  TdDest vi = YVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest ui = XVELOCITY3_2D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest vi = YVELOCITY3_2D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
 	  
-		  TdDest uj = XVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
-		  TdDest vj = YVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest uj = XVELOCITY3_2D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest vj = YVELOCITY3_2D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
 	  
 		  // Compute pressures
-		  TdDest pi = PRESSURE3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
-		  TdDest pj = PRESSURE3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest pi = PRESSURE3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
+		  TdDest pj = PRESSURE3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR2D,2,threads_per_cta);
 	  
 		  // Local variables
 		  TdDest FluxAtEdge[2*NVAR2D];
@@ -2987,7 +2986,7 @@ namespace hydro2d_cuda
     // Shared memory
     __shared__ Ti s_IedgeList[2*compute_threads_per_cta];
     __shared__ TdSrc s_DataAtEdge[NVAR2D*2*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge[HYDRO_NDIM*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[2*2*compute_threads_per_cta];
     
     //--------------------------------------------------------------------------
 
@@ -3008,8 +3007,8 @@ namespace hydro2d_cuda
     // Sequential cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMASequential<false, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      TOTAL_THREADS_PER_CTA>dma_ind;
+      2*compute_threads_per_cta*sizeof(Ti),
+      TOTAL_THREADS_PER_CTA>dma_ind;
 #else
     // List of edges is stored as array of structures, that is, we
     // have nedge integer subarrays of length 6 which store:
@@ -3023,8 +3022,8 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMAStrided<false, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   TOTAL_THREADS_PER_CTA,
-				   compute_threads_per_cta>dma_ind(6*sizeof(Ti));
+      TOTAL_THREADS_PER_CTA,
+      compute_threads_per_cta>dma_ind(6*sizeof(Ti));
 #endif
 
     //--------------------------------------------------------------------------
@@ -3033,9 +3032,9 @@ namespace hydro2d_cuda
     // shared memory s_DataAtEdge, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, false,
-					MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-					TOTAL_THREADS_PER_CTA, 2*compute_threads_per_cta>dma_vec;
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      TOTAL_THREADS_PER_CTA, 2*compute_threads_per_cta>dma_vec;
     
     //--------------------------------------------------------------------------
 
@@ -3053,15 +3052,15 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer precomputed coefficients
     // CoeffsAtEdge into shared memory s_CoeffsAtEdge
     cudaDMAStrided<false, sizeof(Tc),
-                   compute_threads_per_cta*sizeof(Tc),
-                   TOTAL_THREADS_PER_CTA,
-                   2*HYDRO_NDIM>dma_coeff(nedge*sizeof(Tc));
+      compute_threads_per_cta*sizeof(Tc),
+      TOTAL_THREADS_PER_CTA,
+      2*2>dma_coeff(nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    cudaDMAStrided<false, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-                   TOTAL_THREADS_PER_CTA,
-                   2*compute_threads_per_cta>dma_coeff(ncoeff*sizeof(Tc));
+    cudaDMAStrided<false, sizeof(Tc), 2*sizeof(Tc),
+      TOTAL_THREADS_PER_CTA,
+      2*compute_threads_per_cta>dma_coeff(ncoeff*sizeof(Tc));
 #endif
 
     //--------------------------------------------------------------------------
@@ -3090,27 +3089,27 @@ namespace hydro2d_cuda
       //--------------------------------------------------------------------------
       
       // Compute velocities
-      TdDest ui = XVELOCITY3(s_DataAtEdge,
-							 IDX3,1,(int)threadIdx.x+1,
-							 NVAR2D,2,compute_threads_per_cta);
-      TdDest vi = YVELOCITY3(s_DataAtEdge,
-							 IDX3,1,(int)threadIdx.x+1,
-							 NVAR2D,2,compute_threads_per_cta);
+      TdDest ui = XVELOCITY3_2D(s_DataAtEdge,
+                                IDX3,1,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
+      TdDest vi = YVELOCITY3_2D(s_DataAtEdge,
+                                IDX3,1,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
       
-      TdDest uj = XVELOCITY3(s_DataAtEdge,
-							 IDX3,2,(int)threadIdx.x+1,
-							 NVAR2D,2,compute_threads_per_cta);
-      TdDest vj = YVELOCITY3(s_DataAtEdge,
-							 IDX3,2,(int)threadIdx.x+1,
-							 NVAR2D,2,compute_threads_per_cta);
+      TdDest uj = XVELOCITY3_2D(s_DataAtEdge,
+                                IDX3,2,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
+      TdDest vj = YVELOCITY3_2D(s_DataAtEdge,
+                                IDX3,2,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
       
       // Compute pressures
-      TdDest pi = PRESSURE3(s_DataAtEdge,
-							IDX3,1,(int)threadIdx.x+1,
-							NVAR2D,2,compute_threads_per_cta);
-      TdDest pj = PRESSURE3(s_DataAtEdge,
-							IDX3,2,(int)threadIdx.x+1,
-							NVAR2D,2,compute_threads_per_cta);
+      TdDest pi = PRESSURE3_3D(s_DataAtEdge,
+                               IDX3,1,(int)threadIdx.x+1,
+                               NVAR2D,2,compute_threads_per_cta);
+      TdDest pj = PRESSURE3_3D(s_DataAtEdge,
+                               IDX3,2,(int)threadIdx.x+1,
+                               NVAR2D,2,compute_threads_per_cta);
 
       // Local variables
       TdDest FluxAtEdge[2*NVAR2D];
@@ -3187,7 +3186,7 @@ namespace hydro2d_cuda
     __shared__ Ti s_IedgeList[1][2*compute_threads_per_cta];
     __shared__ TdSrc s_VecSrc[1][NVAR2D*2*compute_threads_per_cta];
     __shared__ TdDest s_VecDest[1][NVAR2D*2*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge[1][HYDRO_NDIM*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[1][2*2*compute_threads_per_cta];
 
     //--------------------------------------------------------------------------
 
@@ -3208,8 +3207,8 @@ namespace hydro2d_cuda
     // Sequential cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMASequential<false, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      TOTAL_THREADS_PER_CTA>dma_ind;
+      2*compute_threads_per_cta*sizeof(Ti),
+      TOTAL_THREADS_PER_CTA>dma_ind;
 #else
     // List of edges is stored as array of structures, that is, we
     // have nedge integer subarrays of length 6 which store:
@@ -3223,8 +3222,8 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMAStrided<false, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   TOTAL_THREADS_PER_CTA,
-				   compute_threads_per_cta>dma_ind(6*sizeof(Ti));
+      TOTAL_THREADS_PER_CTA,
+      compute_threads_per_cta>dma_ind(6*sizeof(Ti));
 #endif
 
     //--------------------------------------------------------------------------
@@ -3233,18 +3232,18 @@ namespace hydro2d_cuda
     // shared memory s_VecSrc, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc0(0, compute_threads_per_cta, compute_threads_per_cta);
 
     // Indirect cudaDMA thread to transfer nodal data from vecDest into
     // shared memory s_VecDest, we need to distinguish between vecDest
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest0(1, compute_threads_per_cta, compute_threads_per_cta+
 				   (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
@@ -3264,18 +3263,18 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer precomputed coefficients
     // CoeffsAtEdge into shared memory s_CoeffsAtEdge
     cudaDMAStrided<true, sizeof(Tc),
-                   compute_threads_per_cta*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*HYDRO_NDIM>
+      compute_threads_per_cta*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*2>
       dma_coeff0(2, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*compute_threads_per_cta>
+    cudaDMAStrided<true, sizeof(Tc), 2*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*compute_threads_per_cta>
       dma_coeff0(2, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+0*CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 ncoeff*sizeof(Tc));
@@ -3319,27 +3318,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
-		TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		TdDest pi = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,1,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
-		TdDest pj = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,2,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
+		TdDest pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,1,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
+		TdDest pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,2,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
 	
 		// Local variables
 		TdDest FluxAtEdge[2*NVAR2D];
@@ -3351,13 +3350,13 @@ namespace hydro2d_cuda
 		InviscidFluxDissipation<idissipationtype>::
 		  calcEdgeData<1,compute_threads_per_cta,false,false>
 		  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 		// Compute inviscid fluxes
 		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 		  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 	
 		// Wait for destination vector to be ready
 		dma_vecDest0.wait_for_dma_finish();
@@ -3444,7 +3443,7 @@ namespace hydro2d_cuda
     __shared__ Ti s_IedgeList[4][2*compute_threads_per_cta];
     __shared__ TdSrc s_VecSrc[2][NVAR2D*2*compute_threads_per_cta];
     __shared__ TdDest s_VecDest[2][NVAR2D*2*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge[2][HYDRO_NDIM*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[2][2*2*compute_threads_per_cta];
 
     //--------------------------------------------------------------------------
 
@@ -3465,8 +3464,8 @@ namespace hydro2d_cuda
     // Sequential cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMASequential<false, 2*sizeof(Ti),
-                      4*2*compute_threads_per_cta*sizeof(Ti),
-                      TOTAL_THREADS_PER_CTA>dma_ind;
+      4*2*compute_threads_per_cta*sizeof(Ti),
+      TOTAL_THREADS_PER_CTA>dma_ind;
 #else
     // List of edges is stored as array of structures, that is, we
     // have nedge integer subarrays of length 6 which store:
@@ -3480,8 +3479,8 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMAStrided<false, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   TOTAL_THREADS_PER_CTA,
-				   4*compute_threads_per_cta>dma_ind(6*sizeof(Ti));
+      TOTAL_THREADS_PER_CTA,
+      4*compute_threads_per_cta>dma_ind(6*sizeof(Ti));
 #endif
 
     //--------------------------------------------------------------------------
@@ -3490,31 +3489,31 @@ namespace hydro2d_cuda
     // shared memory s_VecSrc, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc0(0, compute_threads_per_cta, compute_threads_per_cta);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc1(1, compute_threads_per_cta, compute_threads_per_cta);
 
     // Indirect cudaDMA thread to transfer nodal data from vecDest into
     // shared memory s_VecDest, we need to distinguish between vecDest
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest0(2, compute_threads_per_cta, compute_threads_per_cta+
 				   (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest1(3, compute_threads_per_cta, compute_threads_per_cta+
 				   (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
@@ -3534,33 +3533,33 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer precomputed coefficients
     // CoeffsAtEdge into shared memory s_CoeffsAtEdge
     cudaDMAStrided<true, sizeof(Tc),
-                   compute_threads_per_cta*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*HYDRO_NDIM>
+      compute_threads_per_cta*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*2>
       dma_coeff0(4, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 nedge*sizeof(Tc));
 
     cudaDMAStrided<true, sizeof(Tc),
-                   compute_threads_per_cta*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*HYDRO_NDIM>
+      compute_threads_per_cta*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*2>
       dma_coeff1(5, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*compute_threads_per_cta>
+    cudaDMAStrided<true, sizeof(Tc), 2*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*compute_threads_per_cta>
       dma_coeff0(4, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 ncoeff*sizeof(Tc));
   
-    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*compute_threads_per_cta>
+    cudaDMAStrided<true, sizeof(Tc), 2*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*compute_threads_per_cta>
       dma_coeff1(5, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 ncoeff*sizeof(Tc));
@@ -3606,27 +3605,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
-		TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		TdDest pi = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,1,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
-		TdDest pj = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,2,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
+		TdDest pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,1,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
+		TdDest pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,2,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
 	
 		// Local variables
 		TdDest FluxAtEdge[2*NVAR2D];
@@ -3638,13 +3637,13 @@ namespace hydro2d_cuda
 		InviscidFluxDissipation<idissipationtype>::
 		  calcEdgeData<1,compute_threads_per_cta,false,false>
 		  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 		// Compute inviscid fluxes
 		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 		  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 	
 		// Start DMA transfer of coefficients
 		dma_coeff0.start_async_dma();
@@ -3686,27 +3685,27 @@ namespace hydro2d_cuda
 		dma_vecSrc1.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 		
 		// Wait for coefficients to be ready
 		dma_coeff1.wait_for_dma_finish();
@@ -3715,13 +3714,13 @@ namespace hydro2d_cuda
 		InviscidFluxDissipation<idissipationtype>::
 		  calcEdgeData<1,compute_threads_per_cta,false,false>
 		  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 		// Compute inviscid fluxes
 		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 		  (FluxAtEdge,s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 	
 		// Start DMA transfer of coefficients
 		dma_coeff1.start_async_dma();
@@ -3763,27 +3762,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 		
 		// Wait for coefficients to be ready
 		dma_coeff0.wait_for_dma_finish();
@@ -3792,13 +3791,13 @@ namespace hydro2d_cuda
 		InviscidFluxDissipation<idissipationtype>::
 		  calcEdgeData<1,compute_threads_per_cta,false,false>
 		  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 		// Compute inviscid fluxes
 		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 		  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 	
 		// Wait for destination vector to be ready
 		dma_vecDest0.wait_for_dma_finish();
@@ -3833,27 +3832,27 @@ namespace hydro2d_cuda
 		dma_vecSrc1.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 		
 		// Wait for coefficients to be ready
 		dma_coeff1.wait_for_dma_finish();
@@ -3862,13 +3861,13 @@ namespace hydro2d_cuda
 		InviscidFluxDissipation<idissipationtype>::
 		  calcEdgeData<1,compute_threads_per_cta,false,false>
 		  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 		// Compute inviscid fluxes
 		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 		  (FluxAtEdge,s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+		   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
 	
 		// Wait for destination vector to be ready
 		dma_vecDest1.wait_for_dma_finish();
@@ -4001,19 +4000,19 @@ namespace hydro2d_cuda
     // Sequential cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind0(0, compute_threads_per_cta, compute_threads_per_cta);
 
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind1(1, compute_threads_per_cta,
 			   compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
 
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind2(2, compute_threads_per_cta,
 			   compute_threads_per_cta+2*CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
 #else
@@ -4029,22 +4028,22 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind0(0, compute_threads_per_cta,
 			   compute_threads_per_cta,
 			   6*sizeof(Ti));
 
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind1(1, compute_threads_per_cta,
 			   compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
 			   6*sizeof(Ti));
 
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind2(2, compute_threads_per_cta,
 			   compute_threads_per_cta+2*CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
 			   6*sizeof(Ti));
@@ -4056,16 +4055,16 @@ namespace hydro2d_cuda
     // shared memory s_VecSrc, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc0(3, compute_threads_per_cta,
 				  compute_threads_per_cta+3*CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
       dma_vecSrc1(4, compute_threads_per_cta, compute_threads_per_cta+
 				  (3*CUDADMA_DMA_LDS_IND+1*CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
@@ -4073,16 +4072,16 @@ namespace hydro2d_cuda
     // shared memory s_VecDest, we need to distinguish between vecDest
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest0(5, compute_threads_per_cta, compute_threads_per_cta+
 				   (3*CUDADMA_DMA_LDS_IND+2*CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest1(6, compute_threads_per_cta, compute_threads_per_cta+
 				   (3*CUDADMA_DMA_LDS_IND+2*CUDADMA_DMA_LDS_SRC
 					+1*CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld);
@@ -4105,11 +4104,11 @@ namespace hydro2d_cuda
     // cudaDMAStrided<false, sizeof(Tc),
     //                compute_threads_per_cta*sizeof(Tc),
     //                TOTAL_THREADS_PER_CTA,
-    //                2*HYDRO_NDIM>dma_coeff(nedge*sizeof(Tc));
+    //                2*2>dma_coeff(nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    // cudaDMAStrided<false, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+    // cudaDMAStrided<false, sizeof(Tc), 2*sizeof(Tc),
     //                TOTAL_THREADS_PER_CTA,
     //                2*compute_threads_per_cta>dma_coeff(ncoeff*sizeof(Tc));
 #endif
@@ -4149,27 +4148,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,1,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
-		TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+		TdDest uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
+		TdDest vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                  IDX3,2,(int)threadIdx.x+1,
+                                  NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		TdDest pi = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,1,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
-		TdDest pj = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,2,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
+		TdDest pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,1,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
+		TdDest pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                                 IDX3,2,(int)threadIdx.x+1,
+                                 NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		Ti idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4233,27 +4232,27 @@ namespace hydro2d_cuda
 		dma_vecSrc1.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4314,27 +4313,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4395,27 +4394,27 @@ namespace hydro2d_cuda
 		dma_vecSrc1.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4476,27 +4475,27 @@ namespace hydro2d_cuda
 		dma_vecSrc0.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4557,27 +4556,27 @@ namespace hydro2d_cuda
 		dma_vecSrc1.wait_for_dma_finish();
 
 		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,1,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+		uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
+		vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                           IDX3,2,(int)threadIdx.x+1,
+                           NVAR2D,2,compute_threads_per_cta);
 	
 		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+		pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,1,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
+		pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                          IDX3,2,(int)threadIdx.x+1,
+                          NVAR2D,2,compute_threads_per_cta);
 	
 		// Global edge ID
 		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
@@ -4768,7 +4767,7 @@ namespace hydro2d_cuda
     __shared__ Ti s_IedgeList[3][2*compute_threads_per_cta];
     __shared__ TdSrc s_VecSrc[2][NVAR2D*2*compute_threads_per_cta];
     __shared__ TdDest s_VecDest[2][NVAR2D*2*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge[2][HYDRO_NDIM*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[2][2*2*compute_threads_per_cta];
     
     //--------------------------------------------------------------------------
 
@@ -4789,18 +4788,18 @@ namespace hydro2d_cuda
     // Sequential cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind0(0, compute_threads_per_cta, compute_threads_per_cta);
 
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind1(1, compute_threads_per_cta, compute_threads_per_cta);
 
     cudaDMASequential<true, 2*sizeof(Ti),
-                      2*compute_threads_per_cta*sizeof(Ti),
-                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+      2*compute_threads_per_cta*sizeof(Ti),
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
 	  dma_ind2(2, compute_threads_per_cta, compute_threads_per_cta);
 #else
     // List of edges is stored as array of structures, that is, we
@@ -4815,18 +4814,18 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer edge list from integer
     // array IedgeList into shared memory s_IedgeList
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind0(0, compute_threads_per_cta, compute_threads_per_cta, 6*sizeof(Ti));
 
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind1(1, compute_threads_per_cta, compute_threads_per_cta, 6*sizeof(Ti));
 
     cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
-                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
-                   compute_threads_per_cta>
+      CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+      compute_threads_per_cta>
 	  dma_ind2(2, compute_threads_per_cta, compute_threads_per_cta, 6*sizeof(Ti));
 #endif
 
@@ -4836,16 +4835,16 @@ namespace hydro2d_cuda
     // shared memory s_VecSrc, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc0(3, compute_threads_per_cta,
 				  compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecSrc1(4, compute_threads_per_cta,
 				  compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
 
@@ -4853,16 +4852,16 @@ namespace hydro2d_cuda
     // shared memory s_VecDest, we need to distinguish between vecDest
     // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest0(5, compute_threads_per_cta, compute_threads_per_cta+
 				   (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
     cudaDMAIndirect<true, true,
-                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-					(isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+      (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
 	  dma_vecDest1(6, compute_threads_per_cta, compute_threads_per_cta+
 				   (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
 
@@ -4882,9 +4881,9 @@ namespace hydro2d_cuda
     // Strided cudaDMA thread to transfer precomputed coefficients
     // CoeffsAtEdge into shared memory s_CoeffsAtEdge
     cudaDMAStrided<true, sizeof(Tc),
-                   compute_threads_per_cta*sizeof(Tc),
-                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-                   2*HYDRO_NDIM>
+      compute_threads_per_cta*sizeof(Tc),
+      CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+      2*2>
 	  dma_coeff0(7, compute_threads_per_cta, compute_threads_per_cta+
 				 (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
 				 nedge*sizeof(Tc));
@@ -4892,977 +4891,977 @@ namespace hydro2d_cuda
     // cudaDMAStrided<true, sizeof(Tc),
     //                compute_threads_per_cta*sizeof(Tc),
     //                CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-    //                2*HYDRO_NDIM>
+    //                2*2>
     // dma_coeff1(8, compute_threads_per_cta, compute_threads_per_cta+
     // 	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
     // 	       nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+    cudaDMAStrided<true, sizeof(Tc), 2*sizeof(Tc),
                    CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
                    2*compute_threads_per_cta>
-	  dma_coeff0(7, compute_threads_per_cta, compute_threads_per_cta+
-				 (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
-				 ncoeff*sizeof(Tc));
+    dma_coeff0(7, compute_threads_per_cta, compute_threads_per_cta+
+               (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+               ncoeff*sizeof(Tc));
   
-    // cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-    //                CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
-    //                2*compute_threads_per_cta>
-    // dma_coeff1(8, compute_threads_per_cta, compute_threads_per_cta+
-    // 	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
-    // 	       ncoeff*sizeof(Tc));
+  // cudaDMAStrided<true, sizeof(Tc), 2*sizeof(Tc),
+  //                CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+  //                2*compute_threads_per_cta>
+  // dma_coeff1(8, compute_threads_per_cta, compute_threads_per_cta+
+  // 	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+  // 	       ncoeff*sizeof(Tc));
 #endif
 
-    //--------------------------------------------------------------------------
-    // Warp specialisation
-    //--------------------------------------------------------------------------
-    if (threadIdx.x<compute_threads_per_cta) {
+  //--------------------------------------------------------------------------
+  // Warp specialisation
+  //--------------------------------------------------------------------------
+  if (threadIdx.x<compute_threads_per_cta) {
       
-      // Start DMA transfer of indices
-      dma_ind0.start_async_dma();
-      dma_ind1.start_async_dma();
-      dma_ind2.start_async_dma();
+    // Start DMA transfer of indices
+    dma_ind0.start_async_dma();
+    dma_ind1.start_async_dma();
+    dma_ind2.start_async_dma();
       
-      // Start DMA transfer of coefficients
-      dma_coeff0.start_async_dma();
-      //      dma_coeff1.start_async_dma();
+    // Start DMA transfer of coefficients
+    dma_coeff0.start_async_dma();
+    //      dma_coeff1.start_async_dma();
 
-      // Wait for indices to be ready
-      dma_ind0.wait_for_dma_finish();
+    // Wait for indices to be ready
+    dma_ind0.wait_for_dma_finish();
     
-      // Start DMA transfer of indirect data
-      dma_vecSrc0.start_async_dma();
-      dma_vecDest0.start_async_dma();
+    // Start DMA transfer of indirect data
+    dma_vecSrc0.start_async_dma();
+    dma_vecDest0.start_async_dma();
     
-      // Wait for indices to be ready
-      dma_ind1.wait_for_dma_finish();
+    // Wait for indices to be ready
+    dma_ind1.wait_for_dma_finish();
       
-      // Start DMA transfer of indirect data
-      dma_vecSrc1.start_async_dma();
-      dma_vecDest1.start_async_dma();
+    // Start DMA transfer of indirect data
+    dma_vecSrc1.start_async_dma();
+    dma_vecDest1.start_async_dma();
 
-      // Loop over all edge-groups to be processed by this block
-      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+    // Loop over all edge-groups to be processed by this block
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
 	
 #define IBUF 0
 #define DBUF 0
 #define IOFF 0
 	
-		// Wait for source vector to be ready
-		dma_vecSrc0.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc0.wait_for_dma_finish();
 
-		// Compute velocities
-		TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,1,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      TdDest ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                IDX3,1,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
+      TdDest vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                IDX3,1,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
 	
-		TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
-		TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
-							   IDX3,2,(int)threadIdx.x+1,
-							   NVAR2D,2,compute_threads_per_cta);
+      TdDest uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                                IDX3,2,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
+      TdDest vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                                IDX3,2,(int)threadIdx.x+1,
+                                NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		TdDest pi = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,1,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
-		TdDest pj = PRESSURE3(s_VecSrc[DBUF],
-							  IDX3,2,(int)threadIdx.x+1,
-							  NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      TdDest pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                               IDX3,1,(int)threadIdx.x+1,
+                               NVAR2D,2,compute_threads_per_cta);
+      TdDest pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                               IDX3,2,(int)threadIdx.x+1,
+                               NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		Ti idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      Ti idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Local variables
-		TdDest FluxAtEdge[2*NVAR2D];
+      // Local variables
+      TdDest FluxAtEdge[2*NVAR2D];
 	
-		// Wait for coefficients to be ready
-		dma_coeff0.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      dma_coeff0.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		dma_coeff0.start_async_dma();
+      // Start DMA transfer of coefficients
+      dma_coeff0.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest0.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest0.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		Ti i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      Ti i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
       
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		Ti j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      Ti j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 
 #undef IBUF
 #undef DBUF
 #undef IOFF
 	
-		// Start DMA transfer of indices
-		dma_ind0.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind0.start_async_dma();
 
-		// Wait for indices to be ready
-		dma_ind2.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind2.wait_for_dma_finish();
 
-		// Start DMA transfer of indirect data
-		dma_vecSrc0.start_async_dma();
-		dma_vecDest0.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc0.start_async_dma();
+      dma_vecDest0.start_async_dma();
 
 #define IBUF 1
 #define DBUF 1
 #define IOFF 1
 
-		// Wait for source vector to be ready
-		dma_vecSrc1.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc1.wait_for_dma_finish();
 
-		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,1,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
+      pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,2,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Wait for coefficients to be ready
-		//	dma_coeff1.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      //	dma_coeff1.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		//	dma_coeff1.start_async_dma();
+      // Start DMA transfer of coefficients
+      //	dma_coeff1.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest1.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest1.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 	
 #undef IBUF
 #undef DBUF
 #undef IOFF
 
-		// Start DMA transfer of indices
-		dma_ind1.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind1.start_async_dma();
 	
-		// Wait for indices to be ready
-		dma_ind0.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind0.wait_for_dma_finish();
 
-		// Start DMA transfer of indirect data
-		dma_vecSrc1.start_async_dma();
-		dma_vecDest1.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc1.start_async_dma();
+      dma_vecDest1.start_async_dma();
 
 #define IBUF 2
 #define DBUF 0
 #define IOFF 2
 
-		// Wait for source vector to be ready
-		dma_vecSrc0.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc0.wait_for_dma_finish();
 
-		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,1,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
+      pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,2,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Wait for coefficients to be ready
-		dma_coeff0.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      dma_coeff0.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		dma_coeff0.start_async_dma();
+      // Start DMA transfer of coefficients
+      dma_coeff0.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest0.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest0.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 	
 #undef IBUF
 #undef DBUF
 #undef IOFF
 
-		// Start DMA transfer of indices
-		dma_ind2.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind2.start_async_dma();
 	
-		// Wait for indices to be ready
-		dma_ind1.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind1.wait_for_dma_finish();
 
-		// Start DMA transfer of indirect data
-		dma_vecSrc0.start_async_dma();
-		dma_vecDest0.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc0.start_async_dma();
+      dma_vecDest0.start_async_dma();
 
 #define IBUF 0
 #define DBUF 1
 #define IOFF 3
 
-		// Wait for source vector to be ready
-		dma_vecSrc1.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc1.wait_for_dma_finish();
 
-		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,1,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
+      pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,2,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Wait for coefficients to be ready
-		//	dma_coeff1.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      //	dma_coeff1.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		//	dma_coeff1.start_async_dma();
+      // Start DMA transfer of coefficients
+      //	dma_coeff1.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest1.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest1.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 	
 #undef IBUF
 #undef DBUF
 #undef IOFF
 
-		// Start DMA transfer of indices
-		dma_ind0.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind0.start_async_dma();
 	
-		// Wait for indices to be ready
-		dma_ind2.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind2.wait_for_dma_finish();
 
-		// Start DMA transfer of indirect data
-		dma_vecSrc1.start_async_dma();
-		dma_vecDest1.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc1.start_async_dma();
+      dma_vecDest1.start_async_dma();
 
 #define IBUF 1
 #define DBUF 0
 #define IOFF 4
 
-		// Wait for source vector to be ready
-		dma_vecSrc0.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc0.wait_for_dma_finish();
 
-		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,1,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
+      pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,2,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Wait for coefficients to be ready
-		dma_coeff0.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      dma_coeff0.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		dma_coeff0.start_async_dma();
+      // Start DMA transfer of coefficients
+      dma_coeff0.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest0.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest0.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 	
 #undef IBUF
 #undef DBUF
 #undef IOFF
 
-		// Start DMA transfer of indices
-		dma_ind1.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind1.start_async_dma();
 	
-		// Wait for indices to be ready
-		dma_ind0.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind0.wait_for_dma_finish();
 
-		// Start DMA transfer of indirect data
-		dma_vecSrc0.start_async_dma();
-		dma_vecDest0.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc0.start_async_dma();
+      dma_vecDest0.start_async_dma();
 
 #define IBUF 2
 #define DBUF 1
 #define IOFF 5
 
-		// Wait for source vector to be ready
-		dma_vecSrc1.wait_for_dma_finish();
+      // Wait for source vector to be ready
+      dma_vecSrc1.wait_for_dma_finish();
 
-		// Compute velocities
-		ui = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vi = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,1,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      // Compute velocities
+      ui = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vi = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,1,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		uj = XVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
-		vj = YVELOCITY3(s_VecSrc[DBUF],
-						IDX3,2,(int)threadIdx.x+1,
-						NVAR2D,2,compute_threads_per_cta);
+      uj = XVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
+      vj = YVELOCITY3_2D(s_VecSrc[DBUF],
+                         IDX3,2,(int)threadIdx.x+1,
+                         NVAR2D,2,compute_threads_per_cta);
 	
-		// Compute pressures
-		pi = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,1,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
-		pj = PRESSURE3(s_VecSrc[DBUF],
-					   IDX3,2,(int)threadIdx.x+1,
-					   NVAR2D,2,compute_threads_per_cta);
+      // Compute pressures
+      pi = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,1,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
+      pj = PRESSURE3_3D(s_VecSrc[DBUF],
+                        IDX3,2,(int)threadIdx.x+1,
+                        NVAR2D,2,compute_threads_per_cta);
 	
-		// Global edge ID
-		idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
-		  + nedge_offset + threadIdx.x;
+      // Global edge ID
+      idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+        + nedge_offset + threadIdx.x;
 	
-		// Wait for coefficients to be ready
-		//	dma_coeff1.wait_for_dma_finish();
+      // Wait for coefficients to be ready
+      //	dma_coeff1.wait_for_dma_finish();
 
-		// Compute the artificial viscosities
-		InviscidFluxDissipation<idissipationtype>::
-		  calcEdgeData<1,compute_threads_per_cta,false,false>
-		  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
-		Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+        calcEdgeData<1,compute_threads_per_cta,false,false>
+        (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-		// Compute inviscid fluxes
-		InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
-		  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
-		   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+        (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+         1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-		// Start DMA transfer of coefficients
-		//	dma_coeff1.start_async_dma();
+      // Start DMA transfer of coefficients
+      //	dma_coeff1.start_async_dma();
 
-		// Wait for destination vector to be ready
-		dma_vecDest1.wait_for_dma_finish();
+      // Wait for destination vector to be ready
+      dma_vecDest1.wait_for_dma_finish();
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
-		// Get positions of edge endpoints (idx starts at zero)
-		j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      // Get positions of edge endpoints (idx starts at zero)
+      j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-        for (int ivar=1; ivar<=NVAR2D; ++ivar)
-		  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-			IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
-				 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+          IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+               NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
 	
 #undef IBUF
 #undef DBUF
 #undef IOFF
 
-		// Start DMA transfer of indices
-		dma_ind2.start_async_dma();
+      // Start DMA transfer of indices
+      dma_ind2.start_async_dma();
 	
-		// Wait for indices to be ready
-		dma_ind1.wait_for_dma_finish();
+      // Wait for indices to be ready
+      dma_ind1.wait_for_dma_finish();
 	
-		// Start DMA transfer of indirect data
-		dma_vecSrc1.start_async_dma();
-		dma_vecDest1.start_async_dma();
+      // Start DMA transfer of indirect data
+      dma_vecSrc1.start_async_dma();
+      dma_vecDest1.start_async_dma();
 
-      }
     }
+  }
     
-    //--------------------------------------------------------------------------
-    // DMA transfer warps
-    //--------------------------------------------------------------------------
-    else if(dma_ind0.owns_this_thread()) {
-      for (int ipt=0; ipt<nedge_per_thread; ipt+=3) {
+  //--------------------------------------------------------------------------
+  // DMA transfer warps
+  //--------------------------------------------------------------------------
+  else if(dma_ind0.owns_this_thread()) {
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=3) {
 
-		dma_ind0.execute_dma(&IedgeList[ (((ipt+0)*gridDim.x+blockIdx.x)*
-										  compute_threads_per_cta+nedge_offset)*
-										 (EDGELIST_DEVICE == SOA ? 2 : 6)],
-							 s_IedgeList[0]);
+      dma_ind0.execute_dma(&IedgeList[ (((ipt+0)*gridDim.x+blockIdx.x)*
+                                        compute_threads_per_cta+nedge_offset)*
+                                       (EDGELIST_DEVICE == SOA ? 2 : 6)],
+                           s_IedgeList[0]);
 
-		dma_ind1.execute_dma(&IedgeList[ (((ipt+1)*gridDim.x+blockIdx.x)*
-										  compute_threads_per_cta+nedge_offset)*
-										 (EDGELIST_DEVICE == SOA ? 2 : 6)],
-							 s_IedgeList[1]);
+      dma_ind1.execute_dma(&IedgeList[ (((ipt+1)*gridDim.x+blockIdx.x)*
+                                        compute_threads_per_cta+nedge_offset)*
+                                       (EDGELIST_DEVICE == SOA ? 2 : 6)],
+                           s_IedgeList[1]);
 	
-		dma_ind2.execute_dma(&IedgeList[ (((ipt+2)*gridDim.x+blockIdx.x)*
-										  compute_threads_per_cta+nedge_offset)*
-										 (EDGELIST_DEVICE == SOA ? 2 : 6)],
-							 s_IedgeList[2]);
-      }
-      dma_ind0.finish_async_dma();
-      dma_ind1.finish_async_dma();
+      dma_ind2.execute_dma(&IedgeList[ (((ipt+2)*gridDim.x+blockIdx.x)*
+                                        compute_threads_per_cta+nedge_offset)*
+                                       (EDGELIST_DEVICE == SOA ? 2 : 6)],
+                           s_IedgeList[2]);
     }
+    dma_ind0.finish_async_dma();
+    dma_ind1.finish_async_dma();
+  }
     
-    else if(dma_vecSrc0.owns_this_thread()) {
-      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+  else if(dma_vecSrc0.owns_this_thread()) {
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
 	
-		dma_vecSrc0.wait_for_dma_start();
-		dma_vecSrc0.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[0]);
-		dma_vecSrc0.finish_async_dma();
+      dma_vecSrc0.wait_for_dma_start();
+      dma_vecSrc0.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[0]);
+      dma_vecSrc0.finish_async_dma();
 
-		dma_vecSrc1.wait_for_dma_start();
-		dma_vecSrc1.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[1]);
-		dma_vecSrc1.finish_async_dma();
+      dma_vecSrc1.wait_for_dma_start();
+      dma_vecSrc1.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[1]);
+      dma_vecSrc1.finish_async_dma();
 
-		dma_vecSrc0.wait_for_dma_start();
-		dma_vecSrc0.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[0]);
-		dma_vecSrc0.finish_async_dma();
+      dma_vecSrc0.wait_for_dma_start();
+      dma_vecSrc0.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[0]);
+      dma_vecSrc0.finish_async_dma();
 
-		dma_vecSrc1.wait_for_dma_start();
-		dma_vecSrc1.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[1]);
-		dma_vecSrc1.finish_async_dma();
+      dma_vecSrc1.wait_for_dma_start();
+      dma_vecSrc1.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[1]);
+      dma_vecSrc1.finish_async_dma();
 
-		dma_vecSrc0.wait_for_dma_start();
-		dma_vecSrc0.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[0]);
-		dma_vecSrc0.finish_async_dma();
+      dma_vecSrc0.wait_for_dma_start();
+      dma_vecSrc0.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[0]);
+      dma_vecSrc0.finish_async_dma();
 
-		dma_vecSrc1.wait_for_dma_start();
-		dma_vecSrc1.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[1]);
-		dma_vecSrc1.finish_async_dma();
-      }
+      dma_vecSrc1.wait_for_dma_start();
+      dma_vecSrc1.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[1]);
+      dma_vecSrc1.finish_async_dma();
     }
+  }
 
-    else if(dma_vecDest0.owns_this_thread()) {
-      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+  else if(dma_vecDest0.owns_this_thread()) {
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
 	
-		dma_vecDest0.wait_for_dma_start();
-		dma_vecDest0.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[0]);
-		dma_vecDest0.finish_async_dma();
+      dma_vecDest0.wait_for_dma_start();
+      dma_vecDest0.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[0]);
+      dma_vecDest0.finish_async_dma();
 
-		dma_vecDest1.wait_for_dma_start();
-		dma_vecDest1.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[1]);
-		dma_vecDest1.finish_async_dma();
+      dma_vecDest1.wait_for_dma_start();
+      dma_vecDest1.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[1]);
+      dma_vecDest1.finish_async_dma();
 
-		dma_vecDest0.wait_for_dma_start();
-		dma_vecDest0.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[0]);
-		dma_vecDest0.finish_async_dma();
+      dma_vecDest0.wait_for_dma_start();
+      dma_vecDest0.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[0]);
+      dma_vecDest0.finish_async_dma();
 
-		dma_vecDest1.wait_for_dma_start();
-		dma_vecDest1.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[1]);
-		dma_vecDest1.finish_async_dma();
+      dma_vecDest1.wait_for_dma_start();
+      dma_vecDest1.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[1]);
+      dma_vecDest1.finish_async_dma();
 
-		dma_vecDest0.wait_for_dma_start();
-		dma_vecDest0.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[0]);
-		dma_vecDest0.finish_async_dma();
+      dma_vecDest0.wait_for_dma_start();
+      dma_vecDest0.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[0]);
+      dma_vecDest0.finish_async_dma();
 
-		dma_vecDest1.wait_for_dma_start();
-		dma_vecDest1.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[1]);
-		dma_vecDest1.finish_async_dma();
-      }
+      dma_vecDest1.wait_for_dma_start();
+      dma_vecDest1.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[1]);
+      dma_vecDest1.finish_async_dma();
     }
+  }
     
-    else if(dma_coeff0.owns_this_thread()) {
-      for (int ipt=0; ipt<nedge_per_thread; ipt+=2) {
+  else if(dma_coeff0.owns_this_thread()) {
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=2) {
 	
-      	dma_coeff0.execute_dma(&CoeffsAtEdge[ ((ipt*gridDim.x+blockIdx.x)*
-											   compute_threads_per_cta+nedge_offset)*
-											  (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
-							   s_CoeffsAtEdge[0]);
+      dma_coeff0.execute_dma(&CoeffsAtEdge[ ((ipt*gridDim.x+blockIdx.x)*
+                                             compute_threads_per_cta+nedge_offset)*
+                                            (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+                             s_CoeffsAtEdge[0]);
 	
-      	// dma_coeff1.execute_dma(&CoeffsAtEdge[ (((ipt+1)*gridDim.x+blockIdx.x)*
-      	// 				       compute_threads_per_cta+nedge_offset)*
-      	// 				      (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
-      	// 		       s_CoeffsAtEdge[1]);
+      // dma_coeff1.execute_dma(&CoeffsAtEdge[ (((ipt+1)*gridDim.x+blockIdx.x)*
+      // 				       compute_threads_per_cta+nedge_offset)*
+      // 				      (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      // 		       s_CoeffsAtEdge[1]);
 	
-      }
     }
-  };
+  }
+};
 #undef TOTAL_THREADS_PER_CTA
 #endif
   
-  /*****************************************************************************
-   * Internal C++ functions which invoke the CUDA kernels
-   ****************************************************************************/
+/*****************************************************************************
+ * Internal C++ functions which invoke the CUDA kernels
+ ****************************************************************************/
 
-  template <typename Tc,
-			typename TdSrc,
-			typename TdDest,
-			typename Ti,
-			int idissipationtype>
-  inline
-  int hydro_calcFlux2d_cuda(__SIZET *d_CoeffsAtEdge,
-							__SIZET *d_IedgeList,
-							__SIZET *d_vecSrc,
-							__SIZET *d_vecDest,
-							TdDest scale,
-							Ti nblocks,
-							Ti neq,
-							Ti nedge, 
-							Ti ncoeff,
-							Ti nedgeset,
-							Ti iedgeset,
-							cudaStream_t stream=0)
-  {
-    const cudaDeviceProp *devProp = coproc_getCurrentDeviceProp();
+template <typename Tc,
+          typename TdSrc,
+          typename TdDest,
+          typename Ti,
+          int idissipationtype>
+inline
+int hydro_calcFlux2d_cuda(__SIZET *d_CoeffsAtEdge,
+                          __SIZET *d_IedgeList,
+                          __SIZET *d_vecSrc,
+                          __SIZET *d_vecDest,
+                          TdDest scale,
+                          Ti nblocks,
+                          Ti neq,
+                          Ti nedge, 
+                          Ti ncoeff,
+                          Ti nedgeset,
+                          Ti iedgeset,
+                          cudaStream_t stream=0)
+{
+  const cudaDeviceProp *devProp = coproc_getCurrentDeviceProp();
     
-    // Strategy: run the largest possible number of blocks with a
-    // predefined number of compute/dma threads per block and let each
-    // compute thread process the minimal number of edges
-    const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
-    const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
-    const int dma_lds                  = CUDADMA_DMA_LDS;
-    int nedge_per_thread_cudaDMA       = CUDADMA_NEDGE_PER_THREAD;
+  // Strategy: run the largest possible number of blocks with a
+  // predefined number of compute/dma threads per block and let each
+  // compute thread process the minimal number of edges
+  const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
+  const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
+  const int dma_lds                  = CUDADMA_DMA_LDS;
+  int nedge_per_thread_cudaDMA       = CUDADMA_NEDGE_PER_THREAD;
 
-    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
-    int nedge_per_thread_baseline      = BASELINE_NEDGE_PER_THREAD;
+  const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+  int nedge_per_thread_baseline      = BASELINE_NEDGE_PER_THREAD;
     
-    int blocks, threads, nedge_cudaDMA, nedge_baseline;
-    prepare_cudaDMA(devProp, nedgeset,
-					&nedge_per_thread_cudaDMA,
-					compute_threads_per_cta, dma_threads_per_ld,
-					dma_lds, &blocks, &threads, &nedge_cudaDMA);
-    dim3 grid_cudaDMA(blocks, 1, 1);
-    dim3 block_cudaDMA(threads, 1, 1);
+  int blocks, threads, nedge_cudaDMA, nedge_baseline;
+  prepare_cudaDMA(devProp, nedgeset,
+                  &nedge_per_thread_cudaDMA,
+                  compute_threads_per_cta, dma_threads_per_ld,
+                  dma_lds, &blocks, &threads, &nedge_cudaDMA);
+  dim3 grid_cudaDMA(blocks, 1, 1);
+  dim3 block_cudaDMA(threads, 1, 1);
 
-    prepare_baseline(devProp, nedgeset-nedge_cudaDMA,
-					 &nedge_per_thread_baseline, threads_per_cta_baseline,
-					 &blocks, &threads, &nedge_baseline);
-    dim3 grid_baseline(blocks, 1, 1);
-    dim3 block_baseline(threads, 1, 1);
+  prepare_baseline(devProp, nedgeset-nedge_cudaDMA,
+                   &nedge_per_thread_baseline, threads_per_cta_baseline,
+                   &blocks, &threads, &nedge_baseline);
+  dim3 grid_baseline(blocks, 1, 1);
+  dim3 block_baseline(threads, 1, 1);
 
-    TdSrc  *vecSrc = (TdSrc*)(*d_vecSrc);
-    TdDest *vecDest = (TdDest*)(*d_vecDest);
-    Tc *CoeffsAtEdge = (Tc*)(*d_CoeffsAtEdge);
-    Ti *IedgeList = (Ti*)(*d_IedgeList);
+  TdSrc  *vecSrc = (TdSrc*)(*d_vecSrc);
+  TdDest *vecDest = (TdDest*)(*d_vecDest);
+  Tc *CoeffsAtEdge = (Tc*)(*d_CoeffsAtEdge);
+  Ti *IedgeList = (Ti*)(*d_IedgeList);
     
-    if (nblocks == 1) {
+  if (nblocks == 1) {
 #ifdef CUDADMA_KERNEL    
-      if (grid_cudaDMA.x>0) {
-      	// CudaDMA implementation
-		CUDADMA_KERNEL
-      	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
-		   MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
-      	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
-													   IedgeList,
-													   vecSrc, vecDest, scale,
-													   neq, nedge, ncoeff,
-													   nedge_cudaDMA+iedgeset-1, 
-													   nedge_per_thread_cudaDMA,
-													   iedgeset-1);
-      }
+    if (grid_cudaDMA.x>0) {
+      // CudaDMA implementation
+      CUDADMA_KERNEL
+        <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
+        MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
+        <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
+                                                     IedgeList,
+                                                     vecSrc, vecDest, scale,
+                                                     neq, nedge, ncoeff,
+                                                     nedge_cudaDMA+iedgeset-1, 
+                                                     nedge_per_thread_cudaDMA,
+                                                     iedgeset-1);
+    }
 #endif
 
 #ifdef BASELINE_KERNEL
-      if (grid_baseline.x>0) {
-		// Baseline implementation
-		BASELINE_KERNEL
-		  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
-		   threads_per_cta_baseline>
-		  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
-														 IedgeList,
-														 vecSrc, vecDest, scale,
-														 neq, nedge, ncoeff,
-														 nedgeset+iedgeset-1, 
-														 nedge_per_thread_baseline,
-														 nedge_cudaDMA+iedgeset-1);
-      }
+    if (grid_baseline.x>0) {
+      // Baseline implementation
+      BASELINE_KERNEL
+        <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
+        threads_per_cta_baseline>
+        <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
+                                                       IedgeList,
+                                                       vecSrc, vecDest, scale,
+                                                       neq, nedge, ncoeff,
+                                                       nedgeset+iedgeset-1, 
+                                                       nedge_per_thread_baseline,
+                                                       nedge_cudaDMA+iedgeset-1);
+    }
 #endif
-    } else {
+  } else {
 #ifdef CUDADMA_KERNEL
-      if (grid_cudaDMA.x>0) {
-      	// CudaDMA implementation
-      	CUDADMA_KERNEL
-      	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
-		   MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
-      	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
-													   IedgeList,
-													   vecSrc, vecDest, scale, 
-													   neq, nedge, ncoeff,
-													   nedge_cudaDMA+iedgeset-1, 
-													   nedge_per_thread_cudaDMA,
-													   iedgeset-1);
-      }
+    if (grid_cudaDMA.x>0) {
+      // CudaDMA implementation
+      CUDADMA_KERNEL
+        <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
+        MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
+        <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
+                                                     IedgeList,
+                                                     vecSrc, vecDest, scale, 
+                                                     neq, nedge, ncoeff,
+                                                     nedge_cudaDMA+iedgeset-1, 
+                                                     nedge_per_thread_cudaDMA,
+                                                     iedgeset-1);
+    }
 #endif
 
 #ifdef BASELINE_KERNEL
-      if (grid_baseline.x>0) {
-      	// Baseline implementation
-		BASELINE_KERNEL
-		  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
-		   threads_per_cta_baseline>
-		  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
-														 IedgeList,
-														 vecSrc, vecDest, scale, 
-														 neq, nedge, ncoeff,
-														 nedgeset+iedgeset-1, 
-														 nedge_per_thread_baseline,
-														 nedge_cudaDMA+iedgeset-1);
-      }
+    if (grid_baseline.x>0) {
+      // Baseline implementation
+      BASELINE_KERNEL
+        <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
+        threads_per_cta_baseline>
+        <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
+                                                       IedgeList,
+                                                       vecSrc, vecDest, scale, 
+                                                       neq, nedge, ncoeff,
+                                                       nedgeset+iedgeset-1, 
+                                                       nedge_per_thread_baseline,
+                                                       nedge_cudaDMA+iedgeset-1);
+    }
 #endif
-    }   
+  }   
 
-    coproc_checkError("hydro_calcFlux2d_cuda");
-    return 0;
-  };
+  coproc_checkError("hydro_calcFlux2d_cuda");
+  return 0;
+};
   
-  /*****************************************************************************
-   * External C functions which can be called from the Fortran code
-   ****************************************************************************/
+/*****************************************************************************
+ * External C functions which can be called from the Fortran code
+ ****************************************************************************/
 
-  extern "C"
-  { 
-    __INT FNAME(hydro_calcfluxgalerkin2d_cuda)(__SIZET *d_CoeffsAtEdge,
-											   __SIZET *d_IedgeList,
-											   __SIZET *d_vecSrc,
-											   __SIZET *d_vecDest,
-											   __DP *scale,
-											   __INT *nblocks,
-											   __INT *neq,
-											   __INT *nedge,
-											   __INT *ncoeff,
-											   __INT *nedges,
-											   __INT *iedgeset,
-											   __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_ZERO>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset, 
-		 (cudaStream_t)(*stream));
-    }
+extern "C"
+{ 
+  __INT FNAME(hydro_calcfluxgalerkin2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                             __SIZET *d_IedgeList,
+                                             __SIZET *d_vecSrc,
+                                             __SIZET *d_vecDest,
+                                             __DP *scale,
+                                             __INT *nblocks,
+                                             __INT *neq,
+                                             __INT *nedge,
+                                             __INT *ncoeff,
+                                             __INT *nedges,
+                                             __INT *iedgeset,
+                                             __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_ZERO>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset, 
+       (cudaStream_t)(*stream));
+  }
 
-    /**************************************************************************/
+  /**************************************************************************/
     
-    __INT FNAME(hydro_calcfluxscdiss2d_cuda)(__SIZET *d_CoeffsAtEdge,
-											 __SIZET *d_IedgeList,
-											 __SIZET *d_vecSrc,
-											 __SIZET *d_vecDest,
-											 __DP *scale,
-											 __INT *nblocks,
-											 __INT *neq,
-											 __INT *nedge,
-											 __INT *ncoeff,
-											 __INT *nedges,
-											 __INT *iedgeset,
-											 __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_SCALAR>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset, 
-		 (cudaStream_t)(*stream));
-    }
+  __INT FNAME(hydro_calcfluxscdiss2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                           __SIZET *d_IedgeList,
+                                           __SIZET *d_vecSrc,
+                                           __SIZET *d_vecDest,
+                                           __DP *scale,
+                                           __INT *nblocks,
+                                           __INT *neq,
+                                           __INT *nedge,
+                                           __INT *ncoeff,
+                                           __INT *nedges,
+                                           __INT *iedgeset,
+                                           __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_SCALAR>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset, 
+       (cudaStream_t)(*stream));
+  }
 
-    /**************************************************************************/
+  /**************************************************************************/
 
-    __INT FNAME(hydro_calcfluxscdissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
-												 __SIZET *d_IedgeList,
-												 __SIZET *d_vecSrc,
-												 __SIZET *d_vecDest,
-												 __DP *scale,
-												 __INT *nblocks, 
-												 __INT *neq, 
-												 __INT *nedge, 
-												 __INT *ncoeff,
-												 __INT *nedges, 
-												 __INT *iedgeset,
-												 __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_SCALAR_DSPLIT>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset,
-		 (cudaStream_t)(*stream));
-    }
+  __INT FNAME(hydro_calcfluxscdissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                               __SIZET *d_IedgeList,
+                                               __SIZET *d_vecSrc,
+                                               __SIZET *d_vecDest,
+                                               __DP *scale,
+                                               __INT *nblocks, 
+                                               __INT *neq, 
+                                               __INT *nedge, 
+                                               __INT *ncoeff,
+                                               __INT *nedges, 
+                                               __INT *iedgeset,
+                                               __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_SCALAR_DSPLIT>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset,
+       (cudaStream_t)(*stream));
+  }
 
-    /**************************************************************************/
+  /**************************************************************************/
 
-    __INT FNAME(hydro_calcfluxroediss2d_cuda)(__SIZET *d_CoeffsAtEdge,
-											  __SIZET *d_IedgeList,
-											  __SIZET *d_vecSrc,
-											  __SIZET *d_vecDest,
-											  __DP *scale,
-											  __INT *nblocks, 
-											  __INT *neq, 
-											  __INT *nedge, 
-											  __INT *ncoeff,
-											  __INT *nedges, 
-											  __INT *iedgeset,
-											  __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_ROE>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset,
-		 (cudaStream_t)(*stream));
-    }
+  __INT FNAME(hydro_calcfluxroediss2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                            __SIZET *d_IedgeList,
+                                            __SIZET *d_vecSrc,
+                                            __SIZET *d_vecDest,
+                                            __DP *scale,
+                                            __INT *nblocks, 
+                                            __INT *neq, 
+                                            __INT *nedge, 
+                                            __INT *ncoeff,
+                                            __INT *nedges, 
+                                            __INT *iedgeset,
+                                            __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_ROE>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset,
+       (cudaStream_t)(*stream));
+  }
 
-	/***************************************************************************/
+  /***************************************************************************/
 
-    __INT FNAME(hydro_calcfluxroedissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
-												  __SIZET *d_IedgeList,
-												  __SIZET *d_vecSrc,
-												  __SIZET *d_vecDest,
-												  __DP *scale,
-												  __INT *nblocks, 
-												  __INT *neq, 
-												  __INT *nedge, 
-												  __INT *ncoeff,
-												  __INT *nedges, 
-												  __INT *iedgeset,
-												  __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_ROE_DSPLIT>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset,
-		 (cudaStream_t)*stream);
-    }
+  __INT FNAME(hydro_calcfluxroedissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                                __SIZET *d_IedgeList,
+                                                __SIZET *d_vecSrc,
+                                                __SIZET *d_vecDest,
+                                                __DP *scale,
+                                                __INT *nblocks, 
+                                                __INT *neq, 
+                                                __INT *nedge, 
+                                                __INT *ncoeff,
+                                                __INT *nedges, 
+                                                __INT *iedgeset,
+                                                __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_ROE_DSPLIT>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset,
+       (cudaStream_t)*stream);
+  }
 
-    /**************************************************************************/
+  /**************************************************************************/
 
-    __INT FNAME(hydro_calcfluxrusdiss2d_cuda)(__SIZET *d_CoeffsAtEdge,
-											  __SIZET *d_IedgeList,
-											  __SIZET *d_vecSrc,
-											  __SIZET *d_vecDest,
-											  __DP *scale,
-											  __INT *nblocks, 
-											  __INT *neq, 
-											  __INT *nedge, 
-											  __INT *ncoeff,
-											  __INT *nedges, 
-											  __INT *iedgeset,
-											  __I64 *stream)
-    {
-      return (__INT)hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_RUSANOV>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset,
-		 (cudaStream_t)*stream);
-    }
+  __INT FNAME(hydro_calcfluxrusdiss2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                            __SIZET *d_IedgeList,
+                                            __SIZET *d_vecSrc,
+                                            __SIZET *d_vecDest,
+                                            __DP *scale,
+                                            __INT *nblocks, 
+                                            __INT *neq, 
+                                            __INT *nedge, 
+                                            __INT *ncoeff,
+                                            __INT *nedges, 
+                                            __INT *iedgeset,
+                                            __I64 *stream)
+  {
+    return (__INT)hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_RUSANOV>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset,
+       (cudaStream_t)*stream);
+  }
     
-    /**************************************************************************/
+  /**************************************************************************/
 
-    __INT FNAME(hydro_calcfluxrusdissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
-												  __SIZET *d_IedgeList,
-												  __SIZET *d_vecSrc,
-												  __SIZET *d_vecDest,
-												  __DP *scale,
-												  __INT *nblocks, 
-												  __INT *neq, 
-												  __INT *nedge, 
-												  __INT *ncoeff,
-												  __INT *nedges, 
-												  __INT *iedgeset,
-												  __I64 *stream)
-    {
-      return (__INT) hydro_calcFlux2d_cuda
-		<__DP,__DP,__DP,__INT,DISSIPATION_RUSANOV_DSPLIT>
-		(d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
-		 *scale, *nblocks, *neq, *nedge,
-		 *ncoeff, *nedges, *iedgeset,
-		 (cudaStream_t)*stream);
-    }
-  };
+  __INT FNAME(hydro_calcfluxrusdissdisp2d_cuda)(__SIZET *d_CoeffsAtEdge,
+                                                __SIZET *d_IedgeList,
+                                                __SIZET *d_vecSrc,
+                                                __SIZET *d_vecDest,
+                                                __DP *scale,
+                                                __INT *nblocks, 
+                                                __INT *neq, 
+                                                __INT *nedge, 
+                                                __INT *ncoeff,
+                                                __INT *nedges, 
+                                                __INT *iedgeset,
+                                                __I64 *stream)
+  {
+    return (__INT) hydro_calcFlux2d_cuda
+      <__DP,__DP,__DP,__INT,DISSIPATION_RUSANOV_DSPLIT>
+      (d_CoeffsAtEdge, d_IedgeList, d_vecSrc, d_vecDest,
+       *scale, *nblocks, *neq, *nedge,
+       *ncoeff, *nedges, *iedgeset,
+       (cudaStream_t)*stream);
+  }
+};
 }

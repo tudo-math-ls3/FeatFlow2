@@ -1,15 +1,15 @@
 /*#############################################################################
- ******************************************************************************
- * <name> hydro_calcFlux3d_cuda </name>
- ******************************************************************************
- *
- * <purpose>
- * This file provides CUDA kernels to compute the fluxes for the low-order
- * scheme in 3D using different types if artificial viscosities.
- * </purpose>
- *
- *#############################################################################
- */
+******************************************************************************
+* <name> hydro_calcFlux3d_cuda </name>
+******************************************************************************
+*
+* <purpose>
+* This file provides CUDA kernels to compute the fluxes for the low-order
+* scheme in 3D using different types if artificial viscosities.
+* </purpose>
+*
+*#############################################################################
+*/
 
 #include <stdio.h>
 #include <cmath>
@@ -26,7 +26,6 @@
 #include "../../flagship.h"
 #include "../../cudaMacros.h"
 
-#define HYDRO_NDIM 3
 #include "hydro.h"
 
 // Define CUDA kernel which does not make use of the CUDADMA library
@@ -1181,32 +1180,32 @@ namespace hydro3d_cuda
       // Flux component 1
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
@@ -1234,32 +1233,32 @@ namespace hydro3d_cuda
       // Flux component 2
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       
@@ -1287,32 +1286,32 @@ namespace hydro3d_cuda
       // Flux component 3
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       
@@ -1340,32 +1339,32 @@ namespace hydro3d_cuda
       // Flux component 4
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
@@ -1393,32 +1392,32 @@ namespace hydro3d_cuda
       // Flux component 5
       if (btransposeSrc) {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
-		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
-		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
-		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
@@ -1451,232 +1450,232 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
@@ -1685,232 +1684,232 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
@@ -1922,232 +1921,232 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
@@ -2156,232 +2155,232 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 	    
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
 				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
 				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
-			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*
+			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
 			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
 				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
@@ -2665,21 +2664,21 @@ namespace hydro3d_cuda
       Td ri,rj,hi,hj;
       if (btransposeSrc) {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		ri = DENSITY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		rj = DENSITY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
       }
       else {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		ri = DENSITY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		rj = DENSITY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
       }
 
       // Compute Roe mean values
@@ -2690,13 +2689,13 @@ namespace hydro3d_cuda
       Td H_ij = ROE_MEAN_VALUE(hi,hj,aux);
 
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[3];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
+      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       
       // Compute auxiliary variables
       Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
@@ -2781,21 +2780,21 @@ namespace hydro3d_cuda
       Td ri,rj,hi,hj;
       if (btransposeSrc) {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		ri = DENSITY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		rj = DENSITY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
       }
       else {
 		// Compute densities
-		ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		ri = DENSITY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		rj = DENSITY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	
 		// Compute enthalpies
-		hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		hi = (TOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		hj = (TOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
       }
     
       // Compute Roe mean values
@@ -2812,13 +2811,13 @@ namespace hydro3d_cuda
       Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
 
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[3];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
+      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
         
       // Compute scalar dissipation
       Td d_ij = ( abs(a[0]*u_ij) + abs(a[0])*c_ij +
@@ -2895,13 +2894,13 @@ namespace hydro3d_cuda
 							 Ti ncoeff)
     {
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[3];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
+      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
     
       if (anorm > DBL_EPSILON) {
@@ -2914,21 +2913,21 @@ namespace hydro3d_cuda
 		Td ri,rj,hi,hj;
 		if (btransposeSrc) {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		  ri = DENSITY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		  rj = DENSITY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
 		}
 		else {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		  ri = DENSITY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		  rj = DENSITY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
 		}
       
 		// Compute Roe mean values
@@ -3151,13 +3150,13 @@ namespace hydro3d_cuda
 							 Ti ncoeff)
     {
       // Compute skew-symmetric coefficient
-      Td a[HYDRO_NDIM];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge));
+      Td a[3];
+      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
+      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
+      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
       
       if (anorm > DBL_EPSILON) {
@@ -3170,21 +3169,21 @@ namespace hydro3d_cuda
 		Td ri,rj,hi,hj;
 		if (btransposeSrc) {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		  ri = DENSITY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		  rj = DENSITY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
 		}
 		else {
 		  // Compute densities
-		  ri = DENSITY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		  rj = DENSITY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		  ri = DENSITY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		  rj = DENSITY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
 	  
 		  // Compute enthalpies
-		  hi = (TOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
-		  hj = (TOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
+		  hi = (TOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc)+pi)/ri;
+		  hj = (TOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc)+pj)/rj;
 		}
       
 		// Compute Roe mean values
@@ -3434,13 +3433,13 @@ namespace hydro3d_cuda
       Td Ei,Ej;
       if (btransposeSrc) {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
       }
       else {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
       }
     
       // Compute the speed of sound
@@ -3452,44 +3451,44 @@ namespace hydro3d_cuda
 #ifdef HYDRO_USE_IBP
       // Compute scalar dissipation based on the skew-symmetric part
       // which does not include the symmetric boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*uj+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*vj-
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge))*wj)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),2))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*ui+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*vi+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge))*wi)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-										  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),2))*ci );
+      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge))*uj+
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge))*vj-
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge))*wj)+
+					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),2))*cj,
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge))*ui+
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge))*vi+
+						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge))*wi)+
+					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),2)+
+									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+										  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),2))*ci );
 #else
       // Compute scalar dissipation
-      Td d_ij = max( abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*uj+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*vj+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*wj)+
-					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),2))*cj,
-					 abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*ui+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*vi+
-						 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*wi)+
-					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
-						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge),2))*ci );
+      Td d_ij = max( abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*uj+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*vj+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*wj)+
+					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge),2))*cj,
+					 abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*ui+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*vi+
+						 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*wi)+
+					 sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),2)+
+						  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),2))*ci );
 #endif
     
       // Multiply the solution difference by the scalar dissipation
@@ -3564,13 +3563,13 @@ namespace hydro3d_cuda
       Td Ei,Ej;
       if (btransposeSrc) {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc);
       }
       else {
 		// Compute specific energies
-		Ei = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
-		Ej = SPECIFICTOTALENERGY3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ei = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc);
+		Ej = SPECIFICTOTALENERGY3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc);
       }
     
       // Compute the speed of sound
@@ -3583,44 +3582,44 @@ namespace hydro3d_cuda
       // Compute scalar dissipation with dimensional splitting based on
       // the skew-symmetric part which does not include the symmetric
       // boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*uj)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*ui)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)))*ci )
-		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*vj)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)))*cj,
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*vi)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)))*ci )
-		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge))*wj)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)))*cj,
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge))*wi)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)-
-								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)))*ci );
+      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge))*uj)+
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)))*cj,
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge))*ui)+
+					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)))*ci )
+		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge))*vj)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)))*cj,
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge))*vi)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)))*ci )
+		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge))*wj)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)))*cj,
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge))*wi)+
+			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)))*ci );
 #else
       // Compute scalar dissipation with dimensional splitting
-      Td d_ij = max( abs(IDX3(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*uj)+
-					 abs(IDX3(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge))*cj,
-					 abs(IDX3(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*ui)+
-					 abs(IDX3(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge))*ci )
-		+ max( abs(IDX3(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*vj)+
-			   abs(IDX3(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge))*cj,
-			   abs(IDX3(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*vi)+
-			   abs(IDX3(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge))*ci )
-		+ max( abs(IDX3(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*wj)+
-			   abs(IDX3(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge))*cj,
-			   abs(IDX3(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*wi)+
-			   abs(IDX3(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge))*ci );
+      Td d_ij = max( abs(IDX3(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*uj)+
+					 abs(IDX3(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge))*cj,
+					 abs(IDX3(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*ui)+
+					 abs(IDX3(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge))*ci )
+		+ max( abs(IDX3(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*vj)+
+			   abs(IDX3(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge))*cj,
+			   abs(IDX3(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*vi)+
+			   abs(IDX3(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge))*ci )
+		+ max( abs(IDX3(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*wj)+
+			   abs(IDX3(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge))*cj,
+			   abs(IDX3(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*wi)+
+			   abs(IDX3(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge))*ci );
 #endif
     
       // Multiply the solution difference by the scalar dissipation
@@ -3730,12 +3729,12 @@ namespace hydro3d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
 
 #pragma unroll
@@ -3746,23 +3745,23 @@ namespace hydro3d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
 	
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*IDX2(Fxj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*IDX2(Fyj,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*IDX2(Fzj,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*IDX2(Fxi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*IDX2(Fyi,i,iposSrc,NVAR3D,nedgesimSrc)-
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*IDX2(Fzi,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
       }
     }
@@ -3790,34 +3789,34 @@ namespace hydro3d_cuda
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
     
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
       }
       else {
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
     
 #pragma unroll
 		for (int i=1; i<=NVAR3D; i++)
 		  IDX3(FluxesAtEdge,i,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
-			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,HYDRO_NDIM,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*IDX2(Fx_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*IDX2(Fy_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*IDX2(Fz_ij,i,iposSrc,NVAR3D,nedgesimSrc)+
 			 IDX2(Diff,i,iposSrc,NVAR3D,nedgesimSrc));
       }
     }
@@ -3970,17 +3969,17 @@ namespace hydro3d_cuda
 			gatherEdgeData<true>(DataAtEdge,vecSrc,i,j,neq);
 	  
 		  // Compute velocities
-		  TdDest ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  TdDest vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  TdDest wi = ZVELOCITY2(DataAtEdge,IDX2,1,NVAR3D,2);
+		  TdDest ui = XVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  TdDest vi = YVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  TdDest wi = ZVELOCITY2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
 	  
-		  TdDest uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		  TdDest vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
-		  TdDest wj = ZVELOCITY2(DataAtEdge,IDX2,2,NVAR3D,2);
+		  TdDest uj = XVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		  TdDest vj = YVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
+		  TdDest wj = ZVELOCITY2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
 	  
 		  // Compute pressures
-		  TdDest pi = PRESSURE2(DataAtEdge,IDX2,1,NVAR3D,2);
-		  TdDest pj = PRESSURE2(DataAtEdge,IDX2,2,NVAR3D,2);
+		  TdDest pi = PRESSURE2_3D(DataAtEdge,IDX2,1,NVAR3D,2);
+		  TdDest pj = PRESSURE2_3D(DataAtEdge,IDX2,2,NVAR3D,2);
 	  
 		  // Local variables
 		  TdDest FluxAtEdge[2*NVAR3D];
@@ -4047,17 +4046,17 @@ namespace hydro3d_cuda
 			(s_DataAtEdge,vecSrc,(int)threadIdx.x+1,i,j,neq);
 	  
 		  // Compute velocities
-		  TdDest ui = XVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
-		  TdDest vi = YVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
-		  TdDest wi = ZVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest ui = XVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest vi = YVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest wi = ZVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
 	  
-		  TdDest uj = XVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
-		  TdDest vj = YVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
-		  TdDest wj = ZVELOCITY3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest uj = XVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest vj = YVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest wj = ZVELOCITY3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
 	  
 		  // Compute pressures
-		  TdDest pi = PRESSURE3(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
-		  TdDest pj = PRESSURE3(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest pi = PRESSURE3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,1,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
+		  TdDest pj = PRESSURE3_3D(s_DataAtEdge,SHMEM_DATA_IDX3,2,(int)threadIdx.x+1,NVAR3D,2,threads_per_cta);
 	  
 		  // Local variables
 		  TdDest FluxAtEdge[2*NVAR3D];
@@ -4142,7 +4141,7 @@ namespace hydro3d_cuda
       	// CudaDMA implementation
 		CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
-		   MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
+          MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
       	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vecSrc, vecDest, scale,
@@ -4158,7 +4157,7 @@ namespace hydro3d_cuda
 		// Baseline implementation
 		BASELINE_KERNEL
 		  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
-		   threads_per_cta_baseline>
+          threads_per_cta_baseline>
 		  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 														 IedgeList,
 														 vecSrc, vecDest, scale,
@@ -4174,7 +4173,7 @@ namespace hydro3d_cuda
       	// CudaDMA implementation
       	CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
-		   MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
+          MAX(32,compute_threads_per_cta),MAX(32,dma_threads_per_ld)>
       	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
 													   IedgeList,
 													   vecSrc, vecDest, scale, 
@@ -4190,7 +4189,7 @@ namespace hydro3d_cuda
       	// Baseline implementation
 		BASELINE_KERNEL
 		  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
-		   threads_per_cta_baseline>
+          threads_per_cta_baseline>
 		  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 														 IedgeList,
 														 vecSrc, vecDest, scale, 

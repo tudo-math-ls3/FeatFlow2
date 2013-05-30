@@ -196,7 +196,6 @@
 module hydro_callback1d
 
 #include "../../flagship.h"
-#define HYDRO_NDIM 1
 #include "hydro.h"
 
 !$use omp_lib
@@ -344,22 +343,22 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
       
       ! Assemble skew-symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) = dscale *&
@@ -368,12 +367,12 @@ contains
       IDX3(DfluxesAtEdge,:,2,idx,_,_,_) = -IDX3(DfluxesAtEdge,:,1,idx,_,_,_)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
                  
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) =  dscale * IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*Fx_ij
@@ -448,20 +447,20 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
       
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) = dscale *&
@@ -542,30 +541,30 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -578,12 +577,12 @@ contains
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
 
       ! Compute densities
-      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute enthalpies
-      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+      hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+      hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
 
       ! Compute Roe mean values
       aux  = ROE_MEAN_RATIO(ri,rj)
@@ -695,30 +694,30 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -733,12 +732,12 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -920,30 +919,30 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
-      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
+      IDX1(Fxi,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)
 
-      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fxj,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
-      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
-                      INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,1) = INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX1_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,2) = INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX2_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
+      IDX1(Fx_ij,3) = INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,1,idx,_,_,_,ui,pi)-&
+                      INVISCIDFLUX3_XDIR3_1D(DdataAtEdge,IDX3,2,idx,_,_,_,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -951,8 +950,8 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
       ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
@@ -1051,24 +1050,24 @@ contains
     do inode = 1, nnodes
       
       ! Compute velocity
-      ui = XVELOCITY2(DdataAtNode,IDX2,inode,_,_)
+      ui = XVELOCITY2_1D(DdataAtNode,IDX2,inode,_,_)
       
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
       IDX3(DmatrixAtNode,2,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
       IDX3(DmatrixAtNode,3,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
       IDX3(DmatrixAtNode,2,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
       IDX3(DmatrixAtNode,3,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,_)
 #endif
     end do
 
@@ -1124,49 +1123,49 @@ contains
     do inode = 1, nnodes
       
       ! Compute auxiliary variables
-      ui = XVELOCITY2(DdataAtNode,IDX2,inode,_,_)
-      Ei = SPECIFICTOTALENERGY2(DdataAtNode,IDX2,inode,_,_)
+      ui = XVELOCITY2_1D(DdataAtNode,IDX2,inode,_,_)
+      Ei = SPECIFICTOTALENERGY2_1D(DdataAtNode,IDX2,inode,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,2,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,3,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,4,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,5,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,6,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,7,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,8,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,9,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,2,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,3,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,4,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,5,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,6,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,7,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,8,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
       IDX3(DmatrixAtNode,9,1,inode,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX2(DcoeffsAtNode,1,inode,_,_),ui,Ei)
 #endif
     end do
     
@@ -1221,41 +1220,41 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
       IDX3(DmatrixAtEdge,1,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
 #endif
     end do
 
@@ -1310,100 +1309,100 @@ contains
     do idx = 1, nedges
       
       ! Compute auxiliary variables
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
       IDX3(DmatrixAtEdge,1,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,4,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,1,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 #endif
     end do
 
@@ -1462,41 +1461,41 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
      
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
 #endif
       
       !---------------------------------------------------------------------------
@@ -1512,16 +1511,16 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -1601,101 +1600,101 @@ contains
     do idx = 1, nedges
     
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1711,16 +1710,16 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -1808,41 +1807,41 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1857,16 +1856,16 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2031,101 +2030,101 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2139,16 +2138,16 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2305,45 +2304,45 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2416,101 +2415,101 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
       IDX3(DmatrixAtEdge,1,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,2,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,3,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,4,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,5,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,6,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
 
       IDX3(DmatrixAtEdge,7,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,8,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       IDX3(DmatrixAtEdge,9,2,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
       IDX3(DmatrixAtEdge,1,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX11_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,2,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX21_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,3,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX31_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,4,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX12_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,5,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX22_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,6,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX32_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 
       IDX3(DmatrixAtEdge,7,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX13_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,8,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX23_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
       IDX3(DmatrixAtEdge,9,3,idx,_,_,_) =&
-          INVISCIDFLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
+          INVISCIDFLUXJACOBIMATRIX33_1D(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2618,20 +2617,20 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2674,20 +2673,20 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2711,20 +2710,20 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2756,20 +2755,20 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2865,20 +2864,20 @@ contains
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
 
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Compute pressures
-      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute densities
-      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute enthalpies
-      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+      hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+      hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
 
       ! Compute Roe mean values
       aux  = ROE_MEAN_RATIO(ri,rj)
@@ -2970,20 +2969,20 @@ contains
       if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute velocities
-        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
         ! Compute pressures
-        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        pi = PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        pj = PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute densities
-        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+        ri = DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+        rj = DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
         
         ! Compute enthalpies
-        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
-        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
+        hi = (TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)+pi)/ri
+        hj = (TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)+pj)/rj
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(ri,rj)
@@ -3093,12 +3092,12 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute specific total energies
-      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      Ei = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
       ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
@@ -3181,9 +3180,9 @@ contains
       
       ! Transformed density fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+          DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoFluxDensity1d_sim
@@ -3231,8 +3230,8 @@ contains
       
       ! Transformed density difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffDensity1d_sim
@@ -3280,7 +3279,7 @@ contains
       
       ! Transformed density values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          DENSITY2(DdataAtNode,IDX2,idx,_,_)
+          DENSITY2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalDensity1d_sim
@@ -3333,9 +3332,9 @@ contains
       
       ! Transformed total energy fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_)
+          TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoFluxEnergy1d_sim
@@ -3383,8 +3382,8 @@ contains
       
       ! Transformed total density difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffEnergy1d_sim
@@ -3432,7 +3431,7 @@ contains
       
       ! Transformed energy values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          TOTALENERGY2(DdataAtNode,IDX2,idx,_,_)
+          TOTALENERGY2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalEnergy1d_sim
@@ -3485,20 +3484,20 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
           ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
           -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
     end do
     
   end subroutine hydro_trafoFluxPressure1d_sim
@@ -3546,8 +3545,8 @@ contains
       
       ! Transformed pressure difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffPressure1d_sim
@@ -3595,7 +3594,7 @@ contains
       
       ! Transformed pressure values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          PRESSURE2(DdataAtNode,IDX2,idx,_,_)
+          PRESSURE2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalPressure1d_sim
@@ -3648,18 +3647,18 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Transformed velocity fluxes in x-direction
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)-&
-          ui*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_))/&
-             DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          (XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+          ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_))/&
+             DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)-&
-          uj*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_))/&
-             DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+         -(XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+          uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_))/&
+             DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
     end do
     
   end subroutine hydro_trafoFluxVelocity1d_sim
@@ -3707,8 +3706,8 @@ contains
 
       ! Transformed velocity difference in x-direction
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffVelocity1d_sim
@@ -3756,7 +3755,7 @@ contains
       
       ! Transformed x-velocity values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          XVELOCITY2(DdataAtNode,IDX2,idx,_,_)
+          XVELOCITY2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalVelocity1d_sim
@@ -3809,9 +3808,9 @@ contains
       
       ! Transformed momentum fluxes in x-direction
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)
+          XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)
+         -XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)
     end do
     
   end subroutine hydro_trafoFluxMomentum1d_sim
@@ -3859,8 +3858,8 @@ contains
       
       ! Transformed momentum difference in x-direction
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          XMOMENTUM3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          XMOMENTUM3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          XMOMENTUM3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          XMOMENTUM3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
     
   end subroutine hydro_trafoDiffMomentum1d_sim
@@ -3908,7 +3907,7 @@ contains
       
       ! Transformed x-momentum values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          XMOMENTUM2(DdataAtNode,IDX2,idx,_,_)
+          XMOMENTUM2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalMomentum1d_sim
@@ -3961,15 +3960,15 @@ contains
       
       ! Transformed density fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+          DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
 
       ! Transformed total energy fluxes
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
-          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_)
+          TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
-         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoFluxDenEng1d_sim
@@ -4017,13 +4016,13 @@ contains
 
       ! Transformed density difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
 
       ! Transformed total energy difference
       IDX2(DtransformedDataAtEdge,2,idx,_,_) =&
-          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          TOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          TOTALENERGY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffDenEng1d_sim
@@ -4072,11 +4071,11 @@ contains
       
       ! Transformed density values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          DENSITY2(DdataAtNode,IDX2,idx,_,_)
+          DENSITY2_1D(DdataAtNode,IDX2,idx,_,_)
 
       ! Transformed energy values
       IDX2(DtransformedDataAtNode,2,idx,_,_) =&
-          TOTALENERGY2(DdataAtNode,IDX2,idx,_,_)
+          TOTALENERGY2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalDenEng1d_sim
@@ -4129,26 +4128,26 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
            
       ! Transformed density fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+          DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
           ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
           -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
     end do
 
   end subroutine hydro_trafoFluxDenPre1d_sim
@@ -4196,13 +4195,13 @@ contains
       
       ! Transformed density difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) = &
-          DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       
       ! Transformed pressure difference
       IDX2(DtransformedDataAtEdge,2,idx,_,_) =&
-          PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffDenPre1d_sim
@@ -4251,11 +4250,11 @@ contains
       
       ! Transformed density values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          DENSITY2(DdataAtNode,IDX2,idx,_,_)
+          DENSITY2_1D(DdataAtNode,IDX2,idx,_,_)
 
       ! Transformed pressure values
       IDX2(DtransformedDataAtNode,2,idx,_,_) =&
-          PRESSURE2(DdataAtNode,IDX2,idx,_,_)
+          PRESSURE2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalDenPre1d_sim
@@ -4308,36 +4307,36 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
-      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+      ui = XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
+      uj = XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
       
       ! Transformed density fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+          DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)
+         -DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)
 
       ! Transformed velocity fluxes in x-direction
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
-          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           ui*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_))/&
-           DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          (XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_))/&
+           DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
-         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           uj*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_))/&
-           DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)
+         -(XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_))/&
+           DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,3,1,idx,_,_,_) =&
           ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,3,2,idx,_,_,_) =&
           -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
-          uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,_,_)-&
-           uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,_,_)+&
-            TOTALENERGY2(DfluxesAtEdge,IDX2,idx,_,_))
+          uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
+           uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
+            TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
     end do
       
   end subroutine hydro_trafoFluxDenPreVel1d_sim
@@ -4385,18 +4384,18 @@ contains
       
       ! Transformed density difference
       IDX2(DtransformedDataAtEdge,1,idx,_,_) =&
-          DENSITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          DENSITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          DENSITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          DENSITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       
       ! Transformed velocity difference in x-direction
       IDX2(DtransformedDataAtEdge,2,idx,_,_) =&
-          XVELOCITY3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          XVELOCITY3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          XVELOCITY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          XVELOCITY3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
       
       ! Transformed pressure difference
       IDX2(DtransformedDataAtEdge,3,idx,_,_) =&
-          PRESSURE3(DdataAtEdge,IDX3,2,idx,_,_,_)-&
-          PRESSURE3(DdataAtEdge,IDX3,1,idx,_,_,_)
+          PRESSURE3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)-&
+          PRESSURE3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
     end do
 
   end subroutine hydro_trafoDiffDenPreVel1d_sim
@@ -4445,15 +4444,15 @@ contains
       
       ! Transformed density values
       IDX2(DtransformedDataAtNode,1,idx,_,_) =&
-          DENSITY2(DdataAtNode,IDX2,idx,_,_)
+          DENSITY2_1D(DdataAtNode,IDX2,idx,_,_)
 
       ! Transformed x-velocity values
       IDX2(DtransformedDataAtNode,2,idx,_,_) =&
-          XVELOCITY2(DdataAtNode,IDX2,idx,_,_)
+          XVELOCITY2_1D(DdataAtNode,IDX2,idx,_,_)
 
       ! Transformed pressure values
       IDX2(DtransformedDataAtNode,3,idx,_,_) =&
-          PRESSURE2(DdataAtNode,IDX2,idx,_,_)
+          PRESSURE2_1D(DdataAtNode,IDX2,idx,_,_)
     end do
 
   end subroutine hydro_trafoNodalDenPreVel1d_sim
@@ -5880,16 +5879,16 @@ contains
       real(DP) :: l1,l2,l3,w1,w2,w3,aux,b1,b2,dveln
       
       ! Compute auxiliary quantities
-      uI = XVELOCITY1(DstateI,IDX1)
-      pI = PRESSURE1(DstateI,IDX1)
-      rI = DENSITY1(DstateI,IDX1)
-      hI = (TOTALENERGY1(DstateI,IDX1)+pI)/rI
+      uI = XVELOCITY1_1D(DstateI,IDX1)
+      pI = PRESSURE1_1D(DstateI,IDX1)
+      rI = DENSITY1_1D(DstateI,IDX1)
+      hI = (TOTALENERGY1_1D(DstateI,IDX1)+pI)/rI
       
       ! Compute auxiliary quantities
-      uM = XVELOCITY1(DstateM,IDX1)
-      pM = PRESSURE1(DstateM,IDX1)
-      rM = DENSITY1(DstateM,IDX1)
-      hM = (TOTALENERGY1(DstateM,IDX1)+pM)/rM
+      uM = XVELOCITY1_1D(DstateM,IDX1)
+      pM = PRESSURE1_1D(DstateM,IDX1)
+      rM = DENSITY1_1D(DstateM,IDX1)
+      hM = (TOTALENERGY1_1D(DstateM,IDX1)+pM)/rM
 
       ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
       Dflux(1) = dnx*(DstateI(2) + DstateM(2))
@@ -5962,8 +5961,8 @@ contains
       
       
       ! Compute auxiliary quantities
-      u = XVELOCITY1(Dstate,IDX1)
-      p = PRESSURE1(Dstate,IDX1)
+      u = XVELOCITY1_1D(Dstate,IDX1)
+      p = PRESSURE1_1D(Dstate,IDX1)
       
       ! Calculate ${\bf n}\cdot{\bf F}(U)$
       Dflux(1) = dnx*Dstate(2)

@@ -100,9 +100,6 @@
 module mhd_callback
 
 #include "../../flagship.h"
-#ifdef MHD_NDIM
-#undef MHD_NDIM
-#endif
 #include "mhd.h"
 
 !$use omp_lib

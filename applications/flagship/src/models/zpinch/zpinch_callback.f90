@@ -992,9 +992,9 @@ contains
           DdataForce(1,ieq) = 0.0_DP
           DdataForce(2,ieq) = daux * x1
           DdataForce(3,ieq) = daux * x2
-          DdataForce(4,ieq) = daux * (XMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1+&
-                                      YMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x2)/&
-                                        DENSITY2(DdataHydro,IDX2_FORWARD,ieq,_,_)
+          DdataForce(4,ieq) = daux * (XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1+&
+                                      YMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x2)/&
+                                        DENSITY2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1027,9 +1027,9 @@ contains
           DdataForce(2,ieq) = DdataForce(2,ieq) + daux * x1
           DdataForce(3,ieq) = DdataForce(3,ieq) + daux * x2
           DdataForce(4,ieq) = DdataForce(4,ieq)&
-                            + daux * (XMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1+&
-                                      YMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x2)/&
-                                        DENSITY2(DdataHydro,IDX2_FORWARD,ieq,_,_)
+                            + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1+&
+                                      YMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x2)/&
+                                        DENSITY2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1097,9 +1097,9 @@ contains
             ! Update Lorentz force term
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(3) = Ddata(3) + daux * x2
-            Ddata(4) = Ddata(4) + daux * (XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1+&
-                                          YMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x2)/&
-                                            DENSITY2(DdataHydro,IDX2_FORWARD,jeq,_,_)
+            Ddata(4) = Ddata(4) + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1+&
+                                          YMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x2)/&
+                                            DENSITY2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)
           end do
 
           ! Overwrite the Lorentz force term
@@ -1145,9 +1145,9 @@ contains
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(3) = Ddata(3) + daux * x2
             Ddata(4) = Ddata(4)&
-                     + daux * (XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1+&
-                               YMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x2)/&
-                                 DENSITY2(DdataHydro,IDX2_FORWARD,jeq,_,_)
+                     + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1+&
+                               YMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x2)/&
+                                 DENSITY2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)
           end do
 
           ! Update  Lorentz force term
@@ -1207,8 +1207,8 @@ contains
           DdataForce(1,ieq) = 0.0_DP
           DdataForce(2,ieq) = daux * x1
           DdataForce(3,ieq) = 0.0_DP
-          DdataForce(4,ieq) = daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1/&
-                                       DENSITY2(DdataHydro,IDX2_FORWARD,ieq,_,_)
+          DdataForce(4,ieq) = daux * XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1/&
+                                       DENSITY2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1237,8 +1237,8 @@ contains
           ! Compute Lorentz source term
           DdataForce(2,ieq) = DdataForce(2,ieq) + daux * x1
           DdataForce(4,ieq) = DdataForce(4,ieq)&
-                            + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1/&
-                                       DENSITY2(DdataHydro,IDX2_FORWARD,ieq,_,_)
+                            + daux * XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)*x1/&
+                                       DENSITY2_2D(DdataHydro,IDX2_FORWARD,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1303,8 +1303,8 @@ contains
             
             ! Update Lorentz source term
             Ddata(2) = Ddata(2) + daux * x1
-            Ddata(4) = Ddata(4) + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1/&
-                                           DENSITY2(DdataHydro,IDX2_FORWARD,jeq,_,_)
+            Ddata(4) = Ddata(4) + daux * XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1/&
+                                           DENSITY2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)
           end do
           
           ! Overwrite the Lorentz force term
@@ -1346,8 +1346,8 @@ contains
             ! Update Lorentz source term
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(4) = Ddata(4)&
-                     + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1/&
-                                DENSITY2(DdataHydro,IDX2_FORWARD,jeq,_,_)
+                     + daux * XMOMENTUM2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)*x1/&
+                                DENSITY2_2D(DdataHydro,IDX2_FORWARD,jeq,_,_)
           end do
 
           ! Update Lorentz source term
@@ -1410,9 +1410,9 @@ contains
           DdataForce(ieq,1) = 0.0_DP
           DdataForce(ieq,2) = daux * x1
           DdataForce(ieq,3) = daux * x2
-          DdataForce(ieq,4) = daux * (XMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1+&
-                                      YMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x2)/&
-                                        DENSITY2(DdataHydro,IDX2_REVERSE,ieq,_,_)
+          DdataForce(ieq,4) = daux * (XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1+&
+                                      YMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x2)/&
+                                        DENSITY2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1445,9 +1445,9 @@ contains
           DdataForce(ieq,2) = DdataForce(ieq,2) + daux * x1
           DdataForce(ieq,3) = DdataForce(ieq,3) + daux * x2
           DdataForce(ieq,4) = DdataForce(ieq,4)&
-                            + daux * (XMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1+&
-                                      YMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x2)/&
-                                        DENSITY2(DdataHydro,IDX2_REVERSE,ieq,_,_)
+                            + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1+&
+                                      YMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x2)/&
+                                        DENSITY2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1516,9 +1516,9 @@ contains
             ! Update Lorentz source term
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(3) = Ddata(3) + daux * x2
-            Ddata(4) = Ddata(4) + daux * (XMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1+&
-                                          YMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x2)/&
-                                            DENSITY2(DdataHydro,IDX2_REVERSE,jeq,_,_)
+            Ddata(4) = Ddata(4) + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1+&
+                                          YMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x2)/&
+                                            DENSITY2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)
           end do
 
           ! Overwrite Lorentz source term
@@ -1564,9 +1564,9 @@ contains
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(3) = Ddata(3) + daux * x2
             Ddata(4) = Ddata(4)&
-                     + daux * (XMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1+&
-                               YMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x2)/&
-                                 DENSITY2(DdataHydro,IDX2_REVERSE,jeq,_,_)
+                     + daux * (XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1+&
+                               YMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x2)/&
+                                 DENSITY2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)
           end do
 
           ! Update Lorentz source term
@@ -1626,8 +1626,8 @@ contains
           DdataForce(ieq,1) = 0.0_DP
           DdataForce(ieq,2) = daux * x1
           DdataForce(ieq,3) = 0.0_DP
-          DdataForce(ieq,4) = daux * XMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1/&
-                                       DENSITY2(DdataHydro,IDX2_REVERSE,ieq,_,_)
+          DdataForce(ieq,4) = daux * XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1/&
+                                       DENSITY2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)
         end do
         !$omp end parallel do
 
@@ -1656,8 +1656,8 @@ contains
           ! Compute Lorentz source term
           DdataForce(ieq,2) = DdataForce(ieq,2)  + daux * x1
           DdataForce(ieq,4) = DdataForce(ieq,4)&
-                            + daux * XMOMENTUM2(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1/&
-                                       DENSITY2(DdataHydro,IDX2_REVERSE,ieq,_,_)
+                            + daux * XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)*x1/&
+                                       DENSITY2_2D(DdataHydro,IDX2_REVERSE,ieq,_,_)
         end do
         !$omp end parallel do
         
@@ -1722,8 +1722,8 @@ contains
             
             ! Update Lorentz source term
             Ddata(2) = Ddata(2) + daux * x1
-            Ddata(4) = Ddata(4) + daux * XMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1/&
-                                           DENSITY2(DdataHydro,IDX2_REVERSE,jeq,_,_)
+            Ddata(4) = Ddata(4) + daux * XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1/&
+                                           DENSITY2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)
           end do
 
           ! Overwrite Lorentz source term
@@ -1765,8 +1765,8 @@ contains
             ! Update Lorentz source term
             Ddata(2) = Ddata(2)  + daux * x1
             Ddata(4) = Ddata(4)&
-                     + daux * XMOMENTUM2(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1/&
-                                DENSITY2(DdataHydro,IDX2_REVERSE,jeq,_,_)
+                     + daux * XMOMENTUM2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)*x1/&
+                                DENSITY2_2D(DdataHydro,IDX2_REVERSE,jeq,_,_)
           end do
 
           ! Update Lorentz source term
