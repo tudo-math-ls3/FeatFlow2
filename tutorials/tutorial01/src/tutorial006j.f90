@@ -144,6 +144,7 @@ contains
     ! =================================
     
     ! Release the matrices
+    call lsyssc_releaseMatrix (rmatrix)
     call lsyssc_releaseMatrix (rmatrixMass)
     call lsyssc_releaseMatrix (rmatrixLaplace)
     

@@ -187,6 +187,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the vector
+    call lsyssc_releaseVector (rrhs)
+    
     ! Release the cubature formula
     call spdiscr_releaseCubStructure (rcubatureInfo_G3)
 
