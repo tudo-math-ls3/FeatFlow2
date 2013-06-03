@@ -14,6 +14,7 @@ module tutorial010f
   
   use derivatives
   use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock

@@ -14,12 +14,14 @@ module tutorial011d
   
   use derivatives
   use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
   use stdoperators
   
+  use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop

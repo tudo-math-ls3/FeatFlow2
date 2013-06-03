@@ -19,6 +19,7 @@ module tutorial017e
   use linearsystemblock
   use bilinearformevaluation
   
+  use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
