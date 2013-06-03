@@ -23,12 +23,19 @@
 #    rho0*v0  = 0.0                 rho1*v1 = 0.0                              #
 #    rho0*E0  = 6.77442258479132    rho1*E1 = 2.5                              #
 #                                                                              #
+# Shock speed  s = 2.88228944626347                                            #
+#                                                                              #
 ################################################################################
 
+# global constants
+defconst: x0 = 1.25
+defconst: s  = 1.77482407806831
+
 # Specify the initial solution
-deffunc: @initsol_rho  = 1.0 ; x,y,t
-deffunc: @initsol_vel  = 0.0 ; x,y,t
-deffunc: @initsol_Etot = 2.5 ; x,y,t
+deffunc: @initsol_rho    = if(x >= _x0, 1.0, 1.862068449) ; x,y,t
+deffunc: @initsol_vel_x  = if(x >= _x0, 0.0, 1.53002034014096) ; x,y,t
+deffunc: @initsol_vel_y  = 0.0 ; x,y,t
+deffunc: @initsol_Etot   = if(x >= _x0, 2.5, 6.77442258479132) ; x,y,t
 
 # Specify the boundary conditions
 [bdrcond_primal]
@@ -39,14 +46,18 @@ NEXPR
 IBCT
 1
 NCOMP
-4
+5
 PARAMETERS
 1.0  T  'FREESLIP_WEAK'
 2.0  T  'FREESLIP_WEAK'
-5.0  F  'FREESTREAM_WEAK'  1.0 ...
+4.0  F  'FREESTREAM_WEAK'  1.0 ...
      			   0.0 ...
 			   0.0 ...
 			   1.0
+5.0  F  'SUPERINLET_WEAK'  'if(x >= _x0+_s*t, 1.0, 1.862068449)' ...
+                           'if(x >= _x0+_s*t, 0.0, 0.821677818)' ...
+                           '0.0' ...
+                           'if(x >= _x0+_s*t, 1.0, 2.458332279)' ; x,y,t
 6.0  F  'SUPERINLET_WEAK'  1.862068449 ...
      			   0.821677818 ...
 			   0.0 ...

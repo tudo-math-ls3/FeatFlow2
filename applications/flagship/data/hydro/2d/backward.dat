@@ -118,8 +118,8 @@ isolutiontype = 3
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
-  @initsol_vel
-  @initsol_vel
+  @initsol_vel_x
+  @initsol_vel_y
   @initsol_Etot
 
 # type of exact solution profile
@@ -259,7 +259,7 @@ ilineariseucd = 0
 nrefineucd = 0
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 1e-2
 
 # file for UCD output of solution
 sucdsolution = out/backward
@@ -295,7 +295,7 @@ multisteps = 0
 dfinalTime = 0.75
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 1e-4
 
 
 ################################################################################
