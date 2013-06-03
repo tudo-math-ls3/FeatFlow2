@@ -16193,7 +16193,7 @@ contains
   real(DP), dimension(:,:) :: Dcoords
   
   ! Twist index definition of the element.
-  integer, intent(in) :: itwist
+  integer(I32), intent(in) :: itwist
   
   ! Number of the local triangle.
   integer, intent(in) :: ilocaltri
