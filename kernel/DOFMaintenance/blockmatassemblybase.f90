@@ -23,19 +23,30 @@ module blockmatassemblybase
   use feevaluation2
 
   implicit none
+  private
 
 !<constants>
 
 !<constantblock description="Constants for the initialisation">
 
   ! Do not compute extra information
-  integer(I32), parameter :: BMA_CALC_NONE = 0
+  integer(I32), parameter, public :: BMA_CALC_NONE = 0
 
   ! Compute real world coordinates. Usually needed in callback routines
-  integer(I32), parameter :: BMA_CALC_REALCOORDS = 2**0
+  integer(I32), parameter, public :: BMA_CALC_REALCOORDS = 2**0
 
   ! Default flags
-  integer(I32), parameter :: BMA_CALC_STANDARD = BMA_CALC_REALCOORDS
+  integer(I32), parameter, public :: BMA_CALC_STANDARD = BMA_CALC_REALCOORDS
+
+!</constantblock>
+
+!<constantblock description="Constants for integral calculation routines">
+
+  ! Standard operation: Sum up subdomain integrals
+  integer(I32), parameter, public :: BMA_INT_SUM = 0
+
+  ! MAX operation: Return value is the maximum of the values calculated on the subdomains
+  integer(I32), parameter, public :: BMA_INT_MAX = 1
 
 !</constantblock>
 

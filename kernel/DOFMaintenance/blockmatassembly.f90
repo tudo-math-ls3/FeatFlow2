@@ -76,7 +76,9 @@ module blockmatassembly
   use collection, only: t_collection
   use basicgeometry
   use boundaryaux
+  use boundary
   use cubature
+  use transformation
   use element
   use elementpreprocessing
   use domainintegration
@@ -3215,6 +3217,7 @@ contains
     subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
+      use fsystem
       use collection
       use blockmatassemblybase
 
@@ -3323,7 +3326,7 @@ contains
 
   subroutine bma_buildIntegral (dintvalue,cflags,&
       fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
-      revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+      revalVectors,rcubatureInfo,coperation,rtrafoInfo,rperfconfig)
 
 !<description>
   ! This subroutine build a domain integral. The integral value will be
@@ -3346,6 +3349,7 @@ contains
     subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
+      use fsystem
       use collection
       use blockmatassemblybase
 
@@ -3396,6 +3400,14 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+  
+  ! OPTIONAL: Defines the type of operation which should be applied to
+  ! values calculated on subdomains. 
+  ! = BMA_INT_SUM: Sum up values on subdomains (default). This results in
+  !                an integral.
+  ! = BMA_INT_MAX: Take the maximum of values on subdomains (default).
+  !                Can be used to compute a maximum norm.
+  integer, intent(in), optional :: coperation
 
   ! OPTIONAL: A transformation structure that specifies the transformation
   ! from the reference to the real element(s).
@@ -3419,7 +3431,7 @@ contains
     ! Wrapper.
     call bma_buildIntegrals (Dresults,cflags,&
         fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
-        revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+        revalVectors,rcubatureInfo,coperation,rtrafoInfo,rperfconfig)
         
     dintvalue = Dresults(1)
 
@@ -3431,7 +3443,7 @@ contains
 
   subroutine bma_buildIntegrals (Dintvalues,cflags,&
       fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
-      revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+      revalVectors,rcubatureInfo,coperation,rtrafoInfo,rperfconfig)
 
 !<description>
   ! This subroutine build multiple domain integrals at once. Dintvalues is an
@@ -3450,6 +3462,7 @@ contains
     subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
+      use fsystem
       use collection
       use blockmatassemblybase
 
@@ -3500,6 +3513,14 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
+  ! OPTIONAL: Defines the type of operation which should be applied to
+  ! values calculated on subdomains. 
+  ! = BMA_INT_SUM: Sum up values on subdomains (default). This results in
+  !                an integral.
+  ! = BMA_INT_MAX: Take the maximum of values on subdomains (default).
+  !                Can be used to compute a maximum norm.
+  integer, intent(in), optional :: coperation
 
   ! OPTIONAL: A transformation structure that specifies the transformation
   ! from the reference to the real element(s).
@@ -3647,8 +3668,20 @@ contains
       call bma_assembleSubmeshIntegral (Dinttemp,rintegralAssembly, p_IelementList(1:NEL),&
           fcalcLocalIntegral, rcollection)
       
-      ! Sum up
-      Dintvalues(:) = Dintvalues(:) + Dinttemp(:)
+      if (.not. present(coperation)) then
+        ! Sum up. Gives the integral
+        Dintvalues(:) = Dintvalues(:) + Dinttemp(:)
+      else
+        select case (coperation)
+        case (BMA_INT_SUM)
+          ! Sum up. Gives the integral
+          Dintvalues(:) = Dintvalues(:) + Dinttemp(:)
+        
+        case (BMA_INT_MAX)
+          ! Take the maximum
+          Dintvalues(:) = max(Dintvalues(:), Dinttemp(:))
+        end select
+      end if
 
       ! Release the assembly structure.
       call bma_doneIntAssembly(rintegralAssembly)

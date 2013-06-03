@@ -92,6 +92,9 @@
 !#
 !# 19.) bma_fcalc_divergenceL2norm / bma_docalc_divergenceL2norm
 !#     -> Calculates the squared L2-norm of the divergence of a vector field.
+!#
+!# 20.) bma_fcalc_MAXnorm / bma_docalc_MAXnorm
+!#     -> Calculates the MAX norm of a vector (field)
 !# </purpose>
 !##############################################################################
 
@@ -104,6 +107,11 @@ module blockmatassemblystdop
   use collection, only: t_collection
   use basicgeometry
   use perfconfig
+
+  use basicgeometry
+  use boundary
+  use triangulation
+  use derivatives
 
   use feevaluation2
   use blockmatassemblybase
@@ -134,6 +142,17 @@ module blockmatassemblystdop
   public :: bma_docalc_rhsBubblePlusFE
   public :: bma_docalc_rhsFE
 
+  public :: bma_docalc_integralOne
+  public :: bma_docalc_integralFE
+  public :: bma_docalc_bubbleL2error
+  public :: bma_docalc_bubbleH1error
+
+  public :: bma_docalc_L2norm
+  public :: bma_docalc_H1norm
+  public :: bma_docalc_MAXnorm
+  
+  public :: bma_docalc_divergenceL2norm
+
   public :: bma_fcalc_massTensor
   public :: bma_fcalc_laplaceTensor
   public :: bma_fcalc_mass
@@ -154,8 +173,10 @@ module blockmatassemblystdop
   public :: bma_fcalc_integralFE
   public :: bma_fcalc_bubbleL2error
   public :: bma_fcalc_bubbleH1error
+
   public :: bma_fcalc_L2norm
   public :: bma_fcalc_H1norm
+  public :: bma_fcalc_MAXnorm
   
   public :: bma_fcalc_divergenceL2norm
 
@@ -8380,10 +8401,9 @@ contains
 !    ...
 !    real(DP) :: dresult
 !
-!    ! Add the subvectors
-!    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(1),0)
-!    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(2),0)
-!    ...
+!    ! Add the vector field
+!    call fev2_addVectorFieldToEvalList(revalVectors,0,&
+!        rvector%RvectorBlock(1),rvector%RvectorBlock(2))
 !
 !    ! Evaluate the norm to "dresult"
 !    call bma_buildIntegral(dresult,BMA_CALC_STANDARD,bma_fcalc_L2norm,&
@@ -8908,6 +8928,227 @@ contains
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
       Dintvalues(:) = Dintvalues(:) + DintVals(:)
+      
+    end do ! ivec
+
+  end subroutine
+
+  !****************************************************************************
+
+!<--
+! The L2-norm of a vector field "rvector" can be calculated, e.g., as follows:
+!
+!    ! Declare an evaluation structure for the subvectors
+!    type(t_fev2Vectors) :: revalVectors
+!    ...
+!    real(DP) :: dresult
+!
+!    ! Add the vector field
+!    call fev2_addVectorFieldToEvalList(revalVectors,0,&
+!        rvector%RvectorBlock(1),rvector%RvectorBlock(2))
+!
+!    ! Evaluate the norm to "dresult". Specify coperation=BMA_INT_MAX
+!    ! to calculate the maximum norm.
+!    call bma_buildIntegral(dresult,BMA_CALC_STANDARD,bma_fcalc_L2norm,&
+!        revalVectors=revalVectors,rcubatureInfo=rcubatureInfo,&
+!        coperation=BMA_INT_MAX)
+!
+!    ! Clean up
+!    call fev2_releaseVectorList(revalVectors)
+!-->
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_docalc_MAXnorm(Dintvalues,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,rfunction)
+
+!<description>  
+    ! Calculates the MAX-norm of an arbitrary finite element 
+    ! function: <tex> $ |||v||_{max} $ </tex>.
+    ! If v is a vector field, the sum of the maximum norm of all
+    ! components is returned.
+    !
+    ! The FEM function(s) must be provided in rfunction.
+    ! The routine only supports non-interleaved vectors.
+    !
+    ! WARNING: This routine only works if "coperation=BMA_INT_MAX" is
+    ! specified in bma_buildIntegral(s)!
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Function to compute the L2 norm from.
+    type(t_fev2VectorData), intent(in) :: rfunction
+!</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
+!</output>    
+
+!</subroutine>
+
+    ! Local variables
+    real(DP) :: dval, dvaltemp
+    integer :: iel, icubp, idimfe
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+    real(DP), dimension(:,:,:), pointer :: p_DfuncVec
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    Dintvalues(1) = 0.0_DP
+
+    ! Skip interleaved vectors.
+    if (rfunction%bisInterleaved) return
+
+    if (.not. rfunction%bisVectorField) then
+    
+      ! -----------------------
+      ! Scalar-valued FE space. 
+      ! -----------------------
+    
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_Dfunc => rfunction%p_Ddata(:,:,DER_FUNC)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the FEM function
+          dval = p_Dfunc(icubp,iel)
+          
+          ! Set up the maximum norm
+          Dintvalues(1) = max(Dintvalues(1),abs(dval))
+            
+        end do ! icubp
+      
+      end do ! iel
+      
+    else
+    
+      ! -----------------------
+      ! Vector-valued FE space/Vector field
+      ! -----------------------
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_DfuncVec => rfunction%p_DdataVec(:,:,:,DER_FUNC)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          dval = 0.0_DP
+          
+          ! Loop over the dimensions of the FE space
+          do idimfe = 1,rfunction%ndimVectorField
+
+            ! Get the value of the FEM function
+            dvaltemp = p_DfuncVec(idimfe,icubp,iel)
+            
+            ! Get the norm of the vector field
+            dval = dval + dvaltemp**2
+            
+          end do
+
+          ! Set up the maximum norm
+          Dintvalues(1) = max(Dintvalues(1),sqrt(dval))
+          
+        end do ! icubp
+      
+      end do ! iel
+      
+    end if
+      
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_MAXnorm(Dintvalues,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the squared MAX-norm of an arbitrary finite element 
+    ! function: <tex> $ |||v||_{max} $ </tex>.
+    ! If v is a vector field, the maximum norm of the vector field
+    ! is returned.
+    ! If multiple finite element functions are provided, DintValues
+    ! returns for each specified function the corresponding
+    ! maximum norm.
+    !
+    ! The FEM function(s) must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+    !
+    ! WARNING: This routine only works if "coperation=BMA_INT_MAX" is
+    ! specified in bma_buildIntegral(s)!
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
+!</output>    
+
+!</subroutine>
+
+    ! Local variables
+    integer :: ivec
+    real(DP), dimension(size(Dintvalues)) :: DintVals
+  
+    Dintvalues(:) = 0.0_DP
+
+    ! Loop through all provided FEM functions
+    do ivec = 1,revalVectors%ncount
+    
+      ! Calculate the max norm
+      call bma_docalc_MAXnorm(DintVals,rassemblyData,rintAssembly,&
+          npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
+          
+      ! Maximum of maximum norms
+      Dintvalues(ivec) = max(Dintvalues(ivec),DintVals(1))
       
     end do ! ivec
 
