@@ -42,6 +42,7 @@ module poisson2d_method0_block
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
+  use feevaluation2
   use collection
     
   use poisson2d_callback
