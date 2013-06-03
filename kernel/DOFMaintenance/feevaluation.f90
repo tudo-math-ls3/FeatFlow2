@@ -4130,7 +4130,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: icoordSystem
+    integer(I32) :: icoordSystem
     integer :: ipoint,indof,nve,ibas
     integer(I32) :: celement
     integer :: iel,idx,idxFirst,idxLast,ivar
@@ -4265,7 +4265,8 @@ contains
 
       ! Map the 1D cubature point to the edge in 2D.
       call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(idx), &
-          1, Dxi1D, Dxi2d); DpointsRef = Dxi2d(1,:)
+          1, Dxi1D, Dxi2d)
+      DpointsRef = Dxi2d(1,:)
 
       ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
@@ -4611,7 +4612,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: icoordSystem
+    integer(I32) :: icoordSystem
     integer :: ipoint,indof,nve,ibas,ider,iblock,iblMin,iblMax
     integer(I32) :: celement
     integer :: iel,idx,idxFirst,idxLast

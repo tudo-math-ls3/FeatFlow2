@@ -4860,7 +4860,7 @@ contains
     call checkAndOutput('GFEM_SHARE_DIAGDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGDATA)
     call checkAndOutput('GFEM_SHARE_NODEDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODEDATA)
     call checkAndOutput('GFEM_SHARE_EDGEDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_EDGEDATA)
-    call output_line('isetSpec:            '//trim(sys_siL(rgroupFEMSet%isetSpec,15)))
+    call output_line('isetSpec:            '//trim(sys_siL(int(rgroupFEMSet%isetSpec),15)))
     call checkAndOutput('GFEM_HAS_DOFLIST:    ',rgroupFEMSet%isetSpec,GFEM_HAS_DOFLIST)
     call checkAndOutput('GFEM_HAS_DIAGLIST:   ',rgroupFEMSet%isetSpec,GFEM_HAS_DIAGLIST)
     call checkAndOutput('GFEM_HAS_NODELIST:   ',rgroupFEMSet%isetSpec,GFEM_HAS_NODELIST)

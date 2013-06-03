@@ -1148,13 +1148,13 @@ contains
     ! element with the larger element number JEL=MIN(IEL,IEL1) is preserved
     ! whereas the one with the larger element number is removed. The
     ! total number of elements in the triangulation is decreased by one.
-    !
+    ! <verb>
     !    initial lines              combined lines
     !
     ! (e1) iel   iel1  (e2)      (e1)     jel     (e2)
     !     +-----+-----+              +-----------+
     !     i1    i3    i2             i1          i2
-    !
+    ! </verb>
 !</description>
 
 !<input>
