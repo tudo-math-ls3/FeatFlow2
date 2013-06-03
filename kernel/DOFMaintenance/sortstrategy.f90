@@ -884,6 +884,7 @@ contains
   ! local variables
   type(t_random) :: rrng
   integer :: i,j,k,n
+  integer(I32) :: k32
 
     ! initialise the array with 1,2,3,...
     n = size(Ipermutation) / 2
@@ -894,11 +895,12 @@ contains
     ! initialise RNG
     if(present(iseed)) &
       call rng_init(rrng, iseed)
-
+      
     do i = 1, n-1
 
       ! get a random number in range {i,...,n}
-      call rng_get(rrng, k, i, n)
+      call rng_get(rrng, k32, int(i,I32), int(n,I32))
+      k = k32
 
       ! exchange p(i) and p(k)
       j = Ipermutation(i)

@@ -1948,7 +1948,7 @@ contains
 
 !<input>
   ! Number of degrees of freedom
-  integer(I32), intent(in) :: ndof
+  integer, intent(in) :: ndof
 !</input>
 
 !<inputoutput>
@@ -3971,7 +3971,7 @@ contains
   ! Generic cubature formula constant. One of the "CUB_GEN_AUTO(_xxxx)" constants.
   ! E.g., CUB_GEN_AUTO initialises the cubature formula with the default
   ! cubature rule for each FEM space.
-  integer, intent(in) :: ccubType
+  integer(I32), intent(in) :: ccubType
 
   ! OPTIONAL: Number of refinements of the reference element if a summed
   ! cubature rule should be employed.
@@ -4642,7 +4642,7 @@ contains
     call output_line ('CubatureInfoBlock:')
     call output_line ('------------------')
     call output_line ('blocalElementList: '//trim(sys_sl(rcubatureInfoBlock%blocalElementList)))
-    call output_line ('ccubature:         '//trim(sys_siL(rcubatureInfoBlock%ccubature,15)))
+    call output_line ('ccubature:         '//trim(sys_siL(int(rcubatureInfoBlock%ccubature),15)))
     call output_line ('ielementDistr:     '//trim(sys_siL(rcubatureInfoBlock%ielementDistr,15)))
     call output_line ('itrafoBlock:       '//trim(sys_siL(rcubatureInfoBlock%itrafoBlock,15)))
     call output_line ('NEL:               '//trim(sys_siL(rcubatureInfoBlock%NEL,15)))
@@ -4703,7 +4703,7 @@ contains
     call output_line ('TrafoInfoBlock:')
     call output_line ('---------------')
     call output_line ('blocalElementList: '//trim(sys_sl(rtrafoInfoBlock%blocalElementList)))
-    call output_line ('ctrafoType:        '//trim(sys_siL(rtrafoInfoBlock%ctrafoType,15)))
+    call output_line ('ctrafoType:        '//trim(sys_siL(int(rtrafoInfoBlock%ctrafoType),15)))
     call output_line ('ielementDistr:     '//trim(sys_siL(rtrafoInfoBlock%ielementDistr,15)))
     call output_line ('NEL:               '//trim(sys_siL(rtrafoInfoBlock%NEL,15)))
     call output_line ('h_IelementList:    '//trim(sys_siL(rtrafoInfoBlock%h_IelementList,15)))

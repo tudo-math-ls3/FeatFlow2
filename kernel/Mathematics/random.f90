@@ -202,7 +202,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! Recieves the next random number within the range {0,...,2^31-1}.
+  ! Receives the next random number within the range {0,...,2^31-1}.
   integer(I32), intent(out) :: ix
 !</output>
 
