@@ -4852,7 +4852,7 @@ contains
     call output_line('------------')
     call output_line('cassemblyType:       '//trim(sys_siL(rgroupFEMSet%cassemblyType,15)))
     call output_line('cdataType:           '//trim(sys_siL(rgroupFEMSet%cdataType,15)))
-    call output_line('iduplicationFlag:    '//trim(sys_siL(rgroupFEMSet%iduplicationFlag,15)))
+    call output_line('iduplicationFlag:    '//trim(sys_siL(int(rgroupFEMSet%iduplicationFlag),15)))
     call checkAndOutput('GFEM_SHARE_DOFLIST:  ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DOFLIST)
     call checkAndOutput('GFEM_SHARE_DIAGLIST: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGLIST)
     call checkAndOutput('GFEM_SHARE_NODELIST: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODELIST)
