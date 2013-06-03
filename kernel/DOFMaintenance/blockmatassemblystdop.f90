@@ -9005,13 +9005,9 @@ contains
     ! Local variables
     real(DP) :: dval, dvaltemp
     integer :: iel, icubp, idimfe
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
     real(DP), dimension(:,:), pointer :: p_Dfunc
     real(DP), dimension(:,:,:), pointer :: p_DfuncVec
   
-    ! Get cubature weights data
-    p_DcubWeight => rassemblyData%p_DcubWeight
-    
     Dintvalues(1) = 0.0_DP
 
     ! Skip interleaved vectors.
