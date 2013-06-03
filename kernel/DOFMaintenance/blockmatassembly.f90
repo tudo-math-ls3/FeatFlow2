@@ -1373,6 +1373,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the local matrices Dentry in all RmatrixData structures.
@@ -1495,6 +1496,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the local matrices Dentry in all RmatrixData structures.
@@ -2431,6 +2433,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the local vectors Dentry in all rvectorData structures.
@@ -2552,6 +2555,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the local vectors Dentry in all rvectorData structures.
@@ -3219,6 +3223,7 @@ contains
 
       use fsystem
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the value of the integral for a set of elements.
@@ -3351,6 +3356,7 @@ contains
 
       use fsystem
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the value of the integral for a set of elements.
@@ -3464,6 +3470,7 @@ contains
 
       use fsystem
       use collection
+      use feevaluation2
       use blockmatassemblybase
 
       ! Calculates the value of the integral for a set of elements.
