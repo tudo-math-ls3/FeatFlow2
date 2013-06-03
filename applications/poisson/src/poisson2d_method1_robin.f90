@@ -610,7 +610,7 @@ contains
     type(t_linearForm) :: rlinform_boundary
     
     ! For specifying the cubature rule on the boundary, usually, CUB_xxxx_1D
-    integer :: ccubType_boundary
+    integer(I32) :: ccubType_boundary
 
     ! Ok, let us start.
     !
