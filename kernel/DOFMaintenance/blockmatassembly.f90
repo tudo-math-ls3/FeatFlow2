@@ -3680,6 +3680,12 @@ contains
         case (BMA_INT_MAX)
           ! Take the maximum
           Dintvalues(:) = max(Dintvalues(:), Dinttemp(:))
+          
+        case default
+          call output_line ("Unknown operation.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_buildIntegral")
+          call sys_halt()
+        
         end select
       end if
 
