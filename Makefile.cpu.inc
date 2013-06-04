@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/env make
 ########################################################################
 #                                                                      #
@@ -1875,11 +1873,6 @@ include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/linux-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
 include $(TEMPLATESDIR)/blas-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 TOKEN6 := 1
 endif
 
@@ -1888,11 +1881,6 @@ ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/linux-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 LIBS     := $(LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
 #LIBS     := $(LIBS) -L/nfs/home11/HLRS/xam/xamsbuij/intel/Compiler/11.0/074/mkl/lib/64 -lguide -lmkl_lapack -lmkl
 SBB_LIBS := $(SBB_LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
@@ -1940,11 +1928,6 @@ ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
 include $(TEMPLATESDIR)/linux-generic.mk
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/openmpi-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 endif
 
 
@@ -2678,6 +2661,18 @@ CFLAGSF90     := -m64 $(CFLAGSF90)
 CFLAGSC       := -m64 $(CFLAGSC)
 CFLAGSCXX     := -m64 $(CFLAGSCXX)
 LDFLAGS       := -m64 $(LDFLAGS)
+endif
+
+
+##############################################################################
+# Check whether to enable 32bit or 64bit UMFPACK interface
+##############################################################################
+ifeq ($(strip $(INTSIZE)), LARGE)
+# Add preprocessor flag to enable 64bit UMFPACK support.
+# UMFPACK documentation states to also add -DLP64, but there is no
+# reference to it in the UMFPACK 5.2-5.6.2 sources.
+CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
+CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 endif
 
 
