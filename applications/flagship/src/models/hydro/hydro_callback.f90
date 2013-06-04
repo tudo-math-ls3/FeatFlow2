@@ -3637,6 +3637,8 @@ contains
     
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
+    case (BDRC_OPEN)
+      nexpressions = 0
       
     case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXFREESLIP)
       nexpressions = 1
