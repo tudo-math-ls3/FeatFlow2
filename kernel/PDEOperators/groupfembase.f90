@@ -2524,12 +2524,17 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_duplicateGroupFEMBlock(rgroupFEMBlockSrc, rgroupFEMBlockDest, idupFlag)
+  subroutine gfem_duplicateGroupFEMBlock(rgroupFEMBlockSrc, rgroupFEMBlockDest,&
+      idupFlag, bpreserveContent)
 
 !<description>
     ! This subroutine duplicates parts of the source structure
-    ! rgroupFEMBlockSrc in the destination structure rgroupFEMBlockDest.
-    ! Note that rgroupFEMBlockScr is still the owner of the duplicated content.
+    ! rgroupFEMBlockSrc in the destination structure
+    ! rgroupFEMBlockDest. Note that rgroupFEMBlockScr is still the
+    ! owner of the duplicated content. If the optional flag
+    ! bpreserveContent is set to TRUE, then the existing content is
+    ! not removed before copying some content from the source
+    ! structure.
 !<description>
 
 !<input>
@@ -2538,6 +2543,9 @@ contains
 
     ! Duplication flag that decides on how to set up the structure
     integer(I32), intent(in) :: idupFlag
+
+    ! OPTIONAL: Flag to force that existing content is preserved
+    logical, intent(in), optional :: bpreserveContent
 !</input>
 
 !<inputoutput>
@@ -2558,7 +2566,7 @@ contains
 
     do i = 1, rgroupFEMBlockSrc%nblocks
       call gfem_duplicateGroupFEMSet(rgroupFEMBlockSrc%RgroupFEMBlock(i),&
-          rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag)
+          rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag, bpreserveContent)
     end do
 
   end subroutine gfem_duplicateGroupFEMBlock
