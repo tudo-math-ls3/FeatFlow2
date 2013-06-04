@@ -129,13 +129,13 @@ module ccbasic
   type t_matrixAssembly
   
     ! Cubature formula tag for the Stokes matrices
-    integer :: icubA = CUB_GEN_AUTO
+    integer(I32) :: icubA = CUB_GEN_AUTO
 
     ! Cubature formula tag for the B-matrices matrices
-    integer :: icubB = CUB_GEN_AUTO
+    integer(I32) :: icubB = CUB_GEN_AUTO
 
     ! Cubature formula tag for the mass matrices
-    integer :: icubM = CUB_GEN_AUTO
+    integer(I32) :: icubM = CUB_GEN_AUTO
 
     ! Use mass lumping for the velocity
     logical :: bmassLumpingVelocity = .false.
@@ -153,7 +153,7 @@ module ccbasic
   type t_rhsAssembly
     
     ! Cubature formula tag for the right hand side vectors
-    integer :: icubF = CUB_GEN_AUTO
+    integer(I32) :: icubF = CUB_GEN_AUTO
 
     ! Type of the RHS.
     ! =0: zero.
