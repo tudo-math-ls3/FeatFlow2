@@ -8771,7 +8771,13 @@ contains
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
       Du(4) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn+vt*vt)
 
-
+    case (BDRC_OPEN)
+      !-------------------------------------------------------------------------
+      ! The open boundary conditions prescribes the computed solution
+      ! values at the boundary as freestream values
+      
+      ! That`s it
+      
     case default
       call output_line('Unsupported type of boundary condition!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues2d')
@@ -9446,8 +9452,7 @@ contains
           IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM**2+dvtM**2)
         end do
       end do
-
-      
+  
     case (BDRC_FREESLIP)
       !-----------------------------------------------------------------------
       ! Free-slip boundary condition:
@@ -9480,8 +9485,7 @@ contains
           IDX3(DstateM,4,ipoint,iel,_,_,_) = TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
         end do
       end do
-
-
+      
     case (BDRC_SUPERINLET)
       !-----------------------------------------------------------------------
       ! Supersonic inlet boundary conditions:
@@ -9518,8 +9522,7 @@ contains
           IDX3(DstateM,3,ipoint,iel,_,_,_) = IDX3(DstateM,1,ipoint,iel,_,_,_)*IDX3(DstateM,3,ipoint,iel,_,_,_)
         end do
       end do
-
-        
+      
     case (BDRC_SUPEROUTLET)
       !-----------------------------------------------------------------------
       ! Supersonic outlet boundary conditions:
@@ -9595,8 +9598,7 @@ contains
 
       ! That`s it
       return
-
-      
+  
     case (BDRC_SUBINLET)
       !-----------------------------------------------------------------------
       ! Subsonic pressure-density inlet boundary conditions:
@@ -9657,7 +9659,6 @@ contains
           IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM**2+dvtM**2)
         end do
       end do
-
 
     case (BDRC_SUBOUTLET)
       !-----------------------------------------------------------------------
@@ -9857,13 +9858,21 @@ contains
 !!$        ! Deallocate temporal memory
 !!$        deallocate(DpointParMirror, Daux3)
 
+    case (BDRC_OPEN)
+      !-------------------------------------------------------------------------
+      ! The open boundary conditions prescribes the computed solution
+      ! values at the boundary as freestream values
+
+      ! Set the computed external state vector to the computed
+      ! internal state vector. That`s it!
+      DstateM = DstateI
+
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
       call sys_halt()
       
     end select
-
 
     ! Allocate temporal memory
     allocate(Dflux(nvar,npoints), Ddiff(nvar,npoints))
@@ -9991,7 +10000,7 @@ contains
         ! Store flux in the cubature points
         Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
       end do
-#else
+#else92
       ! Loop over the cubature points and store the fluxes
       do ipoint = 1, npointsPerElement
         Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))

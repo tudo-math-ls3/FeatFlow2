@@ -3538,31 +3538,6 @@ contains
     case ('VISCOUSWALL_WEAK_LUMPED')
       ibdrCondType = BDRC_VISCOUSWALL + BDRC_WEAK + BDRC_LUMPED
 
-    ! Supersonic outlet boundary conditions
-    case ('SUPEROUTLET_STRONG')
-      ibdrCondType = BDRC_SUPEROUTLET
-      ! No strong boundary conditions are prescribed
-    case ('SUPEROUTLET_WEAK')
-      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
-    case ('SUPEROUTLET_WEAK_LUMPED')
-      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK + BDRC_LUMPED
-
-    ! Subsonic outlet boundary conditions
-    case ('SUBOUTLET_STRONG')
-      ibdrCondType = BDRC_SUBOUTLET + BDRC_STRONG
-    case ('SUBOUTLET_WEAK')
-      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK
-    case ('SUBOUTLET_WEAK_LUMPED')
-      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK + BDRC_LUMPED
-
-    ! Massflow outlet boundary conditions
-    case ('MASSOUTLET_STRONG')
-      ibdrCondType = BDRC_MASSOUTLET + BDRC_STRONG
-    case ('MASSOUTLET_WEAK')
-      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
-    case ('MASSOUTLET_WEAK_LUMPED')
-      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK + BDRC_LUMPED
-      
     ! Freestream boundary conditions
     case ('FREESTREAM_STRONG')
       ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG     
@@ -3570,14 +3545,6 @@ contains
       ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK
     case ('FREESTREAM_WEAK_LUMPED')
       ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK + BDRC_LUMPED
-
-    ! Supersonic inlet boundary conditions
-    case ('SUPERINLET_STRONG')
-      ibdrCondType = BDRC_SUPERINLET + BDRC_STRONG
-    case ('SUPERINLET_WEAK')
-      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK
-    case ('SUPERINLET_WEAK_LUMPED')
-      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK + BDRC_LUMPED
 
     ! Subsonic inlet boundary conditions
     case ('SUBINLET_STRONG')
@@ -3587,6 +3554,14 @@ contains
     case ('SUBINLET_WEAK_LUMPED')
       ibdrCondType = BDRC_SUBINLET + BDRC_WEAK + BDRC_LUMPED
 
+    ! Subsonic outlet boundary conditions
+    case ('SUBOUTLET_STRONG')
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_STRONG
+    case ('SUBOUTLET_WEAK')
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK
+    case ('SUBOUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK + BDRC_LUMPED
+
     ! Massflow inlet boundary conditions
     case ('MASSINLET_STRONG')
       ibdrCondType = BDRC_MASSINLET + BDRC_STRONG
@@ -3595,7 +3570,49 @@ contains
     case ('MASSINLET_WEAK_LUMPED')
       ibdrCondType = BDRC_MASSINLET + BDRC_WEAK + BDRC_LUMPED
 
-      ! Periodic boundary conditions
+    ! Massflow outlet boundary conditions
+    case ('MASSOUTLET_STRONG')
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_STRONG
+    case ('MASSOUTLET_WEAK')
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
+    case ('MASSOUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK + BDRC_LUMPED
+      
+    ! Mach outlet boundary conditions
+    case ('MACHOUTLET_STRONG')
+      ibdrCondType = BDRC_MACHOUTLET + BDRC_STRONG
+    case ('MACHOUTLET_WEAK')
+      ibdrCondType = BDRC_MACHOUTLET + BDRC_WEAK
+    case ('MACHOUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_MACHOUTLET + BDRC_WEAK + BDRC_LUMPED
+
+    ! Supersonic inlet boundary conditions
+    case ('SUPERINLET_STRONG')
+      ibdrCondType = BDRC_SUPERINLET + BDRC_STRONG
+    case ('SUPERINLET_WEAK')
+      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK
+    case ('SUPERINLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK + BDRC_LUMPED
+
+    ! Supersonic outlet boundary conditions
+    case ('SUPEROUTLET_STRONG')
+      ibdrCondType = BDRC_SUPEROUTLET
+      ! No strong boundary conditions are prescribed
+    case ('SUPEROUTLET_WEAK')
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
+    case ('SUPEROUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK + BDRC_LUMPED
+
+    ! Open boundary conditions
+    case ('OPEN_STRONG')
+      ibdrCondType = BDRC_OPEN
+      ! No strong boundary conditions are prescribed
+    case ('OPEN_WEAK')
+      ibdrCondType = BDRC_OPEN + BDRC_WEAK
+    case ('OPEN_WEAK_LUMPED')
+      ibdrCondType = BDRC_OPEN + BDRC_WEAK + BDRC_LUMPED
+   
+    ! Periodic boundary conditions
     case ('PERIODIC_STRONG')
       ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
     case ('PERIODIC_WEAK')

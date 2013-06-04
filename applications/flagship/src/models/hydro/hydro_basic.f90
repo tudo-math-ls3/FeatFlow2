@@ -256,6 +256,11 @@ module hydro_basic
 
   integer, parameter, public :: BDRC_SUPEROUTLET  = 11
 
+  ! Open boundary condition
+  ! The computed solution values at the boundary are uses as freestream values
+  
+  integer, parameter, public :: BDRC_OPEN         = 12
+
 !</constantblock>
 
 !<constantblock description="Global types of coordinate systems">

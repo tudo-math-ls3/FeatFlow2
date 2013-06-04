@@ -4703,7 +4703,6 @@ contains
       Du(2) = rho*DbdrNormal(1)*vn
       Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
 
-
     case(BDRC_FREESTREAM)
       !-------------------------------------------------------------------------
 
@@ -4748,7 +4747,6 @@ contains
       Du(2) = rho*DbdrNormal(1)*vn
       Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
 
-
     case(BDRC_SUBINLET)
       !-------------------------------------------------------------------------
 
@@ -4780,7 +4778,6 @@ contains
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
       Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
-
 
     case(BDRC_SUBOUTLET)
       !-------------------------------------------------------------------------
@@ -4819,6 +4816,12 @@ contains
       Du(2) = rho*DbdrNormal(1)*vn
       Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
 
+    case (BDRC_OPEN)
+      !-------------------------------------------------------------------------
+      ! The open boundary conditions prescribes the computed solution
+      ! values at the boundary as freestream values
+
+      ! Du := Du That`s it
 
     case default
       call output_line('Unsupported type of boundary condition!',&
@@ -5239,8 +5242,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-
-        
+  
       case (BDRC_FREESLIP)
         !-----------------------------------------------------------------------
         ! Free-slip boundary condition:
@@ -5274,8 +5276,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-
-        
+  
       case (BDRC_SUPERINLET)
         !-----------------------------------------------------------------------
         ! Supersonic inlet boundary conditions:
@@ -5323,7 +5324,6 @@ contains
           end do
         end do
 
-
       case (BDRC_SUPEROUTLET)
         !-----------------------------------------------------------------------
         ! Supersonic outlet boundary conditions:
@@ -5348,7 +5348,6 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
           end do
         end do
-
 
       case (BDRC_SUBINLET)
         !-----------------------------------------------------------------------
@@ -5482,7 +5481,36 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-                
+      
+      case (BDRC_OPEN)
+        !-------------------------------------------------------------------------
+        ! The open boundary conditions prescribes the computed solution
+        ! values at the boundary as freestream values
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+
+            ! Setup the computed external state vector
+            DstateM(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateM(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateM(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+          end do
+        end do
+        
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
@@ -5601,8 +5629,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-
-        
+  
       case (BDRC_FREESLIP)
         !-----------------------------------------------------------------------
         ! Free-slip boundary condition:
@@ -5636,8 +5663,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-
-        
+  
       case (BDRC_SUPERINLET)
         !-----------------------------------------------------------------------
         ! Supersonic inlet boundary conditions:
@@ -5685,7 +5711,6 @@ contains
           end do
         end do
 
-
       case (BDRC_SUPEROUTLET)
         !-----------------------------------------------------------------------
         ! Supersonic outlet boundary conditions:
@@ -5710,7 +5735,6 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
           end do
         end do
-
 
       case (BDRC_SUBINLET)
         !-----------------------------------------------------------------------
@@ -5843,7 +5867,36 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
           end do
         end do
-                
+      
+      case (BDRC_OPEN)
+        !-------------------------------------------------------------------------
+        ! The open boundary conditions prescribes the computed solution
+        ! values at the boundary as freestream values
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+
+            ! Setup the computed external state vector
+            DstateM(1) = Daux2(ipoint,iel,1)
+            DstateM(2) = Daux2(ipoint,iel,2)
+            DstateM(3) = Daux2(ipoint,iel,3)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+          end do
+        end do
+          
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
