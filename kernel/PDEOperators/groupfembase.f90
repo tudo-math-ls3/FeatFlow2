@@ -1943,8 +1943,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyGroupFEMSet(rgroupFEMSetSrc, rgroupFEMSetDest, idupFlag,&
-      bpreserveContent)
+  subroutine gfem_copyGroupFEMSet(rgroupFEMSetSrc, rgroupFEMSetDest,&
+      idupFlag, bpreserveContent)
 
 !<description>
     ! This subroutine selectively copies data from the source
@@ -2229,7 +2229,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyGroupFEMBlock(rgroupFEMBlockSrc, rgroupFEMBlockDest, idupFlag)
+  subroutine gfem_copyGroupFEMBlock(rgroupFEMBlockSrc, rgroupFEMBlockDest,&
+      idupFlag, bpreserveContent)
 
 !<description>
     ! This subroutine selectively copies data from the source
@@ -2243,6 +2244,9 @@ contains
 
     ! Duplication flag that decides on how to set up the structure
     integer(I32), intent(in) :: idupFlag
+
+    ! OPTIONAL: Flag to force that existing content is preserved
+    logical, intent(in), optional :: bpreserveContent
 !</input>
 
 !<inputoutput>
@@ -2263,7 +2267,7 @@ contains
 
     do i = 1, rgroupFEMBlockSrc%nblocks
       call gfem_copyGroupFEMSet(rgroupFEMBlockSrc%RgroupFEMBlock(i),&
-          rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag)
+          rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag, bpreserveContent)
     end do
 
   end subroutine gfem_copyGroupFEMBlock
