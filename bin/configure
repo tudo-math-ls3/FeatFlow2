@@ -1421,7 +1421,8 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
         "# Defines the size of integers.\n" .
         "# =STD  : Standard integer size (32 bit integers).\n" .
-        "# =LARGE: Large integers (64 bit integers). Supports arrays with > 4GB size.\n" .
+        "# =LARGE: Large integers (64 bit integers). Supports arrays with > 4GB size and\n" .
+        "#         enables the 64 bit interface of UMFPACK.\n" .
         "INTSIZE             = $entry\n\n";
 
     $entry = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
