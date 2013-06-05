@@ -46,6 +46,7 @@ module stokes2d_method3_block
   
   use blockmatassemblybase
   use blockmatassembly
+  use feevaluation2
   use collection
   
   implicit none
