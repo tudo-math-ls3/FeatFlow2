@@ -325,6 +325,35 @@ contains
         ! Nothing to do here.
       end select
 
+
+    case (10)
+      ! Fully developed power law flow
+      ! u/u_ave = 2n+1/n+1 * ( 1 - y^(n+1)/n )
+      ! y = [0,1]
+      ! n = r-1
+      
+      select case (icomponent)
+      case (1) ! X-velocity
+        if ((dwhere .ge. 5.0_DP) .and. (dwhere .le. 6.0_DP)) then
+          n = rcollection%DquickAccess(18)-1.0_DP
+          y = 6.0_DP-dwhere
+          Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
+                       ( 1.0_DP - y**((n+1.0_DP)/n) )
+        end if
+
+        if (dwhere .eq. 0.0_DP) then
+          n = rcollection%DquickAccess(18)-1.0_DP
+          y = dwhere
+          Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
+                       ( 1.0_DP - y**((n+1.0_DP)/n) )
+        end if
+
+      case (2) ! Y-velocity
+        ! Nothing to do here.
+
+      case (3) ! Pressure
+        ! Nothing to do here.
+      end select
     
     case default
       ! Un-known problem
