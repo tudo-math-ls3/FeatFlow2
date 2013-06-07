@@ -27,8 +27,9 @@
 #   = 7  Static Bubble
 #   = 8  Split Channel
 #   = 9  Fully developed power law flow
+#   = 10 Sudden expansion
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 9
+Problem = 10
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity \nu(z) model
@@ -43,7 +44,7 @@ viscosity_model = 1
 # Constants in viscosity models
 # Power Law = PL
 PL_nu0 = 1
-PL_r = 2.4
+PL_r = 2.0
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -60,7 +61,7 @@ CL_landa = 1
 #   ~ 1/noo * ||R||^2_{L^2}
 #    scPhysic = 1 lets this happens :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-scPhysic = 1   #check "collection%DquickAccess(2)"
+scPhysic = 1
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,13 +78,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/sudden_expansion'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 3
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -158,7 +159,7 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 15
+NLN_MAX = 500
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -231,7 +232,7 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 6
+iinitialSolutionLevel = 2
 
 
 #-----------------------------------------------------
@@ -320,7 +321,7 @@ depsRelLS = 1e-3
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 15
+nmaxItsLS = 20
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -330,7 +331,7 @@ nmaxItsLS = 15
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = -1
+ioutputLevelLS = 1
 
 
 #-----------------------------------------------------
@@ -511,7 +512,7 @@ detZMV = 3
 #  Bolton step flow, outflow = 30
 #  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 6
+irow = 32
 
 
 #-----------------------------------------------------
@@ -587,14 +588,14 @@ Div = 1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detGMC = 0
 
-# Input line coordinates
+## Input line coordinates
 #  the line defined by the two endpoints:
 #       (xi,yi)_1 ---> (xi,yi)_2
 #       xi_1 yi_1 xi_2 yi_2
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 1.0
+inputGMC = 0.0 0.0 0.0 0.41
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -603,12 +604,12 @@ inputGMC = 0.0 0.0 0.0 1.0
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.3 0.0 0.3 1.0
+outputGMC = 0.05 0.0 0.05 0.41
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
 #  =1,2,3 ... --->  #elem = 2^(1,2,3...)
-nlevels = 10
+nlevels = 12
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate L^2 and H^1 norms for the analytical
