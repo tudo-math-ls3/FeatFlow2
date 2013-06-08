@@ -680,7 +680,7 @@ module afcstabbase
   type t_afcstab
 
     ! Flag which indicates if the underlying operator is symmetric
-    logical, bisSymmetricOperator = .false.
+    logical :: bisSymmetricOperator = .false.
 
     ! Format Tag: Identifies the type of stabilisation
     integer :: cafcstabType = AFCSTAB_GALERKIN
