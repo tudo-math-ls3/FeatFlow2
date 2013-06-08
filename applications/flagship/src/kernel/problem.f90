@@ -10937,19 +10937,19 @@ contains
     ! Second part: Attach scalar matrices to copy coefficients from
     !---------------------------------------------------------------------------
 
-    ncoeffMatrices = parlst_querysubstrings(rparlist, ssectionName, 'coeffmatrix')
-    if (ncoeffMatrices .gt. 0) then
-      allocate(rtask%RmatrixScalar(ncoeffMatrices))
-      do i=1,ncoeffMatrices
-        call parlst_getvalue_string(rparlist, ssectionName,&
-            'coeffmatrix', sparameter, isubstring=i)
-        rtask%RmatrixScalar(i) => problem_getMatrixScalar(&
-            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
-      end do
-    end if
+!!$    ncoeffMatrices = parlst_querysubstrings(rparlist, ssectionName, 'coeffmatrix')
+!!$    if (ncoeffMatrices .gt. 0) then
+!!$      allocate(rtask%RmatrixScalar(ncoeffMatrices))
+!!$      do i=1,ncoeffMatrices
+!!$        call parlst_getvalue_string(rparlist, ssectionName,&
+!!$            'coeffmatrix', sparameter, isubstring=i)
+!!$        rtask%RmatrixScalar(i) => problem_getMatrixScalar(&
+!!$            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+!!$      end do
+!!$    end if
 
     !---------------------------------------------------------------------------
-    ! Second part: generate content
+    ! Third part: generate content
     !---------------------------------------------------------------------------
 
     ! Update the task for content generation
