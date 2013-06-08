@@ -589,6 +589,25 @@ module problem
 
 !</constantblock>
 
+!<constantblock description="Flags for the method to be used for group finite element set creation">
+
+  ! Leave content 'as is'
+  integer, parameter,  public :: PROBMETH_GFEM_ASIS                = 0
+
+  ! Create diagonal list
+  integer, parameter,  public :: PROBMETH_GFEM_DIAGLIST            = 1
+
+  ! Create node list
+  integer, parameter,  public :: PROBMETH_GFEM_NODELIST            = 2
+  
+  ! Create edge list
+  integer, parameter,  public :: PROBMETH_GFEM_EDGELIST            = 3
+
+  ! Create coefficient list
+  integer, parameter,  public :: PROBMETH_GFEM_COEFFICIENTS        = 4
+
+!</constantblock>
+
 !</constants>
 
   !*****************************************************************************
@@ -1224,6 +1243,9 @@ module problem
   ! blocks of group finite element structures
   type t_groupFEMTask
 
+    ! Flag to identify sets and blocks of group finite element sets
+    logical :: bisGroupFEMSet = .true.
+
     ! Task to be performed: CREATE, DUPLICATE
     integer :: ctask = PROBACTION_NONE
     
@@ -1232,6 +1254,9 @@ module problem
     ! specifies when to perform the particular action.
     integer(i32) :: iperform = PROBACTION_PERFORM_NEVER
     
+    ! Flag to define which parts of the structure should be duplicated
+    integer(I32) :: cdupType = 0_I32
+
     ! Name of the section in the parameter list which provides all
     ! necessary information to create/update this task
     character(len=SYS_STRLEN) :: ssectionName = ''
@@ -1264,6 +1289,35 @@ module problem
     type(t_groupFEMTask), pointer :: p_rnextTask => null()
 
     !---------- INTERNAL DATA --------------------------------------------------
+
+    ! Method to be used: PROBMETH_GFEM_xxx
+    integer, dimension(:), pointer :: Cmethod => null()
+
+    ! Pointer to the source scalar matrix
+    type(t_matrixScalar), pointer :: p_rmatrixScalar  => null()
+
+    ! Pointer to the source block matrix
+    type(t_matrixBlock), pointer :: p_rmatrixBlock  => null()
+
+    ! Pointer to the scalar matrices to gather coefficients from
+    type(t_matrixScalar), dimension(:), pointer :: RmatrixScalar  => null()
+
+    !---------- INTERNAL DATA FOR GROUP FEM SETS -------------------------------
+
+    ! Data type of the entries in the group finite element set
+    integer :: cdataType = ST_NOHANDLE
+
+    ! Type of assembly
+    integer :: cassembly = GFEM_UNDEFINED
+
+    ! Number of coefficients at matrix diagonal
+    integer :: ncoeffsAtDiag = 0
+
+    ! Number of coefficients at nodes
+    integer :: ncoeffsAtNode = 0
+
+    ! Number of coefficients at edges
+    integer :: ncoeffsAtEdge = 0
 
   end type t_groupFEMTask
 
@@ -4974,6 +5028,7 @@ contains
 
     ! local variables
     type(t_discrTask), pointer :: p_rtask
+    integer :: i
 
     p_rtask => rtasklist
     do while(associated(p_rtask))
@@ -5016,6 +5071,13 @@ contains
       call output_line ('shareStructure            : '//merge('TRUE ','FALSE',p_rtask%bshareStructure))
       call output_line ('ifirstBlock               : '//trim(sys_siL(p_rtask%ifirstBlock,15)))
       call output_line ('ilastBlock                : '//trim(sys_siL(p_rtask%ilastBlock,15)))
+      call output_line ('element                   :')
+      if (associated(p_rtask%Celement)) then
+        do i=1,size(p_rtask%Celement,1)
+          call output_line ('                          : '//trim(elem_getName(p_rtask%Celement(i))))
+        end do
+      end if
+      call output_line ('ncomponents               : '//trim(sys_siL(p_rtask%ncomponents,15)))
 
       p_rtask => p_rtask%p_rnextTask
     end do
@@ -6345,9 +6407,9 @@ contains
           nullify(rtask%p_rnextTask)
           
           ! Initialise optional parameters
-          sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-          ilev     = rproblemLevel%ilev
-          imatrix  = 1
+          sproblem  = trim(rproblemLevel%p_rproblem%cproblem)
+          ilev      = rproblemLevel%ilev
+          imatrix   = 1
           iblockrow = 1
           iblockcol = 1
           
@@ -6679,7 +6741,7 @@ contains
     end function get_interleavematrixFormat
 
     !**************************************************************
-    ! Return the numeric value of the duplication flad
+    ! Return the numeric value of the duplication flag
     function get_dupType(sdupType) result(cdupType)
 
       character(len=*), intent(in) :: sdupType
@@ -7257,7 +7319,7 @@ contains
     end function appendToTaskList
 
     !**************************************************************
-    ! Return the numeric value of the duplication flad
+    ! Return the numeric value of the duplication flag
     function get_dupType(sdupType) result(cdupType)
 
       character(len=*), intent(in) :: sdupType
@@ -7532,7 +7594,7 @@ contains
       end select
 
       !-------------------------------------------------------------------------
-      ! Second part: generate content (only for scalar matrices)
+      ! Second part: generate content
       !-------------------------------------------------------------------------
 
       call problem_genContentMatrix(p_rtask)
@@ -7543,7 +7605,7 @@ contains
     
   end subroutine problem_updateMatrix
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -8937,7 +8999,7 @@ contains
     end function get_dataType
 
     !**************************************************************
-    ! Return the numeric value of the duplication flad
+    ! Return the numeric value of the duplication flag
     function get_dupType(sdupType) result(cdupType)
 
       character(len=*), intent(in) :: sdupType
@@ -9485,7 +9547,7 @@ contains
     end function appendToTaskList
 
     !**************************************************************
-    ! Return the numeric value of the duplication flad
+    ! Return the numeric value of the duplication flag
     function get_dupType(sdupType) result(cdupType)
 
       character(len=*), intent(in) :: sdupType
@@ -10227,622 +10289,6 @@ contains
   end subroutine problem_infoVectorTL
 
   !*****************************************************************************
-  ! AUXILIARY SUBROUTINES
-  !*****************************************************************************
-
-!<function>
-    
-  function problem_getSpatialDiscr(rproblem, rproblemLevel, sspatialDiscr,& 
-      rspatialDiscrDefault) result(p_rspatialDiscr)
-
-!<descrition>
-    ! This subroutines sets the pointer to a spatial discretisation
-    ! structure based on the string representation sspatialDiscr and the
-    ! data present in the problem structure
-!</descrition>
-   
-!<input>
-    ! problem structure
-    type(t_problem), intent(in) :: rproblem
-
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! string representation
-    character(len=*), intent(in) :: sspatialDiscr
-
-    ! OPTIONAL: default spatial discretisation structure to be used if
-    ! the specified structure cannot be found
-    type(t_spatialDiscretisation), intent(in), target, optional :: rspatialDiscrDefault
-!</input>
-
-!<result>
-    ! pointer to the specified spatial discretisation structure
-    ! or null of it is not available
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-!</result>
-
-!</function>
-
-    ! local variables
-    type(t_problemLevel), pointer :: p_rproblemLevel
-    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
-    
-      ! Do we have a valid string?
-    if (trim(sspatialDiscr) .eq. '') then
-      if (present(rspatialDiscrDefault)) then
-        p_rspatialDiscr => rspatialDiscrDefault
-      else
-        nullify(p_rspatialDiscr)
-      end if
-      ! That`s it
-    end if
-    
-    ! Initialise parameters
-    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-    ilev     = rproblemLevel%ilev
-    idiscr   = 1
-    
-    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
-    
-    do itoken = 1,ntoken
-      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
-      
-      iistart = 1
-      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-      
-      if (trim(skeyword) .eq. 'PROBLEM') then
-        sproblem = trim(svalue)
-      elseif (trim(skeyword) .eq. 'ILEV') then
-        read(svalue,'(I10)') ilev
-      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-          trim(skeyword) .eq. 'IDISCRETISATION') then
-        read(svalue,'(I10)') idiscr
-      else
-        call output_line('Unsupported keyword: '//trim(skeyword),&
-            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
-        call sys_halt()
-      end if
-    end do
-    
-    ! Find problem level in global problem structure
-    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-    if (.not.associated(p_rproblemLevel)) then
-      call output_line('Unable to find problem level in problem '//trim(sproblem),&
-          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
-      call sys_halt()
-    end if
-    
-    ! Set pointer to discretisation structure
-    nullify(p_rspatialDiscr)
-    if ((idiscr .ge. lbound(p_rproblemLevel%RspatialDiscretisation,1)) .and.&
-        (idiscr .le. ubound(p_rproblemLevel%RspatialDiscretisation,1))) then
-      p_rspatialDiscr => p_rproblemLevel%RspatialDiscretisation(idiscr)        
-    end if
-    
-  end function problem_getSpatialDiscr
-  
-  !*****************************************************************************
-
-!<function>
-
-  function problem_getSpatialSubdiscr(rproblem, rproblemLevel, sspatialDiscr,& 
-      rspatialDiscrDefault) result(p_rspatialDiscr)
-
-!<descrition>
-    ! This subroutines sets the pointer to a spatial discretisation
-    ! structure as a sublock of a block discretisation structure based
-    ! on the string representation sspatialDiscr and the data present
-    ! in the problem structure
-!</descrition>
-   
-!<input>
-    ! problem structure
-    type(t_problem), intent(in) :: rproblem
-
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! string representation
-    character(len=*), intent(in) :: sspatialDiscr
-
-    ! OPTIONAL: default spatial discretisation structure to be used if
-    ! the specified structure cannot be found
-    type(t_spatialDiscretisation), intent(in), target, optional :: rspatialDiscrDefault
-!</input>
-
-!<result>
-    ! pointer to the specified spatial discretisation structure
-    ! or null of it is not available
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-!</result>
-
-!</function>
-
-    ! local variables
-    type(t_problemLevel), pointer :: p_rproblemLevel
-    type(t_blockDiscretisation), pointer :: p_rblockDiscr
-    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-    integer :: iblock,idiscr,iistart,ilev,istart,itoken,ntoken
-
-    ! Do we have a valid string?
-    if (trim(sspatialDiscr) .eq. '') then
-      if (present(rspatialDiscrDefault)) then
-        p_rspatialDiscr => rspatialDiscrDefault
-      else
-        nullify(p_rspatialDiscr)
-      end if
-      ! That`s it
-    end if
-
-    ! Initialise parameters
-    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-    ilev     = rproblemLevel%ilev
-    idiscr   = 1
-    iblock   = 1
-
-    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
-
-    do itoken = 1,ntoken
-      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
-
-      iistart = 1
-      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-
-      if (trim(skeyword) .eq. 'PROBLEM') then
-        sproblem = trim(svalue)
-      elseif (trim(skeyword) .eq. 'ILEV') then
-        read(svalue,'(I10)') ilev
-      elseif (trim(skeyword) .eq. 'IBLOCK') then
-        read(svalue,'(I10)') iblock
-      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-          trim(skeyword) .eq. 'IDISCRETISATION') then
-        read(svalue,'(I10)') idiscr
-      else
-        call output_line('Unsupported keyword: '//trim(skeyword),&
-            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
-        call sys_halt()
-      end if
-    end do
-
-    ! Find problem level in global problem structure
-    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-    if (.not.associated(p_rproblemLevel)) then
-      call output_line('Unable to find problem level in problem '//trim(sproblem),&
-          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
-      call sys_halt()
-    end if
-
-    ! Set pointer to discretisation structure
-    nullify(p_rspatialDiscr)
-    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
-        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
-      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)
-      if ((iblock .ge. lbound(p_rblockDiscr%RspatialDiscr,1)) .and.&
-          (iblock .le. ubound(p_rblockDiscr%RspatialDiscr,1))) then
-        p_rspatialDiscr => p_rblockDiscr%RspatialDiscr(iblock)
-      end if
-    end if
-      
-  end function problem_getSpatialSubdiscr
-
-    !*****************************************************************************
-
-!<function>
-    
-  function problem_getBlockDiscr(rproblem, rproblemLevel, sblockDiscr,& 
-      rblockDiscrDefault) result(p_rblockDiscr)
-
-!<descrition>
-    ! This subroutines sets the pointer to a block discretisation
-    ! structure based on the string representation sblockDiscr and the
-    ! data present in the problem structure
-!</descrition>
-   
-!<input>
-    ! problem structure
-    type(t_problem), intent(in) :: rproblem
-
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! string representation
-    character(len=*), intent(in) :: sblockDiscr
-
-    ! OPTIONAL: default block discretisation structure to be used if
-    ! the specified structure cannot be found
-    type(t_blockDiscretisation), intent(in), target, optional :: rblockDiscrDefault
-!</input>
-
-!<result>
-    ! pointer to the specified block discretisation structure
-    ! or null of it is not available
-    type(t_blockDiscretisation), pointer :: p_rblockDiscr
-!</result>
-
-!</function>
-
-    ! local variables
-    type(t_problemLevel), pointer :: p_rproblemLevel
-    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
-
-    ! Do we have a valid string?
-    if (trim(sblockDiscr) .eq. '') then
-      if (present(rblockDiscrDefault)) then
-        p_rblockDiscr => rblockDiscrDefault
-      else
-        nullify(p_rblockDiscr)
-      end if
-      ! That`s it
-    end if
-
-    ! Initialise parameters
-    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-    ilev     = rproblemLevel%ilev
-    idiscr   = 1
-
-    call sys_countTokens(sblockDiscr, ntoken, ',', .false.); istart=1
-
-    do itoken = 1,ntoken
-      call sys_getNextToken (sblockDiscr, stoken, istart, ',', .false.)
-
-      iistart = 1
-      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-
-      if (trim(skeyword) .eq. 'PROBLEM') then
-        sproblem = trim(svalue)
-      elseif (trim(skeyword) .eq. 'ILEV') then
-        read(svalue,'(I10)') ilev
-      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-          trim(skeyword) .eq. 'IDISCRETISATION') then
-        read(svalue,'(I10)') idiscr
-      else
-        call output_line('Unsupported keyword: '//trim(skeyword),&
-            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
-        call sys_halt()
-      end if
-    end do
-
-    ! Find problem level in global problem structure
-    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-    if (.not.associated(p_rproblemLevel)) then
-      call output_line('Unable to find problem level in problem '//trim(sproblem),&
-          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
-      call sys_halt()
-    end if
-
-    ! Set pointer to discretisation structure
-    nullify(p_rblockDiscr)
-    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
-        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
-      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)        
-    end if
-      
-  end function problem_getBlockDiscr
-
-    !*****************************************************************************
-
-!<function>
-
-  function problem_getCubInfo(rproblem, rproblemLevel, scubInfo,& 
-      rcubInfoDefault) result(p_rcubInfo)
-
-!<descrition>
-    ! This subroutines sets the pointer to a cubature info structure
-    !  based on the string representation scubInfo and the data
-    !  present in the problem structure
-!</descrition>
-   
-!<input>
-    ! problem structure
-    type(t_problem), intent(in) :: rproblem
-
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! string representation
-    character(len=*), intent(in) :: scubInfo
-
-    ! OPTIONAL: default cubature info structure to be used if
-    ! the specified structure cannot be found
-    type(t_scalarCubatureInfo), intent(in), target, optional :: rcubInfoDefault
-!</input>
-
-!<result>
-    ! pointer to the specified cubature info structure
-    ! or null of it is not available
-    type(t_scalarCubatureInfo), pointer :: p_rcubInfo
-!</result>
-
-!</function>
-
-    ! local variables
-    type(t_problemLevel), pointer :: p_rproblemLevel
-    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-    integer :: icubinfo,iistart,ilev,istart,itoken,ntoken
-    
-    ! Do we have a valid string?
-    if (trim(scubInfo) .eq. '') then
-      if (present(rcubInfoDefault)) then
-        p_rcubInfo => rcubInfoDefault
-      else
-        nullify(p_rcubInfo)
-      end if
-      ! That`s it
-      return
-    end if
-    
-    ! Initialise parameters
-    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-    ilev     = rproblemLevel%ilev
-    icubinfo = 1
-    
-    call sys_countTokens(scubInfo, ntoken, ',', .false.); istart=1
-    
-    do itoken = 1,ntoken
-      call sys_getNextToken (scubInfo, stoken, istart, ',', .false.)
-      
-      iistart = 1
-      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-      
-      if (trim(skeyword) .eq. 'PROBLEM') then
-        sproblem = trim(svalue)
-      elseif (trim(skeyword) .eq. 'ILEV') then   
-        read(svalue,'(I10)') ilev
-      elseif (trim(skeyword) .eq. 'ICUBINFO' .or.&
-          trim(skeyword) .eq. 'ICUBATUREINFO') then
-        read(svalue,'(I10)') icubinfo
-      else
-        call output_line('Unsupported keyword: '//trim(skeyword),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
-        call sys_halt()
-      end if
-    end do
-    
-    ! Find problem level in global problem structure
-    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-    if (.not.associated(p_rproblemLevel)) then
-      call output_line('Unable to find problem level in problem '//trim(sproblem),&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
-      call sys_halt()
-    end if
-
-    ! Do we have a cubature info?
-    if ((icubinfo .ge. lbound(p_rproblemLevel%Rcubatureinfo,1)) .and.&
-        (icubinfo .le. ubound(p_rproblemLevel%Rcubatureinfo,1))) then
-      p_rcubInfo => p_rproblemLevel%Rcubatureinfo(icubinfo)
-    else
-      call output_line('Unable to find cubature info structure',&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
-      call sys_halt()
-    end if
-    
-  end function problem_getCubInfo
-  
-  !****************************************************************************
-
-!<subroutine>
-
-  subroutine problem_buildMatrixSc_fparser_sim (rdiscretisationTrial,&
-                  rdiscretisationTest, rform, nelements, npointsPerElement,&
-                  Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
-                  Dcoefficients, rcollection)
-
-    use basicgeometry
-    use collection
-    use domainintegration
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-    use fsystem
-
-  !<description>
-    ! This subroutine can be called during the matrix assembly.
-    ! It computes the coefficients in front of the terms of the
-    ! bilinear form from the given function parser.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
-
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(in) :: rform
-
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTrial
-
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF`s in test space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear vectors).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-  !</input>
-
-  !<inputoutput>
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional :: rcollection
-  !</inputoutput>
-
-  !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-  !</output>
-
-  !</subroutine>
-
-    ! local variable
-    type(t_fparser), pointer :: p_rfparser
-    integer :: i,iel,ipoint
-
-    ! Get function parser from collection
-    p_rfparser => rcollection%p_rfparserQuickAccess1
-
-    if (associated(p_rfparser)) then
-      
-      do iel=1,size(Dcoefficients,3)
-        do ipoint=1,size(Dcoefficients,2)
-          do i=1,size(Dcoefficients,1)
-            call fparser_evalFunction(p_rfparser, i, Dpoints(:,ipoint,iel),&
-                                      Dcoefficients(i,ipoint,iel))
-          end do
-        end do
-      end do
-
-    else
-      call output_line('Quick access function parse is not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_buildMatrixSc_fparser_sim')
-      call sys_halt()
-    end if
-
-  end subroutine problem_buildMatrixSc_fparser_sim
-
-  !****************************************************************************
-
-!<subroutine>
-
-  subroutine problem_buildVectorSc_fparser_sim (rdiscretisation, rform, &
-                  nelements, npointsPerElement, Dpoints, &
-                  IdofsTest, rdomainIntSubset,&
-                  Dcoefficients, rcollection)
-
-    use basicgeometry
-    use collection
-    use domainintegration
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-    use fsystem
-
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(in) :: rform
-
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-    ! An array accepting the DOF`s on all elements test in the test space.
-    ! DIMENSION(\#local DOF`s in test space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-  !</input>
-
-  !<inputoutput>
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional :: rcollection
-  !</inputoutput>
-
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-  !</output>
-
-  !</subroutine>
-
-    ! local variable
-    type(t_fparser), pointer :: p_rfparser
-    integer :: i,iel,ipoint
-
-    ! Get function parser from collection
-    p_rfparser => rcollection%p_rfparserQuickAccess1
-
-    if (associated(p_rfparser)) then
-      
-      do iel=1,size(Dcoefficients,3)
-        do ipoint=1,size(Dcoefficients,2)
-          do i=1,size(Dcoefficients,1)
-            call fparser_evalFunction(p_rfparser, i, Dpoints(:,ipoint,iel),&
-                                      Dcoefficients(i,ipoint,iel))
-          end do
-        end do
-      end do
-
-    else
-
-      do iel=1,size(Dcoefficients,3)
-        do ipoint=1,size(Dcoefficients,2)
-          do i=1,size(Dcoefficients,1)
-            Dcoefficients(i,ipoint,iel) = rform%Dcoefficients(i)
-          end do
-        end do
-      end do
-    end if
-
-  end subroutine problem_buildVectorSc_fparser_sim
-
-  !*****************************************************************************
 
 !<subroutine>
 
@@ -11151,14 +10597,14 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvectorBlock
+    type(t_groupFEMBlock), pointer :: p_rgroupFEMBlock
     type(t_groupFEMTask), pointer :: rtask
     type(t_problem), pointer :: p_rproblemTopLevel
     type(t_problemLevel), pointer :: p_rproblemLevel
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: iblock,iistart,ilev,ivector,istart,itoken,ntoken,nblocks
+    integer :: iblock,iistart,ilev,igroupfem,istart,itoken,ntoken,nblocks
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -11198,6 +10644,7 @@ contains
       nullify(rtask)
       allocate(rtask)
       nullify(rtask%p_rnextTask)
+      rtask%bisGroupFEMSet      = .true.
       rtask%ctask               =  PROBACTION_CREATE
       rtask%ssectionName        =  ssectionName
       rtask%p_rgroupFEMSetDest  => rgroupFEMSet
@@ -11209,7 +10656,7 @@ contains
         if (appendToTaskList(p_rtasklist, rtask)) then
           deallocate(rtask)
           
-          ! That`s it we do not have to create this scalar vector
+          ! That`s it we do not have to create this group finite element set
           return
         end if
       else
@@ -11218,313 +10665,301 @@ contains
 
       ! When should we perform this task?
       rtask%iperform = problem_getIperform(sperform)
-!!$      
-!!$      ! Get optional parameters
-!!$    call parlst_getvalue_int(rparlist, ssectionName,&
-!!$        'cdatatype', rtask%cdataType, ST_NOHANDLE)
-!!$    if (rtask%cdataType .eq. ST_NOHANDLE) then
-!!$      call parlst_getvalue_string(rparlist, ssectionName,&
-!!$          'sdatatype', sparameter, 'DOUBLE')
-!!$      call sys_toupper(sparameter)
-!!$      rtask%cdataType = get_dataType(trim(sparameter))
-!!$    end if
-!!$      call parlst_getvalue_int(rparlist, ssectionName,&
-!!$          'nvar', rtask%nvar, 1)
-!!$      
-!!$      ! Get spatial discretisation for test and trial space
-!!$      call parlst_getvalue_string(rparlist, ssectionName,&
-!!$          'discretisation', sparameter)
-!!$      call sys_toupper(sparameter)
-!!$      rtask%p_rspatialDiscr => problem_getSpatialDiscr(&
-!!$          rproblemLevel%p_rproblem, rproblemLevel, sparameter)
-!!$      
-!!$      ! Should we perform this task now?
-!!$      if (iand(rtask%iperform, iperform) .ne. 0) then
-!!$        ! Do we have spatial discretisations?
-!!$        if (.not.associated(rtask%p_rspatialDiscr)) then
-!!$          call output_line('Unable to find spatial discretisation',&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$          call sys_halt()
-!!$        end if
-!!$        
-!!$        ! Clear preexisting scalar vector
-!!$        call lsyssc_releaseVector(rvector)
-!!$        
-!!$        ! Create vector structure and set data type
-!!$        call lsyssc_createVector(rtask%p_rspatialDiscr, rvector,&
-!!$            rtask%nvar, .false., rtask%cdataType)
-!!$      end if
-!!$
-!!$    elseif (trim(saction) .eq. 'DUPLICATE') then
-!!$
-!!$      !-------------------------------------------------------------------------
-!!$      ! Duplicate scalar vector or subvector of a block vector
-!!$      !
-!!$      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#,...
-!!$      !     OR  vectorblock  = name,ivector:#,ilev:#,iblock:#
-!!$      !
-!!$      ! If ilev is not given then the level of the current problem
-!!$      ! level structure is adopted. If iblock are not given then
-!!$      ! standard value 1 is used in both cases
-!!$
-!!$      ! Find problem name from which to duplicate scalar vector (if any)
-!!$      call parlst_getvalue_string(rparlist, ssectionName, 'vectorscalar', sparameter, '')
-!!$      call sys_toupper(sparameter)
-!!$
-!!$      if (trim(sparameter) .ne. '') then
-!!$        
-!!$        !--- Scalar vector case ------------------------------------------------
-!!$
-!!$        ! Create new task for this scalar vector
-!!$        nullify(rtask)
-!!$        allocate(rtask)
-!!$        nullify(rtask%p_rnextTask)
-!!$        
-!!$        ! Initialise optional parameters
-!!$        sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-!!$        ilev     = rproblemLevel%ilev
-!!$        ivector  = 1
-!!$        
-!!$        ! Get optional parameters if available
-!!$        call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
-!!$        
-!!$        do itoken = 1,ntoken
-!!$          call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
-!!$          
-!!$          iistart = 1
-!!$          call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-!!$          call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-!!$          
-!!$          if (trim(skeyword) .eq. 'PROBLEM') then
-!!$            sproblem = trim(svalue)
-!!$          elseif (trim(skeyword) .eq. 'ILEV') then
-!!$            read(svalue,'(I10)') ilev
-!!$          elseif (trim(skeyword) .eq. 'IVECTOR') then
-!!$            read(svalue,'(I10)') ivector
-!!$          else
-!!$            call output_line('Unsupported keyword: '//trim(skeyword),&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$            call sys_halt()
-!!$          end if
-!!$        end do
-!!$        
-!!$        ! Find problem level in global problem structure
-!!$        p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
-!!$        if (.not.associated(p_rproblemLevel)) then
-!!$          call output_line('Unable to find problem level in problem '//trim(sproblem),&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$          call sys_halt()
-!!$        end if
-!!$        
-!!$        ! Get section name of scalar vector
-!!$        call parlst_getvalue_string(rparlist, trim(sproblem),&
-!!$            'vectorscalar', ssubsectionName, isubstring=ivector)
-!!$
-!!$        ! Proceed with possibly prerequisite tasks
-!!$        call problem_updateVectorScalar(p_rproblemLevel,&
-!!$            p_rproblemLevel%RvectorScalar(ivector), rparlist,&
-!!$            ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
-!!$        
-!!$        ! Specify new task for this cubature info structure
-!!$        rtask%bisVectorScalar     = .true.
-!!$        rtask%ctask               =  PROBACTION_DUPLICATE
-!!$        rtask%ssectionName        =  ssectionName
-!!$        rtask%p_rvectorScalarSrc  => p_rproblemLevel%RvectorScalar(ivector)
-!!$        rtask%p_rvectorScalarDest => rvector
-!!$        rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
-!!$        rtask%p_rproblemDest      => rproblemLevel%p_rproblem
-!!$        rtask%p_rproblemLevelSrc  => p_rproblemLevel
-!!$        rtask%p_rproblemLevelDest => rproblemLevel
-!!$
-!!$      else
-!!$
-!!$        !--- Block vector case -------------------------------------------------
-!!$
-!!$        ! Find problem name from which to duplicate entry of block vector (if any)
-!!$        call parlst_getvalue_string(rparlist, ssectionName, 'vectorblock', sparameter, '')
-!!$        call sys_toupper(sparameter)
-!!$      
-!!$        if (trim(sparameter) .ne. '') then
-!!$          
-!!$          ! Create new task for this scalar vector
-!!$          nullify(rtask)
-!!$          allocate(rtask)
-!!$          nullify(rtask%p_rnextTask)
-!!$          
-!!$          ! Initialise optional parameters
-!!$          sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-!!$          ilev     = rproblemLevel%ilev
-!!$          ivector  = 1
-!!$          iblock   = 1
-!!$          
-!!$          ! Get optional parameters if available
-!!$          call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
-!!$          
-!!$          do itoken = 1,ntoken
-!!$            call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
-!!$            
-!!$            iistart = 1
-!!$            call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-!!$            call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-!!$            
-!!$            if (trim(skeyword) .eq. 'PROBLEM') then
-!!$              sproblem = trim(svalue)
-!!$            elseif (trim(skeyword) .eq. 'ILEV') then
-!!$              read(svalue,'(I10)') ilev
-!!$            elseif (trim(skeyword) .eq. 'IVECTOR') then
-!!$              read(svalue,'(I10)') ivector
-!!$            elseif (trim(skeyword) .eq. 'IBLOCK') then
-!!$              read(svalue,'(I10)') iblock
-!!$            else
-!!$              call output_line('Unsupported keyword: '//trim(skeyword),&
-!!$                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$              call sys_halt()
-!!$            end if
-!!$          end do
-!!$          
-!!$          ! Find problem level in global problem structure
-!!$          p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
-!!$          if (.not.associated(p_rproblemLevel)) then
-!!$            call output_line('Unable to find problem level in problem '//trim(sproblem),&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$            call sys_halt()
-!!$          end if
-!!$          
-!!$          ! Get section name of block vector
-!!$          call parlst_getvalue_string(rparlist, trim(sproblem),&
-!!$              'vectorblock', ssubsectionName, isubstring=ivector)
-!!$
-!!$          ! Proceed with possibly prerequisite tasks
-!!$          call problem_updateVecBl(p_rproblemLevel,&
-!!$              p_rproblemLevel%RvectorBlock(ivector), rparlist,&
-!!$              ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
-!!$
-!!$          ! Check if scalar subvector is available
-!!$          p_rvectorBlock => p_rproblemLevel%RvectorBlock(ivector)
-!!$          if ((size(p_rvectorBlock%RvectorBlock,1) .lt. iblock)) then
-!!$            call output_line('Scalar subvector of block vector is not available',&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$            call sys_halt()
-!!$          end if
-!!$
-!!$          ! Specify new task for this cubature info structure
-!!$          rtask%bisVectorScalar     = .true.
-!!$          rtask%ctask               =  PROBACTION_DUPLICATE
-!!$          rtask%ssectionName        =  ssectionName
-!!$          rtask%p_rvectorScalarSrc  => p_rvectorBlock%RvectorBlock(iblock)
-!!$          rtask%p_rvectorScalarDest => rvector
-!!$          rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
-!!$          rtask%p_rproblemDest      => rproblemLevel%p_rproblem
-!!$          rtask%p_rproblemLevelSrc  => p_rproblemLevel
-!!$          rtask%p_rproblemLevelDest => rproblemLevel
-!!$
-!!$        else
-!!$          call output_line('Either scalar or block vector must be present',&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
-!!$          call sys_halt()
-!!$        end if
-!!$      end if
-!!$
-!!$      ! Append task to task list (if not already present)
-!!$      if (associated(p_rtasklist)) then
-!!$        if (appendToTaskList(p_rtasklist, rtask)) then
-!!$          deallocate(rtask)
-!!$
-!!$          ! That`s it we do not have to create this scalar vector
-!!$          return
-!!$        end if
-!!$      else
-!!$        p_rtasklist => rtask
-!!$      end if
-!!$
-!!$      ! When should we perform this task?
-!!$      rtask%iperform = problem_getIperform(sperform)
-!!$          
-!!$      ! Get optional parameters
-!!$      call parlst_getvalue_string(rparlist, ssectionName,&
-!!$          'sdupstructure', sparameter, 'SHARE')
-!!$      call sys_toupper(sparameter)
-!!$      rtask%cdupStructure = get_dupType(sparameter)
-!!$      call parlst_getvalue_string(rparlist, ssectionName,&
-!!$          'sdupcontent', sparameter, 'SHARE')
-!!$      call sys_toupper(sparameter)
-!!$      rtask%cdupContent = get_dupType(sparameter)
-!!$
-!!$      ! Duplicate scalar vector
-!!$      if (iand(rtask%iperform, iperform) .ne. 0) then
-!!$        call lsyssc_duplicateVector(rtask%p_rvectorScalarSrc,&
-!!$            rvector, rtask%cdupStructure, rtask%cdupContent)
-!!$      end if
-!!$      
+      
+      ! Get optional parameters
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'cdatatype', rtask%cdataType, ST_NOHANDLE)
+      if (rtask%cdataType .eq. ST_NOHANDLE) then
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sdatatype', sparameter, 'DOUBLE')
+        call sys_toupper(sparameter)
+        rtask%cdataType = get_dataType(trim(sparameter))
+      end if
+      
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'ncoeffsatdiag', rtask%ncoeffsAtDiag, 0)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'ncoeffsatnode', rtask%ncoeffsAtNode, 0)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'ncoeffsatedge', rtask%ncoeffsAtEdge, 0)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'cassembly', rtask%cassembly, GFEM_UNDEFINED)
+      if (rtask%cassembly .eq. GFEM_UNDEFINED) then
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sassembly', sparameter, 'GFEM_UNDEFINED')
+        call sys_toupper(sparameter)
+        rtask%cassembly = get_assemblyType(sparameter)
+      end if
+
+      ! Get scalar matrix which represents the sparsity pattern for
+      ! the group finite element set
+      call parlst_getvalue_string(rparlist, ssectionName,&
+          'matrixscalar', sparameter)
+      if (trim(sparameter) .ne. '') then
+        call sys_toupper(sparameter)
+        rtask%p_rmatrixScalar => problem_getMatrixScalar(&
+            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+      else
+        ! Otherwise, try to get a scalar matrix as submatrix of a
+        ! block matrix
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'matrixblock', sparameter)
+        if (trim(sparameter) .ne. '') then
+          call sys_toupper(sparameter)
+          rtask%p_rmatrixScalar => problem_getSubmatrixScalar(&
+              rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+        end if
+      end if
+        
+      ! Should we perform this task now?
+      if (iand(rtask%iperform, iperform) .ne. 0) then
+        ! Do we have a scalar matrix?
+        if (.not.associated(rtask%p_rmatrixScalar)) then
+          call output_line('Unable to find scalar matrix',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+          call sys_halt()
+        end if
+        
+        ! Clear preexisting group finite element set
+        call gfem_releaseGroupFEMSet(rgroupFEMSet)
+        
+        ! Create group finite element set and set data type
+        call gfem_initGroupFEMSet(rgroupFEMSet, rtask%p_rmatrixScalar,&
+            rtask%ncoeffsAtDiag, rtask%ncoeffsAtNode, rtask%ncoeffsAtEdge,&
+            rtask%cassembly, rtask%cdataType, .true.)
+      end if
+
+    elseif (trim(saction) .eq. 'DUPLICATE') then
+
+      !-------------------------------------------------------------------------
+      ! Duplicate group finite element set or subset of a block of
+      ! group finite element sets
+      !
+      ! SYNTAX: groupfemset   = name,igroupfem:#,ilev:#,...
+      !     OR  groupfemblock = name,igroupfem:#,ilev:#,iblock:#
+      !
+      ! If ilev is not given then the level of the current problem
+      ! level structure is adopted. If iblock are not given then
+      ! standard value 1 is used in both cases
+
+      ! Find problem name from which to duplicate group finite element set (if any)
+      call parlst_getvalue_string(rparlist, ssectionName, 'groupfemset', sparameter, '')
+      call sys_toupper(sparameter)
+
+      if (trim(sparameter) .ne. '') then
+        
+        !--- Group finite element set case -------------------------------------
+
+        ! Create new task for this group finite element set
+        nullify(rtask)
+        allocate(rtask)
+        nullify(rtask%p_rnextTask)
+        
+        ! Initialise optional parameters
+        sproblem  = trim(rproblemLevel%p_rproblem%cproblem)
+        ilev      = rproblemLevel%ilev
+        igroupfem = 1
+        
+        ! Get optional parameters if available
+        call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+        
+        do itoken = 1,ntoken
+          call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+          
+          iistart = 1
+          call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+          call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+          
+          if (trim(skeyword) .eq. 'PROBLEM') then
+            sproblem = trim(svalue)
+          elseif (trim(skeyword) .eq. 'ILEV') then
+            read(svalue,'(I10)') ilev
+          elseif (trim(skeyword) .eq. 'IGROUPFEM') then
+            read(svalue,'(I10)') igroupfem
+          else
+            call output_line('Unsupported keyword: '//trim(skeyword),&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+            call sys_halt()
+          end if
+        end do
+        
+        ! Find problem level in global problem structure
+        p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+        if (.not.associated(p_rproblemLevel)) then
+          call output_line('Unable to find problem level in problem '//trim(sproblem),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+          call sys_halt()
+        end if
+        
+        ! Get section name of group finite element set
+        call parlst_getvalue_string(rparlist, trim(sproblem),&
+            'groupfemset', ssubsectionName, isubstring=igroupfem)
+
+        ! Proceed with possibly prerequisite tasks
+        call problem_updateGroupFEMSet(p_rproblemLevel,&
+            p_rproblemLevel%RgroupFEMSet(igroupfem), rparlist,&
+            ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+        
+        ! Specify new task for this group finite element set
+        rtask%bisGroupFEMSet      = .true.
+        rtask%ctask               =  PROBACTION_DUPLICATE
+        rtask%ssectionName        =  ssectionName
+        rtask%p_rGroupFEMSetSrc   => p_rproblemLevel%RgroupFEMSet(igroupfem)
+        rtask%p_rGroupFEMSetDest  => rgroupFEMSet
+        rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+        rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+        rtask%p_rproblemLevelSrc  => p_rproblemLevel
+        rtask%p_rproblemLevelDest => rproblemLevel
+
+      else
+
+        !--- Block of group finite element sets case ---------------------------
+
+        ! Find problem name from which to duplicate entry of blocks of
+        ! group finite element sets (if any)
+        call parlst_getvalue_string(rparlist, ssectionName, 'groupfemblock', sparameter, '')
+        call sys_toupper(sparameter)
+      
+        if (trim(sparameter) .ne. '') then
+          
+          ! Create new task for this group finite element set
+          nullify(rtask)
+          allocate(rtask)
+          nullify(rtask%p_rnextTask)
+          
+          ! Initialise optional parameters
+          sproblem  = trim(rproblemLevel%p_rproblem%cproblem)
+          ilev      = rproblemLevel%ilev
+          igroupfem = 1
+          iblock    = 1
+          
+          ! Get optional parameters if available
+          call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+          
+          do itoken = 1,ntoken
+            call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+            
+            iistart = 1
+            call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+            call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+            
+            if (trim(skeyword) .eq. 'PROBLEM') then
+              sproblem = trim(svalue)
+            elseif (trim(skeyword) .eq. 'ILEV') then
+              read(svalue,'(I10)') ilev
+            elseif (trim(skeyword) .eq. 'IGROUPFEM') then
+              read(svalue,'(I10)') igroupfem
+            elseif (trim(skeyword) .eq. 'IBLOCK') then
+              read(svalue,'(I10)') iblock
+            else
+              call output_line('Unsupported keyword: '//trim(skeyword),&
+                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+              call sys_halt()
+            end if
+          end do
+          
+          ! Find problem level in global problem structure
+          p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+          if (.not.associated(p_rproblemLevel)) then
+            call output_line('Unable to find problem level in problem '//trim(sproblem),&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+            call sys_halt()
+          end if
+          
+          ! Get section name of block vector
+          call parlst_getvalue_string(rparlist, trim(sproblem),&
+              'groupfemblock', ssubsectionName, isubstring=igroupfem)
+          
+          ! Proceed with possibly prerequisite tasks
+          call problem_updateGroupFEMBlock(p_rproblemLevel,&
+              p_rproblemLevel%RgroupFEMBlock(igroupfem), rparlist,&
+              ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+
+          ! Check if group finite element subset is available
+          p_rgroupFEMBlock => p_rproblemLevel%RgroupFEMBlock(igroupfem)
+          if ((size(p_rgroupFEMBlock%RgroupFEMBlock,1) .lt. iblock)) then
+            call output_line('Group finite element subset is not available',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+            call sys_halt()
+          end if
+
+          ! Specify new task for this group finite element set
+          rtask%bisGroupFEMSet      = .true.
+          rtask%ctask               =  PROBACTION_DUPLICATE
+          rtask%ssectionName        =  ssectionName
+          rtask%p_rgroupFEMSetSrc   => p_rgroupFEMBlock%RgroupFEMBlock(iblock)
+          rtask%p_rgroupFEMSetDest  => rgroupFEMSet
+          rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+          rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+          rtask%p_rproblemLevelSrc  => p_rproblemLevel
+          rtask%p_rproblemLevelDest => rproblemLevel
+
+        else
+          call output_line('Either group finite element set or subset must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
+          call sys_halt()
+        end if
+      end if
+
+      ! Append task to task list (if not already present)
+      if (associated(p_rtasklist)) then
+        if (appendToTaskList(p_rtasklist, rtask)) then
+          deallocate(rtask)
+          
+          ! That`s it we do not have to create this group finite element set
+          return
+        end if
+      else
+        p_rtasklist => rtask
+      end if
+
+      ! When should we perform this task?
+      rtask%iperform = problem_getIperform(sperform)
+      
+      ! Get optional parameters
+      call parlst_getvalue_string(rparlist, ssectionName,&
+          'sduplicationtype', sparameter, '')
+      rtask%cdupType = get_dupType(sparameter)
+
+      ! Duplicate group finite element set
+      if (iand(rtask%iperform, iperform) .ne. 0) then
+        call gfem_duplicateGroupFEMSet(rtask%p_rGroupFEMSetSrc,&
+            rgroupFEMSet, rtask%cdupType, .true.)
+      end if
+      
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
       call sys_halt()
     end if
-!!$    
-!!$    !---------------------------------------------------------------------------
-!!$    ! Second part: generate content
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! What creation method is adopted?
-!!$    call parlst_getvalue_string(rparlist, ssectionName,&
-!!$        'smethod', sparameter, '')
-!!$    call sys_toupper(sparameter)
-!!$    
-!!$    if (trim(sparameter) .eq. 'EMPTY') then
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Create empty vector
-!!$      
-!!$      call lsyssc_clearVector(rvector, 0.0_DP)
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%cmethod = PROBMETH_VECTOR_EMPTY
-!!$      
-!!$    elseif (trim(sparameter) .eq. 'UNITY') then
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Create unit vector
-!!$      
-!!$      call lsyssc_clearVector(rvector, 1.0_DP)
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%cmethod = PROBMETH_VECTOR_UNITY
-!!$      
-!!$    elseif (trim(sparameter) .eq. 'LINF') then
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Create vector by linearform evaluation         
-!!$      
-!!$      call assembleScalarVector(rparlist, rtask)
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%cmethod = PROBMETH_VECTOR_LINF
-!!$      
-!!$    elseif (trim(sparameter) .eq. 'DOF') then
-!!$
-!!$      !-------------------------------------------------------------------------
-!!$      ! Create coordinate vector for degrees of freedom
-!!$      
-!!$      call lin_calcDofCoords(rtask%p_rspatialDiscr, rvector)
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%cmethod = PROBMETH_VECTOR_DOF
-!!$
-!!$    elseif (trim(sparameter) .eq. '') then
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! Create virtual vector, aka, do nothing
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%cmethod = PROBMETH_VECTOR_VIRTUAL
-!!$      
-!!$    else
-!!$      call output_line('Unsupported method: '//trim(sparameter),&
-!!$          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$      call sys_halt()
-!!$    end if
-!!$    
+    
+    !---------------------------------------------------------------------------
+    ! Second part: Attach scalar matrices to copy coefficients from
+    !---------------------------------------------------------------------------
+
+    ncoeffMatrices = parlst_querysubstrings(rparlist, ssectionName, 'coeffmatrix')
+    if (ncoeffMatrices .gt. 0) then
+      allocate(rtask%RmatrixScalar(ncoeffMatrices))
+      do i=1,ncoeffMatrices
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'coeffmatrix', sparameter, isubstring=i)
+        rtask%RmatrixScalar(i) => problem_getMatrixScalar(&
+            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+      end do
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Second part: generate content
+    !---------------------------------------------------------------------------
+
+    ! Update the task for content generation
+    call problem_genContentGroupFEMTask(rtask, rparlist, ssectionName)
+
+    ! Generate content (if required)
+    if (iand(rtask%iperform, iperform) .ne. 0) then
+      call problem_genContentGroupFEM(rtask)
+    end if
+    
   contains
 
     ! Here, some auxiliary routines follow
@@ -11577,131 +11012,70 @@ contains
       end if
 
     end function get_dataType
-!!$
-!!$    !**************************************************************
-!!$    ! Return the numeric value of the duplication flad
-!!$    function get_dupType(sdupType) result(cdupType)
-!!$
-!!$      character(len=*), intent(in) :: sdupType
-!!$      integer :: cdupType
-!!$
-!!$      if (sdupType .eq. 'IGNORE') then
-!!$        cdupType = LSYSSC_DUP_IGNORE
-!!$      elseif (sdupType .eq. 'REMOVE') then
-!!$        cdupType = LSYSSC_DUP_REMOVE
-!!$      elseif (sdupType .eq. 'DISMISS') then
-!!$        cdupType = LSYSSC_DUP_DISMISS
-!!$      elseif (sdupType .eq. 'SHARE') then
-!!$        cdupType = LSYSSC_DUP_SHARE
-!!$      elseif (sdupType .eq. 'COPY') then
-!!$        cdupType = LSYSSC_DUP_COPY
-!!$      elseif (sdupType .eq. 'COPYOVERWRITE') then
-!!$        cdupType = LSYSSC_DUP_COPYOVERWRITE
-!!$      elseif (sdupType .eq. 'ASIS') then
-!!$        cdupType = LSYSSC_DUP_ASIS
-!!$      elseif (sdupType .eq. 'EMPTY') then
-!!$        cdupType = LSYSSC_DUP_EMPTY
-!!$      elseif (sdupType .eq. 'TEMPLATE') then
-!!$        cdupType = LSYSSC_DUP_TEMPLATE
-!!$      else
-!!$        cdupType = 0
-!!$      end if
-!!$
-!!$    end function get_dupType
-!!$    
-!!$    !**************************************************************
-!!$    ! Assemble the scalar vector from bilinear form evaluation
-!!$    subroutine assembleScalarVector(rparlist, rtask)
-!!$
-!!$      type(t_parlist), intent(in) :: rparlist
-!!$      type(t_vectorTask), intent(inout) :: rtask
-!!$
-!!$      ! local variables
-!!$      type(t_collection) :: rcollection
-!!$      type(t_scalarCubatureInfo), pointer :: p_rcubInfo
-!!$      character(len=PARLST_MLDATA) :: sparameter
-!!$      integer :: i,j,itermCount
-!!$
-!!$      ! Get cubature info structure
-!!$      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-!!$          'cubatureinfo', sparameter)
-!!$      call sys_toupper(sparameter)
-!!$      p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
-!!$          rtask%p_rproblemLevelDest, sparameter)
-!!$      
-!!$      ! Update internal data of the task item
-!!$      rtask%p_rcubatureInfo => p_rcubInfo
-!!$      allocate(rtask%p_rform)
-!!$      
-!!$      ! Get number of terms in bilinear form
-!!$      rtask%p_rform%itermCount = parlst_querysubstrings(&
-!!$          rparlist, rtask%ssectionName, 'function')
-!!$      
-!!$      ! Get test and trial functions in bilinear form
-!!$      do i = 1,rtask%p_rform%itermCount
-!!$        call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-!!$            'function', sparameter, isubString=i)
-!!$        call sys_toupper(sparameter)
-!!$        rtask%p_rform%Idescriptors(i) = der_igetID(sparameter)
-!!$      end do
-!!$      
-!!$      ! Get constant(?) coefficients
-!!$      itermCount = parlst_querysubstrings(rparlist,&
-!!$          rtask%ssectionName, 'scoefficient')
-!!$      
-!!$      if (itermCount .gt. 0) then
-!!$        itermCount = min(itermCount,rtask%p_rform%itermCount)
-!!$        
-!!$        ! Check if all coefficients are constant
-!!$        do i=1,itermCount
-!!$          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-!!$              'scoefficient', sparameter, isubString=i)
-!!$          if (sys_isNumeric(sparameter)) then
-!!$            call parlst_getvalue_double(rparlist, rtask%ssectionName,&
-!!$                'scoefficient', rtask%p_rform%Dcoefficients(i), iarrayindex=i)
-!!$          else
-!!$            ! Not all coefficients are constant. Thus, we create a
-!!$            ! function parser object and perform bilinear form
-!!$            ! evaluation based on a generic callback function
-!!$            allocate (rtask%p_rfparser)
-!!$            call fparser_create(rtask%p_rfparser, itermCount)
-!!$            
-!!$            ! Fill function parser with data
-!!$            do j=1,itermCount
-!!$              call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-!!$                  'scoefficient', sparameter, isubString=j)
-!!$              call fparser_parseFunction(rtask%p_rfparser, j, trim(sparameter), (/'x','y','z'/))
-!!$            end do
-!!$            
-!!$            ! That`s it
-!!$            exit
-!!$          end if
-!!$        end do
-!!$      else
-!!$        rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
-!!$      end if
-!!$
-!!$      ! Assemble vector data from linear form
-!!$      rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
-!!$      if (associated(p_rcubInfo)) then
-!!$        call linf_buildVectorScalar(rtask%p_rform, .true.,&
-!!$            rtask%p_rvectorScalarDest, p_rcubInfo,&
-!!$            problem_buildVectorSc_fparser_sim, rcollection)
-!!$      elseif (associated(rtask%p_rspatialDiscr)) then
-!!$        call linf_buildVectorScalar(rtask%p_rspatialDiscr,&
-!!$            rtask%p_rform, .true., rtask%p_rvectorScalarDest,&
-!!$            problem_buildVectorSc_fparser_sim, rcollection)
-!!$      else
-!!$        call output_line('Neither cubature info structure nor discretisation available',&
-!!$            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$        call sys_halt()
-!!$      end if
-!!$      
-!!$    end subroutine assembleScalarVector
 
+    !**************************************************************
+    ! Return the numeric value of the assembly type
+    function get_assemblyType(sassemblyType) result(cassemblyType)
+
+      character(len=*), intent(in) :: sassemblyType
+      integer :: cassemblyType
+
+      if (sassemblyType .eq. 'NODEBASED') then
+        cassemblyType = GFEM_NODEBASED
+      elseif (sassemblyType .eq. 'EDGEBASED') then
+        cassemblyType = GFEM_EDGEBASED
+      else
+        cassemblyType = GFEM_UNDEFINED
+      end if
+      
+    end function get_assemblyType
+
+    !**************************************************************
+    ! Return the duplication flag
+    function get_dupType(sstring) result(cdupFlag)
+
+      character(len=*), intent(in) :: sstring
+      integer(I32) :: cdupFlag
+
+      ! local variables
+      character(len=SYS_STRLEN) :: sdupflag
+      integer :: istart,itoken,ntoken
+      
+      cdupflag = 0_I32
+      
+      call sys_countTokens(sstring, ntoken, ',', .false.)
+      istart = 1
+      do itoken=1,max(ntoken,1)
+        call sys_getNextToken (sstring, sdupflag, istart, ',', .false.)
+        if (trim(adjustl(sdupflag)) .eq. 'STRUCTURE') then
+          cdupflag = ior(cdupflag, GFEM_DUP_STRUCTURE)
+        elseif (trim(adjustl(sdupflag)) .eq. 'DOFLIST') then
+          cdupflag = ior(cdupflag, GFEM_DUP_DOFLIST)
+        elseif (trim(adjustl(sdupflag)) .eq. 'DIAGLIST') then
+          cdupflag = ior(cdupflag, GFEM_DUP_DIAGLIST)
+        elseif (trim(adjustl(sdupflag)) .eq. 'NODELIST') then
+          cdupflag = ior(cdupflag, GFEM_DUP_NODELIST)
+        elseif (trim(adjustl(sdupflag)) .eq. 'EDGELIST') then
+          cdupflag = ior(cdupflag, GFEM_DUP_EDGELIST)
+        elseif (trim(adjustl(sdupflag)) .eq. 'DIAGDATA') then
+          cdupflag = ior(cdupflag, GFEM_DUP_DIAGDATA)
+        elseif (trim(adjustl(sdupflag)) .eq. 'NODEDATA') then
+          cdupflag = ior(cdupflag, GFEM_DUP_NODEDATA)
+        elseif (trim(adjustl(sdupflag)) .eq. 'EDGEDATA') then
+          cdupflag = ior(cdupflag, GFEM_DUP_EDGEDATA)
+        elseif (trim(adjustl(sdupflag)) .eq. 'ALL') then
+          cdupflag = ior(cdupflag, GFEM_DUP_ALL)
+        else
+          call output_line('Unsupported perform type: '//trim(sdupflag),&
+              OU_CLASS_ERROR,OU_MODE_STD,'get_dupType')
+          call sys_halt()
+        end if
+      end do
+    end function get_dupType
+    
   end subroutine problem_updateGroupFEMSet
-
-!*****************************************************************************
+  
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -12173,7 +11547,7 @@ contains
     end function get_dataType
 !!$
 !!$    !**************************************************************
-!!$    ! Return the numeric value of the duplication flad
+!!$    ! Return the numeric value of the duplication flag
 !!$    function get_dupType(sdupType) result(cdupType)
 !!$
 !!$      character(len=*), intent(in) :: sdupType
@@ -12315,174 +11689,332 @@ contains
 !</input>
 !</subroutine>
 
-!!$    ! local variables
-!!$    type(t_collection) :: rcollection
-!!$    type(t_vectorBlock) :: rvectorTemp
-!!$    type(t_vectorTask), pointer :: p_rtask
-!!$    integer :: iperform
-!!$
-!!$    iperform = PROBACTION_PERFORM_ALWAYS
-!!$    if (present(iperformSpec)) iperform = iperformSpec
-!!$    
-!!$    ! Iterate over all tasks
-!!$    p_rtask => rtasklist
-!!$    taskloop: do while (associated(p_rtask))
-!!$
-!!$      ! Do we have to perform this task?
-!!$      if (iand(p_rtask%iperform, iperform) .eq. 0) then
-!!$        p_rtask => p_rtask%p_rnextTask
-!!$        cycle taskloop
-!!$      end if
-!!$      
-!!$      !-------------------------------------------------------------------------
-!!$      ! First part: create or duplicate vector
-!!$      !-------------------------------------------------------------------------
-!!$      select case(p_rtask%ctask)
-!!$      case(PROBACTION_CREATE)
-!!$
-!!$        ! Do we have to assemble a scalar vector?
-!!$        if (p_rtask%bisVectorScalar) then
-!!$          
-!!$          !---------------------------------------------------------------------
-!!$          ! Create scalar vector
-!!$          
-!!$          ! Do we have spatial discretisations?
-!!$          if (.not.associated(p_rtask%p_rspatialDiscr)) then
-!!$            call output_line('Unable to find spatial discretisation',&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-!!$            call sys_halt()
-!!$          end if
-!!$          
-!!$          ! Clear preexisting vector
-!!$          call lsyssc_releaseVector(p_rtask%p_rvectorScalarDest)
-!!$          
-!!$          ! Create vector structure and set data type
-!!$          call lsyssc_createVector(p_rtask%p_rspatialDiscr,&
-!!$              p_rtask%p_rvectorScalarDest, p_rtask%nvar, .false., p_rtask%cdataType)
-!!$
-!!$        else
-!!$
-!!$          !---------------------------------------------------------------------
-!!$          ! Create block vector
-!!$
-!!$          ! Do we have block discretisations?
-!!$          if (.not.associated(p_rtask%p_rblockDiscr)) then
-!!$            call output_line('Unable to find block discretisation',&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-!!$            call sys_halt()
-!!$          end if
-!!$
-!!$          ! Clear preexisting block vector
-!!$          call lsysbl_releaseVector(p_rtask%p_rvectorBlockDest)
-!!$
-!!$          ! Create block vector from discretisation
-!!$          call lsysbl_createVecBlockByDiscr(p_rtask%p_rblockDiscr,&
-!!$              p_rtask%p_rvectorBlockDest)
-!!$          
-!!$          ! Proceed with next task
-!!$          p_rtask => p_rtask%p_rnextTask
-!!$          
-!!$          ! That`s it for block vectors
-!!$          cycle taskloop
-!!$        end if
-!!$
-!!$      case(PROBACTION_DUPLICATE)
-!!$
-!!$        !-----------------------------------------------------------------------
-!!$        ! Duplicate scalar/block vector
-!!$
-!!$        if (p_rtask%bisVectorScalar) then
-!!$          ! Duplicate scalar vector
-!!$          call lsyssc_duplicateVector(p_rtask%p_rvectorScalarSrc,&
-!!$              p_rtask%p_rvectorScalarDest, p_rtask%cdupStructure, p_rtask%cdupContent)
-!!$        else
-!!$          if (associated(p_rtask%p_rvectorScalarSrc)) then
-!!$            ! Duplicate scalar vector as 1-block vector
-!!$            call lsysbl_createVecFromScalar(p_rtask%p_rvectorScalarSrc, rvectorTemp)
-!!$
-!!$            ! Copy content of temporal vector by hand
-!!$            p_rtask%p_rvectorBlockDest%NEQ         = rvectorTemp%NEQ
-!!$            p_rtask%p_rvectorBlockDest%nblocks     = 1
-!!$
-!!$            allocate(p_rtask%p_rvectorBlockDest%RvectorBlock(1))
-!!$            p_rtask%p_rvectorBlockDest%RvectorBlock(1) = rvectorTemp%RvectorBlock(1)
-!!$
-!!$            ! Release temporal vector
-!!$            call lsysbl_releaseVector(rvectorTemp)
-!!$
-!!$          elseif(associated(p_rtask%p_rvectorBlockSrc)) then
-!!$            ! Duplicate block vector
-!!$            call lsysbl_duplicateVector(p_rtask%p_rvectorBlockSrc,&
-!!$                p_rtask%p_rvectorBlockDest, p_rtask%cdupStructure, p_rtask%cdupContent)
-!!$          else
-!!$            call output_line('Neither scalar nor block vector can be duplicated',&
-!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-!!$            call sys_halt()
-!!$          end if
-!!$        end if
-!!$
-!!$      case default
-!!$        call output_line('Unsupported action: '//sys_siL(p_rtask%ctask,3),&
-!!$            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMamtrix')
-!!$        call sys_halt()
-!!$      end select
-!!$
-!!$      !-------------------------------------------------------------------------
-!!$      ! Second part: generate content (only for scalar vectors)
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! What creation method is adopted?
-!!$      select case (p_rtask%cmethod)
-!!$      case(PROBMETH_VECTOR_EMPTY)
-!!$
-!!$        !---------------------------------------------------------------------
-!!$        ! Create empty vector
-!!$
-!!$        call lsyssc_clearVector(p_rtask%p_rvectorScalarDest, 0.0_DP)
-!!$
-!!$      case(PROBMETH_VECTOR_UNITY)
-!!$
-!!$        !---------------------------------------------------------------------
-!!$        ! Create unit vector
-!!$
-!!$        call lsyssc_clearVector(p_rtask%p_rvectorScalarDest, 1.0_DP)
-!!$                
-!!$      case(PROBMETH_VECTOR_LINF)
-!!$
-!!$        !---------------------------------------------------------------------
-!!$        ! Create vector by bilinearform evaluation         
-!!$
-!!$        rcollection%p_rfparserQuickAccess1 => p_rtask%p_rfparser
-!!$        if (associated(p_rtask%p_rcubatureInfo)) then
-!!$          call linf_buildVectorScalar(p_rtask%p_rform, .true.,&
-!!$              p_rtask%p_rvectorScalarDest, p_rtask%p_rcubatureInfo,&
-!!$              problem_buildVectorSc_fparser_sim, rcollection)
-!!$        elseif (associated(p_rtask%p_rspatialDiscr)) then
-!!$          call linf_buildVectorScalar(p_rtask%p_rspatialDiscr,&
-!!$              p_rtask%p_rform, .true., p_rtask%p_rvectorScalarDest,&
-!!$              problem_buildVectorSc_fparser_sim, rcollection)
-!!$        else
-!!$          call output_line('Neither cubature info structure nor discretisation available',&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-!!$          call sys_halt()
-!!$        end if
-!!$        
-!!$      case(PROBMETH_VECTOR_VIRTUAL)
-!!$        
-!!$        !---------------------------------------------------------------------
-!!$        ! Create virtual vector, aka, do nothing
-!!$        
-!!$      case default
-!!$        call output_line('Unsupported method: '//sys_siL(p_rtask%cmethod,3),&
-!!$            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-!!$        call sys_halt()
-!!$      end select
-!!$      
-!!$      ! Proceed with next task
-!!$      p_rtask => p_rtask%p_rnextTask
-!!$    end do taskloop
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_groupFEMTask), pointer :: p_rtask
+    integer :: iperform
+
+    iperform = PROBACTION_PERFORM_ALWAYS
+    if (present(iperformSpec)) iperform = iperformSpec
+    
+    ! Iterate over all tasks
+    p_rtask => rtasklist
+    taskloop: do while (associated(p_rtask))
+      
+      ! Do we have to perform this task?
+      if (iand(p_rtask%iperform, iperform) .eq. 0) then
+        p_rtask => p_rtask%p_rnextTask
+        cycle taskloop
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! First part: create or duplicate (block of) group finite element set(s)
+      !-------------------------------------------------------------------------
+      select case(p_rtask%ctask)
+      case(PROBACTION_CREATE)
+        
+        ! Do we have to assemble a group finite element set?
+        if (p_rtask%bisGroupFEMSet) then
+          
+          !---------------------------------------------------------------------
+          ! Create group finite element set
+          
+          ! Do we have scalar matrix?
+          if (.not.associated(p_rtask%p_rmatrixScalar)) then
+            call output_line('Unable to find scalar matrix',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEM')
+            call sys_halt()
+          end if
+          
+          ! Clear preexisting group finite element set
+          call gfem_releaseGroupFEMSet(p_rtask%p_rgroupFEMSetDest)
+          
+          ! Create group finite element set and set data type
+          call gfem_initGroupFEMSet(p_rtask%p_rgroupFEMSetDest, p_rtask%p_rmatrixScalar,&
+              p_rtask%ncoeffsAtDiag, p_rtask%ncoeffsAtNode, p_rtask%ncoeffsAtEdge,&
+              p_rtask%cassembly, p_rtask%cdataType, .true.)
+
+        else
+
+          !---------------------------------------------------------------------
+          ! Create block of group finite element sets
+
+          ! Do we have block matrix?
+          if (.not.associated(p_rtask%p_rmatrixBlock)) then
+            call output_line('Unable to find block matrix',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEM')
+            call sys_halt()
+          end if
+
+          ! Clear preexisting block of group finite element sets
+          call gfem_releaseGroupFEMBlock(p_rtask%p_rgroupFEMBlockDest)
+
+          ! Create block of group finite element sets from block matrix
+          call gfem_initGroupFEMBlock(p_rtask%p_rgroupFEMBlockDest,&
+              p_rtask%p_rmatrixBlock%nblocksPerRow)
+          
+          ! Proceed with next task
+          p_rtask => p_rtask%p_rnextTask
+          
+          ! That`s it for blocks of group finite element sets
+          cycle taskloop
+        end if
+
+      case(PROBACTION_DUPLICATE)
+
+        !-----------------------------------------------------------------------
+        ! Duplicate (blocks of) group finite element sets
+
+        if (p_rtask%bisGroupFEMSet) then
+          ! Duplicate group finite element set
+          call gfem_duplicateGroupFEMSet(p_rtask%p_rgroupFEMSetSrc,&
+              p_rtask%p_rgroupFEMSetDest, p_rtask%cdupType, .true.)
+        else
+          if (associated(p_rtask%p_rgroupFEMSetSrc)) then
+            ! Duplicate group finite element set as 1-block version
+            call gfem_initGroupFEMBlock(p_rtask%p_rgroupFEMBlockDest, 1)
+            call gfem_duplicateGroupFEMSet(p_rtask%p_rgroupFEMSetSrc,&
+              p_rtask%p_rgroupFEMBlockDest%RgroupFEMBlock(1), p_rtask%cdupType, .true.)
+            
+          elseif(associated(p_rtask%p_rgroupFEMBlockSrc)) then
+            ! Duplicate blocks of group finite element set
+            call gfem_duplicateGroupFEMBlock(p_rtask%p_rgroupFEMBlockSrc,&
+                p_rtask%p_rgroupFEMBlockDest, p_rtask%cdupType, .true.)
+          else
+            call output_line('Neither group finite element set not blocks '//&
+                'thereof can be duplicated',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEM')
+            call sys_halt()
+          end if
+        end if
+        
+      case default
+        call output_line('Unsupported action: '//sys_siL(p_rtask%ctask,3),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEM')
+        call sys_halt()
+      end select
+
+      !-------------------------------------------------------------------------
+      ! Second part: generate content
+      !-------------------------------------------------------------------------
+
+      call problem_genContentGroupFEM(p_rtask)
+
+      ! Proceed with next task
+      p_rtask => p_rtask%p_rnextTask
+    end do taskloop
     
   end subroutine problem_updateGroupFEM
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentGroupFEMTask(rtask, rparlist, ssectionName)
+
+!<description>
+    ! This subroutine updates the task to generate the content of the
+    ! given group finite element set(s) based on the values of the
+    ! parameter list.  Note that this method does not generate the
+    ! content itself.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+    
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+!</input>
+
+!<inputoutput>
+    ! group finite element task
+    type(t_groupFEMTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    character(len=PARLST_MLDATA) :: sparameter,stoken
+    integer :: i,imethod,istart,itermCount,j,nmethod
+
+    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
+    allocate(rtask%Cmethod(0:nmethod))
+
+    ! Do we have a group finite element set
+    if (rtask%bisGroupFEMSet) then
+
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+        
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+        
+        if (trim(sparameter) .eq. 'ASIS') then
+          
+          !-----------------------------------------------------------------------
+          ! Leave content of the group finite element set as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_ASIS
+          
+        elseif (trim(sparameter) .eq. 'DIAGLIST') then
+
+          !-----------------------------------------------------------------------
+          ! Create list of diagonal entries
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_DIAGLIST
+
+        elseif (trim(sparameter) .eq. 'NODELIST') then
+
+          !-----------------------------------------------------------------------
+          ! Create list of node entries
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_NODELIST
+
+        elseif (trim(sparameter) .eq. 'EDGELIST') then
+
+          !-----------------------------------------------------------------------
+          ! Create list of edge entries
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_EDGELIST
+
+        elseif ((trim(sparameter) .eq. 'COEFFS') .or.&
+                (trim(sparameter) .eq. 'COEFFICIENTS')) then
+
+          !-----------------------------------------------------------------------
+          ! Create list of coefficients from matrix
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_COEFFICIENTS
+
+          ! Get number of coefficient matrices
+
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentGroupFEMTask')
+          call sys_halt()
+        end if
+      end do
+
+    else
+      
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+        
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+        
+        if (trim(sparameter) .eq. 'ASIS') then
+
+          !-----------------------------------------------------------------------
+          ! Leave content of group finite element block as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_GFEM_ASIS
+          
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentGroupFEMTask')
+          call sys_halt()
+        end if
+      end do
+      
+    end if
+
+  end subroutine problem_genContentGroupFEMTask
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentGroupFEM(rtask)
+
+!<description>
+    ! This subroutine generates the content of the given group finite
+    !  element set(s) based on the group finite element task
+!</description>
+
+!<inputoutput>
+    ! group finite element task
+    type(t_groupFEMTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    integer :: i,imethod,j
+    
+    ! Do we have a group finite element set
+    if (rtask%bisGroupFEMSet) then
+
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_GFEM_ASIS)
+
+          !---------------------------------------------------------------------
+          ! Leave content of the group finite element set as is, aka, do nothing
+
+        case(PROBMETH_GFEM_DIAGLIST)
+          
+          !---------------------------------------------------------------------
+          ! Create list of diagonal entries
+          
+          call gfem_genDiagList(rtask%p_rmatrixScalar, rtask%p_rgroupFEMSetDest)
+          
+        case(PROBMETH_GFEM_NODELIST)
+          
+          !---------------------------------------------------------------------
+          ! Create list of nodal entries
+          
+          call gfem_genNodeList(rtask%p_rmatrixScalar, rtask%p_rgroupFEMSetDest)
+          
+        case(PROBMETH_GFEM_EDGELIST)
+          
+          !---------------------------------------------------------------------
+          ! Create list of edges
+          
+          call gfem_genEdgeList(rtask%p_rmatrixScalar, rtask%p_rgroupFEMSetDest)
+          
+        case(PROBMETH_GFEM_COEFFICIENTS)
+          
+          !---------------------------------------------------------------------
+          ! Create list of coefficients
+
+          do i=1,size(rtask%RmatrixScalar,1)
+            call gfem_initCoeffsFromMatrix(rtask%p_rgroupFEMSetDest,&
+                rtask%RmatrixScalar(i), i)
+          end do
+          
+        case default
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentGroupFEM')
+          call sys_halt()
+        end select
+      end do
+      
+    else
+      
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_MATRIX_ASIS)
+
+          !---------------------------------------------------------------------
+          ! Leave content of the group finite element sets as is, aka, do nothing
+        
+        case default
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentGroupFEM')
+          call sys_halt()
+        end select
+      end do
+
+    end if
+
+  end subroutine problem_genContentGroupFEM
 
   !*****************************************************************************
   
@@ -12506,6 +12038,8 @@ contains
 
     p_rtask => p_rtasklist
     do while(associated(p_rtask))
+      if (associated(p_rtask%Cmethod)) deallocate(p_rtask%Cmethod)
+      if (associated(p_rtask%RmatrixScalar)) deallocate(p_rtask%RmatrixScalar)
       p_rtaskSave => p_rtask
       p_rtask     => p_rtask%p_rnextTask
       deallocate(p_rtaskSave)
@@ -12553,38 +12087,33 @@ contains
         call output_line ('GroupFEMTask: UNSUPPORTED')
       end select
 
-!!$      call output_line ('-----------------------')
-!!$      call output_line ('vector type               : '//merge('SCALAR', 'BLOCK ', p_rtask%bisVectorScalar))
-!!$      call output_line ('section name              : '//trim(p_rtask%ssectionName))
-!!$      call output_line ('destination problem       : '//trim(p_rtask%p_rproblemDest%cproblem))
-!!$      call output_line ('destination problem level : '//trim(sys_siL(p_rtask%p_rproblemLevelDest%ilev,15)))
-!!$      call output_line ('destination vector scalar : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rvectorScalarDest)))
-!!$      call output_line ('destination vector block  : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rvectorBlockDest)))
-!!$      if (associated(p_rtask%p_rproblemSrc))&
-!!$      call output_line ('source problem            : '//trim(p_rtask%p_rproblemSrc%cproblem))
-!!$      if (associated(p_rtask%p_rproblemLevelSrc))&
-!!$      call output_line ('source problem level      : '//trim(sys_siL(p_rtask%p_rproblemLevelSrc%ilev,15)))
-!!$      call output_line ('source vector scalar      : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rvectorScalarSrc)))
-!!$      call output_line ('source vector block       : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rvectorBlockSrc)))
-!!$      call output_line ('iperform                  : '//trim(sys_siL(int(p_rtask%iperform),15)))
-!!$      call output_line ('method                    : '//trim(sys_siL(p_rtask%cmethod,15)))
-!!$      call output_line ('data type                 : '//trim(sys_siL(p_rtask%cdatatype,15)))
-!!$      call output_line ('nvar                      : '//trim(sys_siL(p_rtask%nvar,15)))
-!!$      call output_line ('spatial discretisation:     '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rspatialDiscr)))
-!!$      call output_line ('block discretisation      : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rblockDiscr)))
-!!$      call output_line ('cubature info structure   : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rcubatureInfo)))
-!!$      call output_line ('function parser           : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rfparser)))
-!!$      call output_line ('linear form evaluator     : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
-!!$                                                              associated(p_rtask%p_rform)))
-
+      call output_line ('-----------------------')
+      call output_line ('group finite element      : '//merge('SET  ', 'BLOCK', p_rtask%bisGroupFEMSet))
+      call output_line ('section name              : '//trim(p_rtask%ssectionName))
+      call output_line ('destination problem       : '//trim(p_rtask%p_rproblemDest%cproblem))
+      call output_line ('destination problem level : '//trim(sys_siL(p_rtask%p_rproblemLevelDest%ilev,15)))
+      call output_line ('destination groupFEM set  : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rgroupFEMsetDest)))
+      call output_line ('destination groupFEM block: '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rgroupFEMBlockDest)))
+      if (associated(p_rtask%p_rproblemSrc))&
+      call output_line ('source problem            : '//trim(p_rtask%p_rproblemSrc%cproblem))
+      if (associated(p_rtask%p_rproblemLevelSrc))&
+      call output_line ('source problem level      : '//trim(sys_siL(p_rtask%p_rproblemLevelSrc%ilev,15)))
+      call output_line ('source groupFEM set       : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rgroupFEMSetSrc)))
+      call output_line ('source groupFEM block     : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rgroupFEMBlockSrc)))
+      call output_line ('iperform                  : '//trim(sys_siL(int(p_rtask%iperform),15)))
+      call output_line ('data type                 : '//trim(sys_siL(p_rtask%cdatatype,15)))
+      call output_line ('assembly type             : '//trim(sys_siL(p_rtask%cassembly,15)))
+      call output_line ('scalar matrix             :     '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rmatrixScalar)))
+      call output_line ('block matrix              : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rmatrixBlock)))
+      call output_line ('coefficients at diagonal  : '//trim(sys_siL(int(p_rtask%ncoeffsAtDiag),15)))
+      call output_line ('coefficients at nodes     : '//trim(sys_siL(int(p_rtask%ncoeffsAtNode),15)))
+      call output_line ('coefficients at edges     : '//trim(sys_siL(int(p_rtask%ncoeffsAtEdge),15)))
       p_rtask => p_rtask%p_rnextTask
     end do
     
@@ -13247,7 +12776,7 @@ contains
 !!$    end function get_dataType
 !!$
 !!$    !**************************************************************
-!!$    ! Return the numeric value of the duplication flad
+!!$    ! Return the numeric value of the duplication flag
 !!$    function get_dupType(sdupType) result(cdupType)
 !!$
 !!$      character(len=*), intent(in) :: sdupType
@@ -13666,6 +13195,921 @@ contains
   !*****************************************************************************
   ! AUXILIARY SUBROUTINES AND FUNCTIONS
   !*****************************************************************************
+
+!<function>
+    
+  function problem_getSpatialDiscr(rproblem, rproblemLevel, sspatialDiscr,& 
+      rspatialDiscrDefault) result(p_rspatialDiscr)
+
+!<descrition>
+    ! This subroutines sets the pointer to a spatial discretisation
+    ! structure based on the string representation sspatialDiscr and the
+    ! data present in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: sspatialDiscr
+
+    ! OPTIONAL: default spatial discretisation structure to be used if
+    ! the specified structure cannot be found
+    type(t_spatialDiscretisation), intent(in), target, optional :: rspatialDiscrDefault
+!</input>
+
+!<result>
+    ! pointer to the specified spatial discretisation structure
+    ! or null of it is not available
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
+    
+      ! Do we have a valid string?
+    if (trim(sspatialDiscr) .eq. '') then
+      if (present(rspatialDiscrDefault)) then
+        p_rspatialDiscr => rspatialDiscrDefault
+      else
+        nullify(p_rspatialDiscr)
+      end if
+      ! That`s it
+      return
+    end if
+    
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+    
+    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
+    
+    do itoken = 1,ntoken
+      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
+      
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+      
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
+      call sys_halt()
+    end if
+    
+    ! Set pointer to discretisation structure
+    nullify(p_rspatialDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RspatialDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RspatialDiscretisation,1))) then
+      p_rspatialDiscr => p_rproblemLevel%RspatialDiscretisation(idiscr)        
+    end if
+    
+  end function problem_getSpatialDiscr
+  
+  !*****************************************************************************
+
+!<function>
+
+  function problem_getSpatialSubdiscr(rproblem, rproblemLevel, sspatialDiscr,& 
+      rspatialDiscrDefault) result(p_rspatialDiscr)
+
+!<descrition>
+    ! This subroutines sets the pointer to a spatial discretisation
+    ! structure as a sublock of a block discretisation structure based
+    ! on the string representation sspatialDiscr and the data present
+    ! in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: sspatialDiscr
+
+    ! OPTIONAL: default spatial discretisation structure to be used if
+    ! the specified structure cannot be found
+    type(t_spatialDiscretisation), intent(in), target, optional :: rspatialDiscrDefault
+!</input>
+
+!<result>
+    ! pointer to the specified spatial discretisation structure
+    ! or null of it is not available
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: iblock,idiscr,iistart,ilev,istart,itoken,ntoken
+
+    ! Do we have a valid string?
+    if (trim(sspatialDiscr) .eq. '') then
+      if (present(rspatialDiscrDefault)) then
+        p_rspatialDiscr => rspatialDiscrDefault
+      else
+        nullify(p_rspatialDiscr)
+      end if
+      ! That`s it
+      return
+    end if
+
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+    iblock   = 1
+
+    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IBLOCK') then
+        read(svalue,'(I10)') iblock
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
+        call sys_halt()
+      end if
+    end do
+
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
+      call sys_halt()
+    end if
+
+    ! Set pointer to discretisation structure
+    nullify(p_rspatialDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
+      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)
+      if ((iblock .ge. lbound(p_rblockDiscr%RspatialDiscr,1)) .and.&
+          (iblock .le. ubound(p_rblockDiscr%RspatialDiscr,1))) then
+        p_rspatialDiscr => p_rblockDiscr%RspatialDiscr(iblock)
+      end if
+    end if
+      
+  end function problem_getSpatialSubdiscr
+
+  !*****************************************************************************
+
+!<function>
+    
+  function problem_getBlockDiscr(rproblem, rproblemLevel, sblockDiscr,& 
+      rblockDiscrDefault) result(p_rblockDiscr)
+
+!<descrition>
+    ! This subroutines sets the pointer to a block discretisation
+    ! structure based on the string representation sblockDiscr and the
+    ! data present in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: sblockDiscr
+
+    ! OPTIONAL: default block discretisation structure to be used if
+    ! the specified structure cannot be found
+    type(t_blockDiscretisation), intent(in), target, optional :: rblockDiscrDefault
+!</input>
+
+!<result>
+    ! pointer to the specified block discretisation structure
+    ! or null of it is not available
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
+
+    ! Do we have a valid string?
+    if (trim(sblockDiscr) .eq. '') then
+      if (present(rblockDiscrDefault)) then
+        p_rblockDiscr => rblockDiscrDefault
+      else
+        nullify(p_rblockDiscr)
+      end if
+      ! That`s it
+      return
+    end if
+
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+
+    call sys_countTokens(sblockDiscr, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (sblockDiscr, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
+        call sys_halt()
+      end if
+    end do
+
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
+      call sys_halt()
+    end if
+
+    ! Set pointer to discretisation structure
+    nullify(p_rblockDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
+      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)        
+    end if
+      
+  end function problem_getBlockDiscr
+
+  !*****************************************************************************
+
+!<function>
+
+  function problem_getCubInfo(rproblem, rproblemLevel, scubInfo,& 
+      rcubInfoDefault) result(p_rcubInfo)
+
+!<descrition>
+    ! This subroutines sets the pointer to a cubature info structure
+    !  based on the string representation scubInfo and the data
+    !  present in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: scubInfo
+
+    ! OPTIONAL: default cubature info structure to be used if
+    ! the specified structure cannot be found
+    type(t_scalarCubatureInfo), intent(in), target, optional :: rcubInfoDefault
+!</input>
+
+!<result>
+    ! pointer to the specified cubature info structure
+    ! or null of it is not available
+    type(t_scalarCubatureInfo), pointer :: p_rcubInfo
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: icubinfo,iistart,ilev,istart,itoken,ntoken
+    
+    ! Do we have a valid string?
+    if (trim(scubInfo) .eq. '') then
+      if (present(rcubInfoDefault)) then
+        p_rcubInfo => rcubInfoDefault
+      else
+        nullify(p_rcubInfo)
+      end if
+      ! That`s it
+      return
+    end if
+    
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    icubinfo = 1
+    
+    call sys_countTokens(scubInfo, ntoken, ',', .false.); istart=1
+    
+    do itoken = 1,ntoken
+      call sys_getNextToken (scubInfo, stoken, istart, ',', .false.)
+      
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+      
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then   
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'ICUBINFO' .or.&
+          trim(skeyword) .eq. 'ICUBATUREINFO') then
+        read(svalue,'(I10)') icubinfo
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
+      call sys_halt()
+    end if
+
+    ! Do we have a cubature info?
+    if ((icubinfo .ge. lbound(p_rproblemLevel%Rcubatureinfo,1)) .and.&
+        (icubinfo .le. ubound(p_rproblemLevel%Rcubatureinfo,1))) then
+      p_rcubInfo => p_rproblemLevel%Rcubatureinfo(icubinfo)
+    else
+      call output_line('Unable to find cubature info structure',&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_getCubInfo')
+      call sys_halt()
+    end if
+    
+  end function problem_getCubInfo
+  
+  !****************************************************************************
+
+!<function>
+    
+  function problem_getMatrixScalar(rproblem, rproblemLevel, smatrixScalar,& 
+      rmatrixScalarDefault) result(p_rmatrixScalar)
+
+!<descrition>
+    ! This subroutines sets the pointer to a scalar matrix based on
+    ! the string representation smatrixscalar and the data present in
+    ! the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: smatrixscalar
+
+    ! OPTIONAL: default scalar matrix to be used if the specified
+    ! structure cannot be found
+    type(t_matrixScalar), intent(in), target, optional :: rmatrixScalarDefault
+!</input>
+
+!<result>
+    ! pointer to the specified scalar matrix or null of it is not available
+    type(t_matrixScalar), pointer :: p_rmatrixScalar
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: iistart,ilev,imatrix,istart,itoken,ntoken
+    
+    ! Do we have a valid string?
+    if (trim(smatrixScalar) .eq. '') then
+      if (present(rmatrixScalarDefault)) then
+        p_rmatrixScalar => rmatrixScalarDefault
+      else
+        nullify(p_rmatrixScalar)
+      end if
+      ! That`s it
+      return
+    end if
+    
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    imatrix  = 1
+    
+    call sys_countTokens(smatrixScalar, ntoken, ',', .false.); istart=1
+    
+    do itoken = 1,ntoken
+      call sys_getNextToken (smatrixScalar, stoken, istart, ',', .false.)
+      
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+      
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IMATRIX') then
+        read(svalue,'(I10)') imatrix
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_getMatrixScalar')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_getMatrixScalar')
+      call sys_halt()
+    end if
+    
+    ! Set pointer to scalar matrix
+    nullify(p_rmatrixScalar)
+    if ((imatrix .ge. lbound(p_rproblemLevel%RmatrixScalar,1)) .and.&
+        (imatrix .le. ubound(p_rproblemLevel%RmatrixScalar,1))) then
+      p_rmatrixScalar => p_rproblemLevel%RmatrixScalar(imatrix)        
+    end if
+    
+  end function problem_getMatrixScalar
+
+  !*****************************************************************************
+
+!<function>
+
+  function problem_getSubmatrixScalar(rproblem, rproblemLevel, smatrixScalar,& 
+      rmatrixScalarDefault) result(p_rmatrixScalar)
+
+!<descrition>
+    ! This subroutines sets the pointer to a scalar submatrix of a
+    ! block matrix based on the string representation smatrixScalar
+    ! and the data present in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: smatrixScalar
+
+    ! OPTIONAL: default scalar matrix to be used if the specified
+    ! structure cannot be found
+    type(t_matrixScalar), intent(in), target, optional :: rmatrixScalarDefault
+!</input>
+
+!<result>
+    ! pointer to the specified scalar matrix or null of it is not
+    ! available
+    type(t_matrixScalar), pointer :: p_rmatrixScalar
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    type(t_matrixBlock), pointer :: p_rmatrixBlock
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: iblockcol,iblockrow,imatrix,iistart,ilev,istart,itoken,ntoken
+
+    ! Do we have a valid string?
+    if (trim(smatrixScalar) .eq. '') then
+      if (present(rmatrixScalarDefault)) then
+        p_rmatrixScalar => rmatrixScalarDefault
+      else
+        nullify(p_rmatrixScalar)
+      end if
+      ! That`s it
+      return
+    end if
+    
+    ! Initialise parameters
+    sproblem  = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev      = rproblemLevel%ilev
+    imatrix   = 1
+    iblockcol = 1
+    iblockrow = 1
+
+    call sys_countTokens(smatrixScalar, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (smatrixScalar, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IBLOCKCOL') then
+        read(svalue,'(I10)') iblockcol
+      elseif (trim(skeyword) .eq. 'IBLOCKROW') then
+        read(svalue,'(I10)') iblockrow
+      elseif (trim(skeyword) .eq. 'IMATRIX') then
+        read(svalue,'(I10)') imatrix
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_getSubmatrixScalar')
+        call sys_halt()
+      end if
+    end do
+
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_getSubmatrixScalar')
+      call sys_halt()
+    end if
+
+    ! Set pointer to discretisation structure
+    nullify(p_rmatrixScalar)
+    if ((imatrix .ge. lbound(p_rproblemLevel%RmatrixBlock,1)) .and.&
+        (imatrix .le. ubound(p_rproblemLevel%RmatrixBlock,1))) then
+      p_rmatrixBlock => p_rproblemLevel%RmatrixBlock(imatrix)
+      if ((iblockrow .ge. lbound(p_rmatrixBlock%RmatrixBlock,1)) .and.&
+          (iblockrow .le. ubound(p_rmatrixBlock%RmatrixBlock,1)) .and.&
+          (iblockcol .ge. ubound(p_rmatrixBlock%RmatrixBlock,2)) .and.&
+          (iblockcol .le. ubound(p_rmatrixBlock%RmatrixBlock,2))) then
+        p_rmatrixScalar => p_rmatrixBlock%RmatrixBlock(iblockrow,iblockcol)
+      end if
+    end if
+      
+  end function problem_getSubmatrixScalar
+
+  !*****************************************************************************
+
+!<function>
+    
+  function problem_getMatrixBlock(rproblem, rproblemLevel, smatrixBlock,& 
+      rmatrixBlockDefault) result(p_rmatrixBlock)
+
+!<descrition>
+    ! This subroutines sets the pointer to a block matrix based on the
+    ! string representation smatrixBlock and the data present in the
+    ! problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: smatrixBlock
+
+    ! OPTIONAL: default block matrix to be used if the specified
+    ! structure cannot be found
+    type(t_matrixBlock), intent(in), target, optional :: rmatrixBlockDefault
+!</input>
+
+!<result>
+    ! pointer to the specified block matrix or null of it is not
+    ! available
+    type(t_matrixBlock), pointer :: p_rmatrixBlock
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: imatrix,iistart,ilev,istart,itoken,ntoken
+
+    ! Do we have a valid string?
+    if (trim(smatrixBlock) .eq. '') then
+      if (present(rmatrixBlockDefault)) then
+        p_rmatrixBlock => rmatrixBlockDefault
+      else
+        nullify(p_rmatrixBlock)
+      end if
+      ! That`s it
+      return
+    end if
+    
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    imatrix  = 1
+
+    call sys_countTokens(smatrixBlock, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (smatrixBlock, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IMATRIX') then
+        read(svalue,'(I10)') imatrix
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_getMatrixBlock')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_getMatrixBlock')
+      call sys_halt()
+    end if
+
+    ! Set pointer to block matrix
+    nullify(p_rmatrixBlock)
+    if ((imatrix .ge. lbound(p_rproblemLevel%RmatrixBlock,1)) .and.&
+        (imatrix .le. ubound(p_rproblemLevel%RmatrixBlock,1))) then
+      p_rmatrixBlock => p_rproblemLevel%RmatrixBlock(imatrix)
+    end if
+      
+  end function problem_getMatrixBlock
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_buildMatrixSc_fparser_sim (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
+                  Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
+
+  !<description>
+    ! This subroutine can be called during the matrix assembly.
+    ! It computes the coefficients in front of the terms of the
+    ! bilinear form from the given function parser.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear vectors).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variable
+    type(t_fparser), pointer :: p_rfparser
+    integer :: i,iel,ipoint
+
+    ! Get function parser from collection
+    p_rfparser => rcollection%p_rfparserQuickAccess1
+
+    if (associated(p_rfparser)) then
+      
+      do iel=1,size(Dcoefficients,3)
+        do ipoint=1,size(Dcoefficients,2)
+          do i=1,size(Dcoefficients,1)
+            call fparser_evalFunction(p_rfparser, i, Dpoints(:,ipoint,iel),&
+                                      Dcoefficients(i,ipoint,iel))
+          end do
+        end do
+      end do
+
+    else
+      call output_line('Quick access function parse is not available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_buildMatrixSc_fparser_sim')
+      call sys_halt()
+    end if
+
+  end subroutine problem_buildMatrixSc_fparser_sim
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_buildVectorSc_fparser_sim (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, &
+                  IdofsTest, rdomainIntSubset,&
+                  Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
+
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variable
+    type(t_fparser), pointer :: p_rfparser
+    integer :: i,iel,ipoint
+
+    ! Get function parser from collection
+    p_rfparser => rcollection%p_rfparserQuickAccess1
+
+    if (associated(p_rfparser)) then
+      
+      do iel=1,size(Dcoefficients,3)
+        do ipoint=1,size(Dcoefficients,2)
+          do i=1,size(Dcoefficients,1)
+            call fparser_evalFunction(p_rfparser, i, Dpoints(:,ipoint,iel),&
+                                      Dcoefficients(i,ipoint,iel))
+          end do
+        end do
+      end do
+
+    else
+
+      do iel=1,size(Dcoefficients,3)
+        do ipoint=1,size(Dcoefficients,2)
+          do i=1,size(Dcoefficients,1)
+            Dcoefficients(i,ipoint,iel) = rform%Dcoefficients(i)
+          end do
+        end do
+      end do
+    end if
+
+  end subroutine problem_buildVectorSc_fparser_sim
 
 !<function>
 
