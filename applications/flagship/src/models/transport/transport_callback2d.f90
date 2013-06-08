@@ -3940,10 +3940,20 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
-            ! Scale normal velocity by scaling parameter
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the inflow part
+            ! is eaten up by the Dirichlet boundary conditions. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .gt. SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv
             end if
+#else
+            ! Scale the normal velocity by scaling parameter
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv
+            end if
+#endif
           end do
         end do
 
@@ -4696,10 +4706,20 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
-            ! Scale normal velocity by scaling parameter
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the inflow part
+            ! is eaten up by the Dirichlet boundary conditions. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv
             end if
+#else
+            ! Scale normal velocity by scaling parameter
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv
+            end if
+#endif
           end do
         end do
 
