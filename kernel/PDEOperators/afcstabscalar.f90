@@ -275,8 +275,6 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
-    logical :: bsymm
-
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -296,9 +294,6 @@ contains
     ! Set pointers
     call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-
-    ! Symmetric artificial diffusion?
-    bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
 
     ! What data types are we?
     select case(rmatrix%cdataType)
@@ -322,8 +317,8 @@ contains
         !-----------------------------------------------------------------------
         ! Assemble operator with stabilisation and generate coefficients
         !-----------------------------------------------------------------------
-        call doOperatorEdgeAFCDP(p_IedgeListIdx, p_IedgeList, bsymm,&
-            p_Ddata, p_Dcoefficients)
+        call doOperatorEdgeAFCDP(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%bisSymmetricOperator, p_Ddata, p_Dcoefficients)
 
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -343,7 +338,8 @@ contains
         !-----------------------------------------------------------------------
         ! Assemble operator with stabilisation but do not generate coeffs
         !-----------------------------------------------------------------------
-        call doOperatorEdgeDP(p_IedgeListIdx, p_IedgeList, bsymm, p_Ddata)
+        call doOperatorEdgeDP(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%bisSymmetricOperator, p_Ddata)
       end if
 
     case (ST_SINGLE)
@@ -366,8 +362,8 @@ contains
         !-----------------------------------------------------------------------
         ! Assemble operator with stabilisation and generate coefficients
         !-----------------------------------------------------------------------
-        call doOperatorEdgeAFCSP(p_IedgeListIdx, p_IedgeList, bsymm,&
-            p_Fdata, p_Fcoefficients)
+        call doOperatorEdgeAFCSP(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%bisSymmetricOperator, p_Fdata, p_Fcoefficients)
 
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -387,7 +383,8 @@ contains
         !-----------------------------------------------------------------------
         ! Assemble operator with stabilisation but do not generate coeffs
         !-----------------------------------------------------------------------
-        call doOperatorEdgeSP(p_IedgeListIdx, p_IedgeList, bsymm, p_Fdata)
+        call doOperatorEdgeSP(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%bisSymmetricOperator, p_Fdata)
       end if
 
     end select

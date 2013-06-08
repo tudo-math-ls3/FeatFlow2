@@ -263,7 +263,6 @@ contains
     integer, dimension(:), pointer :: p_InodeListIdx1D
 
     integer :: ccType
-    logical :: bsymm
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -429,9 +428,6 @@ contains
             call sys_halt()
           end if
 
-          ! Symmetric artificial diffusion?
-          bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
-
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
 
@@ -449,7 +445,8 @@ contains
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doOperatorEdgeAFCDP(p_IedgeListIdx, p_IedgeList,&
-                p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata, p_Dcoefficients)
+                p_DcoeffsAtEdge, dscale, bclear, rafcstab%bisSymmetricOperator,&
+                p_Ddata, p_Dcoefficients)
 
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
@@ -472,7 +469,8 @@ contains
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorEdgeStabDP(p_IedgeListIdx, p_IedgeList,&
-                p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata)
+                p_DcoeffsAtEdge, dscale, bclear, rafcstab%bisSymmetricOperator,&
+                p_Ddata)
           end if
 
         else   ! no stabilisation structure present
@@ -504,9 +502,6 @@ contains
             call sys_halt()
           end if
 
-          ! Symmetric artificial diffusion?
-          bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
-
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
 
@@ -524,7 +519,8 @@ contains
             ! Assemble operator with stabilisation
             !-------------------------------------------------------------------
             call doOperatorEdgeAFCSP(p_IedgeListIdx, p_IedgeList,&
-                p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata, p_Fcoefficients)
+                p_FcoeffsAtEdge, real(dscale,SP), bclear, rafcstab%bisSymmetricOperator,&
+                p_Fdata, p_Fcoefficients)
 
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
@@ -547,7 +543,8 @@ contains
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorEdgeStabSP(p_IedgeListIdx, p_IedgeList,&
-                p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata)
+                p_FcoeffsAtEdge, real(dscale,SP), bclear, rafcstab%bisSymmetricOperator,&
+                p_Fdata)
           end if
 
         else   ! no stabilisation structure present

@@ -328,11 +328,11 @@ module afcstabbase
   ! No limiting at all
   integer, parameter, public :: AFCSTAB_LIMITING_NONE             = 0
 
-  ! Symmetric limiting
-  integer, parameter, public :: AFCSTAB_LIMITING_SYMMETRIC        = 1
-
   ! Upwind-biased limiting (implies edge-orientation)
-  integer, parameter, public :: AFCSTAB_LIMITING_UPWINDBIASED     = 2
+  integer, parameter, public :: AFCSTAB_LIMITING_UPWINDBIASED     = 1
+
+  ! Symmetric limiting (implies no edge-orientation)
+  integer, parameter, public :: AFCSTAB_LIMITING_SYMMETRIC        = 2
 
   ! Characteristic limiting
   integer, parameter, public :: AFCSTAB_LIMITING_CHARACTERISTIC   = 3
@@ -678,6 +678,9 @@ module afcstabbase
   ! stabilisation strategy some internal structures will be generated.
 
   type t_afcstab
+
+    ! Flag which indicates if the underlying operator is symmetric
+    logical, bisSymmetricOperator = .false.
 
     ! Format Tag: Identifies the type of stabilisation
     integer :: cafcstabType = AFCSTAB_GALERKIN
@@ -1124,18 +1127,19 @@ contains
     rafcstab%p_rvectorPredictor => null()
 
     ! Reset atomic data
-    rafcstab%cafcstabType = AFCSTAB_GALERKIN
-    rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
-    rafcstab%climitingType      = AFCSTAB_LIMITING_NONE
-    rafcstab%cdataType          = ST_DOUBLE
-    rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-    rafcstab%iduplicationFlag   = 0
-    rafcstab%NEQ                = 0
-    rafcstab%NVAR               = 1
-    rafcstab%NVARtransformed    = 1
-    rafcstab%NEDGE              = 0
-    rafcstab%NNVEDGE            = 0
-    rafcstab%ncoeffsAtEdge      = 0
+    rafcstab%bisSymmetricOperator = .false.
+    rafcstab%cafcstabType         = AFCSTAB_GALERKIN
+    rafcstab%cprelimitingType     = AFCSTAB_PRELIMITING_NONE
+    rafcstab%climitingType        = AFCSTAB_LIMITING_NONE
+    rafcstab%cdataType            = ST_DOUBLE
+    rafcstab%istabilisationSpec   = AFCSTAB_UNDEFINED
+    rafcstab%iduplicationFlag     = 0
+    rafcstab%NEQ                  = 0
+    rafcstab%NVAR                 = 1
+    rafcstab%NVARtransformed      = 1
+    rafcstab%NEDGE                = 0
+    rafcstab%NNVEDGE              = 0
+    rafcstab%ncoeffsAtEdge        = 0
 
   contains
 
@@ -1790,17 +1794,18 @@ contains
     ! Copy structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
-      rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
-      rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
-      rafcstabDest%climitingType      = rafcstabSrc%climitingType
-      rafcstabDest%cdataType          = rafcstabSrc%cdataType
-      rafcstabDest%NEQ                = rafcstabSrc%NEQ
-      rafcstabDest%NVAR               = rafcstabSrc%NVAR
-      rafcstabDest%NVARtransformed    = rafcstabSrc%NVARtransformed
-      rafcstabDest%NEDGE              = rafcstabSrc%NEDGE
-      rafcstabDest%NNVEDGE            = rafcstabSrc%NNVEDGE
-      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-                                               AFCSTAB_INITIALISED)
+      rafcstabDest%bisSymmetricOperator = rafcstabSrc%bisSymmetricOperator
+      rafcstabDest%cafcstabType         = rafcstabSrc%cafcstabType
+      rafcstabDest%cprelimitingType     = rafcstabSrc%cprelimitingType
+      rafcstabDest%climitingType        = rafcstabSrc%climitingType
+      rafcstabDest%cdataType            = rafcstabSrc%cdataType
+      rafcstabDest%NEQ                  = rafcstabSrc%NEQ
+      rafcstabDest%NVAR                 = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed      = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE                = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE              = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec   = ior(rafcstabDest%istabilisationSpec,&
+                                              AFCSTAB_INITIALISED)
     end if
 
     ! Copy edge structre
@@ -2091,17 +2096,18 @@ contains
     ! Duplicate structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
-      rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
-      rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
-      rafcstabDest%climitingType      = rafcstabSrc%climitingType
-      rafcstabDest%cdataType          = rafcstabSrc%cdataType
-      rafcstabDest%NEQ                = rafcstabSrc%NEQ
-      rafcstabDest%NVAR               = rafcstabSrc%NVAR
-      rafcstabDest%NVARtransformed    = rafcstabSrc%NVARtransformed
-      rafcstabDest%NEDGE              = rafcstabSrc%NEDGE
-      rafcstabDest%NNVEDGE            = rafcstabSrc%NNVEDGE
-      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-                                               AFCSTAB_INITIALISED)
+      rafcstabDest%bisSymmetricOperator = rafcstabSrc%bisSymmetricOperator
+      rafcstabDest%cafcstabType         = rafcstabSrc%cafcstabType
+      rafcstabDest%cprelimitingType     = rafcstabSrc%cprelimitingType
+      rafcstabDest%climitingType        = rafcstabSrc%climitingType
+      rafcstabDest%cdataType            = rafcstabSrc%cdataType
+      rafcstabDest%NEQ                  = rafcstabSrc%NEQ
+      rafcstabDest%NVAR                 = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed      = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE                = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE              = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec   = ior(rafcstabDest%istabilisationSpec,&
+                                              AFCSTAB_INITIALISED)
     end if
 
     ! Duplicate edge structre
@@ -2571,6 +2577,7 @@ contains
 
     call output_line('AFCstabilisation:')
     call output_line('-----------------')
+    call output_line('bisSymmetricOperator:           '//merge('YES','NO ',rafcstab%bisSymmetricOperator))
     call output_line('cafcstabType:                   '//trim(sys_siL(rafcstab%cafcstabType,15)))
     call output_line('cprelimitingType:               '//trim(sys_siL(rafcstab%cprelimitingType,15)))
     call output_line('climitingType:                  '//trim(sys_siL(rafcstab%climitingType,15)))
