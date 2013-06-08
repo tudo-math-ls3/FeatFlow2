@@ -202,6 +202,7 @@ module transport_callback
   public :: transp_coeffVectorFE
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
+  public :: transp_refFuncAnalyticBdr2D
   public :: transp_weightFuncAnalytic
   public :: transp_weightFuncGHill
   public :: transp_parseBoundaryCondition
@@ -5318,6 +5319,110 @@ contains
     !$omp end parallel do
     
   end subroutine transp_refFuncAnalytic
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_refFuncAnalyticBdr2D(cderivative, rdiscretisation,&
+      DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues, rcollection)
+
+!<description>
+    ! This subroutine is called during the calculation of errors with boundary
+    ! integrals. It has to compute the (analytical) values of a
+    ! function in a couple of points Dpoints on a couple of elements
+    ! Ielements. These values are compared to those of a computed FE
+    ! function to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real and reference coordinates.
+    ! It has to to simultaneously compute the desired values for all these points.
+!</description>
+
+!<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates correspond to the reference
+    ! element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates are world coordinates,
+    ! i.e. on the real element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! This is a list of elements (corresponding to Dpoints) where information
+    ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
+    ! specifies the points where information is needed.
+    ! DIMENSION(nelements)
+    integer, dimension(:), intent(in) :: Ielements
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(1) :: dtime
+    integer :: iel, icomp
+
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine assumes that the first quick access double
+    ! value holds the simulation time
+    dtime(1) = rcollection%DquickAccess(1)
+
+    ! Get number of the analytic reference function
+    icomp = rcollection%IquickAccess(cderivative)
+
+    ! Evaluate all values using the function parser
+    !$omp parallel do
+    do iel = 1, size(Dpoints,3)
+      call fparser_evalFunction(p_rfparser, icomp, 2,&
+          Dpoints(:,:,iel), Dvalues(:,iel), dtime)
+    end do
+    !$omp end parallel do
+    
+  end subroutine transp_refFuncAnalyticBdr2D
 
   !*****************************************************************************
 

@@ -19,7 +19,10 @@
 !# 3.) transp_errestExact
 !#     -> Estimates the solution error using a given analytical solution
 !#
-!# 4.) transp_errestDispersionGHill
+!# 4.) transp_errestExactBoundary2D
+!#     -> Estimates the solution error using a given analytical solution
+!#
+!# 5.) transp_errestDispersionGHill
 !#     -> Estimates the dispersion error for the rotating Gaussian hill
 !#
 !#
@@ -37,6 +40,7 @@ module transport_errorestimation
 
 !$use omp_lib
   use afcstabbase
+  use boundary
   use collection
   use cubature
   use derivatives
@@ -68,6 +72,7 @@ module transport_errorestimation
   public :: transp_errestRecovery
   public :: transp_errestTargetFunc
   public :: transp_errestExact
+  public :: transp_errestExactBoundary2D
   public :: transp_errestDispersionGHill
 
 contains
@@ -1221,6 +1226,210 @@ contains
     end select
    
   end subroutine transp_errestExact
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_errestExactBoundary2D(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, derrorL1, derrorL2,&
+      derrorH1, rboundaryRegion, rcollection)
+
+!<description>
+    ! This subroutine estimates the error of the discrete solution
+    ! along the given boundary region rboundaryRegion by comparing it
+    ! to the analytically given exact solution. If the optional
+    ! boundary region rboundaryRegion is not given, then the error is
+    ! computed along the entire boundary.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! OPTIONAL: boundary region
+    type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: global L1-error
+    real(DP), intent(out), optional :: derrorL1
+
+    ! OPTIONAL: global L2-error
+    real(DP), intent(out), optional :: derrorL2
+
+    ! OPTIONAL: global H1-error
+    real(DP), intent(out), optional :: derrorH1
+!</output>
+!</subroutine>
+    
+    ! section names
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: sexactsolutionName
+    
+    ! local variables
+    type(t_boundaryRegion) :: rboundaryRegionTemp
+    type(t_boundary), pointer :: p_rboundary
+    type(t_fparser), pointer :: p_rfparser
+    type(t_collection) :: rcollectionTmp
+    real(DP) :: derror
+    integer :: ibcomponent,iexactsolution,iexactsolutiontype,&
+        isegment,nexactsolution
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
+    nexactsolution = parlst_querysubstrings(rparlist,&
+        ssectionName, 'sexactsolutionname')
+
+    ! Set pointer to boundary structure
+    p_rboundary => rproblemLevel%p_rproblem%rboundary
+    
+    !---------------------------------------------------------------------------
+    ! Compute solution error
+    !---------------------------------------------------------------------------
+    
+    select case(iexactsolutiontype)
+    case (SOLUTION_ANALYTIC_POINTVALUE)
+      
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
+      
+      ! Initialise temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      
+      do iexactsolution = 1, nexactsolution
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionName, '',&
+            isubstring=iexactsolution)
+        rcollectionTmp%IquickAccess(iexactsolution) =&
+            fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      end do
+      
+      ! Make sure that the callback routine will throw an error if a
+      ! derivative is required which is not given by the user.
+      do iexactsolution = nexactsolution+1, DER_DERIV3D_Z
+        rcollectionTmp%IquickAccess(iexactsolution) = 0
+      end do
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+      
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      
+      call output_lbrk()
+      call output_separator(OU_SEP_DOLLAR, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_line('Error Analysis at the boundary', OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_separator(OU_SEP_MINUS, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      
+      if (present(derrorL1)) then
+        ! Calculate the L1-error of the reference solution
+        if (present(rboundaryRegion)) then
+          call pperr_scalarBoundary2D(PPERR_L1ERROR, CUB_WEDDLE_1D, derrorL1,&
+              rboundaryRegion, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalyticBdr2D, rcollectionTmp)
+        else
+          do ibcomponent = 1,boundary_igetNBoundComp(p_rboundary)
+            do isegment = 1, boundary_igetNsegments(p_rboundary, ibcomponent)
+              call boundary_createRegion(p_rboundary, ibcomponent, isegment,&
+                  rboundaryRegionTemp)
+              call pperr_scalarBoundary2D(PPERR_L1ERROR, CUB_WEDDLE_1D,&
+                  derror, rboundaryRegionTemp, rsolution%RvectorBlock(1),&
+                  transp_refFuncAnalyticBdr2D, rcollectionTmp)
+              derrorL1 = derrorL1 + derror
+            end do
+          end do
+        end if
+        call output_line('Exact L1-error: '//trim(sys_sdEP(derrorL1,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      end if
+      
+      if (present(derrorL2)) then
+        ! Calculate the L2-error of the reference solution
+        if (present(rboundaryRegion)) then
+          call pperr_scalarBoundary2D(PPERR_L2ERROR, CUB_WEDDLE_1D, derrorL2,&
+              rboundaryRegion, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalyticBdr2D, rcollectionTmp)
+        else
+          do ibcomponent = 1,boundary_igetNBoundComp(p_rboundary)
+            do isegment = 1, boundary_igetNsegments(p_rboundary, ibcomponent)
+              call boundary_createRegion(p_rboundary, ibcomponent, isegment,&
+                  rboundaryRegionTemp)
+              call pperr_scalarBoundary2D(PPERR_L2ERROR, CUB_WEDDLE_1D,&
+                  derror, rboundaryRegionTemp, rsolution%RvectorBlock(1),&
+                  transp_refFuncAnalyticBdr2D, rcollectionTmp)
+              derrorL2 = derrorL2 + derror**2
+            end do
+          end do
+          derrorL2 = sqrt(derrorL2)
+        end if
+        call output_line('Exact L2-error: '//trim(sys_sdEP(derrorL2,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      end if
+      
+      if (present(derrorH1)) then
+        ! Calculate the H1-error of the reference solution
+        if (present(rboundaryRegion)) then
+          call pperr_scalarBoundary2D(PPERR_H1ERROR, CUB_WEDDLE_1D, derrorH1,&
+              rboundaryRegion, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalyticBdr2D, rcollectionTmp)
+        else
+          do ibcomponent = 1,boundary_igetNBoundComp(p_rboundary)
+            do isegment = 1, boundary_igetNsegments(p_rboundary, ibcomponent)
+              call boundary_createRegion(p_rboundary, ibcomponent, isegment,&
+                  rboundaryRegionTemp)
+              call pperr_scalarBoundary2D(PPERR_H1ERROR, CUB_WEDDLE_1D,&
+                  derror, rboundaryRegionTemp, rsolution%RvectorBlock(1),&
+                  transp_refFuncAnalyticBdr2D, rcollectionTmp)
+              derrorH1 = derrorH1 + derror**2
+            end do
+          end do
+          derrorH1 = sqrt(derrorH1)
+        end if
+        call output_line('Exact H1-error: '//trim(sys_sdEP(derrorH1,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      end if
+      
+      call output_separator(OU_SEP_DOLLAR, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_lbrk()
+      
+    case default
+      call output_line('Analytical solution is not available!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_errestExactBoundary2D')
+      if (present(derrorL1)) derrorL1 = -1.0_DP
+      if (present(derrorL2)) derrorL2 = -1.0_DP
+      if (present(derrorH1)) derrorH1 = -1.0_DP
+    end select
+    
+  end subroutine transp_errestExactBoundary2D
 
   !*****************************************************************************
 
