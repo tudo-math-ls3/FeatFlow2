@@ -2771,6 +2771,10 @@ contains
       ! Ask Schur and its subsolvers if the matrices are ok.
       call linsol_matCompatSchur (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
 
+    case (LINSOL_ALG_DEFLGMRES)
+      ! Ask Schur and its subsolvers if the matrices are ok.
+      call linsol_matCompatDeflGMRES (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+
     case default
       ! Nothing special. Let us assume that the matrices are ok.
       ccompatible = LINSOL_COMP_OK
@@ -21872,7 +21876,7 @@ contains
   real(dp) :: dvx, dvy, dnx, dny, dnv
 
   integer, dimension(:,:), pointer :: p_IelementsAtEdge    
-  integer, dimension(:,:), allocatable :: IdownwElems
+  !integer, dimension(:,:), allocatable :: IdownwElems
   integer, dimension(:), allocatable :: Ioutdeg
 
   integer, dimension(:,:), pointer :: p_IupwElems, p_IdownwElems
