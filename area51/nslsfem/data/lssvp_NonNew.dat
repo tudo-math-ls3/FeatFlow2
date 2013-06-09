@@ -19,17 +19,10 @@
 #  this does realy help.
 #   = 0  Reg. Cavity Flow
 #   = 1  FAC, zero stress outflow 
-#   = 2  FAC, Dirichlet velocity outflow
-#   = 3  Poiseuielle Flow, zeros stress outflow
-#   = 4  Poiseuielle Flow, Dirichlet velocity outflow
-#   = 5  Bolton, step flow
-#   = 6  Analytic polynomial function
-#   = 7  Static Bubble
-#   = 8  Split Channel
 #   = 9  Fully developed power law flow
 #   = 10 Sudden expansion
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 10
+Problem = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity \nu(z) model
@@ -43,8 +36,8 @@ viscosity_model = 1
 
 # Constants in viscosity models
 # Power Law = PL
-PL_nu0 = 1
-PL_r = 2.0
+PL_nu0 = 1E-3
+PL_r = 2.5
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -63,7 +56,6 @@ CL_landa = 1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 scPhysic = 1
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling the continuity eq.
 #   We scale the functional related to the continuity as:
@@ -78,7 +70,7 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/sudden_expansion'
+sFilenamePathMesh = './pre/channelflow_2d_346elem_FerzigerPeric2002'
 
 # Final mesh level to solve the problem:
 NLMAX = 3
@@ -159,7 +151,7 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 500
+NLN_MAX = 50
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -512,7 +504,7 @@ detZMV = 3
 #  Bolton step flow, outflow = 30
 #  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 32
+irow = 31
 
 
 #-----------------------------------------------------
@@ -546,7 +538,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 0
+LiftDragASO = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy
@@ -571,7 +563,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 1
+Div = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
@@ -625,33 +617,3 @@ H1P = 0
 
 L2S = 0
 StbblError = 0
-
-
-#-----------------------------------------------------
-# Time-dependent problems
-# We solve the problem for t=(t0, T).
-#-----------------------------------------------------
-[TIME]
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# The \theta-scheme parameter
-#   =0   Fully explicit, forward Euler
-#   =1   Fully implicit, backward Euler
-#   =0.5 Crank-Nicolson
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dTheta = 0.5
-
-# Time step size \nabla t
-dTimeStep = 0.1
-
-# Number of time steps
-NMaxTime = 1
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Whether to scale the functionals with an appropriate
-#  scale T/nu || . ||_0^2, where T is the time at the end
-#  the calculations and nu is the kinematic viscosity
-#   =0  off, don't scale
-#   =1  on, please scale
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detTimeScale = 1
