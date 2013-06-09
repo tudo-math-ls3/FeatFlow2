@@ -2287,7 +2287,6 @@ contains
     call fev2_releaseVectorList(revalVectors)
     
   end do
-  
 
   end subroutine
 
@@ -2324,17 +2323,17 @@ contains
   ! Local variables  
   ! Collection of vectors to evaluate in nonlinear terms
   type(t_fev2Vectors) :: revalVectors
-  
-  ! Preparing a collection of vectors to evaluate nonlinear terms
-  call ls_vec_collection(revalVectors,rvector_old)
-  
+    
   ! Decide on the RHS force vectors in NS equation
   if (rcollection%IquickAccess(8) == 0) then
     ! No body force, do nothing 
     return 
        
   else
-  
+    ! Body forces must be taken into account
+    ! Preparing a collection of vectors to evaluate nonlinear terms
+    call ls_vec_collection(revalVectors,rvector_old)
+    
     if (rcollection%IquickAccess(9) == 6) then
       call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs_anal,&
          rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
@@ -2345,10 +2344,10 @@ contains
          revalVectors=revalVectors)
     end if
     
+    ! Release the vector structure used in linearization
+    call fev2_releaseVectorList(revalVectors)
+     
   end if
-  
-  ! Release the vector structure used in linearization
-  call fev2_releaseVectorList(revalVectors)
   
   end subroutine
 
