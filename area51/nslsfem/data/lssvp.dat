@@ -37,7 +37,7 @@ Problem = 0
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1E-2
+dnu = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -50,7 +50,7 @@ dnu = 1E-2
 #    scPhysic = 1 lets this happens :)
 #  See this pls: rcollection%DquickAccess(2)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-scPhysic = 0
+scPhysic = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Another scaling is related to the continuity eq.
@@ -134,7 +134,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -147,11 +147,15 @@ LinTyp = 1
 FPIter = 4
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 15
+NLN_MAX = 18
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
 dNLEpsi = 1E-8
+
+# The damping parameter in nonlinear
+#  deferred correction loop
+omega = 1.0
 
 
 #-----------------------------------------------------
@@ -590,7 +594,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 0
+Div = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
