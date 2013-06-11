@@ -1765,7 +1765,7 @@ contains
 
         ! Sort for the coordinates
         call sortCoords (p_Dcoords, &
-            Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
+            Ipermutation(1:nvt+nmt+nel), idir)
 
         ! Release temp memory
         call storage_free (hhandle)
