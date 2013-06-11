@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# NVIDIA Cuda compiler 3.x
+# NVIDIA Cuda compiler 3.x, 4.x, 5.x
 #
 ##############################################################################
 COMPILERNAME = NVCC
@@ -45,7 +45,7 @@ endif
 ifeq ($(call optimise), YES)
 CFLAGSCUDA := $(CFLAGSCUDA) -O3 --ptxas-options=-v
 else
-CFLAGSCUDA := $(CFLAGSCUDA) -g -DENABLE_PARAMETER_CHECK --ptxas-options=-v
+CFLAGSCUDA := $(CFLAGSCUDA) -g -G -DENABLE_PARAMETER_CHECK --ptxas-options=-v
 endif
 
 
@@ -82,8 +82,12 @@ endif
 NVCCVERSION := $(shell eval $(CUDAVERSION) )
 
 # Functions to detect minimal compiler version
+nvccminversion_5_5=\
+	$(if $(findstring 5.5,$(NVCCVERSION)),yes,no)
 nvccminversion_5_0=\
-	$(if $(findstring 5.0,$(NVCCVERSION)),yes,no)
+	$(if $(findstring yes,\
+	$(call nvccminversion_5_5) \
+	$(if $(findstring 5.0,$(NVCCVERSION)),yes,no)),yes,no)
 nvccminversion_4_2=\
 	$(if $(findstring yes,\
 	$(call nvccminversion_5_0) \
