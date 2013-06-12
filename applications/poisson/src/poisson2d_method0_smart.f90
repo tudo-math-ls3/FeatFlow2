@@ -165,7 +165,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     ! Create a block matrix based on the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscr, rmatSystem)
+    call lsysbl_createMatrix (rdiscr, rmatSystem)
     
     ! Now assemble the matrix structure of the submatrix at position (1,1)
     call bilf_createMatrixStructure (rmatSystem, 1, 1, LSYSSC_MATRIX9)

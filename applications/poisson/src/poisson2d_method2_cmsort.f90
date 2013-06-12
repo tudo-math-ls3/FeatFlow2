@@ -291,7 +291,7 @@ contains
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
+    call lsysbl_createMatrix (p_rdiscretisation,p_rmatrix)
     
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.

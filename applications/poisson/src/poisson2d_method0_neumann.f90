@@ -364,7 +364,7 @@ contains
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! At first, create a basic 1x1 block matrix based on the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatSystem)
+    call lsysbl_createMatrix (rdiscretisation,rmatSystem)
     
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.

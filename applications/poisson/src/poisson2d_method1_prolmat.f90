@@ -263,7 +263,7 @@ contains
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (&
+      call lsysbl_createMatrix (&
           Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
       ! Now as the discretisation is set up, we can start to generate

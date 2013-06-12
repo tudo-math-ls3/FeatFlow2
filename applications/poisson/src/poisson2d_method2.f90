@@ -281,7 +281,7 @@ contains
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
+    call lsysbl_createMatrix (p_rdiscretisation,p_rmatrix)
     
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
