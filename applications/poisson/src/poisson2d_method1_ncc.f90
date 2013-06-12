@@ -328,7 +328,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     ! Create rsolutionT.
-    call lsysbl_createVectorBlock(rdiscretisation,rsolutionT,.true.)
+    call lsysbl_createVector(rdiscretisation,rsolutionT,.true.)
 
     ! As we have Q1, p_Ddata(ivt) is the value in the vertex ivt. This vertex
     ! is at the coordinate p_DvertexCoords(1:2,ivt).
@@ -401,9 +401,9 @@ contains
         
     ! Next step: Create a RHS vector, a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (rdiscretisation,rvecRhs,.true.)
-    call lsysbl_createVectorBlock (rdiscretisation,rvecSol,.true.)
-    call lsysbl_createVectorBlock (rdiscretisation,rvecTmp,.true.)
+    call lsysbl_createVector (rdiscretisation,rvecRhs,.true.)
+    call lsysbl_createVector (rdiscretisation,rvecSol,.true.)
+    call lsysbl_createVector (rdiscretisation,rvecTmp,.true.)
 
     ! Set up a linear form structure for the assembly of the
     ! the right hand side.

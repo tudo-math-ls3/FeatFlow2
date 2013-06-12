@@ -193,9 +193,9 @@ contains
 
     ! Create 3 block vectors based on the matrix:
     ! the RHS vector, the solution vector and a temporary vector
-    call lsysbl_createVectorBlock (rmatSystem, rvecRhs, .true.)
-    call lsysbl_createVectorBlock (rmatSystem, rvecSol, .true.)
-    call lsysbl_createVectorBlock (rmatSystem, rvecTmp, .true.)
+    call lsysbl_createVector (rmatSystem, rvecRhs, .true.)
+    call lsysbl_createVector (rmatSystem, rvecSol, .true.)
+    call lsysbl_createVector (rmatSystem, rvecTmp, .true.)
 
     ! Now assemble the right-hand-side vector
     call linf_buildSimpleVector(rvecRhs%RvectorBlock(1), rcubature, coeff_RHS_2D)

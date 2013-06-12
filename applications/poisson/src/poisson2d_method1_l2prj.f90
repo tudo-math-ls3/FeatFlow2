@@ -328,9 +328,9 @@ contains
 
     ! Next step: Create a RHS vector, a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecRhs,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecSol,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecTmp,.true.)
+    call lsysbl_createVector (Rlevels(NLMAX)%rdiscretisation,rvecRhs,.true.)
+    call lsysbl_createVector (Rlevels(NLMAX)%rdiscretisation,rvecSol,.true.)
+    call lsysbl_createVector (Rlevels(NLMAX)%rdiscretisation,rvecTmp,.true.)
       
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.

@@ -385,8 +385,8 @@ contains
 
     ! Next step: Create a RHS vector and a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
-    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
+    call lsysbl_createVector (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVector (p_rdiscretisation,p_rvector,.true.)
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
@@ -612,7 +612,7 @@ contains
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
     ! Create a temporary vector we need that for some preparation.
-    call lsysbl_createVectorBlock (p_rrhs, rvecTmp, .false.)
+    call lsysbl_createVector (p_rrhs, rvecTmp, .false.)
     
     ! Resort the RHS and solution vector according to the resorting
     ! strategy given in the matrix.

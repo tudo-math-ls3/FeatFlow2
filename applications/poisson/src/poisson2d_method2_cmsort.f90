@@ -341,8 +341,8 @@ contains
     
     ! Next step: Create a RHS vector and a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
-    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
+    call lsysbl_createVector (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVector (p_rdiscretisation,p_rvector,.true.)
 
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
