@@ -800,22 +800,22 @@ contains
       ! The structure of the matrix is shared with the template FEM matrix.
       ! For the content, a new empty array is allocated which will later receive
       ! the entries.
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsysbl_duplicateMatrix (p_rmatrixTemplateFEM,&
+          rmatrix,1,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
       if (.not. bdecoupled .and. .not. bfulltensor) then
            
         ! If X- and Y-velocity is to be treated in a "coupled" way, the matrix
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
         ! structure and the content.
-        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
-                    rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsysbl_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
+            rmatrix,2,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                     
       else
       
         ! Otherwise, create another copy of the template matrix.
-        call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                    rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsysbl_duplicateMatrix (p_rmatrixTemplateFEM,&
+            rmatrix,2,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
                     
       end if
       
@@ -840,9 +840,8 @@ contains
         if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat &
             .eq. LSYSSC_MATRIXUNDEFINED) then
             
-          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
-            rmatrix%RmatrixBlock(1,2), &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsysbl_duplicateMatrix (p_rmatrixTemplateFEM, &
+              rmatrix,1,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
         end if
 
@@ -851,9 +850,8 @@ contains
             
           ! Create a new matrix A21 in memory. create a new matrix
           ! using the template FEM matrix...
-          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
-            rmatrix%RmatrixBlock(2,1), &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsysbl_duplicateMatrix (p_rmatrixTemplateFEM, &
+              rmatrix,2,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
         end if
         
@@ -866,13 +864,11 @@ contains
       ! block matrix, while we create empty space for the entries.
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
-          rmatrix%RmatrixBlock(1,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
+          rmatrix,1,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
-          rmatrix%RmatrixBlock(2,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
+          rmatrix,2,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       ! Now, prepare D1 and D2.
       ! The flag bvirtualTransposedD in the structure decides on whether
@@ -886,11 +882,11 @@ contains
         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2T,&
             rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
       else
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
-            rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
+            rmatrix,3,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
-            rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
+            rmatrix,3,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
 
       ! Include a matrx for the pressure
@@ -902,9 +898,9 @@ contains
       ! which may be used for stabilisation or other features.
       ! This submatrix will be deactived by setting the scaling factor
       ! to 0.
-      call lsyssc_duplicateMatrix (&
+      call lsysbl_duplicateMatrix (&
           rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEMPressure,&
-          rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          rmatrix,3,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
       rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
@@ -1690,13 +1686,11 @@ contains
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
-                                    rmatrix%RmatrixBlock(1,3),&
-                                    idubStructure,idubContent)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
+          rmatrix,1,3,idubStructure,idubContent)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
-                                    rmatrix%RmatrixBlock(2,3),&
-                                    idubStructure,idubContent)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
+          rmatrix,2,3,idubStructure,idubContent)
       
       ! Now, prepare D1 and D2. These matrices always share
       ! their data with the "template" matrices as the data in these
@@ -1710,13 +1704,11 @@ contains
         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2T,&
             rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
       else
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
+            rmatrix,3,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
+            rmatrix,3,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
                                     
     end subroutine
@@ -1834,27 +1826,27 @@ contains
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
-        rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
-        rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
+        rmatrix,1,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
+        rmatrix,2,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
-          rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
-          rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
+          rmatrix,1,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
+          rmatrix,2,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     end if
     
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1,&
-        rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2,&
-        rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1,&
+        rmatrix,1,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2,&
+        rmatrix,2,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1,&
-        rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2,&
-        rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1,&
+        rmatrix,3,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsysbl_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2,&
+        rmatrix,3,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! In the first step, we assemble the defect that arises in the velocity
     ! components. This is characterised by the following submatrix:
