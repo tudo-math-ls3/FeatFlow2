@@ -225,10 +225,10 @@ contains
 
     ! Create (1,1) and (2,2) using the template matrix.
     ! Structure is "shared" (no new memory is allocated), content is allocated.
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(1,1),&
+    call lsysbl_duplicateMatrix (rtemplateMatrix,rmatrix,1,1,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(2,2),&
+    call lsysbl_duplicateMatrix (rtemplateMatrix,rmatrix,2,2,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
