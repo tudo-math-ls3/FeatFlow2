@@ -187,10 +187,10 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy)
+      npointsPerElement,nelements,dscale,iy,ix)
 
 !<description>  
-    ! Calculates the Mass operator at position (ix,iy) of the
+    ! Calculates the Mass operator at position (iy,ix) of the
     ! global matrix with a multiplier scale.
 !</description>
 
@@ -218,7 +218,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Column/row in the global matrix where to asseble the matrix to.
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
 !</input>
 
 !</subroutine>
@@ -484,8 +484,8 @@ contains
     ! in all diagonal blocks with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
-    ! rcollection%IquickAccess(1) = x-position in the destination matrix
-    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+    ! rcollection%IquickAccess(1) = y-position in the destination matrix
+    ! rcollection%IquickAccess(2) = x-position in the destination matrix
     ! rcollection%IquickAccess(3) = size of the tensor; default is maximum size
 !</description>
 
@@ -529,8 +529,8 @@ contains
     dscale = 1.0_DP
     
     if (present(rcollection)) then
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
       dscale = rcollection%DquickAccess(1)
 
       ! Calculate (maximum) size
@@ -543,7 +543,7 @@ contains
     
       ! Calculate the Mass matrix at the diagonal position i.
       call bma_docalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix+i,iy+i)
+          npointsPerElement,nelements,dscale,iy+i,ix+i)
 
     end do
 
@@ -563,8 +563,8 @@ contains
     ! at position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
-    ! rcollection%IquickAccess(1) = x-position in the destination matrix
-    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+    ! rcollection%IquickAccess(1) = y-position in the destination matrix
+    ! rcollection%IquickAccess(2) = x-position in the destination matrix
 !</description>
 
 !<inputoutput>
@@ -608,8 +608,8 @@ contains
 
     if (present(rcollection)) then
       dscale = rcollection%DquickAccess(1)
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
       ! Cancel if nothing to do or parameters wrong
       if (dscale .eq. 0.0_DP) return
@@ -625,7 +625,7 @@ contains
 
     ! Calculate the Mass matrix at the desired position
     call bma_docalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,dscale,ix,iy)
+        npointsPerElement,nelements,dscale,iy,ix)
 
   end subroutine
 
@@ -634,10 +634,10 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,rviscosity)
+      npointsPerElement,nelements,dscale,iy,ix,rviscosity)
 
 !<description>  
-    ! Calculates "dscale (-Laplace)" at position (ix,iy) in a block matrix
+    ! Calculates "dscale (-Laplace)" at position (iy,ix) in a block matrix
     ! with a scaling factor dscale in front.
     !
     ! If rviscosity is specified, "dscale rviscosity (-Laplace)" is calculated.
@@ -667,7 +667,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Column/row in the global matrix where to asseble the matrix to.
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
 
     ! OPTIONAL: Evaluation structure that describes an underlying nonconstant
     ! viscosity. Can be omitted if dviscosity is given.
@@ -2155,8 +2155,8 @@ contains
     ! in all diagonal blocks with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
-    ! rcollection%IquickAccess(1) = x-position in the destination matrix
-    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+    ! rcollection%IquickAccess(1) = y-position in the destination matrix
+    ! rcollection%IquickAccess(2) = x-position in the destination matrix
     ! rcollection%IquickAccess(3) = size of the tensor; default is maximum size
     !
     ! revalVectors(1) may specify a nonconstant coefficient in each cubature point.
@@ -2202,8 +2202,8 @@ contains
     dscale = 1.0_DP
 
     if (present(rcollection)) then
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
       dscale = rcollection%DquickAccess(1)
 
       ! Calculate (maximum) size
@@ -2218,11 +2218,11 @@ contains
       if (revalVectors%ncount .eq. 0) then
         ! Constant viscosity
         call bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix+i,iy+i)
+            npointsPerElement,nelements,dscale,iy+i,ix+i)
       else
         ! Nonconstant viscosity
         call bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix+i,iy+i,revalVectors%p_RvectorData(1))
+            npointsPerElement,nelements,dscale,iy+i,ix+i,revalVectors%p_RvectorData(1))
       end if
 
     end do
@@ -2243,8 +2243,8 @@ contains
     ! at matrix position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     ! rcollection%DquickAccess(1) = multiplier in front of the matrix.
-    ! rcollection%IquickAccess(1) = x-coordinate in the block matrix
-    ! rcollection%IquickAccess(2) = y-coordinate in the block matrix
+    ! rcollection%IquickAccess(1) = y-position in the block matrix
+    ! rcollection%IquickAccess(2) = x-position in the block matrix
     !
     ! revalVectors(1) may specify a nonconstant coefficient in each cubature point.
 !</description>
@@ -2290,8 +2290,8 @@ contains
 
     if (present(rcollection)) then
       dscale = rcollection%DquickAccess(1)
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
       ! Cancel if nothing to do or parameters wrong
       if (dscale .eq. 0.0_DP) return
@@ -2309,11 +2309,11 @@ contains
     if (revalVectors%ncount .eq. 0) then
       ! Constant viscosity
       call bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,1.0_DP,ix,iy)
+          npointsPerElement,nelements,1.0_DP,iy,ix)
     else
       ! Nonconstant viscosity
       call bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,1.0_DP,ix,iy,revalVectors%p_RvectorData(1))
+          npointsPerElement,nelements,1.0_DP,iy,ix,revalVectors%p_RvectorData(1))
     end if
 
   end subroutine
@@ -2323,10 +2323,10 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_gradientdiv(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy)
+      npointsPerElement,nelements,dscale,iy,ix)
 
 !<description>  
-    ! Calculates the gradient operator at position (ix,iy) in a block matrix
+    ! Calculates the gradient operator at position (iy,ix) in a block matrix
     ! with a scaling factor dscale in front.
     ! Uses the "transposed divergence approach", i.e., not the actual
     ! gradient is set up but the derivative is put to the test functions.
@@ -2337,7 +2337,7 @@ contains
     ! imposed to the matrices (iy,ix), (iy+1,ix), (iy+2,ix). It is assumed that
     ! the subspaces in v_i are all of the same FE type.
     ! For vector-valued v-spaces, the gradient operator is imposed
-    ! to the matrix at position (ix,iy).
+    ! to the matrix at position (iy,ix).
 !</description>
 
 !<inputoutput>
@@ -2364,7 +2364,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Column/row in the global matrix where to asseble the matrix to.
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
 !</input>
 
 !</subroutine>
@@ -3022,8 +3022,8 @@ contains
     ! at matrix position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     !   rcollection%DquickAccess(1) = multiplier in front of the matrix.
-    !   rcollection%IquickAccess(1) = x-coordinate in the block matrix
-    !   rcollection%IquickAccess(2) = y-coordinate in the block matrix
+    !   rcollection%IquickAccess(1) = y-position in the block matrix
+    !   rcollection%IquickAccess(2) = x-position in the block matrix
     ! For scalar-valued v-spaces, the gradient operator is
     ! imposed to the matrices (y,x), (y+1,x), (y+2,x). It is assumed that
     ! the subspaces in v_i are all of the same FE type.
@@ -3073,8 +3073,8 @@ contains
     if (present(rcollection)) then
 
       dscale = rcollection%DquickAccess(1)
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
       ! Cancel if nothing to do or parameters wrong
       if (dscale .eq. 0.0_DP) return
@@ -3089,7 +3089,7 @@ contains
     end if
     
     call bma_docalc_gradientdiv(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,dscale,ix,iy)
+        npointsPerElement,nelements,dscale,iy,ix)
 
   end subroutine
 
@@ -3098,10 +3098,10 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_divergence(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy)
+      npointsPerElement,nelements,dscale,iy,ix)
 
 !<description>  
-    ! Calculates the divergence operator at position (ix,iy) in a block matrix:
+    ! Calculates the divergence operator at position (iy,ix) in a block matrix:
     !
     !    ( div v, q )
     !
@@ -3109,7 +3109,7 @@ contains
     ! imposed to the matrices (iy,ix), (iy,ix+1), (iy,ix+2). It is assumed that
     ! the subspaces in v_i are all of the same FE type.
     ! For vector-valued v-spaces, the divergence operator is imposed
-    ! to the matrix at position (ix,iy).
+    ! to the matrix at position (iy,ix).
 !</description>
 
 !<inputoutput>
@@ -3136,7 +3136,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Column/row in the global matrix where to asseble the matrix to.
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
 !</input>
 
 !</subroutine>
@@ -3790,8 +3790,8 @@ contains
     ! at matrix position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     !   rcollection%DquickAccess(1) = multiplier in front of the matrix.
-    !   rcollection%IquickAccess(1) = x-coordinate in the block matrix
-    !   rcollection%IquickAccess(2) = y-coordinate in the block matrix
+    !   rcollection%IquickAccess(1) = y-position in the block matrix
+    !   rcollection%IquickAccess(2) = x-position in the block matrix
     ! For scalar-valued v-spaces, the divergence operator is
     ! imposed to the matrices (y,x), (y,x+1), (y,x+2). It is assumed that
     ! the subspaces in v_i are all of the same FE type.
@@ -3839,8 +3839,8 @@ contains
 
     if (present(rcollection)) then
       dscale = rcollection%DquickAccess(1)
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
       ! Cancel if nothing to do or parameters wrong
       if (dscale .eq. 0.0_DP) return
@@ -3856,7 +3856,7 @@ contains
     
     ! Calculate the matrix.
     call bma_docalc_divergence(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,dscale,ix,iy)
+        npointsPerElement,nelements,dscale,iy,ix)
 
   end subroutine
 
@@ -3865,7 +3865,7 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_convec_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,du1,du2,du3,rvectorField)
+      npointsPerElement,nelements,dscale,iy,ix,du1,du2,du3,rvectorField)
 
 !<description>  
     ! Calculates a convection operator "( (u grad) v, w)" at position (x,y)
@@ -3917,7 +3917,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position in the global matrix where to assemble
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! OPTIONAL: Constant velocity. Must be specified if rvectorField is not
     ! present. Ignored if rvectorField is present.
@@ -4320,7 +4320,7 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_convecTens_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,du1,du2,du3,rvectorField)
+      npointsPerElement,nelements,dscale,iy,ix,du1,du2,du3,rvectorField)
 
 !<description>  
     ! Calculates a convection operator "( (u grad) v, w)" to a tensor at position (x,y)
@@ -4372,7 +4372,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position in the global matrix where to assemble
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! OPTIONAL: Constant velocity. Must be specified if rvectorField is not
     ! present. Ignored if rvectorField is present.
@@ -4830,11 +4830,11 @@ contains
     ! If rcollection is specified, the following parameters are expected:
     !
     ! rcollection%DquickAccess(1) = multiplier in front of the operator.
-    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
-    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(1) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = x-position in the matrix where to set up the operator.
     ! rcollection%IquickAccess(3) = Specifies the target tensor/matrix
-    !                               =0: Only apply SD to the position (ix,iy) (default)
-    !                               =1: Apply SD to the full tensor (ix,iy)..(ix+dim,iy+dim)
+    !                               =0: Only apply SD to the position (iy,ix) (default)
+    !                               =1: Apply SD to the full tensor (iy,ix)..(iy+dim,ix+dim)
     ! rcollection%IquickAccess(4) = 0, if the convection is a constant vector field.
     !                                  in this case:
     !                                  1D: rcollection%DquickAccess(2)   = x-velocity
@@ -4869,8 +4869,8 @@ contains
     !
     !     ...
     !
-    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
-    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(1) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! x-Position in the matrix
     !     rcollection%IquickAccess(3) = 0/1        ! Scalar or tensor target
     !     rcollection%IquickAccess(4) = 1          ! Nonconstant viscosity
     !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
@@ -4971,7 +4971,7 @@ contains
 !</subroutine>
 
     ! Local variables
-    integer :: ndim,ix,iy
+    integer :: ndim,iy,ix
     real(DP) :: dscale
     real(DP) :: dvelX, dvelY, dvelZ
     logical :: bvelConst, btensor
@@ -5006,26 +5006,26 @@ contains
       end if
       
       ! Position
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
     end if
     
     if (.not. btensor) then
       if (bvelConst) then
         call bma_docalc_convec_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix,iy,dvelX,dvelY,dvelZ)
+            npointsPerElement,nelements,dscale,iy,ix,dvelX,dvelY,dvelZ)
       else
         call bma_docalc_convec_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix,iy,rvectorField=revalVectors%p_RvectorData(1))
+            npointsPerElement,nelements,dscale,iy,ix,rvectorField=revalVectors%p_RvectorData(1))
       end if
     else
       if (bvelConst) then
         call bma_docalc_convecTens_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix,iy,dvelX,dvelY,dvelZ)
+            npointsPerElement,nelements,dscale,iy,ix,dvelX,dvelY,dvelZ)
       else
         call bma_docalc_convecTens_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-            npointsPerElement,nelements,dscale,ix,iy,rvectorField=revalVectors%p_RvectorData(1))
+            npointsPerElement,nelements,dscale,iy,ix,rvectorField=revalVectors%p_RvectorData(1))
       end if
     end if
 
@@ -5036,7 +5036,7 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_convecTens_vugradw(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,du1,du2,du3,rvectorField)
+      npointsPerElement,nelements,dscale,iy,ix,du1,du2,du3,rvectorField)
 
 !<description>  
     ! Calculates a convection operator "( v, (u grad) w )" to a tensor at position (x,y)
@@ -5088,7 +5088,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position in the global matrix where to assemble
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! OPTIONAL: Constant velocity. Must be specified if rvectorField is not
     ! present. Ignored if rvectorField is present.
@@ -5546,8 +5546,8 @@ contains
     ! If rcollection is specified, the following parameters are expected:
     !
     ! rcollection%DquickAccess(1) = multiplier in front of the operator.
-    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
-    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(1) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = x-position in the matrix where to set up the operator.
     ! rcollection%IquickAccess(3) = 0, if the convection is a constant vector field.
     !                                  in this case:
     !                                  1D: rcollection%DquickAccess(2)   = x-velocity
@@ -5582,8 +5582,8 @@ contains
     !
     !     ...
     !
-    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
-    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(1) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! x-Position in the matrix
     !     rcollection%IquickAccess(3) = 1          ! Nonconstant viscosity
     !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
     !
@@ -5649,7 +5649,7 @@ contains
 !</subroutine>
 
     ! Local variables
-    integer :: ndim,ix,iy
+    integer :: ndim,iy,ix
     real(DP) :: dscale
     real(DP) :: dvelX, dvelY, dvelZ
     logical :: bvelConst
@@ -5680,17 +5680,17 @@ contains
       end if
       
       ! Position
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
     end if
     
     if (bvelConst) then
       call bma_docalc_convecTens_vugradw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,dvelX,dvelY,dvelZ)
+          npointsPerElement,nelements,dscale,iy,ix,dvelX,dvelY,dvelZ)
     else
       call bma_docalc_convecTens_vugradw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,rvectorField=revalVectors%p_RvectorData(1))
+          npointsPerElement,nelements,dscale,iy,ix,rvectorField=revalVectors%p_RvectorData(1))
     end if
 
   end subroutine
@@ -5700,7 +5700,7 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_convecTens_graduvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,&
+      npointsPerElement,nelements,dscale,iy,ix,&
       du1x,du1y,du1z,du2x,du2y,du2z,du3x,du3y,du3z,rvectorField)
 
 !<description>  
@@ -5754,7 +5754,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position in the global matrix where to assemble
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! OPTIONAL: Derivative of the velocity. Must be specified if rvectorField is not
     ! present. Ignored if rvectorField is present.
@@ -6309,8 +6309,8 @@ contains
     ! If rcollection is specified, the following parameters are expected:
     !
     ! rcollection%DquickAccess(1) = multiplier in front of the operator.
-    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
-    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(1) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = x-position in the matrix where to set up the operator.
     ! rcollection%IquickAccess(3) = 0, if the convection is a constant vector field.
     !                                  in this case:
     !                                  1D: rcollection%DquickAccess(2)   = d/dx x-velocity
@@ -6348,8 +6348,8 @@ contains
     !
     !     ...
     !
-    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
-    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(1) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! x-Position in the matrix
     !     rcollection%IquickAccess(3) = 1          ! Nonconstant viscosity
     !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
     !
@@ -6415,7 +6415,7 @@ contains
 !</subroutine>
 
     ! Local variables
-    integer :: ndim,ix,iy
+    integer :: ndim,iy,ix
     real(DP) :: dscale
     real(DP) :: dvelX1, dvelX2, dvelX3
     real(DP) :: dvelY1, dvelY2, dvelY3
@@ -6473,18 +6473,18 @@ contains
       end if
       
       ! Position
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
     end if
     
     if (bvelConst) then
       call bma_docalc_convecTens_graduvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,&
+          npointsPerElement,nelements,dscale,iy,ix,&
           dvelX1,dvelX2,dvelX3,dvelY1,dvelY2,dvelY3,dvelZ1,dvelZ2,dvelZ3)
     else
       call bma_docalc_convecTens_graduvw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,rvectorField=revalVectors%p_RvectorData(1))
+          npointsPerElement,nelements,dscale,iy,ix,rvectorField=revalVectors%p_RvectorData(1))
     end if
 
 
@@ -6495,7 +6495,7 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_convecTens_vgraduw(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,&
+      npointsPerElement,nelements,dscale,iy,ix,&
       du1x,du1y,du1z,du2x,du2y,du2z,du3x,du3y,du3z,rvectorField)
 
 !<description>  
@@ -6549,7 +6549,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position in the global matrix where to assemble
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! OPTIONAL: Derivative of the velocity. Must be specified if rvectorField is not
     ! present. Ignored if rvectorField is present.
@@ -7105,8 +7105,8 @@ contains
     ! If rcollection is specified, the following parameters are expected:
     !
     ! rcollection%DquickAccess(1) = multiplier in front of the operator.
-    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
-    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(1) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = x-position in the matrix where to set up the operator.
     ! rcollection%IquickAccess(3) = 0, if the convection is a constant vector field.
     !                                  in this case:
     !                                  1D: rcollection%DquickAccess(2)   = d/dx x-velocity
@@ -7144,8 +7144,8 @@ contains
     !
     !     ...
     !
-    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
-    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(1) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! x-Position in the matrix
     !     rcollection%IquickAccess(3) = 1          ! Nonconstant viscosity
     !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
     !
@@ -7211,7 +7211,7 @@ contains
 !</subroutine>
 
     ! Local variables
-    integer :: ndim,ix,iy
+    integer :: ndim,iy,ix
     real(DP) :: dscale
     real(DP) :: dvelX1, dvelX2, dvelX3
     real(DP) :: dvelY1, dvelY2, dvelY3
@@ -7269,18 +7269,18 @@ contains
       end if
       
       ! Position
-      ix = rcollection%IquickAccess(1)
-      iy = rcollection%IquickAccess(2)
+      iy = rcollection%IquickAccess(1)
+      ix = rcollection%IquickAccess(2)
 
     end if
     
     if (bvelConst) then
       call bma_docalc_convecTens_vgraduw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,&
+          npointsPerElement,nelements,dscale,iy,ix,&
           dvelX1,dvelX2,dvelX3,dvelY1,dvelY2,dvelY3,dvelZ1,dvelZ2,dvelZ3)
     else
       call bma_docalc_convecTens_vgraduw(RmatrixData,rassemblyData,rmatrixAssembly,&
-          npointsPerElement,nelements,dscale,ix,iy,rvectorField=revalVectors%p_RvectorData(1))
+          npointsPerElement,nelements,dscale,iy,ix,rvectorField=revalVectors%p_RvectorData(1))
     end if
 
   end subroutine
@@ -10866,11 +10866,11 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+      npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
       relemTempVectors,relemTempVectorsVec,du1,du2,du3,dviscosity,rvectorField,rviscosity)
 
 !<description>  
-    ! Calculates the Streamline diffusion stabilisation at position (ix,iy)
+    ! Calculates the Streamline diffusion stabilisation at position (iy,ix)
     ! of the global matrix.
 !</description>
 
@@ -10898,7 +10898,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position of the matrix where to assemble the operator to
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! Type of SD method to apply.
     ! = 0: Use simple SD stabilisation:
@@ -11477,11 +11477,11 @@ contains
 !<subroutine>
 
   subroutine bma_docalc_streamlinediffTensor(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+      npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
       relemTempVectors,relemTempVectorsVec,du1,du2,du3,dviscosity,rvectorField,rviscosity)
 
 !<description>  
-    ! Calculates the Streamline diffusion stabilisation to a tensor at position (ix,iy)
+    ! Calculates the Streamline diffusion stabilisation to a tensor at position (iy,ix)
     ! of the global matrix.
 !</description>
 
@@ -11509,7 +11509,7 @@ contains
     real(DP), intent(in) :: dscale
     
     ! Position of the matrix where to assemble the operator to
-    integer, intent(in) :: ix,iy
+    integer, intent(in) :: iy,ix
     
     ! Type of SD method to apply.
     ! = 0: Use simple SD stabilisation:
@@ -12116,11 +12116,11 @@ contains
     ! rcollection%DquickAccess(4) = constant viscosity (if constant)
     ! rcollection%DquickAccess(5:7) = constant velocity (if constant)
     !
-    ! rcollection%IquickAccess(1) = x-position in the destination matrix
-    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+    ! rcollection%IquickAccess(1) = y-position in the destination matrix
+    ! rcollection%IquickAccess(2) = x-position in the destination matrix
     ! rcollection%IquickAccess(3) = Specifies the target tensor/matrix
-    !                               =0: Only apply SD to the position (ix,iy)
-    !                               =1: Apply SD to the full tensor (ix,iy)..(ix+dim,iy+dim)
+    !                               =0: Only apply SD to the position (iy,ix)
+    !                               =1: Apply SD to the full tensor (iy,ix)..(iy+dim,ix+dim)
     ! rcollection%IquickAccess(4) = Type of SD method to apply.
     !                               = 0: Use simple SD stabilisation:
     !                                    ddelta = dupsam * h_T.
@@ -12182,7 +12182,7 @@ contains
 
     ! Local variables
     real(DP) :: dscale,dupsam,dumax,du1,du2,du3,dviscosity
-    integer :: ix,iy,cstabiltype,clocalh
+    integer :: iy,ix,cstabiltype,clocalh
     logical :: btensor,bconstVel,bconstNu
     
     ! Fetch parameters from the collection
@@ -12194,8 +12194,8 @@ contains
     du2                   = rcollection%DquickAccess(6)
     du3                   = rcollection%DquickAccess(7)
 
-    ix                    = rcollection%IquickAccess(1)
-    iy                    = rcollection%IquickAccess(2)
+    iy                    = rcollection%IquickAccess(1)
+    ix                    = rcollection%IquickAccess(2)
     btensor               = rcollection%IquickAccess(3) .ne. 0
     cstabiltype           = rcollection%IquickAccess(4)
     clocalh               = rcollection%IquickAccess(5)
@@ -12208,23 +12208,23 @@ contains
       if (bconstNu) then
         if (bconstVel) then
           call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity)
         else
           call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               revalVectors%p_RvectorData(4))
         end if
       else
         if (bconstVel) then
           call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               rviscosity=revalVectors%p_RvectorData(4))
         else
           call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               revalVectors%p_RvectorData(4),revalVectors%p_RvectorData(5))
         end if
@@ -12235,23 +12235,23 @@ contains
       if (bconstNu) then
         if (bconstVel) then
           call bma_docalc_streamlinediffTensor(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity)
         else
           call bma_docalc_streamlinediffTensor(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               revalVectors%p_RvectorData(4))
         end if
       else
         if (bconstVel) then
           call bma_docalc_streamlinediffTensor(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               rviscosity=revalVectors%p_RvectorData(4))
         else
           call bma_docalc_streamlinediffTensor(RmatrixData,rassemblyData,rmatrixAssembly,&
-              npointsPerElement,nelements,dscale,ix,iy,cstabiltype,clocalh,dupsam,dumax,&
+              npointsPerElement,nelements,dscale,iy,ix,cstabiltype,clocalh,dupsam,dumax,&
               revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
               revalVectors%p_RvectorData(4),revalVectors%p_RvectorData(5))
         end if

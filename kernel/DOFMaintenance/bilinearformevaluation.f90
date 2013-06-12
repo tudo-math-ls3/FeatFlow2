@@ -281,6 +281,7 @@ module bilinearformevaluation
   use genoutput
   use linearalgebra
   use linearsystemscalar
+  use linearsystemblock
   use perfconfig
   use mprimitives
   use scalarpde
@@ -448,6 +449,11 @@ module bilinearformevaluation
     module procedure bilf_buildMatrixScalar1
     module procedure bilf_buildMatrixScalar2
   end interface
+  
+  interface bilf_createMatrixStructure
+    module procedure bilf_createMatStrucScalar
+    module procedure bilf_createMatStrucSubmatrix
+  end interface
 
 contains
 
@@ -482,9 +488,74 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_createMatrixStructure (rdiscretisationTrial,iformat,rmatrix, &
-                                         rdiscretisationTest,cconstrType,imemguess,&
-                                         rperfconfig)
+  subroutine bilf_createMatStrucSubmatrix (rmatrix,iy,ix,cformat, &
+      cconstrType,imemguess,rperfconfig)
+
+!<description>
+  ! Creates the matrix structure of a finite-element matrix as submatrix
+  ! of a block matrix.
+  ! The size of the matrix is determined dynamically.
+!</description>
+
+!<input>
+  ! Position of the submatrix in the block matrix to be created.
+  integer, intent(in) :: iy,ix
+
+  ! Format of the matrix structure to be created. One of the LSYSSC_xxxx
+  ! constants.
+  integer, intent(in) :: cformat
+  
+  ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
+  ! the matrix construction method. If not specified,
+  ! BILF_MATC_ELEMENTBASED is used.
+  integer, intent(in), optional :: cconstrType
+
+  ! OPTIONAL: An initial guess about how much memory the matrix needs. If set
+  ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix
+  ! entries) is assumed.
+  integer, intent(in), optional :: imemGuess
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<output>
+  ! Structure of a block matrix in which the submatrix is to be created.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    if ((iy .lt. 1) .or. (iy .gt. rmatrix%nblocksPerCol) .or. &
+        (ix .lt. 1) .or. (ix .gt. rmatrix%nblocksPerRow)) then
+      call output_line ("Indices out of bounds", &
+              OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrStrucSubmatrix")
+      call sys_halt()
+    end if
+    
+    if (.not. associated(rmatrix%p_rblockDiscrTrial) .or. &
+        .not. associated(rmatrix%p_rblockDiscrTest)) then
+      call output_line ("Block matrix invalid, no discretisation attached.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrStrucSubmatrix")
+      call sys_halt()
+    end if
+
+    ! Call the scalar construction routine
+    call bilf_createMatStrucScalar ( &
+        rmatrix%p_rblockDiscrTrial%RspatialDiscr(ix),cformat,&
+        rmatrix%RmatrixBlock(iy,ix), rmatrix%p_rblockDiscrTest%RspatialDiscr(iy),&
+        cconstrType,imemguess,rperfconfig)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bilf_createMatStrucScalar (rdiscretisationTrial,iformat,rmatrix, &
+                                        rdiscretisationTest,cconstrType,imemguess,&
+                                        rperfconfig)
 
 !<description>
   ! This routine allows to calculate the structure of a finite-element matrix
