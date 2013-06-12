@@ -167,9 +167,8 @@ contains
     ! Create a block matrix based on the discretisation.
     call lsysbl_createMatBlockByDiscr (rdiscr, rmatSystem)
     
-    ! Now assemble the matrix structure.
-    call bilf_createMatrixStructure (rdiscr%RspatialDiscr(1), LSYSSC_MATRIX9, &
-        rmatSystem%RmatrixBlock(1,1))
+    ! Now assemble the matrix structure of the submatrix at position (1,1)
+    call bilf_createMatrixStructure (rmatSystem, 1, 1, LSYSSC_MATRIX9)
     
     ! And assemble a Laplace matrix
     call stdop_assembleLaplaceMatrix(rmatSystem%RmatrixBlock(1,1), .true., 1.0_DP, rcubature)

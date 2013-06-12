@@ -245,9 +245,7 @@ contains
       ! the structure of the system matrix which is to solve.
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
-      call bilf_createMatrixStructure ( &
-           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-           LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
+      call bilf_createMatrixStructure (Rlevels(i)%rmatrix, 1, 1, LSYSSC_MATRIX9)
 
       ! And now to the entries of the matrix. For assembling of the entries,
       ! we need a bilinear form, which first has to be set up manually.

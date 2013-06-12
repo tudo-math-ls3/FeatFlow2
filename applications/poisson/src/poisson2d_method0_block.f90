@@ -200,18 +200,17 @@ contains
     
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(1,1))
+    call bilf_createMatrixStructure (rmatSystem, 1, 1, LSYSSC_MATRIX9)
         
     ! And now to the entries of the matrix.
     !
     ! Allocate memory for the entries, fill with zero.
-    call lsyssc_allocEmptyMatrix (rmatSystem%RmatrixBlock(1,1),LSYSSC_SETM_ZERO)
+    call lsysbl_allocEmptyMatrix (rmatSystem,LSYSSC_SETM_ZERO)
     
     ! Pass the constant dnu=1.0 in front of the Laplace via rcollection.
     rcollection%DquickAccess(1) = 1.0_DP
     
-    ! Laplace is to be assembled at position (x,y) = (1,1) in the block matrix
+    ! Laplace is to be assembled at position (y,x) = (1,1) in the block matrix
     rcollection%IquickAccess(1) = 1
     rcollection%IquickAccess(2) = 1
 

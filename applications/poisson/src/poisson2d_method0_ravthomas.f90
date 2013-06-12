@@ -627,19 +627,11 @@ contains
     ! At first, create a basic 1x1 block matrix based on the discretisation.
     call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatSystem)
     
-    ! We create a scalar matrix, based on the discretisation structure
-    ! for our one and only solution component.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(1,1))
-
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(2,1),rdiscretisation%RspatialDiscr(2))
-
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(2),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(1,2),rdiscretisation%RspatialDiscr(1))
-
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(2),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(2,2),rdiscretisation%RspatialDiscr(2))
+    ! We create a scalar matrix, based on the discretisation structure.
+    call bilf_createMatrixStructure (rmatSystem, 1, 1, LSYSSC_MATRIX9)
+    call bilf_createMatrixStructure (rmatSystem, 2, 1, LSYSSC_MATRIX9)
+    call bilf_createMatrixStructure (rmatSystem, 1, 2, LSYSSC_MATRIX9)
+    call bilf_createMatrixStructure (rmatSystem, 2, 2, LSYSSC_MATRIX9)
         
     ! And now to the entries of the matrix.
     !

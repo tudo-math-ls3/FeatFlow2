@@ -368,8 +368,7 @@ contains
     
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(1,1))
+    call bilf_createMatrixStructure (rmatSystem, 1, 1, LSYSSC_MATRIX9)
     
     ! And now to the entries of the matrix. 
     ! We do a quick approach here applying the method from the stdoperators
