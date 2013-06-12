@@ -105,14 +105,14 @@ contains
 
     ! Gradient/divergence operators.
     rcoll%DquickAccess(1) = 1.0_DP
-    rcoll%IquickAccess(1) = 2
-    rcoll%IquickAccess(2) = 1
+    rcoll%IquickAccess(1) = 1
+    rcoll%IquickAccess(2) = 2
     call bma_fcalc_gradientdiv(RmatrixData,rassemblyData,rmatrixAssembly,&
         npointsPerElement,nelements,revalVectors,rcoll)
 
     rcoll%DquickAccess(1) = 1.0_DP
-    rcoll%IquickAccess(1) = 1
-    rcoll%IquickAccess(2) = 2
+    rcoll%IquickAccess(1) = 2
+    rcoll%IquickAccess(2) = 1
     call bma_fcalc_divergence(RmatrixData,rassemblyData,rmatrixAssembly,&
         npointsPerElement,nelements,revalVectors,rcoll)
 
@@ -837,7 +837,7 @@ contains
     !
     ! We want to solve our Poisson problem on level...
     ! As we do not use a multigrid solver here, we will set the level to 5.
-    do NLMAX = 7,7
+    do NLMAX = 5,8
     
       ! Grid disturbance
       do igriddist = 1,size(DgridDist)
