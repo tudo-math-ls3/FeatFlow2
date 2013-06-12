@@ -177,10 +177,8 @@ contains
       ! Create a matrix on level ilevel
       call lsysbl_createMatrix (p_RblockDiscr(ilevel),p_Rmatrices(ilevel))
 
-      ! Create an empty matrix in block (1,1) in CSR format, 
-      ! initialised with the FEM matrix structure.
-      call bilf_createMatrixStructure (p_RspatialDiscr(ilevel), &
-          LSYSSC_MATRIX9,p_Rmatrices(ilevel)%RmatrixBlock(1,1))
+      ! Create an empty matrix in block (1,1) in CSR format
+      call bilf_createMatrixStructure (p_Rmatrices(ilevel),1,1,LSYSSC_MATRIX9)
       call lsysbl_allocEmptyMatrix (p_Rmatrices(ilevel))
 
       ! -----------------------------------------------------

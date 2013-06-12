@@ -156,9 +156,8 @@ contains
     call lsysbl_createVector (rblockDiscr,rsolution)
     call lsysbl_createVector (rblockDiscr,rtemp)
 
-    ! Create an empty matrix in block (1,1) in CSR format, 
-    ! initialised with the FEM matrix structure.
-    call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rmatrix%RmatrixBlock(1,1))
+    ! Create an empty matrix in block (1,1) in CSR format
+    call bilf_createMatrixStructure (rmatrix,1,1,LSYSSC_MATRIX9)
     call lsysbl_allocEmptyMatrix (rmatrix)
 
     ! -----------------------------------------------------

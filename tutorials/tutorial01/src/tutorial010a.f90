@@ -114,15 +114,15 @@ contains
     
     ! Put the mass matrix to (1,1).
     rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 1         ! x-position
-    rcollection%IquickAccess(2) = 1         ! y-position
+    rcollection%IquickAccess(1) = 1         ! y-position
+    rcollection%IquickAccess(2) = 1         ! x-position
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_mass,rcollection,&
         rcubatureInfo=rcubatureInfo)
     
     ! Put the Laplace matrix to (2,2)
     rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 2         ! x-position
-    rcollection%IquickAccess(2) = 2         ! y-position
+    rcollection%IquickAccess(1) = 2         ! y-position
+    rcollection%IquickAccess(2) = 2         ! x-position
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_laplace,rcollection,&
         rcubatureInfo=rcubatureInfo)
 
