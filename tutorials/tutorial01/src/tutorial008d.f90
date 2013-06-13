@@ -271,7 +271,7 @@ contains
     ! Set up a bilinear for for Laplace...    
     rform%itermCount = 2
     
-    ! We have constant coefficients:
+    ! We have nonconstant coefficients:
     rform%ballCoeffConstant = .false.
 
     ! Term 1/2: -Laplace  =>  (g phi_x, psi_x)  +  (g phi_y, psi_y)
