@@ -416,7 +416,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 1.0_DP/(dnu) !20.0_DP !
+    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu) !
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
