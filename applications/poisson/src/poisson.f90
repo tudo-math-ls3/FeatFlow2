@@ -28,6 +28,9 @@
 
 program poisson
 
+  use fsystem
+  use genoutput
+
   use poisson1d_method0_simple
   use poisson1d_method1_mg
   use poisson2d_method0_simple
