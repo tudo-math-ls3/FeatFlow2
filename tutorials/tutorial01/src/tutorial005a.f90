@@ -22,6 +22,7 @@ contains
   
     ! Declare some variables
     real(DP) :: dval1, dval2, dval3
+    real(DP), dimension(4) :: Dcoeff
 
     ! Print a message
     call output_lbrk()
@@ -83,6 +84,22 @@ contains
     call output_line ("parprofile(0.5,len=2,max=10) = " // trim(sys_sdL(dval1,10)) )
     call output_line ("parprofile(1.0,len=2,max=10) = " // trim(sys_sdL(dval2,10)) )
     call output_line ("parprofile(1.5,len=2,max=10) = " // trim(sys_sdL(dval3,10)) )
+
+    ! =================================
+    ! Horner scheme
+    ! =================================
+    
+    ! Initialise a cubic polynomial: p(x,y) = x^3 - 2x^2 - 3*x + 4
+    Dcoeff(:) = (/ 4.0_DP, 3.0_DP, -2.0_DP, 1.0_DP /)
+    
+    ! Get the function value as well as 1st and 2nd derivative in x=2.
+    dval1 = mprim_horner   (2.0_DP,Dcoeff)
+    dval2 = mprim_hornerd1 (2.0_DP,Dcoeff)
+    dval3 = mprim_hornerd2 (2.0_DP,Dcoeff)
+    
+    call output_line ("p  (2.0) = " // trim(sys_sdL(dval1,10)) )
+    call output_line ("p' (2.0) = " // trim(sys_sdL(dval2,10)) )
+    call output_line ("p''(2.0) = " // trim(sys_sdL(dval3,10)) )
 
   end subroutine
 
