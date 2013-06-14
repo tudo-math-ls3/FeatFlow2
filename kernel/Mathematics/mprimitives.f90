@@ -94,6 +94,15 @@
 !#
 !# 27.) mprim_transposeMatrix
 !#      -> Computes the transpose of a matrix
+!#
+!# 28.) mprim_horner
+!#      -> Evaluates a polynomial using the horner scheme.
+!#
+!# 29.) mprim_hornerd1
+!#      -> Evaluates the derivative of a polynomial using the horner scheme.
+!#
+!# 30.) mprim_hornerd2
+!#      -> Evaluates the 2nd derivative of a polynomial using the horner scheme.
 !# </purpose>
 !##############################################################################
 
@@ -308,6 +317,25 @@ module mprimitives
   public :: mprim_getParabolicProfile
   public :: mprim_degToRad
   public :: mprim_radToDeg
+  
+  public :: mprim_horner
+  public :: mprim_hornerd1
+  public :: mprim_hornerd2
+
+  interface mprim_horner
+    module procedure mprim_hornerSP
+    module procedure mprim_hornerDP
+  end interface
+
+  interface mprim_hornerd1
+    module procedure mprim_hornerd1SP
+    module procedure mprim_hornerd1DP
+  end interface
+
+  interface mprim_hornerd2
+    module procedure mprim_hornerd2SP
+    module procedure mprim_hornerd2DP
+  end interface
 
 contains
 
@@ -5823,4 +5851,230 @@ contains
 
   end subroutine mprim_transposeMatrix2SP
 
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerDP(dx,Dai)
+  
+!<description>
+  ! Applies the horner scheme to evaluate a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(DP), intent(in) :: dx
+
+  ! List of coefficients
+  real(DP), dimension(:), intent(in) :: Dai
+!</input>
+
+!<result>
+  ! p(x)
+!</result>
+
+!</function>
+    
+    integer :: i
+    
+    mprim_hornerDP = 0.0_DP
+    do i = ubound(Dai,1),1,-1
+      mprim_hornerDP = mprim_hornerDP * dx + Dai(i)
+    end do
+    
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerd1DP(dx,Dai)
+  
+!<description>
+  ! Applies the extended horner scheme to evaluate the derivative p'(x) of a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(DP), intent(in) :: dx
+
+  ! List of coefficients
+  real(DP), dimension(:), intent(in) :: Dai
+!</input>
+
+!<result>
+  ! p'(x)
+!</result>
+
+!</function>
+
+    integer :: i
+    real(DP) :: dy
+    
+    dy = 0.0_DP
+    mprim_hornerd1DP = 0.0_DP
+    do i = ubound(Dai,1),1,-1
+      mprim_hornerd1DP = mprim_hornerd1DP * dx + dy
+      dy = dy * dx + Dai(i)
+    end do
+    
+  end function
+  
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerd2DP(dx,Dai)
+  
+!<description>
+  ! Applies the extended horner scheme to evaluate the 2nd derivative p''(x) of a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(DP), intent(in) :: dx
+
+  ! List of coefficients
+  real(DP), dimension(:), intent(in) :: Dai
+!</input>
+
+!<result>
+  ! p''(x)
+!</result>
+
+!</function>
+
+    integer :: i
+    real(DP) :: dy, dy1
+    
+    dy = 0.0_DP
+    dy1 = 0.0_DP
+    mprim_hornerd2DP = 0.0_DP
+    do i = ubound(Dai,1),1,-1
+      mprim_hornerd2DP = mprim_hornerd2DP * dx + dy1
+      dy1 = dy1 * dx + dy
+      dy = dy * dx + Dai(i)
+    end do
+    
+  end function
+  
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerSP(fx,Fai)
+  
+!<description>
+  ! Applies the horner scheme to evaluate a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(SP), intent(in) :: fx
+
+  ! List of coefficients
+  real(SP), dimension(:), intent(in) :: Fai
+!</input>
+
+!<result>
+  ! p(x)
+!</result>
+
+!</function>
+    
+    integer :: i
+    
+    mprim_hornerSP = 0.0_DP
+    do i = ubound(Fai,1),1,-1
+      mprim_hornerSP = mprim_hornerSP * fx + Fai(i)
+    end do
+    
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerd1SP(fx,Fai)
+  
+!<description>
+  ! Applies the extended horner scheme to evaluate the derivative p'(x) of a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(SP), intent(in) :: fx
+
+  ! List of coefficients
+  real(SP), dimension(:), intent(in) :: Fai
+!</input>
+
+!<result>
+  ! p'(x)
+!</result>
+
+!</function>
+
+    integer :: i
+    real(SP) :: fy
+    
+    fy = 0.0_DP
+    mprim_hornerd1SP = 0.0_DP
+    do i = ubound(Fai,1),1,-1
+      mprim_hornerd1SP = mprim_hornerd1SP * fx + fy
+      fy = fy * fx + Fai(i)
+    end do
+    
+  end function
+  
+  !*****************************************************************************
+
+!<function>
+
+  pure real(DP) function mprim_hornerd2SP(fx,Fai)
+  
+!<description>
+  ! Applies the extended horner scheme to evaluate the 2nd derivative p''(x) of a polynomial
+  !   p(x) = a_0 + a_1 x + a_2 x^2 + ...
+  ! given as a list of coefficients.
+!</description>
+
+!<input>
+  ! Point where to evaluate
+  real(SP), intent(in) :: fx
+
+  ! List of coefficients
+  real(SP), dimension(:), intent(in) :: Fai
+!</input>
+
+!<result>
+  ! p''(x)
+!</result>
+
+!</function>
+
+    integer :: i
+    real(SP) :: fy, fy1
+    
+    fy = 0.0_DP
+    fy1 = 0.0_DP
+    mprim_hornerd2SP = 0.0_DP
+    do i = ubound(Fai,1),1,-1
+      mprim_hornerd2SP = mprim_hornerd2SP * fx + fy1
+      fy1 = fy1 * fx + fy
+      fy = fy * fx + Fai(i)
+    end do
+    
+  end function
+  
 end module mprimitives
