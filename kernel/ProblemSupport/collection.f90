@@ -2087,8 +2087,16 @@ contains
       nullify(rvalue%p_rhadapt)
       nullify(rvalue%p_rafcstab)
 
-      if (associated(rvalue%p_Iarray)) deallocate(rvalue%p_Iarray)
-      if (associated(rvalue%p_Darray)) deallocate(rvalue%p_Darray)
+      select case (rvalue%itype)
+      case (COLLCT_INTEGERARRP)
+        nullify(rvalue%p_Iarray)
+      case (COLLCT_REALARRP)
+        nullify(rvalue%p_Darray)
+      case (COLLCT_INTEGERARR)
+        if (associated(rvalue%p_Iarray)) deallocate(rvalue%p_Iarray)
+      case (COLLCT_REALARR)
+        if (associated(rvalue%p_Darray)) deallocate(rvalue%p_Darray)
+      end select
 
       rvalue%itype = COLLCT_UNDEFINED
     end if
@@ -2150,7 +2158,7 @@ contains
     if (associated(p_rvalue)) then
 
       ! Ok, we have the parameter. Clean it up.
-      call collct_cleanupvalue(p_rvalue);
+      call collct_cleanupvalue(p_rvalue)
 
       ! Modify the level info:
       if (present(ssectionName)) then
