@@ -334,6 +334,9 @@ module collection
 
   ! Number of 'quick-access' strings in the collection
   integer, parameter, public :: COLLCT_QASTRINGS = 4
+
+  ! Number of 'generic objects' in the collection
+  integer, parameter, public :: COLLCT_QAGENOBJ = 4
 !</constantblock>
 
 !<constantblock description="Type identifier for values">
@@ -707,6 +710,10 @@ module collection
     character(LEN=SYS_STRLEN), dimension(COLLCT_QASTRINGS) :: SquickAccess
 
     ! USER DEFINED:
+    ! A quick access property for a generic object.
+    type(t_genericObject), dimension(COLLCT_QAGENOBJ) :: RgenObjectQuickAccess
+
+    ! USER DEFINED:
     ! A quick access pointer to a vector.
     type(t_vectorBlock), pointer :: p_rvectorQuickAccess1 => null()
 
@@ -771,26 +778,26 @@ module collection
     type(t_parlist), pointer :: p_rparlistQuickAccess4 => null()
 
     ! USER DEFINED:
-    ! A quick acces pointer to a function parser
+    ! A quick access pointer to a function parser
     type(t_fparser), pointer :: p_rfparserQuickAccess1 => null()
 
     ! USER DEFINED:
-    ! A quick acces pointer to a function parser
+    ! A quick access pointer to a function parser
     type(t_fparser), pointer :: p_rfparserQuickAccess2 => null()
 
     ! USER DEFINED:
-    ! A quick acces pointer to a function parser
+    ! A quick access pointer to a function parser
     type(t_fparser), pointer :: p_rfparserQuickAccess3 => null()
 
     ! USER DEFINED:
-    ! A quick acces pointer to a function parser
+    ! A quick access pointer to a function parser
     type(t_fparser), pointer :: p_rfparserQuickAccess4 => null()
 
     ! USER DEFINED:
     ! A quick access pointer to another collection structure.
     ! Can be used to link collection structures.
     type(t_collection), pointer :: p_rnextCollection => null()
-
+    
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
     ! unnamed section.
