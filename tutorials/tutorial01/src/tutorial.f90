@@ -114,6 +114,13 @@ program tutorial
   use tutorial017c
   use tutorial017d
   use tutorial017e
+  
+  use tutorial018a
+  use tutorial018b
+  use tutorial018c
+  use tutorial018d
+  use tutorial018e
+  use tutorial018f
 
   implicit none
   
@@ -234,6 +241,13 @@ program tutorial
   call start_tutorial017c
   call start_tutorial017d
   call start_tutorial017e
+
+  call start_tutorial018a
+  call start_tutorial018b
+  call start_tutorial018c
+  call start_tutorial018d
+  call start_tutorial018e
+  call start_tutorial018f
 
   ! -----------------------------------------------------------------
   ! Clean up

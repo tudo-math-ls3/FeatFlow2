@@ -87,7 +87,7 @@ contains
     if (map_isNull(riterator)) then
       call output_line ("Map does not contain item 2!")
     else
-      call output_line ("Map contain item 2!")
+      call output_line ("Map contains item 2!")
     end if
 
     ! =================================
@@ -104,7 +104,7 @@ contains
     if (map_isNull(riterator)) then
       call output_line ("Map does not contain item 2!")
     else
-      call output_line ("Map contain item 2!")
+      call output_line ("Map contains item 2!")
     end if
 
     ! =================================

@@ -173,5 +173,11 @@
 		<File RelativePath=".\src\tutorial017c.f90"/>
 		<File RelativePath=".\src\tutorial017d.f90"/>
 		<File RelativePath=".\src\tutorial017e.f90"/>
+		<File RelativePath=".\src\tutorial018a.f90"/>
+		<File RelativePath=".\src\tutorial018b.f90"/>
+		<File RelativePath=".\src\tutorial018c.f90"/>
+		<File RelativePath=".\src\tutorial018d.f90"/>
+		<File RelativePath=".\src\tutorial018e.f90"/>
+		<File RelativePath=".\src\tutorial018f.f90"/>
 		</Filter></Files>
 	<Globals/></VisualStudioProject>
