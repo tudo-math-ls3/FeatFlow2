@@ -9,7 +9,7 @@
 !#  - Navier-Stokes equations
 !#  - non-Newtonian fluid flows
 !#
-!# </purpose>
+!# </purpose> 
 !##############################################################################
 
 program lsfem
@@ -88,8 +88,7 @@ program lsfem
 !  call ls_svp_mg_mat2d
 
 
-!  ! Call the problem to solve 2D Navier-stokes:
-!  ! Non-Newtonian fluid
+!  ! Call the problem to solve Non-Newtonian fluid flow:
 !  call output_lbrk()
 !  call output_line('----------------------------------')  
 !  call output_line('Calculating 2D Navier-Stokes-LSFEM')
@@ -117,7 +116,7 @@ program lsfem
 !  call ls_svp_rt2d
 
 
-!  ! Call the problem to solve 2D Navier-stokes:
+!  ! Call the problem to solve level-set equation:
 !  call output_lbrk()
 !  call output_line('Level Set 2D-LSFEM')
 !  call output_line('------------------')
