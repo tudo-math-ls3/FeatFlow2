@@ -36,19 +36,10 @@ contains
   ! The generic object
   type(t_genericObject), intent(out) :: rgenericObject
 
-    ! Internal data structure
-    type t_void_ptr
-      type(t_problem), pointer :: p_robj => null()
-    end type t_void_ptr
-    
-    ! Internal variables
-    type(t_void_ptr) :: rptr
-
-    ! Wrap list by void pointer structure
-    rptr%p_robj => rproblem
-    
-    ! Transfer the void pointer structure to the generic object
-    rgenericObject = transfer(rptr, rgenericObject)
+#define CASTTYPE t_problem
+#define CASTVAR  rproblem
+#define CASTGOBJ rgenericObject
+#include "casttogenobject.h"
     
   end subroutine
 
@@ -63,19 +54,10 @@ contains
   ! User defined object
   type(t_problem), pointer :: p_rproblem
 
-    ! Internal data structure
-    type t_void_ptr
-      type(t_problem), pointer :: p_robj => null()
-    end type
-
-    ! Internal variables
-    type(t_void_ptr) :: rptr
-
-    ! Transfer the generic object to the void pointer structure
-    rptr = transfer(rgenericObject, rptr)
-
-    ! Unwrap list from void pointer structure
-    p_rproblem => rptr%p_robj
+#define CASTTYPE t_problem
+#define CASTVAR  p_rproblem
+#define CASTGOBJ rgenericObject
+#include "uncastfromgenobject.h"
 
   end subroutine
 
