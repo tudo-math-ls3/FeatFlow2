@@ -39,7 +39,7 @@ contains
 #define CASTTYPE t_problem
 #define CASTVAR  rproblem
 #define CASTGOBJ rgenericObject
-#include <casttogenobject.h>
+#include "casttogenobject.h"
     
   end subroutine
 
@@ -57,7 +57,7 @@ contains
 #define CASTTYPE t_problem
 #define CASTVAR  p_rproblem
 #define CASTGOBJ rgenericObject
-#include <uncastfromgenobject.h>
+#include "uncastfromgenobject.h"
 
   end subroutine
 
