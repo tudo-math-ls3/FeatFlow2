@@ -754,13 +754,6 @@ contains
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcMatBdrConvP3d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
     ! velocity field (if any)
@@ -955,13 +948,6 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime,dnv,dval
     integer :: inode,ibdrtype,isegment,i
-
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvP3d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
@@ -1281,13 +1267,6 @@ contains
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcMatBdrConvP3d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
     ! velocity field (if any)
@@ -1482,13 +1461,6 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime,dnv,dval
     integer :: inode,ibdrtype,isegment,i
-
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvD3d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the

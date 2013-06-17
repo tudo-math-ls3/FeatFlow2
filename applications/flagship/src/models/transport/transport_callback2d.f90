@@ -1939,13 +1939,6 @@ do iedge = 1, nedges
 #endif
 
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrConvP2d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -2778,13 +2771,6 @@ do iedge = 1, nedges
 #endif
 
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrConvD2d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -3611,13 +3597,6 @@ do iedge = 1, nedges
 #endif
     
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrConvP2d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -3709,8 +3688,13 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
+#ifdef TRANSP_USE_IBP
             ! Scale normal velocity by the scaling parameter
             Daux(1,idofe,iel) = -dscale*dnv
+#else
+            ! Scale normal velocity by the scaling parameter
+            Daux(1,idofe,iel) = dscale*dnv
+#endif
           end do
         end do
         
@@ -3784,8 +3768,13 @@ do iedge = 1, nedges
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
             
+#ifdef TRANSP_USE_IBP
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = -dscale*dnv
+#else
+            ! Scale normal velocity by scaling parameter
+            Dcoefficients(1,ipoint,iel) = dscale*dnv
+#endif
           end do
         end do
 
@@ -3942,14 +3931,18 @@ do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
             ! Integration by parts yields integral term along the
-            ! whole boundary. The contribution along the inflow part
-            ! is eaten up by the Dirichlet boundary conditions. Thus,
+            ! whole boundary. The contribution along the primal inflow
+            ! part is eaten up by the Dirichlet boundary conditions
+            ! which are implemented into the linear form. Thus,
             ! contributions are calculated only along the outflow part
             if (dnv .gt. SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv
             end if
 #else
-            ! Scale the normal velocity by scaling parameter
+            ! Double integration by parts yields integral term only
+            ! along the primal inflow boundary. The remaining terms
+            ! are eaten up by the Dirichlet boundary conditions which
+            ! are implemented into in the linear form.
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv
             end if
@@ -4065,11 +4058,24 @@ do iedge = 1, nedges
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
             
-            ! Scale normal velocity by scaling parameter and update
-            ! boundary condition in the cubature points
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the primal inflow
+            ! part is eaten up by the Dirichlet boundary conditions
+            ! which are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .gt. SYS_EPSREAL_DP) then
               Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)-dscale*dnv
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the primal inflow boundary. The remaining terms
+            ! are eaten up by the Dirichlet boundary conditions which
+            ! are implemented into in the linear form.
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)+dscale*dnv
+            end if
+#endif
           end do
         end do
 
@@ -4142,13 +4148,28 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
-            ! Only at the primal outflow boundary:
-            ! Scale normal velocity by scaling parameter
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the primal inflow
+            ! part is eaten up by the flux boundary conditions
+            ! which are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .gt. SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = -dscale*dnv
             else
               Daux(1,idofe,iel) = 0.0_DP
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the primal inflow boundary. The remaining terms
+            ! are eaten up by the flux boundary conditions which
+            ! are implemented into in the linear form.
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = dscale*dnv
+            else
+              Daux(1,idofe,iel) = 0.0_DP
+            end if
+#endif
           end do
         end do
         
@@ -4221,14 +4242,29 @@ do iedge = 1, nedges
             ! Compute the normal velocity
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
-            
-            ! Only at the primal outflow boundary:
-            ! Scale normal velocity by scaling parameter
+
+#ifdef TRANSP_USE_IBP           
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the primal inflow
+            ! part is eaten up by the flux boundary conditions
+            ! which are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .gt. SYS_EPSREAL_DP) then
               Dcoefficients(1,ipoint,iel) = -dscale*dnv
             else
               Dcoefficients(1,ipoint,iel) = 0.0_DP
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the primal inflow boundary. The remaining terms
+            ! are eaten up by the flux boundary conditions which
+            ! are implemented into in the linear form.
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = dscale*dnv
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+#endif
           end do
         end do
 
@@ -4377,13 +4413,6 @@ do iedge = 1, nedges
 #endif
     
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrConvD2d_sim')
-    call sys_halt()
-#endif
-
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -4475,8 +4504,13 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
+#ifdef TRANSP_USE_IBP
             ! Scale normal velocity by the scaling parameter
             Daux(1,idofe,iel) = dscale*dnv
+#else
+            ! Scale normal velocity by the scaling parameter
+            Daux(1,idofe,iel) = -dscale*dnv
+#endif
           end do
         end do
         
@@ -4549,9 +4583,14 @@ do iedge = 1, nedges
             ! Compute the normal velocity
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
-            
+
+#ifdef TRANSP_USE_IBP            
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = dscale*dnv
+#else
+            ! Scale normal velocity by scaling parameter
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv
+#endif
           end do
         end do
 
@@ -4708,14 +4747,18 @@ do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
             ! Integration by parts yields integral term along the
-            ! whole boundary. The contribution along the inflow part
-            ! is eaten up by the Dirichlet boundary conditions. Thus,
+            ! whole boundary. The contribution along the dual inflow
+            ! part is eaten up by the Dirichlet boundary conditions
+            ! which are implemented into the linear form. Thus,
             ! contributions are calculated only along the outflow part
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv
             end if
 #else
-            ! Scale normal velocity by scaling parameter
+            ! Double integration by parts yields integral term only
+            ! along the dual inflow boundary. The remaining terms are
+            ! eaten up by the Dirichlet boundary conditions which are
+            ! implemented into in the linear form.
             if (dnv .gt. SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv
             end if
@@ -4831,11 +4874,24 @@ do iedge = 1, nedges
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
             
-            ! Scale normal velocity by scaling parameter and update
-            ! boundary condition in the cubature points
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the dual inflow
+            ! part is eaten up by the Dirichlet boundary conditions
+            ! which are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)+dscale*dnv
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the dual inflow boundary. The remaining terms are
+            ! eaten up by the Dirichlet boundary conditions which are
+            ! implemented into in the linear form.
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)-dscale*dnv
+            end if
+#endif
           end do
         end do
 
@@ -4908,13 +4964,28 @@ do iedge = 1, nedges
             dnv = Dnormal(idofe,iel,1)*p_DvelocityX(idofGlob)+&
                   Dnormal(idofe,iel,2)*p_DvelocityY(idofGlob)
 
-            ! Only at the dual outflow boundary:
-            ! Scale normal velocity by scaling parameter
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the dual inflow
+            ! part is eaten up by the flux boundary conditions which
+            ! are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Daux(1,idofe,iel) = dscale*dnv
             else
               Daux(1,idofe,iel) = 0.0_DP
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the dual inflow boundary. The remaining terms are
+            ! eaten up by the flux boundary conditions which are
+            ! implemented into in the linear form.
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = -dscale*dnv
+            else
+              Daux(1,idofe,iel) = 0.0_DP
+            end if
+#endif
           end do
         end do
         
@@ -4988,13 +5059,28 @@ do iedge = 1, nedges
             dnv = Dnormal(ipoint,iel,1)*Daux(ipoint,iel,1) +&
                   Dnormal(ipoint,iel,2)*Daux(ipoint,iel,2)
             
-            ! Only at the dual outflow boundary:
-            ! Scale normal velocity by scaling parameter
+#ifdef TRANSP_USE_IBP
+            ! Integration by parts yields integral term along the
+            ! whole boundary. The contribution along the dual inflow
+            ! part is eaten up by the flux boundary conditions
+            ! which are implemented into the linear form. Thus,
+            ! contributions are calculated only along the outflow part
             if (dnv .lt. -SYS_EPSREAL_DP) then
               Dcoefficients(1,ipoint,iel) = dscale*dnv
             else
               Dcoefficients(1,ipoint,iel) = 0.0_DP
             end if
+#else
+            ! Double integration by parts yields integral term only
+            ! along the dual inflow boundary. The remaining terms are
+            ! eaten up by the flux boundary conditions which are
+            ! implemented into in the linear form.
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = -dscale*dnv
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+#endif
           end do
         end do
 
@@ -5084,12 +5170,6 @@ do iedge = 1, nedges
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcMatBdrConvP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
@@ -5282,12 +5362,6 @@ do iedge = 1, nedges
     real(DP) :: dtime,dnv,dval
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
@@ -5598,12 +5672,6 @@ do iedge = 1, nedges
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcMatBdrConvP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
@@ -5796,12 +5864,6 @@ do iedge = 1, nedges
     real(DP) :: dtime,dnv,dval
     integer :: inode,ibdrtype,isegment,i
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvD2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first two quick access vectors
     ! points to the coordinates of the degrees of freedom and to the
@@ -6373,12 +6435,6 @@ do iedge = 1, nedges
     real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBurgP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -6700,12 +6756,6 @@ do iedge = 1, nedges
     real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBurgP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -7187,12 +7237,6 @@ do iedge = 1, nedges
     real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBLevP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -7525,12 +7569,6 @@ do iedge = 1, nedges
     real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBLevP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -7973,12 +8011,6 @@ do iedge = 1, nedges
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
     integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -8716,12 +8748,6 @@ do iedge = 1, nedges
     ! this case, the fluxes are evaluated in the degrees of freedom
     ! and interpolated to the cubature points on the boundary afterwards.
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgP2d_sim')
-    call sys_halt()
-#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
