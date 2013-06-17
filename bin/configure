@@ -326,6 +326,8 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/quadtree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/octree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/stack.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/casttogenobject.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/uncastfromgenobject.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_latxd.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79_padded.h " .
