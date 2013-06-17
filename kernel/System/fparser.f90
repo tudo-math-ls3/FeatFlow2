@@ -189,6 +189,7 @@
 !# sin(A)    : Sine of A. Returns the sine of the angle A, where A is
 !#             measured in radians.
 !# sinh(A)   : Same as sin() but for hyperbolic sine.
+!# sign(A)   : Sign of A.
 !# sqrt(A)   : Square root of A. Returns the value whose square is A.
 !# tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
 !#             is measured in radians.
@@ -520,8 +521,9 @@ module fparser
                             cCeil        = 46, &
                             cFloor       = 47, &
                             cCsc         = 48, &
-                            cSec         = 49, & ! --> last monadic operator: .OP.(A)
-                            VarBegin     = 50
+                            cSec         = 49, &
+                            cSign        = 50, & ! --> last monadic operator: .OP.(A)
+                            VarBegin     = 51
 
 !</constantblock>
 
@@ -549,35 +551,36 @@ module fparser
 
 !<constantblock description="function names for parser">
 
-  character (LEN=5), dimension(cIf:cSec), parameter :: Funcs = (/ 'if   ', &
-                                                                  'min  ', &
-                                                                  'max  ', &
-                                                                  'rrand', &
-                                                                  'atan2', &
-                                                                  'abs  ', &
-                                                                  'anint', &
-                                                                  'aint ', &
-                                                                  'exp  ', &
-                                                                  'log10', &
-                                                                  'log  ', &
-                                                                  'sqrt ', &
-                                                                  'sinh ', &
-                                                                  'cosh ', &
-                                                                  'tanh ', &
-                                                                  'sin  ', &
-                                                                  'cos  ', &
-                                                                  'tan  ', &
-                                                                  'cot  ', &
-                                                                  'asinh', &
-                                                                  'asin ', &
-                                                                  'acosh', &
-                                                                  'acos ', &
-                                                                  'atanh', &
-                                                                  'atan ', &
-                                                                  'ceil ', &
-                                                                  'floor', &
-                                                                  'csc  ', &
-                                                                  'sec  ' /)
+  character (LEN=5), dimension(cIf:cSign), parameter :: Funcs = (/ 'if   ', &
+                                                                   'min  ', &
+                                                                   'max  ', &
+                                                                   'rrand', &
+                                                                   'atan2', &
+                                                                   'abs  ', &
+                                                                   'anint', &
+                                                                   'aint ', &
+                                                                   'exp  ', &
+                                                                   'log10', &
+                                                                   'log  ', &
+                                                                   'sqrt ', &
+                                                                   'sinh ', &
+                                                                   'cosh ', &
+                                                                   'tanh ', &
+                                                                   'sin  ', &
+                                                                   'cos  ', &
+                                                                   'tan  ', &
+                                                                   'cot  ', &
+                                                                   'asinh', &
+                                                                   'asin ', &
+                                                                   'acosh', &
+                                                                   'acos ', &
+                                                                   'atanh', &
+                                                                   'atan ', &
+                                                                   'ceil ', &
+                                                                   'floor', &
+                                                                   'csc  ', &
+                                                                   'sec  ', &
+                                                                   'sign '/)
 
 !</constantblock>
 
@@ -2340,7 +2343,7 @@ contains
 
     ! Check all math functions
     n = 0
-    do j = cIf, cSec
+    do j = cIf, cSign
       k = min(len_trim(Funcs(j)), len(sfunctionString))
 
       ! Compare lower case letters
@@ -2382,7 +2385,7 @@ contains
     case(cMin:cAtan2)
       nparameters = 2
 
-    case(cAbs:cSec)
+    case(cAbs:cSign)
       nparameters = 1
 
     case default
@@ -2965,6 +2968,12 @@ contains
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cSign)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        rcomp%Dimmed(rcomp%iimmedSize) = sign(1._DP,rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
@@ -4467,6 +4476,9 @@ contains
         endif
         Dstack(istackPtr) = 1._DP/daux
 
+      case (cSign)
+        Dstack(istackPtr) = sign(1._DP,Dstack(istackPtr))
+
       case (cSin)
         Dstack(istackPtr) = sin(Dstack(istackPtr))
 
@@ -4893,6 +4905,12 @@ contains
           else
             Dstack(iblock, istackPtr) = 1._DP/daux
           end if
+        end do
+
+
+      case (cSign)
+        do iblock = 1, iblockSize
+           Dstack(iblock, istackPtr) = sign(1._DP,Dstack(iblock, istackPtr))
         end do
 
 
