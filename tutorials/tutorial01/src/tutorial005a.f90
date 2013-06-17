@@ -86,6 +86,40 @@ contains
     call output_line ("parprofile(1.5,len=2,max=10) = " // trim(sys_sdL(dval3,10)) )
 
     ! =================================
+    ! Conversion of polar coordinates
+    ! in cartesian coordinates
+    ! =================================
+    
+    call mprim_polarToCartesian(0.5_DP,0.0_DP,dval1,dval2)
+    call output_line ("polar(0.5,0.0    )  = " // trim(sys_sdL(dval1,10)) // "," &
+                                               // trim(sys_sdL(dval2,10)))
+
+    call mprim_polarToCartesian(0.5_DP,0.25_DP*SYS_PI,dval1,dval2)
+    call output_line ("polar(0.5,0.25 Pi)  = " // trim(sys_sdL(dval1,10)) // "," &
+                                               // trim(sys_sdL(dval2,10)))
+
+    call mprim_polarToCartesian(0.5_DP,-0.75*SYS_PI,dval1,dval2)
+    call output_line ("polar(0.5,-0.75 Pi) = " // trim(sys_sdL(dval1,10)) // "," &
+                                               // trim(sys_sdL(dval2,10)))
+
+    ! =================================
+    ! Conversion of cartesian coordinates
+    ! in polar coordinates
+    ! =================================
+    
+    call mprim_cartesianToPolar(0.5_DP,0.0_DP,dval1,dval2)
+    call output_line ("cartesian(0.5,0.0)         = " // trim(sys_sdL(dval1,10)) // "," &
+                                                      // trim(sys_sdL(dval2,10)))
+
+    call mprim_cartesianToPolar(0.25_DP*sqrt(2.0_DP),0.25_DP*sqrt(2.0_DP),dval1,dval2)
+    call output_line ("cartesian(0.3535,0.3535)   = " // trim(sys_sdL(dval1,10)) // "," &
+                                                      // trim(sys_sdL(dval2,10)))
+
+    call mprim_cartesianToPolar(-0.25_DP*sqrt(2.0_DP),-0.25_DP*sqrt(2.0_DP),dval1,dval2)
+    call output_line ("cartesian(-0.3535,-0.3535) = " // trim(sys_sdL(dval1,10)) // "," &
+                                                      // trim(sys_sdL(dval2,10)))
+    
+    ! =================================
     ! Horner scheme
     ! =================================
     
