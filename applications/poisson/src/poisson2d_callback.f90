@@ -75,6 +75,13 @@ module poisson2d_callback
   use element
   use cubature
   use spatialdiscretisation
+  use scalarpde
+  use domainintegration
+  use collection
+  use discretebc
+  use discretefbc
+  use pprocgradients
+  use pprocerror
   
   implicit none
   
@@ -86,7 +93,6 @@ module poisson2d_callback
   public :: getReferenceFunction_Sin2D
   public :: getBoundaryValues_2D
   public :: getBoundaryValuesFBC_2D
-  public :: getBoundaryValuesMR_2D
   public :: gethadaptMonitorFunction_2D
 
 contains
@@ -99,12 +105,6 @@ contains
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -179,12 +179,6 @@ contains
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
   
 !<description>
   ! This subroutine is called during the calculation of errors. It has to compute
@@ -280,12 +274,6 @@ contains
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
     
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
@@ -359,12 +347,6 @@ contains
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
   
 !<description>
   ! This subroutine is called during the calculation of errors. It has to compute
@@ -451,10 +433,6 @@ contains
 
   subroutine getBoundaryValues_2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  
-  use collection
-  use spatialdiscretisation
-  use discretebc
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -545,10 +523,6 @@ contains
 
   subroutine getBoundaryValuesFBC_2D (Icomponents,rdiscretisation,&
                                       Revaluation, rcollection)
-  
-  use collection
-  use spatialdiscretisation
-  use discretefbc
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
@@ -693,75 +667,6 @@ contains
   end subroutine
 
   ! ***************************************************************************
-
-  !<subroutine>
-
-  subroutine getBoundaryValuesMR_2D (Icomponents,rdiscretisation,rmeshRegion,&
-                                      cinfoNeeded,Dcoords,Dvalues,rcollection)
-  
-  use collection
-  use spatialdiscretisation
-  use meshregion
-  
-!<description>
-  ! This subroutine is called during the assembly of boundary conditions which
-  ! are defined on mesh regions.
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary:
-  !   Icomponents(1) defines the number of the solution component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
-  !   2=2nd solution component, e.g. Y-velocity,...,
-  !   3=3rd solution component, e.g. pressure)
-  ! For pressure drop boundary / normal stress:
-  !   Velocity components that are affected by the normal stress
-  integer, dimension(:), intent(in)                           :: Icomponents
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-  
-  ! Mesh region that is currently being processed.
-  type(t_meshRegion), intent(in)                              :: rmeshRegion
-
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  integer, intent(in)                                         :: cinfoNeeded
-  
-  ! The coordinates of the point for which the boundary values are to be
-  ! calculated.
-  real(DP), dimension(:), intent(in)                          :: Dcoords
-
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
-  type(t_collection), intent(inout), optional                 :: rcollection
-
-!</input>
-
-!<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1).
-  ! If multiple values are needed, they are collected here (e.g. for
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  !
-  ! The function may return SYS_INFINITY_DP as a value. This indicates the
-  ! framework to ignore the node and treat it as "natural boundary condition"
-  ! node.
-  real(DP), dimension(:), intent(out)                         :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    ! Return zero Dirichlet boundary values for all situations.
-    Dvalues(1) = 0.0_DP
-
-  end subroutine
-
-  ! ***************************************************************************
   ! Only for poisson2d_method1_hadapt: Monitor function for adaptive grid refinement
   
 !<subroutine>
@@ -769,9 +674,6 @@ contains
   subroutine gethadaptMonitorFunction_2D(rtriangulation,rsolution,ieltype,&
       ierrorestimator,rindicator)
   
-    use pprocgradients
-    use pprocerror
-
 !<description>
   ! This routine defines a "monitor function" for the adaptive grid refinement
   ! with the h-adaptivity refinement strategy. rindicator is a vector with
