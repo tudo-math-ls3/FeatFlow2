@@ -307,6 +307,7 @@
 		<File RelativePath=".\PDEOperators\groupfemscalar.f90"/>
 		<File RelativePath=".\PDEOperators\groupfemsystem.f90"/>
 		<File RelativePath=".\PDEOperators\jumpstabilisation.f90"/>
+		<File RelativePath=".\PDEOperators\lumping.f90"/>
 		<File RelativePath=".\PDEOperators\matrixrestriction.f90"/>
 		<File RelativePath=".\PDEOperators\stdoperators.f90"/></Filter>
 		<Filter Name="Postprocessing">

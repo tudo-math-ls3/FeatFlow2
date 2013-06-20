@@ -258,7 +258,7 @@ use constant SRCLIST_KERNEL =>
     "PDEOperators/afcstabsystemfct.f90 PDEOperators/afcstabsystemtvd.f90 ".
     "PDEOperators/groupfembase.f90 PDEOperators/groupfemscalar.f90 PDEOperators/groupfemsystem.f90 " .
     "PDEOperators/matrixrestriction.f90 PDEOperators/stdoperators.f90 PDEOperators/convection.f90 " .
-    "PDEOperators/jumpstabilisation.f90 " .
+    "PDEOperators/jumpstabilisation.f90 PDEOperators/lumping.f90 " .
 
     "Postprocessing/boundaryintegral.f90 Postprocessing/mapleio.f90 Postprocessing/matrixio.f90 " .
     "Postprocessing/pprocerror.f90 Postprocessing/pprocgradients.f90 Postprocessing/pprocindicator.f90 " .

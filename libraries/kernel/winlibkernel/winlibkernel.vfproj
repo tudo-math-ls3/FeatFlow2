@@ -235,6 +235,7 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsccallback.inc"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsyscallback.inc"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\jumpstabilisation.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\lumping.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\matrixrestriction.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\stdoperators.f90"/></Filter>
 		<Filter Name="Postprocessing">
