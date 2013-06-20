@@ -9,10 +9,10 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) vecio_writeArray_DP
+!# 1.) vecio_writeArray
 !#     -> Writes an array into a (text or binary) file
 !#
-!# 2.) vecio_readArray_DP
+!# 2.) vecio_readArray
 !#     -> Reads an array from a (text or binary) file
 !#
 !# 3.) vecio_writeBlockVectorHR
@@ -58,8 +58,8 @@ module vectorio
 
   private
 
-  public :: vecio_writeArray_DP
-  public :: vecio_readArray_DP
+  public :: vecio_writeArray
+  public :: vecio_readArray
   public :: vecio_writeBlockVectorHR
   public :: vecio_writeVectorHR
   public :: vecio_readBlockVectorHR
@@ -68,6 +68,18 @@ module vectorio
   public :: vecio_writeBlockVectorMaple
   public :: vecio_spyVector
   public :: vecio_spyBlockVector
+  
+  interface vecio_writeArray
+    module procedure vecio_writeArray_DP
+    module procedure vecio_writeArray_SP
+    module procedure vecio_writeArray_int
+  end interface
+
+  interface vecio_readArray
+    module procedure vecio_readArray_DP
+    module procedure vecio_readArray_SP
+    module procedure vecio_readArray_int
+  end interface
 
 contains
 
@@ -115,8 +127,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
       if (cf .eq. -1) then
-        call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_DP')
+        call output_line ("Could not open file "//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,"vecio_writeArray_DP")
         call sys_halt()
       end if
     else
@@ -149,6 +161,93 @@ contains
         do i=1, size(Ddata)
           dval = Ddata(i)
           write (cf) dval
+        end do
+      end if
+    end if
+
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine vecio_writeArray_int (Idata, ifile, sfile, sformat, Ipermutation)
+
+  !<description>
+    ! Write integer vector into a text file.
+    ! The array is written out 'as it is', i.e. as specified by sformat
+    ! without any additional header or footer.
+  !</description>
+
+  !<input>
+    ! vector: array [:] of integer
+    integer, dimension(:), intent(in) :: Idata
+
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+
+    ! OPTIONAL: Format string to use for the output; e.g. '(I10)'.
+    ! If not specified, data is written to the file unformatted
+    ! (i.e. in a computer dependent, not human readable form).
+    character(len=*), intent(in), optional :: sformat
+
+    ! OPTIONAL: Permutation for unsorting.
+    ! If specified, this permutation tells how to unsort a vector before
+    ! writing it to the file.
+    integer, dimension(:), optional :: Ipermutation
+  !</input>
+
+!</subroutine>
+
+    !local variables
+    integer :: i, cf
+    integer :: ival
+
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_int')
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+
+    if (size(Idata) .le. 0) return
+
+    ! Write the vector.
+    ! Unsort the vector on the fly if necessary.
+    if (present(sformat)) then
+      if (present(Ipermutation)) then
+        do i=1, size(Idata)
+          ival = Idata(Ipermutation(i))
+          write (cf,sformat) ival
+        end do
+      else
+        do i=1, size(Idata)
+          ival = Idata(i)
+          write (cf,sformat) ival
+        end do
+      end if
+    else
+      if (present(Ipermutation)) then
+        do i=1, size(Idata)
+          ival = Idata(Ipermutation(i))
+          write (cf) ival
+        end do
+      else
+        do i=1, size(Idata)
+          ival = Idata(i)
+          write (cf) ival
         end do
       end if
     end if
@@ -202,8 +301,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
       if (cf .eq. -1) then
-        call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_SP')
+        call output_line ("Could not open file "//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,"vecio_writeArray_SP")
         call sys_halt()
       end if
     else
@@ -294,8 +393,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, bformatted=present(sformat))
       if (cf .eq. -1) then
-        call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_DP')
+        call output_line ("Could not open file "//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,"vecio_readArray_DP")
         call sys_halt()
       end if
     else
@@ -326,6 +425,96 @@ contains
         do i=1, size(Ddata)
           read (cf) dval
           Ddata(i) = dval
+        end do
+      end if
+    end if
+
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine vecio_readArray_int (Idata, ifile, sfile, sformat, Ipermutation)
+
+  !<description>
+    ! Reads a integer vector from a file.
+    ! The array is read in 'as it is', i.e. as specified by sformat
+    ! without any additional header or footer.
+  !</description>
+
+  !<input>
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+
+    ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
+    ! If not specified, data is read from the file unformatted
+    ! (i.e. in a computer dependent, not human readable form).
+    ! When reading an array written out by vecio_writeArray_DP,
+    ! the format string shall match the setting of the
+    ! format string used there.
+    character(len=*), intent(in), optional :: sformat
+
+    ! OPTIONAL: Permutation for sorting.
+    ! If specified, this permutation tells how to unsort a vector before
+    ! writing it to the file.
+    integer, dimension(:), optional :: Ipermutation
+  !</input>
+
+  !<output>
+    ! Array where to write the data to.
+    integer, dimension(:), intent(out) :: Idata
+  !</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i, cf
+    integer :: ival
+
+    if (ifile .eq. 0) then
+      call io_openFileForReading(sfile, cf, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        call output_line ("Could not open file "//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,"vecio_readArray_int")
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+
+    ! Read the array.
+    if (present(sformat)) then
+      ! Unsort the vector on the fly if necessary.
+      if (present(Ipermutation)) then
+        do i=1, size(Idata)
+          read (cf,sformat) ival
+          Idata(Ipermutation(i)) = ival
+        end do
+      else
+        do i=1, size(Idata)
+          read (cf,sformat) ival
+          Idata(i) = ival
+        end do
+      end if
+    else
+      ! Unsort the vector on the fly if necessary.
+      if (present(Ipermutation)) then
+        do i=1, size(Idata)
+          Idata(Ipermutation(i)) = ival
+        end do
+      else
+        do i=1, size(Idata)
+          read (cf) ival
+          Idata(i) = ival
         end do
       end if
     end if

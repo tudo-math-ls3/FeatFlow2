@@ -103,6 +103,12 @@
 !#
 !# 30.) mprim_hornerd2
 !#      -> Evaluates the 2nd derivative of a polynomial using the horner scheme.
+!#
+!# 31.) mprim_polarToCartesian
+!#      -> Converts polar coordinates to cartesian coordinates
+!#
+!# 32.) mprim_cartesianToPolar
+!#      -> Converts cartesian coordinates to polar coordinates
 !# </purpose>
 !##############################################################################
 
@@ -335,6 +341,19 @@ module mprimitives
   interface mprim_hornerd2
     module procedure mprim_hornerd2SP
     module procedure mprim_hornerd2DP
+  end interface
+  
+  public :: mprim_polarToCartesian
+  public :: mprim_cartesianToPolar
+  
+  interface mprim_polarToCartesian
+    module procedure mprim_polarToCartesian2D
+    module procedure mprim_polarToCartesian3D
+  end interface
+  
+  interface mprim_cartesianToPolar
+    module procedure mprim_cartesianToPolar2D
+    module procedure mprim_cartesianToPolar3D
   end interface
 
 contains
@@ -6077,4 +6096,119 @@ contains
     
   end function
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_polarToCartesian2D(dr,dphi,dx,dy)
+
+!<description>
+  ! Calculates 2D cartesian coordinates from polar coordinates
+!</description>
+
+!<input>
+  ! Radius and angle of a point.
+  real(DP), intent(in) :: dr, dphi
+!</input>
+
+!<inputoutput>
+  ! X/Y cartesian coordinate of the point
+  real(DP), intent(out) :: dx,dy
+!</inputoutput>
+
+!</subroutine>
+
+    dx = dr * cos(dphi)
+    dy = dr * sin(dphi)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_polarToCartesian3D(dr,dphi,dpsi,dx,dy,dz)
+
+!<description>
+  ! Calculates 2D cartesian coordinates from polar coordinates
+!</description>
+
+!<input>
+  ! Radius, Y-angle and Z-angle of a point.
+  real(DP), intent(in) :: dr, dphi, dpsi
+!</input>
+
+!<inputoutput>
+  ! X/Y cartesian coordinate of the point
+  real(DP), intent(out) :: dx,dy,dz
+!</inputoutput>
+
+!</subroutine>
+
+    dx = dr * cos(dphi)
+    dy = dr * sin(dphi)
+    dz = dr * sin(dpsi)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_cartesianToPolar2D(dx,dy,dr,dphi)
+
+!<description>
+  ! Calculates 3D cartesian coordinates from polar coordinates
+!</description>
+
+!<input>
+  ! X/Y/Z cartesian coordinate of a point
+  real(DP), intent(in) :: dx,dy
+!</input>
+
+!<inputoutput>
+  ! Radius, Y-angle and Z-angle of a point.
+  real(DP), intent(out) :: dr, dphi
+!</inputoutput>
+
+!</subroutine>
+
+    dr = sqrt(dx**2 + dy**2)
+    dphi = atan2 (dy,dx)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_cartesianToPolar3D(dx,dy,dz,dr,dphi,dpsi)
+
+!<description>
+  ! Calculates 3D cartesian coordinates from polar coordinates
+!</description>
+
+!<input>
+  ! X/Y/Z cartesian coordinate of a point
+  real(DP), intent(in) :: dx,dy,dz
+!</input>
+
+!<inputoutput>
+  ! Radius, Y-angle and Z-angle of a point.
+  real(DP), intent(out) :: dr, dphi, dpsi
+!</inputoutput>
+
+!</subroutine>
+
+    dr = sqrt(dx**2 + dy**2 + dz**2)
+    dphi = atan2 (dy,dx)
+    
+    if (dr .GT. SYS_EPSREAL_DP) then
+      dpsi = asin (dy/dr)
+    else
+      dpsi = 0.0_DP
+    end if
+
+  end subroutine
+
 end module mprimitives
