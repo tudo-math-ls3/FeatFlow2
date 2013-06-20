@@ -87,7 +87,7 @@ contains
       call lsyssc_getbase_double (rmatrixDest,p_Ddest)
     
       ! Destination matrix format?
-      select case (rmatrixSource%cmatrixFormat)
+      select case (rmatrixDest%cmatrixFormat)
       case (LSYSSC_MATRIX9)
       
         call lsyssc_getbase_Kdiagonal (rmatrixDest,p_KdiagDest)
@@ -139,7 +139,7 @@ contains
       call lsyssc_getbase_double (rmatrixDest,p_Ddest)
     
       ! Destination matrix format?
-      select case (rmatrixSource%cmatrixFormat)
+      select case (rmatrixDest%cmatrixFormat)
       case (LSYSSC_MATRIX9)
       
         call lsyssc_getbase_Kdiagonal (rmatrixDest,p_KdiagDest)
@@ -250,7 +250,7 @@ contains
       call lsyssc_getbase_double (rmatrixDest,p_Ddest)
     
       ! Destination matrix format?
-      select case (rmatrixSource%cmatrixFormat)
+      select case (rmatrixDest%cmatrixFormat)
       case (LSYSSC_MATRIX9)
       
         call lsyssc_getbase_Kdiagonal (rmatrixDest,p_KdiagDest)

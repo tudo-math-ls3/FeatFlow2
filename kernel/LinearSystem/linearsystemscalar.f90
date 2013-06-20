@@ -18495,7 +18495,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_createDiagMatrixDiscr (rdiscretisationTrial,cmatrixFormat,&
-      rmatrix,bclear,rdiscretisationTest)
+      rmatrix,rdiscretisationTest)
 
 !<description>
   ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
@@ -18516,9 +18516,6 @@ contains
   ! the discretisation of the test functions, this test and trial
   ! functions coincide.
   type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
-
-  ! OPTIONAL: Whether to initialise the matrix with zero.
-  logical, intent(in), optional :: bclear
 
   ! OPTIONAL: The underlying discretisation structure for the test functions.
   ! If not specified, the trial functions coincide with the test functions.
@@ -18589,13 +18586,6 @@ contains
       call sys_halt()
 
     end select
-
-    ! Probably clear the matrix    
-    if (present(bclear)) then
-      if (bclear) then
-        call lsyssc_clearMatrix (rmatrix)
-      end if
-    end if
 
   end subroutine
 
