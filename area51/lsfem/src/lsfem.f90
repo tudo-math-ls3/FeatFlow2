@@ -3,16 +3,19 @@
 !# <name> lsfem </name>
 !# ****************************************************************************
 !# <purpose>
+!#
 !# This package solves 2D problems using the least-squares FEM.
 !# The following PDEs are considered in this code:
-!#  - Advection-diffusion-reaction equations
-!#  - Navier-Stokes equations
-!#  - non-Newtonian fluid flows
+!#  - Advection-diffusion-reaction equations (Poisson, diffusion-reaction)
+!#  - Navier-Stokes equations (vorticity-based, stress-based)
+!#  - non-Newtonian fluid flows (stress-based)
 !#
 !# </purpose> 
 !##############################################################################
 
 program lsfem
+
+  use LS_Poisson_MG2D
 
   use LS_NS_VVP_MG2D
   use LS_NS_VVP_Time_MG2D
@@ -21,7 +24,7 @@ program lsfem
   use LS_NS_SVP_MG_MAT2D
   use LS_NS_SVP_RT2D
   use LS_NS_SVP
-  use LS_NS_SVP_NNew_MG2D
+  use LS_SVP_NNew_MG2D
   
   implicit none
   
@@ -53,13 +56,22 @@ program lsfem
   ! 2.) Initialise FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-  ! Call the problem to solve 2D Navier-stokes:
+
+  ! Call the problem to solve 2D Poisson equation:
   call output_lbrk()
-  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+  call output_line('Calculating 2D Poisson')
   call output_lbrk()
-  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
-  call output_line('-------------------------------------')
-  call ls_vvp_mg2d
+  call output_line('Div-Grad-(Curl)-Multigrid')  
+  call output_line('-------------------------')
+  call LS_Poisson_mg
+
+!  ! Call the problem to solve 2D Navier-stokes:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+!  call output_lbrk()
+!  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
+!  call output_line('-------------------------------------')
+!  call ls_vvp_mg2d
 
 !  ! Call the problem to solve 2D transient Navier-stokes:
 !  call output_lbrk()

@@ -1,15 +1,15 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> LS_NS_SVP_NNew_MG2D </name>
+!# <name> LS_SVP_NNew_MG2D </name>
 !# ****************************************************************************
 !# <purpose>   
-!# This module solves the 2D Navier-Stokes (NS) eq. using LSFEM.
+!# This module solves the 2D non-Newtonian fluid flows using LSFEM.
 !#
-!# The second-order elliptic NS equations are reformulated into first-order
-!# system of equations using the the definition of the stresses:
+!# The second-order elliptic non-Newtonian fluid flow equations
+!# are reformulated into first-order system of equations using the
+!# definition of the stresses:
 !#   stress: -pI + \nu(Dii(u)) \nabla(\bu)
-!# The resulting system in this case is Stress-Velocity-Pressure 
-!#   (SVP).
+!# The resulting system in this case is Stress-Velocity-Pressure (SVP).
 !# The problem is solved in a coupled manner for the solution of:
 !#   - velocity component  u1, u2 (in 2D)
 !#   - pressure            p
@@ -17,35 +17,37 @@
 !# variables.
 !#
 !# The viscosity is not constant and depends on the second invariant, Dii(u),
-!# of the deformation rate tensor, D(u), through power law for example.
+!# of the deformation rate tensor, D(u), for instance through power law model.
 !# Here we have:
-!#  D(u) = 1/2 ( grad(u) + grad(u)^T )
-!#  Dii(u) = 1/2 ( 2D(u):2D(u) ) = 1/2 tr(Dii(u)^2)
+!#    D(u) = 1/2 ( grad(u) + grad(u)^T )
+!#    Dii(u) = 1/2 ( 2D(u):2D(u) ) = 1/2 tr(Dii(u)^2)
 !#  
 !#  Viscosity defines with the POWER LAW:
-!#                             r/2-1
-!#   { \nu(Dii(u)) = \nu_0 Dii(u)^     
-!#   { where  ( r>1 , \nu_0>0 )
+!#                               r/2-1
+!#    { \nu(Dii(u)) = \nu_0 Dii(u)^     
+!#    { where  ( r>1 , \nu_0>0 )
 !# 
 !#  and with the CARREAU LAW:
-!#                                                            r/2-1
-!#   { \nu(Dii(u)) = \nu_inf + (\nu_0-\nu_inf) (1+\landa Dii(u))^     
-!#   { where  ( \landa>0, r>1 , \nu_0>\nu_inf>=0 )
+!#                                                              r/2-1
+!#     { \nu(Dii(u)) = \nu_inf + (\nu_0-\nu_inf) (1+\landa Dii(u))^     
+!#     { where  ( \landa>0, r>1 , \nu_0>\nu_inf>=0 )
 !#
 !# The nonlinear terms are first linearized using Newton/Fixed-point method.
 !# The LSFEM formulation then applied which yiedls a symmetric-
 !# positive definite linear system of equations. This routine uses the
-!# multigrid as linear solver. The discretisation uses the block assembly
-!# method to evaluate the system matrices all-in-one.
+!# multigrid-preconditioned CG as linear solver.
+!# The discretisation uses the block assembly method to evaluate
+!# the system matrices all-in-one.
+!#
 !# </purpose>
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Apr  22, 2013
-!# Last Update:   Jun  09, 2013
+!# Last Update:   Jun  25, 2013
 !# 
 !##############################################################################
 
-module LS_NS_SVP_NNew_MG2D
+module LS_SVP_NNew_MG2D
 
   use fsystem
   use storage

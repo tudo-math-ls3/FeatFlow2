@@ -4,17 +4,17 @@
 !# ****************************************************************************
 !# <purpose>   
 !# This module solves the 2D Poisson eq. using LSFEM. The equation reads:
-!#  { -\triangle p = f   in \Omega        
-!#  {            p = 0   on \Gamma_D,    (1)
+!#    { -\triangle p = f   in \Omega        
+!#    {            p = 0   on \Gamma_D,    (1)
 !#  where f is a body force.
 !#
 !# The second-order elliptic equation (1) is reformulated into first-order
 !# system of equations using the first derivatives of the primary variable:
 !#      flux: \bu = -\nabla(p).
 !# The resulting system is the 'div-grad' system which reads:
-!#  {        \nabla p = f   in \Omega        
-!#  { \bu + \nabla(p) = 0   in \Omega          (2)
-!#  {               p = 0   on \Gamma_D,       
+!#    {        \nabla p = f   in \Omega        
+!#    { \bu + \nabla(p) = 0   in \Omega          (2)
+!#    {               p = 0   on \Gamma_D,       
 !# The problem is solved in a coupled manner for the solution of:
 !#   - primary variable  p
 !#   - the fluxes        \bu.
@@ -26,11 +26,11 @@
 !#  can be added to the boundary conitions, i.e.
 !#      \bn \times \bu = 0  on \Gamma_D.
 !#  So, the 'div-grad-curl' system reads
-!#  {          \nabla p = f   in \Omega        
-!#  {   \bu + \nabla(p) = 0   in \Omega
-!#  { \nabla \times \bu = 0   in \Omega         (3)
-!#  {    \bn \times \bu = 0   on \Omega_D
-!#  {                 p = 0   on \Gamma_D,     
+!#    {          \nabla p = f   in \Omega        
+!#    {   \bu + \nabla(p) = 0   in \Omega
+!#    { \nabla \times \bu = 0   in \Omega         (3)
+!#    {    \bn \times \bu = 0   on \Omega_D
+!#    {                 p = 0   on \Gamma_D,     
 !#
 !# The LSFEM formulation then applied to system of equations (2) and (3)
 !# which yiedls a symmetric, positive-definite linear system of equations.
@@ -40,7 +40,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Jan  14, 2011
-!# Last Update:   Jun  24, 2013
+!# Last Update:   Jun  25, 2013
 !# 
 !##############################################################################
 
@@ -233,6 +233,7 @@ contains
   ! 7)- Implement Boundary Conditions
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   call ls_BCs_Dirichlet(Rlevels,rrhs,rvector,NLMAX,NLMIN,rcollection)
+
      
   ! Start Solver Timer
   call stat_startTimer(rtimerSolver)   
@@ -267,7 +268,7 @@ contains
                     trim(sys_sdL(rtimerTotal%delapsedReal,10)))  
     
   call output_lbrk ()
-  call output_line ("Time for Nonlinear Solver: "//&
+  call output_line ("Time for Linear Solver: "//&
                     trim(sys_sdL(rtimerSolver%delapsedReal,10)))
     
   end subroutine
@@ -749,8 +750,7 @@ contains
                 
  !<description>  
   ! In this subroutine we discretise the boundary conditions and
-  ! prepare them to be applied to the matrix/RHS/sol in the 
-  ! nonlinear iteration loop.
+  ! prepare them to be applied to the matrix/RHS/sol later.
  !</description>                
 
  !<output>
@@ -1790,10 +1790,6 @@ contains
   
   ! A couple of block vectors.
   type(t_vectorBlock) :: rvector,rrhs
-  
-  ! Temporary scalar vector; used for calculating the nonlinear matrix
-  ! on lower levels / projecting the solution from higher to lower levels.
-  type(t_vectorScalar), pointer :: p_rtempVectorSc
   !</inputoutput>
 
 !</subroutine>
@@ -1980,7 +1976,7 @@ contains
       p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
          
       ! A12      
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx + Dcurl*dbasJx*dbasIy  )       
+      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx - Dcurl*dbasJx*dbasIy  )       
       p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
       
       ! A21
