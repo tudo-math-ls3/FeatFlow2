@@ -7,7 +7,7 @@
 [GENERAL]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Select the problem to solve!
-#   = 0  Unit square
+#   = 0  Unit square with analytical solution
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Problem = 0
 
@@ -21,7 +21,7 @@ Problem = 0
 #  set icurl_boundary = 1 to activate it.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 icurl = 1
-icurl_boundary = 0
+icurl_boundary = 1
 
 
 #-----------------------------------------------------
@@ -33,10 +33,10 @@ icurl_boundary = 0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 4
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -61,7 +61,7 @@ Ptild = 0
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
-dPert = 0.0
+dPert = 0.1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of 2D cubature rule for numerical integration
@@ -101,12 +101,12 @@ LINsolver = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver relative error
-depsRelLS = 1e-3
+depsRelLS = 1e-6
 
 # If we have a Multigrid-preconditioned solver, then,
-#  what is the Krylov subspace linear solver Max. number of iterations
-#  "=10 for flow around cylinder"
-nmaxItsLS = 10
+#  what is the Krylov subspace linear solver
+#  Max. number of iterations
+nmaxItsLS = 20
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -124,7 +124,10 @@ ioutputLevelLS = 2
 #-----------------------------------------------------
 [MULTI]
 
-# Multi-grid cycle: 0= F-Cycle  1= V-Cycle  2= W-Cycle
+# Multi-grid cycle
+#  0= F-Cycle
+#  1= V-Cycle
+#  2= W-Cycle
 ctMG = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,7 +174,7 @@ DampSmoothMG = 1.0
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Smoother's preconditioner
 #  This sets a preconditioner for the
-#  smoother which is set in 'smoothMG'
+#  smoother which is defined in 'smoothMG'
 #  =0 No preconditioner
 #  =1 General Vanka
 #  =2 SSOR
@@ -192,13 +195,13 @@ nsmMG = 4
 #      MG Control Parameters
 # Relative multigrid error
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-depsRelMG = 1e-3
+depsRelMG = 1e-5
 
 # Absolute multigrid error
 depsAbsMG = 1E-5
 
 # Max. number of iterations
-nmaxItsMG = 2
+nmaxItsMG = 4
 # Min. number of iterations
 nminItsMG = 1
 
