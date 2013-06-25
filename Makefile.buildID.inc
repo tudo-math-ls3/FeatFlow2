@@ -1,7 +1,7 @@
 #!/usr/bin/env make
 ########################################################################
 #                                                                      #
-#         FINITE ELEMENT ANALYSIS TOOLS  2                             #
+#         FINITE ELEMENT ANALYSIS TOOLS 2                              #
 #                                                                      #
 # Authors: M. Koester, M. Moeller, S. Turek                            #
 #          S.Buijssen                                                  #
@@ -61,203 +61,28 @@ CDPATH=
 ##############################################################################
 # Set default target platforms for compilation of serial applications.
 #
-# Refine the machine ID by specifying main fortran compiler and blas library
+# Refine the machine ID by specifying main Fortran compiler and blas library
 # implementation to come up with default build IDs for every platform. 
 # List is to be extended for every new host FEAT is ported to.
 ##############################################################################
 
-ifeq ($(call match,$(REALID),pc-.*-cygwin_nt.*),yes)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), alpha-ev6-osf1)
+# Use DEC Fortran compiler for DEC Alpha machines
+ifeq ($(call match,$(REALID),alpha-.*-osf1.*),yes)
 REALID:=$(strip $(REALID))-cf90-dxml
 endif
 
-ifeq ($(strip $(REALID)), armv7l-cortexa9-linux)
-REALID:=$(strip $(REALID))-gcc-blas
+# Use xlf Fortran compiler on IBM machines running AIX
+ifeq ($(call match,$(REALID),ibm-.*-aix.*),yes)
+REALID:=$(strip $(REALID))-xlf-blas
 endif
 
-ifeq ($(strip $(REALID)), ia64-itanium2-linux)
-# REALID:=$(strip $(REALID))-intel-mkl
-REALID:=$(strip $(REALID))-gcc-blas
+# Use SunStudio Fortran compiler on Sun machines running SunOS
+ifeq ($(call match,$(REALID),sun.*-.*-sunos.*),yes)
+REALID:=$(strip $(REALID))-sunstudio-perf
 endif
 
-ifeq ($(strip $(REALID)), ia64-itanium2x2-linux)
-# REALID:=$(strip $(REALID))-intel-mkl
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), ibm-powerpc_power4-aix)
-# REALID:=$(strip $(REALID))-xlf-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-athlon64-linux)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-athlonxp-linux)
-REALID:=$(strip $(REALID))-g95-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-coreduo-darwin)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-coreduo-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-coresolo-linux)
-REALID:=$(strip $(REALID))-g95-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-coresolo-darwin)
-# REALID:=$(strip $(REALID))-gcc-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-nehalem-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-sandybridge-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-ivybridge-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-opteron-linux)
-# REALID:=$(strip $(REALID))-g95-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-opteron4100-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-opteron6100-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-opteronx2-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-penryn-darwin)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-pentium3-linux)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-pentium4-linux)
-# REALID:=$(strip $(REALID))-gcc-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-pentium4m-linux)
-# REALID:=$(strip $(REALID))-gcc-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-pentiumm-linux)
-# REALID:=$(strip $(REALID))-gcc-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc-turionx2-linux)
-REALID:=$(strip $(REALID))-g95-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-athlon64x2-linux)
-# REALID:=$(strip $(REALID))-gcc-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-coreduo-darwin)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-coreduo-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-nehalem-darwin)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-nehalem-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-opteron-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-opteron4100-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-opteron6100-linux)
-# REALID:=$(strip $(REALID))-intel-goto2
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-opteronx2-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-penryn-darwin)
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-penryn-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), pc64-pentium4-linux)
-# REALID:=$(strip $(REALID))-intel-goto
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), sun4u-sparcv8-sunos)
-# REALID:=$(strip $(REALID))-sunstudio-perf
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), sun4u-sparcv9-sunos)
-# REALID:=$(strip $(REALID))-sunstudio-perf
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), sun4v-sparcv9-sunos)
-# REALID:=$(strip $(REALID))-sunstudio-perf
-REALID:=$(strip $(REALID))-gcc-blas
-endif
-
-ifeq ($(strip $(REALID)), sx6-none-superux)
-REALID:=$(strip $(REALID))-f90-keisan
-endif
-
-ifeq ($(strip $(REALID)), sx8-none-superux)
+# Use NEC Fortran compiler on NEC SX machines running SuperUX
+ifeq ($(call match,$(REALID),sx.*-.*-superux.*),yes)
 REALID:=$(strip $(REALID))-f90-keisan
 endif
 
@@ -271,23 +96,11 @@ endif
 # Set default target platforms for compilation of parallel applications.
 # i.e. refine the machine REALID even more by specifying the MPI environment.
 ifeq ($(strip $(MPI)), YES)
-ifeq ($(strip $(REALID)), ibm-powerpc_power4-aix-xlf-goto)
+ifeq ($(call match,$(REALID),ibm-.*-aix-xlf-goto),yes)
 REALID:=$(strip $(REALID))-poempi
 endif
 
-ifeq ($(strip $(REALID)), pc-pentium4-linux64-intel-goto)
-REALID:=$(strip $(REALID))-lanlmpi
-endif
-
-ifeq ($(strip $(REALID)), sx6-none-superux-f90-keisan)
-REALID:=$(strip $(REALID))-mpi
-endif
-
-ifeq ($(strip $(REALID)), sx8-none-superux-f90-keisan)
-REALID:=$(strip $(REALID))-mpi
-endif
-
-ifeq ($(strip $(REALID)), ia64-itanium2-linux64-intel-mkl)
+ifeq ($(call match,$(REALID),sx.*-.*-superux-f90-keisan),yes)
 REALID:=$(strip $(REALID))-mpi
 endif
 
