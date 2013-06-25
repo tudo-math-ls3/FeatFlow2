@@ -1626,12 +1626,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1640,11 +1640,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2150,12 +2150,12 @@ contains
         dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2164,11 +2164,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2226,12 +2226,12 @@ contains
         dtol = max(RCONST(0.0), (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2240,11 +2240,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2302,12 +2302,12 @@ contains
         dtol = max(RCONST(0.0), (w_ij-c_ij) - (wi-ci), (wj-cj) - (w_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (w_ij+c_ij) - (wi+ci), (wj+cj) - (w_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2316,11 +2316,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2714,38 +2714,38 @@ contains
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))**2)*cj,&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*cj,&
                   abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))**2)*ci )
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*ci )
 #else
       ! Compute scalar dissipation (COMPARE WITH 2D CASE!!!)
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj+&
                       IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)*vj+&
                       IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)*wj)+&
-                 sqrt(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)**2)*cj,&
+             sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*cj,&
                   abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)*ui+&
                       IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)*vi+&
                       IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)*wi)+&
-                 sqrt(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)**2)*ci )
+             sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*ci )
 #endif
 
       ! Multiply the solution difference by the scalar dissipation
@@ -5239,12 +5239,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -5253,11 +5253,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -6051,12 +6051,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -6065,11 +6065,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -6462,15 +6462,15 @@ contains
           max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj+&
                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)*vj+&
                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)*wj) +&
-                   sqrt(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)**2)*cj,&
+          sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*cj,&
                abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)*ui+&
                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)*vi+&
                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)*wi) +&
-                   sqrt(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)**2)*ci )
+          sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*ci )
     end do
 
   end subroutine hydro_calcMatRusDissMatD3d_sim
@@ -6978,15 +6978,15 @@ contains
           max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj+&
                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)*vj+&
                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)*wj) +&
-                   sqrt(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)**2)*cj,&
+          sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*cj,&
                abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)*ui+&
                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)*vi+&
                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)*wi) +&
-                   sqrt(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)**2+&
-                        IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)**2)*ci )
+          sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+               POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*ci )
 
       IDX3(DmatrixAtEdge, :,1,idx,_,_,_) = RCONST(0.0)
       IDX3(DmatrixAtEdge, 1,1,idx,_,_,_) = aux
@@ -7479,38 +7479,38 @@ contains
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))**2)*cj,&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*cj,&
                   abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi+&
                       RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))**2+&
-                                  (IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))**2)*ci )
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+                               POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-
+                                   IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*ci )
 #else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj+&
                       IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)*vj+&
                       IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)*wj)+&
-                 sqrt(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)**2)*cj,&
+             sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*cj,&
                   abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)*ui+&
                       IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)*vi+&
                       IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)*wi)+&
-                 sqrt(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)**2+&
-                      IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)**2)*ci )
+             sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
+                  POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*ci )
 #endif
 
       ! Compute antidiffusive flux

@@ -1483,12 +1483,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1497,11 +1497,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -1890,12 +1890,12 @@ contains
         dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1904,11 +1904,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -1963,12 +1963,12 @@ contains
         dtol = max(RCONST(0.0), (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1977,11 +1977,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -4135,12 +4135,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -4149,11 +4149,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -4574,12 +4574,12 @@ contains
         dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -4588,11 +4588,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -9449,7 +9449,7 @@ contains
           IDX3(DstateM,1,ipoint,iel,_,_,_) = rM
           IDX3(DstateM,2,ipoint,iel,_,_,_) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
           IDX3(DstateM,3,ipoint,iel,_,_,_) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM**2+dvtM**2)
+          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM*dvnM+dvtM*dvtM)
         end do
       end do
   
@@ -9516,8 +9516,8 @@ contains
           
           ! Compute convervative variables
           IDX3(DstateM,4,ipoint,iel,_,_,_) = IDX3(DstateM,4,ipoint,iel,_,_,_)/((HYDRO_GAMMA)-RCONST(1.0))&
-              + IDX3(DstateM,1,ipoint,iel,_,_,_)*RCONST(0.5)*(IDX3(DstateM,2,ipoint,iel,_,_,_)**2+&
-                                                              IDX3(DstateM,3,ipoint,iel,_,_,_)**2)
+              + IDX3(DstateM,1,ipoint,iel,_,_,_)*RCONST(0.5)*(POW(IDX3(DstateM,2,ipoint,iel,_,_,_),2)+&
+                                                              POW(IDX3(DstateM,3,ipoint,iel,_,_,_),2))
           IDX3(DstateM,2,ipoint,iel,_,_,_) = IDX3(DstateM,1,ipoint,iel,_,_,_)*IDX3(DstateM,2,ipoint,iel,_,_,_)
           IDX3(DstateM,3,ipoint,iel,_,_,_) = IDX3(DstateM,1,ipoint,iel,_,_,_)*IDX3(DstateM,3,ipoint,iel,_,_,_)
         end do
@@ -9656,7 +9656,7 @@ contains
           IDX3(DstateM,1,ipoint,iel,_,_,_) = rM
           IDX3(DstateM,2,ipoint,iel,_,_,_) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
           IDX3(DstateM,3,ipoint,iel,_,_,_) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM**2+dvtM**2)
+          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM*dvnM+dvtM*dvtM)
         end do
       end do
 
@@ -9703,7 +9703,7 @@ contains
                    DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
           
           ! Compute three Riemann invariants based on internal state vector
-          w2 = pI/DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)**(HYDRO_GAMMA)
+          w2 = pI/POW(DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_),HYDRO_GAMMA)
           w3 = dvtI
           w4 = dvnI+RCONST(2.0)*cI/((HYDRO_GAMMA)-RCONST(1.0))
           
@@ -9723,7 +9723,7 @@ contains
           IDX3(DstateM,1,ipoint,iel,_,_,_) = rM
           IDX3(DstateM,2,ipoint,iel,_,_,_) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
           IDX3(DstateM,3,ipoint,iel,_,_,_) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM**2+dvtM**2)
+          IDX3(DstateM,4,ipoint,iel,_,_,_) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rM*(dvnM*dvnM+dvtM*dvtM)
         end do
       end do
 

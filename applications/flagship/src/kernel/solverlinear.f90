@@ -1687,7 +1687,7 @@ contains
         end do
 
         ! Get next plane rotation
-        dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL_DP)
+        dtmp = max(sqrt(p_Dh(i,i)*p_Dh(i,i) + p_Dh(i+1,i)*p_Dh(i+1,i)), SYS_EPSREAL_DP)
         p_Dc(i) =  p_Dh(i,i)/dtmp
         p_Ds(i) = -p_Dh(i+1,i)/dtmp
 
