@@ -454,7 +454,7 @@ $(AMD_TARBALL):
 # Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
 
-SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.0.2.tar.gz
+SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.2.0.tar.gz
 
 # List of required source files from SuiteSparse_config package. Purpose: let
 # them share a single common prerequisite that in turn is created by unpacking
@@ -471,9 +471,9 @@ LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_co
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.0.2 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.2.0 sources"
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL   = $(SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.0.2.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.2.0.tar.gz
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES   = 24
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD  = echo
@@ -481,9 +481,9 @@ $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.0.2.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.2.0.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.0.2.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.2.0.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
 $(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
 $(SUITESPARSE_CONFIG_TARBALL):
@@ -494,7 +494,7 @@ $(SUITESPARSE_CONFIG_TARBALL):
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-UMFPACK_TARBALL = ../UMFPACK-5.6.1.tar.gz
+UMFPACK_TARBALL = ../UMFPACK-5.6.2.tar.gz
 
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -518,9 +518,9 @@ SRC_UMFPACK = Include/umfpack.h \
 LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Doc/ChangeLog
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL) $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.6.1 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.6.2 sources"
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.6.1.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.6.2.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
@@ -534,9 +534,9 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.6.1.tar.gz
+$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.6.2.tar.gz
 $(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.6.1.tar.gz
+$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.6.2.tar.gz
 $(UMFPACK_TARBALL):  WAITTIME = 15
 $(UMFPACK_TARBALL):  RETRIES  = 24
 $(UMFPACK_TARBALL):
