@@ -79,119 +79,26 @@ endif
 
 
 # Detect compiler version
-NVCCVERSION := $(shell eval $(CUDAVERSION) )
+NVCCVERSION := $(shell eval $(CUDAVERSION))
+ifneq (,$(findstring Cuda,$(NVCCVERSION)))
+NVCCVERSION_MAJOR := $(shell eval $(CUDAVERSION) | cut -d' ' -f5 | cut -d'.' -f1)
+NVCCVERSION_MINOR := $(shell eval $(CUDAVERSION) | cut -d' ' -f5 | cut -d'.' -f2 | cut -d',' -f1)
+else
+NVCCVERSION_MAJOR := 0
+NVCCVERSION_MINOR := 0
+endif
 
 # Functions to detect minimal compiler version
-nvccminversion_5_5=\
-	$(if $(findstring 5.5,$(NVCCVERSION)),yes,no)
-nvccminversion_5_0=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_5_5) \
-	$(if $(findstring 5.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_4_2=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_5_0) \
-	$(if $(findstring 4.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_4_1=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_4_2) \
-	$(if $(findstring 4.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_4_0=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_4_1) \
-	$(if $(findstring 4.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_3_2=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_4_0) \
-	$(if $(findstring 3.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_3_1=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_3_2) \
-	$(if $(findstring 3.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_3_0=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_3_1) \
-	$(if $(findstring 3.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_2_3=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_3_0) \
-	$(if $(findstring 2.3,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_2_2=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_2_3) \
-	$(if $(findstring 2.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_2_1=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_2_2) \
-	$(if $(findstring 2.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_2_0=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_2_1) \
-	$(if $(findstring 2.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_1_1=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_2_0) \
-	$(if $(findstring 1.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccminversion_1_0=\
-	$(if $(findstring yes,\
-	$(call nvccminversion_1_1) \
-	$(if $(findstring 1.0,$(NVCCVERSION)),yes,no)),yes,no)
+nvccminversion = $(shell if [ $(NVCCVERSION_MAJOR) -gt $(1) ] || \
+	                   ([ $(NVCCVERSION_MAJOR) -ge $(1) ] && [ $(NVCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
 
 # Functions to detect maximal compiler version
-nvccmaxversion_5_0=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_4_2) \
-	$(if $(findstring 5.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_4_2=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_4_1) \
-	$(if $(findstring 4.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_4_1=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_4_0) \
-	$(if $(findstring 4.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_4_0=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_3_2) \
-	$(if $(findstring 4.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_3_2=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_3_1) \
-	$(if $(findstring 3.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_3_1=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_3_0) \
-	$(if $(findstring 3.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_3_0=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_2_3) \
-	$(if $(findstring 3.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_2_3=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_2_2) \
-	$(if $(findstring 2.3,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_2_2=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_2_1) \
-	$(if $(findstring 2.2,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_2_1=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_2_0) \
-	$(if $(findstring 2.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_2_0=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_1_1) \
-	$(if $(findstring 2.0,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_1_1=\
-	$(if $(findstring yes,\
-	$(call nvccmaxversion_1_0) \
-	$(if $(findstring 1.1,$(NVCCVERSION)),yes,no)),yes,no)
-nvccmaxversion_1_0=\
-	$(if $(findstring 1.0,$(NVCCVERSION)),yes,no)
+nvccmaxversion = $(shell if [ $(NVCCVERSION_MAJOR) -lt $(1) ] || \
+	                   ([ $(NVCCVERSION_MAJOR) -le $(1) ] && [ $(NVCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 
 
 # Set features which require special minimum CUDA version
-ifeq ($(call nvccminversion_4_0),yes)
+ifeq ($(call nvccminversion,4,0),yes)
 CFLAGSCUDA := $(CFLAGSCUDA) -DHAS_INLINE_PTX
 endif

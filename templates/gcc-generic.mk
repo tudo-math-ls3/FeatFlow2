@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) --version | head -n 1
-F90VERSION = $(F90) --version | head -n 1
-CCVERSION  = $(CC)  --version | head -n 1
-CXXVERSION = $(CXX) --version | head -n 1
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -98,78 +98,55 @@ endif
 
 
 
-# Detect compiler version
-GFORTRANVERSION  := $(shell eval $(F90VERSION) )
+# Detect C/C++ compiler version
+GCCVERSION := $(shell eval $(CCVERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+ifneq ($(GCCVERSION),)
+GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
+GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
+else
+GCCVERSION_MAJOR := 0
+GCCVERSION_MINOR := 0
+endif
 
-# Functions to detect minimal compiler version
-gfortranminversion_4_8=\
-	$(if $(findstring 4.8.,$(GFORTRANVERSION)),yes,no)
-gfortranminversion_4_7=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_8) \
-	$(if $(findstring 4.7.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_6=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_7) \
-	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_5=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_6) \
-	$(if $(findstring 4.5.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_4=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_5) \
-	$(if $(findstring 4.4.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_3=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_4) \
-	$(if $(findstring 4.3.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_2=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_3) \
-	$(if $(findstring 4.2.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranminversion_4_1=\
-	$(if $(findstring yes,\
-	$(call gfortranminversion_4_2) \
-	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)),yes,no)
+# Functions to detect minimal Fortran compiler version
+gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
+			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
 
-# Functions to detect maximal compiler version
-gfortranmaxversion_4_8=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_7) \
-	$(if $(findstring 4.8.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_7=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_6) \
-	$(if $(findstring 4.7.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_6=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_5) \
-	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_5=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_4) \
-	$(if $(findstring 4.5.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_4=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_3) \
-	$(if $(findstring 4.4.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_3=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_2) \
-	$(if $(findstring 4.3.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_2=\
-	$(if $(findstring yes,\
-	$(call gfortranmaxversion_4_1) \
-	$(if $(findstring 4.2.,$(GFORTRANVERSION)),yes,no)),yes,no)
-gfortranmaxversion_4_1=\
-	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)
+# Functions to detect maximal Fortran compiler version
+gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
+		  	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+
+# Detect Fortran compiler version
+GFORTRANVERSION := $(shell eval $(F90VERSION) | \
+		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+ifneq ($(GFORTRANVERSION),)
+GFORTRANVERSION_MAJOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f1)
+GFORTRANVERSION_MINOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f2)
+else
+GFORTRANVERSION_MAJOR := 0
+GFORTRANVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal Fortran compiler version
+gfortranminversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -gt $(1) ] || \
+	                       ([ $(GFORTRANVERSION_MAJOR) -ge $(1) ] && \
+				[ $(GFORTRANVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal Fortran compiler version
+gfortranmaxversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -lt $(1) ] || \
+	                       ([ $(GFORTRANVERSION_MAJOR) -le $(1) ] && \
+				[ $(GFORTRANVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 
 
 # The gfortran compiler 4.1 and above supports ISO_C_BINDING
-ifeq ($(call gfortranminversion_4_1),yes)
-CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+ifeq ($(call gfortranminversion,4,1),yes)
+CFLAGSF90 := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
 
 

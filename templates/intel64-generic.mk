@@ -44,10 +44,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1 | head -n 1
-F90VERSION = $(F90) -V 2>&1 | head -n 1
-CCVERSION  = $(CC)  -V 2>&1 | head -n 1
-CXXVERSION = $(CXX) -V 2>&1 | head -n 1
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -108,8 +108,26 @@ LDFLAGS       := $(LDFLAGS)
 endif
 
 
-# detect compiler version
-INTELVERSION  := $(shell eval $(CXXVERSION) )
+# Detect compiler version
+INTELVERSION := $(shell eval $(F90VERSION) | \
+		  sed -e 's/^ifort //; y/V-/v /; s/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/'
+ifneq ($(INTELVERSION),)
+INTELVERSION_MAJOR := $(shell echo $(INTELVERSION) | cut -d. -f1)
+INTELVERSION_MINOR := $(shell echo $(INTELVERSION) | cut -d. -f2)
+else
+INTELVERSION_MAJOR := 0
+INTELVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+intelminversion = $(shell if [ $(INTELVERSION_MAJOR) -gt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -ge $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+intelmaxversion = $(shell if [ $(INTELVERSION_MAJOR) -lt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -le $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 # The Intel compiler on the NEC gateway Itanium2 seems to have an independent version
 # numbering. The 2008 release is version 6.1 while the 2008 release for Linux x64/x64_64

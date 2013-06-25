@@ -1,10 +1,10 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# GNU Compiler suite 4.x
+# Open64 Compiler suite
 #
 ##############################################################################
-COMPILERNAME = GFORTRAN
+COMPILERNAME = OPEN64
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -version 2>&1 | head -n 1
-F90VERSION = $(F90) -version 2>&1 | head -n 1
-CCVERSION  = $(CC)  -version 2>&1 | head -n 1
-CXXVERSION = $(CXX) -version 2>&1 | head -n 1
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -100,7 +100,28 @@ endif
 
 
 # Detect compiler version
-OPEN64VERSION  := $(shell eval $(F90VERSION) )
+OPEN64VERSION  := $(shell eval $(F90VERSION) | \
+		    sed -n -e 's/^.*Version \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p; q;')
+ifneq ($(OPEN64VERSION),)
+OPEN64VERSION_MAJOR := $(shell echo $(OPEN64VERSION) | cut -d. -f1)
+OPEN64VERSION_MINOR := $(shell echo $(OPEN64VERSION) | cut -d. -f2)
+else
+OPEN64VERSION_MAJOR := 0
+OPEN64VERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+open64minversion = $(shell if [ $(OPEN64VERSION_MAJOR) -gt $(1) ] || \
+	                     ([ $(OPEN64VERSION_MAJOR) -ge $(1) ] && \
+			      [ $(OPEN64VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+open64maxversion = $(shell if [ $(OPEN64VERSION_MAJOR) -lt $(1) ] || \
+	                     ([ $(OPEN64VERSION_MAJOR) -le $(1) ] && \
+			      [ $(OPEN64VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+
 
 # The Open64 compiler supports ISO_C_BINDING
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)

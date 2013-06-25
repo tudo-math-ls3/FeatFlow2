@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1 1>/dev/null | head -n 1
-F90VERSION = $(F90) -V 2>&1 1>/dev/null | head -n 1
-CCVERSION  = $(CC)  -V 2>&1 1>/dev/null | head -n 1
-CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
+F77VERSION = $(F77) -V 2>&1 1>/dev/null
+F90VERSION = $(F90) -V 2>&1 1>/dev/null
+CCVERSION  = $(CC)  -V 2>&1 1>/dev/null
+CXXVERSION = $(CXX) -V 2>&1 1>/dev/null
 
 
 ##############################################################################
@@ -103,26 +103,24 @@ endif
 #CFLAGSF90 := -DENABLE_USE_ONLY $(CFLAGSF90)
 
 # Detect compiler version
-SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) )
+SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) | \
+		       sed -n -e 's/^.* \([0-9][0-9][0-9][0-9]\/[0-9][0-9]\/[0-9][0-9]\).*$$/\1/p')
 
-# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases,
-# (not necessary for Intel 10.1.021)
-ifneq (,$(findstring Sun C++ 5.10,$(SUNSTUDIOVERSION)))
+# Enable workarounds for special versions
 ifneq (,$(findstring 2009/03/06,$(SUNSTUDIOVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
 endif
 ifneq (,$(findstring 2009/06/03,$(SUNSTUDIOVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
 endif
-endif
-ifneq (,$(findstring Sun C++ 5.11,$(SUNSTUDIOVERSION)))
+
 ifneq (,$(findstring 2010/05/10,$(SUNSTUDIOVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
 endif
 ifneq (,$(findstring 2010/08/13,$(SUNSTUDIOVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
 endif
-endif
+
 
 # The Sun fortran compiler supports ISO_C_BINDING
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)

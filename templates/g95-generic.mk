@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) --version | head -n 1
-F90VERSION = $(F90) --version | head -n 1
-CCVERSION  = $(CC)  --version | head -n 1
-CXXVERSION = $(CXX) --version | head -n 1
+F77VERSION := $(F77) -v 2>&1
+F90VERSION := $(F90) -v 2>&1
+CCVERSION  := $(CC)  -v 2>&1
+CXXVERSION := $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -110,42 +110,50 @@ endif
 endif
 
 
-# Detect compiler version
-G95VERSION  := $(shell eval $(F90VERSION) )
 
+# Detect C/C++ compiler version
+GCCVERSION := $(shell eval $(CCVERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+ifneq ($(GCCVERSION),)
+GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
+GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
+else
+GCCVERSION_MAJOR := 0
+GCCVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal Fortran compiler version
+gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
+			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal Fortran compiler version
+gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
+		   	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+
+# Detect compiler version
+G95VERSION := $(shell eval $(F90VERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' \
+	               -e 's/^.*g95 \([0-9]*\.[0-9]*\.*[0-9]*\)[^0-9a-z.].*$$/\1/p')
+ifneq ($(G95VERSION),)
+G95VERSION_MAJOR := $(shell echo $(G95VERSION) | cut -d. -f1)
+G95VERSION_MINOR := $(shell echo $(G95VERSION) | cut -d. -f2)
+else
+G95VERSION_MAJOR := 0
+G95VERSION_MINOR := 0
+endif
 
 
 # Functions to detect minimal compiler version
-g95minversion_0_93=\
-	$(if $(findstring 0.93.,$(G95VERSION)),yes,no)
-g95minversion_0_92=\
-	$(if $(findstring yes,\
-	$(call g95minversion_0_93) \
-	$(if $(findstring 0.92.,$(G95VERSION)),yes,no)),yes,no)
-g95minversion_0_91=\
-	$(if $(findstring yes,\
-	$(call g95minversion_0_92) \
-	$(if $(findstring 0.91.,$(G95VERSION)),yes,no)),yes,no)
-g95minversion_0_90=\
-	$(if $(findstring yes,\
-	$(call g95minversion_0_91) \
-	$(if $(findstring 0.90.,$(G95VERSION)),yes,no)),yes,no)
+g95minversion = $(shell if [ $(G95VERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(G95VERSION_MAJOR) -ge $(1) ] && [ $(G95VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
 
 # Functions to detect maximal compiler version
-g95maxversion_0_93=\
-	$(if $(findstring yes,\
-	$(call g95maxversion_0_92) \
-	$(if $(findstring 0.93.,$(G95VERSION)),yes,no)),yes,no)
-g95maxversion_0_92=\
-	$(if $(findstring yes,\
-	$(call g95maxversion_0_91) \
-	$(if $(findstring 0.92.,$(G95VERSION)),yes,no)),yes,no)
-g95maxversion_0_91=\
-	$(if $(findstring yes,\
-	$(call g95maxversion_0_90) \
-	$(if $(findstring 0.91.,$(G95VERSION)),yes,no)),yes,no)
-g95maxversion_0_90=\
-	$(if $(findstring 0.90.,$(G95VERSION)),yes,no)
+g95maxversion = $(shell if [ $(G95VERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(G95VERSION_MAJOR) -le $(1) ] && [ $(G95VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 
 

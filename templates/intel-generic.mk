@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1 | head -n 1
-F90VERSION = $(F90) -V 2>&1 | head -n 1
-CCVERSION  = $(CC)  -V 2>&1 | head -n 1
-CXXVERSION = $(CXX) -V 2>&1 | head -n 1
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -119,113 +119,25 @@ endif
 
 
 # Detect compiler version
-INTELVERSION  := $(shell eval $(CXXVERSION) )
+INTELVERSION := $(shell eval $(F90VERSION) | \
+		  sed -e 's/^ifort //; y/V-/v /; s/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/'
+ifneq ($(INTELVERSION),)
+INTELVERSION_MAJOR := $(shell echo $(INTELVERSION) | cut -d. -f1)
+INTELVERSION_MINOR := $(shell echo $(INTELVERSION) | cut -d. -f2)
+else
+INTELVERSION_MAJOR := 0
+INTELVERSION_MINOR := 0
+endif
 
 # Functions to detect minimal compiler version
-intelminversion_12_1=\
-	$(if $(findstring 12.1.,$(INTELVERSION)),yes,no)
-intelminversion_12_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_12_1) \
-	      $(if $(findstring 12.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_11_1=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_12_0) \
-	      $(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_11_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_11_1) \
-	      $(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_10_1=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_11_0) \
-	      $(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_10_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_10_1) \
-	      $(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_9_1=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_10_0) \
-	      $(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_9_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_9_1) \
-	      $(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_8_1=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_9_0) \
-	      $(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_8_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_8_1) \
-	      $(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_7_1=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_8_0) \
-	      $(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_7_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_7_1) \
-	      $(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_6_0=\
-	$(if $(findstring yes,\
-	   $(call intelminversion_7_0) \
-	      $(if $(findstring 6.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion = $(shell if [ $(INTELVERSION_MAJOR) -gt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -ge $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
 
 # Functions to detect maximal compiler version
-intelmaxversion_12_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_12_0) \
-	      $(if $(findstring 12.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_12_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_11_1) \
-	      $(if $(findstring 12.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_11_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_11_0) \
-	      $(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_11_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_10_1) \
-	      $(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_10_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_10_0) \
-	      $(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_10_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_9_1) \
-	      $(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_9_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_9_0) \
-	      $(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_9_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_8_1) \
-	      $(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_8_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_8_0) \
-	      $(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_8_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_7_1) \
-	      $(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_7_1=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_7_0) \
-	      $(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_7_0=\
-	$(if $(findstring yes,\
-	   $(call intelmaxversion_6_0) \
-	      $(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelmaxversion_6_0=\
-	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)
-
-
+intelmaxversion = $(shell if [ $(INTELVERSION_MAJOR) -lt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -le $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 # Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases,
 # (not necessary for Intel 10.1.021)
@@ -237,7 +149,7 @@ CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
 endif
 
 # The Intel compiler 10.1 and above supports ISO_C_BINDING
-ifeq ($(call intelminversion_10_1),yes)
+ifeq ($(call intelminversion,10,1),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
 

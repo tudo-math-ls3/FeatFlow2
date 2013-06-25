@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -version 2>&1 | head -n 4
-F90VERSION = $(F90) -version 2>&1 | head -n 4
-CCVERSION  = $(CC)  -version 2>&1 | head -n 4
-CXXVERSION = $(CXX) -version 2>&1 | head -n 4
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
 
 
 ##############################################################################
@@ -96,6 +96,36 @@ endif
 # Pathscale F90 Compiler (v. 2.4) needs the -g flag (even for -O0
 # optimisation level), otherwise FEAT2 crashes as soon as it tries to
 # start solving something. This is no longer an issue with v. 3.1.
+
+
+
+# Detect compiler version
+PATHSCALEVERSION := $(shell eval $(F90VERSION) | \
+		      sed -n -e 's/^.*Version \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p; q;')
+ifneq ($(PATHSCALEVERSION),)
+PATHSCALEVERSION_MAJOR := $(shell echo $(PATHSCALEVERSION) | cut -d. -f1)
+PATHSCALEVERSION_MINOR := $(shell echo $(PATHSCALEVERSION) | cut -d. -f2)
+else
+PATHSCALEVERSION_MAJOR := 0
+PATHSCALEVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+pathscaleminversion = $(shell if [ $(PATHSCALEVERSION_MAJOR) -gt $(1) ] || \
+	                        ([ $(PATHSCALEVERSION_MAJOR) -ge $(1) ] && \
+				 [ $(PATHSCALEVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+pathscalemaxversion = $(shell if [ $(PATHSCALEVERSION_MAJOR) -lt $(1) ] || \
+	                        ([ $(PATHSCALEVERSION_MAJOR) -le $(1) ] &&\
+				 [ $(PATHSCALEVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+
+# The PathScale compiler 3.2 and above supports ISO_C_BINDING
+ifeq ($(call pathscaleminversion,3,2),yes)
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
 
 
 

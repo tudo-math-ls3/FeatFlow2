@@ -29,7 +29,7 @@ endif
 #   hidden symbol '__intel_cpu_indicator_init' in libirc.a(cpu_disp.o) is referenced by DSO
 ifeq ($(call match,$(ID),.*-.*-.*-intel.*),yes)
 LIBS     := $(LIBS) -lsvml
-ifeq ($(call intelminversion_11_1),yes)
+ifeq ($(call intelminversion,11,1),yes)
 LIBS     := $(LIBS) -lirc
 endif
 endif
