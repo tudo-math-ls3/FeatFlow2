@@ -110,7 +110,7 @@ endif
 
 # Detect compiler version
 INTELVERSION := $(shell eval $(F90VERSION) | \
-		  sed -e 's/^ifort //; y/V-/v /; s/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/'
+		  sed -e 's/^ifort //; y/V-/v /; s/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/')
 ifneq ($(INTELVERSION),)
 INTELVERSION_MAJOR := $(shell echo $(INTELVERSION) | cut -d. -f1)
 INTELVERSION_MINOR := $(shell echo $(INTELVERSION) | cut -d. -f2)

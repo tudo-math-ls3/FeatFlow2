@@ -106,7 +106,7 @@ PGIVERSION := $(shell eval $(F90VERSION) | \
 		sed -n -e '/^pgf90 .*target/h;' -e 's/^.* \([0-9]*\.[0-9]*-[0-9]*\) .*$$/\1/p')
 ifneq ($(PGIVERSION),)
 PGIVERSION_MAJOR := $(shell echo $(PGIVERSION) | cut -d. -f1)
-PGIVERSION_MINOR := $(shell echo $(PGIVERSION) | cut -d. -f2)
+PGIVERSION_MINOR := $(shell echo $(PGIVERSION) | cut -d. -f2 | cut -d- -f1)
 else
 PGIVERSION_MAJOR := 0
 PGIVERSION_MINOR := 0
