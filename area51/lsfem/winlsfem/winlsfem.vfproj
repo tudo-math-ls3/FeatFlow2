@@ -47,12 +47,12 @@
 		<File RelativePath="..\src\LS_NS_SVP.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_MG2D.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_MG_MAT2D.f90"/>
-		<File RelativePath="..\src\LS_NS_SVP_NNew_MG2D.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_RT2D.f90"/>
 		<File RelativePath="..\src\LS_NS_VVP_MG2D.f90"/>
 		<File RelativePath="..\src\LS_NS_VVP_Time_MG2D.f90"/>
 		<File RelativePath="..\src\LS_Poisson_callback.f90"/>
-		<File RelativePath="..\src\LS_Poisson_MG2D.f90"/></Filter>
+		<File RelativePath="..\src\LS_Poisson_MG2D.f90"/>
+		<File RelativePath="..\src\LS_SVP_NNew_MG2D.f90"/></Filter>
 		<Filter Name="main">
 		<File RelativePath="..\src\lsfem.f90"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>
