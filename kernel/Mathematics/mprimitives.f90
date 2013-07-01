@@ -6130,7 +6130,7 @@ contains
   elemental subroutine mprim_polarToCartesian3D(dr,dphi,dpsi,dx,dy,dz)
 
 !<description>
-  ! Calculates 2D cartesian coordinates from polar coordinates
+  ! Calculates 3D cartesian coordinates from polar coordinates
 !</description>
 
 !<input>
@@ -6139,7 +6139,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! X/Y cartesian coordinate of the point
+  ! X/Y/Z cartesian coordinate of the point.
   real(DP), intent(out) :: dx,dy,dz
 !</inputoutput>
 
@@ -6158,16 +6158,16 @@ contains
   elemental subroutine mprim_cartesianToPolar2D(dx,dy,dr,dphi)
 
 !<description>
-  ! Calculates 3D cartesian coordinates from polar coordinates
+  ! Calculates 2D cartesian coordinates from polar coordinates
 !</description>
 
 !<input>
-  ! X/Y/Z cartesian coordinate of a point
+  ! X/Y cartesian coordinate of a point
   real(DP), intent(in) :: dx,dy
 !</input>
 
 !<inputoutput>
-  ! Radius, Y-angle and Z-angle of a point.
+  ! Radius and angle of a point.
   real(DP), intent(out) :: dr, dphi
 !</inputoutput>
 
@@ -6203,7 +6203,7 @@ contains
     dr = sqrt(dx**2 + dy**2 + dz**2)
     dphi = atan2 (dy,dx)
     
-    if (dr .GT. SYS_EPSREAL_DP) then
+    if (dr .gt. SYS_EPSREAL_DP) then
       dpsi = asin (dy/dr)
     else
       dpsi = 0.0_DP
