@@ -191,11 +191,11 @@ contains
     ! Create RHS and solution vectors
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ! Create 3 block vectors based on the matrix:
+    ! Create 3 block vectors based on the discretisation:
     ! the RHS vector, the solution vector and a temporary vector
-    call lsysbl_createVector (rmatSystem, rvecRhs, .true.)
-    call lsysbl_createVector (rmatSystem, rvecSol, .true.)
-    call lsysbl_createVector (rmatSystem, rvecTmp, .true.)
+    call lsysbl_createVector (rdiscr, rvecRhs, .true.)
+    call lsysbl_createVector (rdiscr, rvecSol, .true.)
+    call lsysbl_createVector (rdiscr, rvecTmp, .true.)
 
     ! Now assemble the right-hand-side vector
     call linf_buildSimpleVector(rvecRhs%RvectorBlock(1), rcubature, coeff_RHS_2D)
