@@ -122,6 +122,7 @@ contains
     
     type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rcoarsegridsolver
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMatrixSet) :: rmatrixSet
     integer :: ierror, ilevel, isize
 
     ! Print a message
@@ -364,11 +365,15 @@ contains
         p_rlevelInfo%p_rprojection => p_Rprojection(ilevel)
         
       end if
-      
     end do
     
-    ! Attach the system matrix
-    call linsol_setMatrices (p_rsolverNode, p_Rmatrices)
+    ! Attach the system matrices
+    call linsol_newMatrixSet (rmatrixSet)
+    do ilevel=1,NLMAX
+      call linsol_addMatrix (rmatrixSet,p_Rmatrices(ilevel))
+    end do
+    
+    call linsol_setMatrices (p_rsolverNode, rmatrixSet)
     
     ! Symbolic factorisation
     call linsol_initStructure (p_rsolverNode, ierror)
@@ -422,6 +427,9 @@ contains
     
     ! Symbolic data
     call linsol_doneStructure (p_rsolverNode)
+    
+    ! Matrix set
+    call linsol_releaseMatrixSet (rmatrixSet)
     
     ! Remaining solver data
     call linsol_releaseSolver (p_rsolverNode)

@@ -717,6 +717,10 @@ module linearsolver
   public :: linsol_initBlockUpwGS
   public :: linsol_initSpecDefl
   public :: linsol_initDeflGMRES
+  
+  public :: linsol_newMatrixSet
+  public :: linsol_addMatrix
+  public :: linsol_releaseMatrixSet
     
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
   
@@ -2510,7 +2514,30 @@ module linearsolver
 
 !</typeblock>
 
+!<typeblock>
+
+  ! Encapsules a list of matrices that can be provided to the solver
+  ! via linsol_setMatrices.
+  type t_linsolMatrixSet
+  
+    ! Number of matrices in the matrix set.
+    integer :: ncount = 0
+    
+    ! A list of matrices.
+    type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
+    
+  end type
+
+!</typeblock>
+
+  public :: t_linsolMatrixSet
+
 !</types>
+
+  interface linsol_setMatrices
+    module procedure linsol_setMatricesArray
+    module procedure linsol_setMatricesMatrixSet
+  end interface  
 
 ! *****************************************************************************
 ! *****************************************************************************
@@ -2524,7 +2551,7 @@ contains
   
 !<subroutine>
   
-  recursive subroutine linsol_setMatrices (rsolverNode,Rmatrices)
+  recursive subroutine linsol_setMatricesArray (rsolverNode,Rmatrices)
   
 !<description>
   
@@ -2607,6 +2634,148 @@ contains
 
   end subroutine
 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_newMatrixSet (rmatrixSet,nmatrices)
+  
+!<description>
+  ! Creates a matrix set that can hold up to nmatrices matrices.
+!</description>
+
+!<input>
+  ! OPTIONAL: Predefined number of matrices in the matrix set.
+  integer, intent(in), optional :: nmatrices
+!</input>
+
+!<output>
+  ! Matrix set to be created.
+  type(t_linsolMatrixSet), intent(out) :: rmatrixSet
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory
+    if (present(nmatrices)) then
+      if (nmatrices .le. 0) then
+        call output_line ("nmatrices=0 not allowed!", &
+            OU_CLASS_ERROR, OU_MODE_STD, "linsol_newMatrixSet")
+        call sys_halt()
+      end if
+
+      allocate (rmatrixSet%p_Rmatrices(nmatrices))
+    else
+      allocate (rmatrixSet%p_Rmatrices(16))
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_releaseMatrixSet (rmatrixSet)
+  
+!<description>
+  ! Releases a matrix set.
+!</description>
+
+!<inputoutput>
+  ! Matrix set to be released.
+  type(t_linsolMatrixSet), intent(inout) :: rmatrixSet
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Deallocate memory
+    if (associated (rmatrixSet%p_Rmatrices)) then
+    
+      ! Release the matrices
+      do i=rmatrixSet%ncount,1,-1
+        call lsysbl_releaseMatrix (rmatrixSet%p_Rmatrices(i))
+      end do
+    
+      deallocate (rmatrixSet%p_Rmatrices)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_addMatrix (rmatrixSet,rmatrix)
+  
+!<description>
+  ! Adds a matrix to the matrix set.
+!</description>
+
+!<inputoutput>
+  ! Matrix set to be modified.
+  type(t_linsolMatrixSet), intent(inout) :: rmatrixSet
+!</inputoutput>
+
+!<input>
+  ! The matrix to be added.
+  type(t_matrixBlock), intent(in), target :: rmatrix
+!</input>
+
+!</subroutine>
+    
+    type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices
+
+    if (rmatrixSet%ncount .ge. ubound(rmatrixSet%p_Rmatrices,1)) then
+      ! Reallocate
+      allocate(p_Rmatrices(rmatrixSet%ncount+16))
+      p_Rmatrices(1:rmatrixSet%ncount) = rmatrixSet%p_Rmatrices(1:rmatrixSet%ncount)
+      deallocate(rmatrixSet%p_Rmatrices)
+      rmatrixSet%p_Rmatrices => p_Rmatrices
+    end if
+    
+    ! Add the matrix. Create new matrix, share the handles.
+    rmatrixSet%ncount = rmatrixSet%ncount + 1
+    call lsysbl_duplicateMatrix (rmatrix,rmatrixSet%p_Rmatrices(rmatrixSet%ncount),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_setMatricesMatrixSet (rsolverNode,rmatrixSet)
+  
+!<description>
+  ! Attach a matrix set to a solver node.
+!</description>
+
+!<inputoutput>
+  ! Solver node which should receive the matrices.
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+
+!<input>
+  ! Matrix set.
+  type(t_linsolMatrixSet), intent(in) :: rmatrixSet
+!</input>
+
+!</subroutine>
+    
+    if (rmatrixSet%ncount .le. 0) then
+      call output_line ("Matrix set empty!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrices")
+      call sys_halt()
+    end if
+
+    ! For now, fall back to the original "setmatrices" routine.
+    call linsol_setMatrices (rsolverNode,&
+        rmatrixSet%p_Rmatrices(1:rmatrixSet%ncount))
+    
+  end subroutine
 
   ! ***************************************************************************
   
@@ -16455,8 +16624,15 @@ contains
 
             ! Solve the system on lowest level by preconditioning
             ! of the RHS=defect vector.
-            call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
-                                      p_rcurrentLevel%rsolutionVector)
+            if (.not. associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
+              if (rsolverNode%ioutputLevel .ge. 1) then
+                call output_line ("No coarse grid solver provided!", &
+                                  OU_CLASS_WARNING, OU_MODE_STD, "linsol_precMultigrid2")
+              end if
+            else
+              call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
+                                        p_rcurrentLevel%rsolutionVector)
+            end if
 
             ! stop timer and update coarse grid solver time
             call stat_stopTimer(rtimer)
@@ -22167,6 +22343,4 @@ contains
       
   end subroutine
   
-  
-
 end module
