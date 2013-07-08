@@ -1104,7 +1104,7 @@ contains
           ! defect vectors instead.
           ! So, set up a filter chain that filters the defect vector
           ! during the solution process to implement discrete boundary conditions.
-          call filter_clearFilterChain (RfilterChain,nfilters)
+          call filter_initFilterChain (RfilterChain,nfilters)
           call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
           if (bpureDirichlet) then
@@ -1283,6 +1283,9 @@ contains
           
           ! Release the solver node and all subnodes attached to it (if at all):
           call linsol_releaseSolver (p_rsolverNode)
+          
+          ! Release the filter chain
+          call filter_doneFilterChain (RfilterChain,nfilters)
           
           ! Release the block matrix/vectors
           call lsysbl_releaseVector (rtempBlock)

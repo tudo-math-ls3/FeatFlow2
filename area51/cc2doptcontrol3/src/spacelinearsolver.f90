@@ -1027,7 +1027,7 @@ contains
       
       ! Initialise the filter chain according to cflags.
       ! This is partially equation dependent.
-      call filter_clearFilterChain (p_rlinsolSpace%RfilterChain,ifilter)
+      call filter_initFilterChain (p_rlinsolSpace%RfilterChain,ifilter)
       
       ! Filter for Dirichlet boundary conditions
       call filter_newFilterDiscBCDef (p_rlinsolSpace%RfilterChain,ifilter,&
