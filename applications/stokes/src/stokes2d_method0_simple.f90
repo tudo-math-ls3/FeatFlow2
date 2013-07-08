@@ -503,7 +503,7 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_initFilterChain (RfilterChain,nfilters)
     call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver with VANKA preconditioner.
@@ -721,6 +721,9 @@ contains
     
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the filter chain
+    call filter_doneFilterChain (RfilterChain,nfilters)
     
     ! Release the block matrix/vectors
     call lsysbl_releaseVector (rprjVector)

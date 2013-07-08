@@ -489,7 +489,7 @@ contains
 
     p_rdiscreteBC => collct_getvalue_discbc(rcollection,"DISCBC")
 
-    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_initFilterChain (RfilterChain,nfilters)
     call filter_newFilterDiscBCDef (RfilterChain,nfilters,p_rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
@@ -534,6 +534,9 @@ contains
     
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the filter chain
+    call filter_doneFilterChain (RfilterChain,nfilters)
     
     ! Release the temporary vector
     call lsysbl_releaseVector (rvecTmp)

@@ -385,6 +385,9 @@ module ccnonlinearcore
     ! A filter chain that is used for implementing boundary conditions 
     ! on every level.
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain => null()
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters = 0
 
   end type
 

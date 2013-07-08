@@ -359,7 +359,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_setupFilterChains (rnonlinearIteration)
+  subroutine cc_initFilterChains (rnonlinearIteration)
   
 !<description>
   ! Initialises the filter chains on all levels
@@ -374,7 +374,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ilevel,ifilter
+    integer :: ilevel,nfilters
     type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
@@ -384,22 +384,57 @@ contains
       p_RfilterChain => rnonlinearIteration%RcoreEquation(ilevel)%p_RfilterChain
       
       ! Start the filter chain
-      call filter_clearFilterChain (p_RfilterChain,ifilter)
+      call filter_initFilterChain (p_RfilterChain,nfilters)
 
       ! Dirichlet boundary conditions
       call filter_newFilterDiscBCDef (&
-          p_RfilterChain,ifilter,p_rdynamicInfo%rdiscreteBC)
+          p_RfilterChain,nfilters,p_rdynamicInfo%rdiscreteBC)
           
       call filter_newFilterDiscFBCDef (&
-          p_RfilterChain,ifilter,p_rdynamicInfo%rdiscreteFBC)
+          p_RfilterChain,nfilters,p_rdynamicInfo%rdiscreteFBC)
 
       ! Do we have a Neumann boundary component?
       if (.not. p_rdynamicInfo%bhasNeumannBoundary) then
         ! Pure Dirichlet problem -- Neumann boundary for the pressure.
         ! Filter the pressure to avoid indefiniteness.
-        call filter_newFilterToL20 (p_RfilterChain,ifilter,3)
+        call filter_newFilterToL20 (p_RfilterChain,nfilters,3)
       end if
       
+      ! Save number of filters in the filter chain
+      rnonlinearIteration%RcoreEquation(ilevel)%nfilters = nfilters
+      
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneFilterChains (rnonlinearIteration)
+  
+!<description>
+  ! Cleans up filter chains
+!</description>
+
+!<output>
+  ! Nonlinar iteration structure saving data for the callback routines.
+  ! Is filled with data.
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer ::  ilevel
+    
+    do ilevel = rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+    
+      ! Start the filter chain
+      call filter_doneFilterChain (&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_RfilterChain,&
+          rnonlinearIteration%RcoreEquation(ilevel)%nfilters)
+
     end do
     
   end subroutine
@@ -1147,7 +1182,12 @@ contains
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     
     ! Set up the filter chains to support the current boundary conditions.
-    call cc_setupFilterChains (rnonlinearIteration)
+    if (.not. binit) then
+      ! Clean up the previous filter chain
+      call cc_doneFilterChains (rnonlinearIteration)
+    end if
+
+    call cc_initFilterChains (rnonlinearIteration)
 
     ! Set up the preconditioner    
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
@@ -1430,7 +1470,7 @@ contains
       call linsol_doneStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode)
       call cc_doneLinearSolver (rnonlinearIteration)
       
-    case DEFAULT
+    case default
       
       ! Unknown preconditioner
       call output_line ("Unknown preconditioner for nonlinear iteration!", &
@@ -1438,6 +1478,9 @@ contains
       call sys_halt()
       
     end select
+
+    ! Clean up the filter chain
+    call cc_doneFilterChains (rnonlinearIteration)
 
   end subroutine
 

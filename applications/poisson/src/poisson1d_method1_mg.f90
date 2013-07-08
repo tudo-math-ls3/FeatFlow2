@@ -335,7 +335,7 @@ contains
       ! defect vectors instead.
       ! So, set up a filter chain that filters the defect vector
       ! during the solution process to implement discrete boundary conditions.
-      call filter_clearFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+      call filter_initFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
       call filter_newFilterDiscBCDef (&
           Rlevels(i)%RfilterChain,Rlevels(i)%nfilters,Rlevels(i)%rdiscreteBC)
 
@@ -493,6 +493,9 @@ contains
     end do
 
     do i = nlevels, 1, -1
+      ! Release the filter chain
+      call filter_doneFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+
       ! Release our discrete version of the boundary conditions
       call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
 

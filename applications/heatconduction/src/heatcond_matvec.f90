@@ -333,9 +333,8 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: i
-  
+    ! local variables
+
     ! A linear form describing the analytic problem to solve
     type(t_linearForm) :: rlinform
     

@@ -688,7 +688,7 @@ contains
     do i=ilvmin,ilvmax
     
       ! Set up a filter chain for implementing boundary conditions on that level
-      call filter_clearFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+      call filter_initFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters)
       call filter_newFilterDiscBCDef (rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
@@ -791,6 +791,12 @@ contains
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
     
+    ! Release the filter chain
+    do i=ilvmin,ilvmax
+      call filter_doneFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+    end do
+
     ! Unsort the vectors again in case they were resorted before calling
     ! the solver.
     ! We use the first subvector of rvecTmp as temporary data; it is

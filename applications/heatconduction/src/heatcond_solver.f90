@@ -114,7 +114,7 @@ contains
       ! would be wrong.
       ! Therefore, create a filter chain with one filter only,
       ! which implements Dirichlet-conditions into a defect vector.
-      call filter_clearFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+      call filter_initFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters)
       call filter_newFilterDiscBCDef (rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%p_rdiscreteBC)
@@ -195,6 +195,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables
+    integer :: i
  
     ! Release solver data and structure
     call linsol_doneData (rproblem%p_rsolverNode)
@@ -203,6 +206,12 @@ contains
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (rproblem%p_rsolverNode)
     
+    ! Release the filter chain
+    do i=rproblem%ilvmin,rproblem%ilvmax
+      call filter_doneFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+    end do
+
     ! Release the multilevel projection structure.
     call mlprj_doneProjection (rproblem%rprojection)
 

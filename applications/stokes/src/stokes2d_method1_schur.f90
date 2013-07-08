@@ -432,7 +432,7 @@ contains
     
       ! Create a filter chain for the solver that implements boundary conditions
       ! during the solution process.
-      call filter_clearFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+      call filter_initFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
       call filter_newFilterDiscBCDef (&
           Rlevels(i)%RfilterChain,Rlevels(i)%nfilters,Rlevels(i)%rdiscreteBC)
 
@@ -619,6 +619,13 @@ contains
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)
     call linsol_releaseSolver (p_rsolverNode)
+
+    ! Release the filter chain
+    do i=NLMIN,NLMAX
+      call filter_doneFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+    end do
+
+    ! Release vectors
     call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rvector)
     call lsysbl_releaseVector (rrhs)

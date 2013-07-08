@@ -51,26 +51,32 @@
 !#
 !# The following routines can be used to build up simple filter chains:
 !#
+!# 1.) filter_initFilterChain
+!#     -> Creates a filter chain
+!#
 !# 1.) filter_clearFilterChain
 !#     -> Clears a filter chain
 !#
-!# 2.) filter_newFilterDiscBCDef
+!# 1.) filter_doneFilterChain
+!#     -> Releases a filter chain
+!#
+!# 4.) filter_newFilterDiscBCDef
 !#     -> Adds a filter for discrete boundary conditions on the real boundary
 !#
-!# 3.) filter_newFilterDiscFBCDef
+!# 5.) filter_newFilterDiscFBCDef
 !#     -> Adds a filter for discrete boundary conditions on fict. boundary
 !#
-!# 4.) filter_newFilterToL20
+!# 6.) filter_newFilterToL20
 !#     -> Adds a filter to enforce the L2_0 space for a component
 !#
-!# 5.) filter_newFilterSmallL1to0
+!# 7.) filter_newFilterSmallL1to0
 !#     -> Adds a filter to enforce to enforce the l1-norm of a component
 !#        to be zero
 !#
-!# 6.) filter_newFilterOneEntryZero
+!# 8.) filter_newFilterOneEntryZero
 !#     -> Adds a filter to put one entry to zero
 !#
-!# 7.) filter_newFilterOverwriteDofs  
+!# 9.) filter_newFilterOverwriteDofs  
 !#     -> Adds a filter to set a couple of DOFs to predefined values
 !#
 !#
@@ -90,10 +96,12 @@
 !#    entries in that array to the filter you need, e.g.:
 !#
 !# <code>
-!#      call filter_clearFilterChain (RfilterChain,nsize)
+!#      call filter_newFilterChain (RfilterChain,nsize)
 !#      call filter_newFilterDiscBCDef (RfilterChain,nsize,rdiscreteBC)
 !#      call filter_newFilterDiscFBCDef (RfilterChain,nsize,rdiscreteFBC)
 !#      call filter_newFilterToL20 (RfilterChain,nsize,3)
+!#      ...
+!#      call filter_doneFilterChain (RfilterChain,nsize)
 !# </code>
 !#
 !#    The above initialisation sets up a filter chain the implementation
@@ -147,7 +155,10 @@ module filtersupport
   public :: filter_applyFilterChainVec
   public :: filter_applyFilterChainMat
   
+  public :: filter_initFilterChain
   public :: filter_clearFilterChain
+  public :: filter_doneFilterChain
+  
   public :: filter_newFilterDiscBCDef
   public :: filter_newFilterDiscFBCDef
   public :: filter_newFilterToL20
@@ -282,18 +293,17 @@ contains
 
 !<subroutine>
 
-  subroutine filter_clearFilterChain (RfilterChain,nsize)
+  subroutine filter_initFilterChain (RfilterChain,nsize)
 
 !<description>
-  ! Resets all filters in a filter chain.
+  ! Initialises a filter chain.
 !</description>
 
 !<output>
   ! The filter chain to be resetted.
   type(t_filterChain), dimension(:), intent(out) :: RfilterChain
   
-  ! OPTIONAL: Number of filters in the filter chain.
-  ! Is set to zero.
+  ! Number of filters in the filter chain. Is set to zero.
   integer, intent(out) :: nsize
 !</output>
 
@@ -302,6 +312,57 @@ contains
     ! The "intent(out)" Resets the filter chain.
     ! Just reset nsize if specified.
     nsize = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_clearFilterChain (RfilterChain,nsize)
+
+!<description>
+  ! Resets all filters in a filter chain.
+!</description>
+
+!<inputoutput>
+  ! The filter chain to be resetted.
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+  
+  ! Number of filters in the filter chain.
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    call filter_doneFilterChain (RfilterChain,nsize)
+    call filter_initFilterChain (RfilterChain,nsize)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_doneFilterChain (RfilterChain,nsize)
+
+!<description>
+  ! Releases a filter chain
+!</description>
+
+!<inputoutput>
+  ! The filter chain to be cleaned up.
+  type(t_filterChain), dimension(:), intent(out) :: RfilterChain
+  
+  ! Number of filters in the filter chain.
+  integer, intent(out) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    ! Currently, there is no memory allocated by the filter chain.
+    ! So just reset it.
+    call filter_initFilterChain (RfilterChain,nsize)
 
   end subroutine
 

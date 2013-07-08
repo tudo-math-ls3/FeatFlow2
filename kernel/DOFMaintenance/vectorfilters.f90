@@ -727,6 +727,14 @@ contains
         ! discontinuous non-parametric P2 on quads
         call vecfil_zim_DCQP2_2D(rx)
 
+      case (EL_Q1_2D)
+        ! Q1 element
+        call vecfil_zim_Q1_2D(rx)
+
+      case (EL_Q2_2D)
+        ! Q2 element
+        call vecfil_zim_Q2_2D(rx)
+
       case default
 
         call output_line("Unsupported discretisation!",&
@@ -742,6 +750,226 @@ contains
       call sys_halt()
 
     end if
+
+  end subroutine
+
+! *****************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_zim_Q1_2D (rx)
+
+!<description>
+  ! AUXILIARY ROUTINE:
+  ! This routine imposes the zero-integral-mean constraint onto a Q1_2D FE vector.
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be normalised.
+  type(t_vectorScalar), intent(inout), target :: rx
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dmean, dvolume, dalpha
+  type(t_triangulation), pointer :: p_rtria
+  integer(I32) :: ctrafo, cevalTag
+  integer :: iel, i,j, ivt
+  real(DP), dimension(:), pointer :: p_Dx
+  real(DP), dimension(2,4) :: Dpoints
+  integer, dimension(1) :: IelList
+  type(t_evalElementSet) :: reval
+  logical, dimension(DER_MAXNDER) :: Bder
+  real(DP), dimension(4,1,4,1) :: Dbas
+  real(DP) :: G2
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    G2 = sqrt(1.0_DP / 3.0_DP)
+
+    dmean = 0.0_DP
+    dvolume = 0.0_DP
+
+    ! evaluate function values only
+    Bder = .false.
+    Bder(DER_FUNC2D) = .true.
+
+    ! fetch the vectors data array
+    call lsyssc_getbase_double(rx, p_Dx)
+
+    ! fetch the triangulation from the vector
+    p_rtria => rx%p_rspatialDiscr%p_rtriangulation
+    
+    ! get IverticesAtElement for determining the local DOFs
+    call storage_getbase_int2d (p_rtria%h_IverticesAtElement,p_IverticesAtElement)
+
+    ! fetch the trafo type
+    ctrafo = elem_igetTrafoType(EL_Q1_2D)
+
+    ! fetch the evaluation tag
+    cevalTag = ior(elem_getEvaluationTag(EL_Q1_2D), &
+                   EL_EVLTAG_DETJ + EL_EVLTAG_REFPOINTS)
+
+    ! set up the points array; these correspond to the 2x2 Gauss formula
+    Dpoints(1,1) = -G2
+    Dpoints(2,1) = -G2
+    Dpoints(1,2) =  G2
+    Dpoints(2,2) = -G2
+    Dpoints(1,3) = -G2
+    Dpoints(2,3) =  G2
+    Dpoints(1,4) =  G2
+    Dpoints(2,4) =  G2
+
+    ! loop over all elements of the triangulation
+    do iel = 1, p_rtria%NEL
+
+      IelList(1) = iel
+
+      ! prepare the element evaluation set
+      call elprep_prepareSetForEvaluation (reval, cevalTag, &
+          p_rtria, IelList, ctrafo, Dpoints)
+
+      ! update domain volume
+      dvolume = dvolume + reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
+                        + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1)
+
+      ! Evaluate the element
+      call elem_eval_Q1_2D(EL_Q1_2D, reval, Bder, Dbas)
+
+      ! update the integral mean
+      do i = 1, 4    ! Cubature points
+        dalpha = 0.0_DP
+        do j = 1, 4  ! Local basis functions
+          dalpha = dalpha + p_Dx(p_IverticesAtElement(j,iel))*Dbas(j,DER_FUNC,i,1)
+        end do
+        dmean = dmean + reval%p_Ddetj(i,1) * dalpha
+      end do
+
+    end do
+
+    ! release element set
+    call elprep_releaseElementSet(reval)
+
+    ! divide mean by domain volume
+    dmean = dmean / dvolume
+
+    ! loop over all elements
+    do ivt = 1, ubound(p_Dx,1)
+
+      ! correct the basis function on each element
+      p_Dx(ivt) = p_Dx(ivt) - dmean
+
+    end do
+
+  end subroutine
+
+! *****************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_zim_Q2_2D (rx)
+
+!<description>
+  ! AUXILIARY ROUTINE:
+  ! This routine imposes the zero-integral-mean constraint onto a Q2_2D FE vector.
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be normalised.
+  type(t_vectorScalar), intent(inout), target :: rx
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dmean, dvolume, dalpha
+  type(t_triangulation), pointer :: p_rtria
+  integer(I32) :: ctrafo, cevalTag
+  integer :: iel, i,j, ivt
+  real(DP), dimension(:), pointer :: p_Dx
+  real(DP), dimension(2,4) :: Dpoints
+  integer, dimension(1) :: IelList
+  type(t_evalElementSet) :: reval
+  logical, dimension(DER_MAXNDER) :: Bder
+  real(DP), dimension(9,1,4,1) :: Dbas
+  real(DP) :: G2
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    G2 = sqrt(1.0_DP / 3.0_DP)
+
+    dmean = 0.0_DP
+    dvolume = 0.0_DP
+
+    ! evaluate function values only
+    Bder = .false.
+    Bder(DER_FUNC2D) = .true.
+
+    ! fetch the vectors data array
+    call lsyssc_getbase_double(rx, p_Dx)
+
+    ! fetch the triangulation from the vector
+    p_rtria => rx%p_rspatialDiscr%p_rtriangulation
+    
+    ! get IverticesAtElement for determining the local DOFs
+    call storage_getbase_int2d (p_rtria%h_IverticesAtElement,p_IverticesAtElement)
+
+    ! fetch the trafo type
+    ctrafo = elem_igetTrafoType(EL_Q2_2D)
+
+    ! fetch the evaluation tag
+    cevalTag = ior(elem_getEvaluationTag(EL_Q2_2D), &
+                   EL_EVLTAG_DETJ + EL_EVLTAG_REFPOINTS)
+
+    ! set up the points array; these correspond to the 2x2 Gauss formula
+    Dpoints(1,1) = -G2
+    Dpoints(2,1) = -G2
+    Dpoints(1,2) =  G2
+    Dpoints(2,2) = -G2
+    Dpoints(1,3) = -G2
+    Dpoints(2,3) =  G2
+    Dpoints(1,4) =  G2
+    Dpoints(2,4) =  G2
+
+    ! loop over all elements of the triangulation
+    do iel = 1, p_rtria%NEL
+
+      IelList(1) = iel
+
+      ! prepare the element evaluation set
+      call elprep_prepareSetForEvaluation (reval, cevalTag, &
+          p_rtria, IelList, ctrafo, Dpoints)
+
+      ! update domain volume
+      dvolume = dvolume + reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
+                        + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1)
+
+      ! Evaluate the element
+      call elem_eval_Q2_2D(EL_Q2_2D, reval, Bder, Dbas)
+
+      ! update the integral mean
+      do i = 1, 4    ! Cubature points
+        dalpha = 0.0_DP
+        do j = 1, 4  ! Local basis functions
+          dalpha = dalpha + p_Dx(p_IverticesAtElement(j,iel))*Dbas(j,DER_FUNC,i,1)
+        end do
+        dmean = dmean + reval%p_Ddetj(i,1) * dalpha
+      end do
+
+    end do
+
+    ! release element set
+    call elprep_releaseElementSet(reval)
+
+    ! divide mean by domain volume
+    dmean = dmean / dvolume
+
+    ! loop over all elements
+    do ivt = 1, ubound(p_Dx,1)
+
+      ! correct the basis function on each element
+      p_Dx(ivt) = p_Dx(ivt) - dmean
+
+    end do
 
   end subroutine
 

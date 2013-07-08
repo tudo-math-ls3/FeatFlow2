@@ -584,7 +584,7 @@ contains
 
     p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
 
-    call filter_clearFilterChain (rproblem%RlevelInfo(1)%RfilterChain,&
+    call filter_initFilterChain (rproblem%RlevelInfo(1)%RfilterChain,&
         rproblem%RlevelInfo(1)%nfilters)
     call filter_newFilterDiscBCDef (rproblem%RlevelInfo(1)%RfilterChain,&
         rproblem%RlevelInfo(1)%nfilters,rproblem%RlevelInfo(1)%rdiscreteBC)
@@ -632,7 +632,11 @@ contains
     
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
-    
+
+    ! Release the filter chain    
+    call filter_doneFilterChain (rproblem%RlevelInfo(1)%RfilterChain,&
+        rproblem%RlevelInfo(1)%nfilters)
+
     ! Release the temporary vector
     call lsysbl_releaseVector (rvecTmp)
 

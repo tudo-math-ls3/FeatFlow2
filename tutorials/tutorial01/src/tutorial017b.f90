@@ -105,6 +105,7 @@ contains
     type(t_blockDiscretisation), dimension(:), pointer :: p_RblockDiscr
     type(t_discreteBC), dimension(:), pointer :: p_RdiscreteBC
     type(t_filterChain), dimension(:,:), pointer :: p_RfilterChain
+    integer, dimension(:), pointer :: Isize
     
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices
     type(t_vectorBlock) :: rrhs, rsolution, rtemp
@@ -116,7 +117,7 @@ contains
     type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rcoarsegridsolver
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     type(t_linsolMatrixSet) :: rmatrixSet
-    integer :: ierror, ilevel, isize
+    integer :: ierror, ilevel
 
     ! Print a message
     call output_lbrk()
@@ -133,6 +134,7 @@ contains
     allocate (p_RdiscreteBC(NLMAX))
     allocate (p_Rmatrices(NLMAX))
     allocate (p_RfilterChain(1,NLMAX))
+    allocate (Isize(NLMAX))
     
     ! =================================
     ! Create a brick mesh
@@ -294,8 +296,8 @@ contains
       
         ! Create and attach a filter chain that filters defect vectors on 
         ! this level to include boundary conditions.
-        call filter_clearFilterChain (p_RfilterChain(:,ilevel),isize)
-        call filter_newFilterDiscBCDef (p_RfilterChain(:,ilevel),isize,p_RdiscreteBC(ilevel))
+        call filter_initFilterChain (p_RfilterChain(:,ilevel),Isize(ilevel))
+        call filter_newFilterDiscBCDef (p_RfilterChain(:,ilevel),Isize(ilevel),p_RdiscreteBC(ilevel))
         
         p_rlevelInfo%p_RfilterChain => p_RfilterChain(:,ilevel)
       
@@ -394,6 +396,7 @@ contains
     
     ! Release the matrices/discretisation structures/BC
     do ilevel=1,NLMAX
+      call filter_doneFilterChain (p_RfilterChain(:,ilevel),Isize(ilevel))
       call lsysbl_releaseMatrix (p_Rmatrices(ilevel))
       call bcasm_releaseDiscreteBC (p_RdiscreteBC(ilevel))
       call spdiscr_releaseBlockDiscr (p_RblockDiscr(ilevel))
@@ -401,6 +404,7 @@ contains
       call tria_done (p_Rtriangulations(ilevel))
     end do
 
+    deallocate (Isize)
     deallocate (p_RfilterChain)
     deallocate (p_Rmatrices)
     deallocate (p_RdiscreteBC)

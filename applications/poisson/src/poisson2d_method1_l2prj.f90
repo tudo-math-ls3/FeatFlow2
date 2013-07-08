@@ -389,7 +389,7 @@ contains
       ! defect vectors instead.
       ! So, set up a filter chain that filters the defect vector
       ! during the solution process to implement discrete boundary conditions.
-      call filter_clearFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+      call filter_initFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
       call filter_newFilterDiscBCDef (&
           Rlevels(i)%RfilterChain,Rlevels(i)%nfilters,Rlevels(i)%rdiscreteBC)
       
@@ -786,6 +786,11 @@ contains
     call lsysbl_releaseVector (rvecRhs)
     do i = NLMAX, NLMIN, -1
       call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
+    end do
+
+    ! Release the filter chain
+    do i = NLMAX, NLMIN, -1
+      call filter_doneFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
     end do
 
     ! Release our discrete version of the boundary conditions
