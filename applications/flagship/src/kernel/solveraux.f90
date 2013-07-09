@@ -7698,8 +7698,10 @@ contains
       rsolver%rmatrixIncrement%NCOLS = rsolver%nmaxLeastsquaresSteps
       rsolver%rmatrixIncrement%NA    = rsolution%NEQ*rsolver%nmaxLeastsquaresSteps
       rsolver%rmatrixIncrement%cmatrixFormat = LSYSSC_MATRIX1
-      call lsyssc_allocEmptyMatrix(rsolver%rmatrixIncrement,LSYSSC_SETM_UNDEFINED,&
-                                   .false., rsolution%cdataType)
+      if (rsolver%rmatrixIncrement%h_DA .eq. ST_NOHANDLE) then
+        call lsyssc_allocEmptyMatrix(rsolver%rmatrixIncrement,&
+            LSYSSC_SETM_UNDEFINED, .false., rsolution%cdataType)
+      end if
 
       ! ... and create overlay vectors for solution increments
       if (associated(rsolver%RoverlayVectorsIncrement)) then
@@ -7736,8 +7738,10 @@ contains
       rsolver%rmatrixDifference%NCOLS = rsolver%nmaxLeastsquaresSteps
       rsolver%rmatrixDifference%NA    = rsolution%NEQ*rsolver%nmaxLeastsquaresSteps
       rsolver%rmatrixDifference%cmatrixFormat = LSYSSC_MATRIX1
-      call lsyssc_allocEmptyMatrix(rsolver%rmatrixDifference,LSYSSC_SETM_UNDEFINED,&
-                                   .false., rsolution%cdataType)
+      if (rsolver%rmatrixDifference%h_Da .eq. ST_NOHANDLE) then
+        call lsyssc_allocEmptyMatrix(rsolver%rmatrixDifference,&
+            LSYSSC_SETM_UNDEFINED, .false., rsolution%cdataType)
+      end if
 
       ! ... and create overlay vectors for solution increments
       if (associated(rsolver%RoverlayVectorsDifference)) then
