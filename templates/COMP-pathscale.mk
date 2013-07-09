@@ -1,18 +1,18 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# Portland Group compiler suite
+# Pathscale compiler suite
 #
 ##############################################################################
-COMPILERNAME = PGI
+COMPILERNAME = PATHSCALE
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
-F77       = pgf77
-F90       = pgf95
-CC        = pgcc
-CXX	  = pgCC
-LD        = pgf95
+F77       = pathf90
+F90       = pathf90
+CC        = pathcc
+CXX       = pathCC
+LD        = pathf90
 
 # Compiler flag to specify the directory where module files should be
 # placed when created and where they should be searched for.
@@ -35,10 +35,31 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V
-F90VERSION = $(F90) -V
-CCVERSION  = $(CC)  -V
-CXXVERSION = $(CXX) -V
+F77VERSION = $(F77) -v 2>&1
+F90VERSION = $(F90) -v 2>&1
+CCVERSION  = $(CC)  -v 2>&1
+CXXVERSION = $(CXX) -v 2>&1
+
+# Detect compiler version
+PATHSCALEVERSION := $(shell eval $(F90VERSION) | \
+		      sed -n -e 's/^.*Version \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p; q;')
+ifneq ($(PATHSCALEVERSION),)
+PATHSCALEVERSION_MAJOR := $(shell echo $(PATHSCALEVERSION) | cut -d. -f1)
+PATHSCALEVERSION_MINOR := $(shell echo $(PATHSCALEVERSION) | cut -d. -f2)
+else
+PATHSCALEVERSION_MAJOR := 0
+PATHSCALEVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+pathscaleminversion = $(shell if [ $(PATHSCALEVERSION_MAJOR) -gt $(1) ] || \
+	                        ([ $(PATHSCALEVERSION_MAJOR) -ge $(1) ] && \
+				 [ $(PATHSCALEVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+pathscalemaxversion = $(shell if [ $(PATHSCALEVERSION_MAJOR) -lt $(1) ] || \
+	                        ([ $(PATHSCALEVERSION_MAJOR) -le $(1) ] &&\
+				 [ $(PATHSCALEVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 
 ##############################################################################
@@ -55,7 +76,7 @@ endif
 
 
 
-# Specify -openmp for all PGI compilers
+# Specify -fopenmp for all Pathscale compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
@@ -65,88 +86,51 @@ endif
 
 
 ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specify -Mipa for all PGI compilers
-CFLAGSF77     := -Mipa $(CFLAGSF77)
-CFLAGSC       := -Mipa $(CFLAGSC)
-LDFLAGS       := -Mipa $(LDFLAGS)
+# increases link time to 2 minutes per application, but is well worth it.
+CFLAGSF77     := -ipa $(CFLAGSF77)
+CFLAGSC       := -ipa $(CFLAGSC)
+LDFLAGS       := -ipa $(LDFLAGS)
 endif
 
 
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-# -Mcache_align is important when using ACML.
-CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O4 -fastsse \
-		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
-		 -Mvect=assoc,prefetch,sse
-# PGI F90 Compiler v6.1.x most likely needs "-g -Msave" otherwise FEAT2 used to
-# crash as soon as it tries to start solving something! This might have been
-# fixed, though, with revision 2.5 of parallel.f90.
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
-		 $(CFLAGSF77)
-CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
-		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
-		 -Mvect=assoc,prefetch,sse
+CFLAGSF77     := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77) -O3 -OPT:Ofast \
+		 -fno-math-errno #-Wuninitialized
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -O3 -OPT:Ofast \
+		 -fno-math-errno
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O0 -g -Mbounds
-# PGI F90 Compiler (at least 6.1.x) needs
-# * -g flag (even for -O0 optimisation level)
-# otherwise FEAT2 crashes as soon as it tries to start solving something!
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
-	         $(CFLAGSF77)
-CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O0 -g -B -Mbounds
+CFLAGSF77     := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77) -g \
+	         -Wuninitialized -ffortran-bounds-check
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -g
 LDFLAGS       := $(LDFLAGS)
 endif
+# The option -Wuninitialized is highly recommended to let the compiler
+# warn about variables that are accessed before being uninitialised.
+# As the options doubles compilation time, it is not turned on by default.
+
+# Pathscale F90 Compiler (v. 2.4) needs the -g flag (even for -O0
+# optimisation level), otherwise FEAT2 crashes as soon as it tries to
+# start solving something. This is no longer an issue with v. 3.1.
 
 
 
-# Detect compiler version
-PGIVERSION := $(shell eval $(F90VERSION) | \
-		sed -n -e '/^pgf90 .*target/h;' -e 's/^.* \([0-9]*\.[0-9]*-[0-9]*\) .*$$/\1/p')
-ifneq ($(PGIVERSION),)
-PGIVERSION_MAJOR := $(shell echo $(PGIVERSION) | cut -d. -f1)
-PGIVERSION_MINOR := $(shell echo $(PGIVERSION) | cut -d. -f2 | cut -d- -f1)
-else
-PGIVERSION_MAJOR := 0
-PGIVERSION_MINOR := 0
-endif
+##############################################################################
+# Non-standard features supported by compiler
+##############################################################################
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
+	         -DHAS_INTRINSIC_IARGC \
+	         -DHAS_INTRINSIC_ISATTY \
+	         -DHAS_INTRINSIC_ISNAN \
+		 -DHAS_INTRINSIC_IEEE_ARITHMETIC $(CFLAGSF90)
 
-# Functions to detect minimal compiler version
-pgiminversion = $(shell if [ $(PGIVERSION_MAJOR) -gt $(1) ] || \
-	                  ([ $(PGIVERSION_MAJOR) -ge $(1) ] && \
-			   [ $(PGIVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal compiler version
-pgimaxversion = $(shell if [ $(PGIVERSION_MAJOR) -lt $(1) ] || \
-	                  ([ $(PGIVERSION_MAJOR) -le $(1) ] && \
-			   [ $(PGIVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-
-
-# The PGI compiler 7.2 and above supports ISO_C_BINDING
-ifeq ($(call pgiminversion,7,2),yes)
+# The PathScale compiler 3.2 and above supports ISO_C_BINDING
+ifeq ($(call pathscaleminversion,3,2),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
-endif
-
-# Enable workarounds for PGI 6.1 compiler
-ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_PGI_6_1 $(CFLAGSF90)
-endif
-
-# Enable workarounds for PGI 6.2 compiler
-ifneq (,$(findstring pgf90 6.2-,$(PGIVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_PGI_6_2 $(CFLAGSF90)
-endif
-
-# Enable workarounds for PGI 7.0 compiler
-ifneq (,$(findstring pgf95 7.0-,$(PGIVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_PGI_7_0 $(CFLAGSF90)
-endif
-
-# Enable workarounds for PGI 7.2 compiler
-ifneq (,$(findstring pgf95 7.2-,$(PGIVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_PGI_7_2 $(CFLAGSF90)
 endif
 
 
@@ -168,7 +152,7 @@ MOVEMOD   = NO
 ##############################################################################
 # Commands needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 2!d;'
+SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

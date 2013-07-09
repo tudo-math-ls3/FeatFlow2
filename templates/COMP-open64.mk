@@ -1,18 +1,18 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# Intel Compiler suite
+# Open64 Compiler suite
 #
 ##############################################################################
-COMPILERNAME = INTEL
+COMPILERNAME = OPEN64
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
-F77       = ifort
-F90       = ifort
-CC        = icc
-CXX       = icpc
-LD        = ifort
+F77       = openf90
+F90       = openf90
+CC        = opencc
+CXX       = openCC
+LD        = openf90
 
 # Compiler flag to specify the directory where module files should be
 # placed when created and where they should be searched for.
@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX	  = mpic++
 LD        = mpif90
 endif
 endif
@@ -40,6 +40,27 @@ F90VERSION = $(F90) -v 2>&1
 CCVERSION  = $(CC)  -v 2>&1
 CXXVERSION = $(CXX) -v 2>&1
 
+# Detect compiler version
+OPEN64VERSION  := $(shell eval $(F90VERSION) | \
+		    sed -n -e 's/^.*Version \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p; q;')
+ifneq ($(OPEN64VERSION),)
+OPEN64VERSION_MAJOR := $(shell echo $(OPEN64VERSION) | cut -d. -f1)
+OPEN64VERSION_MINOR := $(shell echo $(OPEN64VERSION) | cut -d. -f2)
+else
+OPEN64VERSION_MAJOR := 0
+OPEN64VERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+open64minversion = $(shell if [ $(OPEN64VERSION_MAJOR) -gt $(1) ] || \
+	                     ([ $(OPEN64VERSION_MAJOR) -ge $(1) ] && \
+			      [ $(OPEN64VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+open64maxversion = $(shell if [ $(OPEN64VERSION_MAJOR) -lt $(1) ] || \
+	                     ([ $(OPEN64VERSION_MAJOR) -le $(1) ] && \
+			      [ $(OPEN64VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
 
 ##############################################################################
 # compiler flags
@@ -48,14 +69,14 @@ CXXVERSION = $(CXX) -v 2>&1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -integer_size 64
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
 
-# Specify -openmp for all Intel compilers
+# Specify -openmp for all Open64 compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -openmp $(CFLAGSC)
@@ -64,101 +85,44 @@ endif
 
 
 
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specifying -ipo for all Intel compilers is only feasible
-# if all Intel compilers have the same build date!
-CFLAGSF77     := -ipo $(CFLAGSF77)
-CFLAGSC       := -ipo $(CFLAGSC)
-LDFLAGS       := -ipo $(LDFLAGS)
+ifneq (,$(findstring EXPENSIVE ,$(OPT)))
+# Specify -Ofast -ipa for all Open64 compilers
+CFLAGSF77     := -Ofast -ipa $(CFLAGSF77)
+CFLAGSC       := -Ofast -ipa $(CFLAGSC)
+LDFLAGS       := -Ofast -ipa $(LDFLAGS)
 endif
 
 
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-# Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
-# Description of compiler flags:
-#  -O3                   : enables aggressive optimization
-#  -align records        : aligns derived-type components and record structure fields on default natural boundaries
-#  -assume buffered_io   : data is buffered before written to disk
-#  -assume underscore    : append an underscore character to external user-defined names
-#  -fp-model precise     : strictly adhere to value-safe  optimizations  when implementing floaing-point calculations
-#  -funroll-loops        : enables loop unrolling
-#  -ip                   : enables interprocedural optimizations for single-file compilation
-#  -no-prec-div          : improves precision of floating-point  divides
-#  -opt-malloc-options=3 : enables optimal malloc algorithm
-#  -pad                  : enables the changing of the variable and array memory layout.
-#  -unroll               : enables aggressive loop unrolling
-CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
-		 -unroll-aggressive -ip -fp-model precise \
-		 -assume underscore -no-prec-div -pad -opt-malloc-options=3
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77) \
-		 -align records -assume buffered_io
-CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
+CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O2 -LNO -mso \
+	          -ffast-math -ffast-stdlib -CG:compute_to=on \
+		  -finline-functions -inline -fno-second-underscore
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
+		 -ffast-math -ffast-stdlib -CG:compute_to=on \
+		 -finline-functions -inline -static
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
-#
-# no optimisations
-#
 else
-#
-CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O0 -g -fpe0 -assume underscore
-# the following (additional) flags make ifort super-strict and allow e.g.
-# the detection of out-of-bounds accesses. Unfortunately, they already complain
-# about such errors deep inside the numerical factorisation in UMFPACK (at
-# least in version 5.5.2, which is the only one I tested), so the use of
-# an iterative/alternative coarse grid solver is recommended.
-#CFLAGSF77     := $(CFLAGSF77) -check all -debug -fp-stack-check -traceback -ftrapuv
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77) \
-		 -C -check bounds -traceback -warn all -assume buffered_io
-CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
+CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O0 -g3 \
+	         -fno-second-underscore
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -ffortran-bounds-check -fullwarn
+CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O0 -g3 -trapuv
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 
 
 
-# Detect compiler version
-INTELVERSION := $(shell eval $(F90VERSION) | \
-		  sed -e 's/^ifort //; y/V-/v /; s/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/')
-ifneq ($(INTELVERSION),)
-INTELVERSION_MAJOR := $(shell echo $(INTELVERSION) | cut -d. -f1)
-INTELVERSION_MINOR := $(shell echo $(INTELVERSION) | cut -d. -f2)
-else
-INTELVERSION_MAJOR := 0
-INTELVERSION_MINOR := 0
-endif
-
-# Functions to detect minimal compiler version
-intelminversion = $(shell if [ $(INTELVERSION_MAJOR) -gt $(1) ] || \
-	                    ([ $(INTELVERSION_MAJOR) -ge $(1) ] && \
-			     [ $(INTELVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal compiler version
-intelmaxversion = $(shell if [ $(INTELVERSION_MAJOR) -lt $(1) ] || \
-	                    ([ $(INTELVERSION_MAJOR) -le $(1) ] && \
-			     [ $(INTELVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases,
-# (not necessary for Intel 10.1.021)
-ifneq (,$(findstring 10.1.00,$(INTELVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
-endif
-ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
-endif
-
-# The Intel compiler 10.1 and above supports ISO_C_BINDING
-ifeq ($(call intelminversion,10,1),yes)
-CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
-endif
-
-
-
 ##############################################################################
-# command to create archive from object files
+# Non-standard features supported by compiler
 ##############################################################################
-AR        = xiar -rv
+CFLAGSF90 := -DHAS_INTRINSIC_FLUSH \
+	     -DHAS_INTRINSIC_ISNAN \
+	     -DHAS_ISO_C_BINDING $(CFLAGSF90)
+
 
 
 ##############################################################################
@@ -178,7 +142,7 @@ MOVEMOD   = NO
 ##############################################################################
 # Commands needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
+SBB_CVERSIONCMD  = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

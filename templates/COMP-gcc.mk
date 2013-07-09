@@ -40,6 +40,51 @@ F90VERSION = $(F90) -v 2>&1
 CCVERSION  = $(CC)  -v 2>&1
 CXXVERSION = $(CXX) -v 2>&1
 
+# Detect C/C++ compiler version
+GCCVERSION := $(shell eval $(CCVERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+ifneq ($(GCCVERSION),)
+GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
+GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
+else
+GCCVERSION_MAJOR := 0
+GCCVERSION_MINOR := 0
+endif
+
+# Function to detect minimal GCC compiler version
+gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
+			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Function to detect maximal GCC compiler version
+gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
+		  	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+# Detect Fortran compiler version
+GFORTRANVERSION := $(shell eval $(F90VERSION) | \
+		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+
+ifneq ($(GFORTRANVERSION),)
+GFORTRANVERSION_MAJOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f1)
+GFORTRANVERSION_MINOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f2)
+else
+GFORTRANVERSION_MAJOR := 0
+GFORTRANVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal Fortran compiler version
+gfortranminversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -gt $(1) ] || \
+	                       ([ $(GFORTRANVERSION_MAJOR) -ge $(1) ] && \
+				[ $(GFORTRANVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal Fortran compiler version
+gfortranmaxversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -lt $(1) ] || \
+	                       ([ $(GFORTRANVERSION_MAJOR) -le $(1) ] && \
+				[ $(GFORTRANVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
 
 ##############################################################################
 # compiler flags
@@ -64,13 +109,39 @@ endif
 
 
 
+# Specify -flto for all gcc compilers
+ifneq (,$(findstring EXPENSIVE,$(OPT)))
+ifeq ($(call gfortranminversion,4,1),yes)
+CFLAGSF77     := -flto $(CFLAGSF77)
+CFLAGSC       := -flto $(CFLAGSC)
+LDFLAGS       := -flto $(LDFLAGS)
+endif
+endif
+
+
+
 # Set default compile flags
 ifeq ($(call optimise), YES)
+# Don't specify -flto here. LTO optimisation is enabled by the flag opt=expensive.
+# Description of compiler flags:
+#  -O3                      : enables aggressive optimization
+#  -ffast-math              : turns on fast math operations
+#  -foptimize-register-move : attempt to reassign register numbers in move instructions and as
+#                             operands of other simple instructions in order to maximize the
+#                             amount of register tying. This is especially helpful on machines
+#                             with two-operand instructions.
+#  -fprefetch-loop-arrays   : If supported by the target machine, generate instructions to
+#                             prefetch memory to improve the performance of loops that access
+#                             large arrays.
+#  -funroll-loops           : Unroll loops whose number of iterations can be determined at
+#                             compile time or upon entry to the loop.
+#  -static                  : static binary
+#  -fno-second-underscore   : do not prepend second underscore
+#  -Wuninitialized          : warn uninitialised variables
 CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static -fno-second-underscore
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH -DHAS_INTRINSIC_IARGC \
-	         -DHAS_INTRINSIC_ISATTY $(CFLAGSF90) $(CFLAGSF77) -Wuninitialized
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -Wuninitialized
 CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static
@@ -79,8 +150,7 @@ LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O0 -g -fno-second-underscore \
 		 -fbacktrace -fexternal-blas #-pg
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH -DHAS_INTRINSIC_IARGC \
-		 -DHAS_INTRINSIC_ISATTY $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
 		 -Wline-truncation -Wsurprising  \
 		 -Wunreachable-code -Wunused-label -Wunused-variable
@@ -98,55 +168,17 @@ endif
 
 
 
-# Detect C/C++ compiler version
-GCCVERSION := $(shell eval $(CCVERSION) | \
-		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
-ifneq ($(GCCVERSION),)
-GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
-GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
-else
-GCCVERSION_MAJOR := 0
-GCCVERSION_MINOR := 0
-endif
-
-# Functions to detect minimal Fortran compiler version
-gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
-	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
-			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal Fortran compiler version
-gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
-	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
-		  	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-
-
-# Detect Fortran compiler version
-GFORTRANVERSION := $(shell eval $(F90VERSION) | \
-		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
-ifneq ($(GFORTRANVERSION),)
-GFORTRANVERSION_MAJOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f1)
-GFORTRANVERSION_MINOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f2)
-else
-GFORTRANVERSION_MAJOR := 0
-GFORTRANVERSION_MINOR := 0
-endif
-
-# Functions to detect minimal Fortran compiler version
-gfortranminversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -gt $(1) ] || \
-	                       ([ $(GFORTRANVERSION_MAJOR) -ge $(1) ] && \
-				[ $(GFORTRANVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal Fortran compiler version
-gfortranmaxversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -lt $(1) ] || \
-	                       ([ $(GFORTRANVERSION_MAJOR) -le $(1) ] && \
-				[ $(GFORTRANVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-
+##############################################################################
+# Non-standard features supported by compiler
+##############################################################################
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
+	         -DHAS_INTRINSIC_IARGC \
+	         -DHAS_INTRINSIC_ISATTY \
+	         -DHAS_INTRINSIC_ISNAN $(CFLAGSF90)
 
 # The gfortran compiler 4.1 and above supports ISO_C_BINDING
 ifeq ($(call gfortranminversion,4,1),yes)
-CFLAGSF90 := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
 
 

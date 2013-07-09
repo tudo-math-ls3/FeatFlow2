@@ -16,11 +16,13 @@ FEAT2_NURBS                : enable support for NURBS (requires additional libra
 
 4) Flags to indicate that architecture/OS has special features
 
-HAS_FLUSH           : fortran compiler has FLUSH function
-HAS_HIGH_RES_CLOCK  : high-resolution clock is available
-HAS_INTRINSIC_IARGC : fortran compiler has intrinsic IARGC function
-HAS_INTRINSIC_ISNAN : fortran compiler has intrinsic ISNAN function
-HAS_ISO_C_BINDING   : fortran compiler supports iso_c_bindings
+HAS_HIGH_RES_CLOCK            : high-resolution clock is available
+HAS_INTRINSIC_FLUSH           : Fortran compiler has FLUSH function
+HAS_INTRINSIC_IARGC           : Fortran compiler has intrinsic IARGC function
+HAS_INTRINSIC_IEEE_ARITHMETIC : Fortran compiler has intrinsic IEEE_ARITHMETIC module
+HAS_INTRINSIC_ISATTY          : Fortran compiler has intrinsic ISATTY function
+HAS_INTRINSIC_ISNAN           : Fortran compiler has intrinsic ISNAN function
+HAS_ISO_C_BINDING             : Fortran compiler supports iso_c_bindings
 
 
 5) Flags to tell that some special featires should be used

@@ -1,18 +1,18 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# Open64 Compiler suite
+# Intel Compiler suite
 #
 ##############################################################################
-COMPILERNAME = OPEN64
+COMPILERNAME = INTEL
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
-F77       = openf90
-F90       = openf90
-CC        = opencc
-CXX       = openCC
-LD        = openf90
+F77       = efc
+F90       = efc
+CC        = ecc
+CXX       = ecpc
+LD        = efc
 
 # Compiler flag to specify the directory where module files should be
 # placed when created and where they should be searched for.
@@ -31,6 +31,15 @@ LD        = mpif90
 endif
 endif
 
+# Note: To not use the default NEC blends of Intel compilers, but a
+#       native Intel compiler IA64 release overwrite MPIF77, MPIF90,
+#       MPICC and MPICXX on the command line, e.g.:
+#       % MPIF77=~/intel/Compiler/11.0/074/bin/ia64/ifort \
+#         MPIF90=~/intel/Compiler/11.0/074/bin/ia64/ifort \
+#	  MPICC=~/intel/Compiler/11.0/074/bin/ia64/icc \
+#	  MPICPP=~/intel/Compiler/11.0/074/bin/ia64/icpc \
+#         make
+
 
 ##############################################################################
 # Commands to get version information from compiler
@@ -40,6 +49,28 @@ F90VERSION = $(F90) -v 2>&1
 CCVERSION  = $(CC)  -v 2>&1
 CXXVERSION = $(CXX) -v 2>&1
 
+# Detect compiler version
+INTELVERSION := $(shell eval $(F90VERSION) | \
+		  sed -n -e 'y/V/v/; /^ifort.*version/h;' -e 's/^.* \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p')
+ifneq ($(INTELVERSION),)
+INTELVERSION_MAJOR := $(shell echo $(INTELVERSION) | cut -d. -f1)
+INTELVERSION_MINOR := $(shell echo $(INTELVERSION) | cut -d. -f2)
+else
+INTELVERSION_MAJOR := 0
+INTELVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+intelminversion = $(shell if [ $(INTELVERSION_MAJOR) -gt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -ge $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+intelmaxversion = $(shell if [ $(INTELVERSION_MAJOR) -lt $(1) ] || \
+	                    ([ $(INTELVERSION_MAJOR) -le $(1) ] && \
+			     [ $(INTELVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
 
 ##############################################################################
 # compiler flags
@@ -48,14 +79,14 @@ CXXVERSION = $(CXX) -v 2>&1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -integer_size 64
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
 
-# Specify -openmp for all Open64 compilers
+# Specify -openmp for all Intel compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -openmp $(CFLAGSC)
@@ -64,68 +95,72 @@ endif
 
 
 
-# Note: Try to use the same settings for C and CXX.
-ifeq ($(strip $(OPT)), EXPENSIVE)
-CFLAGSF77     := -Ofast -ipa $(CFLAGSF77)
-CFLAGSC       := -Ofast -ipa $(CFLAGSC)
-#CFLAGSC       := -O2    -ipa $(CFLAGSC)
-#CFLAGSCXX     := -Ofast -ipa $(CFLAGSCXX)
-LDFLAGS       := -Ofast -ipa $(LDFLAGS)
+ifneq (,$(findstring EXPENSIVE ,$(OPT)))
+# Specifying -ipo for all Intel compilers is only feasible
+# if all Intel compilers have the same build date!
+CFLAGSF77     := -ipo $(CFLAGSF77)
+CFLAGSC       := -ipo $(CFLAGSC)
+LDFLAGS       := -ipo $(LDFLAGS)
 endif
 
 
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O2 -LNO -mso \
-	          -ffast-math -ffast-stdlib -CG:compute_to=on \
-		  -finline-functions -inline -fno-second-underscore
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         $(CFLAGSF90) $(CFLAGSF77)
-CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
-		 -ffast-math -ffast-stdlib -CG:compute_to=on \
-		 -finline-functions -inline -static
+# Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
+CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
+		 -funroll-loops -ip -assume underscore \
+		 -fp-model precise -pad
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
+		 -align records -assume buffered_io
+CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model precise
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O0 -g3 \
-	         -fno-second-underscore
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-		 $(CFLAGSF90) $(CFLAGSF77) -ffortran-bounds-check -fullwarn
-CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O0 -g3 -trapuv
+CFLAGSF77     := $(CFLAGSF77) -DUSE_COMPILER_INTEL -O0 \
+		 -g -fpe0 -assume underscore
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
+		 -C -check bounds -traceback
+CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 
 
 
-# Detect compiler version
-OPEN64VERSION  := $(shell eval $(F90VERSION) | \
-		    sed -n -e 's/^.*Version \([0-9]*\.[0-9]*\.*[0-9]*\).*$$/\1/p; q;')
-ifneq ($(OPEN64VERSION),)
-OPEN64VERSION_MAJOR := $(shell echo $(OPEN64VERSION) | cut -d. -f1)
-OPEN64VERSION_MINOR := $(shell echo $(OPEN64VERSION) | cut -d. -f2)
-else
-OPEN64VERSION_MAJOR := 0
-OPEN64VERSION_MINOR := 0
-endif
+##############################################################################
+# Non-standard features supported by compiler
+##############################################################################
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
+		 -DHAS_INTRINSIC_IARGC \
+		 -DHAS_INTRINSIC_ISATTY \
+		 -DHAS_INTRINSIC_ISNAN \
+	         -DHAS_INTRINSIC_IEEE_ARITHMETIC $(CFLAGSF90)
 
-# Functions to detect minimal compiler version
-open64minversion = $(shell if [ $(OPEN64VERSION_MAJOR) -gt $(1) ] || \
-	                     ([ $(OPEN64VERSION_MAJOR) -ge $(1) ] && \
-			      [ $(OPEN64VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal compiler version
-open64maxversion = $(shell if [ $(OPEN64VERSION_MAJOR) -lt $(1) ] || \
-	                     ([ $(OPEN64VERSION_MAJOR) -le $(1) ] && \
-			      [ $(OPEN64VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-
-
-
-# The Open64 compiler supports ISO_C_BINDING
+# The Intel compiler 10.1 and above supports ISO_C_BINDING
+ifeq ($(call intelminversion,10,1),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
 
+# The Intel compiler on the NEC gateway Itanium2 seems to have an independent version
+# numbering. The 2008 release is version 6.1 while the 2008 release for Linux x64/x64_64
+# is 10.1.x or 11.0.x. But version 6.1 requires the same workarounds as Intel 10.1.0[0-1][0-9]
+# for x64/x64_64.
+ifneq (,$(findstring NEC C++ IA-64 Compiler,$(INTELVERSION)))
+ifneq (,$(findstring Revision 6.1,$(INTELVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
+# Add special NEC extension
+CFLAGSF77     := $(CFLAGSF77) -matmul
+CFLAGSF90     := $(CFLAGSF90) -matmul
+endif
+endif
+
+
+
+##############################################################################
+# command to create archive from object files
+##############################################################################
+AR        = xiar -rv
 
 
 ##############################################################################
@@ -145,7 +180,7 @@ MOVEMOD   = NO
 ##############################################################################
 # Commands needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_CVERSIONCMD  = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
+SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

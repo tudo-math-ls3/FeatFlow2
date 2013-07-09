@@ -40,6 +40,49 @@ F90VERSION := $(F90) -v 2>&1
 CCVERSION  := $(CC)  -v 2>&1
 CXXVERSION := $(CXX) -v 2>&1
 
+# Detect C/C++ compiler version
+GCCVERSION := $(shell eval $(CCVERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+ifneq ($(GCCVERSION),)
+GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
+GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
+else
+GCCVERSION_MAJOR := 0
+GCCVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal Fortran compiler version
+gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
+			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal Fortran compiler version
+gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
+		   	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
+# Detect compiler version
+G95VERSION := $(shell eval $(F90VERSION) | \
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' \
+	               -e 's/^.*g95 \([0-9]*\.[0-9]*\.*[0-9]*\)[^0-9a-z.].*$$/\1/p')
+ifneq ($(G95VERSION),)
+G95VERSION_MAJOR := $(shell echo $(G95VERSION) | cut -d. -f1)
+G95VERSION_MINOR := $(shell echo $(G95VERSION) | cut -d. -f2)
+else
+G95VERSION_MAJOR := 0
+G95VERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+g95minversion = $(shell if [ $(G95VERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(G95VERSION_MAJOR) -ge $(1) ] && [ $(G95VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+g95maxversion = $(shell if [ $(G95VERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(G95VERSION_MAJOR) -le $(1) ] && [ $(G95VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
+
+
 
 ##############################################################################
 # compiler flags
@@ -73,8 +116,7 @@ CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move \
 		 -fprefetch-loop-arrays -funroll-loops -static \
 		 -fno-second-underscore
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static
@@ -85,8 +127,7 @@ CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -g -fno-second-underscore #-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
 # are peppered with out-of-bounds accesses (i[0] and i[n]). That's
 # Turek-style code and nobody volunteered so far to fix it.
-CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         $(CFLAGSF90) $(CFLAGSF77) -fbounds-check -ftrace=full
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check -ftrace=full
 CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
@@ -107,54 +148,24 @@ ifneq ($(shell (which 2>/dev/null $(F90))),)
 ifneq ($(shell (nm `$(F90) -print-libgcc-file-name | sed 's|/libgcc.a|libf95.a|;'` | grep 'T _g95_isatty')),)
 CFLAGSF90     := -DHAS_INTRINSIC_ISATTY $(CFLAGSF90)
 endif
+ifneq ($(shell (nm `$(F90) -print-libgcc-file-name | sed 's|/libgcc.a|libf95.a|;'` | grep 'T _g95_isnan')),)
+CFLAGSF90     := -DHAS_INTRINSIC_ISNAN $(CFLAGSF90)
+endif
+ifneq ($(shell (nm `$(F90) -print-libgcc-file-name | sed 's|/libgcc.a|libf95.a|;'` | grep 'T _g95_iargc')),)
+CFLAGSF90     := -DHAS_INTRINSIC_IARGC $(CFLAGSF90)
+endif
 endif
 
 
+##############################################################################
+# Non-standard features supported by compiler
+##############################################################################
+CFLAGSF90 := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90)
 
-# Detect C/C++ compiler version
-GCCVERSION := $(shell eval $(CCVERSION) | \
-		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
-ifneq ($(GCCVERSION),)
-GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
-GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
-else
-GCCVERSION_MAJOR := 0
-GCCVERSION_MINOR := 0
+# The gfortran compiler 4.1 and above supports ISO_C_BINDING
+ifeq ($(call gfortranminversion,4,1),yes)
+CFLAGSF90 := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
-
-# Functions to detect minimal Fortran compiler version
-gccminversion = $(shell if [ $(GCCVERSION_MAJOR) -gt $(1) ] || \
-	                  ([ $(GCCVERSION_MAJOR) -ge $(1) ] && \
-			   [ $(GCCVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal Fortran compiler version
-gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
-	                  ([ $(GCCVERSION_MAJOR) -le $(1) ] && \
-		   	   [ $(GCCVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
-
-
-# Detect compiler version
-G95VERSION := $(shell eval $(F90VERSION) | \
-		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' \
-	               -e 's/^.*g95 \([0-9]*\.[0-9]*\.*[0-9]*\)[^0-9a-z.].*$$/\1/p')
-ifneq ($(G95VERSION),)
-G95VERSION_MAJOR := $(shell echo $(G95VERSION) | cut -d. -f1)
-G95VERSION_MINOR := $(shell echo $(G95VERSION) | cut -d. -f2)
-else
-G95VERSION_MAJOR := 0
-G95VERSION_MINOR := 0
-endif
-
-
-# Functions to detect minimal compiler version
-g95minversion = $(shell if [ $(G95VERSION_MAJOR) -gt $(1) ] || \
-	                  ([ $(G95VERSION_MAJOR) -ge $(1) ] && [ $(G95VERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
-
-# Functions to detect maximal compiler version
-g95maxversion = $(shell if [ $(G95VERSION_MAJOR) -lt $(1) ] || \
-	                  ([ $(G95VERSION_MAJOR) -le $(1) ] && [ $(G95VERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
-
 
 
 ##############################################################################

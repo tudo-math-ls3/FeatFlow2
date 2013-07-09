@@ -1,23 +1,23 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# Sun Studio Compiler suite
+# Portland Group compiler suite
 #
 ##############################################################################
-COMPILERNAME = SUNSTUDIO
+COMPILERNAME = PGI
 
 # Default: No compiler wrapper commands
 # This works both for builds of serial and parallel applications
-F77       = sunf77
-F90       = sunf90
-CC        = suncc
-CXX       = sunCC
-LD        = sunf90
+F77       = pgf77
+F90       = pgf95
+CC        = pgcc
+CXX	  = pgCC
+LD        = pgf95
 
 # Compiler flag to specify the directory where module files should be
 # placed when created and where they should be searched for.
-# Note: Do not remove ticks!
-MODOPTION = '-moddir='
+# Note: Do not remove ticks and whitespace!
+MODOPTION = '-module '
 
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
 # a build for parallel execution is requested.
@@ -35,10 +35,31 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1 1>/dev/null
-F90VERSION = $(F90) -V 2>&1 1>/dev/null
-CCVERSION  = $(CC)  -V 2>&1 1>/dev/null
-CXXVERSION = $(CXX) -V 2>&1 1>/dev/null
+F77VERSION = $(F77) -V
+F90VERSION = $(F90) -V
+CCVERSION  = $(CC)  -V
+CXXVERSION = $(CXX) -V
+
+# Detect compiler version
+PGIVERSION := $(shell eval $(F90VERSION) | \
+		sed -n -e '/^pgf90 .*target/h;' -e 's/^.* \([0-9]*\.[0-9]*-[0-9]*\) .*$$/\1/p')
+ifneq ($(PGIVERSION),)
+PGIVERSION_MAJOR := $(shell echo $(PGIVERSION) | cut -d. -f1)
+PGIVERSION_MINOR := $(shell echo $(PGIVERSION) | cut -d. -f2 | cut -d- -f1)
+else
+PGIVERSION_MAJOR := 0
+PGIVERSION_MINOR := 0
+endif
+
+# Functions to detect minimal compiler version
+pgiminversion = $(shell if [ $(PGIVERSION_MAJOR) -gt $(1) ] || \
+	                  ([ $(PGIVERSION_MAJOR) -ge $(1) ] && \
+			   [ $(PGIVERSION_MINOR) -ge $(2) ]) ; then echo yes ; else echo no ; fi)
+
+# Functions to detect maximal compiler version
+pgimaxversion = $(shell if [ $(PGIVERSION_MAJOR) -lt $(1) ] || \
+	                  ([ $(PGIVERSION_MAJOR) -le $(1) ] && \
+			   [ $(PGIVERSION_MINOR) -le $(2) ]) ; then echo yes ; else echo no ; fi)
 
 
 ##############################################################################
@@ -48,82 +69,93 @@ CXXVERSION = $(CXX) -V 2>&1 1>/dev/null
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -xtypemap=integer:64
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
 
-# Specify -xopenmp for all Sun compilers
+# Specify -openmp for all PGI compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77     := -DUSE_OPENMP -xopenmp $(CFLAGSF77)
-CFLAGSC       := -DUSE_OPENMP -xopenmp $(CFLAGSC)
-LDFLAGS       := -DUSE_OPENMP -xopenmp $(LDFLAGS)
+CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
+CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
+LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
 endif
 
 
 
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specifying -xipo for interprocedural optimizations
-CFLAGSF77     := -xipo $(CFLAGSF77)
-CFLAGSC       := -xipo $(CFLAGSC)
-LDFLAGS       := -xipo $(LDFLAGS)
+ifneq (,$(findstring EXPENSIVE ,$(OPT)))
+# Specify -Mipa for all PGI compilers
+CFLAGSF77     := -Mipa $(CFLAGSF77)
+CFLAGSC       := -Mipa $(CFLAGSC)
+LDFLAGS       := -Mipa $(LDFLAGS)
 endif
 
 
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-
-# MM: -fast flag produces internal compiler errors; this is a reduced
-#     selection of compiler flags which would be set by the -fast flag
-FAST := -libmil -dalign -xlibmopt -xdepend -pad=local -fround=nearest -xregs=frameptr -xprefetch -xvector
-
-CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) $(FAST) -xtypemap=integer:32
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF90) $(FAST)
-CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) $(FAST)
-CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS) $(FAST)
+# -Mcache_align is important when using ACML.
+CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O4 -fastsse \
+		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
+		 -Mvect=assoc,prefetch,sse
+# PGI F90 Compiler v6.1.x most likely needs "-g -Msave" otherwise FEAT2 used to
+# crash as soon as it tries to start solving something! This might have been
+# fixed, though, with revision 2.5 of parallel.f90.
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
+		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
+		 -Mvect=assoc,prefetch,sse
+LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) -xtypemap=integer:32 -g -nolibmil
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF90) \
-		 -g -nolibmil
-		 #-C -xdebugformat=stabs
-CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) -g #-xdebugformat=stabs
-CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
+CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O0 -g -Mbounds
+# PGI F90 Compiler (at least 6.1.x) needs
+# * -g flag (even for -O0 optimisation level)
+# otherwise FEAT2 crashes as soon as it tries to start solving something!
+CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
+CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O0 -g -B -Mbounds
 LDFLAGS       := $(LDFLAGS)
 endif
 
 
 
-# SunStudio 10 Fortran compiler benefits when setting -DENABLE_USE_ONLY,
-# SunStudio 11 and 12 Fortran compiler, however, crash with internal compiler
-# errors with this setting, both for unoptimised and optimised builds.
-#CFLAGSF90 := -DENABLE_USE_ONLY $(CFLAGSF90)
+##############################################################################
+# Non-standard features supported by compiler
+##############################################################################
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
+	         -DHAS_INTRINSIC_IARGC \
+	         -DHAS_INTRINSIC_ISATTY $(CFLAGSF90)
 
-# Detect compiler version
-SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) | \
-		       sed -n -e 's/^.* \([0-9][0-9][0-9][0-9]\/[0-9][0-9]\/[0-9][0-9]\).*$$/\1/p')
-
-# Enable workarounds for special versions
-ifneq (,$(findstring 2009/03/06,$(SUNSTUDIOVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
-endif
-ifneq (,$(findstring 2009/06/03,$(SUNSTUDIOVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
-endif
-
-ifneq (,$(findstring 2010/05/10,$(SUNSTUDIOVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
-endif
-ifneq (,$(findstring 2010/08/13,$(SUNSTUDIOVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
-endif
-
-
-# The Sun fortran compiler supports ISO_C_BINDING
+# The PGI compiler 7.2 and above supports ISO_C_BINDING
+ifeq ($(call pgiminversion,7,2),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
+
+# The PGI compiler 10.0 and above supports IEEE_ARITHMETIC
+ifeq ($(call pgiminversion,10,0),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_IEEE_ARITHMETIC $(CFLAGSF90)
+endif
+
+# Enable workarounds for PGI 6.1 compiler
+ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_6_1 $(CFLAGSF90)
+endif
+
+# Enable workarounds for PGI 6.2 compiler
+ifneq (,$(findstring pgf90 6.2-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_6_2 $(CFLAGSF90)
+endif
+
+# Enable workarounds for PGI 7.0 compiler
+ifneq (,$(findstring pgf95 7.0-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_7_0 $(CFLAGSF90)
+endif
+
+# Enable workarounds for PGI 7.2 compiler
+ifneq (,$(findstring pgf95 7.2-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_7_2 $(CFLAGSF90)
+endif
 
 
 
@@ -144,7 +176,7 @@ MOVEMOD   = NO
 ##############################################################################
 # Commands needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_CVERSIONCMD = $(F77) -V 2>&1 | sed '2!d;'
+SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 2!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

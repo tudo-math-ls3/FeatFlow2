@@ -3,24 +3,19 @@
 ##############################################################################
 # command to create archive from object files
 ##############################################################################
-AR        = ar -rv -X 64
+AR        = ar -rv
 
 ##############################################################################
 # command to create index to archive
 #############################################################################
-RANLIB    = ranlib -X 64
+RANLIB    = ranlib
 
 ##############################################################################
 # subroutines/functions missing in system libraries
 ##############################################################################
 SRCEXTRA := $(SRCEXTRA) \
-	    # kernel/arch/amub.f90 kernel/arch/ib21.f kernel/arch/if117.f \
-	    # kernel/arch/ifd17.f kernel/arch/sysextra.c kernel/arch/transp.f90
-
-##############################################################################
-# Sparse Banded Blas benchmark
-##############################################################################
-SBB_SRCEXTRA = ztime_ibmregatta.f
+	    # kernel/arch/amub.f90 kernel/arch/if117.f kernel/arch/ifd17.f \
+	    # kernel/arch/transp.f90 kernel/arch/ib21.f kernel/arch/sysextra.c
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
@@ -42,7 +37,7 @@ SBB_SRCEXTRA = ztime_ibmregatta.f
 # information available which BLAS implementation to use and where to find the
 # library.
 #
-# In this file, the first two tokens have been set: architecture and cpu.
+# In this file, the first three tokens have been set: architecture and cpu.
 # Set the flags accordingly.
 TOKEN1 := 1
 TOKEN2 := 1
