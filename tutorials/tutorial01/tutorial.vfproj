@@ -180,5 +180,7 @@
 		<File RelativePath=".\src\tutorial018e.f90"/>
 		<File RelativePath=".\src\tutorial018f.f90"/>
 		<File RelativePath=".\src\tutorial019a.f90"/>
+		<File RelativePath=".\src\tutorial020a.f90"/>
+		<File RelativePath=".\src\tutorial020b.f90"/>
 		</Filter></Files>
 	<Globals/></VisualStudioProject>

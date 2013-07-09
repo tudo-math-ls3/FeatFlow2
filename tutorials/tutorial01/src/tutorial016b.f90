@@ -149,7 +149,7 @@ contains
     call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! -----------------------------------------------------
-    ! Initialise a block martix and block vectors
+    ! Initialise a block matrix and block vectors
     ! corresponding to the block discretisation.
     call lsysbl_createMatrix (rblockDiscr,rmatrix)
     call lsysbl_createVector (rblockDiscr,rrhs)
