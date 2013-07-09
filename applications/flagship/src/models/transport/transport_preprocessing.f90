@@ -981,6 +981,7 @@ contains
             .eq. AFCSTAB_UNDEFINED) then
           call afcstab_initFromParameterlist(rparlist, sdiffusion,&
               rproblemLevel%Rafcstab(diffusionAFC))
+          rproblemLevel%Rafcstab(diffusionAFC)%bisSymmetricOperator = .true.
           call afcsc_initStabilisation(&
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%Rafcstab(diffusionAFC), p_rdiscretisation)
