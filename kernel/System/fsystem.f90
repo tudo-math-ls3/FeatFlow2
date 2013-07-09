@@ -213,6 +213,7 @@ module fsystem
   public :: sys_triml
   public :: sys_trimr
   public :: sys_isNumeric
+  public :: sys_isNAN
 
   public :: t_genericObject
   public :: t_sysconfig
@@ -434,6 +435,14 @@ module fsystem
     module procedure sys_tolower_copy
   end interface
   
+  interface sys_isNAN
+#ifdef ENABLE_QUADPREC
+    module procedure sys_isNANQP
+#endif
+    module procedure sys_isNANDP
+    module procedure sys_isNANSP
+  end interface sys_isNAN
+
 contains
 
 !************************************************************************
@@ -1019,7 +1028,7 @@ contains
 !</input>
 !</subroutine>
 
-#ifdef HAS_FLUSH
+#ifdef HAS_INTRINSIC_FLUSH
     call flush(iunit)
 #endif
 
@@ -3057,5 +3066,104 @@ contains
     sys_isNumeric = (e .eq. 0)
     
   end function sys_isNumeric
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function sys_isNANQP(qx)
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  use, intrinsic :: ieee_arithmetic
+#endif
+
+!<description>
+  ! This function checks if the given data is not-a-number
+!</description>
+
+!<input>
+  ! Quadprec value
+  real(QP), intent(in) :: qx
+!</input>
+
+!<result>
+  ! True if given data is not-a-number
+  logical :: sys_isNANQP
+!</result>
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  sys_isNANQP = ieee_is_nan(qx)
+#elseif HAS_INTRINSIC_ISNAN
+  sys_isNANQP = isnan(qx)
+#else
+  sys_isNANQP = qx .ne. qx
+#endif
+  end function sys_isNANQP
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function sys_isNANDP(dx)
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  use, intrinsic :: ieee_arithmetic
+#endif
+
+!<description>
+  ! This function checks if the given data is not-a-number
+!</description>
+
+!<input>
+  ! Double value
+  real(DP), intent(in) :: dx
+!</input>
+
+!<result>
+  ! True if given data is not-a-number
+  logical :: sys_isNANDP
+!</result>
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  sys_isNANDP = ieee_is_nan(dx)
+#elseif HAS_INTRINSIC_ISNAN
+  sys_isNANDP = isnan(dx)
+#else
+  sys_isNANDP = dx .ne. dx
+#endif
+  end function sys_isNANDP
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function sys_isNANSP(fx)
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  use, intrinsic :: ieee_arithmetic
+#endif
+
+!<description>
+  ! This function checks if the given data is not-a-number
+!</description>
+
+!<input>
+  ! Single value
+  real(SP), intent(in) :: fx
+!</input>
+
+!<result>
+  ! True if given data is not-a-number
+  logical :: sys_isNANSP
+!</result>
+
+#ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
+  sys_isNANSP = ieee_is_nan(fx)
+#elseif HAS_INTRINSIC_ISNAN
+  sys_isNANSP = isnan(fx)
+#else
+  sys_isNANSP = fx .ne. fx
+#endif
+  end function sys_isNANSP
 
 end module fsystem
