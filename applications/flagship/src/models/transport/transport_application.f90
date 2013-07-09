@@ -517,11 +517,11 @@ contains
             rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
-        ! Estimate the error to the exact solution
-        call transp_errestExactBoundary2D(rparlist, ssectionName,&
-            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
-            derrorH1=derrorH1, rcollection=rcollection)
+!!$        ! Estimate the error to the exact solution
+!!$        call transp_errestExactBoundary2D(rparlist, ssectionName,&
+!!$            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+!!$            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
+!!$            derrorH1=derrorH1, rcollection=rcollection)
 
         ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
