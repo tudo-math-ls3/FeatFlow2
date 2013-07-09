@@ -59,9 +59,8 @@ contains
     integer :: irow
 
     if (.not. lsyssc_hasMatrixContent(rmatrixDest)) then
-      call output_line("Destination matrix undefined",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lump_extractDiagonal")
-      call sys_halt()
+      ! Auto-allocate memory.
+      call lsyssc_allocEmptyMatrix (rmatrixDest,.true.)
     end if
 
     if (rmatrixSource%cdataType .ne. rmatrixDest%cdataType) then
@@ -222,20 +221,19 @@ contains
     integer :: irow,icol
 
     if (.not. lsyssc_hasMatrixContent(rmatrixDest)) then
-      call output_line("Destination matrix undefined",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lump_extractDiagonal")
-      call sys_halt()
+      ! Auto-allocate memory.
+      call lsyssc_allocEmptyMatrix (rmatrixDest,.true.)
     end if
 
     if (rmatrixSource%cdataType .ne. rmatrixDest%cdataType) then
       call output_line("Source and destination matrix have different data type",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lump_extractDiagonal")
+          OU_CLASS_ERROR,OU_MODE_STD,"lump_sumToDiagonal")
       call sys_halt()
     end if
 
     if (rmatrixSource%cdataType .ne. ST_DOUBLE) then
       call output_line("Currently, only double precision data is supported",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lump_extractDiagonal")
+          OU_CLASS_ERROR,OU_MODE_STD,"lump_sumToDiagonal")
       call sys_halt()
     end if
 

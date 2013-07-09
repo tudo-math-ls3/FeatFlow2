@@ -7507,6 +7507,12 @@ contains
         else
           if (bclear) call lsyssc_clearMatrix (rmatrix)
         end if
+        
+        if (p_rcubatureInfo%ninfoBlockCount .eq. 0) then
+          call output_line ("Cannot apply integration. No cubature formula specified.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
+          call sys_halt()
+        end if
 
         ! Loop over the cubature blocks to discretise
         do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
