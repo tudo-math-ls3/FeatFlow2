@@ -18,7 +18,7 @@
 # corresponding substring is return instead of the complete ID.
 # Possible choices for the parameter are as follows:
 #
-# 0 : e
+# 0 : arch-cpu-(core)-os
 # 1 : arch
 # 2 : cpu
 # 3 : core
@@ -48,185 +48,548 @@ nproc=1
 
 id=${arch}-${cpu}-${os}
 
+
 # Try to specify the ID more precisely
 case ${id} in
-    x86_64-*-linux|i[65432]86-*-linux|x86-*-linux|*-*-cygwin*)  
-        # all the pc-arch with linux/cygwin/etc..
+
+    # All x86-compatible architectures with Linux, Cygwin, Darwin, SunOS on x86, etc.
+    amd64-*-linux|x86-*-linux|x86_64-*-linux|i[65432]86-*-linux|ia64-*-linux| \
+    x86-*-darwin|x86_64-*-darwin|*-*-cygwin*|i86pc-*-sunos)
+
+    # Detect architecture more precisely
     case ${arch} in
-	ia64) arch="ia64";;
-	x86_64) arch="pc64";;	
-	*) arch="pc";;
+	ia64)
+	    # Intel Itanium
+	    arch="ia64"
+	    ;;
+	x86_64)
+	    # x86-compatible with x86-64 support
+	    arch="pc64"
+	    ;;
+	i86pc)
+	    # Solaris x86 does not indicate 32/64 bit support directly
+	    env=`isainfo -kv | cut -d- -f1`
+	    case ${env} in
+		32)
+		    # x86-compatible without x86-64 support
+		    arch="pc"
+		    ;;
+		64)
+		    # x86-compatible with x86-64 support
+		    arch="pc64"
+		    ;;
+		*)
+		    # x86-compatible without x86-64 support
+		    arch="pc"
+		    ;;
+	    esac
+	    ;;
+	*)
+	    # x86-compatible without x86-64 support
+	    arch="pc";;
     esac
-		
+    
     # generic version
     cpu="x86"
-
-    # try to guess the cpu specs 
-    # (http://www.paradicesoftware.com/specs/cpuid/index.htm)
-    vendor=`awk '/^vendor_id/ { print $3; exit;}' /proc/cpuinfo`
-    family=`awk '/^cpu family/ { print $4; exit;}' /proc/cpuinfo`
-    model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
-    # The following syntax
-    #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
-    # is nicer, but only available in bash. For maximum portability use a syntax
-    # only using POSIX compliant Unix shell commands.
-    nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`
-    nproc=`expr $nproc + 1`
-
+    
+    # try to guess the cpu specs in more detail; the mechanisms to
+    # collect information about the cpu it differs from one OS to the
+    # other so that we have to use different commands    
+    case ${os} in
+	linux|cygwin*)
+	    # Linux/Cygwin OS
+	    # (http://www.paradicesoftware.com/specs/cpuid/index.htm)
+	    vendor=`awk '/^(vendor|vendor_id)/ { print $3; exit;}' /proc/cpuinfo`
+	    family=`awk '/^(family|cpu family)/ { print $3$4; exit;}' /proc/cpuinfo | tr -d ':'`
+	    model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
+	    
+            # The following syntax
+            #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
+            # is nicer, but only available in bash. For maximum portability use a syntax
+            # only using POSIX compliant Unix shell commands.
+            nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`
+            nproc=`expr $nproc + 1`
+	    ;;
+	darwin)
+	    # Darwin, aka, Mac OS X kernel
+	    # Apple introduced a special tag strategy to identify Intel-based CPUs
+	    cpufamily=`sysctl hw.cpufamily | awk '{print $2 ; exit;}'`
+	    case "${cpufamily}" in
+                1943433984)
+		    # Intel Core Solo / Core Duo (32-bit Pentim-M with SSE3) (Yonah)
+		    cpu="coresolo"
+		    ;;
+                1114597871)
+		    # Intel Core Duo (Merom)
+		    cpu="coreduo"
+		    ;;
+                2028621756)
+		    # Intel Penryn
+		    cpu="penryn"
+		    ;;
+                1801080018)
+		    # Intel Nehalem
+		    cpu="nehalem"
+		    ;;
+                1463508716)
+                    # Intel Westmere
+		    cpu="westmere"
+		    ;;
+                1418770316)
+                    # Intel Sandybridge
+		    cpu="sandybridge"
+		    ;;
+                526772277)
+		    # Intel Ivybridge
+		    cpu="ivybridge"
+		    ;;
+		*)
+		    # If run on a hackingtosh or on a new CPU which
+		    # has not been included in the above list yet let
+		    # us try to identify the CPU by the traditional way
+		    vendor=`sysctl machdep.cpu.vendor | awk '{print $2 ; exit;}'`
+		    family=`sysctl machdep.cpu.family | awk '{print $2 ; exit;}'`
+		    model=`sysctl machdep.cpu.model | awk '{print $2 ; exit;}'`
+		    nproc=`sysctl machdep.cpu.core_count | awk '{print $2 ; exit;}'`
+		    ;;
+	    esac
+	    ;;
+	sunos)
+	    # Solaris x86 OS
+	    vendor=`kstat cpu_info | grep vendor_id | awk '{ print $2}' | uniq`
+	    family=`kstat cpu_info | grep family | awk '{ print $2}' | uniq`
+	    model=`kstat cpu_info | grep model | awk '{ print $2}' | uniq`
+	    nproc=`kstat cpu_info | grep core_id | awk '{ print $2}' | uniq | wc -l`
+	    ;;
+	*)
+	    ;;
+    esac	    
+    
+    # try to identify the cpu specs in more detail
     case "$vendor" in
 	# Intel
 	GenuineIntel)
 	    case "$family" in
-                3)
-                    cpu="i386";; # Intel 80386
+		3)
+		    # Intel 80386
+		    cpu="i386"
+		    ;;
 		4) 
 		    case "$model" in
-			0|1|3|7|8|9) core="DX";; # Intel 80486DX/DX2/DX4
-			2|4|5) core="SX";;       # Intel 80486SX/SL (no math coprocessor)
+			0|1|3|7|8|9)
+   		            # Intel 80486DX/DX2/DX4
+			    core="DX"
+			    ;;
+			2|4|5) 
+		            # Intel 80486SX/SL (no math coprocessor)
+			    core="SX"
+			    ;;       
 		    esac
-		    cpu="i486";;
+		    cpu="i486"
+		    ;;
 		5) 
 		    case "$model" in
-			0|1|2|3) core="pentium";;   # Intel Pentium (P5/P54CS/Overdrive)
-			4|7|8) core="pentium-mmx";; # Intel Pentium MMX (P54C/P55C)
+			0|1|2|3)
+		            # Intel Pentium (P5/P54CS/Overdrive)
+			    core="pentium"
+			    ;;
+			4|7|8)
+		            # Intel Pentium MMX (P54C/P55C)
+			    core="pentium-mmx"
+			    ;;
 		    esac
-		    cpu="pentium";;
+		    cpu="pentium"
+		    ;;
 		6) 
 		    case "$model" in
-			0|1) cpu="pentiumpro" core=cpu;;         # Intel Pentium Pro
-			3) cpu="pentium2" core="klamath";;       # Intel Pentium II (Klamath)
-			4|5) cpu="pentium2" core="deschutes";;   # Intel Pentium II (Deschutes)
-			6) cpu="pentium2" core="mendocino";;     # Intel Pentium II (Mendocino)
-			7) cpu="pentium3" core="katmai";;        # Intel Pentium III / III Xeon (Katmai)
-			8) cpu="pentium3" core="coppermine";;    # Intel Pentium III / III Xeon / Celeron (Coppermine) and mobile versions
-			9) cpu="pentiumm" core="banias";;        # Intel Pentium M / Celeron M (Banias)
-			10) cpu="pentium3" core="cascades";;     # Intel Pentium III Xeon (Cascades)
-			11) cpu="pentium3" core="tualatin";;     # Intel Pentium III / Celeron (Tualatin)
-			13) cpu="pentiumm" core="dothan";;       # Intel Pentium M / Celeron M (Dothan)
-			14) cpu="coresolo" core="yonah";;        # Intel Core Solo / Core Duo (Yonah) and mobil versions
-			15|21|22) cpu="coreduo" core=cpu;;       # Intel Core Duo / Core 2 Duo (Conroe / Merom / Allendale) /
-                                                                 #       Core 2 Extreme Dual-/Quad-Core (Conroe / Kentsfield / Clovertown)
-                                                                 #       and Xeon (Kentsfield / Clovertown / Woodcrest / Tigerton)
-                                                                 #       as well as mobile versions
-			23|29) cpu="penryn" core=cpu;;           # Intel Core 2 Duo (Wolfdale / Penryn / Yorkfield) 
-                                                                 #       and Xeon (Wolfdale / Yorkfield / Hapertown / Dunnington)
-                                                                 #       as well as mobile versions
-			26|30|31|46) cpu="nehalem"               # Intel Core (Bloomfield / Lynnfield / Clarkdale / Arrandale / Gulftown) 
-                                     core="nehalem";;            #       and Xeon (Bloomfield / Gainestown / Westmere-EP / Beckton /
-			37|44|47) cpu="nehalem"                  #       Jasper Forest / Clarkdale) as well as mobile versions
-                                  core="westmere";;
-			42|45) cpu="sandybridge";;               # Core i3-{2125,2140} + i5-2467M + i7-2600
-			58|62) cpu="ivybridge";;                 # Core i5-{3210M,3320M,3360M,3470T} + i7-3770K
-                        60|69) cpu="haswell";;                   # Haswell CPU (not yet released)
-			28|38|54) cpu="atom" core=cpu;;          # Intel Atom (Pine, Oak, Cedar)
+			0|1)
+		            # Intel Pentium Pro
+			    cpu="pentiumpro" 
+			    core=cpu
+			    ;;
+			3)
+		            # Intel Pentium II (Klamath)
+			    cpu="pentium2" 
+			    core="klamath"
+			    ;;
+			4|5)
+		            # Intel Pentium II (Deschutes)
+			    cpu="pentium2" 
+			    core="deschutes"
+			    ;;
+			6)
+		            # Intel Pentium II (Mendocino)
+			    cpu="pentium2" 
+			    core="mendocino"
+			    ;;
+			7)
+		            # Intel Pentium III / III Xeon (Katmai)
+			    cpu="pentium3" 
+			    core="katmai"
+			    ;;
+			8)
+		            # Intel Pentium III / III Xeon / Celeron (Coppermine) and mobile versions
+			    cpu="pentium3"
+			    core="coppermine"
+			    ;;
+			9)
+		            # Intel Pentium M / Celeron M (Banias)
+			    cpu="pentiumm"
+			    core="banias"
+			    ;;        
+			10)
+		            # Intel Pentium III Xeon (Cascades)
+			    cpu="pentium3" 
+			    core="cascades"
+			    ;;
+			11)
+		            # Intel Pentium III / Celeron (Tualatin)
+			    cpu="pentium3" 
+			    core="tualatin"
+			    ;;
+			13)
+		            # Intel Pentium M / Celeron M (Dothan)
+			    cpu="pentiumm"
+			    core="dothan"
+			    ;;
+			14)
+		            # Intel Core Solo / Core Duo (Yonah) and mobil versions
+			    cpu="coresolo"
+			    core="yonah"
+			    ;;
+			15|21|22)
+		            # Intel Core Duo / Core 2 Duo (Conroe / Merom / Allendale) /
+                            #       Core 2 Extreme Dual-/Quad-Core (Conroe / Kentsfield / Clovertown)
+		            #       and Xeon (Kentsfield / Clovertown / Woodcrest / Tigerton)
+		            #       as well as mobile versions
+			    cpu="coreduo"
+			    core=cpu
+			    ;;    
+			23|29)
+		            # Intel Core 2 Duo (Wolfdale / Penryn / Yorkfield)
+		            #       and Xeon (Wolfdale / Yorkfield / Hapertown / Dunnington)
+		            #       as well as mobile versions
+			    cpu="penryn"
+			    core=cpu
+			    ;;
+			26|30|31|46)
+		            # Intel Core (Bloomfield / Lynnfield / Clarkdale / Arrandale / Gulftown)
+			    cpu="nehalem"
+			    core="nehalem"
+			    ;;
+			37|44|47)
+		            # Intel Xeon (Bloomfield / Gainestown / Westmere-EP / Beckton /
+		            #       Westmere-EP / Beckton / Jasper Forest / Clarkdale)
+		            #       as well as mobile versions
+			    cpu="nehalem"
+			    core="westmere"
+			    ;;
+			42|45)
+		            # Core i3-{2125,2140} + i5-2467M + i7-2600
+			    cpu="sandybridge"
+			    ;;
+			58|62)
+		            # Core i5-{3210M,3320M,3360M,3470T} + i7-3770K
+			    cpu="ivybridge"
+			    ;;
+			60|69)
+		            # Haswell CPU (not yet released)
+			    cpu="haswell"
+			    ;;                   
+			28|38|54)
+		            # Intel Atom (Pine, Oak, Cedar)
+			    cpu="atom" core=cpu
+			    ;;
 		    esac
 		    ;;
-		7) cpu="itanium" core=cpu;;                      # Intel Itanium (Merced)
-		15) 
+		7)
+                    # Intel Itanium (Merced)
+		    cpu="itanium"
+		    core=cpu
+		    ;;
+		15)
 		    case "$model" in
-			0|1) cpu="pentium4" core="willamette";;  # Intel Pentium 4 (Willamette)
-			2) cpu="pentium4" core="northwood";;     # Intel Pentium 4 (Northwood) / Xeon (MP) (Prestonia / Gallatin)
-			3|4|6) cpu="pentium4"                    # Intel Pentium 4 (Prescott / Cedar Mill) / Xeon (Nocona / Tulsa)
+			0|1)
+		            # Intel Pentium 4 (Willamette)
+			    cpu="pentium4"
+			    core="willamette"
+			    ;;
+			2)
+		            # Intel Pentium 4 (Northwood) / Xeon (MP) (Prestonia / Gallatin)
+			    cpu="pentium4"
+			    core="northwood"
+			    ;;
+			3|4|6)
+		            # Intel Pentium 4 (Prescott / Cedar Mill) / Xeon (Nocona / Tulsa)
+			    cpu="pentium4"
 			    case "$arch" in
 				pc)
-				    core="prescott";;            # Intel Pentium 4 (Prescott / Cedar Mill) and movile versions
+			            # Intel Pentium 4 (Prescott / Cedar Mill) and movile versions
+				    core="prescott"
+				    ;;
 				pc64)
-				    core="nocona";;              # Intel Xeon (Nocona / Tulsa)
+			            # Intel Xeon (Nocona / Tulsa)
+				    core="nocona"
+				    ;;
 			    esac
 			    ;;
-			*) cpu="itanium" core=cpu;;              # Intel Itanium (Merced)
+			*)
+		            # Intel Itanium (Merced)
+			    cpu="itanium"
+			    core=cpu
+			    ;;
 		    esac
 		    ;;
-		31) cpu="itanium2" core=cpu;;                   # Intel Itanium2 (McKinley / Madison / Deerfield / Hondo / Madison / Fanwood)
-		32) cpu="itanium2" core=cpu;;                   # Intel Itanium2 Dual-Core Processor 9x00 ( Montecito / Millington / Montvale / Tukwila)
-		*) cpu="i386" core=cpu;;
+		31)
+	            # Intel Itanium2 (McKinley / Madison / Deerfield / Hondo / Madison / Fanwood)
+		    cpu="itanium2" 
+		    core=cpu
+		    ;;             
+		32) 
+	            # Intel Itanium2 Dual-Core Processor 9x00 ( Montecito / Millington / Montvale / Tukwila)
+		    cpu="itanium2x2" 
+		    core=cpu
+		    ;;
+		Itanium\ 2)
+		    # Intel Itanium 2 Processor
+		    cpu="itanium2"
+		    core=cpu
+		    ;;
+		
+		*) 
+	            # Intel i386 compatible as fallback
+		    cpu="i386"
+		    core=cpu;;
 	    esac
-	    ;;
-
+	    ;; 
 	
 	# AMD
 	AuthenticAMD)
 	    case "$family" in
-		4) cpu="amd486" core=cpu;; # AMD 80486
+		4)
+		    # AMD 80486
+		    cpu="amd486"
+		    core=cpu
+		    ;;
 		5) 
 		    case "$model" in
-			0|1|2|3) cpu="k5" core=cpu;; # AMD 5k86
-			6|7) cpu="k6" core=cpu;;     # AMD K6
-			8) cpu="k6" core="k6-2";;    # AMD K6-2 (Chomper)
-			9) cpu="k6" core="k6-3";;    # AMD K6-III (Sharptooth)
-                        10) cpu="geode" core=cpu;;   # AMD Geode LX
-			13) cpu="k6" core="k6-2";;   # AMD K6-2+, K6-III+
+			0|1|2|3)
+			    # AMD 5k86
+			    cpu="k5"
+			    core=cpu
+			    ;;
+			6|7)
+			    # AMD K6
+			    cpu="k6"
+			    core=cpu
+			    ;;
+			8)
+			    # AMD K6-2 (Chomper)
+			    cpu="k6"
+			    core="k6-2"
+			    ;;
+			9)
+			    # AMD K6-III (Sharptooth)
+			    cpu="k6"
+			    core="k6-3"
+			    ;;
+                        10)
+			    # AMD Geode LX
+			    cpu="geode"
+			    core=cpu
+			    ;;
+			13) 
+			    # AMD K6-2+, K6-III+
+			    cpu="k6"
+			    core="k6-2"
+			    ;;
 		    esac
 		    ;;
 		6)
 		    case "$model" in
-			0|1|2|3) cpu="athlon" core=cpu;;        # AMD Athlon / Duron
-			4) cpu="athlon" core="thunderbird";;    # AMD Athlon (Thunderbird)
-			6) cpu="athlonxp" core="palomino";;     # AMD Athlon (MP) (Palomino)
-			7) cpu="athlonxp" core="morgan";;       # AMD Duron (MP) (Morgan), all compiler treat it as Athlon XP
-			8) cpu="athlonxp" core="thoroughbred";; # AMD Athlon (XP,MP) / Sempron / Duron (MP) (Thoroughbred)
-			10) cpu="athlonxp" core="barton";;      # AMD Athlon (XP,MP) / Sempron (Barton)
+			0|1|2|3)
+			    # AMD Athlon / Duron
+			    cpu="athlon"
+			    core=cpu
+			    ;;        
+			4) 
+			    # AMD Athlon (Thunderbird)
+			    cpu="athlon"
+			    core="thunderbird"
+			    ;;    
+			6)
+			    # AMD Athlon (MP) (Palomino)
+			    cpu="athlonxp"
+			    core="palomino"
+			    ;;
+			7)
+			    # AMD Duron (MP) (Morgan), all compiler treat it as Athlon XP
+			    cpu="athlonxp"
+			    core="morgan"
+			    ;;
+			8)
+			    # AMD Athlon (XP,MP) / Sempron / Duron (MP) (Thoroughbred)
+			    cpu="athlonxp"
+			    core="thoroughbred"
+			    ;;
+			10)
+			    # AMD Athlon (XP,MP) / Sempron (Barton)
+			    cpu="athlonxp"
+			    core="barton"
+			    ;;
 		    esac
 		    ;;
-		15) # AMD family 15
+		15)
+                    # AMD family 15
 		    case "$model" in
-                        5|37) cpu="opteron" core="sledgehammer";; # AMD Opteron (SledgeHammer / Athens)
-			35|43|75|107) cpu="athlon64x2" core=cpu;; # AMD Dual-Core Opteron (Denmark) / Athlon 64 X2/FX (Toledo / Manchester)
-                                                                  #     Athlon 64 X2 Dual-Core (Windsor / Brisbane)
-                        33) cpu="opteron" core=cpu;;              # AMD Dual-Core Opteron; in fact it is a k8-64 revision e, but as far
-                                                                  # as we know only PGI has a special flag for this cpu: -tp k8-64e
-                        65|67) cpu="opteronx2" core=cpu;;         # AMD Dual-Core Opteron (Santa Rosa) / Athlon 64 X2/FX Dual-Core (Windsor)
-                        72|104) cpu="turion64x2" core=cpu;;       # AMD Athlon 64 X2 Dual-Core (Windsor) / Turion 64 X2 (Taylor / Trinidad)
-                        *) cpu="athlon64" core=cpu;;              # Family 15 is AMD Opteron / Athlon 64 and better
+                        5|37)
+			     # AMD Opteron (SledgeHammer / Athens)
+			    cpu="opteron"
+			    core="sledgehammer";;
+			35|43|75|107)
+			    # AMD Dual-Core Opteron (Denmark) / Athlon 64 X2/FX (Toledo / Manchester)
+			    #     Athlon 64 X2 Dual-Core (Windsor / Brisbane)
+			    cpu="athlon64x2"
+			    core=cpu
+			    ;;
+                        33)
+			    # AMD Dual-Core Opteron; in fact it is a k8-64 revision e, but as far
+			    # as we know only PGI has a special flag for this cpu: -tp k8-64e
+			    cpu="opteron"
+			    core=cpu
+			    ;;
+                        65|67)
+			    # AMD Dual-Core Opteron (Santa Rosa) / Athlon 64 X2/FX Dual-Core (Windsor)
+			    cpu="opteronx2"
+			    core=cpu
+			    ;;
+                        72|104)
+			    # AMD Athlon 64 X2 Dual-Core (Windsor) / Turion 64 X2 (Taylor / Trinidad)
+			    cpu="turion64x2"
+			    core=cpu
+			    ;;
+                        *)
+			    # Family 15 is AMD Opteron / Athlon 64 and better
+			    cpu="athlon64"
+			    core=cpu
+			    ;;			
 		    esac
 		    ;;
-		16) # AMD Barcelona, Family 10h also called K10
+		16)
+                    # AMD Barcelona, Family 10h also called K10
 		    case "$model" in
-			2) cpu="phenom" core="barcelona";;        # AMD Quad-Core Opteron (Barcelona) / Phenom Triple-Core (Toliman) /
-                                                                  #     Phenom Quad-Core (Agena) / Athlon Dual-Core (Kuma)
-			4) cpu="phenomII" core="shanghai";;       # AMD Quad-Core Opteron (Shanghai) / Athlon Dual-Core (Regor / Propus) /
-                                                                  #     Phenom II (Callisto / Heka / Deneb)
-			5) cpu="athlonII" core=cpu;;              # AMD Athlon II X2 / X3 / X4 (Regor / Rana / Propus) /
-			                                          #     Phenom II Triple-Core (Heka) / Quad-Core (Deneb)
-			6) cpu="athlonII" core=cpu;;              # AMD Athlon II (Sargas) / Athlon II X2 (Regor) / Sempron II (Sargas) /
-			                                          #     Sempron II X2 (Regor) / some mobile versions
-			8) cpu="opteron4100" core="istanbul";;    # AMD Opteron 4100 (Lisbon) / Six-Core Opteron (Istanbul)
-			9) cpu="opteron6100" core="magnycours";;  # AMD Opteron 6100 (Magny-Cours)
-			10) cpu="phenomII" core=cpu;;             # AMD Phenom II X4 / X6 (Zosma / Thuban)
+			2)
+			    # AMD Quad-Core Opteron (Barcelona) / Phenom Triple-Core (Toliman) /
+			    #     Phenom Quad-Core (Agena) / Athlon Dual-Core (Kuma)
+			    cpu="phenom"
+			    core="barcelona"
+			    ;;
+			4)
+			    # AMD Quad-Core Opteron (Shanghai) / Athlon Dual-Core (Regor / Propus) /
+			    #     Phenom II (Callisto / Heka / Deneb)
+			    cpu="phenomII"
+			    core="shanghai"
+			    ;;
+			5)
+			    # AMD Athlon II X2 / X3 / X4 (Regor / Rana / Propus) /
+			    #     Phenom II Triple-Core (Heka) / Quad-Core (Deneb)
+			    cpu="athlonII"
+			    core=cpu
+			    ;;
+			6)
+			    # AMD Athlon II (Sargas) / Athlon II X2 (Regor) / Sempron II (Sargas) /
+			    #     Sempron II X2 (Regor) / some mobile versions
+			    cpu="athlonII"
+			    core=cpu
+			    ;;
+			8)
+			    # AMD Opteron 4100 (Lisbon) / Six-Core Opteron (Istanbul)
+			    cpu="opteron4100"
+			    core="istanbul"
+			    ;;
+			9)
+                            # AMD Opteron 6100 (Magny-Cours)
+			    cpu="opteron6100"
+			    core="magnycours"
+			    ;;
+			10)
+			    # AMD Phenom II X4 / X6 (Zosma / Thuban)
+			    cpu="phenomII"
+			    core=cpu
+			    ;;
 		    esac
 		    ;;
-		17) # AMD Turion X2 Ultra, Family 11h
+		17)
+                    # AMD Turion X2 Ultra, Family 11h
 		    case "$model" in
-			3) cpu="athlon64x2" core=cpu;;            # AMD Turion X2 (Lion) / Athlon X2 (Lion) / Sempron (Sable)
+			3)
+			    # AMD Turion X2 (Lion) / Athlon X2 (Lion) / Sempron (Sable)
+			    cpu="athlon64x2"
+			    core=cpu
+			    ;;
 		    esac
 		    ;;
-                18) # AMD Fusion, Family 12h
+                18)
+                    # AMD Fusion, Family 12h
                     case "$model" in
-                        0) cpu="fusion" core=cpu;;
-                        1) cpu="fusion" core=cpu;;
-                        2) cpu="fusion" core=cpu;;
+                        0)
+			    cpu="fusion"
+			    core=cpu
+			    ;;
+                        1)
+			    cpu="fusion"
+			    core=cpu
+			    ;;
+                        2)
+			    cpu="fusion"
+			    core=cpu
+			    ;;
                     esac
                     ;;
-                20) # AMD Bobcat, Family 14h
+                20) 
+                    # AMD Bobcat, Family 14h
                     case "$model" in
-                        1) cpu="bobcat" core=cpu;;
-                        2) cpu="bobcat" core=cpu;;
+                        1)
+			    cpu="bobcat"
+			    core=cpu
+			    ;;
+                        2)
+			    cpu="bobcat"
+			    core=cpu
+			    ;;
                     esac
                     ;;
-                21) # AMD Bulldozer, Family 15h
+                21) 
+                    # AMD Bulldozer, Family 15h
                     case "$model" in
-                        0) cpu="bulldozer" core=cpu;;
-                        1) cpu="bulldozer" core=cpu;;
-                        2) cpu="bulldozer" core=cpu;;
-                        16) cpu="bulldozer" core=cpu;;
+                        0)
+			    cpu="bulldozer"
+			    core=cpu
+			    ;;
+                        1)
+			    cpu="bulldozer"
+			    core=cpu
+			    ;;
+                        2)
+			    cpu="bulldozer"
+			    core=cpu
+			    ;;
+                        16)
+			    cpu="bulldozer"
+			    core=cpu
+			    ;;
                     esac
                     ;;
-                22 ) # AMD Jaguar, Family 16h
+                22 )
+                    # AMD Jaguar, Family 16h
                     ;;
-		*) cpu="i386" core=cpu;;
+		*)
+		    cpu="i386"
+		    core=cpu
+		    ;;
 	    esac
 	    ;;
-
+	
 	# Cyrix
 	CyrixInstead)
 	    case "$family" in
@@ -312,132 +675,54 @@ case ${id} in
 	    esac
 	    ;;
 	*)
-	    cpu="generic";;
+	    # Generic CPU-type?
+	    if [ ! -n "$cpu" ]; then
+		cpu="generic"
+	    fi
+	    ;;
     esac
     ;;
+
+    # Below, you find special non-x86-compatible hardware platforms!
+    # Be aware that these platforms are less intensively tested, and therefore,
+    # CPU-detection may be errorneous or at least less optimised.
     
-    alpha-*-osf*)   # alpha more specific version
-	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The alpha \([evEV0-9]*\).* processor.*$/\1/p' | head -n 1 )`
-	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
-	nproc=`(/usr/sbin/psrinfo -n | sed 's/^number of processors on system = //g' )`
-	;;
-
-    sun*-*-sunos*|sun*-*-solaris*) # sparc more specific version
-	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The \([sparcv0-9]*\).* processor.*$/\1/p' | head -n 1 )`
-	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
-	nproc=`(/usr/sbin/psrinfo -p)`
+    alpha-*-osf*)
+        # alpha more specific version
+	#family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The alpha \([evEV0-9]*\).* processor.*$/\1/p' | head -n 1 )`
+	#cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
+	#nproc=`(/usr/sbin/psrinfo -n | sed 's/^number of processors on system = //g' )`
+	echo "DEC Alpha systems with OSF/1 is no longer supported"
+	return
 	;;
     
-    alpha-*-linux)   # alpha more specific version
-	family=`(sed -n 's/^cpu model.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
-	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+    alpha-*-linux)
+        # alpha more specific version
+	#family=`(sed -n 's/^cpu model.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
+	#cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+	echo "DEC Alpha systems with Linux is no longer supported"
+	return
 	;;
-
-    ia64-*-linux)
-	family=`(sed -n 's/^family.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
-	case "$family" in
-	    32) cpu="itanium2x2";;
-	    Itanium\ 2) cpu="itanium2";;
-	esac
-	;;
-
-    *-*-hpux*)
-	arch=hp`( echo ${arch} | tr '/' 's' )`;
-	cpu="hppa";
-	;;
-
-    sr8000-*-hiux/mpp)
-	cpu="hppa";
-	os="hiuxmpp";
-        ;;
-
-    *-powerpc-aix)
-        ibm_cpu_id=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ print $1 }'`
-        if /usr/sbin/lsattr -El ${ibm_cpu_id} | grep ' POWER' >/dev/null 2>&1; then
-            cpu="rs6000"
-        else
-            cpu=`/usr/sbin/lsattr -El ${ibm_cpu_id} | grep "Processor type" | awk '{print $2}' | tr 'A-Z' 'a-z' | tr -d ' '`
-        fi
-        
-	arch=`uname -M | tr 'A-Z' 'a-z' | tr -d ' ' | awk -F, '{print $1; exit;}'`;
-	;;
-
-    ppc*-*-linux)
-	family=`(sed -n 's/^cpu.*: \([^ ]*\).*$/\1/p' /proc/cpuinfo | head -n 1)`
-	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
-        ;;
 
     armv7l-*-linux)
+	# ARM more specific version
         cpu="cortexa9"
         os="linux" 
         ;;
 
-    *-*-*bsd|*-*-darwin*)
-	case ${arch} in
-	    x86_64) arch="pc64";;	
-	    *) arch="pc";;
-	esac
-
-        #from /usr/include/mach/machine.h
-        cputype=`sysctl hw.cputype | awk '{print $2 ; exit;}'`
-        cpusubt=`sysctl hw.cpusubtype | awk '{print $2; exit;}'`
-	cpufamily=`sysctl hw.cpufamily | awk '{print $2; exit;}'`
-        case "${cputype}" in
-            7) cpu="x86"
-		case "${cpufamily}" in
-                    # Darwin/Mac OS X has special tags for identifying their CPUs
-		    1943433984) cpu="coresolo";;     # Intel Core Solo / Core Duo (32-bit Pentim-M with SSE3) (Yonah)
-		    1114597871) cpu="coreduo";;      # Intel Core Duo (Merom)
-		    2028621756) cpu="penryn" ;;      # Intel Penryn
-		    1801080018) cpu="nehalem" ;;     # Intel Nehalem
-                    1463508716) cpu="westmere" ;;    # Intel Westmere
-                    1418770316) cpu="sandybridge" ;; # Intel Sandybridge
-                    526772277)  cpu="ivybridge"   ;; # Intel Ivybridge
-		    *)	
-			case "${cpusubt}" in
-			    3) cpu="i386" ;;
-			    4) cpu="i486" ;;
-			    5) cpu="pentium" ;;
-			    22) cpu="pentiumpro" ;;
-			    54|86) cpu="pentium2" ;;
-			    103|119) cpu="celeron" ;;
-			    8|24|40) cpu="pentium3" ;;
-			    9) cpu="pentiumm" ;;
-			    10|26) cpu="pentium4" ;;
-			    11) cpu="itanium" ;;
-			    27) cpu="itanium2" ;;
-			    12) cpu="xeon" ;;
-			    28) cpu="xeon2" ;;
-			esac
-			;;
-		esac
-                ;;
-            11) cpu="hppa" ;;
-            12) cpu="arm" ;;
-            14) cpu="sparc" ;;
-            16) cpu="alpha" ;;
-            18) cpu="ppc"
-                case "${cpusubt}" in
-                    1) cpu="ppc_601" ;;
-                    2) cpu="ppc_602" ;;
-                    3|4|5) cpu="ppc_603" ;;
-                    6|7) cpu="ppc_604" ;;
-                    8) cpu="ppc_620" ;;
-                    9) cpu="ppc_750" ;;
-                    10) cpu="ppc_7400" ;;
-                    11) cpu="ppc_7450" ;;
-                    100) cpu="ppc_970" ;;
-                esac
-                ;;            
-            82) cpu="ppc64"   # 64+18
-                case "${cpusubt}" in
-                    100) cpu="ppc64_970" ;;
-                esac
-                ;;
-        esac
-        ;;
+    sun*-*-sunos*|sun*-*-solaris*)
+        # SPARC more specific version
+	cpu=`kstat cpu_info | grep cpu_type | awk '{ print $2 }' | uniq`
+	core=`kstat cpu_info | grep brand | awk '{ print $2 }' | uniq`
+	nproc=`kstat cpu_info | grep core_id | awk '{ print $2}' | uniq | wc -l`
+	;;
+    *)
+	echo "Unable to determine CPU architecture!"
+	return
+	;;
 esac
 
+# Canonical core name?
 if [ ! -n "$core" ]; then
     core=${cpu}
 fi
@@ -448,8 +733,8 @@ id=${arch}-${cpu}-${os}
 # So, what to do, return the complete ID-string or only substrings
 if [ -n "$1" ]; then
     case $1 in
-	0) 
-	    if [ "$core" == "$cpu" ]; then
+	0)
+	    if [ "$core" = "$cpu" ]; then
 		echo ${id}
 	    else
 		echo ${arch}-${cpu}-${core}-${os}
