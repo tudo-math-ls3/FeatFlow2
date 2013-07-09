@@ -117,12 +117,6 @@ fi
 
 
 ######################################################
-# Enable preprocessor support
-APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
-
-# Define global memory layout
-APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
-
 # Specify header files which should be copied to the object directory
 HEADER_FILES_TO_COPY="../../applications/flagship/src/flagship.h
  ../../applications/flagship/src/models/hydro/hydro.h
@@ -135,7 +129,44 @@ HEADER_FILES_TO_COPY="../../applications/flagship/src/flagship.h
 # Specify list of application source files
 # (disable any ls alias setting)
 SRCLIST_APP="`\ls ../../applications/flagship/src/*.f90 ../../applications/flagship/src/models/*/*.f90 ../../applications/flagship/src/kernel/*.f90 2>/dev/null` "
-SRCEXTRA_APP="../../applications/flagship/src/coloring.c "
+SRCEXTRA_APP=" "
+
+################################################################
+# Enable preprocessor support
+APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
+
+################################################################
+# Define global memory layout
+APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
+
+################################################################
+# Enable auto-tuning using genetic algorithms.
+if ([ -n "${AUTOTUNE+x}" ] && [ "$AUTOTUNE" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+fi
+
+################################################################
+# Enable use of coprocessor support (if available)
+if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ../../applications/flagship/src/*.c ../../applications/flagship/src/*.h ../../applications/flagship/src/models/*/*.h ../../applications/flagship/src/kernel/*.h ../../applications/flagship/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda20"
+else
+COPROC=""
+fi
+
+################################################################
+# Enable AGMG library
+if ([ -n "${AGMG+x}" ] && [ "$AGMG" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AGMG"
+fi
+
+################################################################
+# Enable external coloring library library
+if ([ -n "${COLORINGTEST+x}" ] && [ "$COLORINGTEST" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_COLORINGTEST"
+SRCEXTRA_APP="$SRCEXTRA_APP ../../applications/flagship/src/coloring.c"
+fi
 
 ######################################################
 
