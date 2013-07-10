@@ -149,6 +149,7 @@ CFLAGSOPTC    := -march=wolfdale
 CFLAGSOPTCXX  := -march=wolfdale
 LDFLAGSOPT    := -march=wolfdale
 endif
+endif
 
 # Intel Core i7 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3,
 # SSSE3, SSE4.1, SSE4.2, AVX, AES and PCLMUL instruction set
@@ -166,6 +167,7 @@ CFLAGSOPTF90  := -march=wolfdale
 CFLAGSOPTC    := -march=wolfdale
 CFLAGSOPTCXX  := -march=wolfdale
 LDFLAGSOPT    := -march=wolfdale
+endif
 endif
 
 # Intel Core CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
@@ -185,6 +187,7 @@ CFLAGSOPTC    := -march=wolfdale
 CFLAGSOPTCXX  := -march=wolfdale
 LDFLAGSOPT    := -march=wolfdale
 endif
+endif
 
 # Intel Core CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
 # SSE4.1, SSE4.2, AVX, AES, PCLMUL, FSGSBASE, RDRND and F16C
@@ -202,6 +205,7 @@ CFLAGSOPTF90  := -march=wolfdale
 CFLAGSOPTC    := -march=wolfdale
 CFLAGSOPTCXX  := -march=wolfdale
 LDFLAGSOPT    := -march=wolfdale
+endif
 endif
 
 # Intel Atom CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3 and
