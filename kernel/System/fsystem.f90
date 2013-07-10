@@ -3093,10 +3093,12 @@ contains
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANQP = ieee_is_nan(qx)
-#elseif HAS_INTRINSIC_ISNAN
-  sys_isNANQP = isnan(qx)
 #else
-  sys_isNANQP = qx .ne. qx
+#ifndef HAS_INTRINSIC_ISNAN
+  real(DP) :: isnan
+  external isnan
+#endif
+  sys_isNANQP = isnan(qx)
 #endif
   end function sys_isNANQP
 
@@ -3126,10 +3128,12 @@ contains
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANDP = ieee_is_nan(dx)
-#elseif HAS_INTRINSIC_ISNAN
-  sys_isNANDP = isnan(dx)
 #else
-  sys_isNANDP = dx .ne. dx
+#ifndef HAS_INTRINSIC_ISNAN
+  real(DP) :: isnan
+  external isnan
+#endif
+  sys_isNANDP = isnan(dx)
 #endif
   end function sys_isNANDP
 
@@ -3159,10 +3163,12 @@ contains
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANSP = ieee_is_nan(fx)
-#elseif HAS_INTRINSIC_ISNAN
-  sys_isNANSP = isnan(fx)
 #else
-  sys_isNANSP = fx .ne. fx
+#ifndef HAS_INTRINSIC_ISNAN
+  real(SP) :: isnan
+  external isnan
+#endif
+  sys_isNANSP = isnan(fx)
 #endif
   end function sys_isNANSP
 
