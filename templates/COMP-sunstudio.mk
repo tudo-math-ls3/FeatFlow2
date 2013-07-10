@@ -108,7 +108,7 @@ ifeq ($(call optimise), YES)
 
 # MM: -fast flag produces internal compiler errors; this is a reduced
 #     selection of compiler flags which would be set by the -fast flag
-FAST := -libmil -dalign -xlibmopt -xdepend -pad=local -fround=nearest -xregs=frameptr -xprefetch -xvector
+FAST := -O3 -libmil -dalign -xlibmopt -xdepend -pad=local -fround=nearest -xregs=frameptr -xprefetch -xvector
 
 CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) $(FAST) -xtypemap=integer:32
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
