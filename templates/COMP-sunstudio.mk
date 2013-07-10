@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1 1>/dev/null
-F90VERSION = $(F90) -V 2>&1 1>/dev/null
-CCVERSION  = $(CC)  -V 2>&1 1>/dev/null
-CXXVERSION = $(CXX) -V 2>&1 1>/dev/null
+F77VERSION = $(F77) -V 2>&1
+F90VERSION = $(F90) -V 2>&1
+CCVERSION  = $(CC)  -V 2>&1
+CXXVERSION = $(CXX) -V 2>&1
 
 # Detect compiler version
 SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) | \
@@ -130,8 +130,6 @@ endif
 # Non-standard features supported by compiler
 ##############################################################################
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
-	         -DHAS_INTRINSIC_IARGC \
-	         -DHAS_INTRINSIC_ISATTY \
 		 -DHAS_INTRINSIC_IEEE_ARITHMETIC \
 		 -DHAS_ISO_C_BINDING $(CFLAGSF90)
 
