@@ -10118,9 +10118,16 @@ contains
 
       ! Read the data from the file
       if (rcontainer%bformatted) then
-        read(cf,*) dataarray(:)
+        read(cf,fmt='(A)') dataarray(:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:)
+#else
+        call output_line ('SunStuio compiler does no allow to read '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
@@ -10285,9 +10292,16 @@ contains
 
       ! Read the data from the file
       if (rcontainer%bformatted) then
-        read(cf,*) dataarray(:,:)
+        read(cf,fmt='(A)') dataarray(:,:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:,:)
+#else
+        call output_line ('SunStuio compiler does no allow to read '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
@@ -10455,9 +10469,16 @@ contains
 
       ! Read the data from the file
       if (rcontainer%bformatted) then
-        read(cf,*) dataarray(:,:,:)
+        read(cf,fmt='(A)') dataarray(:,:,:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:,:,:)
+#else
+        call output_line ('SunStuio compiler does no allow to read '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char3D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
@@ -10602,9 +10623,16 @@ contains
 
       ! Write the data to the file
       if (rcontainer%bformatted) then
-        write(cf,*) dataarray(:)
+        write(cf,fmt='(A)') dataarray(:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:)
+#else
+        call output_line ('SunStuio compiler does no allow to write '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
@@ -10752,9 +10780,16 @@ contains
 
       ! Write the data to the file
       if (rcontainer%bformatted) then
-        write(cf,*) dataarray(:,:)
+        write(cf,fmt='(A)') dataarray(:,:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:,:)
+#else
+        call output_line ('SunStuio compiler does no allow to write '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char2D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
@@ -10905,9 +10940,16 @@ contains
 
       ! Write the data to the file
       if (rcontainer%bformatted) then
-        write(cf,*) dataarray(:,:,:)
+        write(cf,fmt='(A)') dataarray(:,:,:)
       else
+#ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:,:,:)
+#else
+        call output_line ('SunStuio compiler does no allow to write '//&
+            'characters from binary file',&
+            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char3D')
+        call sys_halt()
+#endif
       end if
 
       ! Close the file, finish
