@@ -124,7 +124,6 @@ endif
 # Non-standard features supported by compiler
 ##############################################################################
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
-	         -DHAS_INTRINSIC_IARGC \
 	         -DHAS_INTRINSIC_ISATTY $(CFLAGSF90)
 
 # The PGI compiler 7.2 and above supports ISO_C_BINDING
