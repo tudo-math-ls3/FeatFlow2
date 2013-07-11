@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -V 2>&1
-F90VERSION = $(F90) -V 2>&1
-CCVERSION  = $(CC)  -V 2>&1
-CXXVERSION = $(CXX) -V 2>&1
+F77VERSION = $(F77) -V 2>&1 1>/dev/null | head -n 1
+F90VERSION = $(F90) -V 2>&1 1>/dev/null | head -n 1
+CCVERSION  = $(CC)  -V 2>&1 1>/dev/null | head -n 1
+CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
 
 # Detect compiler version
 SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) | \
