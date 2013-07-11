@@ -227,7 +227,7 @@ contains
     call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rtemplateMatrix)
 
     ! Use the block discretisation to create a basic system matrix.
-    call lsysbl_createMatBlockByDiscr (rblockDiscr,rmatrix)
+    call lsysbl_createMatrix (rblockDiscr,rmatrix)
 
     ! Create (1,1) and (2,2) using the template matrix.
     ! Structure is "shared" (no new memory is allocated), content is allocated.
