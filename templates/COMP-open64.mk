@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -v 2>&1
-F90VERSION = $(F90) -v 2>&1
-CCVERSION  = $(CC)  -v 2>&1
-CXXVERSION = $(CXX) -v 2>&1
+F77VERSION = $(F77) -v 2>&1 | awk '{print}'
+F90VERSION = $(F90) -v 2>&1 | awk '{print}'
+CCVERSION  = $(CC)  -v 2>&1 | awk '{print}'
+CXXVERSION = $(CXX) -v 2>&1 | awk '{print}'
 
 # Detect compiler version
 OPEN64VERSION  := $(shell eval $(F90VERSION) | \
