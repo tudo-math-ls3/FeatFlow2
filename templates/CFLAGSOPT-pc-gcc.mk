@@ -244,6 +244,12 @@ ifeq ($(call gfortranminversion,4,6),yes)
 CFLAGSOPTF77 := -march=corei7-avx
 CFLAGSOPTF90 := -march=corei7-avx
 LDFLAGSOPT   := -march=corei7-avx
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-sandybridge-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=prescott
 CFLAGSOPTF90 := -march=prescott
@@ -252,6 +258,12 @@ endif
 ifeq ($(call gccminversion,4,6),yes)
 CFLAGSOPTC   := -march=corei7-avx
 CFLAGSOPTCXX := -march=corei7-avx
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-sandybridge-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=prescott
 CFLAGSOPTCXX := -march=prescott
@@ -267,6 +279,12 @@ ifeq ($(call gfortranminversion,4,6),yes)
 CFLAGSOPTF77 := -march=corei7-avx
 CFLAGSOPTF90 := -march=corei7-avx
 LDFLAGSOPT   := -march=corei7-avx
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-sandybridge-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=nocona
 CFLAGSOPTF90 := -march=nocona
@@ -275,6 +293,12 @@ endif
 ifeq ($(call gccminversion,4,6),yes)
 CFLAGSOPTC   := -march=corei7-avx
 CFLAGSOPTCXX := -march=corei7-avx
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-sandybridge-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=nocona
 CFLAGSOPTCXX := -march=nocona
@@ -290,6 +314,12 @@ ifeq ($(call gfortranminversion,4,6),yes)
 CFLAGSOPTF77 := -march=core-avx-i
 CFLAGSOPTF90 := -march=core-avx-i
 LDFLAGSOPT   := -march=core-avx-i
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-ivybridge-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=prescott
 CFLAGSOPTF90 := -march=prescott
@@ -298,6 +328,12 @@ endif
 ifeq ($(call gccminversion,4,6),yes)
 CFLAGSOPTC   := -march=core-avx-i
 CFLAGSOPTCXX := -march=core-avx-i
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-ivybridge-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=prescott
 CFLAGSOPTCX := -march=prescott
@@ -313,6 +349,12 @@ ifeq ($(call gfortranminversion,4,6),yes)
 CFLAGSOPTF77 := -march=core-avx-i
 CFLAGSOPTF90 := -march=core-avx-i
 LDFLAGSOPT   := -march=core-avx-i
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-ivybridge-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=nocona
 CFLAGSOPTF90 := -march=nocona
@@ -321,6 +363,12 @@ endif
 ifeq ($(call gccminversion,4,6),yes)
 CFLAGSOPTC   := -march=core-avx-i
 CFLAGSOPTCXX := -march=core-avx-i
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-ivybridge-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=nocona
 CFLAGSOPTCXX := -march=nocona
@@ -336,6 +384,12 @@ ifeq ($(call gfortranminversion,4,7),yes)
 CFLAGSOPTF77 := -march=core-avx2
 CFLAGSOPTF90 := -march=core-avx2
 LDFLAGSOPT   := -march=core-avx2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-haswell-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=prescott
 CFLAGSOPTF90 := -march=prescott
@@ -344,6 +398,12 @@ endif
 ifeq ($(call gccminversion,4,7),yes)
 CFLAGSOPTC   := -march=core-avx2
 CFLAGSOPTCXX := -march=core-avx2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc-haswell-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=prescott
 CFLAGSOPTCXX := -march=prescott
@@ -359,6 +419,12 @@ ifeq ($(call gfortranminversion,4,7),yes)
 CFLAGSOPTF77 := -march=core-avx2
 CFLAGSOPTF90 := -march=core-avx2
 LDFLAGSOPT   := -march=core-avx2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-haswell-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTF77 := -march=nocona
 CFLAGSOPTF90 := -march=nocona
@@ -367,6 +433,12 @@ endif
 ifeq ($(call gccminversion,4,7),yes)
 CFLAGSOPTC   := -march=core-avx2
 CFLAGSOPTCXX := -march=core-avx2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),pc64-haswell-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 CFLAGSOPTC   := -march=nocona
 CFLAGSOPTCXX := -march=nocona
@@ -602,6 +674,12 @@ ifeq ($(call gfortranminversion,4,6),yes)
 CFLAGSOPTF77 := -march=bdver1
 CFLAGSOPTF90 := -march=bdver1
 LDFLAGSOPT   := -march=bdver1
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-bulldozer-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gfortranminversion,4,3),yes)
 CFLAGSOPTF77 := -march=amdfam10
@@ -616,6 +694,12 @@ endif
 ifeq ($(call gccminversion,4,6),yes)
 CFLAGSOPTC   := -march=bdver1
 CFLAGSOPTCXX := -march=bdver1
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-bulldozer-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gccminversion,4,3),yes)
 CFLAGSOPTC   := -march=amdfam10
@@ -637,6 +721,12 @@ ifeq ($(call gfortranminversion,4,7),yes)
 CFLAGSOPTF77 := -march=bdver2
 CFLAGSOPTF90 := -march=bdver2
 LDFLAGSOPT   := -march=bdver2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-piledriver-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gfortranminversion,4,3),yes)
 CFLAGSOPTF77 := -march=amdfam10
@@ -651,6 +741,12 @@ endif
 ifeq ($(call gccminversion,4,7),yes)
 CFLAGSOPTC   := -march=bdver2
 CFLAGSOPTCXX := -march=bdver2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-piledriver*-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gccminversion,4,3),yes)
 CFLAGSOPTC   := -march=amdfam10
@@ -672,6 +768,12 @@ ifeq ($(call gfortranminversion,4,8),yes)
 CFLAGSOPTF77 := -march=bdver3
 CFLAGSOPTF90 := -march=bdver3
 LDFLAGSOPT   := -march=bdver3
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-steamroller-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gfortranminversion,4,3),yes)
 CFLAGSOPTF77 := -march=amdfam10
@@ -686,6 +788,12 @@ endif
 ifeq ($(call gccminversion,4,8),yes)
 CFLAGSOPTC   := -march=bdver3
 CFLAGSOPTCXX := -march=bdver3
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-steamroller-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gccminversion,4,3),yes)
 CFLAGSOPTC   := -march=amdfam10
@@ -742,6 +850,12 @@ ifeq ($(call gfortranminversion,4,8),yes)
 CFLAGSOPTF77 := -march=btver2
 CFLAGSOPTF90 := -march=btver2
 LDFLAGSOPT   := -march=btver2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-jaguar-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gfortranminversion,4,3),yes)
 CFLAGSOPTF77 := -march=amdfam10
@@ -756,6 +870,12 @@ endif
 ifeq ($(call gccminversion,4,8),yes)
 CFLAGSOPTC   := -march=btver2
 CFLAGSOPTCXX := -march=btver2
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-jaguar-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 ifeq ($(call gccminversion,4,3),yes)
 CFLAGSOPTC   := -march=amdfam10
@@ -779,6 +899,12 @@ MESSAGE  := $(MESSAGE) \
 CFLAGSOPTF77 := -march=native
 CFLAGSOPTF90 := -march=native
 LDFLAGSOPT   := -march=native
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-.*-darwin-gcc-.*),yes)
+CFLAGSOPTF77 := $(CFLAGSOPTF77) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTF90 := $(CFLAGSOPTF90) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Warning: No auto-tuning for GNU gfortran below 4.2.0 compiler available!';
@@ -788,6 +914,12 @@ MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by GNU GCC compiler!';
 CFLAGSOPTC   := -march=native
 CFLAGSOPTCXX := -march=native
+# For Intel-based Macs the old as assembler does not support AVX and
+# must therefore be overwritten by clang assembled
+ifeq ($(call match,$(ID),(pc|pc64)-.*-darwin-gcc-.*),yes)
+CFLAGSOPTC   := $(CFLAGSOPTC) -B$(FEAT2BASEDIR)/bin/pc-darwin
+CFLAGSOPTCXX := $(CFLAGSOPTCXX) -B$(FEAT2BASEDIR)/bin/pc-darwin
+endif
 else
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Warning: No auto-tuning for GNU GCC below 4.2.0 compiler available!';
