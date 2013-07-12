@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+# Restore eol-style:native for all types of source code files
+#
+
+# Loop over all directories which may contain source code files
+for directory in applications area51 tutorials kernel librariesNEW;
+do
+  # Loop over all file extensions which represent source code files
+  for fileext in F bib c cpp csh cu dat data def f f90 fbconf fbdef h html in inc indat m mk msg prm py sh tex tri txt;
+  do
+
+    echo "Processing file extension $fileext in directory $directory."
+
+    find $directory -name \*.$fileext -exec svn propset:eol-style 'native' {} \; 1>/dev/null 2>&1
+  done 
+done
