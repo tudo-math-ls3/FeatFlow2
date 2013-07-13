@@ -44,10 +44,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -v 2>&1 | awk '{print}'
-F90VERSION = $(F90) -v 2>&1 | awk '{print}'
-CCVERSION  = $(CC)  -v 2>&1 | awk '{print}'
-CXXVERSION = $(CXX) -v 2>&1 | awk '{print}'
+F77VERSION = $(F77) -v 2>&1 | cat
+F90VERSION = $(F90) -v 2>&1 | cat
+CCVERSION  = $(CC)  -v 2>&1 | cat
+CXXVERSION = $(CXX) -v 2>&1 | cat
 
 # Detect compiler version
 INTELVERSION := $(shell eval $(F90VERSION) | \

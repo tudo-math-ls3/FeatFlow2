@@ -35,10 +35,10 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -v 2>&1 | awk '{print}'
-F90VERSION = $(F90) -v 2>&1 | awk '{print}'
-CCVERSION  = $(CC)  -v 2>&1 | awk '{print}'
-CXXVERSION = $(CXX) -v 2>&1 | awk '{print}'
+F77VERSION = $(F77) -v 2>&1 | cat
+F90VERSION = $(F90) -v 2>&1 | cat
+CCVERSION  = $(CC)  -v 2>&1 | cat
+CXXVERSION = $(CXX) -v 2>&1 | cat
 
 # Detect compiler version
 PATHSCALEVERSION := $(shell eval $(F90VERSION) | \
@@ -123,7 +123,6 @@ endif
 # Non-standard features supported by compiler
 ##############################################################################
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH \
-	         -DHAS_INTRINSIC_IARGC \
 	         -DHAS_INTRINSIC_ISATTY \
 	         -DHAS_INTRINSIC_ISNAN \
 		 -DHAS_INTRINSIC_IEEE_ARITHMETIC $(CFLAGSF90)
