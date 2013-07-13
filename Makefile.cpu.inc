@@ -345,8 +345,9 @@ ifeq ($(call match,$(ID),.*-.*-aix-.*-.*),yes)
 include $(TEMPLATESDIR)/OS-aix.mk
 endif
 
-# Cygwin OS
-ifeq ($(call match,$(ID),.*-.*-cygwin_nt-.*-.*),yes)
+# Cygwin OS, 32 Bit and 64 bit (with 64 bit using the extended 
+# "cygwin_ntN.Nwow64" id!)
+ifeq ($(call match,$(ID),.*-.*-cygwin_nt.*-.*-.*),yes)
 include $(TEMPLATESDIR)/OS-cygwin_nt.mk
 endif
 
