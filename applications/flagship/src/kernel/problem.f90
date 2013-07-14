@@ -929,7 +929,7 @@ module problem
     !---------- INTERNAL DATA FOR SPATIAL DISCRETISATIONS ----------------------
 
     ! Array with element type IDs
-    integer, dimension(:), pointer :: Celement => null()
+    integer(I32), dimension(:), pointer :: Celement => null()
 
     !---------- INTERNAL DATA FOR BLOCK DISCRETISATIONS ------------------------
 
@@ -5778,7 +5778,7 @@ contains
       call output_line ('spatial discretisation    : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
                                                               associated(p_rtask%p_rspatialDiscr)))
       call output_line ('iperform                  : '//trim(sys_siL(int(p_rtask%iperform),15)))
-      call output_line ('cubature type             : '//trim(sys_siL(p_rtask%ccubType,15)))
+      call output_line ('cubature type             : '//trim(sys_siL(int(p_rtask%ccubType),15)))
       call output_line ('nlevels                   : '//trim(sys_siL(p_rtask%nlevels,15)))
       
       p_rtask => p_rtask%p_rnextTask
