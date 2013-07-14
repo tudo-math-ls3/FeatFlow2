@@ -316,8 +316,8 @@ H1-error: 3.7269151395E-02
 
 Calculating Poisson-2D-Problem with method 1 - EM30
 ---------------------------------------------------
-UMFPACK: !!Initial RES!! = 2.098843860710988E-02
-UMFPACK: !!solution!!    = 5.182340172412591E-01 Status = 0
+UMFPACK: !!Initial RES!! = 2.098843860710972E-02
+UMFPACK: !!solution!!    = 5.182340172412532E-01 Status = 0
 L2-error: 1.8029470064E-03
 H1-error: 1.9708230651E-01
 
@@ -780,4 +780,4 @@ Number of handles in use:        0
 Memory in use:                   0 Bytes
 Current total number of handles: 999
 Maximum number of handles used:  323
-Maximum used memory:             3.96 MB
+Maximum used memory:             5.42 MB
