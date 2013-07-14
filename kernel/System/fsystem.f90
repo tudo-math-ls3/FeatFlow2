@@ -3095,8 +3095,20 @@ contains
   sys_isNANQP = ieee_is_nan(qx)
 #else
 #ifndef HAS_INTRINSIC_ISNAN
-  real(DP) :: isnan
-  external isnan
+  interface
+    elemental function isnan (d) result (b)
+    integer, parameter :: DP = selected_real_kind(15,307)
+#ifdef ENABLE_QUADPREC
+    ! kind value for 80/128 bit float (quad precision)
+    integer, parameter :: QP = selected_real_kind(18,4931)
+#else
+    ! set QP equal to DP to avoid compiler problems
+    integer, parameter :: QP = DP
+#endif
+    real(QP), intent(in) :: d
+    logical :: b
+    end function
+  end interface
 #endif
   sys_isNANQP = isnan(qx)
 #endif
@@ -3130,8 +3142,13 @@ contains
   sys_isNANDP = ieee_is_nan(dx)
 #else
 #ifndef HAS_INTRINSIC_ISNAN
-  real(DP) :: isnan
-  external isnan
+  interface
+    elemental function isnan (d) result (b)
+    integer, parameter :: DP = selected_real_kind(15,307)
+    real(DP), intent(in) :: d
+    logical :: b
+    end function
+  end interface
 #endif
   sys_isNANDP = isnan(dx)
 #endif
@@ -3165,8 +3182,13 @@ contains
   sys_isNANSP = ieee_is_nan(fx)
 #else
 #ifndef HAS_INTRINSIC_ISNAN
-  real(SP) :: isnan
-  external isnan
+  interface
+    elemental function isnan (d) result (b)
+    integer, parameter :: SP = selected_real_kind(6,37)
+    real(SP), intent(in) :: d
+    logical :: b
+    end function
+  end interface
 #endif
   sys_isNANSP = isnan(fx)
 #endif
