@@ -365,9 +365,18 @@ module paramlist
   end interface
 
   interface parlst_getvalue_int
-    module procedure parlst_getvalue_int_fetch
-    module procedure parlst_getvalue_int_indir
-    module procedure parlst_getvalue_int_direct
+    module procedure parlst_getvalue_int8_fetch
+    module procedure parlst_getvalue_int16_fetch
+    module procedure parlst_getvalue_int32_fetch
+    module procedure parlst_getvalue_int64_fetch
+    module procedure parlst_getvalue_int8_indir
+    module procedure parlst_getvalue_int16_indir
+    module procedure parlst_getvalue_int32_indir
+    module procedure parlst_getvalue_int64_indir
+    module procedure parlst_getvalue_int8_direct
+    module procedure parlst_getvalue_int16_direct
+    module procedure parlst_getvalue_int32_direct
+    module procedure parlst_getvalue_int64_direct
   end interface
 
   interface parlst_getvalue_single
@@ -1766,8 +1775,8 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine parlst_getvalue_int_indir (rsection, sparameter, ivalue, &
-                                        idefault, iarrayindex)
+  subroutine parlst_getvalue_int8_indir (rsection, sparameter, ivalue, &
+                                         idefault, iarrayindex)
 !<description>
 
   ! Returns the value of a parameter in the section ssection.
@@ -1793,7 +1802,7 @@ contains
   character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  integer, intent(in), optional :: idefault
+  integer(I8), intent(in), optional :: idefault
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
@@ -1806,7 +1815,7 @@ contains
 !<output>
 
   ! The value of the parameter
-  integer, intent(out) :: ivalue
+  integer(I8), intent(out) :: ivalue
 
 !</output>
 
@@ -1832,8 +1841,8 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine parlst_getvalue_int_fetch (rsection, iparameter, ivalue, &
-                                        bexists, iarrayindex)
+  subroutine parlst_getvalue_int8_fetch (rsection, iparameter, ivalue, &
+                                         bexists, iarrayindex)
 !<description>
 
   ! Returns the value of a parameter in the section rsection.
@@ -1874,7 +1883,7 @@ contains
 !<output>
 
   ! The value of the parameter
-  integer, intent(out) :: ivalue
+  integer(I8), intent(out) :: ivalue
 
   ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
@@ -1897,9 +1906,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine parlst_getvalue_int_direct (rparlist, ssectionName, &
-                                         sparameter, ivalue, idefault,&
-                                         iarrayindex)
+  subroutine parlst_getvalue_int8_direct (rparlist, ssectionName, &
+                                          sparameter, ivalue, idefault,&
+                                          iarrayindex)
 !<description>
 
   ! Returns the value of a parameter in the section ssection. If the
@@ -1929,7 +1938,7 @@ contains
   character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  integer, intent(in), optional :: idefault
+  integer(I8), intent(in), optional :: idefault
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
@@ -1942,7 +1951,619 @@ contains
 !<output>
 
   ! The value of the parameter
-  integer, intent(out) :: ivalue
+  integer(I8), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int16_indir (rsection, sparameter, ivalue, &
+                                          idefault, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I16), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I16), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int16_fetch (rsection, iparameter, ivalue, &
+                                          bexists, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  !
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The number of the parameter.
+  integer, intent(in) :: iparameter
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I16), intent(out) :: ivalue
+
+  ! OPTIONAL: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: svalue
+
+  svalue = '0'
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int16_direct (rparlist, ssectionName, &
+                                           sparameter, ivalue, idefault,&
+                                           iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection. If the
+  ! value does not exist, idefault is returned.  If idefault is not
+  ! given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The section name - '' identifies the unnamed section.
+  character(LEN=*), intent(in) :: ssectionName
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I16), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I16), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int32_indir (rsection, sparameter, ivalue, &
+                                          idefault, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I32), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I32), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int32_fetch (rsection, iparameter, ivalue, &
+                                          bexists, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  !
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The number of the parameter.
+  integer, intent(in) :: iparameter
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I32), intent(out) :: ivalue
+
+  ! OPTIONAL: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: svalue
+
+  svalue = '0'
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int32_direct (rparlist, ssectionName, &
+                                           sparameter, ivalue, idefault,&
+                                           iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection. If the
+  ! value does not exist, idefault is returned.  If idefault is not
+  ! given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The section name - '' identifies the unnamed section.
+  character(LEN=*), intent(in) :: ssectionName
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I32), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I32), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int64_indir (rsection, sparameter, ivalue, &
+                                          idefault, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I64), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I64), intent(out) :: ivalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(idefault)) then
+    write (sdefault,*) idefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
+  end if
+
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int64_fetch (rsection, iparameter, ivalue, &
+                                          bexists, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  !
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The number of the parameter.
+  integer, intent(in) :: iparameter
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I64), intent(out) :: ivalue
+
+  ! OPTIONAL: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: svalue
+
+  svalue = '0'
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
+  read(svalue,*) ivalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_int64_direct (rparlist, ssectionName, &
+                                           sparameter, ivalue, idefault,&
+                                           iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection. If the
+  ! value does not exist, idefault is returned.  If idefault is not
+  ! given, an error will be thrown.
+  !
+  ! If the value is an array of integers, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the integer to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The section name - '' identifies the unnamed section.
+  character(LEN=*), intent(in) :: ssectionName
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  integer(I64), intent(in), optional :: idefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  integer(I64), intent(out) :: ivalue
 
 !</output>
 
