@@ -10123,7 +10123,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:)
 #else
-        call output_line ('SunStuio compiler does no allow to read '//&
+        call output_line ('SunStudio compiler does not allow to read '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
         call sys_halt()
@@ -10297,7 +10297,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:,:)
 #else
-        call output_line ('SunStuio compiler does no allow to read '//&
+        call output_line ('SunStudio compiler does not allow to read '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char2D')
         call sys_halt()
@@ -10474,7 +10474,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         read(cf) dataarray(:,:,:)
 #else
-        call output_line ('SunStuio compiler does no allow to read '//&
+        call output_line ('SunStudio compiler does not allow to read '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char3D')
         call sys_halt()
@@ -10628,7 +10628,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:)
 #else
-        call output_line ('SunStuio compiler does no allow to write '//&
+        call output_line ('SunStudio compiler does not allow to write '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
         call sys_halt()
@@ -10785,7 +10785,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:,:)
 #else
-        call output_line ('SunStuio compiler does no allow to write '//&
+        call output_line ('SunStudio compiler does not allow to write '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char2D')
         call sys_halt()
@@ -10945,7 +10945,7 @@ contains
 #ifndef USE_COMPILER_SUNSTUDIO
         write(cf) dataarray(:,:,:)
 #else
-        call output_line ('SunStuio compiler does no allow to write '//&
+        call output_line ('SunStudio compiler does not allow to write '//&
             'characters from binary file',&
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char3D')
         call sys_halt()
