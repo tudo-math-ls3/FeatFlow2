@@ -427,6 +427,10 @@ endif
 ifeq ($(call match,$(ID),ia64-*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-ia64-gcc.mk
 endif
+# Enable optimization flags for sun4u / sun4v
+ifeq ($(call match,$(ID),(sun4u|sun4v)-*-.*-gcc-.*),yes)
+include $(TEMPLATESDIR)/CFLAGSOPT-sun4u-gcc.mk
+endif
 # Optimization flags for further architectures go here
 # ...
 CFLAGSF77 := $(CFLAGSOPTF77) $(CFLAGSF77)

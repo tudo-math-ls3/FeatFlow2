@@ -712,7 +712,7 @@ case ${id} in
 
     sun*-*-sunos*|sun*-*-solaris*)
         # SPARC more specific version
-	cpu=`kstat cpu_info | grep cpu_type | awk '{ print $2 }' | uniq`
+	cpu=`kstat cpu_info | grep brand | awk '{ print $2 }' | sed 's/-//g' | uniq`
 	core=`kstat cpu_info | grep brand | awk '{ print $2 }' | uniq`
 	nproc=`kstat cpu_info | grep core_id | awk '{ print $2}' | uniq | wc -l`
 	;;

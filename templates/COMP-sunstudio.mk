@@ -106,9 +106,13 @@ endif
 # Set default compile flags
 ifeq ($(call optimise), YES)
 
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-sunstudio-.*),yes)
 # MM: -fast flag produces internal compiler errors; this is a reduced
 #     selection of compiler flags which would be set by the -fast flag
 FAST := -O3 -libmil -dalign -xlibmopt -xdepend -pad=local -fround=nearest -xregs=frameptr -xprefetch -xvector
+else
+FAST := -fast
+endif
 
 CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) $(FAST) -xtypemap=integer:32
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
