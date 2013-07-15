@@ -3120,6 +3120,7 @@ sub create_feastAppMakefile {
         "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feat2obj/benchmark/apps_poisson/object\n" .
         "        # CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feat2obj/benchmark/apps_stokes/object\n" .
         "\t\@+\\\n" .
+        "\tLC_ALL=C; \\\n" .
         "\tadditionalflags=\"APPONLYFLAGS  = \$(APPONLYFLAGS)\"; \\\n" .
         "\tmessage=\"\"; \\\n" .
         "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(PREF77) \$(F77)\"; \\\n" .
@@ -3205,6 +3206,7 @@ sub create_feastAppMakefile {
         "        # 'make' was run for this build ID.\n" .
         "        # What exactly is done here? See comment in target check-settings-objdir.\n" .
         "\t\@+\\\n" .
+        "\tLC_ALL=C; \\\n" .
         "\tadditionalflags=\"\"; \\\n" .
         "\tmessage=\"\"; \\\n" .
         "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(PREF77) \$(F77)\"; \\\n" .
@@ -3317,7 +3319,7 @@ sub create_feastAppMakefile {
         "#  while make process B tries already to check settings inside.\n" .
         "#  So, we do not check with 'test -f', but 'test -s'.)\n" .
         "define ls-lLd-for-compiler-foo\n" .
-        "    LANG=C; \\\n" .
+        "    LC_ALL=C; \\\n" .
         "    recompile=no; \\\n" .
         "    if test -s \$\${FILE}; then \\\n" .
         "\tcompilerpath=`which \$\${COMPILER} 2> /dev/null`; \\\n" .
@@ -3406,7 +3408,7 @@ sub create_feastAppMakefile {
         "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
         "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
         "define store-settings\n" .
-        "    LANG=C; \\\n" .
+        "    LC_ALL=C; \\\n" .
         "    if test -n \"\$(F77)\"; then \\\n" .
         "\t\$(F77VERSION) > \"\$(DIR)/\$(FILE_F77_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(F77)\`; \\\n" .
