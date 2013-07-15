@@ -565,7 +565,7 @@ contains
 !</input>
 
 !<output>
-  ! Discretisation structure for the discretisation of the buondary.
+  ! Discretisation structure for the discretisation of the boundary.
   type(t_spatialDiscretisation), intent(inout), target :: rdiscrManifold
 !</output>
 

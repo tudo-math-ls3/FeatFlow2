@@ -1424,7 +1424,7 @@ contains
             ! Invoke the assembly of the inhomogeneous Neumann BCs.
             ! This is just an integration on the boundary.
             
-            ! Get the buondary expression
+            ! Get the boundary expression
             read (sparams,*) sbdex1,sbdex2
             
             ! Use the 4x4 Gauss formula (hardcoded). Should be
