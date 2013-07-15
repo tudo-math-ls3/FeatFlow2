@@ -379,7 +379,7 @@ contains
     type(t_groupFEMSet), pointer :: p_rgroupFEMSet
     character(len=SYS_STRLEN) :: slimitingvariable
     type(t_matrixScalar) :: rmatrixSX,rmatrixSY,rmatrixSZ
-    integer, dimension(:), allocatable :: Celement
+    integer(I32), dimension(:), allocatable :: Celement
     real(DP) :: dmeshdisturb
     integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed,neq
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval

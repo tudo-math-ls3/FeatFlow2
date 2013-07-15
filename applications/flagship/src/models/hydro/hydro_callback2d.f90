@@ -8894,7 +8894,8 @@ contains
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ibct, isegment, ccubTypeBdr
+    integer :: ibct, isegment
+    integer(I32) :: ccubTypeBdr
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -8923,7 +8924,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(4) = ccubTypeBdr
+    rcollectionTmp%IquickAccess(4) = int(ccubTypeBdr)
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -9137,8 +9138,9 @@ contains
     real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM
     real(DP) :: hI,hM,l1,l2,l3,l4,pI,pM,rI,rM,uI,uM,vI,vM,w1,w2,w3,w4
     real(DP) :: aux,aux1,aux2,u_IM,v_IM,H_IM,vel_IM,q_IM,c_IM,c2_IM
-    integer :: ibdrtype,isegment,nmaxExpr,ccubType
+    integer :: ibdrtype,isegment,nmaxExpr
     integer :: iel,icubp,ipoint,npoints,ivar,nvar,iexpr,ivt,nve,neq
+    integer(I32) :: ccubType
     
 
 #ifndef HYDRO_USE_IBP
@@ -9186,7 +9188,7 @@ contains
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
     nmaxExpr = rcollection%IquickAccess(3)
-    ccubType = rcollection%IquickAccess(4)
+    ccubType = int(rcollection%IquickAccess(4),I32)
     
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge

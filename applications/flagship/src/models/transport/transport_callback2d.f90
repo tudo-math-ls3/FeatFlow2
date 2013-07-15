@@ -752,8 +752,9 @@ contains
     real(DP), dimension(NDIM2D,NDIM2D) :: DdiffusionTensor
     real(DP), dimension(1) :: Dunity = (/1.0_DP/)
     integer, dimension(:), pointer :: p_IbdrCondCpIdx,p_IbdrCondType
-    integer :: ibdc,isegment,ccubTypeBdr
+    integer :: ibdc,isegment
     integer :: ivelocitytype,velocityfield,idiffusiontype
+    integer(I32) :: ccubTypeBdr
 
     ! Evaluate bilinear form for boundary integral and
     ! return if there are no weak boundary conditions
@@ -1026,8 +1027,9 @@ contains
     real(DP), dimension(1) :: Dunity = (/1.0_DP/)
     integer, dimension(:), pointer :: p_IbdrCondCpIdx,p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic,p_IbdrCondPeriodic
-    integer :: ibdc,isegment,ccubTypeBdr
+    integer :: ibdc,isegment
     integer :: ivelocitytype,velocityfield,idiffusiontype
+    integer(I32) :: ccubTypeBdr
     
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -8009,7 +8011,8 @@ do iedge = 1, nedges
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dlocalData,dnv,dscale,dtime,dval
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    integer :: ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    integer(I32) :: ccubType
 
 
     ! This subroutine assumes that the first and second quick access
@@ -8037,7 +8040,7 @@ do iedge = 1, nedges
     ! boundary condition, the segment number and the cubature rule
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
+    ccubType = int(rcollection%IquickAccess(3),I32)
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge
@@ -8735,7 +8738,8 @@ do iedge = 1, nedges
     real(DP), dimension(:,:), pointer :: DnormalX,DnormalY,Daux
     real(DP), dimension(:,:,:), pointer :: Dcoords
     real(DP) :: dlocalData,dnv,dscale,dtime
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    integer :: ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    integer(I32) :: ccubType
 
     ! REMARK: This subroutine makes use of a lot of preprocessor flags
     ! to distinguish between the classical boundary integal evaluation,
@@ -8768,7 +8772,7 @@ do iedge = 1, nedges
     ! boundary condition, the segment number and the cubature rule
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
+    ccubType = int(rcollection%IquickAccess(3),I32)
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge

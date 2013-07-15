@@ -6838,7 +6838,7 @@ contains
       integer, intent(in) :: na
       integer, intent(in) :: ifill
       real(DP), intent(in) :: domega
-      integer(I32), intent(out) :: lu,jlu,ilup
+      integer, intent(out) :: lu,jlu,ilup
       integer, intent(inout) :: h_Idata
 
       ! Declare our ILUS-routine from SPLIB as interface to be sure,
@@ -6851,30 +6851,24 @@ contains
                       ierr,mneed)
         use fsystem
 
-        ! Integer precision for ILU solver
-        integer, parameter :: LINSOL_PRECOND_ILUINT = I32
-
-        ! Double precision for ILU solver
-        integer, parameter :: LINSOL_PRECOND_ILUDP  = DP
-
-        integer(LINSOL_PRECOND_ILUINT) n, iwork(*),s,ierr,rwptr(*),colind(*)
-        real(LINSOL_PRECOND_ILUDP)     a(*),relax
-        integer(LINSOL_PRECOND_ILUINT) mneed,maxstr,nzlu,remain
-        logical milu
-        integer(LINSOL_PRECOND_ILUINT) lu,jlu,ilup
+        integer  :: n, iwork(*),s,ierr,rwptr(*),colind(*)
+        real(DP) :: a(*),relax
+        integer  :: mneed,maxstr,nzlu,remain
+        logical  :: milu
+        integer  :: lu,jlu,ilup
       end subroutine ilus
     end interface
 
       ! local variables
-      integer(I32), dimension(:), pointer :: p_Idata
-      integer(I32) :: maxstr,ierr,mneed
+      integer, dimension(:), pointer :: p_Idata
+      integer :: maxstr,ierr,mneed
 
       ! Calculate a memory guess for how much memory the matrix needs.
       ! If the handle h_Idata is not associated to some memory block, then
       ! allocate a dummy block of size 1. Otherwise, try to reuse the existing
       ! memory block first and perform reallocation only if mandatory.
       if (h_Idata .eq. ST_NOHANDLE) then
-        call storage_new('solver_initILU', 'p_Idata', int(1,I32),&
+        call storage_new('solver_initILU', 'p_Idata', 1,&
                          ST_INT, h_Idata, ST_NEWBLOCK_NOINIT)
       end if
       call storage_getbase_int(h_Idata, p_Idata)
@@ -6890,7 +6884,7 @@ contains
         try: do
 
           ! Reallocate the memory
-          call storage_realloc('solver_initILU', int(maxstr, I32),&
+          call storage_realloc('solver_initILU', maxstr,&
                                 h_Idata, ST_NEWBLOCK_NOINIT, .false.)
           call storage_getbase_int(h_Idata, p_Idata)
 
@@ -6924,7 +6918,7 @@ contains
 
       ! Check that not too much memory is wasted
       if ((h_Idata .ne. ST_NOHANDLE) .and. (mneed < maxstr/2)) then
-        call storage_realloc('solver_initILU', int(mneed,I32),&
+        call storage_realloc('solver_initILU', mneed,&
                              h_Idata, ST_NEWBLOCK_NOINIT, .true.)
       end if
     end subroutine do_mat79MILUs
@@ -7548,8 +7542,8 @@ contains
       end if
 
       ! Since UMFPACK4 is written in C, all arrays start at position 0 instead of 1
-      call lsyssc_addIndex(rmatrixDest%h_Kld,  -1_I32, ilength=rmatrixDest%NEQ+1)
-      call lsyssc_addIndex(rmatrixDest%h_Kcol, -1_I32, ilength=rmatrixDest%NA)
+      call lsyssc_addIndex(rmatrixDest%h_Kld,  -1, ilength=rmatrixDest%NEQ+1)
+      call lsyssc_addIndex(rmatrixDest%h_Kcol, -1, ilength=rmatrixDest%NA)
 
     end subroutine initPrepareMatrix
 

@@ -373,7 +373,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_matrixScalar) :: rmatrixBdrSx,rmatrixBdrSy,rmatrixBdrSz
-    integer, dimension(:), allocatable :: Celement
+    integer(I32), dimension(:), allocatable :: Celement
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     real(DP) :: dmeshdisturb
     integer :: nlevel,ncubatureInfo

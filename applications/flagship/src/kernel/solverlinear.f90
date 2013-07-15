@@ -3025,13 +3025,13 @@ contains
       subroutine lusolt(n,x,lu,jlu,uptr)
         use fsystem
 
-        integer(I32) jlu(*),uptr(*),n
-        real(DP)     x(n)
+        integer  :: jlu(*),uptr(*),n
+        real(DP) :: x(n)
 
         ! Note that we changed the interface here in contrast to the original
         ! LUSOLT routine - to make it possible to pass an integer array as
         ! double precision array. Bad practise, but SPLIB is set up this way.
-        integer(I32) :: lu(*)
+        integer  :: lu(*)
       end subroutine lusolt
     end interface
 
@@ -3089,7 +3089,7 @@ contains
       real(DP), dimension(:), pointer :: p_Du,p_Ddata,p_Da
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol,p_Kdiagonal
-      integer(I32), dimension(:), pointer :: p_Idata,p_lu,p_jlu,p_ilup
+      integer, dimension(:), pointer :: p_Idata,p_lu,p_jlu,p_ilup
 
 
       ! What kind of ILU algorithm should be used?
@@ -3204,7 +3204,7 @@ contains
         p_ilup => p_Idata(rsolver%ilup:)
 
         ! Solve the system by calling SPLIB
-        call LUSOLT(int(size(p_Du), I32), p_Du, p_lu, p_jlu, p_ilup)
+        call LUSOLT(size(p_Du), p_Du, p_lu, p_jlu, p_ilup)
 
       end if
     end subroutine do_scalarILU
