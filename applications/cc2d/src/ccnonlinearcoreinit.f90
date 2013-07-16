@@ -179,7 +179,7 @@ contains
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
+    call lsysbl_createMatrix (p_rdiscretisation,rmatrix)
       
     ! Let us consider the global system in detail. It has roughly
     ! the following shape:

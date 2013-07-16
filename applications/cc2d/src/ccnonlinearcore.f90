@@ -1342,6 +1342,8 @@ contains
       type(t_timer) :: rtimer
       ! A filter chain for the linear solver
       type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+      type(t_discreteBC), pointer :: p_rdiscreteBC
+      type(t_discreteFBC), pointer :: p_rdiscreteFBC
       
       ! DEBUG!!!
     !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
@@ -1368,6 +1370,10 @@ contains
         
           ! Get the filter chain. We need tghat later to filter the matrices.
           p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+          
+          ! Boundary condition structures
+          p_rdiscreteBC => rnonlinearIteration%RcoreEquation(ilev)%p_rdynamicInfo%rdiscreteBC
+          p_rdiscreteFBC => rnonlinearIteration%RcoreEquation(ilev)%p_rdynamicInfo%rdiscreteFBC
 
           ! On the highest level, we use rx as solution to build the nonlinear
           ! matrix. On lower levels, we have to create a solution
@@ -1448,15 +1454,15 @@ contains
           else
             ! Call the matrix filter for the boundary conditions to include the BC`s
             ! into the matrix.
-            call matfil_discreteBC (p_rmatrix)
-            call matfil_discreteFBC (p_rmatrix)
+            call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
+            call matfil_discreteFBC (p_rmatrix,p_rdiscreteFBC)
           end if
             
           ! "Nonlinear" boundary conditions like slip boundary conditions
           ! are not implemented with a filter chain into a matrix.
           ! Call the appropriate matrix filter of "nonlinear" boundary
           ! conditions manually:
-          call matfil_discreteNLSlipBC (p_rmatrix,.true.)
+          call matfil_discreteNLSlipBC (p_rmatrix,.true.,p_rdiscreteBC)
             
         end do
         
@@ -1929,7 +1935,7 @@ contains
     ! allocate memory for another temporary vector used
     ! during the MV multiplication.
     if (rsolverNode%cpreconditioner .eq. NLSOL_PREC_MATRIX) then
-      call lsysbl_createVecBlockIndirect (rx,rtemp,.false.)
+      call lsysbl_createVector (rx,rtemp,.false.)
     end if
     
     ! Status reset
@@ -2114,7 +2120,7 @@ contains
     if (.not. present(rtempBlock)) then
       ! Create a temporary vector we need for the nonlinear iteration.
       allocate (p_rtempBlock)
-      call lsysbl_createVecBlockIndirect (rrhs, p_rtempBlock, .false.)
+      call lsysbl_createVector (rrhs, p_rtempBlock, .false.)
     else
       p_rtempBlock => rtempBlock
     end if

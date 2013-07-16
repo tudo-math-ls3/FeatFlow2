@@ -1504,7 +1504,7 @@ contains
                                 p_IverticesAtEdge)
 
     ! Definition of the circle
-    dxcenter = 0.6
+    dxcenter = 0.2
     dycenter = 0.2
     dradius  = 0.05
     

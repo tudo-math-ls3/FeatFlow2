@@ -776,7 +776,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       if (associated(p_rdiscretisation)) then
-        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
+        call lsysbl_createMatrix (p_rdiscretisation,rmatrix)
       else
         ! No discretisation structure; create the matrix directly as 3x3 matrix.
         call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
@@ -902,8 +902,8 @@ contains
           rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEMPressure,&
           rmatrix,3,3,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
-      rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+      rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
 
       ! That is it, all submatrices are set up.
         
@@ -1821,7 +1821,7 @@ contains
     !    ( D1   D2   .   )
     !
     ! Create a temporary matrix that covers this structure.
-    call lsysbl_createMatBlockByDiscr (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)
+    call lsysbl_createMatrix (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)
     
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect
     ! needs this template matrix to provide the structure for the stabilisation

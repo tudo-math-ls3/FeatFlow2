@@ -771,8 +771,8 @@ contains
         rnonlinearIteration,rvector,rrhs)
 
     ! Create temporary vectors we need for the nonlinear iteration.
-    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .false.)
-    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
+    call lsysbl_createVector (rrhs, rtempBlock1, .false.)
+    call lsysbl_createVector (rrhs, rtempBlock2, .false.)
 
     ! Initial time step
     rproblem%rtimedependence%itimeStep = 0
