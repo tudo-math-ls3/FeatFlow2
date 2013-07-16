@@ -712,11 +712,11 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
           
           ! --- SP-SOR ---
-          case (201)
-            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
-          case (202)
-            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
-
+          !case (201)
+          !  call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
+          !case (202)
+          !  call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
+          !
           case default
           
             call output_line ('Unknown smoother!', &

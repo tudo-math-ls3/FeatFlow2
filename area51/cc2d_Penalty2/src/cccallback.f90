@@ -1953,7 +1953,9 @@ contains
 
     ! Find the geometry of the object   
     p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
-
+    !print *,"dx =", p_rgeometryObject%RCOORD2D%dorigin(1)
+    !print *,"dy =", p_rgeometryObject%RCOORD2D%dorigin(2)
+    !
     ! Which method is used to implement the penalty matrix? 
     ! Loop over all elements and calculate the corresponding Lambda value
     select case(ipenalty)

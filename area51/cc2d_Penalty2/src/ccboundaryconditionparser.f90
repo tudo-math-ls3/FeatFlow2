@@ -1156,8 +1156,8 @@ contains
     
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
     if (ifbm .eq. 1) then
-     CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
-         rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
+!     CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
+!         rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
     end if
   end subroutine
 

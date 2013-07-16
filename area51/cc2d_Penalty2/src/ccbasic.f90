@@ -35,6 +35,7 @@ module ccbasic
   use linearsystemblock
   
   use collection
+  use geometry
   
   use adaptivetimestep
     

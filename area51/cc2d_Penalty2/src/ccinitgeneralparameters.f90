@@ -84,7 +84,7 @@ contains
   
   drad = 0.05_dp
   drho = 1.5_dp
-  dx = 0.2_dp
+  dx = 1.1_dp
   dy = 0.2_dp
   
   do i=1,rPDescriptor%iparticles
@@ -92,8 +92,8 @@ contains
     rPDescriptor%pparameters(2,i)= dy
     rPDescriptor%pparameters(3,i)= drad
     rPDescriptor%pparameters(4,i)= drho
-    dx = dx + 1.0_dp
-    dy = dy + 0.5_dp
+!    dx = dx + 1.0_dp
+!    dy = dy + 0.5_dp
   end do
   
 end subroutine ! end cc_initParticleDescriptor

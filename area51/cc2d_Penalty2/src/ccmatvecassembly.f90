@@ -949,7 +949,7 @@ contains
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
-    real(DP) :: dvecWeight
+    real(DP) :: dvecWeight,dpenalty
     type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_IedgesDirichletBC
     type(t_scalarCubatureInfo) :: rcubatureInfo
@@ -1048,7 +1048,9 @@ contains
 
       ! ---------------------------------------------------
       ! Plug in the penalty matrix?
+!      dpenalty = 1.0_DP
       if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
+!      if (dpenalty .ne. 0.0_DP) then
        
         ! Allocate memory if necessary. Normally this should not be necessary...
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
@@ -2008,6 +2010,7 @@ contains
 
     ! local variables
     logical :: bshared
+    real(DP) :: dpenalty
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
@@ -2044,7 +2047,9 @@ contains
 
       ! ---------------------------------------------------
       ! Subtract the mass penalty stuff?
+!      dpenalty = 1.0_DP
       if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
+!      if (dpenalty .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)
@@ -2052,9 +2057,6 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)
-
-!        call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty2', .false.,&
-!                                    0, 'Defect_Penalty2.txt', '(E10.2)')
 
       end if
 
