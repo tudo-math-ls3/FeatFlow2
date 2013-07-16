@@ -1135,177 +1135,181 @@ contains
     ! -----------------------------------------------------------------------
 
     ! We only assemble penalty part if there is a penalty object to describe
-    if (rproblem%iparticles .gt. 0) then
-      p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
-      ! For more then 1 particle, do loop
-      p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
-
-    ! If there is an existing penalty matrix, release it.
-    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
-    call lsyssc_releaseMatrix (rmatrixTemp)
-
-    ! Generate penalty matrix. The matrix has basically the same structure as
-    ! our template FEM matrix, so we can take that.
-    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
-                rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
-                rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-                
-    ! No mass lumping. Just set up the penalty matrix.
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-PENALTY','itypePenaltyAssem',itypePenaltyAssem,1)
+    !if (rproblem%iparticles .gt. 0) then
+    !  p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+    !  ! For more then 1 particle, do loop
+    !  p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
+    !  print *,"dx =", p_rgeometryObject%RCOORD2D%dorigin(1)
+    !  print *,"dy =", p_rgeometryObject%RCOORD2D%dorigin(2)
     
-    select case (itypePenaltyAssem)
-      case (1)     
-       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
-           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
-      case (2)
-       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
-           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
-       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
-           rcubatureInfoPenaltyAdapt,rproblem%rmatrixAssembly%icubMpa)
-    end select
-
-    ! For assembling of the entries, we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (Psi_j, Phi_i) for the scalar system matrix in 2D.
-
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .false.
-    rform%BconstantCoeff = .false.
-    rform%Dcoefficients(1)  = rproblem%dlambda
-
-    ! Now we can build the matrix entries.
-    ! We specify the callback function cclambda for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical data.
-    !
-    ! We pass our collection structure as well to this routine, 
-    ! so the callback routine has access to everything what is in the collection.
-
-    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','IELEMENTTYPE',ielementType,3)
-    call parlst_getvalue_int(rproblem%rparamList,'CC-PENALTY','IELEMENTTYPE_PENALTY',ielementType_penalty,ielementType)
-    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','NLMIN',nlmin,1)
-
-    if (ielementType_penalty .ne. ielementType) then
-      call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
-    end if
-
-    select case (itypePenaltyAssem)
-      case (1)
-        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
-                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
-      case (2)
-        listsize = 0
-        ! First evaluate the entries for the DOFs inside the element which are totally inside the object
-        ! or totally outside the object. This elements will be linked with the simple cubature formula
-        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,1)
-        if (listsize .gt. 0) then
-          h_elListOld = rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList
-          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_IelementList
-          rcubatureInfoPenalty%p_RinfoBlocks(1)%NEL = listsize
-
-          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
-                                       rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
-          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 0.0_DP, &
-                                        .false.,.false.,.true.,.true.,rmatrixTemp)
-          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
-        end if
-        call storage_free (h_IelementList)       
-
-        listsize = 0
-        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
-        if (listsize .ne. 0) then
-          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_elListOld
-          h_elListOld = rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList
-          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_IelementList
-          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%NEL = listsize
-
-          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
-                                       rcubatureInfoPenaltyAdapt,cc_Lambda,rproblem%rcollection)
-  
-          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 1.0_DP, &
-                                        .false.,.false.,.true.,.true.,rmatrixTemp)
-          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
-        end if
-
-        call lsyssc_clearMatrix (rasmTempl%rmatrixPenalty)         
-        call lsyssc_copyMatrix (rmatrixTemp,rasmTempl%rmatrixPenalty)
-        call spdiscr_releaseCubStructure (rcubatureInfoPenaltyAdapt)
-        call storage_free (h_IelementList)       
-    end select
-
-    ! Calculate areea of penalty object using the matrix entries.
-    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
-    if (iarea .ne. 0) then
-      ! Open file for output
-      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix_Vol',sfilenamePenaltyMatrix_Vol,'''''')
-      read(sfilenamePenaltyMatrix_Vol,*) sfilenamePenaltyMatrix_Vol
-
-      cflag = SYS_APPEND           
-      call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
-
-      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
-               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
-
-      if (dlevel .lt. 4.0_dp) then
-        i = 0
-      else
-        i = 0
-        dtemp = dlevel
-        do while (dtemp .ge. 4.0_dp)
-          dtemp = dtemp / 4.0_dp
-          i = i+1
-        end do
-      end if
-
-      dlevel = nlmin + i             
-
-      if ((dlevel .eq. dble(nlmin)).or.(.not. bfileExists)) then
-        write(iunit,'(A)') 'Level  Volume'
-      end if
-
-      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
-      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
-      call lsyssc_clearVector(rones1,1.0_dp)
-      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
-      dvalue=lsyssc_scalarProduct (rones1, rones2)
-      dvalue = dvalue/rproblem%dlambda
-      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
-      call lsyssc_releaseVector(rones1)
-      call lsyssc_releaseVector(rones2)
-
-      close(iunit)
-    end if 
-    
-    ! Output the matrix for every level
-    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IPENMAT',ipenmat,0)
-    if (ipenmat .ne. 0) then
-      ! Open file for output
-      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
-      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
-               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL
-      i=0
-      if (dlevel .gt. 4.0_dp) then
-        i = 0
-        dtemp = dlevel
-        do while (dtemp .ge. 4.0_dp)
-          dtemp = dtemp / 4.0_dp
-          i = i+1
-        end do
-      end if
-      dlevel = nlmin + i
-
-!      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
-      stemp = trim(sfilenamePenaltyMatrix) // '_' // trim(SYS_sdL(dlevel,2)) // '.txt'
-      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
-    end if
-
-    call lsyssc_releaseMatrix (rmatrixTemp)
-    call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
-    end if ! (iParticle)
+    ! Call subroutine to create Penalty matrix  
+    call cc_generateTemplatePenaltyMatrix (rproblem,rdiscretisation,rasmTempl)
+!    ! If there is an existing penalty matrix, release it.
+!    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
+!    call lsyssc_releaseMatrix (rmatrixTemp)
+!
+!    ! Generate penalty matrix. The matrix has basically the same structure as
+!    ! our template FEM matrix, so we can take that.
+!    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+!                rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+!    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+!                rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!                
+!    ! No mass lumping. Just set up the penalty matrix.
+!    call parlst_getvalue_int (rproblem%rparamList, 'CC-PENALTY','itypePenaltyAssem',itypePenaltyAssem,1)
+!    
+!    select case (itypePenaltyAssem)
+!      case (1)     
+!       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+!           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+!      case (2)
+!       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+!           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+!       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+!           rcubatureInfoPenaltyAdapt,rproblem%rmatrixAssembly%icubMpa)
+!    end select
+!
+!    ! For assembling of the entries, we need a bilinear form, which first has to be set up manually.
+!    ! We specify the bilinear form (Psi_j, Phi_i) for the scalar system matrix in 2D.
+!
+!    rform%itermCount = 1
+!    rform%Idescriptors(1,1) = DER_FUNC
+!    rform%Idescriptors(2,1) = DER_FUNC
+!    ! In the standard case, we have constant coefficients:
+!    rform%ballCoeffConstant = .false.
+!    rform%BconstantCoeff = .false.
+!    rform%Dcoefficients(1)  = rproblem%dlambda
+!
+!    ! Now we can build the matrix entries.
+!    ! We specify the callback function cclambda for the coefficients.
+!    ! As long as we use constant coefficients, this routine is not used.
+!    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!    ! the framework will call the callback routine to get analytical data.
+!    !
+!    ! We pass our collection structure as well to this routine, 
+!    ! so the callback routine has access to everything what is in the collection.
+!
+!    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','IELEMENTTYPE',ielementType,3)
+!    call parlst_getvalue_int(rproblem%rparamList,'CC-PENALTY','IELEMENTTYPE_PENALTY',ielementType_penalty,ielementType)
+!    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','NLMIN',nlmin,1)
+!
+!    if (ielementType_penalty .ne. ielementType) then
+!      call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
+!    end if
+!
+!    select case (itypePenaltyAssem)
+!      case (1)
+!        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+!                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+!      case (2)
+!        listsize = 0
+!        ! First evaluate the entries for the DOFs inside the element which are totally inside the object
+!        ! or totally outside the object. This elements will be linked with the simple cubature formula
+!        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,1)
+!        if (listsize .gt. 0) then
+!          h_elListOld = rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList
+!          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+!          rcubatureInfoPenalty%p_RinfoBlocks(1)%NEL = listsize
+!
+!          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+!                                       rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+!          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 0.0_DP, &
+!                                        .false.,.false.,.true.,.true.,rmatrixTemp)
+!          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+!        end if
+!        call storage_free (h_IelementList)       
+!
+!        listsize = 0
+!        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
+!        if (listsize .ne. 0) then
+!          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+!          h_elListOld = rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList
+!          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+!          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%NEL = listsize
+!
+!          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+!                                       rcubatureInfoPenaltyAdapt,cc_Lambda,rproblem%rcollection)
+!  
+!          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 1.0_DP, &
+!                                        .false.,.false.,.true.,.true.,rmatrixTemp)
+!          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+!        end if
+!
+!        call lsyssc_clearMatrix (rasmTempl%rmatrixPenalty)         
+!        call lsyssc_copyMatrix (rmatrixTemp,rasmTempl%rmatrixPenalty)
+!        call spdiscr_releaseCubStructure (rcubatureInfoPenaltyAdapt)
+!        call storage_free (h_IelementList)       
+!    end select
+!
+!    ! Calculate areea of penalty object using the matrix entries.
+!    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
+!    if (iarea .ne. 0) then
+!      ! Open file for output
+!      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix_Vol',sfilenamePenaltyMatrix_Vol,'''''')
+!      read(sfilenamePenaltyMatrix_Vol,*) sfilenamePenaltyMatrix_Vol
+!
+!      cflag = SYS_APPEND           
+!      call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
+!
+!      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+!               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
+!
+!      if (dlevel .lt. 4.0_dp) then
+!        i = 0
+!      else
+!        i = 0
+!        dtemp = dlevel
+!        do while (dtemp .ge. 4.0_dp)
+!          dtemp = dtemp / 4.0_dp
+!          i = i+1
+!        end do
+!      end if
+!
+!      dlevel = nlmin + i             
+!
+!      if ((dlevel .eq. dble(nlmin)).or.(.not. bfileExists)) then
+!        write(iunit,'(A)') 'Level  Volume'
+!      end if
+!
+!      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
+!      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
+!      call lsyssc_clearVector(rones1,1.0_dp)
+!      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
+!      dvalue=lsyssc_scalarProduct (rones1, rones2)
+!      dvalue = dvalue/rproblem%dlambda
+!      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
+!      call lsyssc_releaseVector(rones1)
+!      call lsyssc_releaseVector(rones2)
+!
+!      close(iunit)
+!    end if 
+!    
+!    ! Output the matrix for every level
+!    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IPENMAT',ipenmat,0)
+!    if (ipenmat .ne. 0) then
+!      ! Open file for output
+!      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
+!      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+!               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL
+!      i=0
+!      if (dlevel .gt. 4.0_dp) then
+!        i = 0
+!        dtemp = dlevel
+!        do while (dtemp .ge. 4.0_dp)
+!          dtemp = dtemp / 4.0_dp
+!          i = i+1
+!        end do
+!      end if
+!      dlevel = nlmin + i
+!
+!!      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+!      stemp = trim(sfilenamePenaltyMatrix) // '_' // trim(SYS_sdL(dlevel,2)) // '.txt'
+!      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
+!    end if
+!
+!    call lsyssc_releaseMatrix (rmatrixTemp)
+!    call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
+!    end if ! (iParticle)
        
   end subroutine
 
@@ -2454,4 +2458,254 @@ contains
 
   end subroutine
 
+    ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_generateTemplatePenaltyMatrix (rproblem,rdiscretisation,rasmTempl)
+  
+!<description>
+  ! Calculates entries of all template matrices (Stokes, B-matrices,...)
+  ! in the specified problem structure, i.e. the entries of all matrices
+  ! that do not change during the computation or which serve as a template for
+  ! generating other matrices.
+  !
+  ! Memory for those matrices must have been allocated before with
+  ! allocMatVec!
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout) :: rproblem
+  
+  ! Discretisation structure that defines how to discretise the different
+  ! operators.
+  type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+
+  ! A t_asmTemplates structure. The template matrices in this structure are generated.
+  type(t_asmTemplates), intent(inout), target :: rasmTempl
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: istrongDerivativeBmatrix
+
+    ! Structure for a precomputed jump stabilisation matrix
+    type(t_jumpStabilisation) :: rjumpStabil
+    
+    ! Cubature information structure for the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfoMass
+    type(t_scalarCubatureInfo) :: rcubatureInfoStokes
+    type(t_scalarCubatureInfo) :: rcubatureInfoB
+    type(t_scalarCubatureInfo) :: rcubatureInfoPenalty, rcubatureInfoPenaltyAdapt
+    
+    ! Structure for the bilinear form for assembling Penalty,...
+     type(t_bilinearForm) :: rform
+     type(t_geometryObject), pointer :: p_rgeometryObject
+     type(t_particleCollection), pointer :: p_rparticleCollection
+    ! Calculating mass of penalty matrix
+     type(t_vectorScalar) :: rones1,rones2
+     real(dp) :: dvalue,dlevel,dtemp
+     integer :: i,nlmin,iunit,iarea,ipenmat,cflag,ielementType,ielementType_penalty,itypePenaltyAssem,&
+                listsize
+     character(len=SYS_STRLEN) :: sfilenamePenaltyMatrix,sfilenamePenaltyMatrix_Vol,stemp
+     logical :: bfileExists
+     integer :: h_IelementList, h_elListOld
+     ! temporary matrix
+     type(t_matrixScalar) :: rmatrixTemp
+     h_IelementList = ST_NOHANDLE
+
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    
+    ! -----------------------------------------------------------------------
+    ! Penalty matrices. They are used in so many cases, it is better we always
+    ! have them available.
+    ! -----------------------------------------------------------------------
+    ! Velocity
+    ! -----------------------------------------------------------------------
+
+    ! We only assemble penalty part if there is a penalty object to describe
+    if (rproblem%iparticles .gt. 0) then
+      p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+      ! For more then 1 particle, do loop
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
+      !print *,"dx =", p_rgeometryObject%RCOORD2D%dorigin(1)
+      !print *,"dy =", p_rgeometryObject%RCOORD2D%dorigin(2)
+      !
+    ! If there is an existing penalty matrix, release it.
+!    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
+!    call lsyssc_releaseMatrix (rmatrixTemp)
+
+    ! Generate penalty matrix. The matrix has basically the same structure as
+    ! our template FEM matrix, so we can take that.
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+                
+    ! No mass lumping. Just set up the penalty matrix.
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-PENALTY','itypePenaltyAssem',itypePenaltyAssem,1)
+    
+    !select case (itypePenaltyAssem)
+    !  case (1)     
+    call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+                                        rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+    !  case (2)
+    !   call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+    !       rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+    !   call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+    !       rcubatureInfoPenaltyAdapt,rproblem%rmatrixAssembly%icubMpa)
+    !end select
+
+    ! For assembling of the entries, we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (Psi_j, Phi_i) for the scalar system matrix in 2D.
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+    rform%Dcoefficients(1)  = rproblem%dlambda
+
+    ! Now we can build the matrix entries.
+    ! We specify the callback function cclambda for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical data.
+    !
+    ! We pass our collection structure as well to this routine, 
+    ! so the callback routine has access to everything what is in the collection.
+
+    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','IELEMENTTYPE',ielementType,3)
+    call parlst_getvalue_int(rproblem%rparamList,'CC-PENALTY','IELEMENTTYPE_PENALTY',ielementType_penalty,ielementType)
+    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','NLMIN',nlmin,1)
+
+    if (ielementType_penalty .ne. ielementType) then
+      call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
+    end if
+
+!    select case (itypePenaltyAssem)
+!      case (1)
+        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+    !  case (2)
+    !    listsize = 0
+    !    ! First evaluate the entries for the DOFs inside the element which are totally inside the object
+    !    ! or totally outside the object. This elements will be linked with the simple cubature formula
+    !    call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,1)
+    !    if (listsize .gt. 0) then
+    !      h_elListOld = rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList
+    !      rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+    !      rcubatureInfoPenalty%p_RinfoBlocks(1)%NEL = listsize
+    !
+    !      call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+    !                                   rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+    !      call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 0.0_DP, &
+    !                                    .false.,.false.,.true.,.true.,rmatrixTemp)
+    !      rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+    !    end if
+    !    call storage_free (h_IelementList)       
+    !
+    !    listsize = 0
+    !    call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
+    !    if (listsize .ne. 0) then
+    !      rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+    !      h_elListOld = rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList
+    !      rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+    !      rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%NEL = listsize
+    !
+    !      call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+    !                                   rcubatureInfoPenaltyAdapt,cc_Lambda,rproblem%rcollection)
+    !
+    !      call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 1.0_DP, &
+    !                                    .false.,.false.,.true.,.true.,rmatrixTemp)
+    !      rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+    !    end if
+    !
+    !    call lsyssc_clearMatrix (rasmTempl%rmatrixPenalty)         
+    !    call lsyssc_copyMatrix (rmatrixTemp,rasmTempl%rmatrixPenalty)
+    !    call spdiscr_releaseCubStructure (rcubatureInfoPenaltyAdapt)
+    !    call storage_free (h_IelementList)       
+    !end select
+
+    !! Calculate areea of penalty object using the matrix entries.
+    !call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
+    !if (iarea .ne. 0) then
+    !  ! Open file for output
+    !  call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix_Vol',sfilenamePenaltyMatrix_Vol,'''''')
+    !  read(sfilenamePenaltyMatrix_Vol,*) sfilenamePenaltyMatrix_Vol
+    !
+    !  cflag = SYS_APPEND           
+    !  call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
+    !
+    !  dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+    !           rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
+    !
+    !  if (dlevel .lt. 4.0_dp) then
+    !    i = 0
+    !  else
+    !    i = 0
+    !    dtemp = dlevel
+    !    do while (dtemp .ge. 4.0_dp)
+    !      dtemp = dtemp / 4.0_dp
+    !      i = i+1
+    !    end do
+    !  end if
+    !
+    !  dlevel = nlmin + i             
+    !
+    !  if ((dlevel .eq. dble(nlmin)).or.(.not. bfileExists)) then
+    !    write(iunit,'(A)') 'Level  Volume'
+    !  end if
+    !
+    !  call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
+    !  call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
+    !  call lsyssc_clearVector(rones1,1.0_dp)
+    !  call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
+    !  dvalue=lsyssc_scalarProduct (rones1, rones2)
+    !  dvalue = dvalue/rproblem%dlambda
+    !  write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
+    !  call lsyssc_releaseVector(rones1)
+    !  call lsyssc_releaseVector(rones2)
+    !
+    !  close(iunit)
+    !end if 
+    
+    ! Output the matrix for every level
+!    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IPENMAT',ipenmat,0)
+!    if (ipenmat .ne. 0) then
+!      ! Open file for output
+!      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
+!      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+!               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL
+!      i=0
+!      if (dlevel .gt. 4.0_dp) then
+!        i = 0
+!        dtemp = dlevel
+!        do while (dtemp .ge. 4.0_dp)
+!          dtemp = dtemp / 4.0_dp
+!          i = i+1
+!        end do
+!      end if
+!      dlevel = nlmin + i
+!
+!!      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+!      stemp = trim(sfilenamePenaltyMatrix) // '_' // trim(SYS_sdL(dlevel,2)) // '.txt'
+!      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
+!    end if
+
+    call lsyssc_releaseMatrix (rmatrixTemp)
+    call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
+    end if ! (iParticle)
+       
+  end subroutine
+
+  
 end module
