@@ -312,6 +312,9 @@ contains
     end if
     
     if (ipostprocTimeInterpSolution .ne. 0) then
+      ! update particle
+      call cc_Update_Particle (rproblem)
+
       ! Calculate body forces.
       call cc_calculateBodyForces (rvectorInt,dtimeInt,rproblem)
       
@@ -2655,4 +2658,44 @@ end if
   
   end subroutine
 
+  !----------------------------------------------------------------------------------------------------------------------  
+!<subroutine>
+  subroutine cc_Update_Particle(rproblem)
+!----------------------------------------------------------------------------------------------------------------------  
+  
+!<description>
+  ! This subroutine updates the position of the particle if the move is prescribed
+!</description>
+
+!<input-output>
+! A problem structure for our problem
+type(t_problem), intent(INOUT):: rproblem
+!</input-output>
+
+!  
+!</subroutine>
+  ! local variables
+  real(DP) :: dxcenter, dtime, dstep
+  type(t_geometryObject), pointer :: p_rgeometryObject
+  type(t_particleCollection), pointer :: p_rparticleCollection
+
+  p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+  p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
+  
+  dxcenter = p_rgeometryObject%rcoord2D%Dorigin(1) 
+  dtime = rproblem%rtimedependence%dtime
+  dstep = rproblem%rtimedependence%dtimestep
+  
+  if(dtime .ne. 0.0_DP) then
+    dxcenter = 1.1_DP + 0.1 !+ 0.25*sin(0.5*SYS_PI*(dtime+dstep))
+  else
+    dxcenter = dxcenter
+  end if  
+
+  p_rgeometryObject%rcoord2D%Dorigin(1) = dxcenter
+  write(*,*) 'X_c = ', dxcenter
+  
+  end subroutine
+
+  
 end module

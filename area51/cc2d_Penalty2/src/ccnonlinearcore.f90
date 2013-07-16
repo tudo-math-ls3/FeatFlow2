@@ -663,7 +663,7 @@ contains
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
 
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
-      rnonlinearCCmatrix%dpenalty = rnonlinearIteration%dpenalty
+      rnonlinearCCmatrix%dpenalty = rnonlinearIteration%dtheta !rnonlinearIteration%dpenalty
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = rnonlinearIteration%deta

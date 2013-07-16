@@ -424,13 +424,13 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
     
     ! update Penalty matrix
-      do i = rproblem%NLMIN, rproblem%NLMAX
-        call cc_generateTemplatePenaltyMatrix (rproblem,rproblem%RlevelInfo(i)%rdiscretisation,&
-                                               rproblem%RlevelInfo(i)%rasmTempl)
-      end do  
+!      do i = rproblem%NLMIN, rproblem%NLMAX
+!        call cc_generateTemplatePenaltyMatrix (rproblem,rproblem%RlevelInfo(i)%rdiscretisation,&
+!                                               rproblem%RlevelInfo(i)%rasmTempl)
+!      end do  
     
     rnonlinearCCMatrix%dalpha = -1.0_DP
-    rnonlinearCCMatrix%dpenalty =  -rtimestepping%dweightMatrixRHS !1.0_DP 
+!    rnonlinearCCMatrix%dpenalty =  -rtimestepping%dweightMatrixRHS !1.0_DP 
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
@@ -488,7 +488,7 @@ contains
     rnonlinearIterationTmp = rnonlinearIteration
     
     rnonlinearIterationTmp%dalpha = 1.0_DP
-    rnonlinearIterationTmp%dpenalty = rtimestepping%dweightMatrixLHS !1.0_DP 
+  !  rnonlinearIterationTmp%dpenalty = rtimestepping%dweightMatrixLHS !1.0_DP 
     rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
         real(1-rproblem%rphysics%iequation,DP)

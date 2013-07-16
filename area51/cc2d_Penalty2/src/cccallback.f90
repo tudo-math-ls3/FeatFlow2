@@ -477,7 +477,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_x (rdiscretisation,rform, &
+  subroutine coeff_RHS_x2 (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -549,8 +549,8 @@ contains
     ! local variables
     real(DP) :: dtime
     
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
+     !In a nonstationary simulation, one can get the simulation time
+     !with the quick-access array of the collection.
     if (present(rcollection)) then
       dtime = rcollection%Dquickaccess(1)
     else
@@ -558,9 +558,135 @@ contains
     end if
     
     Dcoefficients(:,:,:) = 0.0_DP
-
+    
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_RHS_x (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form of the
+    ! X-velocity part of the right hand side vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! local variables
+    real(DP) :: dtime
+    real(DP) :: dvel_x,dlambda,dstep
+    integer :: iel,icup,iin,ipenalty,ipart
+    real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
+    integer, dimension(:,:), pointer :: p_iverticesatelement
+    type(t_particlecollection), pointer :: p_rparticlecollection
+    type(t_geometryobject), pointer :: p_rgeometryobject
+    type(t_parlist), pointer :: p_rparlst
+    type (t_problem) :: rproblem
+    
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dvel_x = 0.0_dp
+    else
+      dtime = 0.0_DP
+    end if
+    
+    if (rcollection%Iquickaccess(4) .eq. 0) then
+      p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
+      ipenalty = rcollection%Iquickaccess(4)
+      dlambda = rcollection%Dquickaccess(4)
+      ! Get the triangulation array for the point coordinates
+      call storage_getbase_double2d (rdiscretisation%p_rtriangulation%h_dvertexcoords,&
+                                     p_dvertexcoordinates)
+      call storage_getbase_int2d (rdiscretisation%p_rtriangulation%h_iverticesatelement,&
+                                  p_iverticesatelement)  
+      ! Pointer to collect all variables about the object/s. We will get data about origin, shape,
+      ! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
+      p_rparticlecollection => collct_getvalue_particles(rcollection,'particles')
+      ! Find the geometry of the object   
+      ipart=1
+      p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+      ! Loop over all elements and calculate the corresponding Lambda value
+      do iel=1,nelements
+        do icup=1,npointsperelement 
+        ! get the distance to the center
+          call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
+          ! check if it is inside      
+           if (iin .eq. 1)then 
+            dcoefficients(1,icup,iel) = dlambda
+          else
+            dcoefficients(1,icup,iel) = 0.0_dp
+          end if
+        end do
+      end do !(loop over elements)
+    
+    end if
+    
+    Dcoefficients(:,:,:) = dcoefficients(:,:,:) * dvel_x
+    
+  end subroutine  
+  
   ! ***************************************************************************
 
 !<subroutine>
