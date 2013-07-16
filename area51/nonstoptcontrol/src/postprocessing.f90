@@ -357,7 +357,7 @@ contains
     DerrorTotal(:) = 0.0_DP
     
     call output_lbrk()
-    call output_line ("Error using cubature formula "//trim(sys_siL(ccubType,10))//":")
+    call output_line ("Error using cubature formula "//trim(sys_siL(int(ccubType),10))//":")
 
     do istep=1,rvector%NEQtime-1
       
