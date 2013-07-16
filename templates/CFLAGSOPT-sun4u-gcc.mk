@@ -201,6 +201,7 @@ ifeq ($(call gfortranminversion,4,7),yes)
 CFLAGSOPTF77 := -mcpu=niagara4 -mtune=niagara4
 CFLAGSOPTF90 := -mcpu=niagara4 -mtune=niagara4
 LDFLAGSOPT   := -mcpu=niagara4 -mtune=niagara4
+else
 ifeq ($(call gfortranminversion,4,3),yes)
 CFLAGSOPTF77 := -mcpu=niagara2 -mtune=niagara2
 CFLAGSOPTF90 := -mcpu=niagara2 -mtune=niagara2
@@ -214,6 +215,7 @@ endif
 ifeq ($(call gccminversion,4,7),yes)
 CFLAGSOPTC   := -mcpu=niagara4 -mtune=niagara4
 CFLAGSOPTCXX := -mcpu=niagara4 -mtune=niagara4
+else
 ifeq ($(call gccminversion,4,3),yes)
 CFLAGSOPTC   := -mcpu=niagara2 -mtune=niagara2
 CFLAGSOPTCXX := -mcpu=niagara2 -mtune=niagara2
@@ -240,7 +242,6 @@ else
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Warning: No auto-tuning for GNU gfortran below 4.7.0 compiler available!';
 endif
-endif
 ifeq ($(call gccminversion,4,7),yes)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by GCC compiler!';
@@ -249,6 +250,5 @@ CFLAGSOPTCXX := -mcpu=native -mtune=native
 else
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Warning: No auto-tuning for GNU gcc below 4.7.0 compiler available!';
-endif
 endif
 endif
