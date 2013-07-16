@@ -4788,12 +4788,6 @@ contains
       
     end if
     
-    ! Set the specification flags to "matrix is copy", so the releaseMatrix
-    ! routine will not release any memory but only dismiss all information.
-    rdestMatrix%RmatrixBlock(iy,ix)%imatrixSpec = &
-        ior(rdestMatrix%RmatrixBlock(iy,ix)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
-    call lsyssc_releaseMatrix (rdestMatrix%RmatrixBlock(iy,ix))
-
     ! Call the "scalar duplicate" variant
     call lsyssc_duplicateMatrix ( &
         rsourceMatrix, rdestMatrix%RmatrixBlock(iy,ix),&
@@ -4818,7 +4812,7 @@ contains
 !<subroutine>
 
   subroutine lsysbl_duplicateMatrixBlkBlk (rsourceMatrix,rdestMatrix,&
-      cdupStructure, cdupContent)
+      cdupStructure, cdupContent, bignoreScaleFactors)
 
 !<description>
   ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
@@ -4916,6 +4910,13 @@ contains
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
   integer, intent(in) :: cdupContent
+
+  ! OPTIONAL: Ignore the scaling factors in the source matrix.
+  ! TRUE: Submatrices of the source matrix will be copied regardless of
+  !   whether dscaleFactor=0.0 or not. Standard.
+  ! FALSE: Submatrices of the source matrix will only be copied if
+  !   dscaleFacor <> 0.0.
+  logical, intent(in), optional :: bignoreScaleFactors
 !</input>
 
 !<output>
@@ -4928,7 +4929,7 @@ contains
     ! local variables
     integer :: i,j
     type(t_matrixScalar), dimension(:,:), pointer :: p_rblocks
-
+    
     ! Copy the matrix structure of rsourceMatrix to rdestMatrix. This will also
     ! copy the structures of the submatrices, what we have to correct later.
     p_rblocks => rdestMatrix%RmatrixBlock
@@ -4946,20 +4947,21 @@ contains
     ! the new one.
     do j=1,rsourceMatrix%nblocksPerRow
       do i=1,rsourceMatrix%nblocksPerCol
-        rdestMatrix%RmatrixBlock(i,j) = rsourceMatrix%RmatrixBlock(i,j)
-        if (rdestMatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIXUNDEFINED) then
-
-          ! Set the specification flags to "matrix is copy", so the releaseMatrix
-          ! routine will not release any memory but only dismiss all information.
-          rdestMatrix%RmatrixBlock(i,j)%imatrixSpec = &
-              ior(rdestMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+        
+        ! If there is a destination but no source, remove the destination.
+        if (.not. lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScaleFactors) &
+            .and. lsysbl_isSubmatrixPresent(rdestMatrix,i,j,bignoreScaleFactors)) then
+          ! No source matrix. Release the destination.
           call lsyssc_releaseMatrix (rdestMatrix%RmatrixBlock(i,j))
-
+        end if
+        
+        if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScaleFactors)) then
+          ! Call the "scalar duplicate" variant
           call lsyssc_duplicateMatrix ( &
               rsourceMatrix%RmatrixBlock(i,j), rdestMatrix%RmatrixBlock(i,j),&
               cdupStructure, cdupContent)
-
         end if
+      
       end do
     end do
 
