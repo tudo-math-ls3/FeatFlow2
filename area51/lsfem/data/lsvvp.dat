@@ -37,7 +37,7 @@ Problem = 1
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1e-3
+dnu = 1E-3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -73,13 +73,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/bench1'
+sFilenamePathMesh = './pre/channelflow_2d_346elem_FerzigerPeric2002'
 
 # Final mesh level to solve the problem:
 NLMAX = 2
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 1
+NLMIN = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -139,7 +139,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 2
+LinTyp = 1
 
 # Number of Fixed-point irerations
 #  before Newton's method is active.
@@ -150,11 +150,15 @@ LinTyp = 2
 FPIter = 2
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 15
+NLN_MAX = 35
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
 dNLEpsi = 1E-6
+
+# The damping parameter in nonlinear
+#  deferred correction loop
+omega = 1.0
 
 
 #-----------------------------------------------------
@@ -256,7 +260,7 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 3
+iinitialSolutionLevel = 5
 
 
 #-----------------------------------------------------
@@ -351,7 +355,7 @@ nmaxItsLS = 10
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = -1
+ioutputLevelLS = 1
 
 
 #-----------------------------------------------------
@@ -539,7 +543,7 @@ irow = 5
 #   =1 GMV  used in GMV
 #   =2 Binary GMV
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ExporType = 0
+ExporType = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Determine to write the final solution on level NLMAX
@@ -591,7 +595,7 @@ Ensto = 0
 #		Z = 1/2 [w]^T[M][w]
 #   =1  simply take the L^2 norm of velocity vector
 #       Z = 1/2||w||^2_{L^2}
-detEnsto = 0
+detEnsto = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the velocity divergence L^2-error
