@@ -212,9 +212,9 @@ contains
     call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
         ilev,nlmin,nlmax,rprecSpecials)
 
-    rnonlinearCCMatrix%dtheta = 1.0_DP   ! A velocity block
-    rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
-    rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
+    rnonlinearCCMatrix%dstokes = 1.0_DP     ! A velocity block
+    rnonlinearCCMatrix%dgradient = 1.0_DP   ! A gradient block
+    rnonlinearCCMatrix%ddivergence = 1.0_DP ! A divergence block
 
     call cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
         rmatrix,rnonlinearCCMatrix,rproblem)
@@ -1177,10 +1177,6 @@ contains
     ! A pointer to the matrix of the preconditioner
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
-    
     ! Set up the filter chains to support the current boundary conditions.
     if (.not. binit) then
       ! Clean up the previous filter chain
@@ -1354,32 +1350,26 @@ contains
       
       ! Attach the system matrices to the solver.
       !
-      ! For this purpose, copy the matrix structures from the preconditioner
-      ! matrices to Rmatrix.
-      allocate(Rmatrices(1:NLMAX))
+      ! For this purpose, create a matrix set structure that contains
+      ! links to our system matrices.
+      call linsol_newMatrixSet (rnonlinearIteration%rmatrixSet,NLMAX-NLMIN)
+
       do i=NLMIN,NLMAX
-        call lsysbl_duplicateMatrix ( &
-          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner, &
-          Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call linsol_addMatrix (rnonlinearIteration%rmatrixSet,&
+            rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
       end do
       
       call linsol_setMatrices(&
-          rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(NLMIN:NLMAX))
+          rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+          rnonlinearIteration%rmatrixSet)
           
-      ! The solver got the matrices; clean up Rmatrices, it was only of temporary
-      ! nature...
-      do i=NLMIN,NLMAX
-        call lsysbl_releaseMatrix (Rmatrices(i))
-      end do
-      deallocate(Rmatrices)
-      
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
       if (binit) then
       
-        call linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-            ierror)
+        call linsol_initStructure (&
+            rnonlinearIteration%rpreconditioner%p_rsolverNode,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
           call output_line ("linsol_initStructure failed! Matrix invalid!", &
                             OU_CLASS_ERROR,OU_MODE_STD,"cc_updatePreconditioner")
@@ -1388,8 +1378,8 @@ contains
         
       else if (bstructuralUpdate) then
       
-        call linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-            ierror)
+        call linsol_updateStructure (&
+            rnonlinearIteration%rpreconditioner%p_rsolverNode,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
           call output_line ("linsol_updateStructure failed! Matrix invalid!", &
                             OU_CLASS_ERROR,OU_MODE_STD,"cc_updatePreconditioner")
@@ -1444,6 +1434,9 @@ contains
     case (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! Preconditioner was a linear solver structure.
       !
+      ! Release the matrix set
+      call linsol_releaseMatrixSet (rnonlinearIteration%rmatrixSet)
+
       ! Release the preconditioner matrix on every level
       do i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
         call lsysbl_releaseMatrix ( &

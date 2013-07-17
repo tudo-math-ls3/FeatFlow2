@@ -488,18 +488,18 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
 
-    rnonlinearCCMatrix%dalpha = -1.0_DP
-    rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
-    rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
+    rnonlinearCCMatrix%dmass = -1.0_DP
+    rnonlinearCCMatrix%dstokes = -rtimestepping%dweightMatrixRHS
+    rnonlinearCCMatrix%dconvection = -rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
 
-    rnonlinearCCMatrix%deta = 0.0_DP
-    rnonlinearCCMatrix%dtau = 0.0_DP
+    rnonlinearCCMatrix%dgradient = 0.0_DP
+    rnonlinearCCMatrix%ddivergence = 0.0_DP
 
     ! Fully implicit pressure? There is only a difference if Crank-Nicolson
     ! is used.
     if (ipressureFullyImplicit .ne. 1) then
-      rnonlinearCCMatrix%deta = -rtimestepping%dweightMatrixRHS
+      rnonlinearCCMatrix%dgradient = -rtimestepping%dweightMatrixRHS
     end if
 
     ! Calculate   rtempVectorRhs := -rnonlinearCCMatrix rvector + rtempVectorRhs
@@ -550,21 +550,21 @@ contains
 
     rnonlinearIterationTmp = rnonlinearIteration
 
-    rnonlinearIterationTmp%dalpha = 1.0_DP
-    rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
-    rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
+    rnonlinearIterationTmp%dmass = 1.0_DP
+    rnonlinearIterationTmp%dstokes = rtimestepping%dweightMatrixLHS
+    rnonlinearIterationTmp%dconvection = rtimestepping%dweightMatrixLHS * &
         real(1-rproblem%rphysics%iequation,DP)
-    rnonlinearIterationTmp%deta   = 1.0_DP
-    rnonlinearIterationTmp%dtau   = 1.0_DP
+    rnonlinearIterationTmp%dgradient   = 1.0_DP
+    rnonlinearIterationTmp%ddivergence   = 1.0_DP
 
     ! Scale the pressure by the length of the time step. The core equation routines
     ! handle the equation
-    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
+    !   dmass*M*u + dstokes*nu*Laplace*u + dconvection*N(u)u + B*p = ...
     ! but we want to solve
-    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + tstep*B*p = ...
+    !   dmass*M*u + dstokes*nu*Laplace*u + dconvection*N(u)u + tstep*B*p = ...
     !
     ! So the trick is to scale p by tstep, solve the core equation
-    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(tstep*p) = ...
+    !   dmass*M*u + dstokes*nu*Laplace*u + dconvection*N(u)u + B*(tstep*p) = ...
     ! and scale it back afterwards.
     !
     ! Note that there is an error in the book of [Turek] describing the factor

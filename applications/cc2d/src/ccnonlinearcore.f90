@@ -10,12 +10,12 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#  $$        A_1 y   +  \eta B p   = f_1 $$
-!#  $$   \tau B^T y                 = f_2 $$
+!#  $$               A_1 y   +  dgradient B p   = f_1 $$
+!#  $$   ddivergence B^T y                      = f_2 $$
 !#
 !# with
 !#
-!#   $$ A_1 = \alpha M  +  \theta L  +  \gamma N(y) $$
+!#   $$ A_1 = dmass M  +  dlaplace L  +  dconvection N(y) $$
 !#
 !# and
 !#
@@ -23,13 +23,13 @@
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
 !#   $N(y)$  = Nonlinearity includung stabilisation,
 !#
-!#   $\alpha$ = 0/1     - switches the mass matrix on/off;
+!#   dmass = 0/1        - switches the mass matrix on/off;
 !#                          =0 for stationary problem,
-!#   $\theta$           - weight for the Laplace matrix,
-!#   $\gamma$ = 0/1     - Switches the nonlinearity on/off;
+!#   dlaplace           - weight for the Laplace matrix,
+!#   dconvection = 0/1  - Switches the nonlinearity on/off;
 !#                          =0 for Stokes system,
-!#   $\eta$   = 0/1     - Switches the "B"-term on/off,
-!#   $\tau$   = 0/1     - Switches the "B^T"-term on/off,
+!#   dgradient   = 0/1  - Switches the "B"-term on/off,
+!#   ddivergence = 0/1  - Switches the "B^T"-term on/off,
 !#
 !# (y,p) is the velocity/pressure solution pair.
 !#
@@ -404,23 +404,23 @@ module ccnonlinearcore
   ! parameters are removed from the colletion again.
   type t_ccNonlinearIteration
   
-    ! ALPHA-parameter that controls the weight of the mass matrix in the
+    ! MASS-parameter that controls the weight of the mass matrix in the
     ! core equation. =0.0 for stationary simulations.
-    real(DP) :: dalpha = 0.0_DP
+    real(DP) :: dmass = 0.0_DP
     
-    ! THETA-parameter that controls the weight of the Stokes matrix
+    ! LAPLACE-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
-    real(DP) :: dtheta = 0.0_DP
+    real(DP) :: dstokes = 0.0_DP
     
-    ! GAMMA-parameter that controls the weight in front of the
+    ! CONVECTION-parameter that controls the weight in front of the
     ! nonlinearity. =1.0 for Navier-Stokes, =0.0 for Stokes equation.
-    real(DP) :: dgamma = 0.0_DP
+    real(DP) :: dconvection = 0.0_DP
 
-    ! ETA-parameter that switch the B-term on/off.
-    real(DP) :: deta = 0.0_DP
+    ! GRADIENT-parameter that switch the B-term on/off.
+    real(DP) :: dgradient = 0.0_DP
     
-    ! TAU-parameter that switch the B^T-term on/off
-    real(DP) :: dtau = 0.0_DP
+    ! DIVERGENCE-parameter that switch the B^T-term on/off
+    real(DP) :: ddivergence = 0.0_DP
     
     ! Minimum allowed damping parameter; OMGMIN
     real(DP) :: domegaMin = 0.0_DP
@@ -453,6 +453,9 @@ module ccnonlinearcore
     ! A t_ccPreconditionerSpecials structure that saves information about
     ! special "tweaks" in matrices such that everything works.
     type(t_ccPreconditionerSpecials) :: rprecSpecials
+    
+    ! Matrix set attached to a linear solver.
+    type(t_linsolMatrixSet) :: rmatrixSet
     
     ! An array of t_cccoreEquationOneLevel structures for all levels
     ! of the discretisation.
@@ -665,11 +668,11 @@ contains
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rasmTempl,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
 
-      rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
-      rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
-      rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
-      rnonlinearCCMatrix%deta = rnonlinearIteration%deta
-      rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
+      rnonlinearCCMatrix%dmass = rnonlinearIteration%dmass
+      rnonlinearCCMatrix%dstokes = rnonlinearIteration%dstokes
+      rnonlinearCCMatrix%dconvection = rnonlinearIteration%dconvection
+      rnonlinearCCMatrix%dgradient = rnonlinearIteration%dgradient
+      rnonlinearCCMatrix%ddivergence = rnonlinearIteration%ddivergence
       
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP,rproblem)
       
@@ -857,11 +860,11 @@ contains
         rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX,&
         rnonlinearIteration%rprecSpecials)
         
-      rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
-      rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
-      rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
-      rnonlinearCCMatrix%deta = rnonlinearIteration%deta
-      rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
+      rnonlinearCCMatrix%dmass = rnonlinearIteration%dmass
+      rnonlinearCCMatrix%dstokes = rnonlinearIteration%dstokes
+      rnonlinearCCMatrix%dconvection = rnonlinearIteration%dconvection
+      rnonlinearCCMatrix%dgradient = rnonlinearIteration%dgradient
+      rnonlinearCCMatrix%ddivergence = rnonlinearIteration%ddivergence
 
       ! Assemble the matrix.
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -1024,7 +1027,6 @@ contains
     integer :: i
     real(DP) :: dresInit,dres,dtempdef
     logical :: bassembleNewton
-    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     type(t_ccDynamicNewtonControl), pointer :: p_rnewton
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
@@ -1180,23 +1182,12 @@ contains
         ! that without calling linsol_doneStructure/linsol_doneStructure.
         ! This simply informs the solver about possible new scaling factors
         ! in the matrices in case they have changed...
-        allocate(Rmatrices(rnonlinearIteration%NLMIN:rnonlinearIteration%NLMAX))
         do i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
-          call lsysbl_duplicateMatrix ( &
-            rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner, &
-            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          call linsol_replaceMatrix (rnonlinearIteration%rmatrixSet,&
+              i-rnonlinearIteration%NLMIN+1,&
+              rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
         end do
         
-        call linsol_setMatrices(&
-            rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(:))
-            
-        ! The solver got the matrices; clean up Rmatrices, it was only of temporary
-        ! nature...
-        do i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
-          call lsysbl_releaseMatrix (Rmatrices(i))
-        end do
-        deallocate(Rmatrices)
-
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
         call linsol_initData (p_rsolverNode, ierror)
@@ -1324,7 +1315,6 @@ contains
       integer, intent(in)                              :: NLMIN
       
       ! Maximum level of the preconditioner that is to be initialised.
-      ! This must corresponds to the last matrix in Rmatrices.
       integer, intent(in)                              :: NLMAX
       
       ! Current iteration vector.
@@ -1425,12 +1415,12 @@ contains
           call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
             ilev,nlmin,nlmax,rnonlinearIteration%rprecSpecials)
           
-          rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
-          rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
-          rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
-          if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
-          rnonlinearCCMatrix%deta = rnonlinearIteration%deta
-          rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
+          rnonlinearCCMatrix%dmass = rnonlinearIteration%dmass
+          rnonlinearCCMatrix%dstokes = rnonlinearIteration%dstokes
+          rnonlinearCCMatrix%dconvection = rnonlinearIteration%dconvection
+          if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dconvection
+          rnonlinearCCMatrix%dgradient = rnonlinearIteration%dgradient
+          rnonlinearCCMatrix%ddivergence = rnonlinearIteration%ddivergence
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a "fine-grid" matrix.

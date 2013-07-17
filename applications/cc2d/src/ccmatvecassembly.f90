@@ -11,12 +11,12 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#  $$        A_1 y   +  \eta B p   = f_1 $$
-!#  $$   \tau B^T y                 = f_2 $$
+!#  $$               A_1 y   +  dgradient B p   = f_1 $$
+!#  $$   ddivergence B^T y                     = f_2 $$
 !#
 !# with
 !#
-!#   $$ A_1 = \alpha M  +  \theta L  +  \gamma N(y) + \text{newton }N*(y)$$
+!#   $$ A_1 = dmass M  +  dlaplace L  +  dconvection N(y) + \text{dnewton }N*(y)$$
 !#
 !# and
 !#
@@ -26,14 +26,14 @@
 !#   $N*(y)$ = Adjoint term $\cdot\delta(y)$ of the nonlinearity,
 !#             used for the Newton matrix
 !#
-!#   $\alpha$ - weight in front of the mass matrix;
+!#   dmass    - weight in front of the mass matrix;
 !#                =0 for stationary problem,
-!#   $\theta$ - weight for the Laplace matrix,
-!#   $\gamma$ - weight in front of the nonlinearity;
+!#   dlaplace - weight for the Laplace matrix,
+!#   dconvection - weight in front of the nonlinearity;
 !#                =0 for Stokes system,
-!#   $\eta$   - Switches the "B"-term on/off,
-!#   $\tau$   - Switches the "B^T"-term on/off,
-!#   newton   - Weight for the Newton term
+!#   dgradient   - Switches the "B"-term on/off,
+!#   ddivergence - Switches the "B^T"-term on/off,
+!#   newton      - Weight for the Newton term
 !#
 !# This equation can be written as a nonlinear system $A(y)(y,p) = (f1,f2)$
 !# with a nonlinear matrix $A(\cdot)$. The structure t_nonlinearCCmatrix
@@ -167,23 +167,23 @@ module ccmatvecassembly
   ! assemble the linear matrix A(y).)
   type t_nonlinearCCMatrix
   
-    ! ALPHA-parameter that controls the weight of the mass matrix in the
+    ! MASS-parameter that controls the weight of the mass matrix in the
     ! core equation. =0.0 for stationary simulations.
-    real(DP) :: dalpha = 0.0_DP
+    real(DP) :: dmass = 0.0_DP
     
-    ! THETA-parameter that controls the weight of the Stokes matrix
+    ! LAPLACE-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
-    real(DP) :: dtheta = 0.0_DP
+    real(DP) :: dstokes = 0.0_DP
     
-    ! GAMMA-parameter that controls the weight in front of the
+    ! CONVECTION-parameter that controls the weight in front of the
     ! nonlinearity N(u). =1.0 for Navier-Stokes, =0.0 for Stokes equation.
-    real(DP) :: dgamma = 0.0_DP
+    real(DP) :: dconvection = 0.0_DP
 
-    ! ETA-parameter that switch the B-term on/off in the matrix.
-    real(DP) :: deta = 0.0_DP
+    ! GRADIENT-parameter that switch the B-term on/off in the matrix.
+    real(DP) :: dgradient = 0.0_DP
     
-    ! TAU-parameter that switch the B^T-term on/off in the matrix.
-    real(DP) :: dtau = 0.0_DP
+    ! DIVERGENCE-parameter that switch the B^T-term on/off in the matrix.
+    real(DP) :: ddivergence = 0.0_DP
 
     ! Weight for the Newton matrix N*(u).
     ! = 0.0 deactivates the Newton part.
@@ -353,7 +353,7 @@ contains
 !<input>
   ! Term which is to be computed.
   ! =0: Calculate the $\nu$ values in front of the Laplace.
-  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  ! =1: Calculate the dmass values in front of the Mass matrix.
   integer, intent(in) :: cterm
 
   ! The discretisation structure that defines the basic shape of the
@@ -686,11 +686,11 @@ contains
       !    (  .    .   B2  )
       !    ( D1   D2    .  )
       
-      rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
-      rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%deta
+      rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%dgradient
+      rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%dgradient
       
-      rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%dtau
-      rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%dtau
+      rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%ddivergence
+      rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%ddivergence
       
       ! Matrix restriction
       ! ---------------------------------------------------
@@ -916,7 +916,7 @@ contains
         
     ! Assembles the velocity matrix in the block matrix rmatrix at position (1,1):
     !
-    ! rmatrix := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
+    ! rmatrix := dmass*M + dstokes*Laplace + dconvection*N(p_rvector) +
     !            dnewton*N*(p_rvector)
     
     ! A t_nonlinearCCMatrix structure providing all necessary "source" information
@@ -982,7 +982,7 @@ contains
     
       ! ---------------------------------------------------
       ! Plug in the mass matrix?
-      if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
+      if (rnonlinearCCMatrix%dmass .ne. 0.0_DP) then
        
         ! Allocate memory if necessary. Normally this should not be necessary...
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
@@ -991,7 +991,7 @@ contains
       
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
-            rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
+            rnonlinearCCMatrix%dmass,0.0_DP,.false.,.false.,.true.,.true.)
             
         if (.not. bshared) then
 
@@ -1002,7 +1002,7 @@ contains
 
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
-              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%dmass,0.0_DP,.false.,.false.,.true.,.true.)
         end if
         
       else
@@ -1041,7 +1041,7 @@ contains
         
       ! ---------------------------------------------------
       ! Plug in the Stokes matrix?
-      if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
+      if (rnonlinearCCMatrix%dstokes .ne. 0.0_DP) then
         ! Plug in the Stokes matrix in case of the gradient tensor.
         ! In case of the deformation tensor or nonconstant viscosity,
         ! that is done during the assembly of the nonlinearity.
@@ -1049,19 +1049,19 @@ contains
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(1,1),&
-              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
                 rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(2,2),&
-                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
           end if
         end if
       end if
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
+      if ((rnonlinearCCMatrix%dconvection .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
@@ -1095,7 +1095,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -1127,7 +1127,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
             
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
@@ -1143,15 +1143,15 @@ contains
           rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
           end if
           
           ! Initialise the user defined collection for the assembly.
@@ -1178,7 +1178,7 @@ contains
           rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
 
           ! Matrix weight
-          rupwind%dtheta = rnonlinearCCMatrix%dgamma
+          rupwind%dtheta = rnonlinearCCMatrix%dconvection
           
           if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
             call output_line ("Warning: Upwind does not support assembly "&
@@ -1229,7 +1229,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -1256,7 +1256,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -1280,7 +1280,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -1322,7 +1322,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -1342,12 +1342,12 @@ contains
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
-              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
                 rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(2,2),&
-                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
           end if
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1356,7 +1356,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -1392,7 +1392,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
@@ -1405,15 +1405,15 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
           end if
 
           ! Initialise the user defined collection for the assembly.
@@ -1438,7 +1438,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -1462,7 +1462,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -1507,7 +1507,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -1531,7 +1531,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -1554,12 +1554,12 @@ contains
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
-              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
                 rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(2,2),&
-                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%dstokes,1.0_DP,.false.,.false.,.true.,.true.)
           end if
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1568,7 +1568,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -1873,11 +1873,11 @@ contains
     call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,2))
 
     ! Initialise the weights for the B/B^T matrices
-    rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
-    rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%deta
+    rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%dgradient
+    rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%dgradient
     
-    rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%dtau
-    rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%dtau
+    rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearCCMatrix%ddivergence
+    rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearCCMatrix%ddivergence
 
     ! ------------------------------------------------
     ! Build the defect by matrix-vector multiplication
@@ -1901,7 +1901,7 @@ contains
     !
     ! With a matrix "A" of the theoretical form
     !
-    !       A := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
+    !       A := dmass*M + dstokes*Laplace + dconvection*N(p_rvector) +
     !            dnewton*N*(p_rvector)
     !
     ! and c=dvectorWeight, the routine will construct
@@ -1960,19 +1960,19 @@ contains
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
-      if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
+      if (rnonlinearCCMatrix%dmass .ne. 0.0_DP) then
         call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-            -rnonlinearCCMatrix%dalpha, 1.0_DP)
+            -rnonlinearCCMatrix%dmass, 1.0_DP)
 
         call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-            -rnonlinearCCMatrix%dalpha, 1.0_DP)
+            -rnonlinearCCMatrix%dmass, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
-      if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
+      if (rnonlinearCCMatrix%dstokes .ne. 0.0_DP) then
       
         ! In case of the gradient tensor, we can directly substract
         ! the Stokes matrix.
@@ -1981,11 +1981,11 @@ contains
       
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
 
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
               
         end if
         
@@ -1996,7 +1996,7 @@ contains
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
-      if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
+      if ((rnonlinearCCMatrix%dconvection .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
@@ -2023,7 +2023,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -2061,7 +2061,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
@@ -2077,15 +2077,15 @@ contains
           rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
           end if
 
           ! Initialise the user defined collection for the assembly.
@@ -2113,7 +2113,7 @@ contains
           rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
 
           ! Matrix weight
-          rupwind%dtheta = rnonlinearCCMatrix%dgamma
+          rupwind%dtheta = rnonlinearCCMatrix%dconvection
           
           ! Call the upwind method to calculate the nonlinear defect.
           call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
@@ -2157,7 +2157,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -2206,7 +2206,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -2230,7 +2230,7 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -2259,7 +2259,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
@@ -2275,15 +2275,15 @@ contains
           rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
           end if
 
           if ((rnonlinearCCMatrix%dnewton .eq. 0.0_DP) .and. &
@@ -2331,7 +2331,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -2357,7 +2357,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -2396,7 +2396,7 @@ contains
           rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dconvection
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -2438,11 +2438,11 @@ contains
           ! Subtract the stabilisation matrix stuff.
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
 
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
@@ -2450,7 +2450,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -2487,7 +2487,7 @@ contains
           rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dstokes
 
           ! Cubature formula
           rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -2506,7 +2506,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
@@ -2523,11 +2523,11 @@ contains
           ! Subtract the stabilisation matrix stuff.
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
 
           call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -rnonlinearCCMatrix%dstokes, 1.0_DP)
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
@@ -2535,7 +2535,7 @@ contains
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dstokes
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)

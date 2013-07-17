@@ -1741,7 +1741,7 @@ contains
 !<input>
   ! Term which is to be computed.
   ! =0: Calculate the $\nu$ values in front of the Laplace.
-  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  ! =1: Calculate the dmass values in front of the Mass matrix.
   integer, intent(in) :: cterm
 
   ! The discretisation structure that defines the basic shape of the

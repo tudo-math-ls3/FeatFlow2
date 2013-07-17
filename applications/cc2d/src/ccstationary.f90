@@ -100,11 +100,11 @@ contains
         rnonlinearIteration,"CC2D-NONLINEAR")
         
     ! Set up all the weights in the core equation according to the current timestep.
-    rnonlinearIteration%dalpha = 0.0_DP
-    rnonlinearIteration%dtheta = 1.0_DP
-    rnonlinearIteration%dgamma = real(1-rproblem%rphysics%iequation,DP)
-    rnonlinearIteration%deta   = 1.0_DP
-    rnonlinearIteration%dtau   = 1.0_DP
+    rnonlinearIteration%dmass = 0.0_DP
+    rnonlinearIteration%dstokes = 1.0_DP
+    rnonlinearIteration%dconvection = real(1-rproblem%rphysics%iequation,DP)
+    rnonlinearIteration%dgradient = 1.0_DP
+    rnonlinearIteration%ddivergence = 1.0_DP
 
     ! Initialise the preconditioner for the nonlinear iteration
     call cc_initPreconditioner (rproblem,&

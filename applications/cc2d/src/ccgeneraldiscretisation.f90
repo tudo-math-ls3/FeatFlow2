@@ -1885,7 +1885,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_blockDiscretisation) :: rdiscretisationInitSol
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
-    type(t_matrixBlock), dimension(1) :: Rmatrices
+    type(t_matrixBlock) :: rmassBlock
     type(t_vectorBlock) :: rsingleRHS,rsingleSol
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo) :: rcubatureInfo
@@ -2118,8 +2118,8 @@ contains
       ! Prepare the solver for the velocity.
       ! Prepare the solver for the X-velocity.
       call lsysbl_createMatFromScalar(&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMass,Rmatrices(1))
-      call linsol_setMatrices (p_rsolverNode,Rmatrices)
+          rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMass,rmassBlock)
+      call linsol_setMatrix (p_rsolverNode,rmassBlock)
       call linsol_initStructure (p_rsolverNode,ierror)
       call linsol_initData (p_rsolverNode,ierror)
 
@@ -2167,19 +2167,19 @@ contains
           call lsysbl_releaseVector (rsingleRHS)
           call lsysbl_releaseVector (rsingleSol)
           call lsysbl_releaseVector (rvector2)
-          call lsysbl_releaseMatrix (Rmatrices(1))
+          call lsysbl_releaseMatrix (rmassBlock)
 
           if (rproblem%MSHOW_Initialisation .ge. 1) &
             call output_line("Solving L2 projection for P...")
 
           ! Attach a new matrix.
           call lsysbl_createMatFromScalar(&
-              rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,Rmatrices(1))
+              rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,rmassBlock)
 
           call linsol_doneData (p_rsolverNode,ierror)
           call linsol_doneStructure (p_rsolverNode,ierror)
 
-          call linsol_setMatrices (p_rsolverNode,Rmatrices)
+          call linsol_setMatrix (p_rsolverNode,rmassBlock)
           
           call linsol_initStructure (p_rsolverNode,ierror)
           call linsol_initData (p_rsolverNode,ierror)
@@ -2206,7 +2206,7 @@ contains
       call lsysbl_releaseVector (rsingleRHS)
       call lsysbl_releaseVector (rsingleSol)
       call lsysbl_releaseVector (rvector2)
-      call lsysbl_releaseMatrix (Rmatrices(1))
+      call lsysbl_releaseMatrix (rmassBlock)
       
       call linsol_doneData (p_rsolverNode,ierror)
       call linsol_doneStructure (p_rsolverNode,ierror)
