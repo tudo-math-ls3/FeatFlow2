@@ -866,7 +866,7 @@ contains
         ! Impose Dirichlet fictitious boundary conditions into the matrix rmatrix.
         ! The filter is the same for both, solution and defect filter,
         ! as the matrix modification is teh same (for now).
-        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+        if (associated(RfilterChain(i)%p_rdiscreteFBC)) then
           call matfil_discreteFBC (rmatrix,RfilterChain(i)%p_rdiscreteFBC)
         else
           call matfil_discreteFBC (rmatrix)
