@@ -1353,7 +1353,7 @@ sub create_feastAppMakefile {
 	"#          Germany                                                     #\n" .
 	"#                                                                      #\n" .
 	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
-	"#          mailto:featflow@featflow.de                                 #\n" .
+	"#          mailto:featflow\@featflow.de                                 #\n" .
 	"#                                                                      #\n" .
 	"########################################################################\n" .
         "#                                                                      #\n";
@@ -3738,7 +3738,7 @@ sub create_feastBenchmarkMakefile {
 	"#          Germany                                                     #\n" .
 	"#                                                                      #\n" .
 	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
-	"#          mailto:featflow@featflow.de                                 #\n" .
+	"#          mailto:featflow\@featflow.de                                 #\n" .
 	"#                                                                      #\n" .
 	"########################################################################\n" .
         "#                                                                      #\n" .
