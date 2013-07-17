@@ -47,7 +47,6 @@ module sort
 
 !$use omp_lib
   use fsystem
-  use error
   use genoutput
   use storage
 

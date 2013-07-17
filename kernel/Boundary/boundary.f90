@@ -79,7 +79,6 @@ module boundary
 !$use omp_lib
   use storage
   use fsystem
-  use error
   use io
   use genoutput
   use fparser
