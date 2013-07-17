@@ -737,7 +737,7 @@ contains
 
       case (FILTER_DISCBCSOLFICT)
         ! Impose Dirichlet fictitious boundary conditions into the solution vector rx
-        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+        if (associated(RfilterChain(i)%p_rdiscreteFBC)) then
           call vecfil_discreteFBCsol (rx,RfilterChain(i)%p_rdiscreteFBC)
         else
           call vecfil_discreteFBCsol (rx)
@@ -745,7 +745,7 @@ contains
 
       case (FILTER_DISCBCRHSFICT)
         ! Impose Dirichlet fictitious boundary conditions into the RHS vector rx
-        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+        if (associated(RfilterChain(i)%p_rdiscreteFBC)) then
           call vecfil_discreteFBCrhs (rx,RfilterChain(i)%p_rdiscreteFBC)
         else
           call vecfil_discreteFBCrhs (rx)
@@ -753,7 +753,7 @@ contains
 
       case (FILTER_DISCBCDEFFICT)
         ! Impose Dirichlet fictitious boundary conditions into the defect vector rx
-        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+        if (associated(RfilterChain(i)%p_rdiscreteFBC)) then
           call vecfil_discreteFBCdef (rx,RfilterChain(i)%p_rdiscreteFBC)
         else
           call vecfil_discreteFBCdef (rx)
