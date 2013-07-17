@@ -1048,9 +1048,7 @@ contains
 
       ! ---------------------------------------------------
       ! Plug in the penalty matrix?
-!      dpenalty = 1.0_DP
       if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
-!      if (dpenalty .ne. 0.0_DP) then
        
         ! Allocate memory if necessary. Normally this should not be necessary...
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
@@ -1059,7 +1057,7 @@ contains
 
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
-            rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
+            rnonlinearCCMatrix%dpenalty,1.0_DP,.false.,.false.,.true.,.true.)
             
         if (.not. bshared) then
 
@@ -1070,7 +1068,7 @@ contains
 
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(2,2),&
-              rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%dpenalty,1.0_DP,.false.,.false.,.true.,.true.)
         end if
       end if
       
@@ -2047,9 +2045,7 @@ contains
 
       ! ---------------------------------------------------
       ! Subtract the mass penalty stuff?
-!      dpenalty = 1.0_DP
       if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
-!      if (dpenalty .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)

@@ -60,7 +60,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # Type of coarse grid solver. Standard = 2
 # =0: Gauss elimination (UMFPACK)
 # =1: Defect correction with diagonal VANKA preconditioning.
-# =2: BiCGStab with diagonal VANKA preconditioning
+# =2: BiCGStab	conditioning
 # =3: BiCGStab with full VANKA preconditioning
 # =4: BiCGStab with general VANKA preconditioning
 
@@ -117,7 +117,7 @@ domega             = 1.0
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 
-ioutputLevel       = -1
+ioutputLevel       = 0
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).

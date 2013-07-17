@@ -145,7 +145,7 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 0
+ierrorAnalysisL2 = 1
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
@@ -218,7 +218,7 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 0
+iwriteBodyForces = 1
 
 # Filename for the body forces
 
@@ -245,23 +245,23 @@ sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 #     0.15 0.2 3 0
 #     0.25 0.2 3 0
 
- cevaluatePointValues(8) =
-      0.15 0.2 3 0
-      0.25 0.2 3 0
-      0.1375 0.2 3 0
-      0.2625 0.2 3 0
-      0.4 0.2 1 0
-      0.4 0.2 2 0
-      0.65 0.2 1 0
-      0.65 0.2 2 0
+ cevaluatePointValues(0) =
+#      0.15 0.2 3 0
+#      0.25 0.2 3 0
+#      0.1375 0.2 3 0
+#      0.2625 0.2 3 0
+#      0.4 0.2 1 0
+#      0.4 0.2 2 0
+#      0.65 0.2 1 0
+#      0.65 0.2 2 0
 
 # Whether to write the point values to a file
 
-iwritePointValues = 1
+iwritePointValues = 0
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_G3x3_voll_4_1e9'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 
 # ------------------------------------------------------------------------
 # Flux values

@@ -30,7 +30,7 @@ sdatadirectory = %{sappdirectory}/data
 slogdirectory = %{sappdirectory}/log
 
 # Directory for visualisation files
-spostdirectory = %{sappdirectory}/gmv
+spostdirectory = "%{sappdirectory}/gmv"
 
 # Directory containing/receiving plain solution files
 ssolutiondirectory = %{sappdirectory}/ns

@@ -11,14 +11,14 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 0                       # ISTAT
+itimedependence = 1                       # ISTAT
 
 # ----------------------------------------------------------------------
 
 # Maximum number of macro time steps (TIMEMX).
 # Simulation stops if time > dtimemax or #iterations > niterations
 
-niterations = 10000                       # NITNS
+niterations = 40                           # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
@@ -27,7 +27,7 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 1.0                           # TIMEMX
+dtimeMax = 12.0                           # TIMEMX
 
 # Initial time step size
 

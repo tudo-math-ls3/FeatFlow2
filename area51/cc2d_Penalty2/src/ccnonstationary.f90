@@ -423,14 +423,8 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
     
-    ! update Penalty matrix
-!      do i = rproblem%NLMIN, rproblem%NLMAX
-!        call cc_generateTemplatePenaltyMatrix (rproblem,rproblem%RlevelInfo(i)%rdiscretisation,&
-!                                               rproblem%RlevelInfo(i)%rasmTempl)
-!      end do  
-    
     rnonlinearCCMatrix%dalpha = -1.0_DP
-!    rnonlinearCCMatrix%dpenalty =  -rtimestepping%dweightMatrixRHS !1.0_DP 
+    rnonlinearCCMatrix%dpenalty =  -rtimestepping%dweightMatrixRHS  
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
@@ -457,6 +451,12 @@ contains
       call cc_updateDiscreteBC (rproblem)
     end if
 
+    ! Update Penalty matrix
+    do i = rproblem%NLMIN, rproblem%NLMAX
+      call cc_generateTemplatePenaltyMatrix (rproblem,rproblem%RlevelInfo(i)%rdiscretisation,&
+                                             rproblem%RlevelInfo(i)%rasmTempl)
+    end do  
+    
     ! -------------------------------------------
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
@@ -488,7 +488,7 @@ contains
     rnonlinearIterationTmp = rnonlinearIteration
     
     rnonlinearIterationTmp%dalpha = 1.0_DP
-  !  rnonlinearIterationTmp%dpenalty = rtimestepping%dweightMatrixLHS !1.0_DP 
+    rnonlinearIterationTmp%dpenalty = rtimestepping%dweightMatrixLHS 
     rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
         real(1-rproblem%rphysics%iequation,DP)

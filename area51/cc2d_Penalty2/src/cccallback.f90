@@ -477,7 +477,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_x2 (rdiscretisation,rform, &
+  subroutine coeff_RHS_x (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -565,7 +565,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_x (rdiscretisation,rform, &
+  subroutine coeff_RHS_x_pen (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -647,14 +647,18 @@ contains
     
     if (present(rcollection)) then
       dtime = rcollection%Dquickaccess(1)
-      dvel_x = 0.0_dp
+      dvel_x = SYS_PI * 0.125_DP*cos(SYS_PI*0.5_DP*dtime)
     else
       dtime = 0.0_DP
     end if
     
-    if (rcollection%Iquickaccess(4) .eq. 0) then
+    Dcoefficients(1,:,:) = 0.0_DP
+    
+    ipenalty = rcollection%Iquickaccess(4)
+    
+    select case (ipenalty)
+    case (1)
       p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
-      ipenalty = rcollection%Iquickaccess(4)
       dlambda = rcollection%Dquickaccess(4)
       ! Get the triangulation array for the point coordinates
       call storage_getbase_double2d (rdiscretisation%p_rtriangulation%h_dvertexcoords,&
@@ -673,17 +677,13 @@ contains
         ! get the distance to the center
           call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
           ! check if it is inside      
-           if (iin .eq. 1)then 
-            dcoefficients(1,icup,iel) = dlambda
-          else
-            dcoefficients(1,icup,iel) = 0.0_dp
+         if (iin .eq. 1)then 
+            dcoefficients(1,icup,iel) = dlambda * dvel_x
           end if
         end do
       end do !(loop over elements)
     
-    end if
-    
-    Dcoefficients(:,:,:) = dcoefficients(:,:,:) * dvel_x
+    end select
     
   end subroutine  
   

@@ -13,7 +13,7 @@ dPenalty = 1.0
 #   - 2 - fractional Lambda
 #   - 3 - exponential Lambda (1/(1+exp(d(x)/eps))
 
-ipenalty = 3
+ipenalty = 1
 
 # Penalty parameter (standard 1000)
 dlambda = 1e3
@@ -24,7 +24,7 @@ dlambda = 1e3
 
 itypePenaltyAssem = 1
 
-# Generation of penalty matrix. 0=real mass,1 = HRZ mass
+# Generation of penalty matrix. 0=real mass,1= diagonaliz. + scale, 2 = HRZ mass
 iPenalty_lump = 0
 
 # Element type 

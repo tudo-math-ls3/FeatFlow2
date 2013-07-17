@@ -114,16 +114,16 @@ dwriteSolDeltaTime = 0.0
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 5
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 6
+NLMAX              = 4
 # ------------------------------------------------------------------------
 
 # Activate fbm
 
-ifbm = 0
+ifbm = 1
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
@@ -347,7 +347,7 @@ scubB              =
 # cubature formula for RHS F. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubF              = 
+scubF              = G3x3
 
 # cubature formula for the EOJ stabilisation (1D along edges).
 # ="": use default cubature formula.

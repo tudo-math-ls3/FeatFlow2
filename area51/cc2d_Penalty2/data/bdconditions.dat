@@ -118,11 +118,17 @@ ineumannBoundary = -1
 #  called for that segment to return the analytic boundary value!
 
 # Benchmark configuration:
+#bdComponent1(4)=
+#   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+#   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
+#   4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+
 bdComponent1(4)=
    1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+   2.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
    3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
-   4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+   4.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
 
 # Driven cavity would be (for grid cavity.{prm,tri}):
 #bdComponent1(4)=

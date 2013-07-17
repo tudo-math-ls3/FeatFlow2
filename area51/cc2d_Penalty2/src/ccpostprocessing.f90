@@ -2687,7 +2687,7 @@ type(t_problem), intent(INOUT):: rproblem
   dstep = rproblem%rtimedependence%dtimestep
   
   if(dtime .ne. 0.0_DP) then
-    dxcenter = 1.1_DP + 0.1 !+ 0.25*sin(0.5*SYS_PI*(dtime+dstep))
+    dxcenter = 1.1_DP + 0.25*sin(0.5*SYS_PI*(dtime+dstep))
   else
     dxcenter = dxcenter
   end if  

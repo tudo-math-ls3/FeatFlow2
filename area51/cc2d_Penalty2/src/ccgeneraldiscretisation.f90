@@ -1852,9 +1852,9 @@ contains
                 rproblem%rcollection)
 
       ! Discretise the X-velocity part (penalty):
-!      call linf_buildVectorScalar (rlinform,.false.,&
-!                rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_x_pen,&
-!                rproblem%rcollection)
+      call linf_buildVectorScalar (rlinform,.false.,&
+                rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_x_pen,&
+                rproblem%rcollection)
 
       ! The Y-velocity part:
       call linf_buildVectorScalar (rlinform,.false.,&
