@@ -2,18 +2,17 @@
 
 ########################################################################
 #                                                                      #
-#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
 #                                                                      #
-# Authors: Ch.Becker,                                                  #
-#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #
-#          S.Kilian, S.Turek                                           #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
 #                                                                      #
-# Contact: Applied Mathematics, University of Dortmund                 #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
 #          Vogelpothsweg 87, 44227 Dortmund                            #
 #          Germany                                                     #
 #                                                                      #
-# Web:     http://www.feast.uni-dortmund.de                            #
-#          mailto:feast@math.uni-dortmund.de                           #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
 #                                                                      #
 ########################################################################
 #                                                                      #
@@ -22,7 +21,6 @@
 # Author: Sven H.M. Buijssen (sven.buijssen@math.tu-dortmund.de)       #
 # Author: Dominik Goeddeke   (dominik.goeddeke@math.tu-dortmund.de)    #
 ########################################################################
-# $Id: Makefile,v 2.0 2008/06/01 13:17:51 buijssen Exp $
 
 # Master document, the only one with \begin{document} and \end{document}.
 TEX_MASTER_FILE = feat2

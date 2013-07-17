@@ -1,18 +1,17 @@
 #!/usr/bin/env make
 ########################################################################
 #                                                                      #
-#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
 #                                                                      #
-# Authors: Ch.Becker,                                                  #
-#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #
-#          S.Kilian, S.Turek                                           #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
 #                                                                      #
-# Contact: Applied Mathematics, Dortmund University of Technology      #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
 #          Vogelpothsweg 87, 44227 Dortmund                            #
 #          Germany                                                     #
 #                                                                      #
-# Web:     http://www.feast.tu-dortmund.de                             #
-#          mailto:feast@math.tu-dortmund.de                            #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
 #                                                                      #
 ########################################################################
 #                                                                      #
@@ -20,8 +19,7 @@
 # Makefile for FEAT2 applications                                      #
 #                                                                      #
 # Author    : Sven H.M. Buijssen                                       #
-# Maintainer: Chr. Becker, Sven H.M. Buijssen                          #
-# Version   : $Id: Makefile.cpu.inc,v 2.12 2009/01/28 09:49:25 buijssen Exp $
+# Maintainer: Sven H.M. Buijssen, Matthias Moeller, Michael Koester    #
 ########################################################################
 
 

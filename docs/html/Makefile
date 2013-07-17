@@ -1,16 +1,22 @@
 #!/usr/bin/env make
 
 ########################################################################
-# FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T  (Release 1.0)   #
 #                                                                      #
-# Authors: Ch.Becker, S.Kilian, S.Turek                                #
-#          Institute of Applied Mathematics & Simulation               #
-#          University of Dortmund                                      #
-#          D-44227 DORTMUND                                            #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
+#                                                                      #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
+#                                                                      #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
+#          Vogelpothsweg 87, 44227 Dortmund                            #
+#          Germany                                                     #
+#                                                                      #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
+#                                                                      #
+########################################################################
 #                                                                      #
 # Makefile to create FEAT2 HTML Documentation from FEAT2 sources       #
-#                                                                      #
-# Author: Sven H.M. Buijssen (sven.buijssen@math.uni-dortmund.de)      #
 ########################################################################
 
 include ../../kernel/kernel.mk

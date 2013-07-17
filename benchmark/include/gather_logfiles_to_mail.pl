@@ -4,9 +4,6 @@
 # via a queueing system and creates a logfile containing individual
 # results and overall statistics at the end.
 # Assumption: 1 test per file! See help screen for implications otherwise.
-#
-# Current version:
-# $Id: gather_logfiles_to_mail.pl,v 2.3 2008/10/21 07:14:49 buijssen Exp $
 
 
 # Allow proper programming only

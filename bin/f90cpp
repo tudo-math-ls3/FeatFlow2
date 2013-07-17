@@ -13,9 +13,6 @@
 # originally written by Christian Becker (christian.becker@math.tu-dortmund.de)
 # rewritten and documented by Sven H.M. Buijssen (sven.buijssen@math.tu-dortmund.de)
 # minor contributions by Dominik Goeddeke (dominik.goeddeke@math.tu-dortmund.de)
-#
-# Current version:
-# $Id: f90cpp,v 2.5 2009/01/28 23:34:35 buijssen Exp $
 
 # Do not let the script get confused by non-English messages
 # of system calls.

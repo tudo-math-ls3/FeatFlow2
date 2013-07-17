@@ -2,18 +2,17 @@
 #
 ########################################################################
 #                                                                      #
-#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
 #                                                                      #
-# Authors: Ch.Becker,                                                  #
-#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #
-#          S.Kilian, S.Turek                                           #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
 #                                                                      #
-# Contact: Applied Mathematics, TU Dortmund                            #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
 #          Vogelpothsweg 87, 44227 Dortmund                            #
 #          Germany                                                     #
 #                                                                      #
-# Web:     http://www.feast.tu-dortmund.de                             #
-#          mailto:feast@math.tu-dortmund.de                            #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
 #                                                                      #
 ########################################################################
 #
@@ -1342,22 +1341,21 @@ sub create_feastAppMakefile {
         "#!/usr/bin/env make\n" .
         "\n" .
 
-        "########################################################################\n" .
-        "#                                                                      #\n" .
-        "#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #\n" .
-        "#                                                                      #\n" .
-        "# Authors: Ch.Becker,                                                  #\n" .
-        "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
-        "#          S.Kilian, S.Turek                                           #\n" .
-        "#                                                                      #\n" .
-        "# Contact: Applied Mathematics, TU Dortmund                            #\n" .
-        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
-        "#          Germany                                                     #\n" .
-        "#                                                                      #\n" .
-        "# Web:     http://www.feast.tu-dortmund.de                             #\n" .
-        "#          mailto:feast\@math.tu-dortmund.de                            #\n" .
-        "#                                                                      #\n" .
-        "########################################################################\n" .
+	"########################################################################\n" .
+	"#                                                                      #\n" .
+	"#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
+	"#                                                                      #\n" .
+	"# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
+	"#                                                                      #\n" .
+	"#                                                                      #\n" .
+	"# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
+	"#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+	"#          Germany                                                     #\n" .
+	"#                                                                      #\n" .
+	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
+	"#          mailto:featflow@featflow.de                                 #\n" .
+	"#                                                                      #\n" .
+	"########################################################################\n" .
         "#                                                                      #\n";
     $entry = (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'};
     print MAKEFILE_HDL
@@ -3728,22 +3726,21 @@ sub create_feastBenchmarkMakefile {
     print MAKEFILE_HDL
         "#!/usr/bin/env make\n" .
         "\n" .
-        "########################################################################\n" .
-        "#                                                                      #\n" .
-        "#         FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T          #\n" .
-        "#                                                                      #\n" .
-        "# Authors: Ch.Becker,                                                  #\n" .
-        "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
-        "#          S.Kilian, S.Turek                                           #\n" .
-        "#                                                                      #\n" .
-        "# Contact: Applied Mathematics, TU Dortmund                            #\n" .
-        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
-        "#          Germany                                                     #\n" .
-        "#                                                                      #\n" .
-        "# Web:     http://www.feast.tu-dortmund.de                             #\n" .
-        "#          mailto:feast\@math.tu-dortmund.de                           #\n" .
-        "#                                                                      #\n" .
-        "########################################################################\n" .
+	"########################################################################\n" .
+	"#                                                                      #\n" .
+	"#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
+	"#                                                                      #\n" .
+	"# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
+	"#                                                                      #\n" .
+	"#                                                                      #\n" .
+	"# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
+	"#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+	"#          Germany                                                     #\n" .
+	"#                                                                      #\n" .
+	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
+	"#          mailto:featflow@featflow.de                                 #\n" .
+	"#                                                                      #\n" .
+	"########################################################################\n" .
         "#                                                                      #\n" .
         "# Makefile for FEAT2 regression benchmark                              #\n" .
         "# (auto-created by ./configure                                         #\n" .

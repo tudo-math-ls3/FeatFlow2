@@ -1,36 +1,51 @@
 #!/bin/sh
-#$Id: guess_id,v 1.2 2006/02/27 10:33:57 mkoester Exp $
-#
-# inspired by
-# ftp://ftp.gnu.org/pub/gnu/config/config.guess
-# and
-# http://people.debian.org/~falk/gcc-arch
-#
-
-# the gnu config.guess would be good choice but it doesn't seem to
-# distinguish different pc processors like athlon/pentium4....
-
-# Purpose:
-# Checks the available machine/os information and creates an id of the
-# form machine_architecture-cpu-os
-#
-# If this script is called with an additional parameter, then the 
-# corresponding substring is return instead of the complete ID.
-# Possible choices for the parameter are as follows:
-#
-# 0 : arch-cpu-(core)-os
-# 1 : arch
-# 2 : cpu
-# 3 : core
-# 4 : os
-# 5 : nproc
-#
-# in the ideal case it should be
-# ( uname -m ) - ( uname -p ) - ( uname -s )
-# but on pc/linux (uname -p) gives either unknown or very long answers
-# containing characters which are problematic in directory names like
-# parenthesis, '()'.
-#
+########################################################################
+#                                                                      #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
+#                                                                      #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
+#                                                                      #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
+#          Vogelpothsweg 87, 44227 Dortmund                            #
+#          Germany                                                     #
+#                                                                      #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
+#                                                                      #
+########################################################################
+#                                                                      #
+# inspired by                                                          #
+# ftp://ftp.gnu.org/pub/gnu/config/config.guess                        #
+# and                                                                  #
+# http://people.debian.org/~falk/gcc-arch                              #
+#                                                                      #
+#                                                                      #
+# the gnu config.guess would be good choice but it doesn't seem to     #
+# distinguish different pc processors like athlon/pentium4....         #
+#                                                                      #
+# Purpose:                                                             #
+# Checks the available machine/os information and creates an id of the #
+# form machine_architecture-cpu-os                                     #
+#                                                                      #
+# If this script is called with an additional parameter, then the      #
+# corresponding substring is return instead of the complete ID.        #
+# Possible choices for the parameter are as follows:                   #
+#                                                                      #
+# 0 : arch-cpu-(core)-os                                               #
+# 1 : arch                                                             #
+# 2 : cpu                                                              #
+# 3 : core                                                             #
+# 4 : os                                                               #
+# 5 : nproc                                                            #
+#                                                                      #
+# in the ideal case it should be                                       #
+# ( uname -m ) - ( uname -p ) - ( uname -s )                           #
+# but on pc/linux (uname -p) gives either unknown or very long answers #
+# containing characters which are problematic in directory names like  #
+# parenthesis, '()'.                                                   #
+#                                                                      #
+########################################################################
 
 
 # Don't let the script be confused by non-english messages

@@ -1,17 +1,17 @@
 #!/usr/bin/env make
 ########################################################################
 #                                                                      #
-#         FINITE ELEMENT ANALYSIS TOOLS 2                              #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
 #                                                                      #
-# Authors: M. Koester, M. Moeller, S. Turek                            #
-#          S.Buijssen                                                  #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
 #                                                                      #
-# Contact: Applied Mathematics, TU Dortmund                            #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
 #          Vogelpothsweg 87, 44227 Dortmund                            #
 #          Germany                                                     #
 #                                                                      #
-# Web:     http://www.feast.tu-dortmund.de                             #
-#          mailto:feast@math.tu-dortmund.de                            #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
 #                                                                      #
 ########################################################################
 #                                                                      #
@@ -20,7 +20,6 @@
 #                                                                      #
 # Author    : Sven H.M. Buijssen                                       #
 # Maintainer: Sven H.M. Buijssen, Matthias Moeller, Michael Koester    #
-# Version   : $Id: Makefile.buildID.inc,v 2.4 2009/01/13 19:33:43 buijssen Exp $
 ########################################################################
 
 # Path to this FEAT2 installation main directory

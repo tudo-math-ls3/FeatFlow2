@@ -1,33 +1,17 @@
-!########################################################################
-!# FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T  (Release 1.0)   #
-!#                                                                      #
-!# Authors: Ch.Becker, S.Kilian, S.Turek                                #
-!#          Institute of Applied Mathematics & Simulation               #
-!#          University of Dortmund                                      #
-!#          D-44227 DORTMUND                                            #
-!#                                                                      #
-!########################################################################
-!#                                                                      #
-!# <name> error </name>                                                 #
-!#                                                                      #
-!#                                                                      #
-!# <purpose>                                                            #
-!#                                                                      #
-!# This module contains the definition of the error codes and the       #
-!# routine which prints the output text if an error has ocuured.        #
-!# </purpose>                                                           #
-!#                                                                      #
-!########################################################################
-
-!# Current version: $Id: error.f90,v 1.98 2006/03/21 16:29:28 goeddeke4 Exp $
-
-!<!--
-!#include <feastdefs.h>
-! -->
-
+!##############################################################################
+!# ****************************************************************************
+!# <name> error </name>
+!# ****************************************************************************
+!#
+!# <purpose>
+!# This module provides a mapping for error IDs to hardcoded error messages.
+!# Currently, this is basically only used by the io module. One could argue to
+!# resolve this artificial splitting in the future.
+!# </purpose>
+!##############################################################################
 module error
 
-!$ise omp_lib
+!$use omp_lib
   use genoutput
   use fsystem
 
