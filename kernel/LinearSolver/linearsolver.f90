@@ -720,6 +720,7 @@ module linearsolver
   
   public :: linsol_newMatrixSet
   public :: linsol_addMatrix
+  public :: linsol_replaceMatrix
   public :: linsol_releaseMatrixSet
     
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
@@ -2743,6 +2744,43 @@ contains
     
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_replaceMatrix (rmatrixSet,i,rmatrix)
+  
+!<description>
+  ! Exchanges a matrix in a matrix set with another one.
+!</description>
+
+!<inputoutput>
+  ! Matrix set to be modified.
+  type(t_linsolMatrixSet), intent(inout) :: rmatrixSet
+  
+  ! Index of the matrix in the matrux set to be replaced.
+  integer, intent(in) :: i
+!</inputoutput>
+
+!<input>
+  ! The matrix to be added.
+  type(t_matrixBlock), intent(in), target :: rmatrix
+!</input>
+
+!</subroutine>
+    
+    if ((i .lt. 1) .or. (i .gt. ubound(rmatrixSet%p_Rmatrices,1))) then
+      call output_line ("Index out of bounds!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_replaceMatrix")
+      call sys_halt()
+    end if
+    
+    ! Replace the matrix
+    call lsysbl_releaseMatrix (rmatrixSet%p_Rmatrices(i))
+    call lsysbl_duplicateMatrix (rmatrix,rmatrixSet%p_Rmatrices(i),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+  end subroutine
   ! ***************************************************************************
 
 !<subroutine>
