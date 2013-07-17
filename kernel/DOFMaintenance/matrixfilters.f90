@@ -983,19 +983,24 @@ contains
 
 !</subroutine>
 
-    integer :: iblock,jblock,i,icp
+    integer :: iblock,jblock,i,icp,inumentries
     logical :: boffdiagSubmatrix
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBCEntry
 
     nullify(p_RdiscreteBCEntry)
-    if (.not. present(rdiscreteBC)) then
+    
+    if (present(rdiscreteBC)) then
+      p_RdiscreteBCEntry => rdiscreteBC%p_RdiscBCList
+      inumEntries = rdiscreteBC%inumEntriesUsed
+    else
+      if (.not. associated(rmatrix%p_rdiscreteBC)) then
+        ! There are no BC`s available, so we cannot do anything!
+        return
+      end if
       ! Grab the boundary condition entry list from the matrix. This
       ! is a list of all discretised boundary conditions in the system.
-      if (associated(rmatrix%p_rdiscreteBC)) then
-        p_RdiscreteBCEntry => rmatrix%p_rdiscreteBC%p_RdiscBCList
-      end if
-    else
-      p_RdiscreteBCEntry => rdiscreteBC%p_RdiscBCList
+      p_RdiscreteBCEntry => rmatrix%p_rdiscreteBC%p_RdiscBCList
+      inumEntries = rmatrix%p_rdiscreteBC%inumEntriesUsed
     end if
 
     if (.not. associated(p_RdiscreteBCEntry)) return
@@ -1005,7 +1010,7 @@ contains
 
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBCEntry)
-    do i=1, rmatrix%p_RdiscreteBC%inumEntriesUsed
+    do i=1, inumentries
 
       ! Only implement slip boundary conditions.
       if (p_RdiscreteBCEntry(i)%itype .eq. DISCBC_TPSLIP) then
@@ -1063,19 +1068,25 @@ contains
 
 !</subroutine>
 
-    integer :: iblock,jblock,i,j
+    integer :: iblock,jblock,i,j,inumentries
     logical :: boffdiagSubmatrix
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBCEntry
 
     nullify(p_RdiscreteFBCEntry)
-    if (.not. present(rdiscreteFBC)) then
+
+    if (present(rdiscreteFBC)) then
+      p_RdiscreteFBCEntry => rdiscreteFBC%p_RdiscFBCList
+      inumEntries = rdiscreteFBC%inumEntriesUsed
+    else    
+      if (.not. associated(rmatrix%p_rdiscreteBCfict)) then
+        ! There are no BC`s available, so we cannot do anything!
+        return
+      end if
+
       ! Grab the boundary condition entry list from the matrix. This
       ! is a list of all discretised boundary conditions in the system.
-      if (associated(rmatrix%p_rdiscreteBCfict)) then
-        p_RdiscreteFBCEntry => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
-      end if
-    else
-      p_RdiscreteFBCEntry => rdiscreteFBC%p_RdiscFBCList
+      p_RdiscreteFBCEntry => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
+      inumEntries = rmatrix%p_rdiscreteBCfict%inumEntriesUsed
     end if
 
     if (.not. associated(p_RdiscreteFBCEntry)) return
@@ -1084,7 +1095,7 @@ contains
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
-    do i=1,size(p_RdiscreteFBCEntry)
+    do i=1,inumentries
 
       ! What for BC`s do we have here?
       select case (p_RdiscreteFBCEntry(i)%itype)
