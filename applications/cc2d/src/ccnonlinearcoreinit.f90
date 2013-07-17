@@ -1352,7 +1352,7 @@ contains
       !
       ! For this purpose, create a matrix set structure that contains
       ! links to our system matrices.
-      call linsol_newMatrixSet (rnonlinearIteration%rmatrixSet,NLMAX-NLMIN)
+      call linsol_newMatrixSet (rnonlinearIteration%rmatrixSet,NLMAX-NLMIN+1)
 
       do i=NLMIN,NLMAX
         call linsol_addMatrix (rnonlinearIteration%rmatrixSet,&
