@@ -1236,12 +1236,6 @@ contains
               i,nlmin,nlmax,rproblem%RlevelInfo(i),cmatrixType,&
               rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
               
-          ! Attach boundary conditions
-          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBC &
-              => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC
-          
-          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBCfict &
-              => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC
         end if
         
         ! On the current level, set up a global preconditioner matrix.

@@ -71,7 +71,6 @@ contains
   real(DP) :: ddisturbMeshFactor
   
     ! Variable for a filename:
-    character(LEN=SYS_STRLEN) :: sString
     character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
     type(t_timer) :: rtimer
 

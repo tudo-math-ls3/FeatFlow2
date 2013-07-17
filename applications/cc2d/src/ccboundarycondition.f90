@@ -83,32 +83,7 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: i
-
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
-    type(t_discreteFBC), pointer :: p_rdiscreteFBC
-    
-    do i=rproblem%NLMIN,rproblem%NLMAX
-    
-      ! Hang the pointer into the the matrix. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      p_rdiscreteBC => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC
-
-      ! Also hang in the boundary conditions into the temporary vector that is
-      ! used for the creation of solutions on lower levels.
-      ! This allows us to filter this vector when we create it.
-      rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
-      
-      ! The same for the fictitious boundary boundary conditions.
-      p_rdiscreteFBC => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC
-      rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
-      
-    end do
-
-    ! Call the update routine to assemble the BC`s.
+    ! Nothing to do here, just call the update routine to initialise.
     call cc_updateDiscreteBC (rproblem)
                 
   end subroutine
@@ -244,8 +219,8 @@ contains
     !    ! later and must then be modified again!
     !    DO i=rproblem%NLMIN ,rproblem%NLMAX
     !      p_rmatrix => rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix
-    !      CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
-    !      CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
+    !      CALL matfil_discreteBC (p_rmatrix, p_rdiscreteBC)  ! standard boundary conditions
+    !      CALL matfil_discreteFBC (p_rmatrix, p_rdiscreteFBC)  ! fictitious boundary boundary conditions
     !    END DO
     !
     !  END IF
