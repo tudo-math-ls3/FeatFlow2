@@ -2569,6 +2569,7 @@ sub create_feastAppMakefile {
 
         "# Others need to be evaluated with cpp first before being stored there.\n" .
         "\$(OBJHEADEREVAL): | \$(OBJDIR)\n" .
+        "\$(OBJHEADEREVAL): \$(OBJHEADERCOPY)\n" .
         "\$(OBJHEADEREVAL): TMPFILE=\$(OBJDIR)/\$(notdir \$<).tmp\n" .
         "\$(OBJHEADEREVAL):\n" .
         "\t\@echo \"# Preprocessing \$<\"\n" .
