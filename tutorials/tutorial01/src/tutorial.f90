@@ -123,6 +123,7 @@ program tutorial
   use tutorial018f
   
   use tutorial019a
+  use tutorial019b
 
   use tutorial020a
   use tutorial020b
@@ -258,6 +259,7 @@ program tutorial
   call start_tutorial018f
   
   call start_tutorial019a
+  call start_tutorial019b
 
   call start_tutorial020a
   call start_tutorial020b
