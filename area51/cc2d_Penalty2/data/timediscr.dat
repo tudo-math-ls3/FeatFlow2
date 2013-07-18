@@ -18,7 +18,7 @@ itimedependence = 1                       # ISTAT
 # Maximum number of macro time steps (TIMEMX).
 # Simulation stops if time > dtimemax or #iterations > niterations
 
-niterations = 200                           # NITNS
+niterations = 12                         # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 

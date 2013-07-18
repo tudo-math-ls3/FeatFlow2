@@ -636,7 +636,7 @@ contains
   
     ! local variables
     real(DP) :: dtime
-    real(DP) :: dvel_x,dlambda,dstep
+    real(DP) :: du,dv,dlambda
     integer :: iel,icup,iin,ipenalty,ipart
     real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
     integer, dimension(:,:), pointer :: p_iverticesatelement
@@ -647,13 +647,11 @@ contains
     
     if (present(rcollection)) then
       dtime = rcollection%Dquickaccess(1)
-      dvel_x = SYS_PI * 0.125_DP*cos(SYS_PI*0.5_DP*dtime)
     else
       dtime = 0.0_DP
     end if
     
     Dcoefficients(1,:,:) = 0.0_DP
-    
     ipenalty = rcollection%Iquickaccess(4)
     
     select case (ipenalty)
@@ -671,6 +669,9 @@ contains
       ! Find the geometry of the object   
       ipart=1
       p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+      ! read the velocity
+      du = p_rparticlecollection%p_rparticles(ipart)%Dtransvelx
+      dv = p_rparticlecollection%p_rparticles(ipart)%Dtransvelx
       ! Loop over all elements and calculate the corresponding Lambda value
       do iel=1,nelements
         do icup=1,npointsperelement 
@@ -678,7 +679,7 @@ contains
           call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
           ! check if it is inside      
          if (iin .eq. 1)then 
-            dcoefficients(1,icup,iel) = dlambda * dvel_x
+            dcoefficients(1,icup,iel) = dlambda * du
           end if
         end do
       end do !(loop over elements)

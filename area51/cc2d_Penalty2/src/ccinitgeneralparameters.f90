@@ -76,22 +76,27 @@ contains
   !</subroutine>
   ! locals
   integer :: i, iparticle
-  real(dp) :: dx,dy,drho,drad
+  real(dp) :: dx,dy,drho,drad,du,dv
   type(t_parlist) :: rparlist
 
   rPDescriptor%iparticles = 1
-  allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
+  allocate(rPDescriptor%pparameters(6,rPDescriptor%iparticles))
   
   drad = 0.05_dp
-  drho = 1.5_dp
+  drho = 1.0_dp
   dx = 1.1_dp
   dy = 0.2_dp
+  ! Velocity components
+  du = SYS_PI*0.125_DP
+  dv = 0.0_DP
   
   do i=1,rPDescriptor%iparticles
     rPDescriptor%pparameters(1,i)= dx
     rPDescriptor%pparameters(2,i)= dy
     rPDescriptor%pparameters(3,i)= drad
     rPDescriptor%pparameters(4,i)= drho
+    rPDescriptor%pparameters(5,i)= du
+    rPDescriptor%pparameters(6,i)= dv
 !    dx = dx + 1.0_dp
 !    dy = dy + 0.5_dp
   end do

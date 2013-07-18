@@ -152,6 +152,9 @@ contains
       
       ! initialize the particles
       call geom_initParticleCollct(p_rproblem%rparticleCollection,rParticleDescriptor)
+      ! Initial velocity
+      p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvelx = rParticleDescriptor%pparameters(5,1)
+      p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvely = rParticleDescriptor%pparameters(6,1)
       
       deallocate(rParticleDescriptor%pparameters)
       ! we put the geometry object into the collection to make it easily accessible

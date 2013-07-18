@@ -291,7 +291,10 @@ contains
     ! Figure out if we have to write the solution. This is the case if
     ! 1.) Previous and current time is the same (= first call) or
     ! 2.) The solution "crossed the next timestep".
-  
+
+    ! update particle
+    call cc_Update_Particle (rproblem)
+    
     if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
       itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
       itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
@@ -312,12 +315,15 @@ contains
     end if
     
     if (ipostprocTimeInterpSolution .ne. 0) then
-      ! update particle
-      call cc_Update_Particle (rproblem)
 
       ! Calculate body forces.
-      call cc_calculateBodyForces (rvectorInt,dtimeInt,rproblem)
-      
+      if(rproblem%iParticles .gt. 0)then    
+        ! Drag/Lift Calculation
+        call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+      else 
+        call cc_calculateBodyForces(rvector,0.0_DP,rproblem)
+      end if
+
       ! Calculate point values
       call cc_evaluatePoints (rvectorInt,dtimeInt,rproblem)
 
@@ -331,7 +337,12 @@ contains
       call cc_errorAnalysis (rvectorInt,dtimeInt,rproblem)
     else
       ! Calculate body forces.
-      call cc_calculateBodyForces (rvector,dtime,rproblem)
+      if(rproblem%iParticles .gt. 0)then    
+        ! Drag/Lift Calculation
+        call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+      else 
+        call cc_calculateBodyForces(rvector,0.0_DP,rproblem)
+      end if
       
       ! Calculate point values
       call cc_evaluatePoints (rvector,dtime,rproblem)
@@ -2675,25 +2686,18 @@ type(t_problem), intent(INOUT):: rproblem
 !  
 !</subroutine>
   ! local variables
-  real(DP) :: dxcenter, dtime, dstep
+  real(DP) :: dtime,dstep
   type(t_geometryObject), pointer :: p_rgeometryObject
   type(t_particleCollection), pointer :: p_rparticleCollection
 
   p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
   p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
   
-  dxcenter = p_rgeometryObject%rcoord2D%Dorigin(1) 
   dtime = rproblem%rtimedependence%dtime
   dstep = rproblem%rtimedependence%dtimestep
   
-  if(dtime .ne. 0.0_DP) then
-    dxcenter = 1.1_DP + 0.25*sin(0.5*SYS_PI*(dtime+dstep))
-  else
-    dxcenter = dxcenter
-  end if  
-
-  p_rgeometryObject%rcoord2D%Dorigin(1) = dxcenter
-  write(*,*) 'X_c = ', dxcenter
+  p_rparticleCollection%p_rParticles(1)%Dtransvelx = SYS_PI*0.125_DP+cos(SYS_PI*0.5_DP*dtime)
+  p_rgeometryObject%rcoord2D%Dorigin(1) = 1.1_DP + 0.25*sin(0.5*SYS_PI*(dtime))
   
   end subroutine
 
