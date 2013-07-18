@@ -12,6 +12,6 @@ do
 
     echo "Processing file extension $fileext in directory $directory."
 
-    find $directory -name \*.$fileext -exec svn propset:eol-style 'native' {} \; 1>/dev/null 2>&1
+    find $directory -name \*.$fileext -exec svn propset svn:eol-style 'native' {} \; 1>/dev/null 2>&1
   done 
 done
