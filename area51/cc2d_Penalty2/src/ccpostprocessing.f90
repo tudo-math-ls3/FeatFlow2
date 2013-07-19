@@ -2527,7 +2527,7 @@ end if
 
       ! Write the result to a text file.
 
-      call io_openFileForWriting(sfilenameBodyForces, iunit, SYS_REPLACE,bfileExists,.true.)
+      call io_openFileForWriting(sfilenameBodyForces, iunit, SYS_APPEND,bfileExists,.true.)
         write (iunit,'(A)') trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
                          // trim(sys_sdEL(Dfx,6)) // ' '&
                          // trim(sys_sdEL(Dfy,6))
