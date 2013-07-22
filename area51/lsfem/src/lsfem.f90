@@ -23,7 +23,7 @@ program lsfem
   use LS_NS_SVP_MG2D
   use LS_NS_SVP_MG_MAT2D
   use LS_NS_SVP_RT2D
-  use LS_NS_SVP
+  
   use LS_SVP_NNew_MG2D
   
   implicit none
@@ -57,21 +57,21 @@ program lsfem
   call storage_init(999, 100)
 
 
-  ! Call the problem to solve 2D Poisson equation:
-  call output_lbrk()
-  call output_line('Calculating 2D Poisson')
-  call output_lbrk()
-  call output_line('Div-Grad-(Curl)-Multigrid')  
-  call output_line('-------------------------')
-  call LS_Poisson_mg
+!  ! Call the problem to solve 2D Poisson equation:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Poisson')
+!  call output_lbrk()
+!  call output_line('Div-Grad-(Curl)-Multigrid')  
+!  call output_line('-------------------------')
+!  call LS_Poisson_mg
 
-!  ! Call the problem to solve 2D Navier-stokes:
-!  call output_lbrk()
-!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-!  call output_lbrk()
-!  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
-!  call output_line('-------------------------------------')
-!  call ls_vvp_mg2d
+  ! Call the problem to solve 2D Navier-stokes:
+  call output_lbrk()
+  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+  call output_lbrk()
+  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
+  call output_line('-------------------------------------')
+  call ls_vvp_mg2d
 
 !  ! Call the problem to solve 2D transient Navier-stokes:
 !  call output_lbrk()
@@ -108,15 +108,6 @@ program lsfem
 !  call output_line('       Non-Newtonian Fluid        ') 
 !  call output_line('----------------------------------')
 !  call ls_svp_nn_mg2d
-
-!  ! Call the problem to solve 2D Navier-stokes:
-!  call output_lbrk()
-!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-!  call output_lbrk()
-!  call output_line('Stress-Velocity-Pressure-Multigrid')  
-!  call output_line('       Defect-based Version       ') 
-!  call output_line('----------------------------------')
-!  call ls_svp_2d
 
 
 !  ! Call the problem to solve 2D Navier-stokes:
