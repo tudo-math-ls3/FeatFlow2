@@ -432,13 +432,13 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.3.5"
 		    ;;
 
-		# GNU compiler suite 4.4.5
+		# GNU compiler suite 4.4.7
 		pc64-penryn-linux-gcc-*4.4)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.4.6"
+		    modules="$modules gcc/4.4.7"
 		    LIDOJOBNAMEPREFIX=ff2-gcc44
-		    COMPILERNAME="GCC 4.4.6"
+		    COMPILERNAME="GCC 4.4.7"
 		    ;;
 
 		# GNU compiler suite 4.5.3
@@ -468,13 +468,13 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.7.2"
 		    ;;
 
-		# GNU compiler suite 4.8.0
+		# GNU compiler suite 4.8.1
 		pc64-penryn-linux-gcc-*4.8)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.8.0"
+		    modules="$modules gcc/4.8.1"
 		    LIDOJOBNAMEPREFIX=ff2-gcc48
-		    COMPILERNAME="GCC 4.8.0"
+		    COMPILERNAME="GCC 4.8.1"
 		    ;;
 
 		# default GNU compiler suite
@@ -522,17 +522,17 @@ fb_customise() {
 		# PGI compiler suite 13.x
 		pc64-penryn-linux-pgi-*13*)
 		    modules=""
-		    modules="$modules pgi/13.4-0"
+		    modules="$modules pgi/13.7-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
-		    COMPILERNAME="PGI 13.4"
+		    COMPILERNAME="PGI 13.7"
 		    ;;
 
 		# default PGI compiler suite
 		pc64-penryn-linux-pgi-*)
 		    modules=""
-		    modules="$modules pgi/13.4-0"
+		    modules="$modules pgi/13.7-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
-		    COMPILERNAME="PGI 13.4"
+		    COMPILERNAME="PGI 13.7"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
@@ -643,13 +643,31 @@ fb_customise() {
 		    COMPILERNAME="Intel 12.1"
 		    ;;
 
-		# Intel compiler suite 13.0.2.146
+		# Intel compiler suite 13.0.1.117
 		pc64-penryn-linux-intel-*13.0)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl intel/cce/13.0.2.146 intel/fce/13.0.2.146"
+		    modules="$modules intel/mkl intel/cce/13.0.1.117 intel/fce/13.0.1.117"
 		    LIDOJOBNAMEPREFIX=ff2-intel130
 		    COMPILERNAME="Intel 13.0"
+		    ;;
+
+		# Intel compiler suite 13.1.3.192
+		pc64-penryn-linux-intel-*13.1)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/13.1.3.192 intel/fce/13.1.3.192"
+		    LIDOJOBNAMEPREFIX=ff2-intel131
+		    COMPILERNAME="Intel 13.1"
+		    ;;
+
+		# Intel compiler suite 14.0.0.051beta
+		pc64-penryn-linux-intel-*14.)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/14.0.0.051beta intel/fce/14.0.0.051beta"
+		    LIDOJOBNAMEPREFIX=ff2-intel140
+		    COMPILERNAME="Intel 14.0"
 		    ;;
 
 		# default Intel compiler suite and default build ID
