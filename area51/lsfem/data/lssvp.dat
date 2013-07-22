@@ -69,10 +69,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 9
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 9
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -134,7 +134,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 2
+LinTyp = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -147,11 +147,11 @@ LinTyp = 2
 FPIter = 4
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 18
+NLN_MAX = 28
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-8
+dNLEpsi = 1E-6
 
 # The damping parameter in nonlinear
 #  deferred correction loop
@@ -255,7 +255,7 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 6
+iinitialSolutionLevel = 8
 
 
 #-----------------------------------------------------
@@ -327,7 +327,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -594,7 +594,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 1
+Div = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)

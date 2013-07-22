@@ -27,7 +27,7 @@
 #   = 7  Static Bubble
 #   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 1
+Problem = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -37,7 +37,7 @@ Problem = 1
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1E-3
+dnu = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -73,7 +73,7 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/channelflow_2d_346elem_FerzigerPeric2002'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
 NLMAX = 2
@@ -203,7 +203,7 @@ cu = 1
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 1
+detOFlow = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -330,7 +330,7 @@ dJumpP = 0.1
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver?
@@ -515,7 +515,7 @@ dintARboundEX3YVel       = 20.0
 #       like QP1, P1, P0... :(
 #  =3  active (One pressure DOF = 0)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 0
+detZMV = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -563,7 +563,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 1
+LiftDragASO = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy
@@ -572,7 +572,7 @@ LiftDragASO = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 0
+KEnergy = 1
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -588,7 +588,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Ensto = 0
+Ensto = 1
 
 # How to calculate the Enstrophy
 #   =0  use the FEM definition and the Matrix-vector
