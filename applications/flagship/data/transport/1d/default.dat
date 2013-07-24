@@ -119,7 +119,14 @@ CoeffMatrix_CX(1) = 8
 # Note that '1' stands for the position of the discretisation which is still
 # required by the application problem. This may be removed in a later version
 Discretisation(1) = 1
-                    Discr_Transport
+                    SpatialDiscr_Transport
+
+# Block discretisation sections
+BlockDiscretisation(1) =
+                         BlockDiscr_Transport
+
+# Spatial discretisation sections
+SpatialDiscretisation =
 
 #-------------------------------------------------------------------------------
 
@@ -163,78 +170,83 @@ vectorblock(2) =
 #-------------------------------------------------------------------------------
 
 # Group finite element sections
-groupfemblock(4) =
-                   GFEMBlock_Transport_Template
-                   GFEMBlock_Transport_Convection
-                   GFEMBlock_Transport_Diffusion
-                   GFEMBlock_Transport_Mass
+groupfemblock =
+#                   GFEMBlock_Transport_Template
+#                   GFEMBlock_Transport_Convection
+#                   GFEMBlock_Transport_Diffusion
+#                   GFEMBlock_Transport_Mass
+
+groupfemset(1) =
+                 GFEMSet_Transport_Template
 
 #-------------------------------------------------------------------------------
 
 # Stabilisation of AFC-type
-afcstab(3) =
-             AFCstab_Transport_Convection
-             AFCstab_Transport_Diffusion
-             AFCstab_Transport_Mass
+#afcstab(3) =
+#             AFCstab_Transport_Convection
+#             AFCstab_Transport_Diffusion
+#             AFCstab_Transport_Mass
 
 ################################################################################
-[Discr_Transport]
+[BlockDiscr_Transport]
 ################################################################################
-saction        = create
-sperform       = always
-discretisation = spatialdiscretisation:SpatialDiscr_Transport
+saction              = create
+sperform             = always
+subdiscretisation(1) =
+                      spatialdiscretisation:SpatialDiscr_Transport
 
 ################################################################################
 [SpatialDiscr_Transport]
 ################################################################################
-
+saction  = create
+sperform = always
 celement = %{Transport.celement}
 
 ################################################################################
 [Cubinfo_Transport_FuncFunc]
 ################################################################################
-saction        = create
-sperform       = always
-scubType       = AUTO_G3
-nlevels        = 0
-discretisation = problem:Transport,idiscr:1,iblock:1
+saction             = create
+sperform            = always
+scubType            = AUTO_G3
+nlevels             = 0
+blockdiscretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
 [Cubinfo_Transport_FuncDeriv]
 ################################################################################
-saction        = create
-sperform       = always
-scubType       = AUTO_G3
-nlevels        = 0
-discretisation = problem:Transport,idiscr:1,iblock:1
+saction             = create
+sperform            = always
+scubType            = AUTO_G3
+nlevels             = 0
+blockdiscretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
 [Cubinfo_Transport_DerivDeriv]
 ################################################################################
-saction        = create
-sperform       = always
-scubType       = AUTO_G3
-nlevels        = 0
-discretisation = problem:Transport,idiscr:1,iblock:1
+saction             = create
+sperform            = always
+scubType            = AUTO_G3
+nlevels             = 0
+blockdiscretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
 [Cubinfo_Transport_Func]
 ################################################################################
-saction        = create
-sperform       = always
-scubType       = AUTO_G3
-nlevels        = 0
-discretisation = problem:Transport,idiscr:1,iblock:1
+saction             = create
+sperform            = always
+scubType            = AUTO_G3
+nlevels             = 0
+blockdiscretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
 [Matrix_Transport_Template]
 ################################################################################
-saction        = create
-sperform       = init
-smethod        = virtual
-sdatatype      = %{sdatatype}
-smatrixformat  = %{smatrixformat}
-discretisation = problem:Transport,idiscr:1,iblock:1
+saction             = create
+sperform            = init
+smethod             = virtual
+sdatatype           = %{sdatatype}
+smatrixformat       = %{smatrixformat}
+blockdiscretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
 [Matrix_Transport_System]
@@ -308,18 +320,18 @@ scoefficient   = -1e-2
 ################################################################################
 [Vector_Transport_DofCoords]
 ################################################################################
-saction        = create
-sperform       = always
-smethod        = dof
-discretisation = problem:Transport
+saction             = create
+sperform            = always
+smethod             = dof
+blockdiscretisation = problem:Transport,idiscr:1
 
 ################################################################################
 [Vector_Transport_VelocityField]
 ################################################################################
-saction        = none
-sperform       = always
-smethod        = virtual
-discretisation = problem:Transport
+saction             = none
+sperform            = always
+smethod             = virtual
+blockdiscretisation = problem:Transport,idiscr:1
 
 ################################################################################
 [GFEMBlock_Transport_Template]
@@ -333,9 +345,12 @@ groupfemset(1) =
 ################################################################################
 [GFEMSet_Transport_Template]
 ################################################################################
-saction        = none
+saction        = create
 sperform       = always
-smethod        = virtual
+smethod(2)     = nodelist
+                 edgelist
+                 diaglist
+matrixscalar   = problem:Transport,imatrix:3
 
 ################################################################################
 [GFEMBlock_Transport_Convection]
