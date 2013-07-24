@@ -2700,7 +2700,7 @@ contains
 
       ! local variables
       integer :: idx,IAset,IAmax
-      integer :: ij,j
+      integer :: ij
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
