@@ -193,11 +193,26 @@ contains
 
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
+    
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&
@@ -336,6 +351,22 @@ contains
         rsolver%dfinalDefect   = rsolver%dinitialDefect
         doldDefect             = rsolver%dinitialDefect
 
+        ! Check for not-a-number in initial defect
+        if (sys_isNAN(rsolver%dinitialRHS)) then
+          if (rsolver%coutputModeWarning .gt. 0) then
+            call output_line('!!! Not-a-number occured in right-hand side ',&
+                OU_CLASS_WARNING,rsolver%coutputModeWarning)
+          end if
+          
+          ! Clear solution vector and adjust solver status
+          call lsysbl_clearVector(ru)
+          rsolver%istatus          = SV_NAN_RHS
+          rsolver%dconvergenceRate = 0.0_DP
+          
+          ! That is it, return.
+          return
+        end if
+
         ! Check if initial residual is too large ...
         if (solver_testDivergence(rsolver)) then
           if (rsolver%coutputModeWarning .gt. 0) then
@@ -402,6 +433,22 @@ contains
             call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
           end if
 
+          ! Check if not-a-number occured
+          if (solver_testNAN(rsolver)) then
+            if (rsolver%coutputModeWarning .gt. 0) then
+              call output_line('!!! Not-a-number occured in residual',&
+                  OU_CLASS_WARNING,rsolver%coutputModeWarning)
+            end if
+            
+            ! Clear solution vector and adjust solver status
+            call lsysbl_clearVector(ru)
+            rsolver%istatus          = SV_NAN_DEF
+            rsolver%dconvergenceRate = 1.0_DP
+            
+            ! That is it, return.
+            return
+          end if
+          
           ! Check if residual increased too much
           if (solver_testDivergence(rsolver)) then
             if (rsolver%coutputModeWarning .gt. 0) then
@@ -853,11 +900,28 @@ contains
     real(DP) :: doldDefect
     integer :: iiterations
 
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
+    
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&
@@ -960,6 +1024,22 @@ contains
         call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
       end if
 
+      ! Check if not-a-number occured
+      if (solver_testNAN(rsolver)) then
+        if (rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Not-a-number occured in residual',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+
+        ! Clear solution vector and adjust solver status
+        call lsysbl_clearVector(ru)
+        rsolver%istatus          = SV_NAN_DEF
+        rsolver%dconvergenceRate = 1.0_DP
+
+        ! That is it, return.
+        return
+      end if
+
       ! Check if residual increased too much
       if (solver_testDivergence(rsolver)) then
         if (rsolver%coutputModeWarning .gt. 0) then
@@ -1049,11 +1129,28 @@ contains
     real(DP) :: doldDefect
     integer :: iiterations
 
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
 
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&
@@ -1088,6 +1185,7 @@ contains
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
     rsolver%dfinalDefect   = rsolver%dinitialDefect
     doldDefect             = rsolver%dinitialDefect
+
 
     ! Check if initial residual is too large ...
     if (solver_testDivergence(rsolver)) then
@@ -1154,6 +1252,22 @@ contains
                          OU_CLASS_MSG,rsolver%coutputModeVerbose)
         call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
         call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+      end if
+
+      ! Check if not-a-number occured
+      if (solver_testNAN(rsolver)) then
+        if (rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Not-a-number occured in residual',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+
+        ! Clear solution vector and adjust solver status
+        call lsysbl_clearVector(ru)
+        rsolver%istatus          = SV_NAN_DEF
+        rsolver%dconvergenceRate = 1.0_DP
+
+        ! That is it, return.
+        return
       end if
 
       ! Check if residual increased too much
@@ -1254,11 +1368,28 @@ contains
     integer :: neq,iiterations,iiterations0
     logical :: bprec
 
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
 
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&
@@ -1447,6 +1578,22 @@ contains
         call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
       end if
 
+      ! Check if not-a-number occured
+      if (solver_testNAN(rsolver)) then
+        if (rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Not-a-number occured in residual',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+
+        ! Clear solution vector and adjust solver status
+        call lsysbl_clearVector(ru)
+        rsolver%istatus          = SV_NAN_DEF
+        rsolver%dconvergenceRate = 1.0_DP
+
+        ! That is it, return.
+        return
+      end if
+
       ! Check if residual increased too much
       if (solver_testDivergence(rsolver)) then
         if (rsolver%coutputModeWarning .gt. 0) then
@@ -1542,11 +1689,28 @@ contains
     integer :: neq,i,k,l,iiterations
     logical :: bprec
 
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
 
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&
@@ -1739,6 +1903,22 @@ contains
         call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
       end if
 
+      ! Check if not-a-number occured
+      if (solver_testNAN(rsolver)) then
+        if (rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Not-a-number occured in residual',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+
+        ! Clear solution vector and adjust solver status
+        call lsysbl_clearVector(ru)
+        rsolver%istatus          = SV_NAN_DEF
+        rsolver%dconvergenceRate = 1.0_DP
+
+        ! That is it, return.
+        return
+      end if
+
       ! Check if residual increased too much
       if (solver_testDivergence(rsolver)) then
         if (rsolver%coutputModeWarning .gt. 0) then
@@ -1832,11 +2012,28 @@ contains
     real(DP) :: dtolerance
     integer :: iterations
     
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+
+    ! Check for not-a-number in right-hand side
+    if (sys_isNAN(rsolver%dinitialRHS)) then
+      if (rsolver%coutputModeWarning .gt. 0) then
+        call output_line('!!! Not-a-number occured in right-hand side ',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
+      end if
+      
+      ! Clear solution vector and adjust solver status
+      call lsysbl_clearVector(ru)
+      rsolver%istatus          = SV_NAN_RHS
+      rsolver%dconvergenceRate = 0.0_DP
+      
+      ! That is it, return.
+      return
+    end if
 
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
-      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Zero initial right-hand side '//trim(&

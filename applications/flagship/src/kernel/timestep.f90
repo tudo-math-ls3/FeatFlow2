@@ -2142,7 +2142,7 @@ contains
     ! first solution vector
     type(t_vectorBlock), intent(in) :: rsolution1
 
-    ! second soluion vector
+    ! second solution vector
     type(t_vectorBlock), intent(in) :: rsolution2
 !</input>
 
@@ -2169,7 +2169,9 @@ contains
     ! time step and recompute the solution adopting a smaller time step
     !---------------------------------------------------------------------------
     breject = (rsolver%istatus .eq. SV_INF_DEF  .or.&
-               rsolver%istatus .eq. SV_INCR_DEF)
+               rsolver%istatus .eq. SV_INCR_DEF .or.&
+               rsolver%istatus .eq. SV_NAN_RHS  .or.&
+               rsolver%istatus .eq. SV_NAN_DEF)
 
     if (breject) then
 
@@ -2387,7 +2389,6 @@ contains
       dChange = lalg_errorNorm(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
       rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
                                          lalg_norm(p_Ddata1, rtimestep%isolNorm))
-
     end select
 
   end function tstep_checkTimestep

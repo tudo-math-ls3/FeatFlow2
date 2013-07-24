@@ -700,6 +700,20 @@ contains
             call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
           end if
 
+          ! Check if not-a-number occured
+          if (solver_testNAN(rsolver)) then
+            if (rsolver%coutputModeWarning .gt. 0) then
+              call output_line('!!! Not-a-number occured in residual',&
+                  OU_CLASS_WARNING,rsolver%coutputModeWarning)
+            end if
+            
+            ! Adjust solver status
+            rsolver%istatus = SV_NAN_DEF
+            
+            ! That is it, return.
+            return
+          end if
+
           ! Check if residual increased too much
           if (solver_testDivergence(rsolver)) then
             if (rsolver%coutputModeWarning .gt. 0) then
@@ -1039,7 +1053,6 @@ contains
         return
       end if
 
-
     case(NLSOL_PRECOND_NEWTON)
 
       ! Set pointers
@@ -1112,9 +1125,7 @@ contains
 
       ! Adjust solver status
       p_rsolver%istatus = SV_ZERO_DEF
-
-      ! Also adjust solver status of top-most solver
-      rsolver%istatus = SV_ZERO_DEF
+      rsolver%istatus   = SV_ZERO_DEF
 
       ! That is it, return.
       return
@@ -1404,6 +1415,21 @@ contains
       ! Convergence analysis
       !--------------------------------------------------------------
 
+      ! Check if not-a-number occured
+      if (solver_testNAN(p_rsolver)) then
+        if (p_rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Not-a-number occured in residual',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+        
+        ! Adjust solver status
+        p_rsolver%istatus = SV_NAN_DEF
+        rsolver%istatus   = SV_NAN_DEF
+        
+        ! That is it, return.
+        return
+      end if
+
       ! Check if residual increased too much
       if (solver_testDivergence(p_rsolver)) then
         if (p_rsolver%coutputModeWarning .gt. 0) then
@@ -1457,7 +1483,7 @@ contains
       call output_separator(OU_SEP_HASH,OU_CLASS_MSG,rsolver%coutputModeInfo)
       call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
     end if
-
+    
   end subroutine nlsol_solveFixedpointBlock
 
   !*****************************************************************************

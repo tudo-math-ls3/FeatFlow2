@@ -109,6 +109,9 @@
 !# 29.) solver_testStagnation
 !#      -> Checks all stagnation criteria for a particular solver
 !#
+!# 30.) solver_testNAN
+!#      -> Checks whether not-a-number occured in the solution procedure
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) solver_initUMFPACK
@@ -199,6 +202,7 @@ module solveraux
   public :: solver_testConvergence
   public :: solver_testDivergence
   public :: solver_testStagnation
+  public :: solver_testNAN
 
   public :: solver_initUMFPACK
   public :: solver_initILU
@@ -305,6 +309,12 @@ module solveraux
 
   ! Solver stagnets
   integer, parameter, public :: SV_STAGNATED    = 6
+
+  ! Solver failed with not-a-number in right-hand side
+  integer, parameter, public :: SV_NAN_RHS      = 7
+
+  ! Solver failed with not-a-number in defect
+  integer, parameter, public :: SV_NAN_DEF      = 8
 !</constantblock>
 
   ! ****************************************************************************
@@ -6368,7 +6378,7 @@ contains
   function solver_testConvergence(rsolver) result(bconverged)
 
 !<description>
-    ! This function check all convergence criteria for the solver
+    ! This function checks all convergence criteria for the solver
 !</description>
 
 !<input>
@@ -6445,10 +6455,10 @@ contains
 
 !<function>
 
-  function solver_testDivergence(rsolver) result(bdiverged)
+  pure function solver_testDivergence(rsolver) result(bdiverged)
 
 !<description>
-    ! This function check all divergence criteria for the solver
+    ! This function checks all divergence criteria for the solver
 !</description>
 
 !<input>
@@ -6494,10 +6504,10 @@ contains
 
 !<function>
 
-  function solver_testStagnation(rsolver, doldDefect) result(bstagnated)
+  pure function solver_testStagnation(rsolver, doldDefect) result(bstagnated)
 
 !<description>
-    ! This function check all stagnation criteria for the solver
+    ! This function checks all stagnation criteria for the solver
 !</description>
 
 !<input>
@@ -6527,6 +6537,33 @@ contains
     end if
 
   end function solver_testStagnation
+
+  ! ***************************************************************************
+
+!<function>
+
+  pure function solver_testNAN(rsolver) result(bisnan)
+
+!<description>
+    ! This function checks whether not-a-number occured
+!</description>
+
+!<input>
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+!</input>
+
+!<result>
+    ! Boolean value.
+    ! =TRUE if non-a-number occured;
+    ! =FALSE otherwise.
+    logical :: bisnan
+!</result>
+!</function>
+
+    bisnan = sys_isNAN(rsolver%dfinalDefect)
+
+  end function solver_testNAN
 
   ! ***************************************************************************
   ! Auxiliary routines
