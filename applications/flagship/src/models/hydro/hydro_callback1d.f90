@@ -767,12 +767,12 @@ contains
         dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -781,11 +781,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -964,12 +964,12 @@ contains
       ! which does not include the symmetric boundary contribution
       d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))**2)*cj,&
+                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*cj,&
                   abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))**2)*ci )
+                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ci )
 #else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj)+&
@@ -1898,12 +1898,12 @@ contains
         dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1912,11 +1912,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2178,12 +2178,12 @@ contains
         dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
         
         dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2192,11 +2192,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -3110,12 +3110,12 @@ contains
       ! which does not include the symmetric boundary contribution
       d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))**2)*cj,&
+                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*cj,&
                   abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
-                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))**2)*ci )
+                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ci )
 #else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj)+&
@@ -5308,7 +5308,7 @@ contains
 
             ! Compute convervative variables
             DstateM(3) = DstateM(3)*(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))&
-                       + DstateM(1)*RCONST(0.5)*(DstateM(2)**2)
+                       + DstateM(1)*RCONST(0.5)*(DstateM(2)**DstateM(2))
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -5695,7 +5695,7 @@ contains
 
             ! Compute convervative variables
             DstateM(3) = DstateM(3)*(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))&
-                       + DstateM(1)*RCONST(0.5)*(DstateM(2)**2)
+                       + DstateM(1)*RCONST(0.5)*(DstateM(2)*DstateM(2))
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -5955,7 +5955,7 @@ contains
       H_IM = ROE_MEAN_VALUE(hI,hM,aux)
       
       ! Compute auxiliary variable
-      q_IM  = RCONST(0.5)*u_IM**2
+      q_IM  = RCONST(0.5)*u_IM*u_IM
 
       ! Compute the speed of sound
       cPow2 = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP)
