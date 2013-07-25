@@ -309,7 +309,7 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
 LC_ALL=C perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
-${cppcmd} ${cppflags} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
+${cppcmd} ${cppflags} -I${objdir} ${addcppflags} -DUSE_PREPROC_F90CPP ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one
 # *must not* directly pipe its output to our postprocessing chain!
