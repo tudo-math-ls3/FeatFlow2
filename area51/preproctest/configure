@@ -25,12 +25,12 @@ export LC_ALL
 #  ./configure && make CPP="fpp"
 #
 # If you want to compile the source code natively, that is, without
-# the configure-based build system then envoke the Fortran compiler
+# the configure-based build system then invoke the Fortran compiler
 # with a special flag that tells it to preprocess the file. The
 # following compilers have been tested so far:
 #
 # Intel Fortran compiler:
-#   ifort -fpp -e src/preproctest.f90 -o preproctest
+#   ifort -fpp src/preproctest.f90 -o preproctest
 #
 # SUN Studio Fortran compiler:
 #   sunf90 -fpp -e src/preproctest.f90 -o preproctest
