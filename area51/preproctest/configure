@@ -30,21 +30,18 @@ export LC_ALL
 # following compilers have been tested so far:
 #
 # Intel Fortran compiler:
-#   ifort -fpp src/preproctest.f90 -o preproctest
+#   ifort -fpp -e src/preproctest.f90 -o preproctest
 #
 # SUN Studio Fortran compiler:
-#   sunf90 -fpp src/preproctest.f90 -o preproctest
+#   sunf90 -fpp -e src/preproctest.f90 -o preproctest
 #
 # PathScale Fortran compiler:
 #   pathf90 -cpp src/preproctest.f90 -o preproctest
 #
-# GNU Gfortran compiler (Note that the preprocessor does NOT include
-# line breaks automatically and gfortran does not support lines which
-# exceed the maximum length of 132 characters. Thus, the code does
-# not compile natively with gfortran and g95 at the time being!)
-#   gfortran -x f95-cpp-input src/preproctest.f90 -o preproctest
+# GNU Gfortran compiler:
+#   gfortran -ffree-line-length-none src/preproctest.f90 -o preproctest
 
-APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
+APPONLYFLAGS=""
 
 ../../bin/configure \
         --appname=preproctest \
