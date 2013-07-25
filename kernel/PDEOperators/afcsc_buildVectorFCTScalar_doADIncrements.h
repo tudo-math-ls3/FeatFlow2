@@ -57,14 +57,14 @@
           f_ij = Dalpha(iedge) * Dflux(iedge)
 
           ! Separate fluxes into positive/negative contributions
-          fp_ij = max(FEAT2_PP_CONST(0.0,__AFCType__),f_ij)
-          fm_ij = min(FEAT2_PP_CONST(0.0,__AFCType__),f_ij)
+          fp_ij = max(FEAT2_PP_CONST(0.0,TemplateType_AFC),f_ij)
+          fm_ij = min(FEAT2_PP_CONST(0.0,TemplateType_AFC),f_ij)
 
           ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i) + fp_ij   ! += max(FEAT2_PP_CONST(0.0,__AFCType__), f_ij)
-          Dpp(j) = Dpp(j) - fm_ij   ! += max(FEAT2_PP_CONST(0.0,__AFCType__),-f_ij)
-          Dpm(i) = Dpm(i) + fm_ij   ! += min(FEAT2_PP_CONST(0.0,__AFCType__), f_ij)
-          Dpm(j) = Dpm(j) - fp_ij   ! += min(FEAT2_PP_CONST(0.0,__AFCType__),-f_ij)
+          Dpp(i) = Dpp(i) + fp_ij   ! += max(FEAT2_PP_CONST(0.0,TemplateType_AFC), f_ij)
+          Dpp(j) = Dpp(j) - fm_ij   ! += max(FEAT2_PP_CONST(0.0,TemplateType_AFC),-f_ij)
+          Dpm(i) = Dpm(i) + fm_ij   ! += min(FEAT2_PP_CONST(0.0,TemplateType_AFC), f_ij)
+          Dpm(j) = Dpm(j) - fp_ij   ! += min(FEAT2_PP_CONST(0.0,TemplateType_AFC),-f_ij)
         end do
         !$omp end do
 

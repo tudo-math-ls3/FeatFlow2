@@ -2690,19 +2690,19 @@ namespace hydro3d_cuda
 
       // Compute skew-symmetric coefficient
       Td a[3];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+      a[2] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       
       // Compute auxiliary variables
-      Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
+      Td q_ij   = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
       Td vel_ij = u_ij * a[0] + v_ij * a[1] + w_ij * a[2];
           
       // Compute the speed of sound
-      Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
+      Td c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
     
       // Compute scalar dissipation
       Td d_ij = abs(vel_ij) + sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2])*c_ij;
@@ -2805,18 +2805,18 @@ namespace hydro3d_cuda
       Td H_ij = ROE_MEAN_VALUE(hi,hj,aux);
 
       // Compute auxiliary variables
-      Td q_ij = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
+      Td q_ij = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
     
       // Compute the speed of sound
-      Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
+      Td c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
 
       // Compute skew-symmetric coefficient
       Td a[3];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+      a[2] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
         
       // Compute scalar dissipation
@@ -2895,11 +2895,11 @@ namespace hydro3d_cuda
     {
       // Compute skew-symmetric coefficient
       Td a[3];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+      a[2] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
     
@@ -2939,10 +2939,10 @@ namespace hydro3d_cuda
       
 		// Compute auxiliary variables
 		Td vel_ij = u_ij * a[0] + v_ij * a[1] + w_ij * a[2];
-		Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
+		Td q_ij   = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
 	
 		// Compute the speed of sound
-		Td c2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON);
+		Td c2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON);
 		Td c_ij  = sqrt(c2_ij);
 	
 		// Compute eigenvalues
@@ -2967,35 +2967,35 @@ namespace hydro3d_cuda
 			  -IDX3(DataAtEdge,i,1,iposSrc,NVAR3D,2,nedgesimSrc);
 		}
 		// Compute auxiliary quantities for characteristic variables
-		Td aux1 = ((HYDRO_GAMMA)-RCONST(1.0))*(q_ij*Diff[0]
+		Td aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_ij*Diff[0]
 											   -u_ij*Diff[1]
 											   -v_ij*Diff[2]
 											   -w_ij*Diff[3]
-											   +Diff[4])/RCONST(2.0)/c2_ij;
+											   +Diff[4])/DCONST(2.0)/c2_ij;
 		Td aux2 = (vel_ij*Diff[0]
 				   -a[0]*Diff[1]
 				   -a[1]*Diff[2]
-				   -a[2]*Diff[3])/RCONST(2.0)/c_ij;
+				   -a[2]*Diff[3])/DCONST(2.0)/c_ij;
       
 		// Get the dimension with largest coefficient
 		if (a[0] >= a[1] && a[0] >= a[2]) {
 	
 		  // Compute characteristic variables multiplied by the corresponding eigenvalue
 		  Td w1 = l1 * (aux1 + aux2);
-		  Td w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-						+((HYDRO_GAMMA)-RCONST(1.0))*( u_ij*Diff[1]
+		  Td w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+						+((HYDRO_GAMMA)-DCONST(1.0))*( u_ij*Diff[1]
 													   +v_ij*Diff[2]
 													   +w_ij*Diff[3]
 													   -Diff[4])/c2_ij);
 		  Td w3 = l3 * (aux1 - aux2);
 		  Td w4 = l4 * ( (v_ij-vel_ij*a[1])/a[0]*Diff[0]
 						 +a[1]*Diff[1]
-						 +(a[1]*a[1]-RCONST(1.0))/a[0]*Diff[2]
+						 +(a[1]*a[1]-DCONST(1.0))/a[0]*Diff[2]
 						 +a[1]*a[2]/a[0]*Diff[3]);
 		  Td w5 = l5 * ( (vel_ij*a[2]-w_ij)/a[0]*Diff[0]
 						 -a[2]*Diff[1]
 						 -a[1]*a[2]/a[0]*Diff[2]
-						 +(RCONST(1.0)-a[2]*a[2])/a[0]*Diff[3]);
+						 +(DCONST(1.0)-a[2]*a[2])/a[0]*Diff[3]);
 	
 		  // Compute "R_ij * |Lbd_ij| * L_ij * dU"
 		  if (btransposeDest) {
@@ -3024,20 +3024,20 @@ namespace hydro3d_cuda
 		} else if (a[1] >= a[0] && a[1] >= a[2]) {
 		  // Compute characteristic variables multiplied by the corresponding eigenvalue
 		  Td w1 = l1 * (aux1 + aux2);
-		  Td w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-						+((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff[1]
+		  Td w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+						+((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff[1]
 													  +v_ij*Diff[2]
 													  +w_ij*Diff[3]
 													  -Diff[4])/c2_ij);
 		  Td w3 = l3 * (aux1 - aux2);
 		  Td w4 = l4 * ( (vel_ij*a[0]-u_ij)/a[1]*Diff[0]
-						 +(RCONST(1.0)-a[0]*a[0])/a[1]*Diff[1]
+						 +(DCONST(1.0)-a[0]*a[0])/a[1]*Diff[1]
 						 -a[0]*Diff[2]
 						 -a[0]*a[2]/a[1]*Diff[3]);
 		  Td w5 = l5 * ( (w_ij-vel_ij*a[2])/a[1]*Diff[0]
 						 +a[0]*a[2]/a[1]*Diff[1]
 						 +a[2]*Diff[2]
-						 +(a[2]*a[2]-RCONST(1.0))/a[1]*Diff[3]);
+						 +(a[2]*a[2]-DCONST(1.0))/a[1]*Diff[3]);
 	  
 		  // Compute "R_ij * |Lbd_ij| * L_ij * dU"
 		  if (btransposeDest) {
@@ -3066,19 +3066,19 @@ namespace hydro3d_cuda
 		} else {
 		  // Compute characteristic variables multiplied by the corresponding eigenvalue
 		  Td w1 = l1 * (aux1 + aux2);
-		  Td w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-						+((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff[1]
+		  Td w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+						+((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff[1]
 													  +v_ij*Diff[2]
 													  +w_ij*Diff[3]
 													  -Diff[4])/c2_ij);
 		  Td w3 = l3 * (aux1 - aux2);
 		  Td w4 = l4 * ( (u_ij-vel_ij*a[0])/a[2]*Diff[0]
-						 +(a[0]*a[0]-RCONST(1.0))/a[2]*Diff[1]
+						 +(a[0]*a[0]-DCONST(1.0))/a[2]*Diff[1]
 						 +a[0]*a[1]/a[2]*Diff[2]
 						 +a[0]*Diff[3]);
 		  Td w5 = l5 * ( (vel_ij*a[1]-v_ij)/a[2]*Diff[0]
 						 -a[0]*a[1]/a[2]*Diff[1]
-						 +(RCONST(1.0)-a[1]*a[1])/a[2]*Diff[2]
+						 +(DCONST(1.0)-a[1]*a[1])/a[2]*Diff[2]
 						 -a[1]*Diff[3]);
 	  
 		  // Compute "R_ij * |Lbd_ij| * L_ij * dU"
@@ -3151,11 +3151,11 @@ namespace hydro3d_cuda
     {
       // Compute skew-symmetric coefficient
       Td a[3];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge));
-      a[2] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+      a[2] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
       
@@ -3194,10 +3194,10 @@ namespace hydro3d_cuda
 		Td H_ij = ROE_MEAN_VALUE(hi,hj,aux);
       
 		// Compute auxiliary variable
-		Td q_ij = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
+		Td q_ij = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij + w_ij * w_ij);
       
 		// Compute the speed of sound
-		Td c2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON);
+		Td c2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON);
 		Td c_ij  = sqrt(c2_ij);
       
 		//----------------------------------------------------------------------
@@ -3227,17 +3227,17 @@ namespace hydro3d_cuda
 		}
 
 		// Compute auxiliary quantities for characteristic variables
-		Td aux1 = ((HYDRO_GAMMA)-RCONST(1.0))*(q_ij*Diff[0]
+		Td aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_ij*Diff[0]
 											   -u_ij*Diff[1]
 											   -v_ij*Diff[2]
 											   -w_ij*Diff[3]
-											   +Diff[4])/RCONST(2.0)/c2_ij;
-		Td aux2 = (u_ij*Diff[0]-Diff[1])/RCONST(2.0)/c_ij;
+											   +Diff[4])/DCONST(2.0)/c2_ij;
+		Td aux2 = (u_ij*Diff[0]-Diff[1])/DCONST(2.0)/c_ij;
       
 		// Compute characteristic variables multiplied by the corresponding eigenvalue
 		Td w1 = l1 * (aux1 + aux2);
-		Td w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-					  +((HYDRO_GAMMA)-RCONST(1.0))*( u_ij*Diff[1]
+		Td w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+					  +((HYDRO_GAMMA)-DCONST(1.0))*( u_ij*Diff[1]
 													 +v_ij*Diff[2]
 													 +w_ij*Diff[3]
 													 -Diff[4])/c2_ij);
@@ -3289,17 +3289,17 @@ namespace hydro3d_cuda
 		}
 	      
 		// Compute auxiliary quantities for characteristic variables
-		aux1 = ((HYDRO_GAMMA)-RCONST(1.0))*(q_ij*Diff[0]
+		aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_ij*Diff[0]
 											-u_ij*Diff[1]
 											-v_ij*Diff[2]
 											-w_ij*Diff[3]
-											+Diff[4])/RCONST(2.0)/c2_ij;
-		aux2 = (v_ij*Diff[0]-Diff[2])/RCONST(2.0)/c_ij;
+											+Diff[4])/DCONST(2.0)/c2_ij;
+		aux2 = (v_ij*Diff[0]-Diff[2])/DCONST(2.0)/c_ij;
       
 		// Compute characteristic variables multiplied by the corresponding eigenvalue
 		w1 = l1 * (aux1 + aux2);
-		w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-				   +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff[1]
+		w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+				   +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff[1]
 												 +v_ij*Diff[2]
 												 +w_ij*Diff[3]
 												 -Diff[4])/c2_ij);
@@ -3351,17 +3351,17 @@ namespace hydro3d_cuda
 		}
 
 		// Compute auxiliary quantities for characteristic variables
-		aux1 = ((HYDRO_GAMMA)-RCONST(1.0))*(q_ij*Diff[0]
+		aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_ij*Diff[0]
 											-u_ij*Diff[1]
 											-v_ij*Diff[2]
 											-w_ij*Diff[3]
-											+Diff[4])/RCONST(2.0)/c2_ij;
-		aux2 = (w_ij*Diff[0]-Diff[2])/RCONST(2.0)/c_ij;
+											+Diff[4])/DCONST(2.0)/c2_ij;
+		aux2 = (w_ij*Diff[0]-Diff[2])/DCONST(2.0)/c_ij;
       
 		// Compute characteristic variables multiplied by the corresponding eigenvalue
 		w1 = l1 * (aux1 + aux2);
-		w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff[0]
-				   +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff[1]
+		w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff[0]
+				   +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff[1]
 												 +v_ij*Diff[2]
 												 +w_ij*Diff[3]
 												 -Diff[4])/c2_ij);
@@ -3443,33 +3443,33 @@ namespace hydro3d_cuda
       }
     
       // Compute the speed of sound
-      Td ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*
-					   (HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), DBL_EPSILON));
-      Td cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*
-					   (HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), DBL_EPSILON));
+      Td ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*
+					   (HYDRO_GAMMA)*(Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), DBL_EPSILON));
+      Td cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*
+					   (HYDRO_GAMMA)*(Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), DBL_EPSILON));
     
 #ifdef HYDRO_USE_IBP
       // Compute scalar dissipation based on the skew-symmetric part
       // which does not include the symmetric boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      Td d_ij = max( abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge))*uj+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+						 DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge))*vj-
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+						 DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge))*wj)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+					 DCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge),2)+
 									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge),2)+
 									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 										  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge),2))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+					 abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge))*ui+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+						 DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge))*vi+
-						 RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+						 DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge))*wi)+
-					 RCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+					 DCONST(0.5)*sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
 										  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge),2)+
 									  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
 										  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge),2)+
@@ -3573,38 +3573,38 @@ namespace hydro3d_cuda
       }
     
       // Compute the speed of sound
-      Td ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*
-					   (HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), DBL_EPSILON));
-      Td cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*
-					   (HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), DBL_EPSILON));
+      Td ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*
+					   (HYDRO_GAMMA)*(Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), DBL_EPSILON));
+      Td cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*
+					   (HYDRO_GAMMA)*(Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), DBL_EPSILON));
     
 #ifdef HYDRO_USE_IBP
       // Compute scalar dissipation with dimensional splitting based on
       // the skew-symmetric part which does not include the symmetric
       // boundary contribution
-      Td d_ij = max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+      Td d_ij = max( abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge))*uj)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
+					 abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)))*cj,
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+					 abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge))*ui)+
-					 abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
+					 abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)-
 									  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)))*ci )
-		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+		+ max( abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge))*vj)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)))*cj,
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge))*vi)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)))*ci )
-		+ max( abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+		+ max( abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge))*wj)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)))*cj,
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge))*wi)+
-			   abs(RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
+			   abs(DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)-
 								IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)))*ci );
 #else
       // Compute scalar dissipation with dimensional splitting

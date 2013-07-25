@@ -3,13 +3,13 @@ List of preprocessor flags:
 
 1) Flags to indicate special compilation features
 
-DEBUG, _DEBUG : Defined of compiled in debug mode
+DEBUG, _DEBUG : Defined if compiled in debug mode
 
 
 3) Flags to enable special features which are disabled by default
 
 ENABLE_COPROCESSOR_SUPPORT : enable support for coprocessor devices (e.g. CUDA)
-ENABLE_ERROR_TRACEBACK     : enable traceback up errors
+ENABLE_ERROR_TRACEBACK     : enable traceback of errors
 ENABLE_QUADPREC            : enable quad precision routines
 FEAT2_NURBS                : enable support for NURBS (requires additional library)
 

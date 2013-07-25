@@ -464,7 +464,7 @@ contains
       
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) = dscale *&
-          RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+          DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*Fx_ij
       IDX3(DfluxesAtEdge,:,2,idx,_,_,_) = IDX3(DfluxesAtEdge,:,1,idx,_,_,_)
     end do
@@ -573,7 +573,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
 
       ! Compute densities
@@ -590,10 +590,10 @@ contains
       H_ij = ROE_MEAN_VALUE(hi,hj,aux)
       
       ! Compute auxiliary variable
-      q_ij = RCONST(0.5)*(u_ij*u_ij)
+      q_ij = DCONST(0.5)*(u_ij*u_ij)
 
       ! Compute the speed of sound
-      c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+      c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation
       d_ij = abs(a(1)*u_ij) + abs(a(1))*c_ij
@@ -725,7 +725,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
@@ -745,10 +745,10 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
                 
         ! Compute auxiliary variable
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
 
         ! Compute the speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
         
         ! Compute eigenvalues
@@ -764,15 +764,15 @@ contains
         ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
         cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
-        dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        dtol = max(DCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+        dtol = max(DCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -780,13 +780,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -798,18 +798,18 @@ contains
                IDX3(DdataAtEdge,:,1,idx,_,_,_)
         
         ! Compute auxiliary quantities for characteristic variables
-        b2 = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij; b1 = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij; b1 = b2*q_ij
         
         ! Compute characteristic variables multiplied by the
         ! corresponding eigenvalue
-        w1 = l1 * RCONST(0.5) * (       (b1+u_ij/c_ij)*Diff(1) -&
-                            (b2*u_ij+RCONST(1.0)/c_ij)*Diff(2) +&
+        w1 = l1 * DCONST(0.5) * (       (b1+u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij+DCONST(1.0)/c_ij)*Diff(2) +&
                                                     b2*Diff(3) )
-        w2 = l2 * (                   (RCONST(1.0)-b1)*Diff(1) +&
+        w2 = l2 * (                   (DCONST(1.0)-b1)*Diff(1) +&
                                                b2*u_ij*Diff(2) -&
                                                     b2*Diff(3) )
-        w3 = l3 * RCONST(0.5) * (       (b1-u_ij/c_ij)*Diff(1) -&
-                            (b2*u_ij-RCONST(1.0)/c_ij)*Diff(2) +&
+        w3 = l3 * DCONST(0.5) * (       (b1-u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij-DCONST(1.0)/c_ij)*Diff(2) +&
                                                     b2*Diff(3) )
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
@@ -954,21 +954,21 @@ contains
       Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ei-RCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ei-DCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ej-DCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
 
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+                   DCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                   DCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ci )
 #else
       ! Compute scalar dissipation
@@ -1504,7 +1504,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ji}-C_{ij})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
       anorm = abs(a(1))
       
@@ -1529,10 +1529,10 @@ contains
         
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij)
         
         ! Compute the speed of sound
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute scalar dissipation
         IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = dscale * (abs(vel_ij) + anorm*c_ij)
@@ -1540,7 +1540,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         
       end if
     end do
@@ -1703,7 +1703,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
       
@@ -1728,15 +1728,15 @@ contains
         
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij)
         
         ! Compute the speed of sound
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
         
         ! Compute scalar dissipation
         aux = dscale * (abs(vel_ij) + anorm*c_ij)
 
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         IDX3(DmatrixAtEdge,1,1,idx,_,_,_) = aux
         IDX3(DmatrixAtEdge,5,1,idx,_,_,_) = aux
         IDX3(DmatrixAtEdge,9,1,idx,_,_,_) = aux
@@ -1744,7 +1744,7 @@ contains
       else
 
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
 
       end if
     end do
@@ -1849,7 +1849,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
       anorm = abs(a(1))
       
@@ -1873,13 +1873,13 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
                 
         ! Compute auxiliary variable
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
 
         ! Compute speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
         
-        b2 = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
+        b2 = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
         b1 = b2*q_ij
 
         ! Diagonal matrix of eigenvalues
@@ -1895,15 +1895,15 @@ contains
         ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
         cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
-        dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        dtol = max(DCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+        dtol = max(DCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1911,13 +1911,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -1938,23 +1938,23 @@ contains
         R_ij(3,3) =  l3*(H_ij+c_ij*u_ij)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = RCONST(0.5)*(b1+u_ij/c_ij)
-        L_ij(2,1) = RCONST(1.0)-b1
-        L_ij(3,1) = RCONST(0.5)*(b1-u_ij/c_ij)
+        L_ij(1,1) = DCONST(0.5)*(b1+u_ij/c_ij)
+        L_ij(2,1) = DCONST(1.0)-b1
+        L_ij(3,1) = DCONST(0.5)*(b1-u_ij/c_ij)
         
-        L_ij(1,2) = -RCONST(0.5)*(b2*u_ij+1/c_ij)
+        L_ij(1,2) = -DCONST(0.5)*(b2*u_ij+1/c_ij)
         L_ij(2,2) =  b2*u_ij
-        L_ij(3,2) = -RCONST(0.5)*(b2*u_ij-1/c_ij)
+        L_ij(3,2) = -DCONST(0.5)*(b2*u_ij-1/c_ij)
         
-        L_ij(1,3) = RCONST(0.5)*b2
+        L_ij(1,3) = DCONST(0.5)*b2
         L_ij(2,3) = -b2
-        L_ij(3,3) = RCONST(0.5)*b2
+        L_ij(3,3) = DCONST(0.5)*b2
 
         ! Include scaling parameter
         anorm = dscale*anorm
 
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         IDX3(DmatrixAtEdge,1,1,idx,_,_,_) = anorm*( R_ij(1,1)*L_ij(1,1)+&
                                                           R_ij(1,2)*L_ij(2,1)+&
                                                           R_ij(1,3)*L_ij(3,1)  )
@@ -1967,7 +1967,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
 
       end if
     end do
@@ -2132,7 +2132,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(DcoeffsAtEdge(1,1,idx)-DcoeffsAtEdge(1,2,idx))
+      a = DCONST(0.5)*(DcoeffsAtEdge(1,1,idx)-DcoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -2155,11 +2155,11 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
                 
         ! Compute auxiliary values
-        q_ij = RCONST(0.5)*u_ij*u_ij
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        q_ij = DCONST(0.5)*u_ij*u_ij
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
 
-        b2 = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
+        b2 = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
         b1 = b2*q_ij
         
         ! Diagonal matrix of eigenvalues
@@ -2175,15 +2175,15 @@ contains
         ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,_,_,_)
         cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
-        dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        dtol = max(DCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+        dtol = max(DCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2191,13 +2191,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -2218,17 +2218,17 @@ contains
         R_ij(3,3) =  l3*(H_ij+c_ij*u_ij)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = RCONST(0.5)*(b1+u_ij/c_ij)
-        L_ij(2,1) = RCONST(1.0)-b1
-        L_ij(3,1) = RCONST(0.5)*(b1-u_ij/c_ij)
+        L_ij(1,1) = DCONST(0.5)*(b1+u_ij/c_ij)
+        L_ij(2,1) = DCONST(1.0)-b1
+        L_ij(3,1) = DCONST(0.5)*(b1-u_ij/c_ij)
         
-        L_ij(1,2) = -RCONST(0.5)*(b2*u_ij+1/c_ij)
+        L_ij(1,2) = -DCONST(0.5)*(b2*u_ij+1/c_ij)
         L_ij(2,2) =  b2*u_ij
-        L_ij(3,2) = -RCONST(0.5)*(b2*u_ij-1/c_ij)
+        L_ij(3,2) = -DCONST(0.5)*(b2*u_ij-1/c_ij)
         
-        L_ij(1,3) = RCONST(0.5)*b2
+        L_ij(1,3) = DCONST(0.5)*b2
         L_ij(2,3) = -b2
-        L_ij(3,3) = RCONST(0.5)*b2
+        L_ij(3,3) = DCONST(0.5)*b2
         
         ! Include scaling parameter
         anorm = dscale*anorm
@@ -2236,7 +2236,7 @@ contains
         ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
         do i = 1, NVAR1D
           do j = 1, NVAR1D
-            aux = RCONST(0.0)
+            aux = DCONST(0.0)
             do k = 1, NVAR1D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
@@ -2247,7 +2247,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         
       end if
     end do
@@ -2350,10 +2350,10 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ei-RCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ei-DCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ej-DCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
       IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = dscale *&
@@ -2517,10 +2517,10 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ei-RCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ei-DCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ej-DCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
 
       ! Compute dissipation tensor
       aux = dscale * max( abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)*uj)+&
@@ -2528,7 +2528,7 @@ contains
                           abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)*ui)+&
                           abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*ci )
 
-      IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+      IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
       IDX3(DmatrixAtEdge,1,1,idx,_,_,_) = aux
       IDX3(DmatrixAtEdge,5,1,idx,_,_,_) = aux
       IDX3(DmatrixAtEdge,9,1,idx,_,_,_) = aux
@@ -2602,10 +2602,10 @@ contains
 
     ! Check if weighting coefficient is zero
     if (anorm .le. SYS_EPSREAL_DP) then
-      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = RCONST(0.0)
-      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = RCONST(0.0)
-      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = RCONST(0.0)
-      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = RCONST(0.0)
+      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = DCONST(0.0)
+      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = DCONST(0.0)
+      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = DCONST(0.0)
+      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = DCONST(0.0)
 
       ! That's it
       return
@@ -2638,10 +2638,10 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
 
         ! Compute auxiliary variable
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
 
         ! Compute speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
 
         b2_ij = ((HYDRO_GAMMA)-1.0)/cPow2_ij
@@ -2652,17 +2652,17 @@ contains
                IDX3(DdataAtEdge,:,1,idx,_,_,_)
           
         ! Compute characteristic variables
-        IDX2(DcharVariablesAtEdge,1,idx,_,_) = anorm * RCONST(0.5) *&
+        IDX2(DcharVariablesAtEdge,1,idx,_,_) = anorm * DCONST(0.5) *&
             (            (b1_ij+u_ij/c_ij)*Diff(1)-&
-             (b2_ij*u_ij+RCONST(1.0)/c_ij)*Diff(2)+&
+             (b2_ij*u_ij+DCONST(1.0)/c_ij)*Diff(2)+&
                                      b2_ij*Diff(3))
         IDX2(DcharVariablesAtEdge,2,idx,_,_) = anorm *&
-            (          (RCONST(1.0)-b1_ij)*Diff(1)+&
+            (          (DCONST(1.0)-b1_ij)*Diff(1)+&
                                 b2_ij*u_ij*Diff(2)-&
                                      b2_ij*Diff(3) )
-        IDX2(DcharVariablesAtEdge,3,idx,_,_) = anorm * RCONST(0.5) *&
+        IDX2(DcharVariablesAtEdge,3,idx,_,_) = anorm * DCONST(0.5) *&
             (            (b1_ij-u_ij/c_ij)*Diff(1)-&
-             (b2_ij*u_ij-RCONST(1.0)/c_ij)*Diff(2)+&
+             (b2_ij*u_ij-DCONST(1.0)/c_ij)*Diff(2)+&
                                      b2_ij*Diff(3) )
       end do
     end if
@@ -2694,8 +2694,8 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary variable
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-            (H_ij-RCONST(0.5)*(u_ij*u_ij)), SYS_EPSREAL_DP))
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+            (H_ij-DCONST(0.5)*(u_ij*u_ij)), SYS_EPSREAL_DP))
 
         ! Compute eigenvalues
         IDX2(DeigenvaluesAtEdge,1,idx,_,_) = u_ij-c_ij
@@ -2731,19 +2731,19 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary variables
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute right eigenvectors
-        IDX2(DrightEigenvectorsAtEdge,1,idx,_,_) =  RCONST(1.0)
+        IDX2(DrightEigenvectorsAtEdge,1,idx,_,_) =  DCONST(1.0)
         IDX2(DrightEigenvectorsAtEdge,2,idx,_,_) =  u_ij-c_ij
         IDX2(DrightEigenvectorsAtEdge,3,idx,_,_) =  H_ij-u_ij*c_ij
 
-        IDX2(DrightEigenvectorsAtEdge,4,idx,_,_) =  RCONST(1.0)
+        IDX2(DrightEigenvectorsAtEdge,4,idx,_,_) =  DCONST(1.0)
         IDX2(DrightEigenvectorsAtEdge,5,idx,_,_) =  u_ij
         IDX2(DrightEigenvectorsAtEdge,6,idx,_,_) =  q_ij
 
-        IDX2(DrightEigenvectorsAtEdge,7,idx,_,_) =  RCONST(1.0)
+        IDX2(DrightEigenvectorsAtEdge,7,idx,_,_) =  DCONST(1.0)
         IDX2(DrightEigenvectorsAtEdge,8,idx,_,_) =  u_ij+c_ij
         IDX2(DrightEigenvectorsAtEdge,9,idx,_,_) =  H_ij+u_ij*c_ij
       end do
@@ -2776,25 +2776,25 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary variables
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
 
-        b2_ij = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
+        b2_ij = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
         b1_ij = b2_ij*q_ij
 
         ! Compute left eigenvectors
-        IDX2(DleftEigenvectorsAtEdge,1,idx,_,_) = RCONST(0.5) * (b1_ij+u_ij/c_ij)
-        IDX2(DleftEigenvectorsAtEdge,2,idx,_,_) =               (RCONST(1.0)-b1_ij)
-        IDX2(DleftEigenvectorsAtEdge,3,idx,_,_) = RCONST(0.5) * (b1_ij-u_ij/c_ij)
+        IDX2(DleftEigenvectorsAtEdge,1,idx,_,_) = DCONST(0.5) * (b1_ij+u_ij/c_ij)
+        IDX2(DleftEigenvectorsAtEdge,2,idx,_,_) =               (DCONST(1.0)-b1_ij)
+        IDX2(DleftEigenvectorsAtEdge,3,idx,_,_) = DCONST(0.5) * (b1_ij-u_ij/c_ij)
 
-        IDX2(DleftEigenvectorsAtEdge,4,idx,_,_) =-RCONST(0.5) * (b2_ij*u_ij+RCONST(1.0)/c_ij)
+        IDX2(DleftEigenvectorsAtEdge,4,idx,_,_) =-DCONST(0.5) * (b2_ij*u_ij+DCONST(1.0)/c_ij)
         IDX2(DleftEigenvectorsAtEdge,5,idx,_,_) =               (b2_ij*u_ij)
-        IDX2(DleftEigenvectorsAtEdge,6,idx,_,_) =-RCONST(0.5) * (b2_ij*u_ij-RCONST(1.0)/c_ij)
+        IDX2(DleftEigenvectorsAtEdge,6,idx,_,_) =-DCONST(0.5) * (b2_ij*u_ij-DCONST(1.0)/c_ij)
 
-        IDX2(DleftEigenvectorsAtEdge,7,idx,_,_) = RCONST(0.5)*b2_ij
+        IDX2(DleftEigenvectorsAtEdge,7,idx,_,_) = DCONST(0.5)*b2_ij
         IDX2(DleftEigenvectorsAtEdge,8,idx,_,_) =            -b2_ij
-        IDX2(DleftEigenvectorsAtEdge,9,idx,_,_) = RCONST(0.5)*b2_ij
+        IDX2(DleftEigenvectorsAtEdge,9,idx,_,_) = DCONST(0.5)*b2_ij
       end do
     end if
     
@@ -2860,7 +2860,7 @@ contains
     do idx = 1, nedges
 
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
 
       ! Compute velocities
@@ -2886,10 +2886,10 @@ contains
 
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1)
-      q_ij   = RCONST(0.5)*(u_ij*u_ij)
+      q_ij   = DCONST(0.5)*(u_ij*u_ij)
 
       ! Compute the speed of sound
-      c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+      c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation
       d_ij = abs(vel_ij) + abs(a(1))*c_ij
@@ -2962,7 +2962,7 @@ contains
     do idx = 1, nedges
 
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
@@ -2990,10 +2990,10 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
          
         ! Compute auxiliary variables
-        q_ij = RCONST(0.5)*(u_ij*u_ij)
+        q_ij = DCONST(0.5)*(u_ij*u_ij)
 
         ! Compute the speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
         
         ! Compute eigenvalues
@@ -3006,18 +3006,18 @@ contains
                IDX3(DdataAtEdge,:,2,idx,_,_,_)
         
         ! Compute auxiliary quantities for characteristic variables
-        b2 = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij; b1 = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij; b1 = b2*q_ij
         
         ! Compute characteristic variables multiplied by the
         ! corresponding eigenvalue
-        w1 = l1 * RCONST(0.5) * (       (b1+u_ij/c_ij)*Diff(1) -&
-                            (b2*u_ij+RCONST(1.0)/c_ij)*Diff(2) +&
+        w1 = l1 * DCONST(0.5) * (       (b1+u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij+DCONST(1.0)/c_ij)*Diff(2) +&
                                                     b2*Diff(3) )
-        w2 = l2 * (                   (RCONST(1.0)-b1)*Diff(1) +&
+        w2 = l2 * (                   (DCONST(1.0)-b1)*Diff(1) +&
                                                b2*u_ij*Diff(2) -&
                                                     b2*Diff(3) )
-        w3 = l3 * RCONST(0.5) * (       (b1-u_ij/c_ij)*Diff(1) -&
-                            (b2*u_ij-RCONST(1.0)/c_ij)*Diff(2) +&
+        w3 = l3 * DCONST(0.5) * (       (b1-u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij-DCONST(1.0)/c_ij)*Diff(2) +&
                                                     b2*Diff(3) )
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
@@ -3100,21 +3100,21 @@ contains
       Ej = SPECIFICTOTALENERGY3_1D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ei-RCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*&
-          (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ei-DCONST(0.5)*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(Ej-DCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
      
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+                   DCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-                   RCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                   DCONST(0.5)*abs(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ci )
 #else
       ! Compute scalar dissipation
@@ -3489,12 +3489,12 @@ contains
       
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-          -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
@@ -4139,12 +4139,12 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
-          -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
@@ -4328,12 +4328,12 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,3,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           ui*ui*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            ui*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,3,2,idx,_,_,_) =&
-          -((HYDRO_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((HYDRO_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           uj*uj*DENSITY2_1D(DfluxesAtEdge,IDX2,idx,_,_)-&
            uj*XMOMENTUM2_1D(DfluxesAtEdge,IDX2,idx,_,_)+&
             TOTALENERGY2_1D(DfluxesAtEdge,IDX2,idx,_,_))
@@ -4520,7 +4520,7 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = ((HYDRO_GAMMA)-RCONST(1.0))*rho*(E-RCONST(0.5)*v1*v1)
+      p   = ((HYDRO_GAMMA)-DCONST(1.0))*rho*(E-DCONST(0.5)*v1*v1)
       c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
 
       ! Compute normal velocities at the boundary and the ghost state
@@ -4545,7 +4545,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check the pressure positivity condition
-      if (RCONST(4.0)/((HYDRO_GAMMA)-RCONST(1.0))*c .le. vn_b-vn) then
+      if (DCONST(4.0)/((HYDRO_GAMMA)-DCONST(1.0))*c .le. vn_b-vn) then
         if (present(istatus)) then
           istatus = -ibdrCondType
           return
@@ -4560,8 +4560,8 @@ contains
       ! by using the PVRS Riemann solver as suggested by Toro
 
       cup  = rho*c
-      ppv  = p+RCONST(0.5)*(vn-vn_b)*cup
-      ppv  = max(RCONST(0.0), ppv)
+      ppv  = p+DCONST(0.5)*(vn-vn_b)*cup
+      ppv  = max(DCONST(0.0), ppv)
 
       if (ppv .eq. p) then
 
@@ -4571,22 +4571,22 @@ contains
         if (ppv .lt. p) then
 
           ! Guess pressure from the Two-Rarefaction Riemann solver
-          vm    = RCONST(0.5)*(vn+vn_b)
-          ptl   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)*(vn-vm)/c
-          ptr   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)*(vm-vn_b)/c
-          pstar = RCONST(0.5)*(p*ptl + p*ptr)**(RCONST(2.0)*(HYDRO_GAMMA)/((HYDRO_GAMMA)-RCONST(1.0)))
+          vm    = DCONST(0.5)*(vn+vn_b)
+          ptl   = DCONST(1.0)+((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)*(vn-vm)/c
+          ptr   = DCONST(1.0)+((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)*(vm-vn_b)/c
+          pstar = DCONST(0.5)*(p*ptl + p*ptr)**(DCONST(2.0)*(HYDRO_GAMMA)/((HYDRO_GAMMA)-DCONST(1.0)))
         else
 
           ! Guess pressure from the Two-Shock Riemann solver
           ! with PVRS as estimated pressure value
-          ge    = sqrt((RCONST(2.0)/((HYDRO_GAMMA)+RCONST(1.0))/rho)/&
-              (((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0))*p+ppv))
-          pstar = p - RCONST(0.5)*(vn_b-vn)/ge
+          ge    = sqrt((DCONST(2.0)/((HYDRO_GAMMA)+DCONST(1.0))/rho)/&
+              (((HYDRO_GAMMA)-DCONST(1.0))/((HYDRO_GAMMA)+DCONST(1.0))*p+ppv))
+          pstar = p - DCONST(0.5)*(vn_b-vn)/ge
         end if
       end if
 
       ! Initialise solution difference and pressure
-      vdiff = (vn_b-vn)/RCONST(2.0)
+      vdiff = (vn_b-vn)/DCONST(2.0)
       pold  = pstar
 
       newton: do ite = 1, 100
@@ -4597,28 +4597,28 @@ contains
           ! Rarefaction wave
           prat = pold/p
 
-          f  = RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0))*c*&
-              (prat**(((HYDRO_GAMMA)-RCONST(1.0))/(RCONST(2.0)*(HYDRO_GAMMA)))-RCONST(1.0))
-          fd = (RCONST(1.0)/(rho*c))*prat**(-((HYDRO_GAMMA)+RCONST(1.0))/(RCONST(2.0)*(HYDRO_GAMMA)))
+          f  = DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0))*c*&
+              (prat**(((HYDRO_GAMMA)-DCONST(1.0))/(DCONST(2.0)*(HYDRO_GAMMA)))-DCONST(1.0))
+          fd = (DCONST(1.0)/(rho*c))*prat**(-((HYDRO_GAMMA)+DCONST(1.0))/(DCONST(2.0)*(HYDRO_GAMMA)))
         else
 
           ! Shock wave
-          auxA = RCONST(2.0)/((HYDRO_GAMMA)+RCONST(1.0))/rho
-          auxB = ((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0))*p
+          auxA = DCONST(2.0)/((HYDRO_GAMMA)+DCONST(1.0))/rho
+          auxB = ((HYDRO_GAMMA)-DCONST(1.0))/((HYDRO_GAMMA)+DCONST(1.0))*p
           qrt  = sqrt(auxA/(auxB + pold))
 
           f  = (pold-p)*qrt
-          fd = (RCONST(1.0) - RCONST(0.5)*(pold - p)/(auxB + pold))*qrt
+          fd = (DCONST(1.0) - DCONST(0.5)*(pold - p)/(auxB + pold))*qrt
         end if
 
         pstar = pold - (f+vdiff)/fd
-        if (pstar .lt. RCONST(0.0)) then
+        if (pstar .lt. DCONST(0.0)) then
           pold = 1.0E-6
           cycle newton
         end if
 
-        aux = RCONST(2.0)*abs((pstar-pold)/(pstar+pold))
-        if (aux .le. RCONST(1.0E-6))  exit newton
+        aux = DCONST(2.0)*abs((pstar-pold)/(pstar+pold))
+        if (aux .le. DCONST(1.0E-6))  exit newton
 
         pold = pstar
 
@@ -4642,7 +4642,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Note that the contribution fR-fL vanishes due to constant states
-      vn = RCONST(0.5)*(vn+vn_b)
+      vn = DCONST(0.5)*(vn+vn_b)
 
 
       !-------------------------------------------------------------------------
@@ -4652,18 +4652,18 @@ contains
       if (pstar .le. p) then
 
         ! Rarefaction wave
-        rho = rho*(pstar/p)**(RCONST(1.0)/(HYDRO_GAMMA))
+        rho = rho*(pstar/p)**(DCONST(1.0)/(HYDRO_GAMMA))
       else
 
         ! Shock wave
-        rho = rho*(pstar/p+((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0)))/&
-                  (((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0))*(pstar/p)+RCONST(1.0))
+        rho = rho*(pstar/p+((HYDRO_GAMMA)-DCONST(1.0))/((HYDRO_GAMMA)+DCONST(1.0)))/&
+                  (((HYDRO_GAMMA)-DCONST(1.0))/((HYDRO_GAMMA)+DCONST(1.0))*(pstar/p)+DCONST(1.0))
       end if
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DpointNormal(1)*vn
-      Du(3) = pstar/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
+      Du(3) = pstar/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*rho*(vn*vn)
 
     case(BDRC_VISCOUSWALL)
       !-------------------------------------------------------------------------
@@ -4672,11 +4672,11 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = ((HYDRO_GAMMA)-RCONST(1.0))*rho*(E-RCONST(0.5)*v1*v1)
+      p   = ((HYDRO_GAMMA)-DCONST(1.0))*rho*(E-DCONST(0.5)*v1*v1)
 
       ! Update the solution vector and let vn:=0
-      Du(2) = RCONST(0.0)
-      Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))
+      Du(2) = DCONST(0.0)
+      Du(3) = p/((HYDRO_GAMMA)-DCONST(1.0))
 
     case(BDRC_SUPERINLET)
       !-------------------------------------------------------------------------
@@ -4688,20 +4688,20 @@ contains
       vn  = DbdrNormal(1)*DbdrValue(2)
 
       ! Compute Riemann invariants based on the free stream values
-      W(1) = vn-2*c/((HYDRO_GAMMA)-RCONST(1.0))
-      W(2) = vn+2*c/((HYDRO_GAMMA)-RCONST(1.0))
+      W(1) = vn-2*c/((HYDRO_GAMMA)-DCONST(1.0))
+      W(2) = vn+2*c/((HYDRO_GAMMA)-DCONST(1.0))
       W(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Transform back into conservative variables
-      vn   = RCONST(0.5)*(W(1)+W(2))
-      c    = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(W(2)-W(1))
-      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+      vn   = DCONST(0.5)*(W(1)+W(2))
+      c    = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
       p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*rho*(vn*vn)
 
     case(BDRC_FREESTREAM)
       !-------------------------------------------------------------------------
@@ -4713,22 +4713,22 @@ contains
       vn  = DbdrNormal(1)*DbdrValue(2)
 
       ! Compute Riemann invariants based on the free stream values
-      Winf(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
-      Winf(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Winf(1) = vn-DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
+      Winf(2) = vn+DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
       Winf(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Compute primitive variables
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = ((HYDRO_GAMMA)-RCONST(1.0))*rho*(E-RCONST(0.5)*v1*v1)
+      p   = ((HYDRO_GAMMA)-DCONST(1.0))*rho*(E-DCONST(0.5)*v1*v1)
 
       c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1
 
       ! Compute Riemann invariants based on the solution values
-      Wu(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
-      Wu(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Wu(1) = vn-DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
+      Wu(2) = vn+DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
       Wu(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Adopt free stream/computed values depending on the sign of the eigenvalue
@@ -4737,15 +4737,15 @@ contains
       W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL_DP)
 
       ! Transform back into conservative variables
-      vn   = RCONST(0.5)*(W(1)+W(2))
-      c    = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(W(2)-W(1))
-      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+      vn   = DCONST(0.5)*(W(1)+W(2))
+      c    = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
       p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*rho*(vn*vn)
 
     case(BDRC_SUBINLET)
       !-------------------------------------------------------------------------
@@ -4754,7 +4754,7 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = ((HYDRO_GAMMA)-RCONST(1.0))*rho*(E-RCONST(0.5)*v1*v1)
+      p   = ((HYDRO_GAMMA)-DCONST(1.0))*rho*(E-DCONST(0.5)*v1*v1)
 
       c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1
@@ -4764,20 +4764,20 @@ contains
       p   = DbdrValue(2)
 
       ! Compute Riemann invariants
-      W(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
-      W(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      W(1) = vn-DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
+      W(2) = vn+DCONST(2.0)*c/((HYDRO_GAMMA)-DCONST(1.0))
       W(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Transform back into conservative variables
-      vn   = RCONST(0.5)*(W(1)+W(2))
-      c    = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(W(2)-W(1))
-      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+      vn   = DCONST(0.5)*(W(1)+W(2))
+      c    = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
       p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*rho*(vn*vn)
 
     case(BDRC_SUBOUTLET)
       !-------------------------------------------------------------------------
@@ -4794,27 +4794,27 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = ((HYDRO_GAMMA)-RCONST(1.0))*rho*(E-RCONST(0.5)*v1*v1)
+      p   = ((HYDRO_GAMMA)-DCONST(1.0))*rho*(E-DCONST(0.5)*v1*v1)
 
       vn  = DbdrNormal(1)*v1
       c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
 
       ! Compute Riemann invariants based on the solution values and prescribed exit pressure
-      W(2) = 2*c/((HYDRO_GAMMA)-RCONST(1.0))-vn
+      W(2) = 2*c/((HYDRO_GAMMA)-DCONST(1.0))-vn
       W(3) = p/(rho**(HYDRO_GAMMA))
-      W(1) = 4/((HYDRO_GAMMA)-RCONST(1.0))*sqrt(max((HYDRO_GAMMA)*ps/&
-          rho*(p/ps)**(RCONST(1.0)/(HYDRO_GAMMA)), SYS_EPSREAL_DP))-W(2)
+      W(1) = 4/((HYDRO_GAMMA)-DCONST(1.0))*sqrt(max((HYDRO_GAMMA)*ps/&
+          rho*(p/ps)**(DCONST(1.0)/(HYDRO_GAMMA)), SYS_EPSREAL_DP))-W(2)
 
       ! Transform back into conservative variables
-      vn  = RCONST(0.5)*(W(1)-W(2))
-      c   = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(W(1)+W(2))
-      rho = (c*c/(HYDRO_GAMMA)/W(3))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+      vn  = DCONST(0.5)*(W(1)-W(2))
+      c   = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(W(1)+W(2))
+      rho = (c*c/(HYDRO_GAMMA)/W(3))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
       p   = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*rho*(vn*vn)
 
     case (BDRC_OPEN)
       !-------------------------------------------------------------------------
@@ -5163,7 +5163,7 @@ contains
         ! the sign of the corresponding eigenvalue.
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -5173,7 +5173,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5192,7 +5192,7 @@ contains
             dvnM = dnx*DstateM(2)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = ((HYDRO_GAMMA)-RCONST(1.0))*(Daux1((ipoint-1)*NVAR1D+3,iel)-RCONST(0.5)*&
+            pI = ((HYDRO_GAMMA)-DCONST(1.0))*(Daux1((ipoint-1)*NVAR1D+3,iel)-DCONST(0.5)*&
                 (Daux1((ipoint-1)*NVAR1D+2,iel)**2))/Daux1((ipoint-1)*NVAR1D+1,iel)
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
@@ -5202,9 +5202,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(1) = dvnM-(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
             else
-              DstateM(1) = dvnI-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(1) = dvnI-(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
@@ -5214,21 +5214,21 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(3) = dvnM+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
             else
-              DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(3) = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
-            cM = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+            cM = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
             pM = rM*cM*cM/(HYDRO_GAMMA)
-            dvnM = RCONST(0.5)*(DstateM(1)+DstateM(3))
+            dvnM = DCONST(0.5)*(DstateM(1)+DstateM(3))
             
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5239,7 +5239,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
   
@@ -5254,7 +5254,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5273,7 +5273,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
   
@@ -5284,7 +5284,7 @@ contains
         ! Prescribe the state vector in conservative variables
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -5294,7 +5294,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5307,8 +5307,8 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(3) = DstateM(3)*(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))&
-                       + DstateM(1)*RCONST(0.5)*(DstateM(2)**DstateM(2))
+            DstateM(3) = DstateM(3)*(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))&
+                       + DstateM(1)*DCONST(0.5)*(DstateM(2)**DstateM(2))
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -5320,7 +5320,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
 
@@ -5334,7 +5334,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
         
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5356,7 +5356,7 @@ contains
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -5366,7 +5366,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5390,17 +5390,17 @@ contains
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            w3 = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+            w1 = w3-2*(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*dnx*RCONST(0.5)*(w1+w3)
-            DstateM(3) = (RCONST(1.0)/&
-                ((HYDRO_GAMMA)-RCONST(1.0)))*pM+RCONST(0.5)*rM*((dnx*RCONST(0.5)*(w1+w3))**2)
+            DstateM(2) = rM*dnx*DCONST(0.5)*(w1+w3)
+            DstateM(3) = (DCONST(1.0)/&
+                ((HYDRO_GAMMA)-DCONST(1.0)))*pM+DCONST(0.5)*rM*((dnx*DCONST(0.5)*(w1+w3))**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5411,7 +5411,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
 
@@ -5422,7 +5422,7 @@ contains
         ! Prescribe the pressure at the outlet
 
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -5432,7 +5432,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5442,7 +5442,7 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = ((HYDRO_GAMMA)-RCONST(1.0))*(Daux1((ipoint-1)*NVAR1D+3,iel)-RCONST(0.5)*&
+            pI = ((HYDRO_GAMMA)-DCONST(1.0))*(Daux1((ipoint-1)*NVAR1D+3,iel)-DCONST(0.5)*&
                 (Daux1((ipoint-1)*NVAR1D+2,iel)**2)/Daux1((ipoint-1)*NVAR1D+1,iel))
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
@@ -5451,23 +5451,23 @@ contains
             
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**(HYDRO_GAMMA))
-            DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            DstateM(3) = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
-                (HYDRO_GAMMA)*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(RCONST(1.0)/(HYDRO_GAMMA))))
+            DstateM(1) = DstateM(3)-2*(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
+                (HYDRO_GAMMA)*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(DCONST(1.0)/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables
-            cM = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+            cM = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
             pM = rM*cM*cM/(HYDRO_GAMMA)
-            dvnM = RCONST(0.5)*(DstateM(1)+DstateM(3))
+            dvnM = DCONST(0.5)*(DstateM(1)+DstateM(3))
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5478,7 +5478,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
       
@@ -5491,7 +5491,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -5507,7 +5507,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
         
@@ -5550,7 +5550,7 @@ contains
         ! the sign of the corresponding eigenvalue.
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -5560,7 +5560,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5579,7 +5579,7 @@ contains
             dvnM = dnx*DstateM(2)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = ((HYDRO_GAMMA)-RCONST(1.0))*(Daux2(ipoint,iel,3)-RCONST(0.5)*&
+            pI = ((HYDRO_GAMMA)-DCONST(1.0))*(Daux2(ipoint,iel,3)-DCONST(0.5)*&
                 (Daux2(ipoint,iel,2)**2))/Daux2(ipoint,iel,1)
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
@@ -5589,9 +5589,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(1) = dvnM-(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
             else
-              DstateM(1) = dvnI-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(1) = dvnI-(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
@@ -5601,21 +5601,21 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(3) = dvnM+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
             else
-              DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(3) = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
-            cM = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+            cM = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
             pM = rM*cM*cM/(HYDRO_GAMMA)
-            dvnM = RCONST(0.5)*(DstateM(1)+DstateM(3))
+            dvnM = DCONST(0.5)*(DstateM(1)+DstateM(3))
             
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5626,7 +5626,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
   
@@ -5641,7 +5641,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5660,7 +5660,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
   
@@ -5671,7 +5671,7 @@ contains
         ! Prescribe the state vector in conservative variables
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -5681,7 +5681,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5694,8 +5694,8 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(3) = DstateM(3)*(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))&
-                       + DstateM(1)*RCONST(0.5)*(DstateM(2)*DstateM(2))
+            DstateM(3) = DstateM(3)*(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))&
+                       + DstateM(1)*DCONST(0.5)*(DstateM(2)*DstateM(2))
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -5707,7 +5707,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
 
@@ -5721,7 +5721,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
         
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5743,7 +5743,7 @@ contains
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -5753,7 +5753,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5777,16 +5777,16 @@ contains
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            w3 = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+            w1 = w3-2*(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*dnx*RCONST(0.5)*(w1+w3)
-            DstateM(3) = (RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))*pM+RCONST(0.5)*rM*((dnx*RCONST(0.5)*(w1+w3))**2)
+            DstateM(2) = rM*dnx*DCONST(0.5)*(w1+w3)
+            DstateM(3) = (DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))*pM+DCONST(0.5)*rM*((dnx*DCONST(0.5)*(w1+w3))**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5797,7 +5797,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
 
@@ -5808,7 +5808,7 @@ contains
         ! Prescribe the pressure at the outlet
 
         ! Initialise values for function parser
-        Dvalue = RCONST(0.0)
+        Dvalue = DCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -5818,7 +5818,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5828,7 +5828,7 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = ((HYDRO_GAMMA)-RCONST(1.0))*(Daux2(ipoint,iel,3)-RCONST(0.5)*&
+            pI = ((HYDRO_GAMMA)-DCONST(1.0))*(Daux2(ipoint,iel,3)-DCONST(0.5)*&
                 (Daux2(ipoint,iel,2)**2)/Daux2(ipoint,iel,1))
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
@@ -5837,23 +5837,23 @@ contains
             
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux2(ipoint,iel,1)**(HYDRO_GAMMA))
-            DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            DstateM(3) = dvnI+(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
-                (HYDRO_GAMMA)*pM/Daux2(ipoint,iel,1)*(pI/pM)**(RCONST(1.0)/(HYDRO_GAMMA))))
+            DstateM(1) = DstateM(3)-2*(DCONST(2.0)/((HYDRO_GAMMA)-DCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
+                (HYDRO_GAMMA)*pM/Daux2(ipoint,iel,1)*(pI/pM)**(DCONST(1.0)/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables
-            cM = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
+            cM = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(DCONST(1.0)/((HYDRO_GAMMA)-DCONST(1.0)))
             pM = rM*cM*cM/(HYDRO_GAMMA)
-            dvnM = RCONST(0.5)*(DstateM(1)+DstateM(3))
+            dvnM = DCONST(0.5)*(DstateM(1)+DstateM(3))
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/((HYDRO_GAMMA)-RCONST(1.0))+RCONST(0.5)*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-DCONST(1.0))+DCONST(0.5)*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5864,7 +5864,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
       
@@ -5877,7 +5877,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(RCONST(1.0), -RCONST(1.0), mod(ibct,2) .eq. 0)
+            dnx = merge(DCONST(1.0), -DCONST(1.0), mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5893,7 +5893,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
           end do
         end do
           
@@ -5955,10 +5955,10 @@ contains
       H_IM = ROE_MEAN_VALUE(hI,hM,aux)
       
       ! Compute auxiliary variable
-      q_IM  = RCONST(0.5)*u_IM*u_IM
+      q_IM  = DCONST(0.5)*u_IM*u_IM
 
       ! Compute the speed of sound
-      cPow2 = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP)
+      cPow2 = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP)
       c_IM  = sqrt(cPow2)
 
       ! Compute normal velocity
@@ -5973,17 +5973,17 @@ contains
       Diff = DstateM-DstateI
       
       ! Compute auxiliary quantities for characteristic variables
-      b2 = ((HYDRO_GAMMA)-RCONST(1.0))/cPow2; b1 = b2*q_IM
+      b2 = ((HYDRO_GAMMA)-DCONST(1.0))/cPow2; b1 = b2*q_IM
       
       ! Compute characteristic variables multiplied by the
       ! corresponding eigenvalue
-      w1 = l1 * RCONST(0.5) * (   (b1+dveln/c_IM)*Diff(1) -&
+      w1 = l1 * DCONST(0.5) * (   (b1+dveln/c_IM)*Diff(1) -&
                           (b2*u_IM+dnx/c_IM)*Diff(2) +&
                                           b2*Diff(3) )
-      w2 = l2 * (                (RCONST(1.0)-b1)*Diff(1) +&
+      w2 = l2 * (                (DCONST(1.0)-b1)*Diff(1) +&
                                      b2*u_IM*Diff(2) -&
                                           b2*Diff(3) )
-      w3 = l3 * RCONST(0.5) * (   (b1-dveln/c_IM)*Diff(1) -&
+      w3 = l3 * DCONST(0.5) * (   (b1-dveln/c_IM)*Diff(1) -&
                           (b2*u_IM-dnx/c_IM)*Diff(2) +&
                                           b2*Diff(3) )
             

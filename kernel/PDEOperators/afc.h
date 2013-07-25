@@ -1,5 +1,7 @@
 #include "../feat2constants.h" 
 
+#define LANGUAGE LANGUAGE_F
+
 #if 0
 ! ------------------------------------------------------------------------------
 ! Convention: all internal identifiers have two leading and two

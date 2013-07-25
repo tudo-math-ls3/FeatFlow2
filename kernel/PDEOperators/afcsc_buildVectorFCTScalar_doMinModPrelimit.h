@@ -33,9 +33,9 @@
         if (abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS) then
           ! Check if the antidiffusive flux is directed down the gradient
           !   $f_ij*fp_ij < 0$
-          if (Dflux(iedge)*DfluxPrel(iedge) .lt. FEAT2_PP_CONST(0.0,__AFCType__)) then
+          if (Dflux(iedge)*DfluxPrel(iedge) .lt. FEAT2_PP_CONST(0.0,TemplateType_AFC)) then
             ! Then, cancel the antidiffusive flux completely
-            Dalpha(iedge) = FEAT2_PP_CONST(0.0,__AFCType__)
+            Dalpha(iedge) = FEAT2_PP_CONST(0.0,TemplateType_AFC)
           elseif (abs(Dflux(iedge)) .gt. abs(DfluxPrel(iedge))) then
             ! Check if the magnitude of the raw antidiffusive flux
             ! exceeds the magnitude of the prelimiting flux

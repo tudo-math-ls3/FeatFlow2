@@ -46,16 +46,46 @@
 
 #if 0
 !##############################################################################
-! Supported precisions: Quad, Double, Single, I8, I16, I32, I64
+! Supported precisions: Quad, Double, Single, Integer, I8, I16, I32, I64
 !##############################################################################
 #endif
 
-#define QUAD_PREC   1
-#define DOUBLE_PREC 2
-#define SINGLE_PREC 3
-#define INT8_PREC   4
-#define INT16_PREC  5
-#define INT32_PREC  6
-#define INT64_PREC  7
+#define QUAD_PREC    1
+#define DOUBLE_PREC  2
+#define SINGLE_PREC  3
+#define INTEGER_PREC 4
+#define INT8_PREC    5
+#define INT16_PREC   6
+#define INT32_PREC   7
+#define INT64_PREC   8
+
+      
+#define QUAD_PREC_F    QP
+#define DOUBLE_PREC_F  DP
+#define SINGLE_PREC_F  SP
+
+#define INT8_PREC_F    I8
+#define INT16_PREC_F   I16
+#define INT32_PREC_F   I32
+#define INT64_PREC_F   I64
+#ifdef ENABLE_LARGEINT
+#define INTEGER_PREC_F I64
+#else
+#define INTEGER_PREC_F I32
+#endif  
+
+      
+#define QUAD_PREC_C    long double
+#define DOUBLE_PREC_C  double
+#define SINGLE_PREC_C  float
+#define INT8_PREC_C    signed char
+#define INT16_PREC_C   short
+#define INT32_PREC_C   int
+#define INT64_PREC_C   long long int
+#ifdef ENABLE_LARGEINT
+#define INTEGER_PREC_C long long int
+#else
+#define INTEGER_PREC_C int
+#endif     
 
 #endif

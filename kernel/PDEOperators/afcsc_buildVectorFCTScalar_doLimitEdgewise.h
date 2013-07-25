@@ -43,7 +43,7 @@
         elseif (f_ij .lt. -AFCSTAB_EPSABS) then
           r_ij = min(Drp(j),Drm(i))
         else
-          r_ij = FEAT2_PP_CONST(1.0,__AFCType__)
+          r_ij = FEAT2_PP_CONST(1.0,TemplateType_AFC)
         end if
 
         ! Compute multiplicative correction factor

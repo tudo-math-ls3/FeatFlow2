@@ -851,9 +851,9 @@ namespace hydro2d_cuda
     {
       // Compute skew-symmetric coefficient
       Td a[2];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1]);
     
@@ -877,10 +877,10 @@ namespace hydro2d_cuda
       
       // Compute auxiliary variables
       Td vel_ij = u_ij * a[0] + v_ij * a[1];
-      Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
+      Td q_ij   = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
     
       // Compute the speed of sound
-      Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
+      Td c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
       
       // Compute scalar dissipation
       Td d_ij = abs(vel_ij) + anorm*c_ij;
@@ -919,9 +919,9 @@ namespace hydro2d_cuda
     {
       // Compute skew-symmetric coefficient
       Td a[2];
-      a[0] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
+      a[0] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,2,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,2,ncoeff,nedge));
-      a[1] = RCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
+      a[1] = DCONST(0.5)*(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,2,ncoeff,nedge)-
 						  IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,2,ncoeff,nedge));
       Td anorm = sqrt(a[0] * a[0] + a[1] * a[1]);
     
@@ -945,10 +945,10 @@ namespace hydro2d_cuda
       
       // Compute auxiliary variables
       Td vel_ij = u_ij * a[0] + v_ij * a[1];
-      Td q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
+      Td q_ij   = DCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
     
       // Compute the speed of sound
-      Td c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
+      Td c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), DBL_EPSILON));
       
       // Compute scalar dissipation
       Td d_ij = abs(vel_ij) + anorm*c_ij;

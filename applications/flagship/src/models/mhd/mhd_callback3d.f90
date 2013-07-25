@@ -668,11 +668,11 @@ contains
 
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) =  dscale *&
-          (RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+          (DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*Fx_ij+&
-           RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+           DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*Fy_ij+&
-           RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+           DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*Fz_ij)
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
@@ -882,7 +882,7 @@ contains
       ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
 
-      Diff = RCONST(0.0)
+      Diff = DCONST(0.0)
 
       !!! TODO !!!
 
@@ -1119,11 +1119,11 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      Diff = RCONST(0.0)
+      Diff = DCONST(0.0)
 
       !!! TODO !!!
 
@@ -1356,7 +1356,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -1365,7 +1365,7 @@ contains
         ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
-        Diff = RCONST(0.0)
+        Diff = DCONST(0.0)
 
         !! TODO !!
 
@@ -1622,7 +1622,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -1631,7 +1631,7 @@ contains
         ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
-        DiffX = RCONST(0.0); DiffY = RCONST(0.0); DiffZ = RCONST(0.0)
+        DiffX = DCONST(0.0); DiffY = DCONST(0.0); DiffZ = DCONST(0.0)
 
         !!! TODO !!!
 
@@ -1916,10 +1916,10 @@ contains
       ca3j = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
-      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2i = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
                DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
-      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2j = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
                DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
@@ -1930,45 +1930,45 @@ contains
                  DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
-      cf1i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca1i,2))))
-      cf1j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca1j,2))))
+      cf1i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca1i,2))))
+      cf1j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca1j,2))))
 
       ! Compute the speed of the fast waves in y-direction
-      cf2i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca2i,2))))
-      cf2j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca2j,2))))
+      cf2i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca2i,2))))
+      cf2j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca2j,2))))
 
       ! Compute the speed of the fast waves in z-direction
-      cf3i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca3i,2))))
-      cf3j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca3j,2))))
+      cf3i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca3i,2))))
+      cf3j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca3j,2))))
 
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)*cf1j+&
                                   POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)*cf2j+&
                                   POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2)*cf3j),&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)*cf1i+&
                                   POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)*cf2i+&
@@ -2247,10 +2247,10 @@ contains
       ca3j = abs(ZMAGFIELD3_3D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
-      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2i = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
                DENSITY3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
-      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2j = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
                DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
@@ -2261,49 +2261,49 @@ contains
                  DENSITY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
-      cf1i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca1i,2))))
-      cf1j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca1j,2))))
+      cf1i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca1i,2))))
+      cf1j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca1j,2))))
 
       ! Compute the speed of the fast waves in y-direction
-      cf2i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca2i,2))))
-      cf2j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca2j,2))))
+      cf2i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca2i,2))))
+      cf2j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca2j,2))))
 
       ! Compute the speed of the fast waves in z-direction
-      cf3i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca3i,2))))
-      cf3j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca3j,2))))
+      cf3i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca3i,2))))
+      cf3j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca3j,2))))
       
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2))*cf1j+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2))*cf2j+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*cf3j,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2))*cf1i+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2))*cf2i+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_),2))*cf3i)
 #else
       ! Compute scalar dissipation with dimensional splitting

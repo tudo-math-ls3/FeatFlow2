@@ -26,7 +26,7 @@
 
       !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        Drp(ieq) = min(FEAT2_PP_CONST(1.0,__AFCType__), (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
+        Drp(ieq) = min(FEAT2_PP_CONST(1.0,TemplateType_AFC), (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
                                (Dpp(ieq)+AFCSTAB_EPSABS) * (ML(ieq)/dscale))
       end do
       !$omp end parallel do
@@ -35,7 +35,7 @@
 
       !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        Drm(ieq) = min(FEAT2_PP_CONST(1.0,__AFCType__), (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
+        Drm(ieq) = min(FEAT2_PP_CONST(1.0,TemplateType_AFC), (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
                                (Dpm(ieq)-AFCSTAB_EPSABS) * (ML(ieq)/dscale))
       end do
       !$omp end parallel do

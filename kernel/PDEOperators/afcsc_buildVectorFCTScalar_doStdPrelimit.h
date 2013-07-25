@@ -33,9 +33,9 @@
         ! and if its magnitude is larger than an absolute tolerance
         !  $ |f_ij| > tol$
         ! In this case, cancel the flux completely.
-        if ((Dflux(iedge)*DfluxPrel(iedge) .lt. FEAT2_PP_CONST(0.0,__AFCType__)) .and.&
+        if ((Dflux(iedge)*DfluxPrel(iedge) .lt. FEAT2_PP_CONST(0.0,TemplateType_AFC)) .and.&
             abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS)&
-            Dalpha(iedge) = FEAT2_PP_CONST(0.0,__AFCType__)
+            Dalpha(iedge) = FEAT2_PP_CONST(0.0,TemplateType_AFC)
       end do
       !$omp end parallel do
 

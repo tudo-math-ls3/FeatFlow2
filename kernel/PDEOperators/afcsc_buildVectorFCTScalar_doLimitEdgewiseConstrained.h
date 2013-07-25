@@ -37,13 +37,13 @@
         f2_ij = Dflux2(iedge)
 
         ! Compute nodal correction factors
-        if (f1_ij*f2_ij .le. FEAT2_PP_CONST(0.0,__AFCType__)) then
-          r_ij = FEAT2_PP_CONST(0.0,__AFCType__)
+        if (f1_ij*f2_ij .le. FEAT2_PP_CONST(0.0,TemplateType_AFC)) then
+          r_ij = FEAT2_PP_CONST(0.0,TemplateType_AFC)
         else
-          if (f1_ij .ge. FEAT2_PP_CONST(0.0,__AFCType__)) then
-            r_ij = min(FEAT2_PP_CONST(1.0,__AFCType__), f1_ij/f2_ij*min(Drp(i),Drm(j)))
+          if (f1_ij .ge. FEAT2_PP_CONST(0.0,TemplateType_AFC)) then
+            r_ij = min(FEAT2_PP_CONST(1.0,TemplateType_AFC), f1_ij/f2_ij*min(Drp(i),Drm(j)))
           else
-            r_ij = min(FEAT2_PP_CONST(1.0,__AFCType__), f1_ij/f2_ij*min(Drp(j),Drm(i)))
+            r_ij = min(FEAT2_PP_CONST(1.0,TemplateType_AFC), f1_ij/f2_ij*min(Drp(j),Drm(i)))
           end if
         end if
 

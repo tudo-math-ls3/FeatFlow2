@@ -574,11 +574,11 @@ contains
 
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) =  dscale *&
-          (RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+          (DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*Fx_ij+&
-           RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+           DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*Fy_ij+&
-           RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+           DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*Fz_ij)
       IDX3(DfluxesAtEdge,:,2,idx,_,_,_) = IDX3(DfluxesAtEdge,:,1,idx,_,_,_)
     end do
@@ -750,7 +750,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -771,10 +771,10 @@ contains
 
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-      q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+      q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
       ! Compute the speed of sound
-      c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+      c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
       ! Compute scalar dissipation
       d_ij = abs(vel_ij) + anorm*c_ij
@@ -1222,7 +1222,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       
       ! Compute densities
@@ -1241,10 +1241,10 @@ contains
       H_ij = ROE_MEAN_VALUE(hi,hj,aux)
       
       ! Compute auxiliary variable
-      q_ij = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+      q_ij = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
       ! Compute the speed of sound
-      c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+      c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation with dimensional splitting
       d_ij = ( abs(a(1)*u_ij) + abs(a(1))*c_ij +&
@@ -1574,7 +1574,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -1600,10 +1600,10 @@ contains
 
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
         ! Compute the speed of sound
-        c2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        c2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij  = sqrt(c2_ij)
 
         ! Compute eigenvalues
@@ -1623,15 +1623,15 @@ contains
         veli = ui*a(1) + vi*a(2) + wi*a(3)
         velj = uj*a(1) + vj*a(2) + wj*a(3)
 
-        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1639,13 +1639,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -1657,7 +1657,7 @@ contains
                IDX3(DdataAtEdge,:,1,idx,_,_,_)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*Diff(1)&
+        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)/c2_ij*(q_ij*Diff(1)&
                                                              -u_ij*Diff(2)&
                                                              -v_ij*Diff(3)&
                                                              -w_ij*Diff(4)&
@@ -1665,27 +1665,27 @@ contains
         aux2 = (vel_ij*Diff(1)&
                  -a(1)*Diff(2)&
                  -a(2)*Diff(3)&
-                 -a(3)*Diff(4))/RCONST(2.0)/c_ij
+                 -a(3)*Diff(4))/DCONST(2.0)/c_ij
 
         ! Get the dimension with largest coefficient
         select case(maxloc(a,1))
         case(1)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                      +((HYDRO_GAMMA)-RCONST(1.0))*( u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                      +((HYDRO_GAMMA)-DCONST(1.0))*( u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (v_ij-vel_ij*a(2))/a(1)*Diff(1)&
                                         +a(2)*Diff(2)&
-                +(a(2)*a(2)-RCONST(1.0))/a(1)*Diff(3)&
+                +(a(2)*a(2)-DCONST(1.0))/a(1)*Diff(3)&
                               +a(2)*a(3)/a(1)*Diff(4))
           w5 = l5 * ( (vel_ij*a(3)-w_ij)/a(1)*Diff(1)&
                                         -a(3)*Diff(2)&
                               -a(2)*a(3)/a(1)*Diff(3)&
-                +(RCONST(1.0)-a(3)*a(3))/a(1)*Diff(4))
+                +(DCONST(1.0)-a(3)*a(3))/a(1)*Diff(4))
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
           Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -1701,20 +1701,20 @@ contains
         case(2)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                       +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                       +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (vel_ij*a(1)-u_ij)/a(2)*Diff(1)&
-                +(RCONST(1.0)-a(1)*a(1))/a(2)*Diff(2)&
+                +(DCONST(1.0)-a(1)*a(1))/a(2)*Diff(2)&
                                         -a(1)*Diff(3)&
                               -a(1)*a(3)/a(2)*Diff(4))
           w5 = l5 * ( (w_ij-vel_ij*a(3))/a(2)*Diff(1)&
                               +a(1)*a(3)/a(2)*Diff(2)&
                                         +a(3)*Diff(3)&
-                +(a(3)*a(3)-RCONST(1.0))/a(2)*Diff(4))
+                +(a(3)*a(3)-DCONST(1.0))/a(2)*Diff(4))
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
           Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -1730,19 +1730,19 @@ contains
         case(3)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                       +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                       +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (u_ij-vel_ij*a(1))/a(3)*Diff(1)&
-                +(a(1)*a(1)-RCONST(1.0))/a(3)*Diff(2)&
+                +(a(1)*a(1)-DCONST(1.0))/a(3)*Diff(2)&
                               +a(1)*a(2)/a(3)*Diff(3)&
                                         +a(1)*Diff(4) )
           w5 = l5 * ( (vel_ij*a(2)-v_ij)/a(3)*Diff(1)&
                               -a(1)*a(2)/a(3)*Diff(2)&
-                +(RCONST(1.0)-a(2)*a(2))/a(3)*Diff(3)&
+                +(DCONST(1.0)-a(2)*a(2))/a(3)*Diff(3)&
                                         -a(2)*Diff(4) )
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
@@ -2097,7 +2097,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -2122,10 +2122,10 @@ contains
         H_ij = ROE_MEAN_VALUE(hi,hj,aux)
 
         ! Compute auxiliary variable
-        q_ij = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
         ! Compute the speed of sound
-        c2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        c2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij  = sqrt(c2_ij)
 
         !-----------------------------------------------------------------------
@@ -2147,15 +2147,15 @@ contains
         ci = SOUNDSPEED3_3D(DdataAtEdge,IDX3,1,idx,_,_,_)
         cj = SOUNDSPEED3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
-        dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        dtol = max(DCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+        dtol = max(DCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2163,13 +2163,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -2181,17 +2181,17 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,_,_,_)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffX(1)&
+        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)/c2_ij*(q_ij*DiffX(1)&
                                                              -u_ij*DiffX(2)&
                                                              -v_ij*DiffX(3)&
                                                              -w_ij*DiffX(4)&
                                                                   +DiffX(5))
-        aux2 = (u_ij*DiffX(1)-DiffX(2))/RCONST(2.0)/c_ij
+        aux2 = (u_ij*DiffX(1)-DiffX(2))/DCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*DiffX(1)&
-                                    +((HYDRO_GAMMA)-RCONST(1.0))*( u_ij*DiffX(2)&
+        w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*DiffX(1)&
+                                    +((HYDRO_GAMMA)-DCONST(1.0))*( u_ij*DiffX(2)&
                                                                   +v_ij*DiffX(3)&
                                                                   +w_ij*DiffX(4)&
                                                                        -DiffX(5))/c2_ij)
@@ -2223,15 +2223,15 @@ contains
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
         ! Entropy-fix by Harten and Hyman
-        dtol = max(RCONST(0.0), (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
+        dtol = max(DCONST(0.0), (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
+        dtol = max(DCONST(0.0), (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2239,13 +2239,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -2257,17 +2257,17 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,_,_,_)
 
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffY(1)&
+        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)/c2_ij*(q_ij*DiffY(1)&
                                                              -u_ij*DiffY(2)&
                                                              -v_ij*DiffY(3)&
                                                              -w_ij*DiffY(4)&
                                                                   +DiffY(5))
-        aux2 = (v_ij*DiffY(1)-DiffY(3))/RCONST(2.0)/c_ij
+        aux2 = (v_ij*DiffY(1)-DiffY(3))/DCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*DiffY(1)&
-                                     +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*DiffY(2)&
+        w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*DiffY(1)&
+                                     +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*DiffY(2)&
                                                                   +v_ij*DiffY(3)&
                                                                   +w_ij*DiffY(4)&
                                                                        -DiffY(5))/c2_ij)
@@ -2299,15 +2299,15 @@ contains
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
         ! Entropy-fix by Harten and Hyman
-        dtol = max(RCONST(0.0), (w_ij-c_ij) - (wi-ci), (wj-cj) - (w_ij-c_ij) )
+        dtol = max(DCONST(0.0), (w_ij-c_ij) - (wi-ci), (wj-cj) - (w_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (w_ij+c_ij) - (wi+ci), (wj+cj) - (w_ij+c_ij) )
+        dtol = max(DCONST(0.0), (w_ij+c_ij) - (wi+ci), (wj+cj) - (w_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -2315,13 +2315,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -2333,17 +2333,17 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,_,_,_)
 
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffZ(1)&
+        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)/c2_ij*(q_ij*DiffZ(1)&
                                                              -u_ij*DiffZ(2)&
                                                              -v_ij*DiffZ(3)&
                                                              -w_ij*DiffZ(4)&
                                                                   +DiffZ(5))
-        aux2 = (w_ij*DiffZ(1)-DiffZ(3))/RCONST(2.0)/c_ij
+        aux2 = (w_ij*DiffZ(1)-DiffZ(3))/DCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*DiffZ(1)&
-                                     +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*DiffZ(2)&
+        w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*DiffZ(1)&
+                                     +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*DiffZ(2)&
                                                                   +v_ij*DiffZ(3)&
                                                                   +w_ij*DiffZ(4)&
                                                                        -DiffZ(5))/c2_ij)
@@ -2699,34 +2699,34 @@ contains
       Ej = SPECIFICTOTALENERGY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
       ! (COMPARE WITH 2D CASE!!!)
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
@@ -3068,38 +3068,38 @@ contains
       Ej = SPECIFICTOTALENERGY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation with dimensional splitting based on
       ! the skew-symmetric part which does not include the symmetric
       ! boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)))*ci )&
-           + max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+           + max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)))*ci )&
-           + max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+           + max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)))*ci )
 #else
       ! Compute scalar dissipation with dimensional splitting
@@ -4434,7 +4434,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
@@ -4461,10 +4461,10 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
         ! Compute the speed of sound
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute scalar dissipation
         IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = dscale * (abs(vel_ij) + anorm*c_ij)
@@ -4472,7 +4472,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
 
       end if
     end do
@@ -4976,7 +4976,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
@@ -5003,15 +5003,15 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
         ! Compute the speed of sound
-        c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+        c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute scalar dissipation
         aux = dscale * (abs(vel_ij) + anorm*c_ij)
 
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         IDX3(DmatrixAtEdge, 1,1,idx,_,_,_) = aux
         IDX3(DmatrixAtEdge, 6,1,idx,_,_,_) = aux
         IDX3(DmatrixAtEdge,11,1,idx,_,_,_) = aux
@@ -5020,7 +5020,7 @@ contains
       else
 
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         
       end if
     end do
@@ -5183,7 +5183,7 @@ contains
 #endif
         
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -5213,10 +5213,10 @@ contains
 
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)+v_ij*a(2)+w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
         
         ! Compute speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
 
         ! Diagonal matrix of eigenvectors
@@ -5236,15 +5236,15 @@ contains
         veli = ui*a(1) + vi*a(2) + wi*a(3)
         velj = uj*a(1) + vj*a(2) + wj*a(3)
 
-        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -5252,13 +5252,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -5287,48 +5287,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) =  l4*a(2)
           R_ij(3,4) = -l4*a(1)
-          R_ij(4,4) =  RCONST(0.0)
+          R_ij(4,4) =  DCONST(0.0)
           R_ij(5,4) =  l4*(u_ij*a(2)-v_ij*a(1))
 
-          R_ij(1,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
           R_ij(2,5) = -l5*a(3)
-          R_ij(3,5) =  RCONST(0.0)
+          R_ij(3,5) =  DCONST(0.0)
           R_ij(4,5) =  l5*a(1)
           R_ij(5,5) =  l5*(w_ij*a(1)-u_ij*a(3))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (v_ij-vel_ij*a(2))/a(1)
           L_ij(5,1) =  (vel_ij*a(3)-w_ij)/a(1)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
           L_ij(4,2) =  a(2)
           L_ij(5,2) = -a(3)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
-          L_ij(4,3) =  (a(2)*a(2)-RCONST(1.0))/a(1)
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(4,3) =  (a(2)*a(2)-DCONST(1.0))/a(1)
           L_ij(5,3) = -a(2)*a(3)/a(1)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) =  a(2)*a(3)/a(1)
           L_ij(5,4) = -(1-a(3)*a(3))/a(1)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
 
         case(2)
           ! Matrix of right eigenvectors
@@ -5350,48 +5350,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) =  l4*a(2)
           R_ij(3,4) = -l4*a(1)
-          R_ij(4,4) =  RCONST(0.0)
+          R_ij(4,4) =  DCONST(0.0)
           R_ij(5,4) =  l4*(u_ij*a(2)-v_ij*a(1))
 
-          R_ij(1,5) =  RCONST(0.0)
-          R_ij(2,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
+          R_ij(2,5) =  DCONST(0.0)
           R_ij(3,5) =  l5*a(3)
           R_ij(4,5) = -l5*a(2)
           R_ij(5,5) =  l5*(v_ij*a(3)-w_ij*a(2))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (vel_ij*a(1)-u_ij)/a(2)
           L_ij(5,1) =  (w_ij-vel_ij*a(3))/a(2)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
-          L_ij(4,2) =  (RCONST(1.0)-a(1)*a(1))/a(2)
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(4,2) =  (DCONST(1.0)-a(1)*a(1))/a(2)
           L_ij(5,2) =  a(1)*a(3)/a(2)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
           L_ij(4,3) = -a(1)
           L_ij(5,3) =  a(3)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) = -a(1)*a(3)/a(2)
-          L_ij(5,4) =  (a(3)*a(3)-RCONST(1.0))/a(2)
+          L_ij(5,4) =  (a(3)*a(3)-DCONST(1.0))/a(2)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
           
         case(3)
           ! Matrix of right eigenvectors
@@ -5413,48 +5413,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) = -l4*a(3)
-          R_ij(3,4) =  RCONST(0.0)
+          R_ij(3,4) =  DCONST(0.0)
           R_ij(4,4) =  l4*a(1)
           R_ij(5,4) =  l4*(w_ij*a(1)-u_ij*a(3))
 
-          R_ij(1,5) =  RCONST(0.0)
-          R_ij(2,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
+          R_ij(2,5) =  DCONST(0.0)
           R_ij(3,5) =  l5*a(3)
           R_ij(4,5) = -l5*a(2)
           R_ij(5,5) =  l5*(v_ij*a(3)-w_ij*a(2))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (u_ij-vel_ij*a(1))/a(3)
           L_ij(5,1) =  (vel_ij*a(2)-v_ij)/a(3)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
-          L_ij(4,2) =  (a(1)*a(1)-RCONST(1.0))/a(3)
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(4,2) =  (a(1)*a(1)-DCONST(1.0))/a(3)
           L_ij(5,2) = -a(1)*a(2)/a(3)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
           L_ij(4,3) =  a(1)*a(2)/a(3)
-          L_ij(5,3) =  (RCONST(1.0)-a(2)*a(2))/a(3)
+          L_ij(5,3) =  (DCONST(1.0)-a(2)*a(2))/a(3)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) =  a(1)
           L_ij(5,4) = -a(2)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
 
         end select
 
@@ -5462,7 +5462,7 @@ contains
         anorm = dscale*anorm
         
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         IDX3(DmatrixAtEdge,1,1,idx,_,_,_) = anorm*( R_ij(1,1)*L_ij(1,1)+&
                                                           R_ij(1,2)*L_ij(2,1)+&
                                                           R_ij(1,3)*L_ij(3,1)+&
@@ -5491,7 +5491,7 @@ contains
       else
 
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         
       end if
     end do
@@ -5998,7 +5998,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
@@ -6025,10 +6025,10 @@ contains
 
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)+v_ij*a(2)+w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
         
         ! Compute speed of sound
-        cPow2_ij = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        cPow2_ij = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij     = sqrt(cPow2_ij)
 
         ! Diagonal matrix of eigenvectors
@@ -6048,15 +6048,15 @@ contains
         veli = ui*a(1) + vi*a(2) + wi*a(3)
         velj = uj*a(1) + vj*a(2) + wj*a(3)
 
-        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = RCONST(0.5)*((l1*l1)/dtol + dtol)
+            l1 = DCONST(0.5)*((l1*l1)/dtol + dtol)
         
-        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(DCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = RCONST(0.5)*((l3*l3)/dtol + dtol)
+            l3 = DCONST(0.5)*((l3*l3)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -6064,13 +6064,13 @@ contains
 #error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
 #else
         ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = RCONST(0.5)*((l1*l1)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l1 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = DCONST(0.5)*((l1*l1)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = RCONST(0.5)*((l3*l3)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+        if (l3 .lt. DCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = DCONST(0.5)*((l3*l3)/DCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + DCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
 #error "Invalid type of entropy fix!"
@@ -6099,48 +6099,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) =  l4*a(2)
           R_ij(3,4) = -l4*a(1)
-          R_ij(4,4) =  RCONST(0.0)
+          R_ij(4,4) =  DCONST(0.0)
           R_ij(5,4) =  l4*(u_ij*a(2)-v_ij*a(1))
 
-          R_ij(1,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
           R_ij(2,5) = -l5*a(3)
-          R_ij(3,5) =  RCONST(0.0)
+          R_ij(3,5) =  DCONST(0.0)
           R_ij(4,5) =  l5*a(1)
           R_ij(5,5) =  l5*(w_ij*a(1)-u_ij*a(3))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (v_ij-vel_ij*a(2))/a(1)
           L_ij(5,1) =  (vel_ij*a(3)-w_ij)/a(1)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
           L_ij(4,2) =  a(2)
           L_ij(5,2) = -a(3)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
-          L_ij(4,3) =  (a(2)*a(2)-RCONST(1.0))/a(1)
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(4,3) =  (a(2)*a(2)-DCONST(1.0))/a(1)
           L_ij(5,3) = -a(2)*a(3)/a(1)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) =  a(2)*a(3)/a(1)
           L_ij(5,4) = -(1-a(3)*a(3))/a(1)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
 
         case(2)
           ! Matrix of right eigenvectors
@@ -6162,48 +6162,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) =  l4*a(2)
           R_ij(3,4) = -l4*a(1)
-          R_ij(4,4) =  RCONST(0.0)
+          R_ij(4,4) =  DCONST(0.0)
           R_ij(5,4) =  l4*(u_ij*a(2)-v_ij*a(1))
 
-          R_ij(1,5) =  RCONST(0.0)
-          R_ij(2,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
+          R_ij(2,5) =  DCONST(0.0)
           R_ij(3,5) =  l5*a(3)
           R_ij(4,5) = -l5*a(2)
           R_ij(5,5) =  l5*(v_ij*a(3)-w_ij*a(2))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (vel_ij*a(1)-u_ij)/a(2)
           L_ij(5,1) =  (w_ij-vel_ij*a(3))/a(2)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
-          L_ij(4,2) =  (RCONST(1.0)-a(1)*a(1))/a(2)
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(4,2) =  (DCONST(1.0)-a(1)*a(1))/a(2)
           L_ij(5,2) =  a(1)*a(3)/a(2)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
           L_ij(4,3) = -a(1)
           L_ij(5,3) =  a(3)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) = -a(1)*a(3)/a(2)
-          L_ij(5,4) =  (a(3)*a(3)-RCONST(1.0))/a(2)
+          L_ij(5,4) =  (a(3)*a(3)-DCONST(1.0))/a(2)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
           
         case(3)
           ! Matrix of right eigenvectors
@@ -6225,48 +6225,48 @@ contains
           R_ij(4,3) =  l3*(v_ij+c_ij*a(3))
           R_ij(5,3) =  l3*(H_ij+c_ij*vel_ij)
         
-          R_ij(1,4) =  RCONST(0.0)
+          R_ij(1,4) =  DCONST(0.0)
           R_ij(2,4) = -l4*a(3)
-          R_ij(3,4) =  RCONST(0.0)
+          R_ij(3,4) =  DCONST(0.0)
           R_ij(4,4) =  l4*a(1)
           R_ij(5,4) =  l4*(w_ij*a(1)-u_ij*a(3))
 
-          R_ij(1,5) =  RCONST(0.0)
-          R_ij(2,5) =  RCONST(0.0)
+          R_ij(1,5) =  DCONST(0.0)
+          R_ij(2,5) =  DCONST(0.0)
           R_ij(3,5) =  l5*a(3)
           R_ij(4,5) = -l5*a(2)
           R_ij(5,5) =  l5*(v_ij*a(3)-w_ij*a(2))
 
           ! Matrix of left eigenvectors
-          L_ij(1,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
-          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-RCONST(1.0))*q_ij)/cPow2_ij
-          L_ij(3,1) =  RCONST(0.5)*(((HYDRO_GAMMA)-RCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
+          L_ij(1,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij+c_ij*vel_ij)/cPow2_ij
+          L_ij(2,1) =  (cPow2_ij-((HYDRO_GAMMA)-DCONST(1.0))*q_ij)/cPow2_ij
+          L_ij(3,1) =  DCONST(0.5)*(((HYDRO_GAMMA)-DCONST(1.0))*q_ij-c_ij*vel_ij)/cPow2_ij
           L_ij(4,1) =  (u_ij-vel_ij*a(1))/a(3)
           L_ij(5,1) =  (vel_ij*a(2)-v_ij)/a(3)
           
-          L_ij(1,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
-          L_ij(2,2) =  ((HYDRO_GAMMA)-RCONST(1.0))*u_ij/cPow2_ij
-          L_ij(3,2) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
-          L_ij(4,2) =  (a(1)*a(1)-RCONST(1.0))/a(3)
+          L_ij(1,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij-c_ij*a(1))/cPow2_ij
+          L_ij(2,2) =  ((HYDRO_GAMMA)-DCONST(1.0))*u_ij/cPow2_ij
+          L_ij(3,2) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*u_ij+c_ij*a(1))/cPow2_ij
+          L_ij(4,2) =  (a(1)*a(1)-DCONST(1.0))/a(3)
           L_ij(5,2) = -a(1)*a(2)/a(3)
           
-          L_ij(1,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
-          L_ij(2,3) =  ((HYDRO_GAMMA)-RCONST(1.0))*v_ij/cPow2_ij
-          L_ij(3,3) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
+          L_ij(1,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij-c_ij*a(2))/cPow2_ij
+          L_ij(2,3) =  ((HYDRO_GAMMA)-DCONST(1.0))*v_ij/cPow2_ij
+          L_ij(3,3) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*v_ij+c_ij*a(2))/cPow2_ij
           L_ij(4,3) =  a(1)*a(2)/a(3)
-          L_ij(5,3) =  (RCONST(1.0)-a(2)*a(2))/a(3)
+          L_ij(5,3) =  (DCONST(1.0)-a(2)*a(2))/a(3)
           
-          L_ij(1,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
-          L_ij(2,4) =  ((HYDRO_GAMMA)-RCONST(1.0))*w_ij/cPow2_ij
-          L_ij(3,4) =  RCONST(0.5)*(-((HYDRO_GAMMA)-RCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
+          L_ij(1,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij-c_ij*a(3))/cPow2_ij
+          L_ij(2,4) =  ((HYDRO_GAMMA)-DCONST(1.0))*w_ij/cPow2_ij
+          L_ij(3,4) =  DCONST(0.5)*(-((HYDRO_GAMMA)-DCONST(1.0))*w_ij+c_ij*a(3))/cPow2_ij
           L_ij(4,4) =  a(1)
           L_ij(5,4) = -a(2)
 
-          L_ij(1,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(2,5) = -((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(3,5) =  RCONST(0.5)*((HYDRO_GAMMA)-RCONST(1.0))/cPow2_ij
-          L_ij(4,5) =  RCONST(0.0)
-          L_ij(5,5) =  RCONST(0.0)
+          L_ij(1,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(2,5) = -((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(3,5) =  DCONST(0.5)*((HYDRO_GAMMA)-DCONST(1.0))/cPow2_ij
+          L_ij(4,5) =  DCONST(0.0)
+          L_ij(5,5) =  DCONST(0.0)
 
         end select
 
@@ -6276,7 +6276,7 @@ contains
         ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
         do i = 1, NVAR3D
           do j = 1, NVAR3D
-            aux = RCONST(0.0)
+            aux = DCONST(0.0)
             do k = 1, NVAR3D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
@@ -6287,7 +6287,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = DCONST(0.0)
         
       end if
     end do
@@ -6452,10 +6452,10 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
       IDX3(DmatrixAtEdge,:,1,idx,_,_,_) = dscale *&
@@ -6968,10 +6968,10 @@ contains
       !---------------------------------------------------------------------------
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
       aux = dscale *&
@@ -6988,7 +6988,7 @@ contains
                POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
                POW(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*ci )
 
-      IDX3(DmatrixAtEdge, :,1,idx,_,_,_) = RCONST(0.0)
+      IDX3(DmatrixAtEdge, :,1,idx,_,_,_) = DCONST(0.0)
       IDX3(DmatrixAtEdge, 1,1,idx,_,_,_) = aux
       IDX3(DmatrixAtEdge, 6,1,idx,_,_,_) = aux
       IDX3(DmatrixAtEdge,11,1,idx,_,_,_) = aux
@@ -7116,7 +7116,7 @@ contains
     do idx = 1, nedges
 
       ! Compute skew-symmetric coefficient
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                   IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -7150,10 +7150,10 @@ contains
 
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-      q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+      q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
       ! Compute the speed of sound
-      c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
+      c_ij = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
       ! Compute scalar dissipation
       d_ij = abs(vel_ij) + anorm*c_ij
@@ -7227,7 +7227,7 @@ contains
     do idx = 1, nedges
       
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
@@ -7266,10 +7266,10 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = RCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+        q_ij   = DCONST(0.5)*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
 
         ! Compute the speed of sound
-        c2_ij  = max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
+        c2_ij  = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij   = sqrt(c2_ij)
 
         ! Compute eigenvalues
@@ -7284,7 +7284,7 @@ contains
                IDX3(DdataAtEdge,:,2,idx,_,_,_)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*Diff(1)&
+        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))/DCONST(2.0)/c2_ij*(q_ij*Diff(1)&
                                                              -u_ij*Diff(2)&
                                                              -v_ij*Diff(3)&
                                                              -w_ij*Diff(4)&
@@ -7292,27 +7292,27 @@ contains
         aux2 = (vel_ij*Diff(1)&
                  -a(1)*Diff(2)&
                  -a(2)*Diff(3)&
-                 -a(3)*Diff(4))/RCONST(2.0)/c_ij
+                 -a(3)*Diff(4))/DCONST(2.0)/c_ij
 
         ! Get the dimension with largest coefficient
         select case(maxloc(a,1))
         case(1)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                      +((HYDRO_GAMMA)-RCONST(1.0))*( u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                      +((HYDRO_GAMMA)-DCONST(1.0))*( u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (v_ij-vel_ij*a(2))/a(1)*Diff(1)&
                                         +a(2)*Diff(2)&
-                +(a(2)*a(2)-RCONST(1.0))/a(1)*Diff(3)&
+                +(a(2)*a(2)-DCONST(1.0))/a(1)*Diff(3)&
                               +a(2)*a(3)/a(1)*Diff(4))
           w5 = l5 * ( (vel_ij*a(3)-w_ij)/a(1)*Diff(1)&
                                         -a(3)*Diff(2)&
                               -a(2)*a(3)/a(1)*Diff(3)&
-                +(RCONST(1.0)-a(3)*a(3))/a(1)*Diff(4))
+                +(DCONST(1.0)-a(3)*a(3))/a(1)*Diff(4))
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
           Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -7328,20 +7328,20 @@ contains
         case(2)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                       +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                       +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (vel_ij*a(1)-u_ij)/a(2)*Diff(1)&
-                +(RCONST(1.0)-a(1)*a(1))/a(2)*Diff(2)&
+                +(DCONST(1.0)-a(1)*a(1))/a(2)*Diff(2)&
                                         -a(1)*Diff(3)&
                               -a(1)*a(3)/a(2)*Diff(4))
           w5 = l5 * ( (w_ij-vel_ij*a(3))/a(2)*Diff(1)&
                               +a(1)*a(3)/a(2)*Diff(2)&
                                         +a(3)*Diff(3)&
-                +(a(3)*a(3)-RCONST(1.0))/a(2)*Diff(4))
+                +(a(3)*a(3)-DCONST(1.0))/a(2)*Diff(4))
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
           Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -7357,19 +7357,19 @@ contains
         case(3)
           ! Compute characteristic variables multiplied by the corresponding eigenvalue
           w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((RCONST(1.0)-((HYDRO_GAMMA)-RCONST(1.0))*q_ij/c2_ij)*Diff(1)&
-                                       +((HYDRO_GAMMA)-RCONST(1.0))*(u_ij*Diff(2)&
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_ij/c2_ij)*Diff(1)&
+                                       +((HYDRO_GAMMA)-DCONST(1.0))*(u_ij*Diff(2)&
                                                                     +v_ij*Diff(3)&
                                                                     +w_ij*Diff(4)&
                                                                          -Diff(5))/c2_ij)
           w3 = l3 * (aux1 - aux2)
           w4 = l4 * ( (u_ij-vel_ij*a(1))/a(3)*Diff(1)&
-                +(a(1)*a(1)-RCONST(1.0))/a(3)*Diff(2)&
+                +(a(1)*a(1)-DCONST(1.0))/a(3)*Diff(2)&
                               +a(1)*a(2)/a(3)*Diff(3)&
                                         +a(1)*Diff(4) )
           w5 = l5 * ( (vel_ij*a(2)-v_ij)/a(3)*Diff(1)&
                               -a(1)*a(2)/a(3)*Diff(2)&
-                +(RCONST(1.0)-a(2)*a(2))/a(3)*Diff(3)&
+                +(DCONST(1.0)-a(2)*a(2))/a(3)*Diff(3)&
                                         -a(2)*Diff(4) )
 
           ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
@@ -7465,33 +7465,33 @@ contains
       Ej = SPECIFICTOTALENERGY3_3D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ei-RCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
-          (Ej-RCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-DCONST(0.5)*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-DCONST(0.5)*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_))*wj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,3,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,3,2,idx,_,_,_),2))*cj,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,3,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,_,_,_))*wi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)+&
                                POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)+&
@@ -7882,15 +7882,15 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*&
-          (RCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+          ((HYDRO_GAMMA)-DCONST(1.0))*&
+          (DCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       ui*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       vi*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       wi*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&
                                        TOTALENERGY2_3D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-         -((HYDRO_GAMMA)-RCONST(1.0))*&
-         (RCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+         -((HYDRO_GAMMA)-DCONST(1.0))*&
+         (DCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      uj*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      vj*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      wj*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&
@@ -8615,15 +8615,15 @@ contains
       
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*&
-          (RCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+          ((HYDRO_GAMMA)-DCONST(1.0))*&
+          (DCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       ui*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       vi*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       wi*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&
                                        TOTALENERGY2_3D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
-         -((HYDRO_GAMMA)-RCONST(1.0))*&
-         (RCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+         -((HYDRO_GAMMA)-DCONST(1.0))*&
+         (DCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      uj*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      vj*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      wj*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&
@@ -8833,15 +8833,15 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,5,1,idx,_,_,_) =&
-          ((HYDRO_GAMMA)-RCONST(1.0))*&
-          (RCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+          ((HYDRO_GAMMA)-DCONST(1.0))*&
+          (DCONST(0.5)*(ui*ui+vi*vi+wi*wi)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       ui*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       vi*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                       wi*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&
                                        TOTALENERGY2_3D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,5,2,idx,_,_,_) =&
-         -((HYDRO_GAMMA)-RCONST(1.0))*&
-         (RCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
+         -((HYDRO_GAMMA)-DCONST(1.0))*&
+         (DCONST(0.5)*(uj*uj+vj*vj+wj*wj)*DENSITY2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      uj*XMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      vj*YMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)-&
                                      wj*ZMOMENTUM2_3D(DfluxesAtEdge,IDX2,idx,_,_)+&

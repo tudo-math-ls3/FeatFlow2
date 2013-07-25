@@ -602,9 +602,9 @@ contains
       
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,_,_,_) = dscale *&
-          (RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+          (DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*Fx_ij+&
-           RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+           DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                         IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*Fy_ij)
       IDX3(DfluxesAtEdge,:,2,idx,_,_,_) = IDX3(DfluxesAtEdge,:,1,idx,_,_,_)
     end do
@@ -776,7 +776,7 @@ contains
       ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
 
-      Diff = RCONST(0.0)
+      Diff = DCONST(0.0)
 
       !!! TODO !!!
 
@@ -972,11 +972,11 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-      Diff = RCONST(0.0)
+      Diff = DCONST(0.0)
 
       !!! TODO !!!
 
@@ -1168,7 +1168,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
@@ -1177,7 +1177,7 @@ contains
         ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
-        Diff = RCONST(0.0)
+        Diff = DCONST(0.0)
 
         !! TODO !!
 
@@ -1389,13 +1389,13 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
+      a = DCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,_,_,_)-&
                        IDX3(DcoeffsAtEdge,:,2,idx,_,_,_))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
 
-        DiffX = RCONST(0.0); DiffY = RCONST(0.0)
+        DiffX = DCONST(0.0); DiffY = DCONST(0.0)
 
         !!! TODO !!!
 
@@ -1631,10 +1631,10 @@ contains
       ca2j = abs(YMAGFIELD3_2D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
-      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2i = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_2D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
                DENSITY3_2D(DdataAtEdge,IDX3,1,idx,_,_,_)
-      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2j = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_2D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
                DENSITY3_2D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
@@ -1645,33 +1645,33 @@ contains
                  DENSITY3_2D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
-      cf1i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca1i,2))))
-      cf1j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca1j,2))))
+      cf1i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca1i,2))))
+      cf1j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca1j,2))))
 
       ! Compute the speed of the fast waves in y-direction
-      cf2i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca2i,2))))
-      cf2j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca2j,2))))
+      cf2i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca2i,2))))
+      cf2j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca2j,2))))
 
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)*cf1j+&
                                   POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)*cf2j),&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
-                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                      DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)*cf1i+&
                                   POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                       IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)*cf2i) )
@@ -1903,10 +1903,10 @@ contains
       ca2j = abs(YMAGFIELD3_2D(DdataAtEdge,IDX3,2,idx,_,_,_))
 
       ! Compute the speed of sound
-      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2i = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_2D(DdataAtEdge,IDX3,1,idx,_,_,_)/&
                DENSITY3_2D(DdataAtEdge,IDX3,1,idx,_,_,_)
-      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+      aPow2j = DCONST(MAGNETOHYDRODYN_GAMMA)*&
                PRESSURE3_2D(DdataAtEdge,IDX3,2,idx,_,_,_)/&
                DENSITY3_2D(DdataAtEdge,IDX3,2,idx,_,_,_)
 
@@ -1917,35 +1917,35 @@ contains
                  DENSITY3_2D(DdataAtEdge,IDX3,2,idx,_,_,_) + aPow2j
 
       ! Compute the speed of the fast waves in x-direction
-      cf1i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca1i,2))))
-      cf1j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca1j,2))))
+      cf1i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca1i,2))))
+      cf1j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca1j,2))))
 
       ! Compute the speed of the fast waves in y-direction
-      cf2i = sqrt(RCONST(0.5)*(astPow2i+&
-                  sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(ca2i,2))))
-      cf2j = sqrt(RCONST(0.5)*(astPow2j+&
-                  sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(ca2j,2))))
+      cf2i = sqrt(DCONST(0.5)*(astPow2i+&
+                  sqrt(POW(astPow2i,2)-DCONST(4.0)*aPow2i*POW(ca2i,2))))
+      cf2j = sqrt(DCONST(0.5)*(astPow2j+&
+                  sqrt(POW(astPow2j,2)-DCONST(4.0)*aPow2j*POW(ca2j,2))))
 
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
+      d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2))*cf1j+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2))*cf2j,&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2))*cf1i+&
-                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
+                  abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2))*cf2i)
 #else
       ! Compute scalar dissipation with dimensional splitting
@@ -3010,7 +3010,7 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,1,1,idx,_,_,_) =&
-          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (ui*ui+vi*vi+wi*wi)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          ui*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vi*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
@@ -3023,7 +3023,7 @@ contains
                             ZMAGFIELD2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                           TOTALENERGY2_2D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,1,2,idx,_,_,_) =&
-          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (uj*uj+vj*vj+wj*wj)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          uj*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vj*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
@@ -3751,7 +3751,7 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,2,1,idx,_,_,_) =&
-          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (ui*ui+vi*vi+wi*wi)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          ui*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vi*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
@@ -3764,7 +3764,7 @@ contains
                             ZMAGFIELD2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                           TOTALENERGY2_2D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,2,2,idx,_,_,_) =&
-          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (uj*uj+vj*vj+wj*wj)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          uj*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vj*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
@@ -3981,7 +3981,7 @@ contains
 
       ! Transformed pressure fluxes
       IDX3(DtransformedFluxesAtEdge,5,1,idx,_,_,_) =&
-          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          ((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (ui*ui+vi*vi+wi*wi)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          ui*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vi*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
@@ -3994,7 +3994,7 @@ contains
                             ZMAGFIELD2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                           TOTALENERGY2_2D(DfluxesAtEdge,IDX2,idx,_,_))
       IDX3(DtransformedFluxesAtEdge,5,2,idx,_,_,_) =&
-          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          -((MAGNETOHYDRODYN_GAMMA)-DCONST(1.0))*(DCONST(0.5)*&
           (uj*uj+vj*vj+wj*wj)*DENSITY2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          uj*XMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
                          vj*YMOMENTUM2_2D(DfluxesAtEdge,IDX2,idx,_,_)-&
