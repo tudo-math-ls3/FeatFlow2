@@ -405,6 +405,7 @@ contains
     call fev2_addVectorToEvalList (rcoeffVectors,rx1%RvectorBlock(1),1)
     
     ! Add temporary space for the values of Du_2 in the cubature points.
+    ! This is a vector field with NDIM2D components.
     call fev2_addDummyVecFieldToEvalList (rcoeffVectors,NDIM2D)
     
     ! Pass u_2 via rcollection. It "lives" on a different mesh, so we
