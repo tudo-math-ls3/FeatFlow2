@@ -131,6 +131,13 @@ program tutorial
   use tutorial021a
   use tutorial021b
 
+  use tutorial023a
+  use tutorial023b
+  use tutorial023c
+  use tutorial023d
+  use tutorial023e
+  use tutorial023f
+
   implicit none
   
   ! =================================================================
@@ -266,6 +273,13 @@ program tutorial
 
   call start_tutorial021a
   call start_tutorial021b
+
+  call start_tutorial023a
+  call start_tutorial023b
+  call start_tutorial023c
+  call start_tutorial023d
+  call start_tutorial023e
+  call start_tutorial023f
 
   ! -----------------------------------------------------------------
   ! Clean up

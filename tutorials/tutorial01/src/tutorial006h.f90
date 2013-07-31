@@ -85,7 +85,7 @@ contains
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
     
     ! Set the entries of the vector according to the function
-    !    f(x,y) = x^2 * y^2
+    !    u(x,y) = x^2 * y^2
     do ivt=1,rx%NEQ
       dx = p_DvertexCoords(1,ivt)
       dy = p_DvertexCoords(2,ivt)
