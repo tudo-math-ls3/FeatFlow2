@@ -113,6 +113,7 @@ module feevaluation
   interface fevl_evaluate
     module procedure fevl_evaluate1
     module procedure fevl_evaluate2
+    module procedure fevl_evaluate3
   end interface
 
   ! There are multiple functions fevl_evaluate_mult which do the same --
@@ -300,8 +301,8 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!', OU_CLASS_ERROR, OU_MODE_STD, &
-                        'fevl_evaluate1')
+      call output_line ("Unsupported vector precision!", OU_CLASS_ERROR, OU_MODE_STD, &
+                        "fevl_evaluate1")
       call sys_halt()
     end select
 
@@ -383,8 +384,8 @@ contains
       end if
 
       if (iel .eq. 0) then
-        call output_line ('Point '//trim(sys_siL(ipoint,10))//' not found!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate1')
+        call output_line ("Point "//trim(sys_siL(ipoint,10))//" not found!", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate1")
         cycle
       end if
 
@@ -668,8 +669,8 @@ contains
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock, p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!', OU_CLASS_ERROR, OU_MODE_STD, &
-                        'fevl_evaluate2')
+      call output_line ("Unsupported vector precision!", OU_CLASS_ERROR, OU_MODE_STD, &
+                        "fevl_evaluate2")
       call sys_halt()
     end select
 
@@ -743,8 +744,8 @@ contains
 
       if (iel .eq. 0) then
         ! report when element has not been found and go to next iteration
-        call output_line ('Point ' // trim(sys_siL(ipoint,10)) // ' not found!', &
-                          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluate2')
+        call output_line ("Point " // trim(sys_siL(ipoint,10)) // " not found!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluate2")
         Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
         cycle
       end if
@@ -812,6 +813,277 @@ contains
             end do
             Dvalues(iblock, ider, ipoint) = dval
           end do
+        end do
+      end if
+
+    end do ! ipoint
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate3 (CderType, Dvalues, rvector, Dpoints, Ielements, &
+      IelementsHint, cnonmeshPoints)
+
+!<description>
+  ! This subroutine is an extension of fevl_evaluate1(). It simultaneously evaluates
+  ! several types of function values (given by CderType) for all components of a
+  ! FE function (given by rvector). Thus, the evaluation of all the
+  ! element basis functions etc. has to be performed only once. The routine is called via
+  ! the interface fevl_evaluate(...).
+  ! E.g., instead of,
+  !
+  !   real(DP), dimension(3,npoints) :: Dvalues
+  !   call fevl_evaluate(DER_FUNC, Dvalues(1,:), rsol, Dpoints)
+  !   call fevl_evaluate(DER_DERIV_X, DderivX(1,:), rsol, Dpoints)
+  !   call fevl_evaluate(DER_DERIV_Y, DderivY(1,:), rsol, Dpoints)
+  !
+  ! one can use
+  !
+  !   integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
+  !   real(DP), dimension(3,npoints) :: Dvalues
+  !   call fevl_evaluate(CderType, Dvalues, rsol, Dpoints)
+  !
+!</description>
+
+!<input>
+  ! array of type of function values to evaluate (DER_FUNC, DER_DERIV_X etc.)
+  integer, dimension(:), intent(in) :: CderType
+
+  ! Solution vector representing the FE function that is to be evaluated
+  ! It is assumed that all components correspond to the same spatial discretisation and
+  ! use the same element type (i.e., only that of the first component is inquired)
+  type(t_vectorScalar), intent(in) :: rvector
+
+  ! list of points where to evaluate. DIMENSION(ndim,npoints)
+  real(DP), dimension(:,:), intent(in) :: Dpoints
+
+  ! OPTIONAL: A list of elements containing the points Dpoints.
+  ! If this is not specified, the element numbers containing the points are determined
+  ! automatically.
+  integer, dimension(:), intent(in), optional :: Ielements
+
+  ! OPTIONAL: A list of elements that are near the points in Dpoints.
+  ! This gives only a hint where to start searching for the actual elements containing
+  ! the points. This is ignored if Ielements is specified!
+  integer, dimension(:), intent(in), optional :: IelementsHint
+
+  ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens if a point is
+  ! located outside of the domain. May happen e.g. in nonconvex domains.
+  ! FEVL_NONMESHPTS_NONE is the default parameter if cnonmeshPoints is not specified.
+  integer, intent(in), optional :: cnonmeshPoints
+!</input>
+
+!<output>
+  ! values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(size(CderType), npoints)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: cnonmesh
+    integer :: ipoint, indof, nve, ibas, ider
+    integer(I32) :: celement
+    integer :: iel,iresult,iellast
+    integer, dimension(:), pointer :: p_IelementDistr
+    logical, dimension(EL_MAXNDER) :: Bder
+    real(DP) :: dval
+
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+
+    ! transformation
+    integer(I32) :: ctrafoType
+    real(DP), dimension(TRAFO_MAXDIMREFCOORD) :: DparPoint
+
+    ! values of basis functions and DOF`s
+    real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+    integer, dimension(EL_MAXNBAS) :: Idofs
+
+    ! pointer to the list of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    ! pointer to the spatial discretisation structure
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+
+    ! evaluation structure and tag
+    type(t_evalElement) :: revalElement
+    integer(I32) :: cevaluationTag
+
+    ! set shortcuts
+    p_rspatialDiscr => rvector%p_rspatialDiscr
+    p_RelementDistribution => p_rspatialDiscr%RelementDistr
+
+    if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      ! for uniform discretisations, get the element type in advance
+
+      ! element type
+      celement = p_RelementDistribution(1)%celement
+
+      ! number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+
+      ! number of vertices on the element
+      nve = elem_igetNVE(celement)
+
+      ! type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+
+      ! element evaluation tag; necessary for the preparation of the element
+      cevaluationTag = elem_getEvaluationTag(celement)
+
+      nullify(p_IelementDistr)
+    else
+      ! non-uniform discretisations
+      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr, p_IelementDistr)
+    end if
+
+    ! set pointer to the data vector
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvector, p_Fdata)
+    case default
+      call output_line ("Unsupported vector precision!", OU_CLASS_ERROR, OU_MODE_STD, &
+                        "fevl_evaluate3")
+      call sys_halt()
+    end select
+
+    ! inquire which types of function values are to be evaluated
+    Bder = .false.
+    do ider = 1, size(CderType)
+      Bder(CderType(ider)) = .true.
+    end do
+
+    cnonmesh = FEVL_NONMESHPTS_NONE
+    if (present(cnonmeshPoints)) then
+      cnonmesh = cnonmeshPoints
+    endif
+
+    iel = 1
+
+    ! loop over all points
+    do ipoint = 1,ubound(Dpoints,2)
+
+      ! get the element number that contains the point
+      if (present(Ielements)) then
+        ! either it is provided...
+        iel = Ielements (ipoint)
+      else
+        ! ...or the element has to be searched
+
+        if (present(IelementsHint)) then
+          ! if available, use the hint provided by the user
+          iel = IelementsHint (ipoint)
+        end if
+        ! otherwise, we use iel from the previous iteration as inital guess
+
+        ! use raytracing search to find the element containing the point
+        call tsrch_getElem_raytrace2D(Dpoints(:,ipoint), p_rspatialDiscr%p_rtriangulation, &
+          iel, iresult=iresult,ilastElement=iellast)
+
+        if (iresult .eq. -2) then
+          ! Not found, too many iterations. Probably the domain is too big.
+          ! Search again starting from the last found element, specify
+          ! 2*sqrt(NEL) as maximum number of steps (should work for rather
+          ! isotropic meshes) and try again.
+          iel = iellast
+          call tsrch_getElem_raytrace2D (&
+            Dpoints(:,ipoint), p_rspatialDiscr%p_rtriangulation,iel,&
+            iresult=iresult,ilastElement=iellast,&
+            imaxIterations=max(100,2*int(sqrt(real(p_rspatialDiscr%p_rtriangulation%NEL,DP)))))
+        end if
+
+        if (iel .eq. 0) then
+          ! if not found, use brute force search
+          call tsrch_getElem_BruteForce(Dpoints(:,ipoint), &
+                                        p_rspatialDiscr%p_rtriangulation, iel)
+        end if
+
+        if (iel .eq. 0) then
+          ! if element is still not found, inquire if nonmesh-points are allowed
+          if (cnonmesh .eq. FEVL_NONMESHPTS_NEARBY) then
+            ! if yes then find the closest element
+            call tsrch_getNearestElem_BruteForce(Dpoints(:,ipoint), &
+                   p_rspatialDiscr%p_rtriangulation, iel)
+            ! The evaluation routine then computes the FE function outside of the element.
+
+          else if (cnonmesh .eq. FEVL_NONMESHPTS_ZERO) then
+            ! if no then set the value to zero
+            Dvalues(:,ipoint) = 0.0_DP
+            ! go to next iteration
+            cycle
+          end if
+        end if
+      end if
+
+      if (iel .eq. 0) then
+        ! report when element has not been found and go to next iteration
+        call output_line ("Point " // trim(sys_siL(ipoint,10)) // " not found!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluate3")
+        Dvalues(:,ipoint) = 0.0_DP
+        cycle
+      end if
+
+      ! get the type of the element iel
+      if (associated(p_IelementDistr)) then
+        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+
+        ! get the number of local DOFs for trial and test functions
+        indof = elem_igetNDofLoc(celement)
+
+        ! number of vertices on the element
+        nve = elem_igetNVE(celement)
+
+        ! type of transformation from/to the reference element
+        ctrafoType = elem_igetTrafoType(celement)
+
+        ! get the element evaluation tag; necessary for the preparation of the element
+        cevaluationTag = elem_getEvaluationTag(celement)
+      end if
+
+      ! calculate the global DOFs on that element into IdofsTest.
+      call dof_locGlobMapping (p_rspatialDiscr, iel, Idofs)
+
+      ! get the element shape information
+      call elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
+             p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
+
+      ! calculate the transformation of the point to the reference element
+      call trafo_calcRefCoords (ctrafoType, revalElement%Dcoords, &
+                                Dpoints(:,ipoint), DparPoint)
+
+      ! calculate everything else what is necessary for the element
+      call elprep_prepareForEvaluation (revalElement, &
+             iand(cevaluationTag,not(EL_EVLTAG_COORDS)), p_rspatialDiscr%p_rtriangulation, &
+             iel, ctrafoType, DparPoint, Dpoints(:,ipoint))
+
+      ! call the element to calculate the values of the basis functions in the point.
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
+
+      ! calculate function values by multiplying the FE-coefficients with the values of
+      ! the basis functions and summing up
+      Dvalues(:,ipoint) = 0.0_DP
+      if (rvector%cdataType .eq. ST_DOUBLE) then
+        do ider = 1,size(CderType)
+          dval = 0.0_DP
+          do ibas = 1,indof
+            dval = dval + p_Ddata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+          end do
+          Dvalues(ider, ipoint) = dval
+        end do
+      else if (rvector%cdataType .eq. ST_SINGLE) then
+        do ider = 1,size(CderType)
+          dval = 0.0_DP
+          do ibas = 1,indof
+            dval = dval + p_Fdata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+          end do
+          Dvalues(ider, ipoint) = dval
         end do
       end if
 
@@ -894,8 +1166,8 @@ contains
 
     ! Are points given?
     if ((.not. present(Dpoints)) .and. (.not. present(DpointsRef))) then
-      call output_line ('Evaluation points not specified!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_mult')
+      call output_line ("Evaluation points not specified!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_mult")
     end if
 
     if (present(DpointsRef)) then
@@ -938,8 +1210,8 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate")
       call sys_halt()
     end select
 
@@ -1272,8 +1544,8 @@ contains
     end if
 
   else
-    call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_mult2')
+    call output_line("Unsupported vector precision!",&
+      OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_mult2")
     call sys_halt()
   end if
 
@@ -1404,8 +1676,8 @@ contains
 !    CASE (ST_SINGLE)
 !      CALL lsyssc_getbase_single(rvectorScalar,p_Fdata)
 !    CASE DEFAULT
-!      CALL output_line ('Unsupported vector precision!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+!      CALL output_line ("Unsupported vector precision!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate")
 !      CALL sys_halt()
 !    END SELECT
 !
@@ -1670,8 +1942,8 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim1')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim1")
       call sys_halt()
     end select
 
@@ -1890,7 +2162,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
 !</description>
 
@@ -2107,8 +2379,8 @@ contains
     end if
 
   else
-    call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim2')
+    call output_line("Unsupported vector precision!",&
+      OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim2")
     call sys_halt()
   end if
 
@@ -2136,7 +2408,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
 !</description>
 
@@ -2314,8 +2586,8 @@ contains
     end if
 
   else
-    call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim3')
+    call output_line("Unsupported vector precision!",&
+      OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim3")
     call sys_halt()
   end if
 
@@ -2342,7 +2614,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
   !
   ! The interface of this routine is designed to be called in callback
@@ -2533,8 +2805,8 @@ contains
     end if
 
   else
-    call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim4')
+    call output_line("Unsupported vector precision!",&
+      OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim4")
     call sys_halt()
   end if
 
@@ -2565,7 +2837,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
 !</description>
 
@@ -2749,8 +3021,8 @@ contains
     end if
 
   else
-    call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim5')
+    call output_line("Unsupported vector precision!",&
+      OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim5")
     call sys_halt()
   end if
 
@@ -2786,7 +3058,7 @@ contains
   type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
 
   ! Callback function used to evaluate the FE function
-  include 'intf_fecoefficient_sim.inc'
+  include "intf_fecoefficient_sim.inc"
 
   ! A list of points where to evaluate. All points must be inside
   ! of element ielement.
@@ -2988,7 +3260,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
 !</description>
 
@@ -2998,7 +3270,7 @@ contains
   type(t_evalElementSet), intent(in) :: revalElementSet
 
   ! Callback function used to evaluate the FE function
-  include 'intf_fecoefficient_sim.inc'
+  include "intf_fecoefficient_sim.inc"
 
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
@@ -3079,7 +3351,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
   !
   ! The interface of this routine is designed to be called in callback
@@ -3099,7 +3371,7 @@ contains
   type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
 
   ! Callback function used to evaluate the FE function
-  include 'intf_fecoefficient_sim.inc'
+  include "intf_fecoefficient_sim.inc"
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
@@ -3192,7 +3464,7 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! So, evaluating "simultaneously" on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
   ! elements is not allowed e.g..
 !</description>
 
@@ -3205,7 +3477,7 @@ contains
   type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
 
   ! Callback function used to evaluate the FE function
-  include 'intf_fecoefficient_sim.inc'
+  include "intf_fecoefficient_sim.inc"
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
@@ -3318,8 +3590,8 @@ contains
     if (associated(rvectorScalar%p_rspatialDiscr)) then
       p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
     else
-      call output_line('Vector does not provide discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d1')
+      call output_line("Vector does not provide discretisation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr1d1")
       call sys_halt()
     end if
 
@@ -3327,8 +3599,8 @@ contains
     if (associated(p_rspatialDiscr%p_rtriangulation)) then
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     else
-      call output_line('Discretisation does not provide triangulation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d1')
+      call output_line("Discretisation does not provide triangulation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr1d1")
       call sys_halt()
     end if
 
@@ -3454,8 +3726,8 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr1d2')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr1d2")
       call sys_halt()
     end select
 
@@ -3678,8 +3950,8 @@ contains
     if (associated(rvectorBlock%p_rblockDiscr%RspatialDiscr)) then
       p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
     else
-      call output_line('Vector does not provide discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d3')
+      call output_line("Vector does not provide discretisation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr1d3")
       call sys_halt()
     end if
 
@@ -3687,8 +3959,8 @@ contains
     if (associated(p_rspatialDiscr%p_rtriangulation)) then
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     else
-      call output_line('Discretisation does not provide triangulation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d3')
+      call output_line("Discretisation does not provide triangulation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr1d3")
       call sys_halt()
     end if
 
@@ -3869,8 +4141,8 @@ contains
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr1d4')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr1d4")
       call sys_halt()
     end select
 
@@ -4016,8 +4288,8 @@ contains
     if (associated(rvectorScalar%p_rspatialDiscr)) then
       p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
     else
-      call output_line('Vector does not provide discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d1')
+      call output_line("Vector does not provide discretisation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d1")
       call sys_halt()
     end if
 
@@ -4025,8 +4297,8 @@ contains
     if (associated(p_rspatialDiscr%p_rtriangulation)) then
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     else
-      call output_line('Discretisation does not provide triangulation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d1')
+      call output_line("Discretisation does not provide triangulation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d1")
       call sys_halt()
     end if
 
@@ -4034,8 +4306,8 @@ contains
     if (present(rboundaryRegion)) then
       ! Check if boundary region is given in 0-1 parametrisation
       if (rboundaryRegion%cparType .ne. BDR_PAR_01) then
-        call output_line ('Boundary region must be given in 0-1 parametrisation!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d1')
+        call output_line ("Boundary region must be given in 0-1 parametrisation!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d1")
         call sys_halt()
       end if
 
@@ -4196,8 +4468,8 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr2d2')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr2d2")
       call sys_halt()
     end select
 
@@ -4230,8 +4502,8 @@ contains
       end if
 
       if (iel .le. 0) then
-        call output_line ('Point '//trim(sys_siL(ipoint,10))//' not found!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d2')
+        call output_line ("Point "//trim(sys_siL(ipoint,10))//" not found!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d2")
         cycle
       end if
 
@@ -4460,8 +4732,8 @@ contains
     if (associated(rvectorBlock%p_rblockDiscr%RspatialDiscr)) then
       p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
     else
-      call output_line('Vector does not provide discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d3')
+      call output_line("Vector does not provide discretisation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d3")
       call sys_halt()
     end if
 
@@ -4469,8 +4741,8 @@ contains
     if (associated(p_rspatialDiscr%p_rtriangulation)) then
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     else
-      call output_line('Discretisation does not provide triangulation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d3')
+      call output_line("Discretisation does not provide triangulation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d3")
       call sys_halt()
     end if
 
@@ -4478,8 +4750,8 @@ contains
     if (present(rboundaryRegion)) then
       ! Check if boundary region is given in 0-1 parametrisation
       if (rboundaryRegion%cparType .ne. BDR_PAR_01) then
-        call output_line ('Boundary region must be given in 0-1 parametrisation!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d3')
+        call output_line ("Boundary region must be given in 0-1 parametrisation!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d3")
         call sys_halt()
       end if
 
@@ -4695,8 +4967,8 @@ contains
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr2d4')
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr2d4")
       call sys_halt()
     end select
 
@@ -4732,8 +5004,8 @@ contains
       end if
 
       if (iel .le. 0) then
-        call output_line ('Point '//trim(sys_siL(ipoint,10))//' not found!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr2d3')
+        call output_line ("Point "//trim(sys_siL(ipoint,10))//" not found!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluateBdr2d3")
         cycle
       end if
 
