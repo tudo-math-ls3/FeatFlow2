@@ -385,19 +385,19 @@ contains
     ! and expensive.
     rcollection%p_rvectorQuickAccess1 => rx2
 
-    ! Calculate ||u_h-u||_L2^2
+    ! Calculate ||u_1-u_2||_L2^2
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,fcalc_L2error,&
         rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfo)
 
     call fev2_releaseVectorList(rcoeffVectors)
         
-    ! Take the square root to get ||u_h-u||
+    ! Take the square root to get ||u_1-u_2||
     dintvalue = sqrt(dintvalue)
         
     call output_line ("L2-error = "//trim(sys_sdEL(dintvalue,10)))
 
     ! =================================
-    ! Calculate the L2-error of u_1 (coarse grid)
+    ! Calculate the H1-error of u_1 (coarse grid)
     ! against u_2 (fine grid)
     ! =================================
     
@@ -412,13 +412,13 @@ contains
     ! and expensive.
     rcollection%p_rvectorQuickAccess1 => rx2
 
-    ! Calculate ||u_h-u||_L2^2
+    ! Calculate ||D(u_1-u_2)||_L2^2
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,fcalc_H1error,&
         rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfo)
 
     call fev2_releaseVectorList(rcoeffVectors)
         
-    ! Take the square root to get ||u_h-u||
+    ! Take the square root to get ||u_1-u_2||
     dintvalue = sqrt(dintvalue)
         
     call output_line ("H1-error = "//trim(sys_sdEL(dintvalue,10)))
