@@ -39,6 +39,7 @@ program tutorial
   use tutorial004i
   use tutorial004j
   use tutorial004k
+  use tutorial004l
   
   use tutorial005a
   use tutorial005b
@@ -137,6 +138,7 @@ program tutorial
   use tutorial023d
   use tutorial023e
   use tutorial023f
+  use tutorial023g
 
   implicit none
   
@@ -182,6 +184,7 @@ program tutorial
   call start_tutorial004i
   call start_tutorial004j
   call start_tutorial004k
+  call start_tutorial004l
   
   call start_tutorial005a
   call start_tutorial005b
@@ -280,6 +283,7 @@ program tutorial
   call start_tutorial023d
   call start_tutorial023e
   call start_tutorial023f
+  call start_tutorial023g
 
   ! -----------------------------------------------------------------
   ! Clean up
