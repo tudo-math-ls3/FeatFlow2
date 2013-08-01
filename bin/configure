@@ -208,7 +208,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/graph.f90  " .
     "DataStructures/numbersets.f90 DataStructures/geneticalgorithm.f90  " .
     
-    "DataStructures/intgrouplist.f90  " .
+    "DataStructures/intgroupset.f90  " .
 
     "DOFMaintenance/bcassembly.f90  DOFMaintenance/bcassemblybase.f90 " .
     "DOFMaintenance/bilinearformevaluation.f90 DOFMaintenance/extstdassemblyinfo.f90 " .
