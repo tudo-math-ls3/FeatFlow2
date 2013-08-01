@@ -158,6 +158,7 @@
 		<File RelativePath=".\DataStructures\stackSP.f90"/></Filter>
 		<File RelativePath=".\DataStructures\geneticalgorithm.f90"/>
 		<File RelativePath=".\DataStructures\graph.f90"/>
+		<File RelativePath=".\DataStructures\intgroupset.f90"/>
 		<File RelativePath=".\DataStructures\numbersets.f90"/></Filter>
 		<Filter Name="DOFMaintenance">
 		<Filter Name="Interfaces">

@@ -4,7 +4,7 @@
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS;_DEBUG" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem;../../../kernel/PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS;_DEBUG" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -13,7 +13,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem;../../../kernel/PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -22,7 +22,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug Parallel|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" OpenMP="OpenMPParallelCode" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem;../../../kernel/PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" OpenMP="OpenMPParallelCode" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -31,7 +31,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release ohne IPO|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance;../../../kernel/DataStructures;../../../kernel/LinearSystem;../../../kernel/PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
@@ -62,7 +62,6 @@
 		<File RelativePath="..\..\..\kernel\ContinuousFormulation\boundarycondition.f90"/>
 		<File RelativePath="..\..\..\kernel\ContinuousFormulation\scalarpde.f90"/></Filter>
 		<Filter Name="Datastructures">
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylist.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistbase.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDP_DP.f90"/>
@@ -78,7 +77,7 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSP_SP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\geneticalgorithm.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\graph.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\list.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\intgroupset.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listbase.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listDP_DP.f90"/>
@@ -92,7 +91,6 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\listSP_DP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listSP_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listSP_SP.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\map.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapbase.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapDP_DP.f90"/>
@@ -107,15 +105,12 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\mapSP_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapSP_SP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\numbersets.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\octree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octreebase.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octreeDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octreeSP.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtreebase.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtreeDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtreeSP.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackDP.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackInt.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackSP.f90"/></Filter>
@@ -216,6 +211,17 @@
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/>
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\nonlinearsolver.f90"/></Filter>
 		<Filter Name="PDEOperators">
+		<File RelativePath="..\..\..\kernel\PDEOperators\afc.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doADIncrements.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doBounds.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doCorrect.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doLimitEdgewise.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doLimitNodal.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doMinModPrelimit.h"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcsc_buildVectorFCTScalar_doStdPrelimit.h"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabbase.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabscalar.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabscalarfct.f90"/>
