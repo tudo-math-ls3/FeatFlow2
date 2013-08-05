@@ -169,6 +169,13 @@
 !#
 !# 43.) spdiscr_commitBlockDiscr
 !#      -> Commits a block discretisation
+!#
+!# 44.) spdiscr_getNelemGroups
+!#      -> Determins the number of element groups. Each element group has an
+!#         element type and an underlying transformation.
+!#
+!# 45.) spdiscr_getElemGroupInfo
+!#      -> Determins information about an element group.
 !# 
 !#   The cubature information structure \\
 !# -------------------------------------- \\
@@ -4709,4 +4716,103 @@ contains
     call output_line ('h_IelementList:    '//trim(sys_siL(rtrafoInfoBlock%h_IelementList,15)))
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<function>
+
+  integer function spdiscr_getNelemGroups (rspatialDiscr)
+
+!<description>
+  ! Returns the number of element groups. Each element group defines
+  ! a set of elements with the same element type and transformati8on.
+!</description>
+
+!<input>
+  ! Discretisation structure
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+!</input>
+
+!<result>
+  ! Number of element groups.
+!</result>
+
+!</function>
+
+    spdiscr_getNelemGroups = rspatialDiscr%inumFESpaces
+
+  end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getElemGroupInfo (rspatialDiscr,igroup,celement,NEL,p_IelementList,ctrafoType)
+
+!<description>
+  ! Determins basic information about an element group.
+!</description>
+
+!<input>
+  ! Discretisation structure
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+  
+  ! Index of the group
+  integer, intent(in) :: igroup
+!</input>
+
+!<output>
+  ! OPTIONAL: Element type
+  integer(I32), intent(out), optional :: celement
+  
+  ! OPTIONAL: Number of elements in this group
+  integer, intent(out), optional :: NEL
+  
+  ! OPTIONAL: Pointer to a list of elements beloging to this group
+  integer, dimension(:), pointer, optional :: p_IelementList
+  
+  ! OPTIONAL: Underlying transformation
+  integer(I32), intent(out), optional :: ctrafoType
+!</output>
+
+!</subroutine>
+
+    ! Structure initialised?
+    if (rspatialDiscr%inumFESpaces .le. 0) then
+      call output_line ("Structure not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_getElemGroupInfo")
+      call sys_halt()
+    end if
+
+    if ((igroup .le. 0) .or. (igroup .gt. rspatialDiscr%inumFESpaces)) then
+      call output_line ("igroup invalid!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_getElemGroupInfo")
+      call sys_halt()
+    end if
+    
+    ! Element type in this block
+    if (present(celement)) then
+      celement = rspatialDiscr%RelementDistr(igroup)%celement
+    end if
+    
+    if (present(NEL)) then
+      NEL = rspatialDiscr%RelementDistr(igroup)%NEL
+    end if
+    
+    ! List of elements
+    if (present(p_IelementList)) then
+      if (rspatialDiscr%RelementDistr(igroup)%h_IelementList .ne. ST_NOHANDLE) then
+        call storage_getbase_int (rspatialDiscr%RelementDistr(igroup)%h_IelementList,&
+            p_IelementList)
+      else
+        nullify(p_IelementList)
+      end if
+    end if
+    
+    if (present(ctrafoType)) then
+      ctrafoType = rspatialDiscr%RelementDistr(igroup)%ctrafoType
+    end if
+    
+  end subroutine
+
 end module

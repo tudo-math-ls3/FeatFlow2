@@ -1283,7 +1283,9 @@ contains
           call output_line(&
               "Finite element does not support the calculation of the H1 error!",&
               OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalar_conf")
-          DelementError(:) = SYS_INFINITY_DP
+          if (present(DelementError)) then
+            DelementError(:) = SYS_INFINITY_DP
+          end if
           return
         end if
       end do
