@@ -691,6 +691,9 @@ module spatialdiscretisation
   public :: spdiscr_isBlockDiscrCompatible
   public :: spdiscr_isDiscrCompatible
   public :: spdiscr_isElemDistrCompatible
+  
+  public :: spdiscr_getNelemGroups
+  public :: spdiscr_getElemGroupInfo
 
   public :: t_scalarCubatureInfoBlock
   public :: t_scalarCubatureInfo
