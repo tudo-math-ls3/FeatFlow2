@@ -929,11 +929,10 @@ contains
     ! Standard problem structure that defines all underlying parameters.
     type(t_problem), intent(inout), target :: rproblem
 
-    ! Velocity vector for the nonlinearity. Must be specified if
-    ! GAMMA <> 0; can be omitted if GAMMA=0.
+    ! Velocity vector for the nonlinearity.
     type(t_vectorBlock), target :: rvelocityvector
     
-    ! Weight for the velocity vector; standard = -1.
+    ! Weight for the velocity vector
     real(DP), intent(in) :: dvectorWeight
     
     ! local variables
