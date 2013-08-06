@@ -931,10 +931,10 @@ contains
 
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    type(t_vectorBlock), target, optional :: rvelocityvector
+    type(t_vectorBlock), target :: rvelocityvector
     
     ! Weight for the velocity vector; standard = -1.
-    real(DP), intent(in), optional :: dvectorWeight
+    real(DP), intent(in) :: dvectorWeight
     
     ! local variables
     logical :: bshared
@@ -943,14 +943,9 @@ contains
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
-    real(DP) :: dvecWeight
     type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_IedgesDirichletBC
     type(t_scalarCubatureInfo) :: rcubatureInfo
-    
-      ! Standard value for dvectorWeight is = -1.
-      dvecWeight = -1.0_DP
-      if (present(dvectorWeight)) dvecWeight = dvectorWeight
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -981,41 +976,13 @@ contains
       end if
     
       ! ---------------------------------------------------
-      ! Plug in the mass matrix?
-      if (rnonlinearCCMatrix%dmass .ne. 0.0_DP) then
-       
-        ! Allocate memory if necessary. Normally this should not be necessary...
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
-        end if
+      ! Initialise the basic matrix with 0.0
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
       
-        call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
-            rnonlinearCCMatrix%dmass,0.0_DP,.false.,.false.,.true.,.true.)
-            
-        if (.not. bshared) then
-
-          ! Allocate memory if necessary. Normally this should not be necessary...
-          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
-            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
-          end if
-
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
-              rnonlinearCCMatrix%dmass,0.0_DP,.false.,.false.,.true.,.true.)
-        end if
-        
-      else
-      
-        ! Otherwise, initialise the basic matrix with 0.0
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
-        
-        if (.not. bshared) then
-          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
-        end if
-        
+      if (.not. bshared) then
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
       end if
-      
+
       ! If the submatrices A12 and A21 exist, fill them with zero.
       ! If they do not exist, we do not have to do anything.
       
@@ -1039,8 +1006,26 @@ contains
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
       end if
         
-      ! ---------------------------------------------------
-      ! Plug in the Stokes matrix?
+      ! =============================================================
+      ! Plug in the mass matrix
+      ! =============================================================
+      if (rnonlinearCCMatrix%dmass .ne. 0.0_DP) then
+       
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
+            rnonlinearCCMatrix%dmass,1.0_DP,.false.,.false.,.true.,.true.)
+            
+        if (.not. bshared) then
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%dmass,1.0_DP,.false.,.false.,.true.,.true.)
+        end if
+        
+      end if
+      
+      ! =============================================================
+      ! Plug in the Stokes matrix
+      ! =============================================================
       if (rnonlinearCCMatrix%dstokes .ne. 0.0_DP) then
         ! Plug in the Stokes matrix in case of the gradient tensor.
         ! In case of the deformation tensor or nonconstant viscosity,
@@ -1059,22 +1044,19 @@ contains
         end if
       end if
       
-      ! ---------------------------------------------------
-      ! That was easy -- the adventure begins now... The nonlinearity!
+      ! =============================================================
+      ! Plug in the convection. This is a nonlinear assembly!
+      ! =============================================================
       if ((rnonlinearCCMatrix%dconvection .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
-        if (.not. present(rvelocityvector)) then
-          call output_line ("Velocity vector not present!", &
-                             OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
-          call sys_halt()
-        end if
-      
         select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
         
+          ! ---------------------------------------------------------
           ! Streamline diffusion.
+          ! ---------------------------------------------------------
 
           if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             ! Not supported by this SD method.
@@ -1106,13 +1088,17 @@ contains
 
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
+                              dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix,rcubatureInfo=rcubatureInfo)
                               
           call spdiscr_releaseCubStructure (rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
+        
+          ! ---------------------------------------------------------
+          ! Streamline diffusion, new implementation
+          ! ---------------------------------------------------------
 
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
@@ -1170,6 +1156,11 @@ contains
           call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
         case (CCMASM_STAB_UPWIND)
+        
+          ! ---------------------------------------------------------
+          ! Upwind
+          ! ---------------------------------------------------------
+        
           ! Set up the upwind structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%p_rphysics%dnu
@@ -1190,14 +1181,14 @@ contains
               rcubatureInfo,rproblem%rmatrixAssembly%icubA)
 
           call conv_upwind2d (rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
+                              dvectorWeight, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))
                               
           if (.not. bshared) then
             ! Modify also the matrix block (2,2)
             call conv_upwind2d (rvelocityvector, rvelocityvector, &
-                                dvecWeight, 0.0_DP,&
+                                dvectorWeight, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))
           end if
@@ -1205,7 +1196,10 @@ contains
           call spdiscr_releaseCubStructure (rcubatureInfo)
 
         case (CCMASM_STAB_EDGEORIENTED)
+        
+          ! ---------------------------------------------------------
           ! Jump stabilisation.
+          ! ---------------------------------------------------------
 
           if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             ! Not supported by this SD method.
@@ -1240,7 +1234,7 @@ contains
 
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
+                              dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix,rcubatureInfo=rcubatureInfo)
 
@@ -1298,7 +1292,10 @@ contains
           end if
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
+        
+          ! ---------------------------------------------------------
           ! Jump stabilisation with precomputed matrix.
+          ! ---------------------------------------------------------
 
           if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             ! Not supported by this SD method.
@@ -1333,7 +1330,7 @@ contains
 
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
+                              dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix,rcubatureInfo=rcubatureInfo)
 
@@ -1374,7 +1371,10 @@ contains
           end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
-          ! Jump stabilisation.
+        
+          ! ---------------------------------------------------------
+          ! Jump stabilisation. New implementation of the SD method.
+          ! ---------------------------------------------------------
 
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -1495,7 +1495,10 @@ contains
       
         select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
+        
+          ! ---------------------------------------------------------
           ! Jump stabilisation.
+          ! ---------------------------------------------------------
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
