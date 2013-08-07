@@ -1,16 +1,4 @@
 #if 0
-! Undefine the keyword 'mynewline' (i.e. keep it) if this file is preprocessed 
-! by f90cpp and simply remove it if another preprocessor is used instead.
-#endif
-
-#ifdef USE_PREPROC_F90CPP
-#undef MYNEWLINE
-#else
-#define MYNEWLINE
-#endif
-
-
-#if 0
 ! Compute the Euclidean norm of a vector with 8 entries
 #endif
 

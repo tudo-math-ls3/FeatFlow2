@@ -27,6 +27,7 @@
 
 program preproctest
 
+#include "../../kernel/feat2constants.h"
 #include "preproctest.h"
 
   implicit none
