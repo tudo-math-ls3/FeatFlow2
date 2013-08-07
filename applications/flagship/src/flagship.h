@@ -20,28 +20,10 @@
 !##############################################################################
 #endif
 
-!#ifndef LANGUAGE
-!#define LANGUAGE LANGUAGE_F
-!#endif
-
-!#ifndef IDXADDR
-!#define IDXADDR LANGUAGE_F
-!#endif
-
 #include "../../kernel/feat2constants.h"
 #include "../../kernel/feat2macros.h"
 #include "../../kernel/System/fmath.h"
 #include "../../kernel/System/idxmanager.h"
-
-
-#if 0
-!##############################################################################
-! Use double precision and default integer
-!##############################################################################
-#endif
-
-!#define REAL_PREC DOUBLE_PREC
-!#undef  INT_PREC
 
 #if 0
 !##############################################################################
