@@ -16,6 +16,20 @@
 
 #if 0
 !##############################################################################
+! Undefine the keyword 'MYNEWLINE' (i.e. keep it) if this file is preprocessed 
+! by f90cpp and simply remove it if another preprocessor is used instead.
+!##############################################################################
+#endif
+
+#ifdef USE_PREPROC_F90CPP
+#undef MYNEWLINE
+#else
+#define MYNEWLINE
+#endif
+
+
+#if 0
+!##############################################################################
 ! Supported programming languages: C or Fortran
 !##############################################################################
 #endif
