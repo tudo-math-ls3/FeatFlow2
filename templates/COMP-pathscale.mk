@@ -63,7 +63,7 @@ pathscalemaxversion = $(shell if [ $(PATHSCALEVERSION_MAJOR) -lt $(1) ] || \
 
 
 ##############################################################################
-# compiler flags
+# Compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
@@ -90,6 +90,14 @@ ifeq ($(strip $(OPT)), EXPENSIVE)
 CFLAGSF77     := -ipa $(CFLAGSF77)
 CFLAGSC       := -ipa $(CFLAGSC)
 LDFLAGS       := -ipa $(LDFLAGS)
+endif
+
+
+
+# Check if Fortran source code files are preprocessed by F90CPP script.
+# Otherwise, set additional flags to enforce use of CPP preprocessor.
+ifeq ($(strip $(F90CPP)),)
+CFLAGSF77 := $(CFLAGSF77) -cpp
 endif
 
 

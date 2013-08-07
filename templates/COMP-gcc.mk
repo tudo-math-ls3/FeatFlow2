@@ -32,6 +32,7 @@ endif
 endif
 
 
+
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
@@ -87,7 +88,7 @@ gfortranmaxversion = $(shell if [ $(GFORTRANVERSION_MAJOR) -lt $(1) ] || \
 
 
 ##############################################################################
-# compiler flags
+# Compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
@@ -116,6 +117,14 @@ CFLAGSF77     := -flto $(CFLAGSF77)
 CFLAGSC       := -flto $(CFLAGSC)
 LDFLAGS       := -flto $(LDFLAGS)
 endif
+endif
+
+
+
+# Check if Fortran source code files are preprocessed by F90CPP script.
+# Otherwise, set additional flags to enforce use of CPP preprocessor.
+ifeq ($(strip $(F90CPP)),)
+CFLAGSF77 := $(CFLAGSF77) -cpp -ffree-line-length-none
 endif
 
 
