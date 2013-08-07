@@ -174,20 +174,20 @@
 !###############################################################################
 ! The following macro tries to detect the memory layout automatically
 !
-! Example: FEAT2_PP_AUTO_MEMORYLAYOUT()
-!          expands to the content of variable MEMORYLAYOUT if defined;
-!          if variable MEMORYLAYOUT is not set then the default value depends on
+! Example: FEAT2_PP_AUTO_MEMORY_LAYOUT()
+!          expands to the content of variable MEMORY_LAYOUT if defined;
+!          if variable MEMORY_LAYOUT is not set then the default value depends on
 !          the programming language which is determined via FEAT2_PP_AUTO_LANGUAGE
 !###############################################################################
 #endif
 
-#define FEAT2_PP_AUTO_MEMORYLAYOUT()              FEAT2_PP_GET_MEMORYLAYOUT(MEMORYLAYOUT)
-#define FEAT2_PP_GET_MEMORYLAYOUT(memorylayout)   FEAT2_PP_GET_MEMORYLAYOUT_I(memorylayout)
-#define FEAT2_PP_GET_MEMORYLAYOUT_I(memorylayout) FEAT2_PP_GET_MEMORYLAYOUT_##memorylayout(memorylayout)
+#define FEAT2_PP_AUTO_MEMORY_LAYOUT()              FEAT2_PP_GET_MEMORY_LAYOUT(MEMORY_LAYOUT)
+#define FEAT2_PP_GET_MEMORY_LAYOUT(memorylayout)   FEAT2_PP_GET_MEMORY_LAYOUT_I(memorylayout)
+#define FEAT2_PP_GET_MEMORY_LAYOUT_I(memorylayout) FEAT2_PP_GET_MEMORY_LAYOUT_##memorylayout(memorylayout)
 
-#define FEAT2_PP_GET_MEMORYLAYOUT_1(memorylayout)            memorylayout
-#define FEAT2_PP_GET_MEMORYLAYOUT_2(memorylayout)            memorylayout
-#define FEAT2_PP_GET_MEMORYLAYOUT_MEMORYLAYOUT(memorylayout) FEAT2_PP_AUTO_LANGUAGE()
+#define FEAT2_PP_GET_MEMORY_LAYOUT_1(memorylayout)             memorylayout
+#define FEAT2_PP_GET_MEMORY_LAYOUT_2(memorylayout)             memorylayout
+#define FEAT2_PP_GET_MEMORY_LAYOUT_MEMORY_LAYOUT(memorylayout) FEAT2_PP_AUTO_LANGUAGE()
 
 
 #if 0
