@@ -136,58 +136,39 @@
 ! The following macro tries to detect the programming language automatically
 !
 ! Example: FEAT2_PP_AUTO_LANGUAGE()
-!          expands to the content of variable LANGUAGE if defined;
-!          if variable LANGUAGE is not set then the default value is LANGUAGE_F
+!          expands to the content of the global variable LANGUAGE if defined;
+!          if variable LANGUAGE is not set then we try to identify the
+!          programming language by checking various preprocessor macros which
+!          are typically predefined by Fortran compilers.
+!          It is also possible to overwrite the global LANGUAGE variable by
+!          hand by passing the optional argument language.
 !###############################################################################
 #endif
 
-#define FEAT2_PP_AUTO_LANGUAGE()          FEAT2_PP_GET_LANGUAGE(LANGUAGE)
-#define FEAT2_PP_GET_LANGUAGE(language)   FEAT2_PP_GET_LANGUAGE_I(language)
-#define FEAT2_PP_GET_LANGUAGE_I(language) FEAT2_PP_GET_LANGUAGE_##language(language)
-
-#define FEAT2_PP_GET_LANGUAGE_1(language)        language
-#define FEAT2_PP_GET_LANGUAGE_2(language)        language
-#define FEAT2_PP_GET_LANGUAGE_LANGUAGE(language) LANGUAGE_F
-
+#define FEAT2_PP_AUTO_LANGUAGE(language) FEAT2_PP_GET_LANGUAGE_OVERRIDE(language)
 
 #if 0
-!###############################################################################
-! The following macro tries to detect the array index addressing automatically
-!
-! Example: FEAT2_PP_AUTO_IDXADDR()
-!          expands to the content of variable IDXADDR if defined;
-!          if variable IDXADDR is not set then the default value depends on the
-!          programming language which is determined via FEAT2_PP_AUTO_LANGUAGE
-!###############################################################################
+!-------------------------------------------------------------------------------
+! Auxiliary macros that should not be called directly
+!-------------------------------------------------------------------------------
 #endif
 
-#define FEAT2_PP_AUTO_IDXADDR()         FEAT2_PP_GET_IDXADDR(IDXADDR)
-#define FEAT2_PP_GET_IDXADDR(idxaddr)   FEAT2_PP_GET_IDXADDR_I(idxaddr)
-#define FEAT2_PP_GET_IDXADDR_I(idxaddr) FEAT2_PP_GET_IDXADDR_##idxaddr(idxaddr)
+#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_GET_LANGUAGE_##language()
+#define FEAT2_PP_GET_LANGUAGE_1()                LANGUAGE_C
+#define FEAT2_PP_GET_LANGUAGE_2()                LANGUAGE_F
+#define FEAT2_PP_GET_LANGUAGE_()                 FEAT2_PP_GET_LANGUAGE(LANGUAGE)
+#define FEAT2_PP_GET_LANGUAGE(language)          FEAT2_PP_GET_LANGUAGE_I(language)
+#define FEAT2_PP_GET_LANGUAGE_I(language)        FEAT2_PP_GET_LANGUAGE_##language()
 
-#define FEAT2_PP_GET_IDXADDR_1(idxaddr)       idxaddr
-#define FEAT2_PP_GET_IDXADDR_2(idxaddr)       idxaddr
-#define FEAT2_PP_GET_IDXADDR_IDXADDR(idxaddr) FEAT2_PP_AUTO_LANGUAGE()
-
-
-#if 0
-!###############################################################################
-! The following macro tries to detect the memory layout automatically
-!
-! Example: FEAT2_PP_AUTO_MEMORY_LAYOUT()
-!          expands to the content of variable MEMORY_LAYOUT if defined;
-!          if variable MEMORY_LAYOUT is not set then the default value depends on
-!          the programming language which is determined via FEAT2_PP_AUTO_LANGUAGE
-!###############################################################################
+#if defined(USE_PREPROC_F90CPP) ||                     \
+    defined(__GFORTRAN__) || defined(__G95__) ||       \
+    defined(_LANGUAGE_FORTRAN) ||                      \
+    defined(__SUNPRO_F90) || defined (__SUNPRO_F95) || \
+    defined(__INTEL_COMPILER) && !defined(__ICC)
+#define FEAT2_PP_GET_LANGUAGE_LANGUAGE()  LANGUAGE_F
+#else
+#define FEAT2_PP_GET_LANGUAGE_LANGUAGE()  LANGUAGE_C
 #endif
-
-#define FEAT2_PP_AUTO_MEMORY_LAYOUT()              FEAT2_PP_GET_MEMORY_LAYOUT(MEMORY_LAYOUT)
-#define FEAT2_PP_GET_MEMORY_LAYOUT(memorylayout)   FEAT2_PP_GET_MEMORY_LAYOUT_I(memorylayout)
-#define FEAT2_PP_GET_MEMORY_LAYOUT_I(memorylayout) FEAT2_PP_GET_MEMORY_LAYOUT_##memorylayout(memorylayout)
-
-#define FEAT2_PP_GET_MEMORY_LAYOUT_1(memorylayout)             memorylayout
-#define FEAT2_PP_GET_MEMORY_LAYOUT_2(memorylayout)             memorylayout
-#define FEAT2_PP_GET_MEMORY_LAYOUT_MEMORY_LAYOUT(memorylayout) FEAT2_PP_AUTO_LANGUAGE()
 
 
 #if 0
@@ -202,17 +183,18 @@
 !###############################################################################
 #endif
 
-#define FEAT2_PP_CONST(value,precision)                 FEAT2_PP_CONST_LANG(value,precision,FEAT2_PP_AUTO_LANGUAGE())
-#define FEAT2_PP_CONST_C(value,precision)               FEAT2_PP_CONST_LANG(value,precision,LANGUAGE_C)
-#define FEAT2_PP_CONST_F(value,precision)               FEAT2_PP_CONST_LANG(value,precision,LANGUAGE_F)
+#define FEAT2_PP_CONST(value,precision)   FEAT2_PP_CONST_LANG(value,precision,FEAT2_PP_AUTO_LANGUAGE())
+#define FEAT2_PP_CONST_C(value,precision) FEAT2_PP_CONST_LANG(value,precision,LANGUAGE_C)
+#define FEAT2_PP_CONST_F(value,precision) FEAT2_PP_CONST_LANG(value,precision,LANGUAGE_F)
+
+#if 0
+!-------------------------------------------------------------------------------
+! Auxiliary macros that should not be called directly
+!-------------------------------------------------------------------------------
+#endif
 
 #define FEAT2_PP_CONST_LANG(value,precision,language)   FEAT2_PP_CONST_LANG_I(value,precision,language)
 #define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST##_##precision##_##language(value)
-
-
-#if 0
-! Do not call the following auxiliary macros directly
-#endif
 
 #define FEAT2_PP_CONST_1_1(value) value##L
 #define FEAT2_PP_CONST_2_1(value) value##E
@@ -226,7 +208,6 @@
 #define FEAT2_PP_CONST_6_1(value) value
 #define FEAT2_PP_CONST_7_1(value) value
 #define FEAT2_PP_CONST_8_1(value) value##L
-
 
 #define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value##_##prec_f
 #define FEAT2_PP_CONST_CONCAT_F(value,prec_f) FEAT2_PP_CONST_CONCAT_F_I(value,prec_f)
