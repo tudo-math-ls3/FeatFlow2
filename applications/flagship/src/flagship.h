@@ -20,34 +20,19 @@
 !##############################################################################
 #endif
 
-#ifndef LANGUAGE
-#define LANGUAGE LANGUAGE_F
-#endif
+!#ifndef LANGUAGE
+!#define LANGUAGE LANGUAGE_F
+!#endif
 
-#ifndef IDXADDR
-#define IDXADDR LANGUAGE_F
-#endif
+!#ifndef IDXADDR
+!#define IDXADDR LANGUAGE_F
+!#endif
 
 #include "../../kernel/feat2constants.h"
 #include "../../kernel/feat2macros.h"
 #include "../../kernel/System/fmath.h"
 #include "../../kernel/System/idxmanager.h"
 
-#if 0
-!##############################################################################
-! Preserve manual line breaks if preprocessing is done by F90CPP script
-!##############################################################################
-#endif
-
-#if LANGUAGE == LANGUAGE_F
-#ifdef USE_PREPROC_F90CPP
-#undef MYNEWLINE
-#else
-#define MYNEWLINE
-#endif
-#else
-#define MYNEWLINE
-#endif
 
 #if 0
 !##############################################################################
@@ -55,8 +40,8 @@
 !##############################################################################
 #endif
 
-#define REAL_PREC DOUBLE_PREC
-#undef  INT_PREC
+!#define REAL_PREC DOUBLE_PREC
+!#undef  INT_PREC
 
 #if 0
 !##############################################################################
