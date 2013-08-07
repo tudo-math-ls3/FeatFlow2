@@ -40,26 +40,6 @@
 
 #if 0
 !##############################################################################
-! Supported array index addressing: C- or Fortran-style
-!##############################################################################
-#endif
-
-#define IDXADDR_C LANGUAGE_C
-#define IDXADDR_F LANGUAGE_F
-
-
-#if 0
-!##############################################################################
-! Supported memory layouts: Column/Row Major Ordering
-!##############################################################################
-#endif
-
-#define COLUMN_MAJOR_ORDER 1
-#define ROW_MAJOR_ORDER    2
-
-
-#if 0
-!##############################################################################
 ! Supported precisions: Quad, Double, Single, Integer, I8, I16, I32, I64
 !##############################################################################
 #endif
