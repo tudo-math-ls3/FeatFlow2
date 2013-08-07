@@ -22,7 +22,6 @@
 #include "../../cudaDMA.h"
 #endif
 
-#define LANGUAGE LANGUAGE_C
 #include "../../flagship.h"
 #include "../../cudaMacros.h"
 

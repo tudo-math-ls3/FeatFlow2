@@ -13,7 +13,6 @@
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
 
-#define LANGUAGE LANGUAGE_C
 #include "flagship.h"
 
 /*******************************************************************************
