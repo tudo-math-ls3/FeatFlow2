@@ -132,6 +132,11 @@ program tutorial
   use tutorial021a
   use tutorial021b
 
+  use tutorial022a
+  use tutorial022b
+  use tutorial022c
+  use tutorial022d
+
   use tutorial023a
   use tutorial023b
   use tutorial023c
@@ -276,6 +281,11 @@ program tutorial
 
   call start_tutorial021a
   call start_tutorial021b
+
+  call start_tutorial022a
+  call start_tutorial022b
+  call start_tutorial022c
+  call start_tutorial022d
 
   call start_tutorial023a
   call start_tutorial023b
