@@ -36,12 +36,12 @@
 !# conformal discretisations - under a few conditions:
 !#
 !# 1. Both the coarse and fine mesh discretisation must have the same number
-!#    of FE spaces ( = number of element distributions).
+!#    of FE spaces ( = number of element groups).
 !#
 !# 2. If a coarse mesh element IELC, which was refined into the elements
 !#    IELF_1, ..., IELF_k in the fine mesh, belongs to the element
-!#    distribution i of the coarse mesh discretisation, then all its children
-!#    IELF_1, ..., IELF_k must (also) belong to the element distribution i
+!#    group i of the coarse mesh discretisation, then all its children
+!#    IELF_1, ..., IELF_k must (also) belong to the element group i
 !#    of the fine mesh discretisation.
 !#
 !# Please note that the above conditions are SILENTLY ASSUMED to be fulfilled.
@@ -244,7 +244,8 @@ contains
 
     ! In the case the discretisations are conformal, they must have the same
     ! number of FE spaces.
-    if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
+    if(spdiscr_getNelemGroups(rdiscretisationCoarse) .ne. &
+       spdiscr_getNelemGroups(rdiscretisationFine)) then
 
       call output_line ("Discretisations must have same number of FE spaces!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatrixStruct")
@@ -353,7 +354,8 @@ contains
 
     ! In the case the discretisations are conformal, they must have the same
     ! number of FE spaces.
-    if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
+    if(spdiscr_getNelemGroups(rdiscretisationCoarse) .ne. &
+       spdiscr_getNelemGroups(rdiscretisationFine)) then
 
       call output_line ("Discretisations must have same number of FE spaces!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMassMatrix")
@@ -483,7 +485,8 @@ contains
 
     ! In the case the discretisations are conformal, they must have the same
     ! number of FE spaces.
-    if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
+    if(spdiscr_getNelemGroups(rdiscretisationCoarse) .ne. &
+       spdiscr_getNelemGroups(rdiscretisationFine)) then
 
       call output_line ("Discretisations must have same number of FE spaces!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProlMatrix")
@@ -612,7 +615,8 @@ contains
 
     ! In the case the discretisations are conformal, they must have the same
     ! number of FE spaces.
-    if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
+    if(spdiscr_getNelemGroups(rdiscretisationCoarse) .ne. &
+       spdiscr_getNelemGroups(rdiscretisationFine)) then
 
       call output_line ("Discretisations must have same number of FE spaces!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterpMatrix")
@@ -700,9 +704,12 @@ contains
 
   ! local variables
   integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
-  integer :: IDOFE, JDOFE, i, IHELP, IELDIST
+  integer :: IDOFE, JDOFE, i, IHELP, ielemGroup
   integer :: IELC,IELF,IELIDX,NELREF
   logical :: BSORT
+  
+  ! Element type on the coarse and fine mesh
+  integer(I32) :: celemCoarse, celemFine
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -726,7 +733,7 @@ contains
   ! Currently active memory block
   integer :: icurrentblock
 
-  ! Number of elements in the current coarse/fine mesh element distribution
+  ! Number of elements in the current coarse/fine mesh element group
   integer :: NELC, NELF
 
   ! Size of memory blocks
@@ -757,9 +764,6 @@ contains
 
   ! A pointer to an element-number list
   integer, dimension(:), pointer :: p_IelementList,p_IelementRef
-
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! Number of elements that have already been processed and number of
   ! elements that are to be processed in the current run
@@ -907,23 +911,24 @@ contains
     ! to have at least one element per line.
     NA = NEQ
 
-    ! Loop through all element distributions and determine maximum values
+    ! Loop through all element groups and determine maximum values
     inmaxdofCoarse = 0
     inmaxdofFine = 0
     nmaxelementsCoarse = 0
     nmaxelementsFine = 0
-    do i = 1, rdiscrCoarse%inumFESpaces
+    do i = 1, spdiscr_getNelemGroups(rdiscrCoarse)
 
-      ! Activate the current coarse mesh element distribution
-      p_relementDistribution => rdiscrCoarse%RelementDistr(i)
+      ! Element type on the coarse and fine grid
+      call spdiscr_getElemGroupInfo (rdiscrCoarse,i,celemCoarse,NELC)
+      call spdiscr_getElemGroupInfo (rdiscrFine,i,celemFine)
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(rdiscrCoarse%RelementDistr(i)%celement)
-      indofFine = elem_igetNDofLoc(rdiscrFine%RelementDistr(i)%celement)
+      indofCoarse = elem_igetNDofLoc(celemCoarse)
+      indofFine = elem_igetNDofLoc(celemFine)
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,NELC)
 
       ! Now calculate the number of fine mesh elements we want to process
       ! in one run.
@@ -951,29 +956,22 @@ contains
     ! And allocate the refinemed element list for the test functions
     allocate(p_IelementRef(nelementsFine))
 
-    ! Now let us loop over all element distributions
-    do IELDIST = 1, rdiscrCoarse%inumFESpaces
+    ! Now let us loop over all element groups
+    do ielemGroup = 1, spdiscr_getNelemGroups(rdiscrCoarse)
 
-      ! Activate the current coarse mesh element distribution
-      p_relementDistribution => rdiscrCoarse%RelementDistr(IELDIST)
+      ! Activate the current coarse mesh element group
+      call spdiscr_getElemGroupInfo (rdiscrCoarse,ielemGroup,celemCoarse,NELC,p_IelementList)
+      call spdiscr_getElemGroupInfo (rdiscrCoarse,ielemGroup,celemFine)
 
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      if (NELC .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relementDistribution%celement)
-      indofFine = elem_igetNDofLoc(rdiscrFine%RelementDistr(IELDIST)%celement)
+      indofCoarse = elem_igetNDofLoc(celemCoarse)
+      indofFine = elem_igetNDofLoc(celemFine)
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL)
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that the trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of coarse mesh elements there.
-      NELC = p_relementDistribution%NEL
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,NELC)
 
       ! Set the pointers/indices to the initial position. During the
       ! search for new DOF`s, these might be changed if there is not enough
@@ -1287,7 +1285,7 @@ contains
 
       end do ! WHILE(nelementsDone .LT. NEL)
 
-    end do ! IELDIST
+    end do ! ielemGroup
 
     ! Release the fine mesh element list
     deallocate(p_IelementRef)
@@ -1473,7 +1471,7 @@ contains
 
 
   ! local variables
-  integer :: i,JDFG, ICUBP, NELC, NELF, IELDIST
+  integer :: i,JDFG, ICUBP, NELC, NELF, ielemGroup
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
@@ -1627,7 +1625,7 @@ contains
       p_rcubatureInfoFine => rcubatureInfoFine
     end if
 
-    ! Let us loop over all element distributions and determine the
+    ! Let us loop over all cubature blocks and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -1643,7 +1641,7 @@ contains
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
@@ -1726,12 +1724,12 @@ contains
     allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
 
-    ! Let us run through the element distributions
+    ! Let us run through the cubature blocks
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
-          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
+          ielemGroup,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine,NEL=NELF)
@@ -2108,7 +2106,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k,JDFG, ICUBP, NELC,NELF, IELDIST
+  integer :: i,k,JDFG, ICUBP, NELC,NELF, ielemGroup
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
@@ -2272,7 +2270,7 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
 
-    ! Let us loop over all element distributions and determine the
+    ! Let us loop over all cubature blocks and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -2288,7 +2286,7 @@ contains
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
@@ -2388,9 +2386,9 @@ contains
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
-          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
+          ielemGroup,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
@@ -2724,7 +2722,7 @@ contains
 
       end do ! while(nelementsDone .lt. NELC)
 
-    end do ! IELDIST
+    end do ! ielemGroup
 
     ! Okay, there is one last thing left: Scale the matrix rows by the
     ! global averaging weights!
@@ -2827,7 +2825,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k,JDFG, ICUBP, NELC,NELF, IELDIST
+  integer :: i,k,JDFG, ICUBP, NELC,NELF, ielemGroup
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
@@ -2991,7 +2989,7 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
 
-    ! Let us loop over all element distributions and determine the
+    ! Let us loop over all element groups and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -3007,7 +3005,7 @@ contains
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
@@ -3104,9 +3102,9 @@ contains
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
-      ! Get the element distribution, element id, number of elements,...
+      ! Get the element group, element id, number of elements,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
-          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
+          ielemGroup,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
@@ -3477,7 +3475,7 @@ contains
 
       end do ! while(nelementsDone .lt. NELC)
 
-    end do ! IELDIST
+    end do ! ielemGroup
 
     ! Okay, there is one last thing left: Scale the matrix columns by the
     ! global averaging weights!

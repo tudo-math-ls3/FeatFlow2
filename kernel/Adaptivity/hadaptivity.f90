@@ -185,7 +185,7 @@ contains
       call hadapt_setVertexCoords3D(rhadapt,&
                                     rtriangulation%h_DvertexCoords,&
                                     rtriangulation%NVT)
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_initFromTriangulation')
       call sys_halt()
@@ -263,7 +263,7 @@ contains
       call hadapt_getVertexCoords3D(rhadapt,&
                                     rtriangulation%h_DvertexCoords,&
                                     rtriangulation%NVT)
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_generateRawMesh')
       call sys_halt()
@@ -337,7 +337,7 @@ contains
       case(NDIM3D)
         call otree_release(rhadapt%rVertexCoordinates3D)
 
-      case DEFAULT
+      case default
         call output_line('Invalid spatial dimension!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_releaseAdaptation')
         call sys_halt()
@@ -584,7 +584,7 @@ contains
       case(NDIM3D)
         call otree_duplicate(rhadapt%rVertexCoordinates3D,&
                                    rhadaptBackup%rVertexCoordinates3D)
-      case DEFAULT
+      case default
         call output_line('Invalid spatial dimension!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_duplicateAdaptation')
         call sys_halt()
@@ -752,7 +752,7 @@ contains
       case(NDIM3D)
         call otree_restore(rhadaptBackup%rVertexCoordinates3D,&
                                  rhadapt%rVertexCoordinates3D)
-      case DEFAULT
+      case default
         call output_line('Invalid spatial dimension!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_restoreAdaptation')
         call sys_halt()
@@ -968,7 +968,7 @@ contains
         call sys_halt()
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
       call sys_halt()
@@ -1111,13 +1111,13 @@ contains
         call storage_realloc('hadapt_performAdaptation', rhadapt%NVT,&
                              rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported spatial dimension!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line('Unsupported refinement strategy!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
       call sys_halt()
@@ -1264,7 +1264,7 @@ contains
         call sys_halt()
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
       call sys_halt()
@@ -1319,7 +1319,7 @@ contains
         write(UNIT=iunit,FMT=10) otree_getZ(rhadapt%rVertexCoordinates3D, ivt)
       end do
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
       call sys_halt()
@@ -1343,7 +1343,7 @@ contains
         write(UNIT=iunit,FMT=*) 'quad 4'
         write(UNIT=iunit,FMT=30) rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D, iel)
 
-      case DEFAULT
+      case default
         call output_line('Invalid element type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
         call sys_halt()

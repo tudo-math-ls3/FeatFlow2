@@ -1985,7 +1985,7 @@ contains
                 write(mfile,'(A)')'phex8 8'
                 write(mfile,'(8I8)') p_IverticesAtElement(1:8,iel)
 
-              case DEFAULT
+              case default
                 call output_line ('Invalid element!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
               end select
@@ -3123,7 +3123,7 @@ contains
               nod8ids(8) = p_IverticesAtElement(8,iel)
               call fgmvwrite_cell_type('phex8 8',8,nod8ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -3170,7 +3170,7 @@ contains
               nod2ids(2) = iel+rexport%p_rtriangulation%NVT
               call fgmvwrite_cell_type('line 2',2,nod2ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -3697,7 +3697,7 @@ contains
               Z(j) = real(p_Ddata2D(3,j))
             end do
 
-          case DEFAULT
+          case default
             call output_line ('Invalid spatial dimensions for polygon output!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
           end select
@@ -3911,7 +3911,7 @@ contains
           write(mfile, '(2I10,A,4I10)') j, k, ' quad', &
               p_IverticesAtElement(1:4,j)
 
-        case DEFAULT
+        case default
           call output_line ('Invalid element!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeAVS')
 
@@ -6932,7 +6932,7 @@ contains
           read(mfile,*) Dnode(:)
           call ucd_addVariableVertexBased (rexport,sname,UCD_VAR_STANDARD,Dnode)
 
-        case DEFAULT
+        case default
           call output_line ('Error reading GMV data! Unknown variable type!', &
                   OU_CLASS_ERROR,OU_MODE_STD,'read_variables')
           call sys_halt()
@@ -6998,7 +6998,7 @@ contains
         ! Node/Vertex based data.
         allocate(Imat(rexport%p_rtriangulation%NVT))
 
-      case DEFAULT
+      case default
         call output_line ('Error reading GMV data! Unknown variable type!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'read_materials')
         call sys_halt()
@@ -7110,7 +7110,7 @@ contains
         ! Deallocate memory
         deallocate(Ddata)
 
-      case DEFAULT
+      case default
         call output_line ('Error reading GMV data! Unknown variable type!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'read_velocity')
         call sys_halt()
@@ -7218,7 +7218,7 @@ contains
           ! Deallocate memory
           deallocate(Ddata)
 
-        case DEFAULT
+        case default
           call output_line ('Error reading GMV data! Unknown variable type!', &
               OU_CLASS_ERROR,OU_MODE_STD,'read_vectors')
           call sys_halt()
@@ -7438,7 +7438,7 @@ contains
         ! Generate all missing information.
         call tria_initStandardMeshFromRaw(rtriangulation)
 
-      case DEFAULT
+      case default
         ! For an (efficient) implementation of reconstructing InodalProperty
         ! in 3D, see [Jens Acker, Diploma Thesis].
         call output_line ('Only 2D supported! Cannot reconstruct InodalProperty!', &
@@ -7791,7 +7791,7 @@ contains
     case (UCD_FORMAT_GMV,UCD_FORMAT_AVS,UCD_FORMAT_VTK)
       ! Here it is ok to change the filename
       rexport%sfilename = sfilename
-    case DEFAULT
+    case default
       call output_line ('Cannot change filename', &
                         OU_CLASS_ERROR,OU_MODE_STD,'ucd_setFilename')
       call sys_halt()

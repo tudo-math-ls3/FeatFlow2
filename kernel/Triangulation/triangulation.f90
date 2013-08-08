@@ -2707,7 +2707,7 @@ contains
       call tria_genEdgesAtElement3D      (rtriangulation)
       call tria_genFacesAtElement3D      (rtriangulation)
 
-    case DEFAULT
+    case default
       call output_line ("Triangulation structure not initialised!", &
                         OU_CLASS_ERROR,OU_MODE_STD,"tria_initExtendedRawMesh")
       call sys_halt()
@@ -2902,7 +2902,7 @@ contains
 
       ! call tria_genElementVolume3D (rtriangulation)
 
-    case DEFAULT
+    case default
       call output_line ("Triangulation structure not initialised!", &
                         OU_CLASS_ERROR,OU_MODE_STD,"tria_generateStandardMeshFromRaw")
       call sys_halt()
@@ -3057,7 +3057,7 @@ contains
       ! Refine the boundary
       call tria_refineBdry2lv3D(rsourceTriangulation, rdestTria, rboundary)
 
-    case DEFAULT
+    case default
       call output_line ("Triangulation structure not initialised!", &
                         OU_CLASS_ERROR,OU_MODE_STD,"tria_refine2LevelOrdering")
       call sys_halt()
@@ -5123,7 +5123,7 @@ contains
           p_IvertAtElementDest(4,iel7) = p_IedgesAtElementSource(6,iel)+NVTsrc
 
 
-        case DEFAULT
+        case default
           call output_line("Unsupported type of element shape",&
                            OU_CLASS_ERROR,OU_MODE_STD,"tria_refineMesh2lv3D")
           call sys_halt()
@@ -5731,7 +5731,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,"tria_exportTriFile")
       call sys_halt()
 
-    case DEFAULT
+    case default
       call output_line ("Triangulation structure not properly initialised!", &
                         OU_CLASS_ERROR,OU_MODE_STD,"tria_exportTriFile")
       call sys_halt()
@@ -7807,7 +7807,7 @@ contains
     case (TRIA_NVEHEXA3D)
       tria_getNAE_direct = TRIA_NAEHEXA3D
 
-    case DEFAULT
+    case default
       tria_getNAE_direct = 0
     end select
 
@@ -7859,7 +7859,7 @@ contains
     case (TRIA_NVEHEXA3D)
       tria_getNAE_indirect = TRIA_NAEHEXA3D
 
-    case DEFAULT
+    case default
       tria_getNAE_indirect = 0
     end select
 
@@ -8332,7 +8332,7 @@ contains
       ! Deallocate memory, that is it.
       deallocate(IelementFlag)
 
-    case DEFAULT
+    case default
       call output_line ("tria_getSubmeshNeighbourhood: Dimension not implemented!", &
                         OU_CLASS_ERROR,OU_MODE_STD,"mysubroutine")
       call sys_halt()
@@ -15183,7 +15183,7 @@ contains
         end do
 
 
-      case DEFAULT
+      case default
         call output_line("Unsupported type of element shape",&
                          OU_CLASS_ERROR,OU_MODE_STD,"tria_genVerticesAtEdge3D")
         call sys_halt()

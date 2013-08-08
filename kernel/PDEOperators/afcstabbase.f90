@@ -3647,7 +3647,7 @@ contains
 
       !-------------------------------------------------------------------------
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_allocInternalData')
       call sys_halt()

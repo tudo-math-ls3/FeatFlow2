@@ -3701,7 +3701,7 @@ contains
       isize = size(p_rnode%p_Blogical1D)
     case (ST_CHAR)
       isize = size(p_rnode%p_Schar1D)
-    case DEFAULT
+    case default
       call output_line ('Invalid data type!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize1D')
       call sys_halt()
@@ -16861,7 +16861,7 @@ contains
                    p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1)))
           call fpdb_getdata_char1d(p_fpdbDataItem, p_rnode%p_Schar1D)
 
-        case DEFAULT
+        case default
           call output_line ('Invalid data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
           call sys_halt()

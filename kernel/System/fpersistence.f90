@@ -2120,7 +2120,7 @@ contains
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
 
 
-      case DEFAULT
+      case default
         call output_line ('Undefined data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
         call sys_halt()
@@ -2299,7 +2299,7 @@ contains
       case (FPDB_CHAR3D)
         str = 'FPDB_CHAR3D'
 
-      case DEFAULT
+      case default
         str = 'unknown'
       end select
     end function ctype2String

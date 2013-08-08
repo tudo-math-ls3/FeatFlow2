@@ -1434,7 +1434,7 @@ contains
       ! (0 .le. dparloc .le. length(segment))
       dparloc = dpar - dcurrentpar
 
-    case DEFAULT
+    case default
       iseg = 0
       istartidx = 0
       dcurrentpar = 0.0_DP
@@ -1598,7 +1598,7 @@ contains
       call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, dx)
       call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, dy)
 
-    case DEFAULT
+    case default
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
       call sys_halt()
@@ -1762,7 +1762,7 @@ contains
         call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, Dx(ipoint))
         call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, Dy(ipoint))
 
-      case DEFAULT
+      case default
         call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_mult')
         call sys_halt()
@@ -1928,7 +1928,7 @@ contains
           call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, Dx(ipoint,iel))
           call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, Dy(ipoint,iel))
           
-        case DEFAULT
+        case default
           call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                             OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
           call sys_halt()
@@ -3461,7 +3461,7 @@ contains
       dny0 = -dny0
       call fparser_evalFunction(rfparser, icomp+4, D1, dnx0)
 
-    case DEFAULT
+    case default
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getNormal2D')
       call sys_halt()

@@ -727,7 +727,7 @@ contains
           call vecio_writeArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorHR')
       call sys_halt()
@@ -872,7 +872,7 @@ contains
           call vecio_readArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_readVectorHR')
       call sys_halt()
@@ -1010,7 +1010,7 @@ contains
           end if
         end if
       end do
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorHR')
       call sys_halt()
@@ -1196,7 +1196,7 @@ contains
           end if
         end if
       end do
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_readBlockVectorHR')
       call sys_halt()
@@ -1300,7 +1300,7 @@ contains
       ! Footer
       write (cf,'(A)') '):';
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorMaple')
       call sys_halt()
@@ -1412,7 +1412,7 @@ contains
       ! Footer
       write (cf,'(A)') '):';
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorMaple')
       call sys_halt()
@@ -1555,7 +1555,7 @@ contains
         cstat="REPLACE"; cpos="ASIS"
       case (IO_OLD)
         cstat="OLD"; cpos="APPEND"
-      case DEFAULT
+      case default
         cstat="UNKNOWN"; cpos ="ASIS"
       end select
     else
@@ -1644,7 +1644,7 @@ contains
 
       write(UNIT=iunit,FMT=30)
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported vector precision!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_spyVector')
       call sys_halt()

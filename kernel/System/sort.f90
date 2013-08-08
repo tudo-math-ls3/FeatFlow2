@@ -1887,7 +1887,7 @@ contains
             call mergeSort(1,nnode)
             call storage_free (hhandle)
           end if
-        case DEFAULT
+        case default
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
           call sys_halt()
@@ -2192,7 +2192,7 @@ contains
             call storage_free (hhandle)
           end if
 
-        case DEFAULT
+        case default
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
           call sys_halt()
@@ -2500,7 +2500,7 @@ contains
             call mergeSort(1,nnode)
             call storage_free (hhandle)
           end if
-        case DEFAULT
+        case default
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
           call sys_halt()

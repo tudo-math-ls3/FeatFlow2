@@ -551,7 +551,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataBMat(rmatrix,rfemDataBlocks,ielementDistr, &
+  subroutine fev2_prepareFemDataBMat(rmatrix,rfemDataBlocks,ielementGroup, &
       RmaxDerivativeTest,RmaxDerivativeTrial)
 
 !<description>
@@ -564,8 +564,8 @@ contains
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
   
-  ! Element distribution to use.
-  integer, intent(in) :: ielementDistr
+  ! Element group to use.
+  integer, intent(in) :: ielementGroup
   
   ! OPTIONAL: For every block in the matrix, maximum
   ! derivative of the basis functions to be computed. If not
@@ -603,7 +603,7 @@ contains
           p_rdiscrTest  => rmatrix%RmatrixBlock(i,j)%p_rspatialDiscrTest
           
           ! Some basic checks...
-          if (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrTest%inumFESpaces) then
+          if (spdiscr_getNelemGroups(p_rdiscrTrial) .ne. spdiscr_getNelemGroups(p_rdiscrTest)) then
             call output_line ("Discretisation structures incompatible.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"fev2_prepareFemDataBMat")
             call sys_halt()
@@ -618,7 +618,7 @@ contains
 
           ! Append the space and initialise if we do not have it.
           call fev2_prepareFemDataSMat(rmatrix%RmatrixBlock(i,j),rfemDataBlocks,&
-              ielementDistr,imaxTest,imaxTrial)
+              ielementGroup,imaxTest,imaxTrial)
 
         end if
       
@@ -632,7 +632,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataBVec(rvector,rfemDataBlocks,ielementDistr, &
+  subroutine fev2_prepareFemDataBVec(rvector,rfemDataBlocks,ielementGroup, &
       RmaxDerivative)
 
 !<description>
@@ -645,8 +645,8 @@ contains
   ! The matrix which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
   
-  ! Element distribution to use.
-  integer, intent(in) :: ielementDistr
+  ! Element group to use.
+  integer, intent(in) :: ielementGroup
   
   ! OPTIONAL: For every block in the vector, maximum
   ! derivative of the basis functions to be computed. If not
@@ -682,7 +682,7 @@ contains
       end if
       
       ! Some basic checks...
-      if (p_rdiscrTest1%inumFESpaces .ne. p_rdiscrTest%inumFESpaces) then
+      if (spdiscr_getNelemGroups(p_rdiscrTest1) .ne. spdiscr_getNelemGroups(p_rdiscrTest)) then
         call output_line ("Discretisation structures incompatible.",&
             OU_CLASS_ERROR,OU_MODE_STD,"fev2_prepareFemDataBVec")
         call sys_halt()
@@ -694,7 +694,7 @@ contains
 
       ! Append the FEM space and initialise if we do not have it.
       call fev2_prepareFemDataSVec(rvector%RvectorBlock(i),rfemDataBlocks, &
-          ielementDistr,imaxTest)
+          ielementGroup,imaxTest)
       
     end do
     
@@ -704,7 +704,7 @@ contains
 
 !<subroutine>
 
-  recursive subroutine fev2_prepareFemDataSVec(rvector,rfemDataBlocks,ielementDistr, &
+  recursive subroutine fev2_prepareFemDataSVec(rvector,rfemDataBlocks,ielementGroup, &
       imaxDerivative)
 
 !<description>
@@ -717,8 +717,8 @@ contains
   ! The matrix which is going to be assembled.
   type(t_vectorScalar), intent(in) :: rvector
   
-  ! Element distribution to use.
-  integer, intent(in) :: ielementDistr
+  ! Element group to use.
+  integer, intent(in) :: ielementGroup
   
   ! OPTIONAL: Maximum derivative of the basis functions to be computed. If not
   ! specified or an entry is =-1, the maximum available derivative for 
@@ -758,10 +758,11 @@ contains
       p_RfemData => rfemDataBlocks%p_RfemData
     
       ! Initialise the content
-      p_RfemData(rfemDataBlocks%ncount)%celement = &
-          p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
-      p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
-          p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+      call spdiscr_getElemGroupInfo (&
+          p_RfemData(rfemDataBlocks%ncount)%p_rdiscr,ielementGroup,&
+          celement = p_RfemData(rfemDataBlocks%ncount)%celement,&
+          ctrafoType = p_RfemData(rfemDataBlocks%ncount)%ctrafoType)
+      
       p_RfemData(rfemDataBlocks%ncount)%ndof = &
           elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
       p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
@@ -791,7 +792,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataSMat(rmatrix,rfemDataBlocks,ielementDistr, &
+  subroutine fev2_prepareFemDataSMat(rmatrix,rfemDataBlocks,ielementGroup, &
       imaxDerivativeTest,imaxDerivativeTrial)
 
 !<description>
@@ -804,8 +805,8 @@ contains
   ! The matrix which is going to be assembled.
   type(t_matrixScalar), intent(in) :: rmatrix
   
-  ! Element distribution to use.
-  integer, intent(in) :: ielementDistr
+  ! Element group to use.
+  integer, intent(in) :: ielementGroup
   
   ! OPTIONAL: Maximum derivative of the basis functions to be computed. If not
   ! specified or an entry is =-1, the maximum available derivative for 
@@ -859,10 +860,11 @@ contains
         p_RfemData => rfemDataBlocks%p_RfemData
       
         ! Initialise the content
-        p_RfemData(rfemDataBlocks%ncount)%celement = &
-            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
-            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        call spdiscr_getElemGroupInfo (&
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr,ielementGroup,&
+            celement = p_RfemData(rfemDataBlocks%ncount)%celement,&
+            ctrafoType = p_RfemData(rfemDataBlocks%ncount)%ctrafoType)
+
         p_RfemData(rfemDataBlocks%ncount)%ndof = &
             elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
         p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
@@ -902,10 +904,11 @@ contains
         p_RfemData => rfemDataBlocks%p_RfemData
 
         ! Initialise the content
-        p_RfemData(rfemDataBlocks%ncount)%celement = &
-            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
-            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        call spdiscr_getElemGroupInfo (&
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr,ielementGroup,&
+            celement = p_RfemData(rfemDataBlocks%ncount)%celement,&
+            ctrafoType = p_RfemData(rfemDataBlocks%ncount)%ctrafoType)
+
         p_RfemData(rfemDataBlocks%ncount)%ndof = &
             elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
         p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
@@ -2127,7 +2130,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataVecEval(revalVectors,rfemDataBlocks,ielementDistr)
+  subroutine fev2_prepareFemDataVecEval(revalVectors,rfemDataBlocks,ielementGroup)
 
 !<description>
   ! Initialise a FEM structure based on the FEM spaces
@@ -2139,8 +2142,8 @@ contains
   ! A t_fev2Vectors structure with a set of vectorsto be evaluated.
   type(t_fev2Vectors), intent(in) :: revalVectors
   
-  ! Element distribution to use.
-  integer, intent(in) :: ielementDistr
+  ! Element group to use.
+  integer, intent(in) :: ielementGroup
 !</input>
 
 !<output>
@@ -2160,7 +2163,7 @@ contains
       if (associated(revalVectors%p_RvectorData(i)%p_rvector)) then
         ! Add the FEM space if not done already.
         call fev2_prepareFemDataSVec(&
-            revalVectors%p_RvectorData(i)%p_rvector,rfemDataBlocks,ielementDistr, &
+            revalVectors%p_RvectorData(i)%p_rvector,rfemDataBlocks,ielementGroup, &
             revalVectors%p_RvectorData(i)%nmaxDerivative)
       end if
     end do

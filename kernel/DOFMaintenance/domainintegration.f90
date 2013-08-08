@@ -62,14 +62,14 @@ module domainintegration
     integer :: npointsPerElement = 0
 
     !<!-- DEPRECATED, REMOVED!
-    ! The currently active element distribution in the discretisation.
+    ! The currently active element group in the discretisation.
     ! Allows the routine to get the currently active element type for
     ! trial and test functions.
-    !integer :: ielementDistribution = 0
+    !integer :: ielemGroupibution = 0
     !-->
 
     ! Start index of the current element block in the current element
-    ! distribution ielementDistribution of the discretisation.
+    ! distribution ielemGroupibution of the discretisation.
     ! If this is =1, e.g., this is the very first element block
     ! that is currently being integrated.
     integer :: ielementStartIdx = 0
@@ -228,7 +228,7 @@ contains
     ! Initialise constants in the structure
     rintSubset%nelements            = nelements
     rintSubset%npointsPerElement    = npointsPerElement
-    !rintSubset%ielementDistribution = 1
+    !rintSubset%ielemGroupibution = 1
     rintSubset%ielementStartIdx     = 1
 
     ! Allocate memory for the structures:
@@ -262,7 +262,7 @@ contains
           TRAFO_CS_REAL3DTETRA,TRAFO_CS_REAL3DHEXA)
       allocate(rintSubset%p_DcubPtsRef(ndimSpace,npointsPerElement,nelements))
 
-    case DEFAULT
+    case default
       ! NULLIFY(rintSubset%p_DcubPtsRef)
       call output_line('Unknown coordinate system!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'domint_initIntegration')
@@ -312,7 +312,7 @@ contains
     ! Initialise constants in the structure
     rintSubset%nelements            = revalElementSet%nelements
     rintSubset%npointsPerElement    = revalElementSet%npointsPerElement
-    !rintSubset%ielementDistribution = 1
+    !rintSubset%ielemGroupibution = 1
     rintSubset%ielementStartIdx     = 1
 
     ! Let the pointers of the integration structure point to

@@ -288,7 +288,7 @@ contains
       else
         iorder = 1
       end if
-    case DEFAULT
+    case default
       ! Error case
       iorder = 0
     end select

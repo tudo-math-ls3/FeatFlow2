@@ -208,7 +208,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_addToDASet (rset,ielement)
+  pure subroutine nsets_addToDASet (rset,ielement)
 !<description>
   ! Adds an element to the set rset if it is not already part of it.
 !</description>
@@ -235,7 +235,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_removeFromDASet (rset,ielement)
+  pure subroutine nsets_removeFromDASet (rset,ielement)
 !<description>
   ! Removes an element from the set it it is part of it.
 !</description>
@@ -260,7 +260,7 @@ contains
   !****************************************************************************
 
 !<function>
-  integer function nsets_DASetContains (rset,ielement)
+  pure integer function nsets_DASetContains (rset,ielement)
 !<description>
   ! Determines if a set contains the element ielement
 !</description>
@@ -309,7 +309,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_invertDASet (rset)
+  pure subroutine nsets_invertDASet (rset)
 !<description>
   ! Inverts a direct-access set. All elements in the set are removed,
   ! all elements not in the set are added.
@@ -333,7 +333,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_addAllDASet (rset)
+  pure subroutine nsets_addAllDASet (rset)
 !<description>
   ! Adds all possible elements to a a direct-access set.
 !</description>
@@ -356,7 +356,7 @@ contains
   !****************************************************************************
 
 !<function>
-  integer function nsets_nelementsInSet (rset)
+  pure integer function nsets_nelementsInSet (rset)
 !<description>
   ! Determines the number of elements in the set.
 !</description>
@@ -381,11 +381,14 @@ contains
         ! Get the integer
         j = rset%p_Idata(i)
 
-        ! Shift it and count every one.
-        do k=1,rset%ibitsPerInteger
-          ncount = ncount + iand(j,1)
-          j = ishft(j,-1)
-        end do
+        ! Skip if zero, no bits set
+        if (j .ne. 0) then
+          ! Shift it and count every one.
+          do k=1,rset%ibitsPerInteger
+            ncount = ncount + iand(j,1)
+            j = ishft(j,-1)
+          end do
+        end if
       end do
 
     else
@@ -396,21 +399,27 @@ contains
         ! Get the integer
         j = rset%p_Idata(i)
 
-        ! Shift it and count every one.
-        do k=1,rset%ibitsPerInteger
-          ncount = ncount + iand(j,1)
-          j = ishft(j,-1)
-        end do
+        ! Skip if zero, no bits set
+        if (j .ne. 0) then
+          ! Shift it and count every one.
+          do k=1,rset%ibitsPerInteger
+            ncount = ncount + iand(j,1)
+            j = ishft(j,-1)
+          end do
+        end if
       end do
 
       ! Get the last integer
       j = rset%p_Idata(i)
 
-      ! Shift it and count every one.
-      do k=1,iand(rset%nmaxEntries,rset%ibitmask)
-        ncount = ncount + iand(j,1)
-        j = ishft(j,-1)
-      end do
+      ! Skip if zero, no bits set.
+      if (j .ne. 0) then
+        ! Shift it and count every one.
+        do k=1,iand(rset%nmaxEntries,rset%ibitmask)
+          ncount = ncount + iand(j,1)
+          j = ishft(j,-1)
+        end do
+      end if
     end if
 
     nsets_nelementsInSet = ncount
@@ -420,7 +429,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_getElements (rset,Ilist,nelementsInList)
+  pure subroutine nsets_getElements (rset,Ilist,nelementsInList)
 !<description>
   ! Creates a list of all elements in the set.
 !</description>
@@ -445,57 +454,67 @@ contains
 
 !</subroutine>
 
-    integer :: i,j,k,ncount,iidx
+    integer :: i,j,k,ncount,nbitsPerInteger,ioffs
+    
+    nbitsPerInteger = rset%ibitsPerInteger
 
-    if (rset%nmaxEntries .eq. rset%ibitsPerInteger*rset%nintegers) then
+    if (rset%nmaxEntries .eq. nbitsPerInteger*rset%nintegers) then
 
       ! Loop through all integers
-      iidx = 0
       ncount = 0
       do i = 1,rset%nintegers
         ! Get the integer
         j = rset%p_Idata(i)
+        
+        ! Skip if zero. No bits set.
+        if (j .ne. 0) then
+          ioffs = (i-1)*nbitsPerInteger + 1
+          ! Get every element from the bitfield.
+          do k=0,nbitsPerInteger-1
+            if (btest(j,k)) then
+              ncount = ncount+1
+              Ilist(ncount) = ioffs + k
+            end if
+          end do
+        end if
 
-        ! Get every element from the bitfield.
-        do k=0,rset%ibitsPerInteger-1
-          iidx = iidx + 1
-          if (btest(j,k)) then
-            ncount = ncount+1
-            Ilist(ncount) = iidx
-          end if
-        end do
       end do
 
     else
 
       ! Loop through all integers except the last one.
       ncount = 0
-      iidx = 0
       do i = 1,rset%nintegers-1
         ! Get the integer
         j = rset%p_Idata(i)
 
-        ! Get every element from the bitfield.
-        do k=0,rset%ibitsPerInteger-1
-          iidx = iidx + 1
-          if (btest(j,k)) then
-            ncount = ncount+1
-            Ilist(ncount) = iidx
-          end if
-        end do
+        ! Skip if zero. No bits set.
+        if (j .ne. 0) then
+          ioffs = (i-1)*nbitsPerInteger + 1
+          ! Get every element from the bitfield.
+          do k=0,nbitsPerInteger-1
+            if (btest(j,k)) then
+              ncount = ncount+1
+              Ilist(ncount) = ioffs + k
+            end if
+          end do
+        end if
       end do
 
       ! Get the last integer
       j = rset%p_Idata(i)
 
-      ! Shift it and get the elements.
-      do k=0,iand(rset%nmaxEntries,rset%ibitmask)-1
-        iidx = iidx + 1
-        if (btest(j,k)) then
-          ncount = ncount+1
-          Ilist(ncount) = iidx
-        end if
-      end do
+      ! Skip if zero, no bits set
+      if (j .ne. 0) then
+        ioffs = (i-1)*nbitsPerInteger + 1
+        ! Shift it and get the elements.
+        do k=0,iand(rset%nmaxEntries,rset%ibitmask)-1
+          if (btest(j,k)) then
+            ncount = ncount+1
+            Ilist(ncount) = ioffs + k
+          end if
+        end do
+      end if
     end if
 
     if (present(nelementsInList)) &
@@ -506,7 +525,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_putElements (rset,Ilist,nelementsInList)
+  pure subroutine nsets_putElements (rset,Ilist,nelementsInList)
 !<description>
   ! Puts all elements in the list Ilist into the set rset.
 !</description>

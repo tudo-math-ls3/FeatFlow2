@@ -415,7 +415,7 @@ contains
 !<subroutine>
 
   subroutine bma_prepareMatrixData(&
-      rmatrix,RmatrixData,rfemDataBlocks,ielementDistr)
+      rmatrix,RmatrixData,rfemDataBlocks,ielemGroup)
 
 !<description>
   ! Initialise a matrix assembly structure for assembling the submatrices
@@ -427,9 +427,9 @@ contains
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the matrix which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! Data of all involved FEM spaces.
   type(t_fev2FemDataBlocks) , intent(in) :: rfemDataBlocks
@@ -539,9 +539,9 @@ contains
           p_rdiscrTest  => rmatrix%RmatrixBlock(i,j)%p_rspatialDiscrTest
 
           ! Some basic checks...
-          if ((p_rdiscrTrial%inumFESpaces .lt. ielementDistr) .or. &
-              (p_rdiscrTrial%inumFESpaces .lt. ielementDistr)) then
-            call output_line ("Element distribution does not exist in the discretisation.",&
+          if ((spdiscr_getNelemGroups(p_rdiscrTrial) .lt. ielemGroup) .or. &
+              (spdiscr_getNelemGroups(p_rdiscrTest) .lt. ielemGroup)) then
+            call output_line ("element group does not exist in the discretisation.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareMatrixData")
             call sys_halt()
           end if
@@ -551,12 +551,9 @@ contains
           RmatrixData(i,j)%iidxFemDataTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
           RmatrixData(i,j)%bIdenticalTrialAndTest = associated(p_rdiscrTrial,p_rdiscrTest)
 
-          ! Element type          
-          RmatrixData(i,j)%celementTrial = &
-              p_rdiscrTrial%RelementDistr(ielementDistr)%celement
-
-          RmatrixData(i,j)%celementTest = &
-              p_rdiscrTest%RelementDistr(ielementDistr)%celement
+          ! Element type
+          call spdiscr_getElemGroupInfo (p_rdiscrTrial,ielemGroup,RmatrixData(i,j)%celementTrial)
+          call spdiscr_getElemGroupInfo (p_rdiscrTest,ielemGroup,RmatrixData(i,j)%celementTest)
 
           ! Get the number of local DOFs for trial and test functions
           RmatrixData(i,j)%ndofTrial = elem_igetNDofLoc(RmatrixData(i,j)%celementTrial)
@@ -579,7 +576,7 @@ contains
 !<subroutine>
 
   subroutine bma_initMatAssemblyData(rassemblyData,&
-      rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors)
+      rmatrix,ielemGroup,RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors)
 
 !<description>
   ! Initialises the main parameters in the structure containing the
@@ -593,9 +590,9 @@ contains
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the matrix which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! OPTIONAL: For every block in the matrix, maximum
   ! derivative of the basis functions to be computed. If not
@@ -625,12 +622,12 @@ contains
 
     ! Prepare FEM data
     call fev2_prepareFemDataBMat(rmatrix,rassemblyData%rfemDataBlocks,&
-        ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
+        ielemGroup,RmaxDerivativeTest,RmaxDerivativeTrial)
 
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
       call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
-          ielementDistr)
+          ielemGroup)
     end if
 
     ! Initialise the blocks according to the structure of the matrix
@@ -639,7 +636,7 @@ contains
         ubound(rmatrix%RmatrixBlock,1),ubound(rmatrix%RmatrixBlock,2)))
 
     call bma_prepareMatrixData(&
-        rmatrix,rassemblyData%p_RmatrixData,rassemblyData%rfemDataBlocks,ielementDistr)
+        rmatrix,rassemblyData%p_RmatrixData,rassemblyData%rfemDataBlocks,ielemGroup)
 
   end subroutine
 
@@ -890,12 +887,12 @@ contains
 !<subroutine>
 
   subroutine bma_initMatAssembly(rmatrixAssembly,ccubType,ctrafoType,cflags,&
-      rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,&
+      rmatrix,ielemGroup,RmaxDerivativeTest,RmaxDerivativeTrial,&
       revalVectors,rperfconfig)
 
 !<description>
   ! Initialise a matrix assembly structure for assembling a bilinear form
-  ! for a certain element distribution.
+  ! for a certain element group.
 !</description>
 
 !<input>
@@ -912,9 +909,9 @@ contains
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the matrix which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! OPTIONAL: For every block in the matrix, maximum
   ! derivative of the basis functions to be computed. If not
@@ -964,13 +961,13 @@ contains
       rmatrixAssembly%revalVectorsTemplate = revalVectors
     end if
 
-    ! Remember current element distribution
-    rmatrixAssembly%ielementDistr = ielementDistr
+    ! Remember current element group
+    rmatrixAssembly%ielemGroup = ielemGroup
 
     ! Initialise the template structure which is used during the
     ! actual matrix assembly.
     call bma_initMatAssemblyData(rmatrixAssembly%rassemblyDataTemplate,&
-        rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,&
+        rmatrix,ielemGroup,RmaxDerivativeTest,RmaxDerivativeTrial,&
         revalVectors)
 
     ! Get the cubature formula/transformation on/from the reference element
@@ -1569,7 +1566,7 @@ contains
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     type(t_bmaMatrixAssembly) :: rmatrixAssembly
-    integer :: ielementDistr,icubatureBlock,NEL
+    integer :: ielemGroup,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
     integer(I32) :: ccubType,celement,ctrafoType
     type(t_spatialDiscretisation), pointer :: p_rdiscr
@@ -1622,18 +1619,18 @@ contains
 
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+          p_rdiscr,ielemGroup,celement,ccubType,NEL,p_IelementList,&
           p_rtrafoInfo,ctrafoType=ctrafoType)
 
-      ! Check if element distribution is empty
+      ! Check if element group is empty
       if (NEL .le. 0) cycle
 
-      ! Initialise a matrix assembly structure for that element distribution
+      ! Initialise a matrix assembly structure for that element group
       call bma_initMatAssembly(rmatrixAssembly,ccubType,ctrafoType,cflags,&
-          rmatrix,ielementDistr,&
+          rmatrix,ielemGroup,&
           RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors,rperfconfig)
 
-      ! Assemble the data for all elements in this element distribution
+      ! Assemble the data for all elements in this element group
       call bma_assembleSubmeshMatrix (rmatrixAssembly, p_IelementList(1:NEL),&
           fcalcLocalMatrices, rcollection)
 
@@ -1662,7 +1659,7 @@ contains
 !<subroutine>
 
   subroutine bma_prepareVectorData(&
-      rvector,RvectorData,rfemDataBlocks,ielementDistr)
+      rvector,RvectorData,rfemDataBlocks,ielemGroup)
 
 !<description>
   ! Initialise a vector assembly structure for assembling the subvectors
@@ -1674,9 +1671,9 @@ contains
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the vector which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! Structure for all involved FEM spaces.
   type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
@@ -1720,8 +1717,7 @@ contains
       RvectorData(i)%iidxFemDataTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
 
       ! Element type          
-      RvectorData(i)%celementTest = &
-          p_rdiscrTest%RelementDistr(ielementDistr)%celement
+      call spdiscr_getElemGroupInfo (p_rdiscrTest,ielemGroup,RvectorData(i)%celementTest)
 
       ! Get the number of local DOF`s for trial and test functions
       RvectorData(i)%ndofTest = elem_igetNDofLoc(RvectorData(i)%celementTest)
@@ -1737,7 +1733,7 @@ contains
 !<subroutine>
 
   subroutine bma_initVecAssemblyData(rassemblyData,&
-      rvector,ielementDistr,RmaxDerivativeTest,revalVectors)
+      rvector,ielemGroup,RmaxDerivativeTest,revalVectors)
 
 !<description>
   ! Initialises the main parameters in the structure containing the
@@ -1751,9 +1747,9 @@ contains
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the vector which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! OPTIONAL: For every block in the vector, maximum
   ! derivative of the basis functions to be computed. If not
@@ -1782,12 +1778,12 @@ contains
 
     ! Prepare FEM data
     call fev2_prepareFemDataBVec(rvector,rassemblyData%rfemDataBlocks,&
-        ielementDistr,RmaxDerivativeTest)
+        ielemGroup,RmaxDerivativeTest)
         
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
       call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
-          ielementDistr)
+          ielemGroup)
     end if
 
     ! Initialise the blocks according to the structure of the vector
@@ -1795,7 +1791,7 @@ contains
     allocate(rassemblyData%p_RvectorData(ubound(rvector%RvectorBlock,1)))
 
     call bma_prepareVectorData(&
-        rvector,rassemblyData%p_RvectorData,rassemblyData%rfemDataBlocks,ielementDistr)
+        rvector,rassemblyData%p_RvectorData,rassemblyData%rfemDataBlocks,ielemGroup)
 
   end subroutine
 
@@ -2001,12 +1997,12 @@ contains
 !<subroutine>
 
   subroutine bma_initVecAssembly(rvectorAssembly,ccubType,ctrafoType,cflags,&
-      rvector,ielementDistr,RmaxDerivativeTest,&
+      rvector,ielemGroup,RmaxDerivativeTest,&
       revalVectors,rperfconfig)
 
 !<description>
   ! Initialise a vector assembly structure for assembling a linear form
-  ! for a certain element distribution.
+  ! for a certain element group.
 !</description>
 
 !<input>
@@ -2023,9 +2019,9 @@ contains
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
 
-  ! ID of the active element distribution. Identifies the FEM space
+  ! ID of the active element group. Identifies the FEM space
   ! in the vector which is to be assembled.
-  integer, intent(in) :: ielementDistr
+  integer, intent(in) :: ielemGroup
 
   ! OPTIONAL: For every block in the vector, maximum
   ! derivative of the basis functions to be computed. If not
@@ -2074,13 +2070,13 @@ contains
       rvectorAssembly%revalVectorsTemplate = revalVectors
     end if
 
-    ! Remember current element distribution
-    rvectorAssembly%ielementDistr = ielementDistr
+    ! Remember current element group
+    rvectorAssembly%ielemGroup = ielemGroup
 
     ! Initialise the template structure which is used during the
     ! actual vector assembly.
     call bma_initVecAssemblyData(rvectorAssembly%rassemblyDataTemplate,&
-        rvector,ielementDistr,RmaxDerivativeTest,&
+        rvector,ielemGroup,RmaxDerivativeTest,&
         revalVectors)
 
     ! Get the cubature/transformation formula on/from the reference element
@@ -2627,7 +2623,7 @@ contains
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     type(t_bmaVectorAssembly) :: rvectorAssembly
-    integer :: ielementDistr,icubatureBlock,NEL
+    integer :: ielemGroup,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
     integer(I32) :: ccubType,celement,ctrafoType
     type(t_spatialDiscretisation), pointer :: p_rdiscr
@@ -2680,17 +2676,17 @@ contains
 
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+          p_rdiscr,ielemGroup,celement,ccubType,NEL,p_IelementList,&
           p_rtrafoInfo,ctrafoType=ctrafoType)
 
-      ! Check if element distribution is empty
+      ! Check if element group is empty
       if (NEL .le. 0 ) cycle
 
-      ! Initialise a vector assembly structure for that element distribution
+      ! Initialise a vector assembly structure for that element group
       call bma_initVecAssembly(rvectorAssembly,ccubType,ctrafoType,cflags,&
-          rvector,ielementDistr,RmaxDerivativeTest,revalVectors,rperfconfig)
+          rvector,ielemGroup,RmaxDerivativeTest,revalVectors,rperfconfig)
 
-      ! Assemble the data for all elements in this element distribution
+      ! Assemble the data for all elements in this element group
       call bma_assembleSubmeshVector (rvectorAssembly, p_IelementList(1:NEL),&
           fcalcLocalVectors, rcollection)
 
@@ -2718,7 +2714,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_initIntAssemblyData(rassemblyData,revalVectors,ielementDistr)
+  subroutine bma_initIntAssemblyData(rassemblyData,revalVectors,ielemGroup)
 
 !<description>
   ! Initialises the main parameters in the structure containing the
@@ -2733,9 +2729,9 @@ contains
   ! assembly.
   type(t_fev2Vectors), intent(in), optional :: revalVectors
 
-  ! OPTIONAL: Current element distribution.
+  ! OPTIONAL: Current element group.
   ! Must be specified if revalVectors is given.
-  integer, intent(in), optional :: ielementDistr
+  integer, intent(in), optional :: ielemGroup
 !</input>
 
 !<output>
@@ -2755,7 +2751,7 @@ contains
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
       call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
-          ielementDistr)
+          ielemGroup)
     end if
 
   end subroutine
@@ -2902,11 +2898,11 @@ contains
 !<subroutine>
 
   subroutine bma_initIntAssembly(rintegralAssembly,ccubType,ctrafoType,cflags,&
-      rtriangulation,rboundary,revalVectors,ielementDistr,rperfconfig)
+      rtriangulation,rboundary,revalVectors,ielemGroup,rperfconfig)
 
 !<description>
   ! Initialise a vector assembly structure for assembling a linear form
-  ! for a certain element distribution.
+  ! for a certain element group.
 !</description>
 
 !<input>
@@ -2929,9 +2925,9 @@ contains
   ! OPTIONAL: Set of vectors to be automatically evaluated
   type(t_fev2Vectors), intent(in), optional :: revalVectors
 
-  ! OPTIONAL: Current element distribution.
+  ! OPTIONAL: Current element group.
   ! Must be specified if revalVectors is given.
-  integer, intent(in), optional :: ielementDistr
+  integer, intent(in), optional :: ielemGroup
   
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2978,7 +2974,7 @@ contains
     ! Initialise the template structure which is used during the
     ! actual vector assembly.
     call bma_initIntAssemblyData(rintegralAssembly%rassemblyDataTemplate,&
-        revalVectors,ielementDistr)
+        revalVectors,ielemGroup)
 
     ! Get the cubature/transformation formula on/from the reference element
     rintegralAssembly%ccubType = ccubType
@@ -3550,7 +3546,7 @@ contains
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     type(t_bmaIntegralAssembly) :: rintegralAssembly
-    integer :: ielementDistr,icubatureBlock,NEL
+    integer :: ielemGroup,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
     integer(I32) :: ccubType,celement,ctrafoType
     type(t_spatialDiscretisation), pointer :: p_rdiscr
@@ -3639,7 +3635,7 @@ contains
       ! Get information about that block as well as an appropriate cubature formula
       if (associated(p_rdiscr)) then
         call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-            p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+            p_rdiscr,ielemGroup,celement,ccubType,NEL,p_IelementList,&
             p_rtrafoInfo,ctrafoType=ctrafoType)
       else
         ! Set the data manually.
@@ -3663,14 +3659,14 @@ contains
         
       end if
 
-      ! Check if element distribution is empty
+      ! Check if element group is empty
       if (NEL .le. 0 ) cycle
 
-      ! Initialise a vector assembly structure for that element distribution
+      ! Initialise a vector assembly structure for that element group
       call bma_initIntAssembly(rintegralAssembly,ccubType,ctrafoType,cflags,&
-          p_rtriangulation,rboundary,revalVectors,ielementDistr,rperfconfig)
+          p_rtriangulation,rboundary,revalVectors,ielemGroup,rperfconfig)
 
-      ! Assemble the data for all elements in this element distribution
+      ! Assemble the data for all elements in this element group
       Dinttemp(:) = 0.0_DP
       call bma_assembleSubmeshIntegral (Dinttemp,rintegralAssembly, p_IelementList(1:NEL),&
           fcalcLocalIntegral, rcollection)

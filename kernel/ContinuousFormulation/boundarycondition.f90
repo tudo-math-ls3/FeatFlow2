@@ -550,7 +550,7 @@ contains
   case (BC_RTYPE_FBCOBJECT)
     p_Rregion => rboundaryConditions%p_RregionsFBC
     ifull => rboundaryConditions%iregionCountFBC
-  case DEFAULT
+  case default
     print *,'Not implemented boundary condition.'
     call sys_halt()
   end select

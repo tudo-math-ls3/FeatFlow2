@@ -358,7 +358,7 @@ contains
     ! directory string.
     character(len=*), intent(out), optional :: sfilename
 
-    ! OPTINOAL: Returns TRUE if the path specification in sfile points to an
+    ! OPTIONAL: Returns TRUE if the path specification in sfile points to an
     ! absolute path. Returns FALSE if the path in sfile is relative.
     logical, intent(out), optional :: babsolute
   !</output>

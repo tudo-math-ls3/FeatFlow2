@@ -112,9 +112,9 @@ module sortstrategy
     ! Element type; only valid if the corresponding discretisation is uniform.
     integer(I32) :: celement
 
-    ! Pointer to the identifier for the element distribution of an element.
+    ! Pointer to the identifier for the element group of an element.
     ! Only valid if the corresponding discretisation is not uniform.
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
 
   end type
 
@@ -1691,6 +1691,7 @@ contains
     integer :: imt,nmt
     integer :: iel,nel
     integer :: idim,ivtlocal
+    integer(I32) :: celement
 
     if (rdiscretisation%ndimension .eq. 0) then
       call output_line ("Discretisation not initialised.", &
@@ -1706,8 +1707,9 @@ contains
     case (SPDISC_UNIFORM)
 
       ! FE-space?
-      select case (elem_getPrimaryElement(&
-                       rdiscretisation%RelementDistr(1)%celement))
+      call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
+
+      select case (elem_getPrimaryElement(celement))
       case (EL_Q1,EL_P1)
 
         ! Q_1-element. Take the vertex coordinates as DOF`s and sort for that.
@@ -1797,7 +1799,7 @@ contains
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line ("Discretisation too complex.", &
                         OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcRowwise")
       call sys_halt()
@@ -1859,7 +1861,7 @@ contains
           call arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
         end do
 
-      case DEFAULT
+      case default
         call output_line ("Invalid direction!", &
                           OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcXYZsorting")
         call sys_halt()
@@ -1920,6 +1922,7 @@ contains
   !</subroutine>
 
     ! local variables
+    integer(I32) :: celement
     integer, dimension(:,:), pointer :: p_IelementsAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
@@ -1939,8 +1942,9 @@ contains
     case (SPDISC_UNIFORM)
 
       ! FE-space?
-      select case (elem_getPrimaryElement(&
-                       rdiscretisation%RelementDistr(1)%celement))
+      call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
+      
+      select case (elem_getPrimaryElement(celement))
       case (EL_Q1)
 
         ! Get geometrical data
@@ -1967,13 +1971,13 @@ contains
             Ipermutation(1: rdiscretisation%p_rtriangulation%NVT), ivt, iel, &
             rdiscretisation%p_rtriangulation%NVT)
 
-      case DEFAULT
+      case default
         call output_line ("Element type not supported.", &
                           OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcFEASTsorting")
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line ("Discretisation too complex.", &
                         OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcFEASTsorting")
       call sys_halt()
@@ -2295,7 +2299,7 @@ contains
       ! Regular 2-level refinement in 2D.
       call calcHierarch(Rdiscretisation,Ipermutation)
 
-    case DEFAULT
+    case default
       call output_line ("Invalid dimension.", &
           OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
       call sys_halt()
@@ -2331,7 +2335,7 @@ contains
       integer, dimension(size(Rdiscretisation)) :: ImaxIndex
       integer, dimension(size(Rdiscretisation)) :: Ielement
       type(t_levelHierarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
-      integer :: ilev,ndof,ieldistr,idof
+      integer :: ilev,ndof,ielemGroup,idof
       integer(I32) :: celement
       integer :: ipos
       integer :: ielcoarse
@@ -2356,14 +2360,13 @@ contains
 
         if (bisUniform) then
           ! One element type for all elements
-          Rhierarchy(ilev)%celement = &
-              Rdiscretisation(ilev)%RelementDistr(1)%celement
+          call spdiscr_getElemGroupInfo (Rdiscretisation(ilev),1,Rhierarchy(ilev)%celement)
         else
           ! A different element type for every element.
-          ! Get a pointer to the array that defines the element distribution
+          ! Get a pointer to the array that defines the element group
           ! of the element. This allows us later to determine the element type.
           call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
-              Rhierarchy(ilev)%p_IelementDistr)
+              Rhierarchy(ilev)%p_IelemGroupIDs)
         end if
       end do
 
@@ -2427,9 +2430,9 @@ contains
           if (Rhierarchy(ilev)%bisUniform) then
             celement = Rhierarchy(ilev)%celement
           else
-            ! Get the element distribution and from that the element type.
-            ieldistr = Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
-            celement = Rdiscretisation(ilev)%RelementDistr(ieldistr)%celement
+            ! Get the element group and from that the element type.
+            ielemGroup = Rhierarchy(ilev)%p_IelemGroupIDs(Ielement(ilev))
+            call spdiscr_getElemGroupInfo (Rdiscretisation(ilev),ielemGroup,celement)
           end if
 
           ndof = elem_igetNDofLoc(celement)
@@ -2543,7 +2546,7 @@ contains
       ! Regular 2-level refinement in 2D.
       call calcHierarch(rfeHierarchy,iblock,Ipermutation)
 
-    case DEFAULT
+    case default
       call output_line ("Invalid dimension.", &
           OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
       call sys_halt()
@@ -2578,7 +2581,7 @@ contains
       integer, dimension(:), allocatable :: ImaxIndex
       integer, dimension(:), allocatable :: Ielement
       type(t_levelHierarchy), dimension(:), pointer :: p_Rhierarchy
-      integer :: ilev,ndof,ieldistr,idof
+      integer :: ilev,ndof,ielemGroup,idof
       integer(I32) :: celement
       integer :: ipos
       integer :: ielcoarse
@@ -2618,13 +2621,13 @@ contains
 
         if (bisUniform) then
           ! One element type for all elements
-          p_Rhierarchy(ilev)%celement = p_rdiscr%RelementDistr(1)%celement
+          call spdiscr_getElemGroupInfo (p_rdiscr,1,p_Rhierarchy(ilev)%celement)
         else
           ! A different element type for every element.
-          ! Get a pointer to the array that defines the element distribution
+          ! Get a pointer to the array that defines the element group
           ! of the element. This allows us later to determine the element type.
           call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
-              p_Rhierarchy(ilev)%p_IelementDistr)
+              p_Rhierarchy(ilev)%p_IelemGroupIDs)
         end if
       end do
 
@@ -2691,9 +2694,9 @@ contains
           if (p_Rhierarchy(ilev)%bisUniform) then
             celement = p_Rhierarchy(ilev)%celement
           else
-            ! Get the element distribution and from that the element type.
-            ieldistr = p_Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
-            celement = p_rdiscr%RelementDistr(ieldistr)%celement
+            ! Get the element group and from that the element type.
+            ielemGroup = p_Rhierarchy(ilev)%p_IelemGroupIDs(Ielement(ilev))
+            call spdiscr_getElemGroupInfo (p_rdiscr,ielemGroup,celement)
           end if
 
           ndof = elem_igetNDofLoc(celement)

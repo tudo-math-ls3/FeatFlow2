@@ -224,7 +224,7 @@
 !#  the default cubature formula.
 !#  Then, modify all subblocks in the rcubatureInfo%p_RinfoBlocks array
 !#  to use your cubature formula of choice (every block corresponds to one
-!#  element distribution, so to say to one element in the mesh; example:
+!#  element group, so to say to one element in the mesh; example:
 !#  if you use a mixed tri/quad mesh, you have at least two blocks, one for
 !#  triangles and one for quads; note that each block needs a different
 !#  cubature formula!!!).
@@ -646,13 +646,13 @@ contains
         call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
             rdiscretisationTest,imem,rperfconfig)
 
-      case DEFAULT
+      case default
         call output_line ("Invalid matrix construction method.", &
                 OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
         call sys_halt()
       end select
       
-    case DEFAULT
+    case default
       call output_line ("Not supported matrix structure!", &
           OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
       call sys_halt()
@@ -866,12 +866,12 @@ contains
 !        ! Release backup of the original matrix
 !        call lsyssc_releaseMatrix (rmatrixBackup)
 !                                       
-!      case DEFAULT
+!      case default
 !        call output_line ("Not supported matrix structure!", &
 !            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !        call sys_halt()
 !      end select
-!    case DEFAULT
+!    case default
 !      call output_line ("Single precision matrices currently not supported!", &
 !          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !      call sys_halt()
@@ -915,17 +915,17 @@ contains
 !        ! Release backup of the original matrix
 !        call lsyssc_releaseMatrix (rmatrixBackup)
 !
-!      case DEFAULT
+!      case default
 !        call output_line ("Not supported matrix structure!", &
 !            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !        call sys_halt()
 !      end select
-!    case DEFAULT
+!    case default
 !      call output_line ("Single precision matrices currently not supported!", &
 !          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !      call sys_halt()
 !    end select
-!  case DEFAULT
+!  case default
 !    call output_line ("General discretisation not implemented!", &
 !        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !    call sys_halt()
@@ -1002,13 +1002,13 @@ contains
   ! Number of currently allocated pointers in Ihmemblock
   integer :: iblocks
 
-  ! Number of currently active element distribution
-  integer :: icurrentElementDistr
+  ! Number of currently active element group
+  integer :: ielemGroup
 
   ! Currently active memory block
   integer :: icurrentblock
 
-  ! Number of elements in the current element distribution
+  ! Number of elements in the current element group
   integer :: NEL
 
   ! Size of memory blocks
@@ -1040,10 +1040,9 @@ contains
 
   ! A pointer to an element-number list
   integer, dimension(:), pointer :: p_IelementList
-
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistrTest
-  type(t_elementDistribution), pointer :: p_relementDistrTrial
+  
+  ! Trial/test element
+  integer(I32) :: celemTrial, celemTest
 
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -1203,27 +1202,28 @@ contains
   ! to have at least one element per line.
   NA = NEQ
 
-  ! Now loop over the different element distributions (=combinations
+  ! Now loop over the different element groups (=combinations
   ! of trial and test functions) in the discretisation.
 
-  do icurrentElementDistr = 1,rdiscretisationTrial%inumFESpaces
+  do ielemGroup = 1,spdiscr_getNelemGroups(rdiscretisationTrial)
 
-    ! Activate the current element distribution
-    p_relementDistrTest => &
-        rmatrix%p_rspatialDiscrTest%RelementDistr(icurrentElementDistr)
-    p_relementDistrTrial => &
-        rmatrix%p_rspatialDiscrTrial%RelementDistr(icurrentElementDistr)
+    ! Activate the current element group.
+    !
+    ! p_IelementList must point to our set of elements in the discretisation
+    ! with that combination of trial/test functions
+    call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,&
+        celemTest,NEL,p_IelementList)
+    call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial)
 
-    ! Cancel if this element distribution is empty.
-    if (p_relementDistrTest%NEL .eq. 0) cycle
+    ! Cancel if this element group is empty.
+    if (NEL .eq. 0) cycle
 
     ! Get the number of local DOF`s for trial and test functions
-    indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
-    indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
+    indofTrial = elem_igetNDofLoc(celemTrial)
+    indofTest = elem_igetNDofLoc(celemTest)
 
     ! Get the number of corner vertices of the element
-    if (elem_igetShape(p_relementDistrTest%celement) .ne. &
-        elem_igetShape(p_relementDistrTrial%celement)) then
+    if (elem_igetShape(celemTest) .ne. elem_igetShape(celemTrial)) then
       call output_line ("Element spaces incompatible!", &
           OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatStructure9_conf")
       call sys_halt()
@@ -1237,8 +1237,7 @@ contains
     ! We do not rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
-    bIdenticalTrialAndTest = &
-      p_relementDistrTest%celement .eq. p_relementDistrTrial%celement
+    bIdenticalTrialAndTest = celemTest .eq. celemTrial
 
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
     ! space IdofTest (if both spaces are identical).
@@ -1249,14 +1248,6 @@ contains
     else
       p_IdofsTrial => IdofsTrial
     end if
-
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistrTest%h_IelementList, &
-                              p_IelementList)
-
-    ! Get the number of elements there.
-    NEL = p_relementDistrTest%NEL
 
     ! Set the pointers/indices to the initial position. During the
     ! search for new DOF`s, these might be changed if there is not enough
@@ -1540,7 +1531,7 @@ contains
 
     end do ! IELset
 
-  end do ! icurrentElementDistr
+  end do ! ielemGroup
 
   ! Ok, p_Icol is built. The hardest part is done!
   ! Now build KCOL by collecting the entries in the linear lists of
@@ -1791,16 +1782,12 @@ contains
   ! The triangulation structure - to shorten some things...
   type(t_triangulation), pointer :: p_rtriangulation
 
-  ! A pointer to an element-number list
-  integer, dimension(:), pointer :: p_IelementList
-
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistrTest
-  type(t_elementDistribution), pointer :: p_relementDistrTrial
-
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
+  
+  ! Trial and test element
+  integer(I32) :: celemTest, celemTrial
 
   ! Adjacent elements
   integer, dimension(:,:), pointer :: p_Kadj
@@ -1958,17 +1945,19 @@ contains
   ! to have at least one element per line.
   NA = NEQ
 
-  ! Activate the one and only element distribution
-  p_relementDistrTest => rmatrix%p_rspatialDiscrTest%RelementDistr(1)
-  p_relementDistrTrial => rmatrix%p_rspatialDiscrTrial%RelementDistr(1)
-
+  ! Activate the one and only element group
+  !  
+  ! p_IelementList must point to our set of elements in the discretisation
+  ! with that combination of trial/test functions
+  call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,1,celemTest)
+  call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,1,celemTrial)
+  
   ! Get the number of local DOF`s for trial and test functions
-  indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
-  indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
+  indofTrial = elem_igetNDofLoc(celemTest)
+  indofTest = elem_igetNDofLoc(celemTrial)
 
   ! Get the number of corner vertices of the element
-  if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
-      elem_igetShape(p_relementDistrTest%celement)) then
+  if (elem_igetShape(celemTest) .ne. elem_igetShape(celemTrial)) then
     call output_line ("Element spaces incompatible!", &
         OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatStructure9_conf")
     call sys_halt()
@@ -1998,8 +1987,7 @@ contains
   ! We do not rely on bidenticalTrialAndTest purely, as this does not
   ! indicate whether there are identical trial and test functions
   ! in one block!
-  bIdenticalTrialAndTest = &
-    p_relementDistrTest%celement .eq. p_relementDistrTrial%celement
+  bIdenticalTrialAndTest = celemTest .eq. celemTrial
 
   ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
   ! space IdofTest (if both spaces are identical).
@@ -2010,12 +1998,6 @@ contains
   else
     p_IdofsTrial => IdofsTrial
   end if
-
-  ! p_IelementList must point to our set of elements in the discretisation
-  ! with that combination of trial/test functions
-  call storage_getbase_int (p_relementDistrTest%h_IelementList, &
-                            p_IelementList)
-
 
   ! Set the pointers/indices to the initial position. During the
   ! search for new DOF`s, these might be changed if there is not enough
@@ -2545,7 +2527,7 @@ contains
 !!</subroutine>
 !
 !  ! local variables
-!  INTEGER :: i,i1,j,icurrentElementDistr,IDFG, ICUBP, IALBET, IA, IB, NVE
+!  INTEGER :: i,i1,j,ielemGroup,IDFG, ICUBP, IALBET, IA, IB, NVE
 !  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
 !  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
 !  INTEGER :: JCOL0,JCOL
@@ -2624,7 +2606,7 @@ contains
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !
-!  ! Current element distribution
+!  ! Current element group
 !  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
 !
 !  ! Number of elements in a block. Normally =NELEMSIM,
@@ -2732,16 +2714,16 @@ contains
 !  ! Allocate memory for corner coordinates
 !  ALLOCATE(DCoords(2,TRIA_MAXNVE2D,nelementsPerBlock))
 !
-!  ! Now loop over the different element distributions (=combinations
+!  ! Now loop over the different element groups (=combinations
 !  ! of trial and test functions) in the discretisation.
 !  !CALL ZTIME(DT(2))
 !
-!  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+!  DO ielemGroup = 1,rdiscretisation%inumFESpaces
 !
-!    ! Activate the current element distribution
-!    p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+!    ! Activate the current element group
+!    p_relementDistribution => rdiscretisation%RelementDistr(ielemGroup)
 !
-!    ! Cancel if this element distribution is empty.
+!    ! Cancel if this element group is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 !
 !    ! Get the number of local DOF`s for trial and test functions
@@ -2826,7 +2808,7 @@ contains
 !
 !    ! In case of nonconstant coefficients in that part of the matrix, we
 !    ! need an additional array to save all the coefficients:
-!    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
+!    IF (.NOT. rform%BconstantCoeff(ielemGroup)) THEN
 !      IF (rform%ballCoeffConstant) THEN
 !        CALL output_line ("Some coefficients are not constant " // &
 !            "although thy should be!", &
@@ -3033,7 +3015,7 @@ contains
 !      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
 !
 !        CALL trafo_calctrafo_sim (&
-!             rdiscretisation%RelementDistr(icurrentElementDistr)%ctrafoType,&
+!             rdiscretisation%RelementDistr(ielemGroup)%ctrafoType,&
 !             IELmax-IELset+1,ncubp,Dcoords,&
 !             DcubPtsRef,Djac(:,:,1:IELmax-IELset+1),Ddetj(:,1:IELmax-IELset+1),DcubPtsReal)
 !
@@ -3049,7 +3031,7 @@ contains
 !
 !      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
 !      IF (.NOT. rform%ballCoeffConstant) THEN
-!        CALL fcoeff_buildMatrixSc_sim (rdiscretisation,icurrentElementDistr, rform, &
+!        CALL fcoeff_buildMatrixSc_sim (rdiscretisation,ielemGroup, rform, &
 !                  IELset,IELmax-IELset+1,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
 !                  DcubPtsRef,DcubPtsReal,p_IdofsTrial,IdofsTest,Djac,Ddetj, &
 !                  Dcoefficients,rcollection)
@@ -3295,7 +3277,7 @@ contains
 !    DEALLOCATE(DcubPtsReal)
 !    DEALLOCATE(DcubPtsRef)
 !
-!  END DO ! icurrentElementDistr
+!  END DO ! ielemGroup
 !
 !  ! Clean up memory, finish
 !
@@ -3362,7 +3344,7 @@ contains
 !!</subroutine>
 !
 !  ! local variables
-!  INTEGER :: i,i1,j,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
+!  INTEGER :: i,i1,j,k,ielemGroup,JDFG, ICUBP, IALBET, IA, IB
 !  LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
 !  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
 !  INTEGER :: JCOL0,JCOL
@@ -3439,7 +3421,7 @@ contains
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !
-!  ! Current element distribution
+!  ! Current element group
 !  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
 !
 !  ! Number of elements in a block. Normally =NELEMSIM,
@@ -3561,15 +3543,15 @@ contains
 !  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
 !                             p_DvertexCoords)
 !
-!  ! Now loop over the different element distributions (=combinations
+!  ! Now loop over the different element groups (=combinations
 !  ! of trial and test functions) in the discretisation.
 !
-!  DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+!  DO ielemGroup = 1,p_rdiscretisation%inumFESpaces
 !
-!    ! Activate the current element distribution
-!    p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
+!    ! Activate the current element group
+!    p_relementDistribution => p_rdiscretisation%RelementDistr(ielemGroup)
 !
-!    ! Cancel if this element distribution is empty.
+!    ! Cancel if this element group is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 !
 !    ! Get the number of local DOF`s for trial and test functions
@@ -3696,7 +3678,7 @@ contains
 !
 !    ! In case of nonconstant coefficients in that part of the matrix, we
 !    ! need an additional array to save all the coefficients:
-!    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
+!    IF (.NOT. rform%BconstantCoeff(ielemGroup)) THEN
 !      IF (rform%ballCoeffConstant) THEN
 !        CALL output_line ("Some coefficients are not constant " // &
 !                "although thy should be!",&
@@ -3925,7 +3907,7 @@ contains
 !      IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
 !
 !        CALL trafo_calctrafo_sim (&
-!             p_rdiscretisation%RelementDistr(icurrentElementDistr)%ctrafoType,&
+!             p_rdiscretisation%RelementDistr(ielemGroup)%ctrafoType,&
 !             IELmax-IELset+1,ncubp,p_Dcoords,&
 !             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
 !             p_DcubPtsReal)
@@ -3940,7 +3922,7 @@ contains
 !
 !      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
 !      IF (.NOT. rform%ballCoeffConstant) THEN
-!        rintSubset%ielementDistribution = icurrentElementDistr
+!        rintSubset%ielemGroupibution = ielemGroup
 !        rintSubset%ielementStartIdx = IELset
 !        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
 !        CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
@@ -4217,7 +4199,7 @@ contains
 !
 !    !%omp end parallel
 !
-!  END DO ! icurrentElementDistr
+!  END DO ! ielemGroup
 !
 !  ! Finish
 !
@@ -4286,7 +4268,7 @@ contains
 !!</subroutine>
 !
 !  ! local variables
-!  integer :: i,i1,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
+!  integer :: i,i1,ielemGroup,JDFG, ICUBP, IALBET, IA, IB
 !  logical :: bIdenticalTrialAndTest
 !  integer :: IEL, IELmax, IELset, IDOFE, JDOFE
 !  integer :: JCOL0,JCOL
@@ -4349,7 +4331,7 @@ contains
 !  ! Pointer to the jacobian determinants
 !  real(DP), dimension(:,:), pointer :: p_Ddetj
 !
-!  ! Current element distribution
+!  ! Current element group
 !  type(t_elementDistribution), pointer :: p_relementDistrTest
 !  type(t_elementDistribution), pointer :: p_relementDistrTrial
 !  
@@ -4478,16 +4460,16 @@ contains
 !  ! NELEMSIM. This is only used for allocating some arrays.
 !  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 !  
-!  ! Now loop over the different element distributions (=combinations
+!  ! Now loop over the different element groups (=combinations
 !  ! of trial and test functions) in the discretisation.
 !
-!  do icurrentElementDistr = 1,p_rdiscrTest%inumFESpaces
+!  do ielemGroup = 1,p_rdiscrTest%inumFESpaces
 !  
-!    ! Activate the current element distribution
-!    p_relementDistrTest => p_rdiscrTest%RelementDistr(icurrentElementDistr)
-!    p_relementDistrTrial => p_rdiscrTrial%RelementDistr(icurrentElementDistr)
+!    ! Activate the current element group
+!    p_relementDistrTest => p_rdiscrTest%RelementDistr(ielemGroup)
+!    p_relementDistrTrial => p_rdiscrTrial%RelementDistr(ielemGroup)
 !  
-!    ! Cancel if this element distribution is empty.
+!    ! Cancel if this element group is empty.
 !    if (p_relementDistrTest%NEL .eq. 0) cycle
 !    
 !    ! Get the number of local DOF`s for trial and test functions
@@ -4589,7 +4571,7 @@ contains
 !    
 !    ! In case of nonconstant coefficients in that part of the matrix, we
 !    ! need an additional array to save all the coefficients:
-!    if (.not. rform%BconstantCoeff(icurrentElementDistr)) then
+!    if (.not. rform%BconstantCoeff(ielemGroup)) then
 !      if (rform%ballCoeffConstant) then
 !        call output_line ("Some coefficients are not constant " // &
 !                "although they should be!",&
@@ -4818,7 +4800,7 @@ contains
 !      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
 !      if (.not. rform%ballCoeffConstant) then
 !        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-!        rintSubset%ielementDistribution = icurrentElementDistr
+!        rintSubset%ielemGroupibution = ielemGroup
 !        rintSubset%ielementStartIdx = IELset
 !        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
 !        rintSubset%p_IdofsTrial => p_IdofsTrial
@@ -5088,7 +5070,7 @@ contains
 !    deallocate(p_DcubPtsRef)
 !    deallocate(Domega)
 !
-!  end do ! icurrentElementDistr
+!  end do ! ielemGroup
 !
 !  ! Finish
 !  
@@ -6051,7 +6033,7 @@ contains
             call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
           end if
 
-          !rintSubset%ielementDistribution =  0
+          !rintSubset%ielemGroupibution =  0
           rintSubset%ielementStartIdx     =  IELset
           rintSubset%p_Ielements          => IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial         => p_IdofsTrial
@@ -6502,7 +6484,7 @@ contains
           call domint_setTempMemory (rintSubset,rmatrixAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution =  0
+        !rintSubset%ielemGroupibution =  0
         rintSubset%ielementStartIdx     =  1
         rintSubset%p_Ielements          => IelementList
         rintSubset%p_IdofsTrial         => p_IdofsTrial
@@ -7082,7 +7064,7 @@ contains
             call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
           end if
 
-          !rintSubset%ielementDistribution  =  0
+          !rintSubset%ielemGroupibution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -7385,7 +7367,7 @@ contains
   ! contributions of a submesh.
   ! The bilf_assembleSubmeshMatrix9 interface allows to assemble parts of a
   ! matrix based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
   !
   ! IMPLEMENTATIONAL REMARK 2:
   ! Currently, rcubatureInfo is not optional such that the
@@ -7402,7 +7384,7 @@ contains
   ! If .FALSE., the new matrix entries are added to the existing entries.
   logical, intent(in) :: bclear
 
-  ! (OPTINOAL:) A scalar cubature information structure that specifies the cubature
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target :: rcubatureInfo
 
@@ -7441,7 +7423,7 @@ contains
   ! local variables
   type(t_matrixScalar) :: rmatrixBackup
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
-  integer :: ielementDistr,icubatureBlock,NEL
+  integer :: ielemGroup,icubatureBlock,NEL
   integer, dimension(:), pointer :: p_IelementList
 !  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -7519,19 +7501,19 @@ contains
 
           ! Get information about that block.
           call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-              rmatrix%p_rspatialDiscrTest,ielementDistr,celementTest,ccubature,NEL,p_IelementList)
+              rmatrix%p_rspatialDiscrTest,ielemGroup,celementTest,ccubature,NEL,p_IelementList)
 
           call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
               rmatrix%p_rspatialDiscrTrial,celement=celementTrial)
 
-          ! Check if element distribution is empty
+          ! Check if element group is empty
           if (NEL .le. 0 ) cycle
 
-          ! Initialise a matrix assembly structure for that element distribution
+          ! Initialise a matrix assembly structure for that element group
           call bilf_initAssembly(rmatrixAssembly,rform,&
               celementTest,celementTrial,ccubature,min(p_rperfconfig%NELEMSIM,NEL),rperfconfig)
 
-          ! Assemble the data for all elements in this element distribution
+          ! Assemble the data for all elements in this element group
           call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
               p_IelementList,fcoeff_buildMatrixSc_sim,rcollection,&
               ntempArrays,rperfconfig)
@@ -7667,7 +7649,8 @@ contains
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
   type(t_triangulation), pointer :: p_rtriangulation
   integer, dimension(:), pointer :: IelementList, IelementOrientation
-  integer :: ibdc,ielementDistr,NELbdc,ccType
+  integer :: ibdc,ielemGroup,NELbdc,ccType,NEL
+  integer(I32) :: celemTest, celemTrial
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -7740,23 +7723,27 @@ contains
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rmatrix%p_rspatialDiscrTrial)
+            
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial,NEL)
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,celemTest)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rmatrix%p_rspatialDiscrTest, NELbdc, IelementList, IelementOrientation,&
-                celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                cparType=BDR_PAR_LENGTH)
+                celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element list is empty
             if (NELbdc .le. 0) cycle
 
             ! Initialise a matrix assembly structure for all elements
             call bilf_initAssembly(rmatrixAssembly, rform,&
-                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc, rperfconfig)
+                celemTest,celemTrial,CUB_G1_1D, NELbdc, rperfconfig)
             call bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
             ! Assemble the data for all elements
@@ -7774,11 +7761,15 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rmatrix%p_rspatialDiscrTrial)
 
-            ! Check if element distribution is empty
-            if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial,NEL)
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,celemTest)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Loop over all boundary components and call
             ! the calculation routines for that
@@ -7793,17 +7784,14 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc, rmatrix%p_rspatialDiscrTest,&
                   NELbdc, IelementList, IelementOrientation,&
-                  celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  cparType=BDR_PAR_LENGTH)
+                  celement=celemTrial,cparType=BDR_PAR_LENGTH)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Initialise a matrix assembly structure for all elements
               call bilf_initAssembly(rmatrixAssembly, rform,&
-                  rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc, rperfconfig)
+                  celemTest,celemTrial,CUB_G1_1D, NELbdc, rperfconfig)
               call bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
               ! Assemble the data for all elements
@@ -7819,7 +7807,7 @@ contains
 
             end do ! ibdc
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
@@ -7951,7 +7939,8 @@ contains
   type(t_boundaryRegion) :: rboundaryReg
   real(DP), dimension(:,:), pointer :: DedgePosition
   integer, dimension(:), pointer :: IelementList, IelementOrientation
-  integer :: ibdc,ielementDistr,NELbdc,ccType
+  integer :: ibdc,ielemGroup,NELbdc,ccType,NEL
+  integer(I32) :: celemTest, celemTrial
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -8041,26 +8030,31 @@ contains
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
           allocate(DedgePosition(2,NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rmatrix%p_rspatialDiscrTrial)
+
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial,NEL)
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,celemTest)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rmatrix%p_rspatialDiscrTrial, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                BDR_PAR_LENGTH)
+                celemTrial,BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element list is empty
             if (NELbdc .le. 0) cycle
 
-            ! Initialise a matrix assembly structure for that element distribution
+            ! Initialise a matrix assembly structure for that element group
             call bilf_initAssembly(rmatrixAssembly, rform,&
-                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                celemTest,celemTrial,&
                 ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
 
-            ! Assemble the data for all elements in this element distribution
+            ! Assemble the data for all elements in this element group
             call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
@@ -8076,16 +8070,19 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rmatrix%p_rspatialDiscrTrial)
 
-            ! Check if element distribution is empty
-            if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial,NEL)
+            call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,celemTest)
 
-            ! Initialise a matrix assembly structure for that element distribution
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
+
+            ! Initialise a matrix assembly structure for that element group
             call bilf_initAssembly(rmatrixAssembly,rform,&
-                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                celemTest,celemTrial,&
                 ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
 
             ! Create a boundary region for each boundary component and call
@@ -8105,12 +8102,11 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rmatrix%p_rspatialDiscrTrial, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  BDR_PAR_LENGTH)
+                  celemTrial,BDR_PAR_LENGTH)
 
               if (NELbdc .gt. 0) then
 
-                ! Assemble the data for all elements in this element distribution
+                ! Assemble the data for all elements in this element group
                 call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
@@ -8126,7 +8122,7 @@ contains
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 

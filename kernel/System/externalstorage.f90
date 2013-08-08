@@ -1264,7 +1264,7 @@ contains
       imemsize = int(isize,I64)*ST_LOGICAL_BYTES
     case (ST_CHAR)
       imemsize = int(isize,I64)*ST_CHAR_BYTES
-    case DEFAULT
+    case default
       call output_line ('Unknown mem type!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_new1D')
       call sys_halt()
@@ -1446,7 +1446,7 @@ contains
       imemsize = int(product(Isize),I64)*ST_LOGICAL_BYTES
     case (ST_CHAR)
       imemsize = int(product(Isize),I64)*ST_CHAR_BYTES
-    case DEFAULT
+    case default
       call output_line ('Unknown mem type!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_new')
       call sys_halt()
@@ -11141,7 +11141,7 @@ contains
       case (ST_CHAR)
         call storage_getbase_char (istoragehandle,p_Cdata1D,rstorageheap)
         call exstor_getdata_char (ihandle,p_Cdata1D,rheap)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
       end select
@@ -11178,7 +11178,7 @@ contains
       case (ST_CHAR)
         call storage_getbase_char2D (istoragehandle,p_Cdata2D,rstorageheap)
         call exstor_getdata_char2D (ihandle,p_Cdata2D)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
       end select
@@ -11215,7 +11215,7 @@ contains
       case (ST_CHAR)
         call storage_getbase_char3D (istoragehandle,p_Cdata3D,rstorageheap)
         call exstor_getdata_char3D (ihandle,p_Cdata3D)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
       end select
@@ -11373,7 +11373,7 @@ contains
       case (ST_CHAR)
         call storage_getbase_char (istoragehandle, p_Cdata1D, rstorageheap)
         call exstor_setdata_char (ihandle, p_Cdata1D, rheap)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
       end select
@@ -11420,7 +11420,7 @@ contains
       case (ST_CHAR)
         call storage_getbase_char2D (istoragehandle, p_Cdata2D, rstorageheap)
         call exstor_setdata_char2D (ihandle, p_Cdata2D, rheap)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
       end select
@@ -11467,12 +11467,12 @@ contains
       case (ST_CHAR)
         call storage_getbase_char3D (istoragehandle, p_Cdata3D, rstorageheap)
         call exstor_setdata_char3D (ihandle, p_Cdata3D, rheap)
-      case DEFAULT
+      case default
         call output_line ('Unsupported data type!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
       end select
 
-    case DEFAULT
+    case default
       call output_line ('Handle '//sys_siL(ihandle, 11)//&
                         ' is neither 1- nor 2- dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')

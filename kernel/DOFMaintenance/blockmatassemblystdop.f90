@@ -10195,7 +10195,7 @@ contains
   ! OPTIONAL: Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in), optional :: Dnu
 
-  ! OPTINOAL: Minimum velocity from which stabilisation is applied.
+  ! OPTIONAL: Minimum velocity from which stabilisation is applied.
   ! For a velocity smaller than this, no stabilisation is applied
   ! on the corresponding element. Default = 1E-8.
   real(DP), intent(in), optional :: duMin

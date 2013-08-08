@@ -457,8 +457,8 @@ module linearsystemblock
     ! structure.
     type(t_blockDiscretisation), pointer :: p_rblockDiscrTrial => null()
 
-    ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there is at least one element distribution
+    ! Flag: Trial and Test functions in all element groups
+    ! are the same. If FALSE, there is at least one element group
     ! with different trial and test functions.
     logical :: bidenticalTrialAndTest = .true.
 
@@ -3497,7 +3497,7 @@ contains
       call lsysbl_getbase_single (ry,p_Fdest)
       call lalg_copyVector (p_Dsource(1:NEQ),p_Fdest(1:NEQ))
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported data type!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
       call sys_halt()
@@ -3515,13 +3515,13 @@ contains
       call lsysbl_getbase_single (ry,p_Fdest)
       call lalg_copyVector (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported data type!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
       call sys_halt()
     end select
 
-  case DEFAULT
+  case default
     call output_line ('Unsupported data type!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
     call sys_halt()
@@ -3603,7 +3603,7 @@ contains
     call lsysbl_getbase_single(rx,p_Fdata)
     call lalg_scaleVector (p_Fdata,real(c,SP))
 
-  case DEFAULT
+  case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_scaleVector')
     call sys_halt()
@@ -3657,7 +3657,7 @@ contains
       call lalg_setVector (p_Ssource,real(dvalue,SP))
     end if
 
-  case DEFAULT
+  case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_clearVector')
     call sys_halt()
@@ -3723,7 +3723,7 @@ contains
 
     call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
-  case DEFAULT
+  case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb1')
     call sys_halt()
@@ -3797,7 +3797,7 @@ contains
 
     call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
-  case DEFAULT
+  case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb2')
     call sys_halt()
@@ -3947,7 +3947,7 @@ contains
     call lsysbl_getbase_single (rx,p_Fdata)
     lsysbl_vectorNorm = lalg_norm (p_Fdata,cnorm,iposMax)
 
-  case DEFAULT
+  case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorNorm')
     call sys_halt()
@@ -4243,7 +4243,7 @@ contains
           call lsysbl_getbase_single (rvector,p_Fsource)
           call lalg_copyVector (p_Fsource(:),p_Fdest(:))
 
-        case DEFAULT
+        case default
 
           call output_line('Invalid data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createScalarFromVec')
@@ -5273,7 +5273,7 @@ contains
         end if
       end if
 
-    case DEFAULT
+    case default
 
       call output_line('cdupContent unknown!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_duplicateVector')
@@ -6826,7 +6826,7 @@ contains
           call lalg_copyVector(p_IdataTmp(1:n), p_Idata(1:n))
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
         call sys_halt()
@@ -7285,7 +7285,7 @@ contains
           call lalg_copyVector(p_IdataTmp(1:n), p_Idata(1:n))
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndMat')
         call sys_halt()

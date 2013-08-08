@@ -929,7 +929,7 @@ contains
           end if
         end do
 
-      case DEFAULT
+      case default
         call output_line (&
             "Unknown boundary condition"//sys_siL(p_RdiscreteBCEntry(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteBC")
@@ -1128,7 +1128,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line (&
             "Unknown boundary condition"//sys_siL(p_RdiscreteFBCEntry(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteFBC")

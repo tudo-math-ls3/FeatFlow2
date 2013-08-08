@@ -705,7 +705,7 @@ contains
   ! Some local variables
   type(t_spatialDiscretisation), pointer :: p_rdiscrV, p_rdiscrP
   integer(I32) :: celemP, celemV
-  integer :: ndofPres, ndofVelo, ieldist
+  integer :: ndofPres, ndofVelo, ielemGroup
 
     ! Set the system and flags
     rdata%csystem = SPSOR_SYSTEM_NAVST2D
@@ -743,12 +743,12 @@ contains
 
       rdata%cvelocity = SPSOR_VELO_NONE
 
-      ! Loop over all element distributions
-      do ieldist = 1, p_rdiscrV%inumFESpaces
+      ! Loop over all element groups
+      do ielemGroup = 1, spdiscr_getNelemGroups(p_rdiscrV)
 
         ! Get the element of the spaces
-        celemV = elem_getPrimaryElement(&
-                 p_rdiscrV%RelementDistr(ieldist)%celement)
+        call spdiscr_getElemGroupInfo (p_rdiscrV,ielemGroup,celemV)
+        celemV = elem_getPrimaryElement(celemV)
 
         ! What is the velocity element?
         select case(celemV)
@@ -788,7 +788,7 @@ contains
 
         end select
 
-      end do ! ieldist
+      end do ! ielemGroup
 
     else
 
@@ -804,12 +804,12 @@ contains
 
       rdata%cpressure = SPSOR_PRES_NONE
 
-      ! Loop over all element distributions
-      do ieldist = 1, p_rdiscrP%inumFESpaces
+      ! Loop over all element groups
+      do ielemGroup = 1, spdiscr_getNelemGroups(p_rdiscrP)
 
         ! Get the element of the spaces
-        celemP = elem_getPrimaryElement(&
-                 p_rdiscrP%RelementDistr(ieldist)%celement)
+        call spdiscr_getElemGroupInfo (p_rdiscrP,ielemGroup,celemP)
+        celemP = elem_getPrimaryElement(celemP)
 
         ! What is the pressure element?
         select case(celemP)
@@ -829,7 +829,7 @@ contains
 
         end select
 
-      end do ! ieldist
+      end do ! ielemGroup
 
     else
 
@@ -2381,7 +2381,7 @@ contains
   ! Some local variables
   type(t_spatialDiscretisation), pointer :: p_rdiscrV, p_rdiscrP
   integer(I32) :: celemP, celemV
-  integer :: ndofPres, ndofVelo, ieldist
+  integer :: ndofPres, ndofVelo, ielemGroup
 
     ! Set the system and flags
     rdata%csystem = SPSOR_SYSTEM_NAVST3D
@@ -2426,12 +2426,12 @@ contains
 
       rdata%cvelocity = SPSOR_VELO_NONE
 
-      ! Loop over all element distributions
-      do ieldist = 1, p_rdiscrV%inumFESpaces
+      ! Loop over all element groups
+      do ielemGroup = 1, spdiscr_getNelemGroups(p_rdiscrV)
 
         ! Get the element of the spaces
-        celemV = elem_getPrimaryElement(&
-                 p_rdiscrV%RelementDistr(ieldist)%celement)
+        call spdiscr_getElemGroupInfo (p_rdiscrV,ielemGroup,celemV)
+        celemV = elem_getPrimaryElement(celemV)
 
         ! What is the velocity element?
         select case(celemV)
@@ -2450,7 +2450,7 @@ contains
 
         end select
 
-      end do ! ieldist
+      end do ! ielemGroup
 
     else
 
@@ -2466,12 +2466,12 @@ contains
 
       rdata%cpressure = SPSOR_PRES_NONE
 
-      ! Loop over all element distributions
-      do ieldist = 1, p_rdiscrP%inumFESpaces
+      ! Loop over all element groups
+      do ielemGroup = 1, spdiscr_getNelemGroups(p_rdiscrP)
 
         ! Get the element of the spaces
-        celemP = elem_getPrimaryElement(&
-                 p_rdiscrP%RelementDistr(ieldist)%celement)
+        call spdiscr_getElemGroupInfo (p_rdiscrP,ielemGroup,celemP)
+        celemP = elem_getPrimaryElement(celemP)
 
         ! What is the pressure element?
         select case(celemP)
@@ -2491,7 +2491,7 @@ contains
 
         end select
 
-      end do ! ieldist
+      end do ! ielemGroup
 
     else
 

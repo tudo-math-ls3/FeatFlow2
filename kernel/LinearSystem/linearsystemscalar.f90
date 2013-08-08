@@ -806,8 +806,8 @@ module linearsystemscalar
     ! A pointer to the spatial discretisation for the test functions.
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTest => null()
 
-    ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there is at least one element distribution
+    ! Flag: Trial and Test functions in all element groups
+    ! are the same. If FALSE, there is at least one element group
     ! with different trial and test functions.
     logical :: bidenticalTrialAndTest = .true.
 
@@ -1407,7 +1407,7 @@ contains
 !<description>
   ! Checks whether a given discretisation structure rdiscretisation is
   ! basically compatible to a given vector (concerning NEQ, cubature formulas
-  ! on element distribution, element compatibility,...)
+  ! on element group, element compatibility,...)
 !</description>
 
 !<input>
@@ -30507,7 +30507,7 @@ contains
       call map_copy(p_Key,rgraph%rVertices)
       call storage_free(h_Key)
 
-    case DEFAULT
+    case default
       call output_line('Invalid matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createGraphFromMatrix')
       call sys_halt()
@@ -30553,7 +30553,7 @@ contains
         call sys_halt()
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
       call sys_halt()

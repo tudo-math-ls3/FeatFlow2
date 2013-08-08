@@ -57,7 +57,7 @@ module vanka_optcontrol
 
 !<typeblock>
 
-  ! Element distribution information for the 2D Navier-Stokes
+  ! element group information for the 2D Navier-Stokes
   ! optimal control Vanka driver. COntains some preallocated
   ! data arrays. Private type.
   type t_vanka_NavStOptC2D_eldist
@@ -267,10 +267,9 @@ contains
 
 !</subroutine>
 
-  integer :: ndofu,ndofp,ielementdist
+  integer :: ndofu,ndofp,ielemGroup
   integer(I32) :: celemV, celemP
   type(t_blockDiscretisation), pointer :: p_rblockDiscr
-  type(t_elementDistribution), pointer :: p_relementDistrV, p_relementDistrP
 
     ! Matrix must be 3x3.
     if ((rmatrix%nblocksPerCol .ne. 6) .or. (rmatrix%nblocksPerRow .ne. 6)) then
@@ -311,23 +310,23 @@ contains
     rvanka%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(1)
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
 
-    if ((p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
-         p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) .or. &
-        (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
-         p_rblockDiscr%RspatialDiscr(4)%inumFESpaces) .or. &
-        (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
-         p_rblockDiscr%RspatialDiscr(5)%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(1)) .ne. &
+         spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(2))) .or. &
+        (spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(1)) .ne. &
+         spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(4))) .or. &
+        (spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(1)) .ne. &
+         spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(5)))) then
       call output_line (&
           'Discretisation structures incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()
     end if
 
-    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
-          rvanka%p_rspatialDiscrV%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -453,54 +452,51 @@ contains
     end if
 
     ! Preallocate memory for the FEM data.
-    allocate(rvanka%p_rfemdata(p_rblockDiscr%RspatialDiscr(1)%inumFESpaces))
+    allocate(rvanka%p_rfemdata(spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(1))))
 
-    do ielementdist = 1,size(rvanka%p_rfemdata)
-      ! Get the corresponding element distributions of u and p.
-      p_relementDistrV => &
-          rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
+    do ielemGroup = 1,size(rvanka%p_rfemdata)
+      ! Get the corresponding element types of u and p.
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrV,ielemGroup,celemV)
 
       ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,ielemGroup,celemP)
       else
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(1)
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,1,celemP)
       end if
 
       ! Which element combination do we have now?
-      celemV = elem_getPrimaryElement(p_relementDistrV%celement)
-      celemP = elem_getPrimaryElement(p_relementDistrP%celement)
+      celemV = elem_getPrimaryElement(celemV)
+      celemP = elem_getPrimaryElement(celemP)
 
       ! #dofs in the FEM-spaces?
       ndofu = elem_igetNDofLoc(celemV)
       ndofp = elem_igetNDofLoc(celemP)
 
-      rvanka%p_rfemdata(ielementdist)%ndofu = ndofu
-      rvanka%p_rfemdata(ielementdist)%ndofp = ndofp
+      rvanka%p_rfemdata(ielemGroup)%ndofu = ndofu
+      rvanka%p_rfemdata(ielemGroup)%ndofp = ndofp
 
       ! Allocate an array for the pressure DOF's.
       ! Allocate memory for the correction on each element.
       ! Note that all P-dofs on one element are connected to all the V-dofs on that
       ! element. Therefore, each row in D corresponding to an arbitrary P-dof on an
       ! element will return all the V-dof's on that element!
-      allocate (rvanka%p_rfemdata(ielementdist)%p_IdofsP(ndofp,1))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_DdefectU(ndofu,4))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_DdefectP(ndofp,2))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_Ddefect(2*ndofu+ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_Ds1(ndofp,ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_Ds2(ndofp,ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_Ipiv(4*ndofu+2*ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_DaInv(4,ndofu))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_DaFull(2*ndofu+ndofp,2*ndofu+ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_IdofsU(ndofu))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalB(ndofu,ndofp))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalD(ndofp,ndofu))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalA11(ndofu,ndofu))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalA12(ndofu,ndofu))
-      allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalC(ndofp,ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_IdofsP(ndofp,1))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_DdefectU(ndofu,4))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_DdefectP(ndofp,2))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_Ddefect(2*ndofu+ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_Ds1(ndofp,ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_Ds2(ndofp,ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_Ipiv(4*ndofu+2*ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_DaInv(4,ndofu))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_DaFull(2*ndofu+ndofp,2*ndofu+ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_IdofsU(ndofu))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_KentryLocalB(ndofu,ndofp))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_KentryLocalD(ndofp,ndofu))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_KentryLocalA11(ndofu,ndofu))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_KentryLocalA12(ndofu,ndofu))
+      allocate (rvanka%p_rfemdata(ielemGroup)%p_KentryLocalC(ndofp,ndofp))
 
     end do
 
@@ -581,52 +577,46 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: ielementdist
+  integer :: ielemGroup, NEL
   integer(I32) :: celemV, celemP
   integer, dimension(:), pointer :: p_IelementList
-  type(t_elementDistribution), pointer :: p_relementDistrV
-  type(t_elementDistribution), pointer :: p_relementDistrP
 
     ! Nothing to do?
     if(niterations .le. 0) return
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV)
 
-      ! Get the corresponding element distributions of u and p.
-      p_relementDistrV => &
-          rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Get the corresponding element types of u and p.
+      !
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrV,ielemGroup,celemV,NEL,p_IelementList)
+
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,ielemGroup,celemP)
+      else
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,1,celemP)
+      end if
 
       ! Which element combination do we have now?
-      celemV = elem_getPrimaryElement(p_relementDistrV%celement)
-      celemP = elem_getPrimaryElement(p_relementDistrP%celement)
+      celemV = elem_getPrimaryElement(celemV)
+      celemP = elem_getPrimaryElement(celemP)
 
       ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
       select case (rvanka%csubtype)
       case (VANKATP_NAVSTOPTC2D_DIAG)
         ! Call the jacobi-style vanka
         call vanka_NavStOptC2D(rvanka, rsol, rrhs, niterations, &
-            domega, p_IelementList,rvanka%p_rfemdata(ielementdist))
+            domega, p_IelementList,rvanka%p_rfemdata(ielemGroup))
       case (VANKATP_NAVSTOPTC2D_FULL)
         ! Call the jacobi-style vanka
         call vanka_NavStOptC2Dfull(rvanka, rsol, rrhs, niterations, &
-            domega, p_IelementList,rvanka%p_rfemdata(ielementdist))
+            domega, p_IelementList,rvanka%p_rfemdata(ielemGroup))
 
       case default
         call output_line ('Unknown Vanka subtype!',&

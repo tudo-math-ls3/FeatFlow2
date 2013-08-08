@@ -247,7 +247,7 @@ contains
 
   subroutine trilf_buildMatrixScalar (rform,bclear,rmatrixScalar,rvector,&
                                       fcoeff_buildTrilMatrixSc_sim,rcollection,&
-                                      ntempArrays,rperfconfig)
+                                      ntempArrays,rcubatureInfo,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -270,7 +270,7 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is "compatible" with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same
+  ! of the matrix! I.e., the element groups must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
   ! The matrix must be unsorted when this routine is called,
@@ -308,6 +308,10 @@ contains
   ! The temporary memory is available in the callback function as
   !    rdomainIntSubset%p_DtempArrays !
   integer, intent(in), optional :: ntempArrays
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -349,26 +353,24 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
-                                          fcoeff_buildTrilMatrixSc_sim,&
-                                          rcollection,ntempArrays,rperfconfig)
+              fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rcubatureInfo,rperfconfig)
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9.
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
 
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
-                                        fcoeff_buildTrilMatrixSc_sim,&
-                                        rcollection,ntempArrays,rperfconfig)
+            fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rcubatureInfo,rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
-      case DEFAULT
+      case default
         call output_line("Not supported matrix structure!",&
             OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
         call sys_halt()
       end select
-    case DEFAULT
+    case default
       call output_line("Single precision matrices currently not supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
       call sys_halt()
@@ -384,8 +386,7 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
-                                          fcoeff_buildTrilMatrixSc_sim,&
-                                          rcollection,ntempArrays,rperfconfig)
+              fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rcubatureInfo,rperfconfig)
 
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9
@@ -393,23 +394,22 @@ contains
 
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
-                                        fcoeff_buildTrilMatrixSc_sim,&
-                                        rcollection,ntempArrays,rperfconfig)
+            fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rcubatureInfo,rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
-      case DEFAULT
+      case default
         call output_line("Not supported matrix structure!",&
             OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
         call sys_halt()
       end select
-    case DEFAULT
+    case default
       call output_line("Single precision matrices currently not supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
       call sys_halt()
     end select
-  case DEFAULT
+  case default
     call output_line("General discretisation not implemented!",&
         OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
     call sys_halt()
@@ -423,7 +423,7 @@ contains
 
   subroutine trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,rcollection,&
-                                        ntempArrays,rperfconfig)
+                                        ntempArrays,rcubatureInfo,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -440,7 +440,7 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is "compatible" with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same
+  ! of the matrix! I.e., the element groups must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
   ! Double-precision version.
@@ -478,6 +478,10 @@ contains
   !    rdomainIntSubset%p_DtempArrays !
   integer, intent(in), optional :: ntempArrays
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -491,7 +495,7 @@ contains
 !</subroutine>
 
   ! local variablesvboxdrv
-  integer :: i,i1,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
+  integer :: i,i1,ielemGroup,JDFG, ICUBP, IALBET, IA, IB, ifunc, icubatureBlock
   logical :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
   integer :: IEL, IELmax, IELset, IDOFE, JDOFE
   integer :: JCOL0,JCOL,idertype
@@ -541,6 +545,7 @@ contains
 
   ! A pointer to an element-number list
   integer, dimension(:), pointer :: p_IelementList
+  integer :: NEL
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
@@ -554,10 +559,14 @@ contains
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Current element distribution for discretisation and function $u$.
-  type(t_elementDistribution), pointer :: p_relementDistrTrial
-  type(t_elementDistribution), pointer :: p_relementDistrTest
-  type(t_elementDistribution), pointer :: p_relementDistrFunc
+  ! Element IDs for discretisation and function $u$.
+  integer(I32) :: celemTrial, celemTest, celemFunc
+  
+  ! Cubature formula
+  integer(I32) :: ccubature
+
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
   ! DOF-Data of the vector
   real(DP), dimension(:), pointer :: p_Ddata
@@ -601,9 +610,9 @@ contains
   ! Check the descriptors of the bilinear form and set BDERxxxx
   ! according to these.
 
-  BderTrialTempl = .false.
-  BderTestTempl = .false.
-  BderFuncTempl = .false.
+  BderTrialTempl(:) = .false.
+  BderTestTempl(:) = .false.
+  BderFuncTempl(:) = .false.
 
   ! Loop through the additive terms
   do i=1,rform%itermCount
@@ -697,12 +706,22 @@ contains
     call sys_halt()
   end if
 
-  if ((p_rdiscrTest%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
-      (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
-      (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrTest%inumFESpaces)) then
+  if ((spdiscr_getNelemGroups(p_rdiscrTest ) .ne. spdiscr_getNelemGroups(p_rdiscrFunc)) .or. &
+      (spdiscr_getNelemGroups(p_rdiscrTrial) .ne. spdiscr_getNelemGroups(p_rdiscrFunc)) .or. &
+      (spdiscr_getNelemGroups(p_rdiscrTrial) .ne. spdiscr_getNelemGroups(p_rdiscrTest))) then
     call output_line("Discretisations not compatible!",&
         OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
+  end if
+
+  ! If we do not have it, create a cubature info structure that
+  ! defines how to do the assembly.
+  if (.not. present(rcubatureInfo)) then
+    call spdiscr_createDefCubStructure(p_rdiscrTrial,&
+        rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+    p_rcubatureInfo => rtempCubatureInfo
+  else
+    p_rcubatureInfo => rcubatureInfo
   end if
 
   ! Get a pointer to the triangulation - for easier access.
@@ -714,41 +733,46 @@ contains
   ! NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
-  ! Now loop over the different element distributions (=combinations
+  ! Now loop over the different element groups (=combinations
   ! of trial and test functions) in the discretisation.
 
-  do icurrentElementDistr = 1,p_rdiscrTest%inumFESpaces
+  ! Loop over the element blocks. Each defines a separate cubature formula.
+  do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-    ! Activate the current element distribution(s)
-    p_relementDistrTest => p_rdiscrTest%RelementDistr(icurrentElementDistr)
-    p_relementDistrTrial => p_rdiscrTrial%RelementDistr(icurrentElementDistr)
-    p_relementDistrFunc => p_rdiscrFunc%RelementDistr(icurrentElementDistr)
+    ! Get typical information: Number of elements, element list,...
+    call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscrTest,&
+        ielemGroup,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList)
 
-    ! Cancel if this element distribution is empty.
-    if (p_relementDistrTest%NEL .eq. 0) cycle
+    ! Cancel if this element list is empty.
+    if (NEL .le. 0) cycle
 
-    ! Get the number of local DOF`s for trial and test functions
-    indofFunc = elem_igetNDofLoc(p_relementDistrFunc%celement)
-    indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
-    indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
-
+    ! Activate the current element group(s)
+    !
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistrTest%h_IelementList, &
-                              p_IelementList)
+    call spdiscr_getElemGroupInfo (p_rdiscrTest,ielemGroup,celemTest,NEL,p_IelementList)
+    call spdiscr_getElemGroupInfo (p_rdiscrTrial,ielemGroup,celemTrial)
+    call spdiscr_getElemGroupInfo (p_rdiscrFunc,ielemGroup,celemFunc)
+
+    ! Cancel if this element group is empty.
+    if (NEL .eq. 0) cycle
+
+    ! Get the number of local DOF`s for trial and test functions
+    indofFunc = elem_igetNDofLoc(celemFunc)
+    indofTrial = elem_igetNDofLoc(celemTrial)
+    indofTest = elem_igetNDofLoc(celemTest)
 
     ! Get the data array from the vector
     call lsyssc_getbase_double(rvector,p_Ddata)
 
     ! Get the number of corner vertices of the element
-    if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
-        elem_igetShape(p_relementDistrTest%celement)) then
+    if (elem_igetShape(celemTrial) .ne. elem_igetShape(celemTest)) then
       call output_line("Element spaces incompatible!",&
           OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     end if
-    if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
-        elem_igetShape(p_relementDistrFunc%celement)) then
+    
+    if (elem_igetShape(celemTrial) .ne. elem_igetShape(celemFunc)) then
       call output_line("Element spaces incompatible!",&
           OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
@@ -756,17 +780,17 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistrTest%celement)
+    ctrafoType = elem_igetTrafoType(celemTest)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistrTest%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistrTest%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(ccubature,p_DcubPtsRef, Domega)
 
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -775,7 +799,7 @@ contains
       IB = rform%Idescriptors(3,IALBET)
 
       if ((ifunc.lt.0) .or. &
-          (ifunc .gt. elem_getMaxDerivative(p_relementDistrFunc%celement))) then
+          (ifunc .gt. elem_getMaxDerivative(celemFunc))) then
          call output_line("Specified function-derivative "&
              //trim(sys_siL(ifunc,10))//" not available",&
              OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
@@ -783,7 +807,7 @@ contains
       end if
 
       if ((IA.le.0) .or. &
-          (IA .gt. elem_getMaxDerivative(p_relementDistrTrial%celement))) then
+          (IA .gt. elem_getMaxDerivative(celemTrial))) then
         call output_line("Specified trial-derivative "&
              //trim(sys_siL(IA,10))//" not available",&
              OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
@@ -791,7 +815,7 @@ contains
       end if
 
       if ((IB.le.0) .or. &
-          (IB .gt. elem_getMaxDerivative(p_relementDistrTest%celement))) then
+          (IB .gt. elem_getMaxDerivative(celemTest))) then
         call output_line("Specified test-derivative "&
              //trim(sys_siL(IB,10))//" not available",&
              OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
@@ -823,13 +847,13 @@ contains
     ! which reduces the speed by 50%!
 
     allocate(DbasTest(indofTest,&
-        elem_getMaxDerivative(p_relementDistrTest%celement),&
+        elem_getMaxDerivative(celemTest),&
         ncubp,nelementsPerBlock))
     allocate(DbasTrial(indofTrial,&
-        elem_getMaxDerivative(p_relementDistrTrial%celement), &
+        elem_getMaxDerivative(celemTrial), &
         ncubp,nelementsPerBlock))
     allocate(DbasFunc(indofTrial,&
-        elem_getMaxDerivative(p_relementDistrFunc%celement), &
+        elem_getMaxDerivative(celemFunc), &
         ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
@@ -862,8 +886,7 @@ contains
     ! We do not rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
-    bIdenticalTrialAndTest = p_relementDistrTrial%celement .eq. &
-                             p_relementDistrTest%celement
+    bIdenticalTrialAndTest = celemTrial .eq. celemTest
 
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
     ! space IdofTest (if both spaces are identical).
@@ -889,10 +912,8 @@ contains
 
     ! Test whether the coefficient functions are identical to the trial functions
     ! of the discretisation.
-    bIdenticalFuncAndTest = p_relementDistrTest%celement .eq. &
-                            p_relementDistrFunc%celement
-    bIdenticalFuncAndTrial = p_relementDistrTrial%celement .eq. &
-                             p_relementDistrFunc%celement
+    bIdenticalFuncAndTest = celemTest .eq. celemFunc
+    bIdenticalFuncAndTrial = celemTrial .eq. celemFunc
 
     ! If yes, we can use the data calculated for the trial functions.
     if (bIdenticalFuncAndTest) then
@@ -920,14 +941,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, p_relementDistrTest%NEL, nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most
       ! nelementsPerBlock elements simultaneously.
 
-      IELmax = min(p_relementDistrTest%NEL,IELset-1+nelementsPerBlock)
+      IELmax = min(NEL,IELset-1+nelementsPerBlock)
 
       ! --------------------- DOF SEARCH PHASE ------------------------
 
@@ -1066,11 +1087,11 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistrTrial%celement)
+      cevaluationTag = elem_getEvaluationTag(celemTrial)
       cevaluationTag = ior(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistrTest%celement))
+                      elem_getEvaluationTag(celemTest))
       cevaluationTag = ior(cevaluationTag,&
-                      elem_getEvaluationTag(p_relementDistrFunc%celement))
+                      elem_getEvaluationTag(celemFunc))
 
       if (.not. rform%ballCoeffConstant) then
         ! Evaluate real coordinates if not necessary.
@@ -1113,11 +1134,11 @@ contains
           call domint_allocTempMemory (rintSubset,ntempArrays)
         end if
 
-        !rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielemGroupibution = ielemGroup
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_IdofsTrial
-        rintSubset%celement = p_relementDistrTrial%celement
+        rintSubset%celement = celemTrial
 
         call fcoeff_buildTrilMatrixSc_sim (p_rdiscrTest,p_rdiscrTrial,rform, &
                   IELmax-IELset+1,ncubp,&
@@ -1128,21 +1149,18 @@ contains
       end if
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistrTest%celement, &
-          revalElementSet, BderTest, DbasTest)
+      call elem_generic_sim2 (celemTest, revalElementSet, BderTest, DbasTest)
 
       ! Omit the calculation of the trial function values if they
       ! are identical to the test function values.
       if (.not. bidenticalTrialAndTest) then
-        call elem_generic_sim2 (p_relementDistrTrial%celement, &
-            revalElementSet, BderTrial, DbasTrial)
+        call elem_generic_sim2 (celemTrial, revalElementSet, BderTrial, DbasTrial)
       end if
 
       ! Omit the calculation of the coefficient function values if they
       ! are identical to the trial function values.
       if ((.not. bIdenticalFuncAndTest) .and. (.not. bIdenticalFuncAndTrial)) then
-        call elem_generic_sim2 (p_relementDistrFunc%celement, &
-            revalElementSet, BderFunc, DbasFunc)
+        call elem_generic_sim2 (celemFunc, revalElementSet, BderFunc, DbasFunc)
       end if
 
       ! ----------------- COEFFICIENT EVALUATION PHASE ---------------------
@@ -1299,6 +1317,11 @@ contains
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
 
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+
     deallocate(Dcoefficients)
     deallocate(IdofsTrial)
     deallocate(IdofsTest)
@@ -1314,7 +1337,7 @@ contains
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
 
-  end do ! icurrentElementDistr
+  end do ! ielemGroup
 
   ! Finish
 
@@ -1954,7 +1977,7 @@ contains
             call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
           end if
 
-          !rintSubset%ielementDistribution  =  0
+          !rintSubset%ielemGroupibution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial          => p_IdofsTrial
@@ -2242,7 +2265,7 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is "compatible" with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same
+  ! of the matrix! I.e., the element groups must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
   ! The matrix must be unsorted when this routine is called,
@@ -2256,7 +2279,7 @@ contains
   ! contributions of a submesh.
   ! The trilf_assembleSubmeshMatrix9 interface allows to assemble parts of a
   ! matrix based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
 !</description>
 
 
@@ -2311,10 +2334,12 @@ contains
   ! local variables
   type(t_matrixScalar) :: rmatrixBackup
   type(t_trilfMatrixAssembly) :: rmatrixAssembly
-  integer :: ielementDistr,icubatureBlock,NEL
+  integer :: ielemGroup,icubatureBlock,NEL
   integer, dimension(:), pointer :: p_IelementList
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  integer(I32) :: celemTest, celemTrial, celemFunc
+  integer(I32) :: ccubature
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -2365,8 +2390,8 @@ contains
   case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
     ! Uniform and conformal discretisations
 
-    if (rmatrix%p_rspatialDiscrTest%inumFESpaces .ne.&
-        rvector%p_rspatialDiscr%inumFESpaces) then
+    if (spdiscr_getNelemGroups(rmatrix%p_rspatialDiscrTest) .ne.&
+        spdiscr_getNelemGroups(rvector%p_rspatialDiscr)) then
       call output_line("Discretisations not compatible!",&
           OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
       call sys_halt()
@@ -2390,20 +2415,23 @@ contains
 
           ! Get information about that block.
           call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-              rvector%p_rspatialDiscr,ielementDistr,NEL=NEL,p_IelementList=p_IelementList)
+              rvector%p_rspatialDiscr,ielemGroup,ccubature=ccubature,&
+              NEL=NEL,p_IelementList=p_IelementList)
 
-          ! Check if element distribution is empty
+          ! Check if element group is empty
           if (NEL .le. 0 ) cycle
 
-          ! Initialise a matrix assembly structure for that element distribution
+          ! Get the associated element types
+          call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,ielemGroup,celemTest)
+          call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,ielemGroup,celemTrial)
+          call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemFunc)
+
+          ! Initialise a matrix assembly structure for that element group
           call trilf_initAssembly(rmatrixAssembly,rform,&
-              rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-              rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature,&
+              celemTest,celemTrial,celemFunc,ccubature,&
               min(p_rperfconfig%NELEMSIM,NEL),rperfconfig)
 
-          ! Assemble the data for all elements in this element distribution
+          ! Assemble the data for all elements in this element group
           call trilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,rvector,&
               p_IelementList,fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rperfconfig)
 

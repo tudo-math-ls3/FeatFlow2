@@ -302,9 +302,6 @@ contains
   ! A pointer to the discretisation that is to be used
   type(t_spatialDiscretisation), pointer :: p_rdiscr
 
-  ! A pointer to an element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
   ! An array holding the element list
   integer, dimension(:), pointer :: p_IelementList
 
@@ -348,7 +345,7 @@ contains
 
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
-  integer :: nelementsPerBlock,ielementdistr
+  integer :: nelementsPerBlock,ielemGroup
 
   ! Some other local variables
   integer :: i,j,k,ndofs,ncubp,iel,ider
@@ -553,22 +550,22 @@ contains
     ! Do we have to calculate H1 errors?
     if(bcalcH1) then
 
-      ! Okay, in this case all element distributions of the spatial
+      ! Okay, in this case all element groups of the spatial
       ! discretisation must support first derivatives.
-      do i = 1, p_rdiscr%inumFEspaces
+      do i = 1, spdiscr_getNelemGroups(p_rdiscr)
 
-        ! Get a pointer to the element distribution
-        p_relementDistribution => p_rdiscr%RelementDistr(i)
+        ! Get informations about the element group
+        call spdiscr_getElemGroupInfo (p_rdiscr,i,celement)
 
         ! If the maximum supported derivative is 1, then the element does not
         ! support first derivatives!
-        if(elem_getMaxDerivative(p_relementDistribution%celement) .le. 1) then
+        if(elem_getMaxDerivative(celement) .le. 1) then
           bcalcH1 = .false.
           exit
         end if
       end do
 
-      ! Now if bcalcH1 is .false. now, then at least one element distribution
+      ! Now if bcalcH1 is .false. now, then at least one element group
       ! does not support first derivatives...
       if(.not. bcalcH1) then
         ! If p_DerrorH1 is given, set its entries to SYS_INFTY to indicate that
@@ -600,7 +597,7 @@ contains
 
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
-          ielementDistr,celement,ccubature,NEL,p_IelementList)
+          ielemGroup,celement,ccubature,NEL,p_IelementList)
 
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
@@ -700,7 +697,6 @@ contains
           call domint_setTempMemory (rintSubset,p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs(:,1:IELmax-IELset+1)
@@ -937,7 +933,7 @@ contains
       ! Release cubature information
       call easminfo_doneStdCubature(rcubatureData)
 
-    end do ! icurrentElementDistr
+    end do ! icubatureblock
 
     ! Do not forget to take the square roots of the L2- and H1-errors
     if(associated(rerror%p_DerrorL2) .and. bcalcL2) then
@@ -981,8 +977,8 @@ contains
   ! by the local weighting coefficients.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the
-  ! cubature formula to use for each element distribution.
+  ! element groups in the discretisation structure specifies the
+  ! cubature formula to use for each element group.
   !
   ! If the H1-error is desired and the element does not provide first
   ! derivatives, then this routine sets derror to -1 to indicate that the
@@ -1186,7 +1182,7 @@ contains
   integer :: nelementsPerBlock
 
   ! Current assembly block, cubature formula, element type,...
-  integer :: ielementDistr,icubatureBlock
+  integer :: ielemGroup,icubatureBlock
   integer(I32) :: cevalTag, celement, ccubature, ctrafoType
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -1273,13 +1269,15 @@ contains
     ! Do we have to calculate H1 errors?
     if(cerrortype .eq. PPERR_H1ERROR) then
 
-      ! Okay, in this case all element distributions of the spatial
+      ! Okay, in this case all element groups of the spatial
       ! discretisation must support first derivatives.
-      do i = 1, p_rdiscr%inumFEspaces
+      do i = 1, spdiscr_getNelemGroups(p_rdiscr)
 
         ! If the maximum supported derivative is 1, then the element does not
         ! support first derivatives!
-        if(elem_getMaxDerivative(p_rdiscr%RelementDistr(i)%celement) .le. 1) then
+        call spdiscr_getElemGroupInfo (p_rdiscr,i,celement)
+        
+        if(elem_getMaxDerivative(celement) .le. 1) then
           call output_line(&
               "Finite element does not support the calculation of the H1 error!",&
               OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalar_conf")
@@ -1319,7 +1317,7 @@ contains
 
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
-          ielementDistr,celement,ccubature,NEL,p_IelementList)
+          ielemGroup,celement,ccubature,NEL,p_IelementList)
 
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
@@ -1432,7 +1430,7 @@ contains
           call domint_setTempMemory (rintSubset,p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution = ielementDistr
+        !rintSubset%ielemGroupibution = ielemGroup
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs(:,1:IELmax-IELset+1)
@@ -1822,7 +1820,7 @@ contains
                                           rboundaryRegion, p_rdiscretisation,&
                                           rvectorScalar, ffunctionReference,&
                                           rcollection, ffunctionWeight)
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
                          OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarBoundary2D")
         call sys_halt()
@@ -1847,7 +1845,7 @@ contains
           derror = derror + dlocalError
         end do
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
                          OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarBoundary2D")
         call sys_halt()
@@ -1921,7 +1919,7 @@ contains
     integer, dimension(:), allocatable :: IelementList
     real(DP), dimension(:,:), allocatable :: DedgePosition
 
-    integer :: NELbdc,NVE,iel,i,k
+    integer :: NELbdc,NVE,iel,i,k,NEL
     integer(I32) :: ctrafoType
 
     ! The triangulation structure - to shorten some things...
@@ -1937,7 +1935,7 @@ contains
     real(DP), dimension(CUB_MAXCUBP) :: Domega1D
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    integer :: ncubp,ipoint,ielementDistr
+    integer :: ncubp,ipoint,ielemGroup
     integer(I32) :: celement
     integer(i32) :: icoordSystem
     real(DP) :: dlen
@@ -1970,23 +1968,24 @@ contains
     call cub_getCubPoints(ccubType, ncubp, Dxi1D, Domega1D)
 
 
-    ! Now loop over the different element distributions (=combinations
+    ! Now loop over the different element groups (=combinations
     ! of trial and test functions) in the discretisation.
 
-    do ielementDistr = 1, rdiscretisation%inumFESpaces
+    do ielemGroup = 1, spdiscr_getNelemGroups(rdiscretisation)
 
       ! Set type of elements for this distribution
-      celement = rdiscretisation%RelementDistr(ielementDistr)%celement
+      call spdiscr_getElemGroupInfo (rdiscretisation,ielemGroup,celement,NEL)
+
+      ! Check if element group is empty
+      if (NEL .le. 0) cycle
 
       ! Calculate the list of elements adjacent to the boundary
       call bdraux_getElementsAtRegion(rboundaryRegion,&
           rdiscretisation, NELbdc, IelementList, IelementOrientation,&
           DedgePosition, celement, BDR_PAR_LENGTH)
 
-
-      ! Check if element distribution is empty
+      ! Check if element set is empty
       if (NELbdc .le. 0) cycle
-
 
       ! Map the 1D cubature points to the edges in 2D.
       allocate(Dxi2D(ncubp,NDIM2D+1,NELbdc))
@@ -2468,8 +2467,8 @@ contains
   ! reference gradient, c.f. ZZ-technique.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the
-  ! cubature formula to use for each element distribution.
+  ! element groups in the discretisation structure specifies the
+  ! cubature formula to use for each element group.
 !</description>
 
 !<input>
@@ -2558,8 +2557,8 @@ contains
   ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the
-  ! cubature formula to use for each element distribution.
+  ! element groups in the discretisation structure specifies the
+  ! cubature formula to use for each element group.
 !</description>
 
 !<input>
@@ -2599,7 +2598,7 @@ contains
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationRef
-    integer :: i,k,ielementDistr,ielementDistrRef,iblock,ICUBP,NVE
+    integer :: i,k,ielemGroup,ielemGroupRef,iblock,ICUBP,NVE
     integer :: IEL, IELmax, IELset,IELGlobal
     real(DP) :: OM,delementError
 
@@ -2635,7 +2634,7 @@ contains
     ! Pointer to the element error
     real(DP), dimension(:), pointer :: p_DelementError
 
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL,NELref
 
     ! Pointer to the values of the function that are computed by the callback routine.
@@ -2727,35 +2726,35 @@ contains
       call lalg_clearVector (p_DelementError)
     end if
 
-    ! Check that both discretisations have the same number of element distributions
-    if (p_rdiscretisation%inumFESpaces .ne. &
-        p_rdiscretisationRef%inumFESpaces) then
-      call output_line("Number of element distributions mismatch!",&
+    ! Check that both discretisations have the same number of element groups
+    if (spdiscr_getNelemGroups(p_rdiscretisation) .ne. &
+        spdiscr_getNelemGroups(p_rdiscretisationRef)) then
+      call output_line("Number of element groups mismatch!",&
           OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
       call sys_halt()
     end if
 
     ! Loop over the element blocks. Each defines a separate cubature formula
     ! and is connected to a combination of test and trial functions
-    ! via the corresponding element distribution.
+    ! via the corresponding element group.
     do iinfoBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (iinfoBlock,p_rcubatureInfo,p_rdiscretisation,&
-          ielementDistr,celement,ccubature,NEL,p_IelementList)
-      call spdiscr_getStdDiscrInfo (iinfoBlock,p_rcubatureInfo,p_rdiscretisationRef,&
-          ielementDistrRef,celementRef,ccubatureRef,NELref)
+          ielemGroup,celement,ccubature,NEL,p_IelementList)
 
-      ! Check if element distributions have different number of elements
-      if (p_rdiscretisation%RelementDistr(ielementDistr)%NEL .ne. &
-          p_rdiscretisation%RelementDistr(ielementDistrRef)%NEL) then
+      ! Cancel if this element list is empty.
+      if (NEL .le. 0) cycle
+
+      call spdiscr_getStdDiscrInfo (iinfoBlock,p_rcubatureInfo,p_rdiscretisationRef,&
+          ielemGroupRef,celementRef,ccubatureRef,NELref)
+
+      ! Check if element groups have different number of elements
+      if (NEL .ne. NELref) then
         call output_line("Number of elements in distributions mismatch!",&
             OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
         call sys_halt()
       end if
-
-      ! Cancel if this element list is empty.
-      if (NEL .le. 0) cycle
 
       ! For saving some memory in smaller discretisations, we calculate
       ! the number of elements per block. For smaller triangulations,
@@ -2979,7 +2978,7 @@ contains
 
           end do ! IEL
 
-        case DEFAULT
+        case default
 
           call output_line("Requested error estimate not implemented!",&
               OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
@@ -2996,7 +2995,7 @@ contains
       deallocate(Dcoefficients)
       deallocate(IdofsTrial,IdofsTrialRef)
 
-    end do ! ielementDistr
+    end do ! ielemGroup
 
     if (ctype .ne. PPERR_L1ERROR) then
       ! derror is ||error||^2, so take the square root at last.
@@ -3015,7 +3014,7 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarStandardDeviation (rvector, ddeviation,&
-                                            relementDeviation, rperfconfig)
+      relementDeviation, rcubatureInfo, rperfconfig)
 
 !<description>
   ! This routine calculates the standard deviation
@@ -3031,13 +3030,17 @@ contains
   ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the
-  ! cubature formula to use for each element distribution.
+  ! element groups in the discretisation structure specifies the
+  ! cubature formula to use for each element group.
 !</description>
 
 !<input>
     ! FE solution vector
     type(t_vectorScalar), intent(in), target :: rvector
+
+    ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+    ! formula(s) to use. If not specified, default settings are used.
+    type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -3073,7 +3076,7 @@ contains
 
     ! Call block version
     call pperr_blockStandardDeviation(rvectorBlock, ddeviation,&
-        relementDeviation, rperfconfig)
+        relementDeviation, rcubatureInfo, rperfconfig)
 
     ! Release auxiliary block discretisations
     call spdiscr_releaseBlockDiscr(rDiscr)
@@ -3087,8 +3090,8 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_blockStandardDeviation (rvector, ddeviation,&
-                                           relementDeviation, rperfconfig)
+  subroutine pperr_blockStandardDeviation (&
+      rvector, ddeviation, relementDeviation, rcubatureInfo, rperfconfig)
 
 !<description>
   ! This routine calculates the standard deviation
@@ -3104,13 +3107,17 @@ contains
   ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the
-  ! cubature formula to use for each element distribution.
+  ! element groups in the discretisation structure specifies the
+  ! cubature formula to use for each element group.
 !</description>
 
 !<input>
     ! FE solution block vector
     type(t_vectorBlock), intent(in), target :: rvector
+
+    ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+    ! formula(s) to use. If not specified, default settings are used.
+    type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -3130,7 +3137,7 @@ contains
 
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
-    integer :: i,k,ielementDistr,iblock,ICUBP,NVE,idim
+    integer :: i,k,ielemGroup,iblock,ICUBP,NVE,idim
     integer :: IEL, IELmax, IELset,IELGlobal
     real(DP) :: OM,delementDeviation
 
@@ -3170,10 +3177,7 @@ contains
     ! Pointer to the element deviation
     real(DP), dimension(:), pointer :: p_DelementDeviation
 
-    ! Current element distribution
-    type(t_elementDistribution), pointer :: p_relementDistribution
-
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
@@ -3184,6 +3188,15 @@ contains
 
     ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
+    
+    ! Element
+    integer(I32) :: celement
+    
+    ! Cubature structures
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    integer :: icubatureBlock
+    integer(I32) :: ccubature
 
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -3207,6 +3220,17 @@ contains
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => pperr_perfconfig
+    end if
+
+    ! Do we have a cubature stucture?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rvector%p_rblockDiscr%RspatialDiscr(1),&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Get the correct discretisation structure for the solution vector
@@ -3246,31 +3270,26 @@ contains
     ! Set the mathematical expectation of the center of mass to 0
     DmassCenter = 0.0_DP
 
-    ! Now loop over the different element distributions (=combinations
-    ! of trial and test functions) in the discretisation.
+    ! Now loop over the different cubature groups in the discretisation.
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-    do ielementDistr = 1,p_rdiscretisation%inumFESpaces
+      ! Get information about that block.
+      call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
+          p_rdiscretisation,ielemGroup,celement,ccubature,NEL,p_IelementList,&
+          ctrafoType=ctrafoType)
 
-      ! Activate the current element distribution
-      p_relementDistribution => p_rdiscretisation%RelementDistr(ielementDistr)
-
-      ! Cancel if this element distribution is empty.
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! Cancel if this element group is empty.
+      if (NEL .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTrial = elem_igetNDofLoc(celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
+      NVE = elem_igetNVE(celement)
 
       ! Initialise the cubature formula.
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval,&
-          ncubp, Dxi, Domega)
-
-      ! Get from the trial element space the type of coordinate system
-      ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      call cub_getCubPoints(ccubature, ncubp, Dxi, Domega)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -3294,19 +3313,11 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
 
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of elements there.
-      NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -3347,8 +3358,7 @@ contains
 
           ! solution vector
           call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1,iblock))
+              celement, IdofsTrial, DER_FUNC,Dcoefficients(:,1:IELmax-IELset+1,iblock))
 
         end do
 
@@ -3397,7 +3407,7 @@ contains
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
 
-    end do ! ielementDistr
+    end do ! icubaturegroup
 
     ! Ok, we have the mathematical expectation of the center of mass.
     ! Let us compute the standard deviation.
@@ -3410,39 +3420,26 @@ contains
       call lalg_clearVector (p_DelementDeviation)
     end if
 
-    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-    ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag.
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+    ! Now loop over the different cubature groups in the discretisation.
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-    ! Make sure that we have determinants.
-    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
+      ! Get information about that block.
+      call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
+          p_rdiscretisation,ielemGroup,celement,ccubature,NEL,p_IelementList,&
+          ctrafoType=ctrafoType)
 
-    ! Now loop over the different element distributions (=combinations
-    ! of trial and test functions) in the discretisation.
-
-    do ielementDistr = 1,p_rdiscretisation%inumFESpaces
-
-      ! Activate the current element distribution
-      p_relementDistribution => p_rdiscretisation%RelementDistr(ielementDistr)
-
-      ! Cancel if this element distribution is empty.
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! Cancel if this element group is empty.
+      if (NEL .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTrial = elem_igetNDofLoc(celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
+      NVE = elem_igetNVE(celement)
 
       ! Initialise the cubature formula.
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval,&
-          ncubp, Dxi, Domega)
-
-      ! Get from the trial element space the type of coordinate system
-      ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      call cub_getCubPoints(ccubature, ncubp, Dxi, Domega)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -3466,19 +3463,11 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
 
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of elements there.
-      NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -3519,8 +3508,7 @@ contains
 
           ! solution vector
           call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1,iblock))
+              celement, IdofsTrial, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1,iblock))
 
         end do
 
@@ -3582,13 +3570,18 @@ contains
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
 
-    end do ! ielementDistr
+    end do ! ielemGroup
 
     ! ddeviation is ||deviation||^2, so take the square root at last.
     if (ddeviation .ge. huge(ddeviation)) then
       ddeviation = 0._DP
     else
       ddeviation = sqrt(ddeviation)
+    end if
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
     end if
 
   end subroutine pperr_blockStandardDeviation

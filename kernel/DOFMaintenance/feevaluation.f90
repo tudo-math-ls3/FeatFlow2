@@ -244,7 +244,7 @@ contains
     integer :: ipoint,indof,nve,ibas
     integer(I32) :: celement
     integer :: iel,iresult,iellast,ivar
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
 
@@ -259,22 +259,17 @@ contains
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! Evaluation structure and tag
     type(t_evalElement) :: revalElement
     integer(I32) :: cevaluationTag
 
     ! Ok, slow but general.
 
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rvectorScalar%p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -288,10 +283,9 @@ contains
       ! Get the element evaluation tag; necessary for the preparation of the element
       cevaluationTag = elem_getEvaluationTag(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (&
-          rvectorScalar%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -300,7 +294,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!", OU_CLASS_ERROR, OU_MODE_STD, &
                         "fevl_evaluate1")
       call sys_halt()
@@ -390,8 +384,11 @@ contains
       end if
 
       ! Get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+      
+        ! Element type
+        call spdiscr_getElemGroupInfo (&
+            rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -595,7 +592,7 @@ contains
     integer :: ipoint, indof, nve, ibas, ider, iblock, iblMin, iblMax
     integer(I32) :: celement
     integer :: iel,iresult,iellast
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
 
@@ -612,9 +609,6 @@ contains
     ! values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
-
-    ! pointer to the list of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     ! pointer to the spatial discretisation structure
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -636,13 +630,12 @@ contains
 
     ! set shortcuts
     p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
-    p_RelementDistribution => p_rspatialDiscr%RelementDistr
 
     if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       ! for uniform discretisations, get the element type in advance
 
-      ! element type
-      celement = p_RelementDistribution(1)%celement
+      ! Element type
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
 
       ! number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -656,10 +649,10 @@ contains
       ! element evaluation tag; necessary for the preparation of the element
       cevaluationTag = elem_getEvaluationTag(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
       ! non-uniform discretisations
-      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr, p_IelementDistr)
+      call spdiscr_getElemGroupIDs (p_rspatialDiscr, p_IelemGroupIDs)
     end if
 
     ! set pointer to the data vector
@@ -668,7 +661,7 @@ contains
       call lsysbl_getbase_double(rvectorBlock, p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock, p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!", OU_CLASS_ERROR, OU_MODE_STD, &
                         "fevl_evaluate2")
       call sys_halt()
@@ -751,8 +744,11 @@ contains
       end if
 
       ! get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+
+        ! Element type
+        call spdiscr_getElemGroupInfo (&
+            p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! get the number of local DOFs for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -889,7 +885,7 @@ contains
     integer :: ipoint, indof, nve, ibas, ider
     integer(I32) :: celement
     integer :: iel,iresult,iellast
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
 
@@ -904,9 +900,6 @@ contains
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
 
-    ! pointer to the list of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! pointer to the spatial discretisation structure
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
 
@@ -916,13 +909,12 @@ contains
 
     ! set shortcuts
     p_rspatialDiscr => rvector%p_rspatialDiscr
-    p_RelementDistribution => p_rspatialDiscr%RelementDistr
 
     if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       ! for uniform discretisations, get the element type in advance
 
-      ! element type
-      celement = p_RelementDistribution(1)%celement
+      ! Element type
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
 
       ! number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -936,10 +928,10 @@ contains
       ! element evaluation tag; necessary for the preparation of the element
       cevaluationTag = elem_getEvaluationTag(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
       ! non-uniform discretisations
-      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr, p_IelementDistr)
+      call spdiscr_getElemGroupIDs (p_rspatialDiscr, p_IelemGroupIDs)
     end if
 
     ! set pointer to the data vector
@@ -1031,8 +1023,10 @@ contains
       end if
 
       ! get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+
+        ! Element type
+        call spdiscr_getElemGroupInfo (p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! get the number of local DOFs for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -1140,7 +1134,7 @@ contains
     ! local variables
     integer :: ipoint,indof,nve,ibas,npoints,ivar
     integer(I32) :: celement
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
 
@@ -1154,9 +1148,6 @@ contains
     ! Values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
-
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     ! Evaluation structure and tag
     type(t_evalElement) :: revalElement
@@ -1176,19 +1167,19 @@ contains
       npoints = ubound(Dpoints,2)
     end if
 
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = p_RelementDistribution(1)%celement
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,1,celement)
 
     else
-      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
 
-      celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+      ! Element type
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(ielement),celement)
     end if
 
     ! Get the number of local DOF`s for trial and test functions
@@ -1209,7 +1200,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate")
       call sys_halt()
@@ -1603,7 +1594,7 @@ contains
 !    ! local variables
 !    LOGICAL :: bnonpar
 !    INTEGER :: ipoint,celement,indof,nve,ibas,iel,ndim,ntwistsize
-!    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
+!    INTEGER(I32), DIMENSION(:), POINTER :: p_IelemGroupIDs
 !    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
 !    REAL(DP) :: dval
 !    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef
@@ -1627,7 +1618,7 @@ contains
 !    ! Coordinates of the corners of one element
 !    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
 !
-!    ! List of element distributions in the discretisation structure
+!    ! List of element groups in the discretisation structure
 !    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
 !
 !    ! Twist index array to define the orientation of faces/edges
@@ -1663,10 +1654,10 @@ contains
 !      ! Element nonparametric?
 !      bnonpar = elem_isNonparametric(celement)
 !
-!      NULLIFY(p_IelementDistr)
+!      NULLIFY(p_IelemGroupIDs)
 !    ELSE
-!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
-!          p_IelementDistr)
+!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_ielemGroup,&
+!          p_IelemGroupIDs)
 !    END IF
 !
 !    ! Get the data vector
@@ -1686,10 +1677,10 @@ contains
 !    Bder(iderType) = .TRUE.
 !
 !    ! Get the type of the element ielement
-!    IF (ASSOCIATED(p_IelementDistr)) THEN
+!    IF (ASSOCIATED(p_IelemGroupIDs)) THEN
 !      ! As all elements have the same type, we get the element
 !      ! characteristics by checking the first element.
-!      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+!      celement = p_RelementDistribution(p_IelemGroupIDs(Ielements(1)))%celement
 !
 !      ! Get the number of local DOF`s for trial and test functions
 !      indof = elem_igetNDofLoc(celement)
@@ -1877,7 +1868,7 @@ contains
     logical :: bnonpar
     integer :: ipoint,indof,nve,ibas,iel,ivar
     integer(I32) :: celement
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
 
@@ -1901,21 +1892,17 @@ contains
     type(t_evalElementSet)  :: revalElementSet
     integer(I32) :: cevaluationTag
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! Ok, slow but general.
 
     ! Get triangulation information
     p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
 
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = p_RelementDistribution(1)%celement
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -1929,10 +1916,9 @@ contains
       ! Element nonparametric?
       bnonpar = elem_isNonparametric(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -1941,7 +1927,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim1")
       call sys_halt()
@@ -1952,10 +1938,11 @@ contains
     Bder(iderType) = .true.
 
     ! Get the type of the element ielement
-    if (associated(p_IelementDistr)) then
+    if (associated(p_IelemGroupIDs)) then
       ! As all elements have the same type, we get the element
       ! characteristics by checking the first element.
-      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(Ielements(1)),celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -3097,7 +3084,7 @@ contains
     logical :: bnonpar
     integer :: indof,nve,iel,ipoint
     integer(I32) :: celement
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
 
     real(DP), dimension(:,:,:), pointer :: p_DpointsRef
@@ -3117,21 +3104,16 @@ contains
     type(t_evalElementSet)  :: revalElementSet
     integer(I32) :: cevaluationTag
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! Ok, slow but general.
 
     ! Get triangulation information
     p_rtriangulation => rspatialDiscr%p_rtriangulation
 
-    p_RelementDistribution => rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = p_RelementDistribution(1)%celement
+      call spdiscr_getElemGroupInfo (rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -3145,9 +3127,9 @@ contains
       ! Element nonparametric?
       bnonpar = elem_isNonparametric(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (rspatialDiscr%h_IelementDistr, p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rspatialDiscr, p_IelemGroupIDs)
     end if
 
     ! What to evaluate?
@@ -3155,10 +3137,11 @@ contains
     Bder(iderType) = .true.
 
     ! Get the type of the element ielement
-    if (associated(p_IelementDistr)) then
+    if (associated(p_IelemGroupIDs)) then
       ! As all elements have the same type, we get the element
       ! characteristics by checking the first element.
-      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+      call spdiscr_getElemGroupInfo (&
+          rspatialDiscr,p_IelemGroupIDs(Ielements(1)),celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -3666,7 +3649,7 @@ contains
     integer :: indof,nve,ibas
     integer(I32) :: celement
     integer :: iel,idx,ivar
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP), dimension(NDIM1D+2) :: DpointRef
     real(DP) :: dval
@@ -3681,22 +3664,17 @@ contains
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! Evaluation structure and tag
     type(t_evalElement) :: revalElement
     integer(I32) :: cevaluationTag
 
     ! Ok, slow but general.
 
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rvectorScalar%p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -3713,10 +3691,9 @@ contains
       ! Type of coordinate system
       icoordSystem = elem_igetCoordSystem(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (&
-          rvectorScalar%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -3725,7 +3702,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr1d2")
       call sys_halt()
@@ -3742,8 +3719,10 @@ contains
       iel = IelementList(idx)
 
       ! Get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+        ! Element type
+        call spdiscr_getElemGroupInfo (&
+            rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -4064,7 +4043,7 @@ contains
     integer :: ipoint,indof,nve,ibas,ider,iblock,iblMin,iblMax
     integer(I32) :: celement
     integer :: iel,idx
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP), dimension(NDIM1D+2) :: DpointRef
     real(DP) :: dval
@@ -4081,9 +4060,6 @@ contains
     ! Values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
-
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     ! pointer to the spatial discretisation structure
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -4106,13 +4082,12 @@ contains
     ! Ok, slow but general.
 
     p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
-    p_RelementDistribution => p_rspatialDiscr%RelementDistr
 
     ! For uniform discretisations, we get the element type in advance...
     if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -4129,9 +4104,9 @@ contains
       ! Type of coordinate system
       icoordSystem = elem_igetCoordSystem(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+      call spdiscr_getElemGroupIDs (p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -4140,7 +4115,7 @@ contains
       call lsysbl_getbase_double(rvectorBlock,p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr1d4")
       call sys_halt()
@@ -4159,8 +4134,9 @@ contains
       iel = IelementList(idx)
 
       ! Get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+        ! Element type
+        call spdiscr_getElemGroupInfo (p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -4406,7 +4382,7 @@ contains
     integer :: ipoint,indof,nve,ibas
     integer(I32) :: celement
     integer :: iel,idx,idxFirst,idxLast,ivar
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP), dimension(1,NDIM2D+1) :: Dxi2d
     real(DP), dimension(NDIM2D+1) :: DpointsRef
@@ -4423,22 +4399,17 @@ contains
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! Evaluation structure and tag
     type(t_evalElement) :: revalElement
     integer(I32) :: cevaluationTag
 
     ! Ok, slow but general.
 
-    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
-
     ! For uniform discretisations, we get the element type in advance...
     if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rvectorScalar%p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -4455,10 +4426,9 @@ contains
       ! Type of coordinate system
       icoordSystem = elem_igetCoordSystem(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (&
-          rvectorScalar%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -4467,7 +4437,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr2d2")
       call sys_halt()
@@ -4508,8 +4478,11 @@ contains
       end if
 
       ! Get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+
+        ! Element type
+        call spdiscr_getElemGroupInfo (&
+            rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -4888,7 +4861,7 @@ contains
     integer :: ipoint,indof,nve,ibas,ider,iblock,iblMin,iblMax
     integer(I32) :: celement
     integer :: iel,idx,idxFirst,idxLast
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP), dimension(1,NDIM2D+1) :: Dxi2d
     real(DP), dimension(NDIM2D+1) :: DpointsRef
@@ -4907,9 +4880,6 @@ contains
     ! Values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
-
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     ! pointer to the spatial discretisation structure
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -4932,13 +4902,12 @@ contains
     ! Ok, slow but general.
 
     p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
-    p_RelementDistribution => p_rspatialDiscr%RelementDistr
 
     ! For uniform discretisations, we get the element type in advance...
     if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
       ! Element type
-      celement = p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
 
       ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
@@ -4955,9 +4924,9 @@ contains
       ! Type of coordinate system
       icoordSystem = elem_igetCoordSystem(celement)
 
-      nullify(p_IelementDistr)
+      nullify(p_IelemGroupIDs)
     else
-      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+      call spdiscr_getElemGroupIDs (p_rspatialDiscr,p_IelemGroupIDs)
     end if
 
     ! Get the data vector
@@ -4966,7 +4935,7 @@ contains
       call lsysbl_getbase_double(rvectorBlock,p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
-    case DEFAULT
+    case default
       call output_line ("Unsupported vector precision!",&
           OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr2d4")
       call sys_halt()
@@ -5010,8 +4979,10 @@ contains
       end if
 
       ! Get the type of the element iel
-      if (associated(p_IelementDistr)) then
-        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+      if (associated(p_IelemGroupIDs)) then
+        ! Element type
+        call spdiscr_getElemGroupInfo (&
+            p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
         ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
@@ -5114,7 +5085,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_Dvalues,p_Dvalues2
     integer :: i,j
-    integer(I32) :: celement
+    integer(I32) :: celement,celement2
     logical :: bevaluate
 
     nullify(p_Dvalues)
@@ -5129,16 +5100,18 @@ contains
 
     do i=1,rvector%nblocks
       ! All vectors must have the same shape
-      if (rvector%RvectorBlock(i)%p_rspatialDiscr%inumFESpaces .ne. &
-          rvector%RvectorBlock(1)%p_rspatialDiscr%inumFESpaces) then
+      if (spdiscr_getNelemGroups(rvector%RvectorBlock(i)%p_rspatialDiscr) .ne. &
+          spdiscr_getNelemGroups(rvector%RvectorBlock(1)%p_rspatialDiscr)) then
          bevaluate = .false.
          exit
       end if
 
-      do j=1,rvector%RvectorBlock(i)%p_rspatialDiscr%inumFESpaces
-        celement = rvector%RvectorBlock(i)%p_rspatialDiscr%RelementDistr(j)%celement
-        if (celement .ne. &
-            rvector%RvectorBlock(1)%p_rspatialDiscr%RelementDistr(j)%celement) then
+      do j=1,spdiscr_getNelemGroups(rvector%RvectorBlock(i)%p_rspatialDiscr)
+
+        call spdiscr_getElemGroupInfo (rvector%RvectorBlock(i)%p_rspatialDiscr,j,celement)
+        call spdiscr_getElemGroupInfo (rvector%RvectorBlock(1)%p_rspatialDiscr,j,celement2)
+
+        if (celement .ne. celement2) then
            bevaluate = .false.
            exit
         end if

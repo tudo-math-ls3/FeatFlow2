@@ -180,7 +180,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
@@ -188,17 +187,17 @@ contains
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: p_IedgesAtBoundary
     integer, dimension(:), pointer :: p_IelementsAtBoundary
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: ibdc,iedge,iel,ilocaledge,cpar
+    integer(I32) :: celemCurrent
 
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
 
     ! Get some pointers and arrays for quicker access
     p_rtriangulation => rdiscretisation%p_rtriangulation
-    p_RelementDistribution => rdiscretisation%RelementDistr
 
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
@@ -243,7 +242,9 @@ contains
 
       ! Check if there are elements which satisfy the type of element
       if (present(celement)) then
-        if (p_RelementDistribution(1)%celement .ne. celement) then
+        call spdiscr_getElemGroupInfo (rdiscretisation,1,celemCurrent)
+        
+        if (celemCurrent .ne. celement) then
           NELBdc = 0
           return
         end if
@@ -318,8 +319,7 @@ contains
     else
 
       ! Set pointer
-      call storage_getbase_int (rdiscretisation%h_IelementDistr,&
-          p_IelementDistr)
+      call spdiscr_getElemGroupIDs (rdiscretisation,p_IelemGroupIDs)
 
       ! Loop through the edges on the boundary component ibdc. If the
       ! edge is inside, remember the element number and figure out the
@@ -331,10 +331,12 @@ contains
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
 
-          ! Check if we are the correct element distribution
+          ! Check if we are the correct element group
           if (present(celement)) then
-            if (celement .ne. p_RelementDistribution(&
-                p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) cycle
+            call spdiscr_getElemGroupInfo (rdiscretisation,&
+                p_IelemGroupIDs(p_IelementsAtBoundary(iedge)),celemCurrent)
+                
+            if (celement .ne. celemCurrent) cycle
           end if
           iel = iel + 1
 
@@ -370,15 +372,19 @@ contains
       if (boundary_isInRegion(rboundaryRegion, ibdc,&
           p_DedgeParameterValue(iedge))) then
 
-        ! Check if we are the correct element distribution
+        ! Check if we are the correct element group
         if (present(celement)) then
-          if (celement .ne. p_RelementDistribution(&
-              p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) then
+          
+          call spdiscr_getElemGroupInfo (rdiscretisation,&
+              p_IelemGroupIDs(p_IelementsAtBoundary(iedge)),celemCurrent)
+              
+          if (celement .ne. celemCurrent) then
             ! Adjust number of elements
             NELbdc = iel
             return
           end if
         end if
+
         iel = iel + 1
 
         ! Element number
@@ -458,16 +464,16 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_boundary), pointer :: p_rboundary
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: p_IelementsAtBoundary
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: iel,iedge,cpar
+    integer(I32) :: celemCurrent
 
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
@@ -476,7 +482,6 @@ contains
     case(NDIM1D)
       ! Get some pointers and arrays for quicker access
       p_rtriangulation => rdiscretisation%p_rtriangulation
-      p_RelementDistribution => rdiscretisation%RelementDistr
 
       call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
           p_IboundaryCpIdx)
@@ -502,7 +507,9 @@ contains
 
         ! Check if there are elements which satisfy the type of element
         if (present(celement)) then
-          if (p_RelementDistribution(1)%celement .ne. celement) then
+          call spdiscr_getElemGroupInfo (rdiscretisation,1,celemCurrent)
+          
+          if (celemCurrent .ne. celement) then
             NELBdc = 0
             return
           end if
@@ -533,17 +540,18 @@ contains
       else
 
         ! Set pointer
-        call storage_getbase_int (rdiscretisation%h_IelementDistr,&
-            p_IelementDistr)
+        call spdiscr_getElemGroupIDs (rdiscretisation,p_IelemGroupIDs)
 
         ! Determine the element numbers and their orientation at the boundary
         iel = 0
         do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
 
-          ! Check if we are the correct element distribution
+          ! Check if we are the correct element group
           if (present(celement)) then
-            if (celement .ne. p_RelementDistribution(&
-                p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) cycle
+            call spdiscr_getElemGroupInfo (rdiscretisation,&
+                p_IelemGroupIDs(p_IelementsAtBoundary(iedge)),celemCurrent)
+                
+            if (celement .ne. celemCurrent) cycle
           end if
           iel = iel+1
 

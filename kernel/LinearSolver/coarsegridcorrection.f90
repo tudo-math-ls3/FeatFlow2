@@ -276,7 +276,7 @@ contains
     case (CGCOR_SCALARDEFMIN)
       call cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
                                 rtempVector,p_RfilterChain,dalpha)
-    case DEFAULT !(=CGCOR_STANDARD)
+    case default !(=CGCOR_STANDARD)
       dalpha = 1.0_DP   ! Standard setting
     end select
   end if

@@ -249,7 +249,6 @@ contains
   integer :: i
   integer(I32) :: celemV, celemP
   type(t_blockDiscretisation), pointer :: p_rblockDiscr
-  type(t_elementDistribution), pointer :: p_relementDistrV, p_relementDistrP
 
     ! Matrix must be 3x3.
     if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
@@ -380,19 +379,19 @@ contains
     rvanka%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(1)
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
 
-    if (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
-        p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) then
+    if (spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(1)) .ne. &
+        spdiscr_getNelemGroups(p_rblockDiscr%RspatialDiscr(2))) then
       call output_line (&
           "Discretisation structures of X- and Y-velocity incompatible!",&
           OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
-    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
-          rvanka%p_rspatialDiscrV%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -403,25 +402,22 @@ contains
 
 
     ! Loop through all FE spaces
-    do i = 1, rvanka%p_rspatialDiscrV%inumFESpaces
+    do i = 1, spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV)
 
-      ! Get the corresponding element distributions of V.
-      p_relementDistrV => &
-          rvanka%p_rspatialDiscrV%RelementDistr(i)
+      ! Get the corresponding element types of V.
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrV,1,celemV)
 
       ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(i)
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,i,celemP)
       else
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(1)
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,1,celemP)
       end if
 
       ! Get the elements
-      celemV = elem_getPrimaryElement(p_relementDistrV%celement)
-      celemP = elem_getPrimaryElement(p_relementDistrP%celement)
+      celemV = elem_getPrimaryElement(celemV)
+      celemP = elem_getPrimaryElement(celemP)
 
       ! Check whether we support the discretisation.
       if((celemV .eq. EL_Q1T) .and. (celemP .eq. EL_Q0)) cycle
@@ -474,41 +470,38 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: ielementdist
+  integer :: ielemGroup,NEL
   integer(I32) :: celemV, celemP
   integer, dimension(:), pointer :: p_IelementList
-  type(t_elementDistribution), pointer :: p_relementDistrV
-  type(t_elementDistribution), pointer :: p_relementDistrP
 
     ! Nothing to do?
     if(niterations .le. 0) return
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV)
 
-      ! Get the corresponding element distributions of u and p.
-      p_relementDistrV => &
-          rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Get the corresponding element types of u and p.
+      !
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as "primary" element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrV,1,celemV,NEL,p_IelementList)
+      
+      ! Skip if empty
+      if (NEL .eq. 0) cycle
+
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,ielemGroup,celemP)
+      else
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,1,celemP)
+      end if
 
       ! Which element combination do we have now?
-      celemV = elem_getPrimaryElement(p_relementDistrV%celement)
-      celemP = elem_getPrimaryElement(p_relementDistrP%celement)
+      celemV = elem_getPrimaryElement(celemV)
+      celemP = elem_getPrimaryElement(celemP)
       if ((celemV .eq. EL_Q1T) .and. (celemP .eq. EL_Q0)) then
 
         ! Q1~/Q0 discretisation

@@ -622,7 +622,8 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(DP), dimension(:), pointer        :: p_DelementArea,p_Ddata
     real(DP) :: dpintegral,c
-    integer :: iel,nel,itrialspace
+    integer :: iel,nel
+    integer(I32) :: celement
 
     ! Get the discretisation...
     if (.not. associated(rx%p_rspatialDiscr)) return
@@ -634,13 +635,11 @@ contains
     ! representing is area*rx. Otherwise we have to calculate the integral
     ! which is somehow more costly...
 
-
     if (p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
-      itrialspace = elem_getPrimaryElement(&
-          p_rdiscretisation%RelementDistr(1)%celement)
+      call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
 
-      select case (itrialspace)
+      select case (celement)
       case (EL_P0, EL_Q0)
 
         ! Ok, easy case. Get from the triangulation the AREA-array for calculating

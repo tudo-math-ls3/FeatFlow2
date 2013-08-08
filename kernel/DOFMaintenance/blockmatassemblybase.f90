@@ -233,8 +233,8 @@ module blockmatassemblybase
   ! with bma_buildMatrix.
   type t_bmaMatrixAssembly
 
-    ! Currently active element distribution
-    integer :: ielementDistr = 0
+    ! Currently active element group
+    integer :: ielemGroup = 0
 
     ! Maximum number of elements to handle simultaneously.
     integer :: nelementsPerBlock = 0
@@ -420,8 +420,8 @@ module blockmatassemblybase
   ! with bma_buildVector.
   type t_bmaVectorAssembly
 
-    ! Currently active element distribution
-    integer :: ielementDistr = 0
+    ! Currently active element group
+    integer :: ielemGroup = 0
 
     ! Maximum number of elements to handle simultaneously.
     integer :: nelementsPerBlock = 0
@@ -518,8 +518,8 @@ module blockmatassemblybase
   ! with bma_buildVector.
   type t_bmaIntegralAssembly
 
-    ! Currently active element distribution
-    integer :: ielementDistr = 0
+    ! Currently active element group
+    integer :: ielemGroup = 0
     
     ! Maximum number of elements to handle simultaneously.
     integer :: nelementsPerBlock = 0

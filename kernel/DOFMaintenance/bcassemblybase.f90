@@ -887,7 +887,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTINOAL: Number of DOF's on the boundary.
+  ! OPTIONAL: Number of DOF's on the boundary.
   integer, intent(out), optional :: ndofs
 !</output>
 
@@ -900,13 +900,10 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     integer, dimension(:,:), allocatable :: Idofs
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     integer, dimension(:), pointer :: p_Idofs,p_IdofsLocal
     integer, dimension(:), pointer :: p_IelementsAtBoundary
     integer, dimension(:), pointer :: p_InodalProperty
-
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     ! Initialise the output
     icounttotal = 0
@@ -945,7 +942,6 @@ contains
 
       ! For easier access:
       p_rtriangulation => rspatialDiscr%p_rtriangulation
-      p_RelementDistribution => rspatialDiscr%RelementDistr
 
       ! Set pointers
       call storage_getbase_int(&
@@ -977,14 +973,13 @@ contains
       ! that and have to call dof_locGlobMapping for every element separately.
       if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
         ! All elements are of the samne type. Get it in advance.
-        celement = rspatialDiscr%RelementDistr(1)%celement
+        call spdiscr_getElemGroupInfo (rspatialDiscr,1,celement)
         nve = elem_igetNVE (celement)
         call dof_locGlobMapping_mult(rspatialDiscr, &
             p_IelementsAtBoundary, Idofs)
       else
         ! Every element can be of different type.
-        call storage_getbase_int(rspatialDiscr%h_IelementDistr,&
-            p_IelementDistr)
+        call spdiscr_getElemGroupIDs(rspatialDiscr,p_IelemGroupIDs)
         do ielement = 1,icounttotal
           call dof_locGlobMapping(rspatialDiscr,&
               p_IelementsAtBoundary(ielement), Idofs(:,ielement))
@@ -1000,7 +995,7 @@ contains
         ! Get the element type in case we do not have a uniform triangulation.
         ! Otherwise, celement was set to the trial element type above.
         if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-          celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+          call spdiscr_getElemGroupInfo (rspatialDiscr,p_IelemGroupIDs(ielement),celement)
           nve = elem_igetNVE (celement)
         end if
 
@@ -1183,7 +1178,7 @@ contains
     integer :: ielement
     integer :: iedge,ipoint1,ipoint2,NVT
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     integer, dimension(:,:), allocatable :: Idofs
     integer, dimension(:), pointer :: p_Idofs
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
@@ -1205,12 +1200,8 @@ contains
     real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
     real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     ! For easier access:
     p_rtriangulation => rspatialDiscr%p_rtriangulation
-    p_RelementDistribution => rspatialDiscr%RelementDistr
 
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
@@ -1247,11 +1238,10 @@ contains
 
     if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       ! Every element can be of different type.
-      call storage_getbase_int(rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
+      call spdiscr_getElemGroupIDs(rspatialDiscr,p_IelemGroupIDs)
     else
       ! All elements are of the samne type. Get it in advance.
-      celement = rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rspatialDiscr,1,celement)
       nve = elem_igetNVE (celement)
     end if
 
@@ -1330,7 +1320,7 @@ contains
       ! Get the element type in case we do not have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
       if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-        celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+        call spdiscr_getElemGroupInfo (rspatialDiscr,p_IelemGroupIDs(ielement),celement)
         nve = elem_igetNVE (celement)
       end if
 

@@ -751,7 +751,7 @@ contains
           end do
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid element type!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRefinement2D')
           call sys_halt()
@@ -999,7 +999,7 @@ contains
         end if   ! lock element due to accuracy reasons?
 
 
-      case DEFAULT
+      case default
 
         ! The current element is marked for some sort of green
         ! refinement, and hence, only the corner nodes have to be
@@ -1070,7 +1070,7 @@ contains
           istate = redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid number of vertices per element!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
           call sys_halt()
@@ -1178,7 +1178,7 @@ contains
           end if
 
 
-        case DEFAULT
+        case default
 
           ! Get number of vertices per element
           nve = hadapt_getNVE(rhadapt, iel)
@@ -1380,7 +1380,7 @@ contains
         end if
 
 
-      case DEFAULT
+      case default
 
         ! The current element is not marked for red refinement, and hence,
         ! it is a potential candidate for the re-coarsening algorithm.
@@ -1408,7 +1408,7 @@ contains
           istate = redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid number of vertices per element!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
           call sys_halt()
@@ -1458,7 +1458,7 @@ contains
             ! Mark element IEL for re-coarsening into two triangles
             p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_3
 
-          case DEFAULT
+          case default
             cycle phase3
           end select
 
@@ -1609,7 +1609,7 @@ contains
             p_Imarker(ImacroElement(4)) = MARK_CRS_4QUAD4TRIA
 
 
-          case DEFAULT
+          case default
             call output_line('Invalid number of locked vertices!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
             call sys_halt()
@@ -1743,7 +1743,7 @@ contains
             end if
 
 
-          case DEFAULT
+          case default
             call output_line('Invalid element state of adjacent element!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
             call sys_halt()
@@ -1794,7 +1794,7 @@ contains
           end if
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid element state!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
           call sys_halt()
@@ -1841,7 +1841,7 @@ contains
           ! Element is a red element and/or belongs to the initial triangulation
           blockElement = (p_Dindicator(iel) .ge. rhadapt%dcoarseningTolerance)
 
-        case DEFAULT
+        case default
           blockElement = .false.
 
         end select
@@ -2045,7 +2045,7 @@ contains
           end do
           istate = redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
-        case DEFAULT
+        case default
           call output_line('Invalid number of vertices per element!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
           call sys_halt()
@@ -2646,7 +2646,7 @@ contains
             end if
 
 
-          case DEFAULT
+          case default
             call output_line('Invalid element state!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
             call sys_halt()
@@ -2862,14 +2862,14 @@ contains
             end if
 
 
-          case DEFAULT
+          case default
             call output_line('Invalid element state!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
             call sys_halt()
           end select
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid element state!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
           call sys_halt()
@@ -2911,7 +2911,7 @@ contains
             case(TRIA_NVEQUAD2D)
               p_Imarker(jel) = ibset(p_Imarker(jel),0)
 
-            case DEFAULT
+            case default
               call output_line('Invalid number of vertices per element!',&
                                OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenRefinement2D')
               call sys_halt()
@@ -2988,7 +2988,7 @@ contains
           rhadapt%increaseNVT =  rhadapt%increaseNVT+2
 
 
-        case DEFAULT
+        case default
           p_Imodifier(iel) = (p_Imodifier(iel)-imodifier)/2
         end select
       end do noblue
@@ -3055,7 +3055,7 @@ contains
           end if
         end do
 
-      case DEFAULT
+      case default
         call output_line('Invalid number of vertices per element!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'mark_edge')
         call sys_halt()
@@ -3278,7 +3278,7 @@ contains
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
         p_Imarker(iel)         = MARK_ASIS
 
-      case DEFAULT
+      case default
         call output_line('Invalid element refinement marker!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refine2D')
         call sys_halt()
@@ -3421,7 +3421,7 @@ contains
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
         p_Imarker(iel)         = MARK_ASIS
 
-      case DEFAULT
+      case default
         call output_line('Invalid recoarsening marker!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen2D')
         call sys_halt()
@@ -3816,7 +3816,7 @@ contains
                 '" fill="yellow" stroke="black" stroke-width="1"'
 
           ! Unknown element marker
-          case DEFAULT
+          case default
             write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="hotpink" stroke="black" stroke-width="1"'
           end select
@@ -4747,7 +4747,7 @@ contains
     case(TRIA_NVEQUAD2D)
       rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
-    case DEFAULT
+    case default
       call output_line('Invalid element type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
       call sys_halt()
@@ -5358,7 +5358,7 @@ contains
     case(MARK_REF_TRIA2TRIA_3)
       loc1=3; loc2=1; loc3=2
 
-    case DEFAULT
+    case default
       call output_line('Invalid element marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria2Tria')
       call sys_halt()
@@ -5500,7 +5500,7 @@ contains
     case(MARK_REF_TRIA3TRIA_13)
       loc1=3; loc2=1; loc3=2
 
-    case DEFAULT
+    case default
       call output_line('Invalid element marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
       call sys_halt()
@@ -5859,7 +5859,7 @@ contains
     case(MARK_REF_QUAD2QUAD_24)
       loc1=2; loc2=3; loc3=4; loc4=1
 
-    case DEFAULT
+    case default
       call output_line('Invalid element marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       call sys_halt()
@@ -6019,7 +6019,7 @@ contains
     case(MARK_REF_QUAD3TRIA_4)
       loc1=4; loc2=1; loc3=2; loc4=3
 
-    case DEFAULT
+    case default
       call output_line('Invalid element marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       call sys_halt()
@@ -6187,7 +6187,7 @@ contains
     case(MARK_REF_QUAD4TRIA_14)
       loc1=4; loc2=1; loc3=2; loc4=3
 
-    case DEFAULT
+    case default
       call output_line('Invalid element marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       call sys_halt()
@@ -7250,7 +7250,7 @@ contains
       call replace_element2D(rhadapt,jel, i3, i1, i2,&
                              e3, e1, e2, e6, e4, e5)
 
-    case DEFAULT
+    case default
       call output_line('Invalid state of resulting triangle!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
       call sys_halt()
@@ -7449,7 +7449,7 @@ contains
       call replace_element2D(rhadapt, jel, i2, i3, i1,&
                              e2, e3, e1, e5, e6, e4)
 
-    case DEFAULT
+    case default
       call output_line('Invalid state of resulting triangle!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       call sys_halt()
@@ -7955,7 +7955,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid position of midpoint vertex!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
       call sys_halt()
@@ -8099,7 +8099,7 @@ contains
       call replace_element2D(rhadapt, jel, i4, i1, i2, i3,&
                              e4, e1, e2, e3, e8, e5, e6, e7)
 
-    case DEFAULT
+    case default
       call output_line('Invalid state of resulting quadrilateral!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
@@ -8860,7 +8860,7 @@ contains
         ! Update element IEL = (I4,I1,I2,I3)
         call replace_element2D(rhadapt,iel,i4,i1,i2,i3,e4,e1,e2,e3,e8,e5,e6,e7)
 
-      case DEFAULT
+      case default
         call output_line('Invalid state of resulting quadrilateral!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
@@ -8935,7 +8935,7 @@ contains
         ! Update element IEL1 = (I4,I1,I2,I3)
         call replace_element2D(rhadapt,iel1,i4,i1,i2,i3,e4,e1,e2,e3,e8,e5,e6,e7)
 
-      case DEFAULT
+      case default
         call output_line('Invalid state of resulting quadrilateral!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
@@ -9220,7 +9220,7 @@ contains
       ! Update element JEL = (I4,I1,I2,I3)
       call replace_element2D(rhadapt,jel,i4,i1,i2,i3,e4,e1,e2,e3,e8,e5,e6,e7)
 
-    case DEFAULT
+    case default
       call output_line('Invalid state of resulting quadrilateral!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
@@ -9447,7 +9447,7 @@ contains
       ! Update element JEL = (I4,I1,I2,I3)
       call replace_element2D(rhadapt,jel,i4,i1,i2,i3,e4,e1,e2,e3,e8,e5,e6,e7)
 
-    case DEFAULT
+    case default
       call output_line('Invalid state of resulting quadrilateral!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
@@ -9911,7 +9911,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid position of midpoint vertex!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
       call sys_halt()

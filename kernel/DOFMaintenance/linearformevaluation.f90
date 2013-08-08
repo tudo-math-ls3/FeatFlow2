@@ -595,7 +595,7 @@ contains
 !      call linf_buildVector_confDP (rdiscretisation, rform, bclear, rvector,&
 !                                    fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 !
-!    case DEFAULT
+!    case default
 !      call output_line("Single precision vectors currently not supported!",&
 !          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
 !      call sys_halt()
@@ -669,7 +669,7 @@ contains
 !!</subroutine>
 !
 !  ! local variables
-!  integer :: i,i1,icurrentElementDistr, ICUBP, IALBET, IA
+!  integer :: i,i1,ielemGroup, ICUBP, IALBET, IA
 !  integer :: IEL, IELmax, IELset, IDOFE
 !  real(DP) :: OM,AUX
 !  
@@ -725,7 +725,7 @@ contains
 !  ! Pointer to the jacobian determinants
 !  real(DP), dimension(:,:), pointer :: p_Ddetj
 !  
-!  ! Current element distribution
+!  ! Current element group
 !  type(t_elementDistribution), pointer :: p_relementDistribution
 !  
 !  ! Number of elements in a block. Normally =NELEMSIM,
@@ -809,14 +809,14 @@ contains
 !  ! NELEMSIM. This is only used for allocating some arrays.
 !  nelementsPerBlock = min(p_rperfconfig%NELEMSIM, p_rtriangulation%NEL)
 !  
-!  ! Now loop over the different element distributions (=combinations
+!  ! Now loop over the different element groups (=combinations
 !  ! of trial and test functions) in the discretisation.
-!  do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+!  do ielemGroup = 1,rdiscretisation%inumFESpaces
 !  
-!    ! Activate the current element distribution
-!    p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+!    ! Activate the current element group
+!    p_relementDistribution => rdiscretisation%RelementDistr(ielemGroup)
 !  
-!    ! Cancel if this element distribution is empty.
+!    ! Cancel if this element group is empty.
 !    if (p_relementDistribution%NEL .eq. 0) cycle
 !
 !    ! Get the number of local DOF`s for trial and test functions
@@ -944,7 +944,7 @@ contains
 !      ! Now it is time to call our coefficient function to calculate the
 !      ! function values in the cubature points:
 !      call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-!      rintSubset%ielementDistribution =  icurrentElementDistr
+!      rintSubset%ielemGroupibution =  ielemGroup
 !      rintSubset%ielementStartIdx     =  IELset
 !      rintSubset%p_Ielements          => p_IelementList(IELset:IELmax)
 !      rintSubset%p_IdofsTrial         => IdofsTest
@@ -1071,7 +1071,7 @@ contains
 !    deallocate(p_DcubPtsRef)
 !    deallocate(Domega)
 !
-!  end do ! icurrentElementDistr
+!  end do ! ielemGroup
 !  
 !  end subroutine
 
@@ -1142,7 +1142,8 @@ contains
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc
+    integer :: ibdc,ielemGroup,NELbdc,NEL
+    integer(I32) :: celemTest
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
@@ -1193,22 +1194,26 @@ contains
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
+
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                cparType=BDR_PAR_LENGTH)
+                celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element list is empty
             if (NELbdc .le. 0) cycle
 
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc, rperfconfig)
+                celemTest,CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly,ntempArrays=ntempArrays)
 
             ! Assemble the data all elements
@@ -1226,11 +1231,14 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Loop over all boundary components and call
             ! the calculation routines for that
@@ -1245,16 +1253,14 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  cparType=BDR_PAR_LENGTH)
+                  celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc, rperfconfig)
+                  celemTest,CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly,ntempArrays=ntempArrays)
 
               ! Assemble the data for one element
@@ -1270,11 +1276,11 @@ contains
 
             end do ! ibdc
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       end select
@@ -1361,7 +1367,9 @@ contains
     type(t_boundaryRegion) :: rboundaryReg
     real(DP), dimension(:,:), pointer :: DedgePosition
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc
+    integer :: ibdc,ielemGroup,NELbdc
+    integer(I32) :: celemTest
+    integer :: NEL
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -1437,25 +1445,29 @@ contains
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
           allocate(DedgePosition(2,NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
+
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+            
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                BDR_PAR_LENGTH)
+                celemTest,BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element list is empty
             if (NELbdc .le. 0) cycle
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
+                celemTest,ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
 
-            ! Assemble the data for all elements in this element distribution
+            ! Assemble the data for all elements in this element group
             call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
@@ -1471,16 +1483,18 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
+
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
+                celemTest, ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
 
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -1490,7 +1504,7 @@ contains
               ! Calculate number of elements adjacent to the boundary region
               NELbdc = bdraux_getNELAtRegion(rboundaryReg, p_rtriangulation)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Allocate memory for element list, element orientation and
@@ -1502,12 +1516,11 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  BDR_PAR_LENGTH)
+                  celemTest,BDR_PAR_LENGTH)
 
               if (NELbdc .gt. 0) then
 
-                ! Assemble the data for all elements in this element distribution
+                ! Assemble the data for all elements in this element group
                 call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
@@ -1523,11 +1536,11 @@ contains
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       end select
@@ -1607,7 +1620,8 @@ contains
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc
+    integer :: ibdc,ielemGroup,NELbdc,NEL
+    integer(I32) :: celemTest
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
@@ -1658,22 +1672,26 @@ contains
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
+
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                cparType=BDR_PAR_LENGTH)
+                celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element group is empty
             if (NELbdc .le. 0) cycle
 
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc, rperfconfig)
+                celemTest,CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR, ntempArrays)
 
             ! Assemble the data all elements
@@ -1691,11 +1709,14 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Loop over all boundary components and call
             ! the calculation routines for that
@@ -1710,16 +1731,14 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  cparType=BDR_PAR_LENGTH)
+                  celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc, rperfconfig)
+                  celemTest,CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR, ntempArrays)
 
               ! Assemble the data for one element
@@ -1735,14 +1754,14 @@ contains
 
             end do ! ibdc
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
           ! Release memory
           deallocate(IelementList, IelementOrientation)
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       end select
@@ -1829,7 +1848,8 @@ contains
     type(t_boundaryRegion) :: rboundaryReg
     real(DP), dimension(:,:), pointer :: DedgePosition
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc
+    integer :: ibdc,ielemGroup,NELbdc,NEL
+    integer(I32) :: celemTest
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -1899,25 +1919,29 @@ contains
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
           allocate(DedgePosition(2,NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
+
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                BDR_PAR_LENGTH)
+                celemTest,BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element list is empty
             if (NELbdc .le. 0) cycle
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
+                celemTest,ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
 
-            ! Assemble the data for all elements in this element distribution
+            ! Assemble the data for all elements in this element group
             call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
@@ -1933,16 +1957,18 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(rvector%p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the element group
+            call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,celemTest,NEL)
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
+
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
+                celemTest, ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
 
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -1952,7 +1978,7 @@ contains
               ! Calculate number of elements adjacent to the boundary region
               NELbdc = bdraux_getNELAtRegion(rboundaryReg, p_rtriangulation)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Allocate memory for element list, element orientation and
@@ -1964,12 +1990,11 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  BDR_PAR_LENGTH)
+                  celemTest,BDR_PAR_LENGTH)
 
               if (NELbdc .gt. 0) then
 
-                ! Assemble the data for all elements in this element distribution
+                ! Assemble the data for all elements in this element group
                 call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
@@ -1985,11 +2010,11 @@ contains
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       end select
@@ -2451,7 +2476,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution =  0
+        !rintSubset%ielemGroupibution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -2799,7 +2824,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution =  0
+        !rintSubset%ielemGroupibution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -3084,7 +3109,7 @@ contains
         call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
       end if
 
-      !rintSubset%ielementDistribution  =  0
+      !rintSubset%ielemGroupibution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -3484,7 +3509,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution  =  0
+        !rintSubset%ielemGroupibution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -3770,7 +3795,7 @@ contains
         call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
       end if
 
-      !rintSubset%ielementDistribution  =  0
+      !rintSubset%ielemGroupibution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -4175,7 +4200,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution  =  0
+        !rintSubset%ielemGroupibution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -4531,7 +4556,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution = 0
+        !rintSubset%ielemGroupibution = 0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -4820,7 +4845,7 @@ contains
         call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
       end if
 
-      !rintSubset%ielementDistribution  =  0
+      !rintSubset%ielemGroupibution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -5227,7 +5252,7 @@ contains
           call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution  =  0
+        !rintSubset%ielemGroupibution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -5391,7 +5416,7 @@ contains
   ! submesh.
   ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
   !
   ! IMPLEMENTATIONAL REMARK 2:
   ! Currently, rcubatureInfo is not optional such that the
@@ -5491,7 +5516,7 @@ contains
   ! submesh.
   ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
 !</description>
 
 !<input>
@@ -5540,7 +5565,7 @@ contains
 
     ! local variables
     type(t_linfVectorAssembly) :: rvectorAssembly
-    integer :: ielementDistr,icubatureBlock,NEL
+    integer :: ielemGroup,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -5616,16 +5641,16 @@ contains
 
           ! Get information about that block.
           call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-              rvector%p_rspatialDiscr,ielementDistr,celement,ccubature,NEL,p_IelementList)
+              rvector%p_rspatialDiscr,ielemGroup,celement,ccubature,NEL,p_IelementList)
 
-          ! Check if element distribution is empty
+          ! Check if element group is empty
           if (NEL .le. 0) cycle
 
-          ! Initialise a vector assembly structure for that element distribution
+          ! Initialise a vector assembly structure for that element group
           call linf_initAssembly(rvectorAssembly,rform,&
               celement,ccubature,min(p_rperfconfig%NELEMSIM, NEL), rperfconfig)
 
-          ! Assemble the data for all elements in this element distribution
+          ! Assemble the data for all elements in this element group
           call linf_assembleSubmeshVector (rvectorAssembly,rvector,&
               p_IelementList,fcoeff_buildVectorSc_sim,rcollection,ntempArrays,rperfconfig)
 
@@ -5678,7 +5703,7 @@ contains
   ! submesh.
   ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
 !</description>
 
 !<input>
@@ -5727,10 +5752,11 @@ contains
 
     ! local variables
     type(t_linfVectorAssembly) :: rvectorAssembly
-    integer :: ielementDistr, icubatureBlock
+    integer :: ielemGroup, icubatureBlock, NEL
     integer, dimension(:), pointer :: p_IelementList
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    integer(I32) :: celemTest
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -5781,27 +5807,26 @@ contains
       select case(rvector%cdataType)
 
       case(ST_DOUBLE)
+
         ! Loop over the cubature blocks to discretise
         do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-          ! Get the element distribution of that block.
-          ielementDistr = p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielementDistr
+          ! Get the element group of that block.
+          ielemGroup = p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielemGroup
 
-          ! Check if element distribution is empty
-          if (p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .le. 0) cycle
+          ! Activate the current element group.
+          call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,ielemGroup,&
+              celemTest,NEL,p_IelementList)
 
-          ! Get list of elements in distribution
-          call storage_getbase_int(&
-              p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList,&
-              p_IelementList)
+          ! Check if element group is empty
+          if (NEL .le. 0) cycle
 
-          ! Initialise a vector assembly structure for that element distribution
+          ! Initialise a vector assembly structure for that element group
           call linf_initAssembly(rvectorAssembly,rform,&
-              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature,&
-              min(p_rperfconfig%NELEMSIM, size(p_IelementList)), rperfconfig)
+              celemTest,p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature,&
+              min(p_rperfconfig%NELEMSIM, NEL), rperfconfig)
 
-          ! Assemble the data for all elements in this element distribution
+          ! Assemble the data for all elements in this element group
           call linf_assembleSubmeshVecSc (rvectorAssembly,rvector,&
               p_IelementList,fcoeff_buildVectorBl_sim,rcollection,ntempArrays,rperfconfig)
 
@@ -5810,7 +5835,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
       end select
@@ -5856,7 +5881,7 @@ contains
   ! submesh.
   ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! element group.
 !</description>
 
 !<input>
@@ -5907,7 +5932,7 @@ contains
     ! local variables
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    integer :: ielementDistr, iblock, icubatureBlock
+    integer :: ielemGroup, iblock, icubatureBlock
     integer, dimension(:), pointer :: p_IelementList
     logical :: bcompatible
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
@@ -5985,16 +6010,16 @@ contains
 
           ! Get standard information: Number of elements, element list,...
           call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rspatialDiscr,&
-              ielementDistr,celement,ccubature,NEL,p_IelementList)
+              ielemGroup,celement,ccubature,NEL,p_IelementList)
 
-          ! Check if element distribution is empty
+          ! Check if element group is empty
           if (NEL .le. 0) cycle
 
-          ! Initialise a vector assembly structure for that element distribution
+          ! Initialise a vector assembly structure for that element group
           call linf_initAssembly(rvectorAssembly,rform,&
               celement,ccubature,min(p_rperfconfig%NELEMSIM, NEL), rperfconfig)
 
-          ! Assemble the data for all elements in this element distribution
+          ! Assemble the data for all elements in this element group
           call linf_assembleSubmeshVecBl (rvectorAssembly,rvectorBlock,&
               p_IelementList,fcoeff_buildVectorBl_sim,rcollection,ntempArrays,rperfconfig)
 
@@ -6089,8 +6114,9 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc,iblock
+    integer :: ibdc,ielemGroup,NELbdc,iblock,NEL
     logical :: bcompatible
+    integer(I32) :: celemTest
 
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
@@ -6157,19 +6183,20 @@ contains
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(p_rspatialDiscr)
+
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielemGroup,celemTest,NEL)
 
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                cparType=BDR_PAR_LENGTH)
+                celement=celemTest,cparType=BDR_PAR_LENGTH)
 
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc, rperfconfig)
+                celemTest,CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks, ntempArrays)
 
             ! Assemble the data all elements
@@ -6187,11 +6214,14 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Loop over all boundary components and call
             ! the calculation routines for that
@@ -6206,16 +6236,14 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  cparType=BDR_PAR_LENGTH)
+                  celement=celemTest,cparType=BDR_PAR_LENGTH)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc, rperfconfig)
+                  celemTest,CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks, ntempArrays)
 
               ! Assemble the data for one element
@@ -6231,11 +6259,11 @@ contains
 
             end do ! ibdc
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
       end select
@@ -6322,8 +6350,9 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     real(DP), dimension(:,:), pointer :: DedgePosition
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,ielementDistr,NELbdc,iblock
+    integer :: ibdc,ielemGroup,NELbdc,iblock,NEL
     logical :: bcompatible
+    integer(I32) :: celemTest
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -6409,25 +6438,29 @@ contains
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
           allocate(DedgePosition(2,NELbdc))
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(p_rspatialDiscr)
+
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielemGroup,celemTest,NEL)
+
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
 
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                BDR_PAR_LENGTH)
+                celemTest,BDR_PAR_LENGTH)
 
-            ! Check if element distribution is empty
+            ! Check if element group is empty
             if (NELbdc .le. 0) cycle
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
+                celemTest, ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
 
-            ! Assemble the data for all elements in this element distribution
+            ! Assemble the data for all elements in this element group
             call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
@@ -6443,26 +6476,29 @@ contains
 
         else
 
-          ! Loop over the element distributions.
-          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
+          ! Loop over the element groups.
+          do ielemGroup = 1,spdiscr_getNelemGroups(p_rspatialDiscr)
 
-            ! Check if element distribution is empty
-            if (p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            ! Activate the current element group.
+            call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielemGroup,celemTest,NEL)
 
-            ! Initialise a vector assembly structure for that element distribution
+            ! Check if element group is empty
+            if (NEL .le. 0) cycle
+
+            ! Initialise a vector assembly structure for that element group
             call linf_initAssembly(rvectorAssembly, rform,&
-                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
+                celemTest, ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
 
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
             do ibdc = 1,boundary_igetNBoundComp(p_rboundary)
+              
               call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryReg)
 
               ! Calculate number of elements adjacent to the boundary region
               NELbdc = bdraux_getNELAtRegion(rboundaryReg, p_rtriangulation)
 
-              ! Check if element distribution is empty
+              ! Check if element group is empty
               if (NELbdc .le. 0) cycle
 
               ! Allocate memory for element list, element orientation and
@@ -6474,12 +6510,11 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  BDR_PAR_LENGTH)
+                  celemTest, BDR_PAR_LENGTH)
 
               if (NELbdc .gt. 0) then
 
-                ! Assemble the data for all elements in this element distribution
+                ! Assemble the data for all elements in this element group
                 call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
@@ -6495,11 +6530,11 @@ contains
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
 
-          end do ! ielementDistr
+          end do ! ielemGroup
 
         end if
 
-      case DEFAULT
+      case default
         call output_line("Single precision vectors currently not supported!",&
             OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       end select

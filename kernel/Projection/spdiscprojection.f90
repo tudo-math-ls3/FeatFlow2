@@ -101,8 +101,8 @@ contains
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx
     integer, dimension(:), pointer :: p_IelementsAtVertex
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IedgesAtElement,&
-        p_IfacesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IfacesAtElement
+    integer(I32) :: celemSource,celemDest
 
     ! Up to now, this routine is rather rudimentary.
     ! We only support
@@ -169,9 +169,10 @@ contains
     ! Ok, now we have a chance that we can convert.
 
     ! If the spaces are identical, we can simply copy the vector
-    if (p_rsourceDiscr%RelementDistr(1)%celement .eq. &
-        p_rdestDiscr%RelementDistr(1)%celement) then
-
+    call spdiscr_getElemGroupInfo (p_rsourceDiscr,1,celemSource)
+    call spdiscr_getElemGroupInfo (p_rdestDiscr,1,celemDest)
+    
+    if (celemSource .eq. celemDest) then
       ! Ok, that is easy.
       ! Copy the vector data but prevent structural data from being overwritten.
       ! Let us hope the vectors have the same length :)
@@ -194,11 +195,9 @@ contains
     call lsyssc_clearVector (rdestVector)
 
     ! What is the destination space?
-    select case (elem_getPrimaryElement(p_rdestDiscr%RelementDistr(1)%&
-                                        celement))
+    select case (elem_getPrimaryElement(celemDest))
     case (EL_Q0, EL_P0)
-      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
-                                          celement))
+      select case (elem_getPrimaryElement(celemSource))
       case (EL_Q1, EL_P1)
         ! Get geometric information from the triangulation.
         p_rtriangulation => p_rsourceDiscr%p_rtriangulation
@@ -222,8 +221,7 @@ contains
     case (EL_Q1)
       ! So we should convert the source vector into a Q1 destination vector.
       ! Which element is used in the trial space?
-      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
-                                          celement))
+      select case (elem_getPrimaryElement(celemSource))
       case (EL_Q0)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
         !
@@ -304,8 +302,7 @@ contains
     case (EL_P1)
       ! So we should convert the source vector into a P1 destination vector.
       ! Which element is used in the trial space?
-      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
-                                          celement))
+      select case (elem_getPrimaryElement(celemSource))
       case (EL_P0)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
         !
@@ -359,8 +356,7 @@ contains
     case (EL_Q1_3D)
         ! So we should convert the source vector into a 3D Q1 destination vector.
       ! Which element is used in the trial space?
-      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
-                                          celement))
+      select case (elem_getPrimaryElement(celemSource))
       case (EL_Q0_3D)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
         !
@@ -1144,11 +1140,10 @@ contains
   ! A hand full of local variables
   type(t_spatialDiscretisation), pointer :: p_rdiscr
   type(t_triangulation), pointer :: p_rtria
-  type(t_elementDistribution), pointer :: p_relemDist
   integer, dimension(:), pointer :: p_IelemList, p_IelemAtVertIdx, p_IcurEL
   integer, dimension(:,:), pointer :: p_IvertAtElem
   real(DP), dimension(4,TRIA_MAXNVE) :: Dcorners
-  integer :: NEL,NVT,NVE,NDIM,NBAS,NDER,ied,ivt,iel,i,j,k
+  integer :: NEL,NVT,NVE,NDIM,NBAS,NDER,ielemgroup,ivt,iel,i,j,k
   type(t_evalElementSet)  :: reval
   integer(I32) :: cevalTag, celement, ctrafo
   integer :: NELtodo, NELdone, NELpatch
@@ -1188,10 +1183,12 @@ contains
 
       ! Let' see if our FE space has DOFs in the vertices
       bvertexDofs = .true.
-      do i = 1, p_rdiscr%inumFESpaces
+      do i = 1, spdiscr_getNelemGroups(p_rdiscr)
 
         ! check the elements
-        select case(elem_getPrimaryElement(p_rdiscr%RelementDistr(i)%celement))
+        call spdiscr_getElemGroupInfo (p_rdiscr,i,celement)
+        
+        select case(elem_getPrimaryElement(celement))
         case (EL_P1_1D, EL_P2_1D, EL_S31_1D)
         case (EL_P1_2D, EL_P2_2D)
         case (EL_Q1_2D, EL_Q2_2D)
@@ -1238,19 +1235,14 @@ contains
     ballocated = .false.
     ndimfe = 0
 
-    ! Okay, now loop through all element distributions
-    do ied = 1, p_rdiscr%inumFESpaces
+    ! Okay, now loop through all element groups
+    do ielemgroup = 1, spdiscr_getNelemGroups(p_rdiscr)
 
-      ! Get the element distribution
-      p_relemDist => p_rdiscr%RelementDistr(ied)
-
-      ! Get the element list for this distribution
-      call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
+      ! Get the element group data
+      call spdiscr_getElemGroupInfo (p_rdiscr,ielemgroup ,celement,NEL,p_IelemList,ctrafo)
 
       ! Get the element, its evaluation tag and trafo type
-      celement = p_relemDist%celement
       cevalTag = elem_getEvaluationTag(celement)
-      ctrafo = elem_igetTrafoType(celement)
 
       ! Get the number of vertices per element
       NVE = tria_getNVE(p_rtria, p_IelemList(1))
@@ -1288,9 +1280,6 @@ contains
 
       ! Calculate the corner vertice reference coordinates
       call spdp_aux_getCornerRefCoords(Dcorners, NDIM, NVE)
-
-      ! Get the number of elements in this distribution
-      NEL = size(p_IelemList)
 
       ! Determine the element patch size
       NELpatch = min(1000, NEL)
@@ -1362,9 +1351,9 @@ contains
       deallocate(Idofs)
       deallocate(Dbas)
 
-      ! Go for the next element distribution
+      ! Go for the next element group
 
-    end do ! ied
+    end do ! ielemgroup
 
     do idimfe = 0,ndimfe-1
       ! And loop through all vertices
@@ -1427,10 +1416,9 @@ contains
   ! A hand full of local variables
   type(t_spatialDiscretisation), pointer :: p_rdiscr
   type(t_triangulation), pointer :: p_rtria
-  type(t_elementDistribution), pointer :: p_relemDist
   integer, dimension(:), pointer :: p_IelemList, p_IcurEL
   real(DP), dimension(4,1) :: DmidPoint
-  integer :: NEL,NVE,NDIM,NBAS,NDER,ied,iel,i,j
+  integer :: NEL,NVE,NDIM,NBAS,NDER,ielemgroup,iel,i,j
   type(t_evalElementSet)  :: reval
   integer(I32) :: cevalTag, celement, ctrafo
   integer :: NELtodo, NELdone, NELpatch,NELinList
@@ -1470,10 +1458,12 @@ contains
 
       ! Let' see if our FE space has DOFs in the cells
       bcellDofs = .true.
-      do i = 1, p_rdiscr%inumFESpaces
+      do i = 1, spdiscr_getNelemGroups(p_rdiscr)
 
         ! check the elements
-        select case(elem_getPrimaryElement(p_rdiscr%RelementDistr(i)%celement))
+        call spdiscr_getElemGroupInfo (p_rdiscr,i,celement)
+        
+        select case(elem_getPrimaryElement(celement))
         case (EL_P0_1D)
         case (EL_P0_2D)
         case (EL_Q0_2D, EL_QP1_2D)
@@ -1516,19 +1506,14 @@ contains
     ballocated = .false.
     ndimfe = 0
 
-    ! Okay, now loop through all element distributions
-    do ied = 1, p_rdiscr%inumFESpaces
+    ! Okay, now loop through all element groups
+    do ielemgroup = 1, spdiscr_getNelemGroups(p_rdiscr)
 
-      ! Get the element distribution
-      p_relemDist => p_rdiscr%RelementDistr(ied)
-
-      ! Get the element list for this distribution
-      call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
+      ! Get the element group data
+      call spdiscr_getElemGroupInfo (p_rdiscr,ielemgroup,celement,NELinList,p_IelemList,ctrafo)
 
       ! Get the element, its evaluation tag and trafo type
-      celement = p_relemDist%celement
       cevalTag = elem_getEvaluationTag(celement)
-      ctrafo = elem_igetTrafoType(celement)
 
       ! Get the number of vertices per element
       NVE = tria_getNVE(p_rtria, p_IelemList(1))
@@ -1566,9 +1551,6 @@ contains
 
       ! Calculate the cell midpoint reference coordinates
       call spdp_aux_getMidpointRefCoords(DmidPoint, NDIM, NVE)
-
-      ! Get the number of elements in this distribution
-      NELinList = size(p_IelemList)
 
       ! Determine the element patch size
       NELpatch = min(1000, NELinList)
@@ -1631,9 +1613,9 @@ contains
       deallocate(Idofs)
       deallocate(Dbas)
 
-      ! Go for the next element distribution
+      ! Go for the next element group
 
-    end do ! ied
+    end do ! ielemgroup
 
     ! That is it
 

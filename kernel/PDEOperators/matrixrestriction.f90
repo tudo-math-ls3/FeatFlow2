@@ -103,7 +103,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: i1,i2
+    integer(I32) :: celemCoarse, celemFine
     integer :: iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
     integer :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
     integer :: imid1,imid2,imid3,imid4,imid5
@@ -177,10 +177,11 @@ contains
       call sys_halt()
     end if
 
-    i1 = rfineMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
-    i2 = rcoarseMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
-    if ((elem_getPrimaryElement(i1) .ne. EL_Q1T) .or. &
-        (elem_getPrimaryElement(i2) .ne. EL_Q1T)) then
+    call spdiscr_getElemGroupInfo (rfineMatrix%p_rspatialDiscrTrial,1,celemFine)
+    call spdiscr_getElemGroupInfo (rcoarseMatrix%p_rspatialDiscrTrial,1,celemCoarse)
+
+    if ((elem_getPrimaryElement(celemFine) .ne. EL_Q1T) .or. &
+        (elem_getPrimaryElement(celemCoarse) .ne. EL_Q1T)) then
       call output_line ("Only Q1~-discretisation supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()

@@ -582,7 +582,7 @@ contains
 
       end if
 
-    case DEFAULT
+    case default
       nve = 0
     end select
   end function hadapt_getNVE
@@ -1117,7 +1117,7 @@ contains
       ! Set specifier for ImidneighboursAtElement
       rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_MIDNEIGH)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNeighboursAtElement')
       call sys_halt()

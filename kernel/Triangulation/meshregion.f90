@@ -56,6 +56,7 @@ module meshregion
   use storage
   use triangulation
   use fparser
+  use numbersets
   use collection, only: t_collection
 
   implicit none
@@ -1764,5 +1765,269 @@ module meshregion
     ! That is it
 
   end subroutine mshreg_calcBoundaryNormals3D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine mshreg_auxMarkElementsAtVerts(rtriangulation,Ivertices,rset)
+
+!<description>
+  ! Marks all elements adjacent to the vertices in Ivertices.
+!</description>
+
+!<input>
+  ! Underlying triangulation.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! List of vertices
+  integer, dimension(:), intent(in) :: Ivertices
+!</input>
+
+!<inputoutput>
+  ! Set where all elements adjacent to the vertices are marked.
+  type(t_directAccessIntSet), intent(inout) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+    integer, dimension(:), pointer :: p_IelementsAtVertex
+    integer :: i,ivt,iel1,iel2
+    
+    ! Get data from the triangulation
+    call storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+    call storage_getbase_int (rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    
+    ! Loop through the vertices
+    do i=1,size(Ivertices)
+      ivt = Ivertices(i)
+      iel1 = p_IelementsAtVertexIdx(ivt)
+      iel2 = p_IelementsAtVertexIdx(ivt+1)-1
+      
+      ! Add the adjacent elements to the set
+      call nsets_putElements (rset,p_IelementsAtVertex(iel1:iel2))
+    end do
+
+  end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine mshreg_auxMarkElementsAtEdges(rtriangulation,Iedges,rset)
+
+!<description>
+  ! Marks all elements adjacent to the edges in Iedges.
+!</description>
+
+!<input>
+  ! Underlying triangulation.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! List of edges
+  integer, dimension(:), intent(in) :: Iedges
+!</input>
+
+!<inputoutput>
+  ! Set where all elements adjacent to the edges are marked.
+  type(t_directAccessIntSet), intent(inout) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: idim
+    integer, dimension(:), pointer :: p_IelementsAtEdgeIdx
+    integer, dimension(:), pointer :: p_IelementsAtEdge
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge2D
+    integer :: i,imt,iel1,iel2
+
+    ! Get the dimension of the triangulation
+    idim = rtriangulation%ndim
+    
+    select case (idim)
+    case (NDIM2D)
+      ! Get data from the triangulation
+      call storage_getbase_int2d (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge2D)
+      
+      ! Add adjacent elements
+      do i=1,size(Iedges)
+        imt = Iedges(i)
+      
+        ! The first element is always there, the 2nd element not necessarily
+        call nsets_addToDASet (rset,p_IelementsAtEdge2D(1,imt))
+        
+        if (p_IelementsAtEdge2D(2,i) .ne. 0) then
+          call nsets_addToDASet (rset,p_IelementsAtEdge2D(2,imt))
+        end if
+      end do
+      
+    case (NDIM3D)
+      ! Get data from the triangulation
+      call storage_getbase_int (rtriangulation%h_IelementsAtEdgeIdx3d,p_IelementsAtEdgeIdx)
+      call storage_getbase_int (rtriangulation%h_IelementsAtEdge3d,p_IelementsAtEdge)
+      
+      ! Loop through the vertices
+      do i=1,size(Iedges)
+        imt = Iedges(i)
+        iel1 = p_IelementsAtEdgeIdx(imt)
+        iel2 = p_IelementsAtEdgeIdx(imt+1)-1
+        
+        ! Add the adjacent elements to the set
+        call nsets_putElements (rset,p_IelementsAtEdge(iel1:iel2))
+      end do
+    end select
+
+  end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine mshreg_auxMarkElementsAtFaces(rtriangulation,Ifaces,rset)
+
+!<description>
+  ! Marks all elements adjacent to the faces in Ifaces.
+!</description>
+
+!<input>
+  ! Underlying triangulation.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! List of faces
+  integer, dimension(:), intent(in) :: Ifaces
+!</input>
+
+!<inputoutput>
+  ! Set where all elements adjacent to the faces are marked.
+  type(t_directAccessIntSet), intent(inout) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IelementsAtFace
+    integer :: i,ifc
+
+    ! Get data from the triangulation
+    call storage_getbase_int2d (rtriangulation%h_IelementsAtFace,p_IelementsAtFace)
+    
+    ! Add adjacent elements
+    do i=1,size(Ifaces)
+      ifc = Ifaces(i)
+
+      ! The first element is always there, the 2nd element not necessarily
+      call nsets_addToDASet (rset,p_IelementsAtFace(1,ifc))
+      
+      if (p_IelementsAtFace(2,i) .ne. 0) then
+        call nsets_addToDASet (rset,p_IelementsAtFace(2,ifc))
+      end if
+    end do
+
+  end subroutine
+
+!************************************************************************
+! to be implemented... does not work until now.
+
+!# 10.) mshreg_getAssocElements
+!#      -> Creates a mesh region that contains all elements associated to
+!#         the vertices/edges/faces in a "source" mesh region
+!#
+
+!!<subroutine>
+!
+!  subroutine mshreg_getAssocElements(rmeshRegionSrc, rmeshRegionDst, cidxCalc)
+!
+!!<description>
+!  ! Creates a new mesh region rmesgRegionDst that contains all elements
+!  ! associated to the vertices/edges/faces in the mesh region
+!  ! rmeshRegionSrc. cidxCalc defines which parts of rmeshRegionSrc
+!  ! are used for determining the elements.
+!!</description>
+!
+!!<remarks>
+!  ! A value MSHREG_IDX_ELEMENT in cidxCalc is currently ignored. It would have 
+!  ! to be defined whether the adjacency of an element to its neighbours is via 
+!  ! vertices, edges or faces.
+!!</remarks>
+!
+!!<input>
+!  ! A combination of MSHREG_IDX_XXXX constants defined above which
+!  ! specifies which index arrays in rmeshRegionSrc are used to determine
+!  ! the elements. A value MSHREG_IDX_ALL, e.g., computes the associated
+!  ! to vertices, edges and faces. A value MSHREG_IDX_EDGE computes
+!  ! only the elements associated to the edges in rmesgRegionSrc, etc.
+!  !
+!  ! If not specified, MSHREG_IDX_ALL is assumed.
+!  integer(I32), intent(in) :: cidxCalc
+!
+!  ! "Source" mesh region that defines vertices/edges/faces to be analysed.
+!  type(t_meshRegion), intent(in) :: rmeshRegionSrc
+!!</input>
+!
+!!<output>
+!  ! The mesh region to be created based on rmeshRegionSrc.
+!  ! Receives a sorted list of all elements adjacent to vertices/edges/faces
+!  ! in rmesgRegionSrc, depending on cidxCalc.
+!  type(t_meshRegion), intent(out) :: rmeshRegionDst
+!!</output>
+!
+!!</subroutine>
+!
+!  ! Some local variables
+!  type(t_directAccessIntSet) :: rset
+!  integer :: nelInSet
+!  integer, dimension(:), pointer :: p_Iarray
+!  integer :: idim
+!
+!    ! Get the dimension of the triangulation
+!    idim = rmeshRegionSrc%p_rtriangulation%ndim
+!  
+!    ! To prevent elements from being collected twice, set up a flag array
+!    ! that mark all elements we have.
+!    call nsets_initDASet (rset,rmeshRegionSrc%p_rtriangulation%NEL)
+!    
+!    ! Mark elements adjacent to vertices
+!    if ((iand(cidxCalc, MSHREG_IDX_VERTEX) .ne. 0) .and. &
+!        (rmeshRegionSrc%h_IvertexIdx .ne. ST_NOHANDLE)) then
+!
+!      call storage_getbase_int (rmeshRegionSrc%h_IvertexIdx,p_Iarray)
+!      call mshreg_auxMarkElementsAtVerts(rmeshRegionSrc%p_rtriangulation,p_Iarray,rset)
+!
+!    end if
+!    
+!    ! Mark elements adjacent to edges
+!    if ((iand(cidxCalc, MSHREG_IDX_EDGE) .ne. 0) .and. &
+!        (idim .ge. NDIM2D) .and. (rmeshRegionSrc%h_IedgeIdx .ne. ST_NOHANDLE)) then
+!
+!      call storage_getbase_int (rmeshRegionSrc%h_IedgeIdx,p_Iarray)
+!      call mshreg_auxMarkElementsAtEdges(rmeshRegionSrc%p_rtriangulation,p_Iarray,rset)
+!
+!    end if
+!    
+!    ! Mark elements adjacent to faces
+!    if ((iand(cidxCalc, MSHREG_IDX_FACE) .ne. 0) .and. &
+!        (idim .ge. NDIM3D) .and. (rmeshRegionSrc%h_IfaceIdx .ne. ST_NOHANDLE)) then
+!
+!      call storage_getbase_int (rmeshRegionSrc%h_IfaceIdx,p_Iarray)
+!      call mshreg_auxMarkElementsAtFaces(rmeshRegionSrc%p_rtriangulation,p_Iarray,rset)
+!
+!    end if
+!    
+!    ! Form a list of elements from the set
+!    nelInSet = nsets_nelementsInSet (rset)
+!
+!    call storage_new("mshreg_getAssocElements", "p_IidxArray", nelInSet, &
+!        ST_INT, rmeshRegionDst%h_IelementIdx, ST_NEWBLOCK_NOINIT)
+!    call storage_getbase_int(rmeshRegionDst%h_IelementIdx, p_Iarray)
+!
+!    call nsets_getElements (rset,p_Iarray)
+!        
+!    ! Release the element flags
+!    call nsets_doneDASet (rset)
+!
+!  end subroutine
 
 end module meshregion

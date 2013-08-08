@@ -631,14 +631,13 @@ contains
 
     ! A hand full of local variables
     integer :: idx, ibndVert, ibndElem, iDOF
-    integer(I32) :: ielemType
+    integer(I32) :: celement
     type(t_discreteBCEntry), pointer :: p_rdiscrBCEntry
     type(t_discreteBCDirichlet), pointer :: p_rdirichlet
     real(DP), dimension(:), pointer             :: p_DdirichletValues
     integer, dimension(:), pointer         :: p_IdirichletDOFs
     type(t_triangulation), pointer              :: p_rtria
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
-    type(t_elementDistribution), pointer        :: p_relemDist
     integer, dimension(:), pointer :: p_IelemAtVert,p_IelemAtVertIdx, &
         p_IvertAtBnd, p_IbndCpIdx
     integer, dimension(128) :: IDOFs
@@ -660,7 +659,7 @@ contains
     p_rtria => p_rspatialDiscr%p_rtriangulation
 
     ! Make sure that there is only one FE space in the discretisation.
-    if (p_rspatialDiscr%inumFESpaces .ne. 1) then
+    if (spdiscr_getNelemGroups(p_rspatialDiscr) .ne. 1) then
 
       ! Print an error message
       call output_line ("Spatial discretisation must have 1 FE space!", &
@@ -671,11 +670,8 @@ contains
 
     end if
 
-    ! Get the element distribution from the spatial discretisation
-    p_relemDist => p_rspatialDiscr%RelementDistr(1)
-
     ! Get the element type of the trial functions
-    ielemType = elem_getPrimaryElement(p_relemDist%celement)
+    call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
 
     ! Get the boundary component index array
     call storage_getbase_int(p_rtria%h_IboundaryCpIdx, p_IbndCpIdx)
@@ -733,7 +729,7 @@ contains
 
       ! Now we need to find the DOF for this boundary condition.
       ! This is element-dependent...
-      select case(ielemType)
+      select case(celement)
       case (EL_P0_1D)
         ! P0_1D element
         ! This is the easy case - there is only one DOF per element and this
@@ -820,7 +816,7 @@ contains
 
       ! Now we need to find the DOF for this boundary condition.
       ! This is element-dependent...
-      select case(ielemType)
+      select case(celement)
       case (EL_P0_1D)
         ! P0_1D element
         ! This is the easy case - there is only one DOF per element and this
@@ -1113,7 +1109,7 @@ contains
     type(t_discreteBCDirichlet),pointer         :: p_rdirichletBCs
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
-    integer, dimension(:), pointer              :: p_IelementDistr
+    integer, dimension(:), pointer              :: p_IelemGroup
     integer, dimension(:,:), allocatable :: Idofs
     real(DP), dimension(:,:), allocatable       :: DdofValue
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
@@ -1142,9 +1138,6 @@ contains
     real(DP), dimension(16) :: Dweights
     real(DP) :: dedgelen
 
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
     integer(I32) :: casmComplexity, cmyoptions
 
     casmComplexity = BCASM_DISCFORALL
@@ -1170,8 +1163,6 @@ contains
     call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
 
-    p_RelementDistribution => p_rspatialDiscr%RelementDistr
-
     ! The parameter value arrays may not be initialised.
     if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
       call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
@@ -1192,11 +1183,10 @@ contains
 
     if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       ! Every element can be of different type.
-      call storage_getbase_int(p_rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
+      call spdiscr_getElemGroupIDs (p_rspatialDiscr,p_IelemGroup)
     else
       ! All elements are of the samne type. Get it in advance.
-      celement = p_rspatialDiscr%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
       nve = tria_getNVE (p_rtriangulation,1)
     end if
 
@@ -1288,7 +1278,7 @@ contains
       ! Get the element type in case we do not have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-        celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+        call spdiscr_getElemGroupInfo (p_rspatialDiscr,p_IelemGroup(ielement),celement)
         nve = tria_getNVE (p_IverticesAtElement,ielidx)
       end if
 
@@ -2423,7 +2413,8 @@ contains
       call sys_halt()
     end if
 
-    celement = p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
+    
     if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
       call output_line("Discrete FEAST mirror boundary conditions currently only supported",&
           OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
@@ -2653,7 +2644,8 @@ contains
       call sys_halt()
     end if
 
-    celement = p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
+    
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       call output_line("Discrete pressure drop boundary conditions currently only supported",&
           OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
@@ -2916,7 +2908,8 @@ contains
       call sys_halt()
     end if
 
-    celement = p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement)
+    
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       call output_line("Discrete Slip boundary conditions currently only supported",&
           OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
@@ -3129,10 +3122,10 @@ contains
 
     ! local variables
     integer(I32) :: casmComplexity
+    integer(I32) :: celement
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_discreteFBCEntry), pointer :: p_rdiscreteFBCentry
-    type(t_elementDistribution), pointer :: p_relementDist
     type(t_discreteFBCDirichlet),pointer :: p_rdirichletFBCs
     integer :: nequations,ieq,nmaxInfoPerElement,icount,i,j,iel,ielidx
     integer, dimension(:), pointer :: p_Ielements
@@ -3141,7 +3134,7 @@ contains
     integer :: h_Ddofs,h_Idofs
     integer, dimension(:), pointer :: p_Idofs
     real(DP), dimension(:,:), pointer   :: p_Ddofs
-    integer :: idof,iidx,nDOFs,ieldist,nve,ndofloc
+    integer :: idof,iidx,nDOFs,ielgroup,nve,ndofloc,NEL
     integer :: isubsetStart,isubsetLength
     integer, dimension(2) :: IdofCount
     real(dp), dimension(:,:), pointer :: p_Dwhere
@@ -3258,34 +3251,29 @@ contains
     end do
 
     ! To collect the values of all the DOFs in question, we loop in sets
-    ! about the elements in every element distribution.
+    ! about the elements in every element group.
     !
-    ! So at first, we loop over the element distribution which tells us the
+    ! So at first, we loop over the element group which tells us the
     ! current element type.
-    do ieldist = 1,p_rspatialDiscr%inumFESpaces
+    do ielgroup = 1,spdiscr_getNelemGroups(p_rspatialDiscr)
 
-      ! Get the element distribution
-      p_relementDist => p_rspatialDiscr%RelementDistr(ieldist)
-
-      if (p_relementDist%NEL .eq. 0) cycle
+      ! Get the element list
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielgroup,celement,NEL,p_Ielements)
+      if (NEL .eq. 0) cycle
 
       ! Number of corner vertices.
-      nve = elem_igetNVE(p_relementDist%celement)
+      nve = elem_igetNVE(celement)
 
       ! Reserve some memory to save temporarily all DOF`s of all elements.
-      ndofloc = elem_igetNDofLoc(p_relementDist%celement)
+      ndofloc = elem_igetNDofLoc(celement)
       allocate (Idofs(ndofloc,p_rperfconfig%NITEMSIM))
       Idofs(:,:) = 0
 
-      ! Get the elements in that distribution
-      call storage_getbase_int(p_relementDist%h_IelementList,p_Ielements)
-
       ! Loop through the elements in sets a p_rperfconfig%NITEMSIM.
-      do isubsetStart = 1,p_relementDist%NEL,p_rperfconfig%NITEMSIM
+      do isubsetStart = 1,NEL,p_rperfconfig%NITEMSIM
 
         ! Remaining elements here...
-        isubsetLength = min(p_relementDist%NEL-isubsetStart+1,&
-                            p_rperfconfig%NITEMSIM)
+        isubsetLength = min(NEL-isubsetStart+1,p_rperfconfig%NITEMSIM)
 
         ! Get all the DOFs on all the elements in the current set.
         call dof_locGlobMapping_mult(p_rspatialDiscr, &
@@ -3304,10 +3292,10 @@ contains
           !
           ! -----
           ! P1, Q1, P2, Q2
-          if ((p_relementDist%celement .eq. EL_P1) .or. &
-              (p_relementDist%celement .eq. EL_Q1) .or. &
-              (p_relementDist%celement .eq. EL_P2) .or. &
-              (p_relementDist%celement .eq. EL_Q2)) then
+          if ((celement .eq. EL_P1) .or. &
+              (celement .eq. EL_Q1) .or. &
+              (celement .eq. EL_P2) .or. &
+              (celement .eq. EL_Q2)) then
 
             bok = .true.
 
@@ -3353,8 +3341,8 @@ contains
             end do
           end if
 
-          if ((p_relementDist%celement .eq. EL_P2) .or. &
-              (p_relementDist%celement .eq. EL_Q2)) then
+          if ((celement .eq. EL_P2) .or. &
+              (celement .eq. EL_Q2)) then
 
             ! Loop through the edges of the elements and collect them.
             ! The local DOFs nve+1..2*nve correspond to the egdes here.
@@ -3400,7 +3388,7 @@ contains
             end do
           end if
 
-          if (p_relementDist%celement .eq. EL_Q2) then
+          if (celement .eq. EL_Q2) then
 
             ! Getthe element midpoints, corresponding to the local DOF 2*nve+1
             do ielidx = 1,isubsetLength
@@ -3447,8 +3435,8 @@ contains
 
           ! -----
           ! Q1~, all implementations
-          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T .or.&
-              elem_getPrimaryElement(p_relementDist%celement) .eq. EL_P1T) then
+          if (elem_getPrimaryElement(celement) .eq. EL_Q1T .or.&
+              elem_getPrimaryElement(celement) .eq. EL_P1T) then
 
             bok = .true.
 
@@ -3471,7 +3459,7 @@ contains
 
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
-            if (iand(p_relementDist%celement,int(2**16,I32)) .ne. 0) then
+            if (iand(celement,int(2**16,I32)) .ne. 0) then
               ! Integral mean value based element
               p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDINTMEAN
             end if
@@ -3510,8 +3498,8 @@ contains
           ! P1, Q1, P2, Q2.
           ! Note: P2/Q2 not yet supported... too ugly to realise until now,
           ! but will have to be done similar to 2D.
-          if ((p_relementDist%celement .eq. EL_P1_3D) .or. &
-              (p_relementDist%celement .eq. EL_Q1_3D)) then
+          if ((celement .eq. EL_P1_3D) .or. &
+              (celement .eq. EL_Q1_3D)) then
 
             bok = .true.
 
@@ -3559,7 +3547,7 @@ contains
 
           ! -----
           ! Q1~, all implementations
-          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T_3D) then
+          if (elem_getPrimaryElement(celement) .eq. EL_Q1T_3D) then
 
             bok = .true.
 
@@ -3584,7 +3572,7 @@ contains
 
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
-            if (iand(p_relementDist%celement,int(2**16,I32)) .ne. 0) then
+            if (iand(celement,int(2**16,I32)) .ne. 0) then
               ! Integral mean value based element
               p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFACEINTMEAN
             end if
@@ -3677,7 +3665,7 @@ contains
 !    ! local variables
 !
 !    integer :: nDOFs
-!    integer :: h_Ddofs, h_Idofs, i, j, iidx, ieldist
+!    integer :: h_Ddofs, h_Idofs, i, j, iidx, ielgroup
 !    integer(I32) :: celement
 !    integer :: nequations
 !    integer, dimension(2) :: IdofCount
@@ -4231,7 +4219,7 @@ contains
     inumGlobalDofs,ilenDofBitmap,idof,cinfoNeeded,ndofs
   integer, dimension(1) :: Icomponents
   real(DP), dimension(1) :: Dvalues
-  integer(I32) :: ielemType, idofMask
+  integer(I32) :: celement, idofMask
   type(t_discreteBCEntry), pointer :: p_rdbcEntry
   type(t_discreteBCDirichlet), pointer :: p_rdirichlet
   type(t_triangulation), pointer :: p_rtria
@@ -4246,7 +4234,7 @@ contains
   integer :: iregionNEL, itriaNEL
   integer, dimension(:), pointer :: p_IdofBitmap
   integer, dimension(:), pointer :: p_IelemAtVertIdx, p_IelemAtVert,&
-    p_IelemAtEdgeIdx, p_IelemAtEdge, p_IelemDist
+    p_IelemAtEdgeIdx, p_IelemAtEdge, p_IelemGroup
   integer, dimension(:,:), pointer :: p_IelemAtEdge2D, p_IelemAtFace,&
     p_IedgesAtElem, p_IfacesAtElem
   real(DP), dimension(1) :: Dcoord1D
@@ -4279,16 +4267,16 @@ contains
     cinfoNeeded = DISCBC_NEEDFUNC
 
     ! Is this a uniform discretisation?
-    if (p_rspatDisc%inumFESpaces .gt. 1) then
+    if (spdiscr_getNelemGroups(p_rspatDisc) .gt. 1) then
 
-      ! Get the element distribution array, if given
-      call storage_getbase_int(p_rspatDisc%h_IelementDistr, p_IelemDist)
+      ! Get the element group array, if given
+      call spdiscr_getElemGroupIDs(p_rspatDisc, p_IelemGroup)
       buniform = .false.
 
     else
 
       ! Get the one and only element type
-      ielemType = p_rspatDisc%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (p_rspatDisc,1,celement)
       buniform = .true.
 
     end if
@@ -4422,12 +4410,11 @@ contains
     ! Calculate an initial guess of the number of DOFs that will be affected
     ! with this dirichlet condition.
     ndofs = 0
-    if (p_rspatDisc%inumFESpaces .eq. 1) then
+    if (buniform) then
 
       ! The discretisation is uniform. In this nice case, our initial
       ! guess will be exact.
-      select case(elem_getPrimaryElement(&
-        p_rspatDisc%RelementDistr(1)%celement))
+      select case(elem_getPrimaryElement(celement))
 
       ! P0/Q0 elements (and 2D QP1 element)
       case (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
@@ -4519,13 +4506,14 @@ contains
 
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
-        if (.not. buniform) ielemType = &
-          p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+        if (.not. buniform) then
+          call spdiscr_getElemGroupInfo (p_rspatDisc,p_IelemGroup(iel),celement)
+        end if
 
         ! Now we need to find which global DOF the currently processed
         ! vertices belongs to.
         idof = 0
-        select case(elem_getPrimaryElement(ielemType))
+        select case(elem_getPrimaryElement(celement))
         ! 1D P1/P2/S31 element
         case (EL_P1_1D,EL_P2_1D,EL_S31_1D)
           do j = 1, 2
@@ -4650,13 +4638,14 @@ contains
 
           ! Now get the element type for this element (if the discretisation
           ! is not uniform)
-          if (.not. buniform) ielemType = &
-            p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+          if (.not. buniform) then
+            call spdiscr_getElemGroupInfo (p_rspatDisc,p_IelemGroup(iel),celement)
+          end if
 
           ! Now we need to find which global DOF the currently processed
           ! edge belongs to.
           idof = 0
-          select case(elem_getPrimaryElement(ielemType))
+          select case(elem_getPrimaryElement(celement))
           ! 2D P1~ element
           case (EL_P1T)
             do j=1,3
@@ -4816,13 +4805,14 @@ contains
 
           ! Now get the element type for this element (if the discretisation
           ! is not uniform)
-          if (.not. buniform) ielemType = &
-            p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+          if (.not. buniform) then
+            call spdiscr_getElemGroupInfo (p_rspatDisc,p_IelemGroup(iel),celement)
+          end if
 
           ! Now we need to find which global DOF the currently processed
           ! edge belongs to.
           idof = 0
-          select case(elem_getPrimaryElement(ielemType))
+          select case(elem_getPrimaryElement(celement))
           ! 3D Q2 element
           case (EL_Q2_3D)
             do j=1,12
@@ -4900,13 +4890,14 @@ contains
 
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
-        if (.not. buniform) ielemType = &
-          p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+        if (.not. buniform) then
+          call spdiscr_getElemGroupInfo (p_rspatDisc,p_IelemGroup(iel),celement)
+        end if
 
         ! Now we need to find which global DOF the currently processed
         ! face belongs to.
         idof = 0
-        select case(elem_getPrimaryElement(ielemType))
+        select case(elem_getPrimaryElement(celement))
         ! 3D Q2 element
         case (EL_Q2_3D)
           do j=1,6
@@ -5086,13 +5077,14 @@ contains
 
       ! Now get the element type for this element (if the discretisation
       ! is not uniform)
-      if (.not. buniform) ielemType = &
-        p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
+      if (.not. buniform) then
+        call spdiscr_getElemGroupInfo (p_rspatDisc,p_IelemGroup(iel),celement)
+      end if
 
       ! Now we need to find which global DOF the currently processed
       ! element belongs to.
       idof = 0
-      select case(elem_getPrimaryElement(ielemType))
+      select case(elem_getPrimaryElement(celement))
       ! 1D P0 element
       case (EL_P0_1D)
         ! The line-midpoint DOF has number 1

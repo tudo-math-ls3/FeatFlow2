@@ -133,6 +133,8 @@ contains
 !</subroutine>
 
     ! local variables
+    integer(I32) :: celement
+    
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
@@ -150,7 +152,9 @@ contains
     end if
 
     ! Check which element we have here...
-    select case(elem_igetShape(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement))
+    call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,1,celement)
+    
+    select case(elem_igetShape(celement))
     case (BGEOM_SHAPE_LINE)
       ! 1D line element
       call jstab_ueoJumpStabil1d_m_uniDP (&
@@ -287,9 +291,6 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
 
@@ -332,6 +333,9 @@ contains
 
   ! number of cubature points on the reference element
   integer :: ncubp,icubp
+  
+  ! Underlying element
+  integer(I32) :: celement, celemTrial
 
   ! Derivative specifiers
   logical, dimension(EL_MAXNDER) :: Bder
@@ -373,18 +377,18 @@ contains
     call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
     call lsyssc_getbase_double (rmatrixScalar,p_Da)
 
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
+    ! Underlying element
+    call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
+    call spdiscr_getElemGroupInfo (rmatrixScalar%p_rspatialDiscrTrial,1,celemTrial)
 
     ! Get the number of local DOF`s for trial and test functions
-    indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofPerElement = elem_igetNDofLoc(celement)
 
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! Assure thath the element spaces are compatible
-    if (elem_igetShape(p_relementDistribution%celement) .ne. &
-        elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
+    if (elem_igetShape(celement) .ne. elem_igetShape(celemTrial)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
       call sys_halt()
@@ -413,7 +417,7 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,2))
@@ -440,14 +444,12 @@ contains
     ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
 
-    allocate(Dbas(indofPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
+    allocate(Dbas(indofPerElement*2,elem_getMaxDerivative(celement),ncubp,3))
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
     ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
@@ -661,8 +663,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement,revalElementSet, Bder, Dbas)
 
       ! Apply the permutation of the local DOF`s on the test functions
       ! on element 2. The numbers of the local DOF`s on element 1
@@ -1055,9 +1056,6 @@ contains
   ! The triangulation structure - to shorten some things...
   type(t_triangulation), pointer :: p_rtria
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDist
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscr
 
@@ -1147,11 +1145,10 @@ contains
     ! Allocate an array for the 3D rules - the content is initialised later
     allocate(DcubPts3D(3,ncubp,2))
 
-    ! Activate the one and only element distribution
-    p_relemDist => p_rdiscr%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
 
     ! Get the number of DOFs
-    celement = p_relemDist%celement
     ndofs = elem_igetNDofLoc(celement)
 
     ! Get the trafo type
@@ -1450,9 +1447,6 @@ contains
   ! The triangulation structure - to shorten some things...
   type(t_triangulation), pointer :: p_rtria
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDist
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscr
 
@@ -1519,11 +1513,10 @@ contains
     call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
     call lsyssc_getbase_double (rmatrixScalar,p_Da)
 
-    ! Activate the one and only element distribution
-    p_relemDist => p_rdiscr%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
 
     ! Get the number of DOFs
-    celement = p_relemDist%celement
     ndofs = elem_igetNDofLoc(celement)
 
     ! Get the trafo type
@@ -1838,9 +1831,6 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
 
@@ -1881,6 +1871,9 @@ contains
 
   ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
+  
+  ! Element ID
+  integer(I32) :: celement
 
   ! Data arrays for the vectors
   real(DP), dimension(:), pointer :: p_Dx1,p_Dy1
@@ -1934,18 +1927,17 @@ contains
     call lsyssc_getbase_double (rx%RvectorBlock(2),p_Dx2)
     call lsyssc_getbase_double (ry%RvectorBlock(2),p_Dy2)
 
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
 
     ! Get the number of local DOF`s for trial and test functions
-    indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofPerElement = elem_igetNDofLoc(celement)
 
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! Assure that the element spaces are compatible
-    if (elem_igetShape(p_relementDistribution%celement) .ne. &
-        elem_igetShape(p_relementDistribution%celement)) then
+    if (elem_igetShape(celement) .ne. elem_igetShape(celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'conv_ueoJumpStabil2d_double_uni')
       call sys_halt()
@@ -1974,7 +1966,7 @@ contains
 
     ! Get from the FE element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,2))
@@ -2001,9 +1993,7 @@ contains
     ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
 
-    allocate(Dbas(indofPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
+    allocate(Dbas(indofPerElement*2,elem_getMaxDerivative(celement),ncubp,3))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
     Bder = .false.
@@ -2013,7 +2003,7 @@ contains
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
     ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
@@ -2217,8 +2207,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! Apply the permutation of the local DOF`s on the test functions
       ! on element 2. The numbers of the local DOF`s on element 1
@@ -2429,6 +2418,8 @@ contains
 !</subroutine>
 
     ! local variables
+    integer(I32) :: celement
+    
     ! At the moment, we only support a rather limited set of configurations:
     ! Matrix and vectors must all be double precision, matrix must be format
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
@@ -2446,7 +2437,9 @@ contains
     end if
 
     ! Check which element we have here...
-    select case(elem_igetShape(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement))
+    call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,1,celement)
+    
+    select case(elem_igetShape(celement))
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_reacJumpStabil2d_m_unidbl (&
@@ -2564,9 +2557,6 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
 
@@ -2615,6 +2605,9 @@ contains
 
   ! Whther the viscosity is constant or not
   logical :: bconstViscosity
+  
+  ! Element type
+  integer(I32) :: celement,celemTrial
 
     ! Currently we support only constant viscosity
     bconstViscosity = .true.
@@ -2648,18 +2641,19 @@ contains
     call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
     call lsyssc_getbase_double (rmatrixScalar,p_Da)
 
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
+    call spdiscr_getElemGroupInfo (rmatrixScalar%p_rspatialDiscrTrial,1,celemTrial)
 
     ! Get the number of local DOF`s for trial and test functions
-    indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofPerElement = elem_igetNDofLoc(celement)
 
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! Assure that the element spaces are compatible
-    if (elem_igetShape(p_relementDistribution%celement) .ne. &
-        elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
+    if (elem_igetShape(celement) .ne. &
+        elem_igetShape(celemTrial)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
       call sys_halt()
@@ -2691,7 +2685,7 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,IELcount))
@@ -2718,14 +2712,12 @@ contains
     ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
 
-    allocate(Dbas(indofPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
+    allocate(Dbas(indofPerElement*2, elem_getMaxDerivative(celement),ncubp,3))
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
     ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
@@ -2907,8 +2899,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! Apply the permutation of the local DOF`s on the test functions
       ! on element 2. The numbers of the local DOF`s on element 1
@@ -3121,9 +3112,6 @@ contains
   ! The triangulation structure - to shorten some things...
   type(t_triangulation), pointer :: p_rtria
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDist
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscr
 
@@ -3213,11 +3201,10 @@ contains
     ! Allocate an array for the 3D rules - the content is initialised later
     allocate(DcubPts3D(3,ncubp,2))
 
-    ! Activate the one and only element distribution
-    p_relemDist => p_rdiscr%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
 
     ! Get the number of DOFs
-    celement = p_relemDist%celement
     ndofs = elem_igetNDofLoc(celement)
 
     ! Get the trafo type
@@ -3554,9 +3541,6 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
   ! Underlying discretisation structure
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
 
@@ -3597,6 +3581,9 @@ contains
 
   ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
+  
+  ! Element
+  integer(I32) :: celement,celemTrial
 
   ! Data arrays for the vectors
   real(DP), dimension(:), pointer :: p_Dx1,p_Dy1
@@ -3648,18 +3635,19 @@ contains
     call lsyssc_getbase_double (rx%RvectorBlock(2),p_Dx2)
     call lsyssc_getbase_double (ry%RvectorBlock(2),p_Dy2)
 
-    ! Activate the one and only element distribution
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
+    ! Activate the one and only element group
+    call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
+    call spdiscr_getElemGroupInfo (rtemplateMat%p_rspatialDiscrTrial,1,celemTrial)
 
     ! Get the number of local DOF`s for trial and test functions
-    indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofPerElement = elem_igetNDofLoc(celement)
 
     ! Triangle elements? Quad elements?
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! Assure that the element spaces are compatible
-    if (elem_igetShape(p_relementDistribution%celement) .ne. &
-        elem_igetShape(p_relementDistribution%celement)) then
+    if (elem_igetShape(celement) .ne. &
+        elem_igetShape(celemTrial)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'conv_ueoJumpStabil2d_double_uni')
       call sys_halt()
@@ -3691,7 +3679,7 @@ contains
 
     ! Get from the FE element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,IELcount))
@@ -3718,9 +3706,7 @@ contains
     ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
 
-    allocate(Dbas(indofPerElement*2, &
-            elem_getMaxDerivative(p_relementDistribution%celement),&
-            ncubp,3))
+    allocate(Dbas(indofPerElement*2, elem_getMaxDerivative(celement), ncubp,3))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
     Bder = .false.
@@ -3730,7 +3716,7 @@ contains
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
-    cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
     ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
@@ -3908,8 +3894,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! Apply the permutation of the local DOF`s on the test functions
       ! on element 2. The numbers of the local DOF`s on element 1

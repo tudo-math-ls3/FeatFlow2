@@ -17832,7 +17832,7 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     integer, dimension(:), pointer :: p_KCOL, p_KLD
     integer, dimension(:), pointer :: p_IelementList
-    integer :: NEL, iel, igel, iFESpace, indof, i, ig, j, jg,iloc
+    integer :: NEL, iel, igel, ielemgroup, indof, i, ig, j, jg,iloc
     integer(I32) :: celement
     real(DP) :: dlocOmega
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
@@ -17841,7 +17841,6 @@ contains
     integer, dimension(:), allocatable :: IdofGlob
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    type(t_elementDistribution), pointer :: p_relemDist
     logical :: bsuccess
     
       ! Status reset
@@ -17881,17 +17880,12 @@ contains
               p_rspatialDiscr => p_rmatrix%p_rspatialDiscrTest
               p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
-              ! Get number of elements
-              NEL = p_rtriangulation%NEL
+              ! Loop over all element groups
+              do ielemgroup = 1, spdiscr_getNelemGroups(p_rspatialDiscr)
 
-              ! Loop over all element distributions
-              do iFESpace = 1, p_rspatialDiscr%inumFESpaces
-
-                ! Get the element distribution from the spatial discretisation
-                p_relemDist => p_rspatialDiscr%RelementDistr(iFESpace)
-
-                ! Get type of element in this distribution
-                celement =  p_relemDist%celement
+                ! Get the element group info from the spatial discretisation
+                call spdiscr_getElemGroupInfo (p_rspatialDiscr,ielemgroup,&
+                    celement,NEL,p_IelementList)
 
                 ! Get number of local DOF
                 indof = elem_igetNDofLoc(celement)
@@ -17899,14 +17893,11 @@ contains
                 ! Allocate space for global DOFs
                 allocate(IdofGlob(indof))
 
-                ! Get list of all elements in this distribution
-                call storage_getbase_int(p_relemDist%h_IelementList, p_IelementList)
-
                 ! Allocate local matrix and vector
                 allocate(DlocMat(indof,indof), DlocVec(indof), DlocSol(indof))
 
-                ! Loop over all elements in this element distribution
-                do iel = 1, p_relemDist%NEL
+                ! Loop over all elements in this element group
+                do iel = 1, NEL
 
                   ! Get global element number
                   igel = p_IelementList(iel)
@@ -17975,7 +17966,7 @@ contains
                 ! Deallocate space for global DOFs
                 deallocate(IdofGlob)
                   
-              end do ! iFESpace
+              end do ! ielemgroup
               
             case default
               call output_line ("Unsupported vector precision.", &
@@ -21201,7 +21192,7 @@ contains
     
     type(t_matrixScalar), pointer :: p_rmatrix
     integer, dimension(:), pointer :: p_KCOL, p_KLD
-    integer :: NEL, iel, indof, i, ig, j, jg,iloc
+    integer :: NEL, iel, indof, i, ig, j, jg, iloc
     integer(I32) :: celement
     real(DP) :: dlocOmega
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
@@ -21210,10 +21201,9 @@ contains
     integer, dimension(:), allocatable :: IdofGlob
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    type(t_elementDistribution), pointer :: p_relemDist
     logical :: bsuccess
     real(dp) :: drelax, domega
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelemGroupIDs
     
       ! Status reset
       rsolverNode%iresult = 0
@@ -21271,17 +21261,11 @@ contains
               p_rspatialDiscr => p_rmatrix%p_rspatialDiscrTest
               p_rtriangulation => p_rspatialDiscr%p_rtriangulation
               
-              ! Get number of elements
-              NEL = p_rtriangulation%NEL
-              
               ! Check if we have a uniform discretisation (simplifies a lot)
               if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
               
-                ! Get the element distribution from the spatial discretisation
-                p_relemDist => p_rspatialDiscr%RelementDistr(1)
-
-                ! Get type of element in this distribution
-                celement =  p_relemDist%celement
+                ! Get the element group info from the spatial discretisation
+                call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement,NEL)
 
                 ! Get number of local DOF
                 indof = elem_igetNDofLoc(celement)
@@ -21292,8 +21276,8 @@ contains
                 ! Allocate local matrix and vector
                 allocate(DlocMat(indof,indof), DlocVec(indof), DlocSol(indof))
               
-                ! Loop over all elements in this element distribution
-                do iel = 1, p_relemDist%NEL
+                ! Loop over all elements in this element group
+                do iel = 1, NEL
                 
                   ! Map local to global DOFs
                   call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
@@ -21368,17 +21352,17 @@ contains
               
               else ! No uniform distribution
               
-                ! Gett array which shows, which element distribution one element is in
-                call storage_getbase_int (p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+                ! Get array which shows, which element group one element is in
+                call spdiscr_getElemGroupIDs (p_rspatialDiscr,p_IelemGroupIDs)
               
-                ! Loop over all elements in this element distribution
-                do iel = 1, p_relemDist%NEL
+                ! Get total number of elements
+                NEL = p_rtriangulation%NEL
                 
-                  ! Get the element distribution from the spatial discretisation
-                  p_relemDist => p_rspatialDiscr%RelementDistr(p_IelementDistr(iel))
-
-                  ! Get type of element in this distribution
-                  celement =  p_relemDist%celement
+                ! Loop over all elements
+                do iel = 1, NEL
+                
+                  ! Get the corresponding element group data from the spatial discretisation
+                  call spdiscr_getElemGroupInfo (p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
                   ! Get number of local DOF
                   indof = elem_igetNDofLoc(celement)
@@ -21706,7 +21690,6 @@ contains
     integer, dimension(:), allocatable :: IdofGlob, IdofGlobRef
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    type(t_elementDistribution), pointer :: p_relemDist
     logical :: bsuccess
     real(dp) :: domega
     
@@ -21746,17 +21729,11 @@ contains
             p_rspatialDiscr => p_rmatrix%p_rspatialDiscrTest
             p_rtriangulation => p_rspatialDiscr%p_rtriangulation
             
-            ! Get number of elements
-            NEL = p_rtriangulation%NEL
-            
             ! Check if we have a uniform discretisation (simplifies a lot)
             if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
             
-              ! Get the element distribution from the spatial discretisation
-              p_relemDist => p_rspatialDiscr%RelementDistr(1)
-
-              ! Get type of element in this distribution
-              celement =  p_relemDist%celement
+              ! Get the element group data from the spatial discretisation
+              call spdiscr_getElemGroupInfo (p_rspatialDiscr,1,celement,NEL)
 
               ! Get number of local DOF
               indof = elem_igetNDofLoc(celement)
@@ -21767,8 +21744,8 @@ contains
               ! Allocate local matrix and vector
               allocate(DlocMat(indof,indof), DlocVec(indof), DlocSol(indof))
             
-              ! Loop over all elements in this element distribution
-              do iouter = 1, p_relemDist%NEL
+              ! Loop over all elements in this element group
+              do iouter = 1, NEL
 
                 ! Get next element in the queue (the "most upwind" one)
                 iel = rsolverNode%p_rsubnodeBlockUpwGS%p_Iqueue(iouter)

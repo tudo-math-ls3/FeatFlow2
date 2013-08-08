@@ -671,7 +671,7 @@ contains
       ! Free storage
       call storage_free(h_Ksep)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildJacLinearGPScalar')
       call sys_halt()
@@ -1436,7 +1436,7 @@ contains
 !!$      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 !!$      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 !!$
-!!$    case DEFAULT
+!!$    case default
 !!$      call output_line('Unsupported spatial dimension!',&
 !!$          OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildJacobianGPScalar')
 !!$      call sys_halt()
@@ -1554,7 +1554,7 @@ contains
       ! Free storage
       call storage_free(h_Ksep)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildJacobianGPScalar')
       call sys_halt()

@@ -616,7 +616,7 @@ contains
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
 
-      case DEFAULT
+      case default
         call output_line('Invalid graph format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
@@ -831,7 +831,7 @@ contains
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
 
-      case DEFAULT
+      case default
         call output_line('Invalid graph format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
@@ -1059,7 +1059,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported graph format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
       call sys_halt()
@@ -1195,7 +1195,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported graph format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
       call sys_halt()

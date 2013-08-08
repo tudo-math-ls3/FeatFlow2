@@ -4135,7 +4135,7 @@ end subroutine
       ! Special Case: Convex Polygon
       call geom_polygon_iIG_convex(rgeomObject, Dcoords, iisInObject)
 
-    case DEFAULT
+    case default
       ! Call Projector
       call geom_polygon_projector(rgeomObject, Dcoords, Ddummy2, ddummy1, &
                                   bisInObject)
@@ -5183,7 +5183,7 @@ end subroutine
     case (GEOM_NURBS)
       call geom_NURBS_isInGeometry(rgeomObject, Dcoords, iisInObject)
 #endif
-    case DEFAULT
+    case default
       iisInObject = 0
     end select
 
@@ -5342,7 +5342,7 @@ end subroutine
      call geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    case (GEOM_ELLIPSOID)
      call geom_ellipsoid_calcSignedDist(rgeomObject, Dcoords, ddistance)
-   case DEFAULT
+   case default
      ddistance = 0.0_DP
    end select
 

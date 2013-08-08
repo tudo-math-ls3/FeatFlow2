@@ -544,7 +544,7 @@ contains
       ! Free storage
       call storage_free(h_Ksep)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildJacobianSymmScalar')
       call sys_halt()

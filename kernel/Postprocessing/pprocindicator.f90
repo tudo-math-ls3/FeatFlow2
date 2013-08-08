@@ -103,6 +103,7 @@ contains
     ! local variable
     integer, dimension(2) :: Isize
     integer :: i
+    integer(I32) :: celement
 
     ! Set pointer to the underlying spatial discretization
     p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
@@ -113,15 +114,19 @@ contains
     end if
 
     ! Loop over all FE spaces an check that linear or multi-linear elements are used
-    do i = 1, p_rspatialDiscr%inumFESpaces
-      select case (p_rspatialDiscr%RelementDistr(i)%celement)
+    do i = 1, spdiscr_getNelemGroups(p_rspatialDiscr)
+    
+      ! Get the underlying element
+      call spdiscr_getElemGroupInfo (p_rspatialDiscr,i,celement)
+    
+      select case (celement)
 
       case (EL_P1_1D,&
             EL_P1_2D, EL_Q1_2D,&
             EL_P1_3D, EL_Q1_3D)
         ! These element types are valid
 
-      case DEFAULT
+      case default
         call output_line('Unsupported type of finite elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'errest_calcSecondDifferenceIndicator')
         call sys_halt()
@@ -179,7 +184,7 @@ contains
       call storage_free(h_Dcoefficients)
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported spatial dimension!',&
                         OU_CLASS_ERROR,OU_MODE_STD,'ppind_secondDifference')
       call sys_halt()
@@ -511,7 +516,7 @@ contains
           Dcoefficients(12,i4) = Dcoefficients(12,i4) + DabsBas(2,3) * dweight * Dfunc(2) * darea
 
 
-        case DEFAULT
+        case default
           call output_line('Unsupproted element type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'doSecondDiffIndicator2D')
           call sys_halt()

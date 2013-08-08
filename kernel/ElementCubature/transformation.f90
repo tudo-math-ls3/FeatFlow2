@@ -3413,7 +3413,7 @@ contains
     ! Quadrilateral, [-1,1]^2
     call trafo_mapCubPts1Dto2DRefQuad(iedge, ncubp, Dxi1D, Dxi2D)
 
-  case DEFAULT
+  case default
     call output_line ('Unsupported coordinate system.', &
                       OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')
   end select

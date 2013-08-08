@@ -952,7 +952,7 @@ contains
         s = semptystring(1:iindent)//'* Error: '//adjustl(smessage)
       case (OU_CLASS_WARNING)
         s = semptystring(1:iindent)//'* Warning: '//adjustl(smessage)
-      case DEFAULT
+      case default
         s = smessage
       end select
 
@@ -971,7 +971,7 @@ contains
         s = semptystring(1:iindent)//'* Error ('//trim(ssubroutine)//'): '//adjustl(smessage)
       case (OU_CLASS_WARNING)
         s = semptystring(1:iindent)//'* Warning ('//trim(ssubroutine)//'): '//adjustl(smessage)
-      case DEFAULT
+      case default
         s = smessage
       end select
 
@@ -1366,7 +1366,7 @@ contains
       write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''%''))'
     case (OU_SEP_HASH)
       write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''#''))'
-    case DEFAULT
+    case default
       write (unit=*, fmt=*) 'output_separator: Unknown separator type: ',&
                             csepType
       call sys_halt()

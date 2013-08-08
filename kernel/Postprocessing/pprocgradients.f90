@@ -274,7 +274,7 @@ contains
       ! 1st order gradient
       call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar,rvectorGradient,rperfconfig)
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported gradient recovery technique!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
       call sys_halt()
@@ -375,20 +375,27 @@ contains
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
       ! Initialise block discretisations for the consistent/reconstructed gradient vectors
-      call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
-      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlock, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rtriangulation)
+      
+      ! As many components as the underlying dimension of the space
+      call spdiscr_appendBlockComponent (rdiscrBlock, p_rspatialDiscr, p_rspatialDiscr%ndimension)
+      call spdiscr_appendBlockComponent (rdiscrBlockRef, p_rspatialDiscr, p_rspatialDiscr%ndimension)
+      
+      ! Finish building discretisations.
+      call spdiscr_commitBlockDiscr (rdiscrBlock)
+      call spdiscr_commitBlockDiscr (rdiscrBlockRef)
 
       ! Duplicate the discretisation from the scalar vector and adjust
       ! the FE spaces for the consistent finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
 
-        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlock%RspatialDiscr(idim))
-        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlockRef%RspatialDiscr(idim))
-
         ! Adjust the FE space for the consistent gradient values
-        do i = 1, rdiscrBlock%RspatialDiscr(idim)%inumFESpaces
+        do i = 1, spdiscr_getNelemGroups(rdiscrBlock%RspatialDiscr(idim))
+        
+          call spdiscr_getElemGroupInfo (rdiscrBlock%RspatialDiscr(idim),i,celement)
 
-          select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          select case(celement)
           case (EL_P1_1D)
             celement = EL_P0_1D
           case (EL_P2_1D)
@@ -418,20 +425,14 @@ contains
           case (EL_Q2_3D)
             celement = EL_Q1_3D
 
-          case DEFAULT
+          case default
             call output_line('Unsupported element type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
             call sys_halt()
           end select
 
-          ! Compute natural cubature rule
-          ccub = spdiscr_getStdCubature(celement)
-
-          ! Adjust element distribution
+          ! Adjust element group
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
@@ -471,19 +472,27 @@ contains
       p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
       ! Initialise block discretisations for the consistent/reconstructed gradient vectors
-      call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
-      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlock, p_rtriangulation)
+      call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rtriangulation)
+
+      ! As many components as the underlying dimension of the space
+      call spdiscr_appendBlockComponent (rdiscrBlock, p_rspatialDiscr, p_rspatialDiscr%ndimension)
+      call spdiscr_appendBlockComponent (rdiscrBlockRef, p_rspatialDiscr, p_rspatialDiscr%ndimension)
+
+      ! Finish building discretisations.
+      call spdiscr_commitBlockDiscr (rdiscrBlock)
+      call spdiscr_commitBlockDiscr (rdiscrBlockRef)
 
       ! Duplicate the discretisation from the scalar vector and adjust
       ! the FE spaces for the consistent finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
 
-        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlock%RspatialDiscr(idim))
-
         ! Adjust the FE space for the consistent gradient values
-        do i = 1, rdiscrBlock%RspatialDiscr(idim)%inumFESpaces
+        do i = 1, spdiscr_getNelemGroups(rdiscrBlock%RspatialDiscr(idim))
 
-          select case(rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          call spdiscr_getElemGroupInfo (rdiscrBlock%RspatialDiscr(idim),i,celement)
+
+          select case(celement)
           case (EL_P1_1D)
             celement = EL_P0_1D
           case (EL_P2_1D)
@@ -513,7 +522,7 @@ contains
           case (EL_Q2_3D)
             celement = EL_Q1_3D
 
-          case DEFAULT
+          case default
             call output_line('Unsupported element type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
             call sys_halt()
@@ -522,11 +531,8 @@ contains
           ! Compute natural cubature rule
           ccub = spdiscr_getStdCubature(celement)
 
-          ! Adjust element distribution
+          ! Adjust element group
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
           rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
@@ -535,12 +541,12 @@ contains
       ! the FE spaces for the reconstructed finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
 
-        call spdiscr_duplicateDiscrSc(p_rspatialDiscr, rdiscrBlockRef%RspatialDiscr(idim))
-
         ! Adjust the FE space for the consistent gradient values
-        do i = 1, rdiscrBlockRef%RspatialDiscr(idim)%inumFESpaces
+        do i = 1, spdiscr_getNelemGroups(rdiscrBlockRef%RspatialDiscr(idim))
 
-          select case(rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement)
+          call spdiscr_getElemGroupInfo (rdiscrBlockRef%RspatialDiscr(idim),i,celement)
+
+          select case(celement)
           case (EL_P1_2D)
             celement = EL_P1T_2D
 
@@ -550,7 +556,7 @@ contains
           case (EL_Q1_3D)
             celement = EL_Q1T_3D
 
-          case DEFAULT
+          case default
             call output_line('Unsupported element type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
             call sys_halt()
@@ -559,11 +565,8 @@ contains
           ! Compute natural cubature rule
           ccub = spdiscr_getStdCubature(celement)
 
-          ! Adjust element distribution
+          ! Adjust element group
           rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeBilForm = ccub
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeLinForm = ccub
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ccubTypeEval    = ccub
           rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
         end do
       end do
@@ -591,7 +594,7 @@ contains
       call lsysbl_releaseVector(rgradientRef)
 
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported gradient recovery technique!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradientError')
       call sys_halt()
@@ -635,7 +638,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j,k,icurrentElementDistr,NVE,IELmax,IELset
+    integer :: i,j,k,ielemGroup,NVE,IELmax,IELset
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -671,10 +674,6 @@ contains
     ! the reference element for all elements in a set.
     real(DP), dimension(:,:), pointer :: p_DcubPtsRef
 
-    ! Current element distribution in source- and destination vector
-    type(t_elementDistribution), pointer :: p_relementDistribution
-    type(t_elementDistribution), pointer :: p_relementDistrDest
-
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dderivatives
 
@@ -693,8 +692,11 @@ contains
     ! Pointers to the X- and Y-derivative vector
     real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
 
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL
+    
+    ! Current element
+    integer(I32) :: celemSource,celemDest
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there is the same information in the triangulation, but that is not
@@ -718,10 +720,11 @@ contains
     ! Loop over all blocks of the gradient and over all FE spaces
     do i = 1, min(rvectorGradient%nblocks,&
                   rvectorScalar%p_rspatialDiscr%ndimension)
-      do j = 1, rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%inumFESpaces
+      do j = 1, spdiscr_getNelemGroups(rvectorGradient%p_rblockDiscr%RspatialDiscr(i))
 
-        select case(elem_getPrimaryElement(&
-            rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%RelementDistr(j)%celement))
+        call spdiscr_getElemGroupInfo (rvectorGradient%p_rblockDiscr%RspatialDiscr(i),j,celemSource)
+        
+        select case(elem_getPrimaryElement(celemSource))
         case (EL_Q0_2D, EL_Q0_3D,&
               EL_P0_1D, EL_P0_2D, EL_P0_3D,&
               EL_Q1_2D, EL_Q1_3D,&
@@ -729,7 +732,7 @@ contains
               EL_Q2_2D, EL_Q2_3D,&
               EL_P2_1D, EL_P2_2D, EL_P2_3D)
 
-        case DEFAULT
+        case default
           call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
               ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP12Q12cnf')
@@ -789,31 +792,32 @@ contains
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
       call sys_halt()
     end select
 
-    ! Now loop over the different element distributions (=combinations
+    ! Now loop over the different element groups (=combinations
     ! of trial and test functions) in the discretisation.
 
-    do icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
+    do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscrSource)
 
-      ! Activate the current element distribution
-      p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
-      p_relementDistrDest => p_rdiscrDest%RelementDistr(icurrentElementDistr)
+      ! Activate the current element group
+      call spdiscr_getElemGroupInfo (p_rdiscrSource,ielemGroup,celemSource,NEL,p_IelementList,ctrafoType)
 
-      ! If the element distribution is empty, skip it
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! If the element group is empty, skip it
+      if (NEL .eq. 0) cycle
+
+      call spdiscr_getElemGroupInfo (p_rdiscrDest,ielemGroup,celemDest)
 
       ! Get the number of local DOF`s for trial functions
       ! in the source and destination vector.
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
-      indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+      indofTrial = elem_igetNDofLoc(celemSource)
+      indofDest = elem_igetNDofLoc(celemDest)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
+      NVE = elem_igetNVE(celemSource)
 
       ! Initialise the cubature formula,
       ! That is a special trick here! The FE space of the destination vector
@@ -828,7 +832,7 @@ contains
       !
       ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
       ! on each element indofDest!
-      select case (elem_getPrimaryElement(p_relementDistrDest%celement))
+      select case (elem_getPrimaryElement(celemDest))
       case (EL_P0_1D)
         call cub_getCubPoints(CUB_G1_1D, nlocalDOFsDest, Dxi, Domega)
       case (EL_P1_1D)
@@ -1059,15 +1063,11 @@ contains
 
         nlocalDOFsDest = 20
 
-      case DEFAULT
+      case default
         call output_line('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP1Q1cnf')
         call sys_halt()
       end select
-
-      ! Get from the trial element space the type of coordinate system
-      ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -1092,15 +1092,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-
-      ! Get the number of elements in the element distribution.
-      NEL = p_relementDistribution%NEL
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
+      cevaluationTag = elem_getEvaluationTag(celemSource)
 
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -1141,7 +1133,7 @@ contains
           ! into Dderivatives(:,:,1).
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
+              celemSource, IdofsTrial, DER_DERIV1D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           ! Sum up the derivative values in the destination vector.
@@ -1164,11 +1156,11 @@ contains
           ! into Dderivatives(:,:,1) and the Y-derivative into Dderivatives(:,:,2).
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_X,&
+              celemSource, IdofsTrial, DER_DERIV2D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV2D_Y,&
+              celemSource, IdofsTrial, DER_DERIV2D_Y,&
               Dderivatives(:,1:IELmax-IELset+1,2))
 
           ! Sum up the derivative values in the destination vector.
@@ -1193,15 +1185,15 @@ contains
            ! and the Z-derivative into Dderivatives(:,:,3)
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
+              celemSource, IdofsTrial, DER_DERIV3D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
+              celemSource, IdofsTrial, DER_DERIV3D_Y,&
               Dderivatives(:,1:IELmax-IELset+1,2))
 
           call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-              p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
+              celemSource, IdofsTrial, DER_DERIV3D_Z,&
               Dderivatives(:,1:IELmax-IELset+1,3))
 
           ! Sum up the derivative values in the destination vector.
@@ -1233,7 +1225,7 @@ contains
       deallocate(IdofsDest)
       deallocate(IdofsTrial)
 
-    end do ! icurrentElementDistr
+    end do ! ielemGroup
 
     ! We are nearly done. The final thing: divide the calculated derivatives by
     ! the number of elements adjacent to each vertex. That closes the calculation
@@ -1316,7 +1308,7 @@ contains
     ! local variables
     real(DP), dimension(NDIM3D) :: Dval
     integer :: IVE,NVE,NVEMax,IEL,JEL,KEL,IVT,IPATCH,NPATCH,PATCHset,PATCHmax
-    integer :: icurrentElementDistr,ilastElementDistr,ilocalElementDistr
+    integer :: ielemGroup,ilastElementGroup,ilocalElementGroup
     integer :: i,j,k,ipoint,idx,idx2,idxsubgroup
     integer(i32) :: icoordSystem
     logical :: bnonparTrial
@@ -1371,10 +1363,6 @@ contains
     ! The spatial discretisation structure - to shorten some things...
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource
     type(t_spatialDiscretisation), pointer :: p_rdiscrDest
-
-    ! Current element distribution in use
-    type(t_elementDistribution), pointer :: p_relementDistribution
-    type(t_elementDistribution), pointer :: p_relementDistrDest
 
     ! A t_domainIntSubset structure that is used for storing information
     ! and passing it to callback routines.
@@ -1435,8 +1423,8 @@ contains
     ! Pointer to vertex coordinates of the triangulation
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! Pointer to element distribution identifier list.
-    integer, dimension(:), pointer :: p_IelementDistr
+    ! Pointer to element group identifier list.
+    integer, dimension(:), pointer :: p_IelemGroupIDs
 
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -1482,13 +1470,13 @@ contains
 
     ! Current assembly block, cubature formula, element type,...
     integer :: iinfoBlock,NEL
-    integer(I32) :: celementSource,ccubatureSource
-    integer(I32) :: ctrafoTypeSource
+    integer(I32) :: celemSource,celemDest,celemLocal,ccubatureSource
+    integer(I32) :: ctrafoTypeSource,ctrafoTypeDest,ctrafoTypeLocal
     type(t_scalarCubatureInfo), target :: rlocalcubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     integer :: h_IcubPerElement
     integer(I32), dimension(:), pointer :: p_IcubPerElement
-
+    
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -1501,10 +1489,11 @@ contains
     ! Loop over all blocks of the gradient and over all FE spaces
     do i = 1, min(rvectorGradient%nblocks,&
                   rvectorScalar%p_rspatialDiscr%ndimension)
-      do j = 1, rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%inumFESpaces
+      do j = 1, spdiscr_getNelemGroups(rvectorGradient%p_rblockDiscr%RspatialDiscr(i))
 
-        select case(elem_getPrimaryElement(&
-            rvectorGradient%p_rblockDiscr%RspatialDiscr(i)%RelementDistr(j)%celement))
+        call spdiscr_getElemGroupInfo (rvectorGradient%p_rblockDiscr%RspatialDiscr(i),j,celemSource)
+
+        select case(elem_getPrimaryElement(celemSource))
         case (EL_Q0_2D, EL_Q0_3D,&
               EL_P0_1D, EL_P0_2D, EL_P0_3D,&
               EL_Q1_2D, EL_Q1_3D,&
@@ -1512,7 +1501,7 @@ contains
               EL_Q2_2D, EL_Q2_3D,&
               EL_P2_1D, EL_P2_2D, EL_P2_3D)
 
-        case DEFAULT
+        case default
           call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
               ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
@@ -1593,7 +1582,7 @@ contains
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
       call sys_halt()
@@ -1625,25 +1614,25 @@ contains
       ncubpMax          = 0
       nlocalDOFsDestMax = 0
 
-      ! Set pointer to list of element distributions which exists in this case
-      call storage_getbase_int(p_rdiscrSource%h_IelementDistr, p_IelementDistr)
+      ! Set pointer to list of element groups which exists in this case
+      call spdiscr_getElemGroupIDs (p_rdiscrSource,p_IelemGroupIDs)
 
       ! Loop over the element blocks. Each defines a separate cubature formula.
       do iinfoBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
         ! Get typical information: Number of elements, element list,...
         call spdiscr_getStdDiscrInfo (iinfoBlock,p_rcubatureInfo,p_rdiscrSource,&
-            icurrentElementDistr,celementSource,ccubatureSource,NEL)
+            ielemGroup,celemSource,ccubatureSource,NEL)
 
         ! Cancel if this element list is empty.
         if (NEL .le. 0) cycle
 
         ! Get the number of local DOF`s for trial functions
-        indofTrial    = elem_igetNDofLoc(celementSource)
+        indofTrial    = elem_igetNDofLoc(celemSource)
         indofTrialMax = max(indofTrialMax,indofTrial)
 
         ! Get the number of corner vertices of the element
-        NVE    = elem_igetNVE(celementSource)
+        NVE    = elem_igetNVE(celemSource)
         NVEmax = max (NVEmax,NVE)
 
         ! Get cubature weights and point coordinates on the reference element
@@ -1651,23 +1640,23 @@ contains
         ncubpMax = max(ncubpMax,ncubp)
       end do
 
-      ! Loop over all element distributions of the destination discretisation
-      do icurrentElementDistr = 1, p_rdiscrDest%inumFESpaces
+      ! Loop over all element groups of the destination discretisation
+      do ielemGroup = 1, spdiscr_getNelemGroups(p_rdiscrDest)
 
-        ! Activate the current element distribution
-        p_relementDistrDest => p_rdiscrDest%RelementDistr(icurrentElementDistr)
+        ! Activate the current element group
+        call spdiscr_getElemGroupInfo (p_rdiscrDest,ielemGroup,celemDest,NEL)
 
-        ! Cancel if this element distribution is empty.
-        if (p_relementDistrDest%NEL .eq. 0) cycle
+        ! Cancel if this element group is empty.
+        if (NEL .eq. 0) cycle
 
         ! Get the number of local DOF`s for trial functions
-        indofDest    = elem_igetNDofLoc(p_relementDistrDest%celement)
+        indofDest    = elem_igetNDofLoc(celemDest)
         indofDestMax = max(indofDestMax,indofDest)
 
         ! Get cubature weights and point coordinates on the reference element.
         ! The cubature formula is special as it coincides with the location
         ! of the DOF`s for Lagrangian elements.
-        call calc_cubatureDest(elem_getPrimaryElement(p_relementDistrDest%celement), &
+        call calc_cubatureDest(elem_getPrimaryElement(celemDest), &
               nlocalDOFsDest, Dxi, Domega)
         nlocalDOFsDestMax = max(nlocalDOFsDestMax,nlocalDOFsDest)
       end do
@@ -1703,7 +1692,7 @@ contains
       ! Get the elements-at-element array.
       call storage_getbase_int2D (p_rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
 
-    case DEFAULT
+    case default
       call output_line('Invalid patch type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
       call sys_halt()
@@ -1714,10 +1703,10 @@ contains
     ! (1)  Superconvergent patch recovery - main loop
     !---------------------------------------------------------------------------
 
-    ! Now loop over the different element distributions (=combinations
+    ! Now loop over the different element groups (=combinations
     ! of trial and test functions) in the discretisation. Note that
     ! nodal patches are only allowed for uniform discretisations, that is,
-    ! we can be sure, that there is exactly one element distribution if
+    ! we can be sure, that there is exactly one element group if
     ! nodal patches should be considered.
 
     ! Loop over the element blocks. Each defines a separate cubature formula.
@@ -1725,15 +1714,15 @@ contains
 
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (iinfoBlock,p_rcubatureInfo,p_rdiscrSource,&
-          icurrentElementDistr,celementSource,ccubatureSource,NEL,p_IelementList)
+          ielemGroup,celemSource,ccubatureSource,NEL,p_IelementList,ctrafoType=ctrafoTypeSource)
 
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(celementSource)
+      NVE = elem_igetNVE(celemSource)
 
-      ! Get number of patches in current element distribution
+      ! Get number of patches in current element group
       select case(cpatchType)
       case (PPGRD_NODEPATCH)
         ! Recall that for nodal-baes patches there MUST be exactly one element
@@ -1743,10 +1732,10 @@ contains
 
       case (PPGRD_ELEMPATCH,PPGRD_FACEPATCH)
         ! The number of patches equals the number of elements
-        ! in the current element distribution.
+        ! in the current element group.
         NPATCH = NEL
 
-      case DEFAULT
+      case default
         call output_line('Invalid patch type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
         call sys_halt()
@@ -1943,7 +1932,7 @@ contains
           ! Store index of last element in last patch increased by one
           IelementsInPatchIdx(npatchesInCurrentBlock+1) = nelementsPerBlock + 1
 
-        case DEFAULT
+        case default
           call output_line('Invalid patch type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
           call sys_halt()
@@ -1954,12 +1943,9 @@ contains
         ! Phase 2: Perform Least-squares fitting on the set of patches
         !-----------------------------------------------------------------------
 
-        ! Get the type of the transformation between the reference and the real element
-        ctrafoTypeSource = elem_igetTrafoType(celementSource)
-
         ! Get from the trial element space the type of coordinate system
         ! that is used there:
-        icoordSystem = elem_igetCoordSystem(celementSource)
+        icoordSystem = elem_igetCoordSystem(celemSource)
 
         ! Do we have a uniform discretisation? Would simplify a lot...
         if (bisUniform) then
@@ -1967,15 +1953,15 @@ contains
           ! Yes, the discretisation is uniform. In this case, we have to set the
           ! pointers, dimensions, etc. just once and can work blockwise.
 
-          ! Active element distribution in the destination
-          p_relementDistrDest    => p_rdiscrDest%RelementDistr(icurrentElementDistr)
+          ! Active element group in the destination
+          call spdiscr_getElemGroupInfo (p_rdiscrDest,ielemGroup,celemDest,ctrafoType=ctrafoTypeDest)
 
           ! Get the number of local DOF`s for trial functions
-          indofTrial = elem_igetNDofLoc(celementSource)
-          indofDest  = elem_igetNDofLoc(p_relementDistrDest%celement)
+          indofTrial = elem_igetNDofLoc(celemSource)
+          indofDest  = elem_igetNDofLoc(celemDest)
 
           ! Get the number of corner vertices of the element
-          NVE = elem_igetNVE(celementSource)
+          NVE = elem_igetNVE(celemSource)
 
           !---------------------------------------------------------------------
           ! Step 1:  Prepare the source FE space
@@ -1988,7 +1974,7 @@ contains
           call dof_locGlobMapping_mult(p_rdiscrSource, &
               IelementsInPatch(1:nelementsPerBlock), IdofsTrial)
 
-          ! Initialise the cubature formula for the source element distribution
+          ! Initialise the cubature formula for the source element group
           ! Get cubature weights and point coordinates on the reference element
           call cub_getCubPoints(ccubatureSource, ncubp, Dxi, Domega)
 
@@ -2017,7 +2003,7 @@ contains
           end do
 
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(celementSource)
+          bnonparTrial = elem_isNonparametric(celemSource)
 
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2061,32 +2047,32 @@ contains
           select case(p_rtriangulation%ndim)
           case (NDIM1D)
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1))
 
           case (NDIM2D)
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1))
 
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2))
 
           case (NDIM3D)
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1))
 
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2))
 
             call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
-                celementSource, IdofsTrial, ncubp, &
+                celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3))
 
-          case DEFAULT
+          case default
             call output_line('Invalid spatial dimension!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
             call sys_halt()
@@ -2126,7 +2112,7 @@ contains
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
-          call elem_generic_sim(celementSource,&
+          call elem_generic_sim(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
               nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2166,12 +2152,12 @@ contains
           ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
           ! on each element indofDest!
           call calc_cubatureDest(&
-              elem_getPrimaryElement(p_relementDistrDest%celement), &
+              elem_getPrimaryElement(celemDest), &
               nlocalDOFsDest, Dxi, Domega)
 
           ! Get from the trial element space the type of coordinate system
           ! that is used there:
-          icoordSystem = elem_igetCoordSystem(p_relementDistrDest%celement)
+          icoordSystem = elem_igetCoordSystem(celemDest)
 
           ! Allocate memory and get local references to it. This domain integration
           ! structure stores all information of the destination FE space.
@@ -2198,7 +2184,7 @@ contains
           end do
 
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
+          bnonparTrial = elem_isNonparametric(celemDest)
 
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2217,7 +2203,7 @@ contains
 
           ! At first, get the coordinates of the corners of all the
           ! elements in the current set of elements.
-          call trafo_getCoords_sim (elem_igetTrafoType(p_relementDistrDest%celement), &
+          call trafo_getCoords_sim (ctrafoTypeDest, &
               p_rtriangulation, IelementsInPatch(1:nelementsPerBlock), p_Dcoords)
 
           ! Depending on the type of transformation, we must now choose
@@ -2226,7 +2212,7 @@ contains
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          call trafo_calctrafo_sim (p_relementDistrDest%ctrafoType, &
+          call trafo_calctrafo_sim (ctrafoTypeDest, &
               nelementsPerBlock, nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, &
               p_Ddetj, p_DcubPtsReal)
 
@@ -2240,7 +2226,7 @@ contains
           p_Dcoords => rintSubset%p_Dcoords
 
           ! Calculate the transformation from the reference elements to the real ones
-          call trafo_calctrafo_sim (p_relementDistrDest%ctrafoType, &
+          call trafo_calctrafo_sim (ctrafoTypeDest, &
               nelementsPerBlock, nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, &
               p_Ddetj)
 
@@ -2251,7 +2237,7 @@ contains
           end if
 
           ! Evaluate the basis functions for the cubature points of the destination FE space
-          call elem_generic_sim(celementSource,&
+          call elem_generic_sim(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
               nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2340,7 +2326,7 @@ contains
               end do
             end do
 
-          case DEFAULT
+          case default
             call output_line('Invalid spatial dimension!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
             call sys_halt()
@@ -2363,14 +2349,14 @@ contains
           ! of element for each individual element and adopt the FE spaces accordingly.
           !
           ! In the beginning, perform a short bubble-sort to sort the elements in each
-          ! patch for their element distribution.
+          ! patch for their element group.
           !
           ! Loop over the patches in the set
           do ipatch = 1, npatchesInCurrentBlock
 
-            ! Get the element distribution of the first element in the patch
+            ! Get the element group of the first element in the patch
             IEL = IelementsInPatch(IelementsInPatchIdx(ipatch))
-            ilastElementDistr = p_IelementDistr(IEL)
+            ilastElementGroup = p_IelemGroupIDs(IEL)
 
             ! Now find all elements in the patch that are in the same element
             ! distribution. Shift them to behind IEL.
@@ -2381,21 +2367,21 @@ contains
               ! Get global element number
               IEL = IelementsInPatch(idx)
 
-              ! Get number of local element distribution
-              ilocalElementDistr = p_IelementDistr(IEL)
+              ! Get number of local element group
+              ilocalElementGroup = p_IelemGroupIDs(IEL)
 
-              ! If it is different to the current element distribution,
+              ! If it is different to the current element group,
               ! try to find another element in the patch which has that
               ! distruibution and can be shifted to the front.
-              if (ilocalElementDistr .ne. ilastElementDistr) then
+              if (ilocalElementGroup .ne. ilastElementGroup) then
 
                 do idx2 = idx+1,IelementsInPatchIdx(ipatch+1)-1
-                  ! Is there another element with element distribution
-                  ! ilastElementDistr?
+                  ! Is there another element with element group
+                  ! ilastElementGroup?
 
-                  ilocalElementDistr = p_IelementDistr(IelementsInPatch(idx2))
+                  ilocalElementGroup = p_IelemGroupIDs(IelementsInPatch(idx2))
 
-                  if (ilocalElementDistr .eq. ilastElementDistr) then
+                  if (ilocalElementGroup .eq. ilastElementGroup) then
                     ! Yep, we found one. Shift it to the front and continue
                     ! with the next element.
                     IEL = IelementsInPatch(idx2)
@@ -2407,8 +2393,8 @@ contains
                 end do
 
                 ! No other element was found that belongs to the same element
-                ! group than IEL. In that case, we begin a new element distribution.
-                ilastElementDistr = ilocalElementDistr
+                ! group than IEL. In that case, we begin a new element group.
+                ilastElementGroup = ilocalElementGroup
 
               end if
 
@@ -2497,9 +2483,9 @@ contains
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
           ! However, we may skip the re-initialisation of cubature points, etc.
-          ! if the current elements belongs to the same element distribution as
+          ! if the current elements belongs to the same element group as
           ! the last one.
-          ilastElementDistr = 0
+          ilastElementGroup = 0
 
           ! Loop over the patches in the set
           do ipatch = 1, npatchesInCurrentBlock
@@ -2509,21 +2495,21 @@ contains
 
             do while (idxsubgroup .lt. IelementsInPatchIdx(ipatch+1))
 
-              ! Get the element distribution of the first element in the patch.
+              ! Get the element group of the first element in the patch.
               IEL = IelementsInPatch(idxsubgroup)
-              ilocalElementDistr = p_IelementDistr(IEL)
+              ilocalElementGroup = p_IelemGroupIDs(IEL)
 
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
-              ! before, so all elements of the same element distribution are behind
+              ! before, so all elements of the same element group are behind
               ! each other.
               ! All these elements have the same basis functions, the same transformation,
               ! coordinate system,...
               !
               ! Start at the end of the patch and find the last element within the
-              ! same element distribution as the first one. The loop ends
+              ! same element group as the first one. The loop ends
               ! - if such an element is found or
-              ! - if no element is found; then (by Fortrag standard) idx2 points
+              ! - if no element is found; then (by Fortran standard) idx2 points
               !   also to the first element of the patch -- our 'reference' element
               !   of the subgroup.
               ! It is better to do the loop 'from end to the beginning' instead of
@@ -2531,41 +2517,42 @@ contains
               ! elements of the same kind; in that case, the loop is immediately left
               ! as the last element has the same kind as the first one.
               do idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
-                if (ilocalElementDistr .eq. p_IelementDistr(IelementsInPatch(idx2))) exit
+                if (ilocalElementGroup .eq. p_IelemGroupIDs(IelementsInPatch(idx2))) exit
               end do
 
               ! Ok, the elements of 'the same kind' can now be found between
               ! positions idxsubgroup..idx2.
               !
-              ! In case the 'local' element distribution changed, activate the new one.
+              ! In case the 'local' element group changed, activate the new one.
               ! This small check saves some time if there are some patches with completely
               ! the same element type.
 
-              if (ilocalElementDistr .ne. ilastElementDistr) then
+              if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                ! Active the local element distribution of that group.
-                p_relementDistribution => p_rdiscrSource%RelementDistr(ilocalElementDistr)
+                ! Active the new local element group.
+                call spdiscr_getElemGroupInfo (p_rdiscrSource,ilocalElementGroup,&
+                    celemLocal,ctrafoType=ctrafoTypeLocal)
 
                 ! Get the number of local DOF`s for trial functions
-                indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+                indofTrial = elem_igetNDofLoc(celemLocal)
 
                 ! Get the number of corner vertices of the element
-                NVE = elem_igetNVE(p_relementDistribution%celement)
+                NVE = elem_igetNVE(celemLocal)
 
                 !---------------------------------------------------------------------
                 ! Step 1:  Prepare the source FE space
                 !---------------------------------------------------------------------
 
-                ! Initialise the cubature formula for the local element distribution
+                ! Initialise the cubature formula for the local element group
                 ! Get cubature weights and point coordinates on the reference element
                 call cub_getCubPoints(p_IcubPerElement(IEL), ncubp, Dxi, Domega)
 
                 ! Get from the trial element space the type of coordinate system
-                ! that is used in the local element distribution
-                icoordSystem = elem_igetCoordSystem(p_relementDistribution%celement)
+                ! that is used in the local element group
+                icoordSystem = elem_igetCoordSystem(celemLocal)
 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistribution%celement)
+                bnonparTrial = elem_isNonparametric(celemLocal)
 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2613,8 +2600,7 @@ contains
               ! all the points.
 
               ! At first, get the coordinates of the corners of the element.
-              call trafo_getCoords_sim(&
-                  elem_igetTrafoType(p_relementDistribution%celement), &
+              call trafo_getCoords_sim(ctrafoTypeLocal, &
                   p_rtriangulation, IelementsInPatch(idxsubgroup:idx2), &
                   p_Dcoords(:,:,idxsubgroup:idx2))
 
@@ -2624,7 +2610,7 @@ contains
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
-              call trafo_calctrafo_sim (p_relementDistribution%ctrafoType, &
+              call trafo_calctrafo_sim (ctrafoTypeLocal, &
                   idx2-idxsubgroup+1,ncubp, &
                   p_Dcoords(:,:,idxsubgroup:idx2), p_DcubPtsRef(:,:,idxsubgroup:idx2), &
                   p_Djac(:,:,idxsubgroup:idx2), &
@@ -2640,7 +2626,7 @@ contains
               case (NDIM1D)
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV1D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
@@ -2648,14 +2634,14 @@ contains
               case (NDIM2D)
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_Y, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
@@ -2663,26 +2649,26 @@ contains
               case (NDIM3D)
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
 
                 call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
-                    p_relementDistribution%celement, IdofsTrial(:,idxsubgroup:idx2), &
+                    celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_Z, &
                     Dcoefficients(:,idxsubgroup:idx2,3))
 
-              case DEFAULT
+              case default
                 call output_line('Invalid spatial dimension!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
                 call sys_halt()
@@ -2705,22 +2691,22 @@ contains
           call calc_patchBoundingGroup_mult(IelementsInPatchIdx, npatchesInCurrentBlock, &
               IelementNVEInPatch, p_Dcoords, DpatchBound(:,:,1:npatchesInCurrentBlock))
 
-          ! Initialise the cubature formula for the local element distribution
+          ! Initialise the cubature formula for the local element group
           ! Get cubature weights and point coordinates on the reference element
           call cub_getCubPoints(ccubatureSource, ncubp, Dxi, Domega)
 
           ! Get the number of local DOF`s for trial functions
-          indofTrial = elem_igetNDofLoc(celementSource)
+          indofTrial = elem_igetNDofLoc(celemSource)
 
           ! Get the number of corner vertices of the element
-          NVE = elem_igetNVE(celementSource)
+          NVE = elem_igetNVE(celemSource)
 
           ! Get from the trial element space the type of coordinate system
           ! that is used there:
-          icoordSystem = elem_igetCoordSystem(celementSource)
+          icoordSystem = elem_igetCoordSystem(celemSource)
 
           ! Check if one of the trial/test elements is nonparametric
-          bnonparTrial = elem_isNonparametric(celementSource)
+          bnonparTrial = elem_isNonparametric(celemSource)
 
           ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
           ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2756,7 +2742,7 @@ contains
           ! Note that we evaluate over the maximum number of cubature points present in
           ! the patch. Although some meaningless values may be generated, it is faster to
           ! evaluate all values simultaneously and filter the required data afterwards.
-          call elem_generic_sim(celementSource,&
+          call elem_generic_sim(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
               nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2837,7 +2823,7 @@ contains
 
           ! Loop over the patches in the set
 
-          ilastElementDistr = 0
+          ilastElementGroup = 0
 
           do ipatch = 1, npatchesInCurrentBlock
 
@@ -2846,31 +2832,32 @@ contains
 
             do while (idxsubgroup .lt. IelementsInPatchIdx(ipatch+1))
 
-              ! Get the element distribution of the first element in the patch.
+              ! Get the element group of the first element in the patch.
               IEL = IelementsInPatch(idxsubgroup)
-              ilocalElementDistr = p_IelementDistr(IEL)
+              ilocalElementGroup = p_IelemGroupIDs(IEL)
 
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
-              ! before, so all elements of the same element distribution are behind
+              ! before, so all elements of the same element group are behind
               ! each other.
               do idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
-                if (ilocalElementDistr .eq. p_IelementDistr(IelementsInPatch(idx2))) exit
+                if (ilocalElementGroup .eq. p_IelemGroupIDs(IelementsInPatch(idx2))) exit
               end do
 
               ! Ok, the elements of 'the same kind' can now be found between
               ! positions idxsubgroup..idx2.
               !
-              ! In case the 'local' element distribution changed, activate the new one.
+              ! In case the 'local' element group changed, activate the new one.
               ! This small check saves some time if there are some patches with completely
               ! the same element type.
-              if (ilocalElementDistr .ne. ilastElementDistr) then
+              if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                ! Active local element distribution
-                p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
+                ! Active local element group
+                call spdiscr_getElemGroupInfo (p_rdiscrDest,ilocalElementGroup,&
+                    celemDest,ctrafoType=ctrafoTypeDest)
 
                 ! Get the number of local DOF`s for trial functions
-                indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+                indofDest = elem_igetNDofLoc(celemDest)
 
                 ! Initialise arrays with zeros
                 Dxi    = 0
@@ -2888,11 +2875,11 @@ contains
                 ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
                 ! on each element indofDest!
                 call calc_cubatureDest(&
-                    elem_getPrimaryElement(p_relementDistrDest%celement), &
+                    elem_getPrimaryElement(celemDest), &
                     nlocalDOFsDest, Dxi, Domega)
 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
+                bnonparTrial = elem_isNonparametric(celemDest)
 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -2902,8 +2889,8 @@ contains
                   p_DcubPtsTrial => p_DcubPtsRef
                 end if
 
-                ! Save number of last element distribution
-                ilastElementDistr = ilocalElementDistr
+                ! Save number of last element group
+                ilastElementGroup = ilocalElementGroup
               end if
 
               ! Put the cubature point coordinates in the right format to the
@@ -2928,8 +2915,7 @@ contains
               ! all the points.
 
               ! At first, get the coordinates of the corners of the element
-              call trafo_getCoords_sim (&
-                  elem_igetTrafoType(p_relementDistrDest%celement), &
+              call trafo_getCoords_sim (ctrafoTypeDest, &
                   p_rtriangulation, IelementsInPatch(idxsubgroup:idx2) , &
                   p_Dcoords(:,:,idxsubgroup:idx2))
 
@@ -2939,7 +2925,7 @@ contains
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
-              call trafo_calctrafo_sim (p_relementDistrDest%ctrafoType, &
+              call trafo_calctrafo_sim (ctrafoTypeDest, &
                   idx2-idxsubgroup+1,nlocalDOFsDest, &
                   p_Dcoords(:,:,idxsubgroup:idx2),p_DcubPtsRef(:,:,idxsubgroup:idx2),&
                   p_Djac(:,:,idxsubgroup:idx2), &
@@ -2971,7 +2957,7 @@ contains
           Dpolynomials = 0.0_DP
 
           ! Loop over the patches in the set
-          ilastElementDistr = 0
+          ilastElementGroup = 0
 
           do ipatch = 1, npatchesInCurrentBlock
 
@@ -2980,34 +2966,35 @@ contains
 
             do while (idxsubgroup .lt. IelementsInPatchIdx(ipatch+1))
 
-              ! Get the element distribution of the first element in the patch.
+              ! Get the element group of the first element in the patch.
               IEL = IelementsInPatch(idxsubgroup)
-              ilocalElementDistr = p_IelementDistr(IEL)
+              ilocalElementGroup = p_IelemGroupIDs(IEL)
 
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
-              ! before, so all elements of the same element distribution are behind
+              ! before, so all elements of the same element group are behind
               ! each other.
               do idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
-                if (ilocalElementDistr .eq. p_IelementDistr(IelementsInPatch(idx2))) exit
+                if (ilocalElementGroup .eq. p_IelemGroupIDs(IelementsInPatch(idx2))) exit
               end do
 
               ! Ok, the elements of 'the same kind' can now be found between
               ! positions idxsubgroup..idx2.
               !
-              ! In case the 'local' element distribution changed, activate the new one.
+              ! In case the 'local' element group changed, activate the new one.
               ! This small check saves some time if there are some patches with completely
               ! the same element type.
-              if (ilocalElementDistr .ne. ilastElementDistr) then
+              if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                ! Active local element distribution
-                p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
+                ! Active local element group
+                call spdiscr_getElemGroupInfo (p_rdiscrDest,ilocalElementGroup,&
+                    celemDest,ctrafoType=ctrafoTypeDest)
 
                 ! Get the number of local DOF`s for trial functions which coincides with
-                nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+                nlocalDOFsDest = elem_igetNDofLoc(celemDest)
 
                 ! Check if one of the trial/test elements is nonparametric
-                bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
+                bnonparTrial = elem_isNonparametric(celemDest)
 
                 ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                 ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -3017,18 +3004,18 @@ contains
                   p_DcubPtsTrial => p_DcubPtsRef
                 end if
 
-                ! Save number of last element distribution
-                ilastElementDistr = ilocalElementDistr
+                ! Save number of last element group
+                ilastElementGroup = ilocalElementGroup
               end if
 
               ! Calculate the transformation from the reference element to the real one
-              call trafo_calctrafo_sim(p_relementDistrDest%ctrafoType, &
+              call trafo_calctrafo_sim(ctrafoTypeDest, &
                   idx2-idxsubgroup+1,nlocalDOFsDest, &
                   p_Dcoords(:,:,idxsubgroup:idx2), p_DcubPtsRef(:,:,idxsubgroup:idx2),&
                   p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2))
 
               ! Evaluate the basis functions for the cubature points of the destination FE space
-              call elem_generic_sim(celementSource, &
+              call elem_generic_sim(celemSource, &
                   p_Dcoords(:,:,idxsubgroup:idx2), p_Djac(:,:,idxsubgroup:idx2), &
                   p_Ddetj(:,idxsubgroup:idx2), &
                   BderDest, Dpolynomials(:,:,:,idxsubgroup:idx2), &
@@ -3040,7 +3027,7 @@ contains
 
             end do
           end do
-          ilastElementDistr = 0
+          ilastElementGroup = 0
 
           !---------------------------------------------------------------------
           ! Step 6: Evaluate the averaged derivative values at the cubature
@@ -3060,21 +3047,22 @@ contains
                 ! Get global element number
                 IEL = IelementsInPatch(idx)
 
-                ! Get number of local element distribution
-                ilocalElementDistr = p_IelementDistr(IEL)
+                ! Get number of local element group
+                ilocalElementGroup = p_IelemGroupIDs(IEL)
 
-                ! Check if local element distribution corresponds to the last element
+                ! Check if local element group corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
-                if (ilocalElementDistr .ne. ilastElementDistr) then
+                if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                  ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
+                  ! Active local element group
+                  call spdiscr_getElemGroupInfo (p_rdiscrDest,ilocalElementGroup,&
+                      celemDest,ctrafoType=ctrafoTypeDest)
 
                   ! Get the number of local DOF`s for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+                  nlocalDOFsDest = elem_igetNDofLoc(celemDest)
 
                   ! Check if one of the trial/test elements is nonparametric
-                  bnonparTrial = elem_isNonparametric(p_relementDistrDest%celement)
+                  bnonparTrial = elem_isNonparametric(celemDest)
 
                   ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
                   ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -3084,8 +3072,8 @@ contains
                     p_DcubPtsTrial => p_DcubPtsRef
                   end if
 
-                  ! Save number of last element distribution
-                  ilastElementDistr = ilocalElementDistr
+                  ! Save number of last element group
+                  ilastElementGroup = ilocalElementGroup
                 end if
 
                 ! Loop over local degrees of freedom
@@ -3105,7 +3093,7 @@ contains
                 end do
               end do
             end do
-            ilastElementDistr = 0
+            ilastElementGroup = 0
 
           case(NDIM2D)
 
@@ -3118,21 +3106,22 @@ contains
                 ! Get global element number
                 IEL = IelementsInPatch(idx)
 
-                ! Get number of local element distribution
-                ilocalElementDistr = p_IelementDistr(IEL)
+                ! Get number of local element group
+                ilocalElementGroup = p_IelemGroupIDs(IEL)
 
-                ! Check if local element distribution corresponds to the last element
+                ! Check if local element group corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
-                if (ilocalElementDistr .ne. ilastElementDistr) then
+                if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                  ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
+                  ! Active local element group
+                  call spdiscr_getElemGroupInfo (p_rdiscrDest,ilocalElementGroup,&
+                      celemDest,ctrafoType=ctrafoTypeDest)
 
                   ! Get the number of local DOF`s for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+                  nlocalDOFsDest = elem_igetNDofLoc(celemDest)
 
-                  ! Save number of last element distribution
-                  ilastElementDistr = ilocalElementDistr
+                  ! Save number of last element group
+                  ilastElementGroup = ilocalElementGroup
                 end if
 
                 ! Loop over local degrees of freedom
@@ -3153,7 +3142,7 @@ contains
                 end do
               end do
             end do
-            ilastElementDistr = 0
+            ilastElementGroup = 0
 
           case(NDIM3D)
 
@@ -3166,21 +3155,22 @@ contains
                 ! Get global element number
                 IEL = IelementsInPatch(idx)
 
-                ! Get number of local element distribution
-                ilocalElementDistr = p_IelementDistr(IEL)
+                ! Get number of local element group
+                ilocalElementGroup = p_IelemGroupIDs(IEL)
 
-                ! Check if local element distribution corresponds to the last element
+                ! Check if local element group corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
-                if (ilocalElementDistr .ne. ilastElementDistr) then
+                if (ilocalElementGroup .ne. ilastElementGroup) then
 
-                  ! Active local element distribution
-                  p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
+                  ! Active local element group
+                  call spdiscr_getElemGroupInfo (p_rdiscrDest,ilocalElementGroup,&
+                      celemDest,ctrafoType=ctrafoTypeDest)
 
                   ! Get the number of local DOF`s for trial functions which coincides with
-                  nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+                  nlocalDOFsDest = elem_igetNDofLoc(celemDest)
 
-                  ! Save number of last element distribution
-                  ilastElementDistr = ilocalElementDistr
+                  ! Save number of last element group
+                  ilastElementGroup = ilocalElementGroup
                 end if
 
                 ! Loop over local degrees of freedom
@@ -3202,9 +3192,9 @@ contains
                 end do
               end do
             end do
-            ilastElementDistr = 0
+            ilastElementGroup = 0
 
-          case DEFAULT
+          case default
             call output_line('Invalid spatial dimension!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
             call sys_halt()
@@ -3233,7 +3223,7 @@ contains
       deallocate(DpatchBound)
       deallocate(IelementsInPatchIdx)
 
-    end do   ! End of icurrentElementDistr loop
+    end do   ! End of ielemGroup loop
 
     ! We are nearly done. The final thing: divide the calculated derivatives by the
     ! number of elements adjacent to each vertex. That closes the calculation
@@ -3377,7 +3367,7 @@ contains
               DpointsReal(1,4,idx) = xmin
               DpointsReal(2,4,idx) = ymax
 
-            case DEFAULT
+            case default
               call output_line ('Invalid number of vertices per elements!', &
                   OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_mult')
               call sys_halt()
@@ -3492,7 +3482,7 @@ contains
               DpointsReal(2,8,idx) = ymax
               DpointsReal(3,8,idx) = zmax
 
-            case DEFAULT
+            case default
               call output_line ('Invalid number of vertices per elements!', &
                   OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_mult')
               call sys_halt()
@@ -3500,7 +3490,7 @@ contains
           end do
         end do
 
-      case DEFAULT
+      case default
         call output_line ('Invalid number of spatial dimensions!', &
             OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_mult')
         call sys_halt()
@@ -3632,7 +3622,7 @@ contains
             DpointsReal(2,4,idxFirst:idxLast) = ymax
           end do
 
-        case DEFAULT
+        case default
           call output_line ('Invalid number of vertices per elements!', &
               OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
           call sys_halt()
@@ -3823,13 +3813,13 @@ contains
             DpointsReal(3,8,idxFirst:idxLast) = zmax
           end do
 
-        case DEFAULT
+        case default
           call output_line ('Invalid number of vertices per elements!', &
               OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line ('Invalid number of spatial dimensions!', &
             OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup_sim')
         call sys_halt()
@@ -3971,13 +3961,13 @@ contains
                 (2.0_DP*DpointsReal(2,:,idxFirst:idxLast)-(ymax+ymin))/(ymax-ymin)
           end do
 
-        case DEFAULT
+        case default
           call output_line ('Invalid number of vertices per elements!', &
               OU_CLASS_ERROR,OU_MODE_STD,'calc_localTrafo_sim')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unknown coordinate system!',&
             OU_CLASS_ERROR,OU_MODE_STD,'calc_localTrafo_sim')
         call sys_halt()
@@ -4217,7 +4207,7 @@ contains
 
         ncubp = 9
 
-      case DEFAULT
+      case default
         call output_line ('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'calc_cubatureDest')
         call sys_halt()
@@ -4262,7 +4252,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j,k,icurrentElementDistr,NVE,IELmax,IELset,idof
+    integer :: i,j,k,ielemGroup,NVE,IELmax,IELset,idof
     logical :: bnonparTrial
     integer(I32) :: icoordinatesystem
 
@@ -4315,9 +4305,9 @@ contains
     ! Pointer to DCORVG of the triangulation
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! Current element distribution in source- and destination vector
-    type(t_elementDistribution), pointer :: p_relementDistribution
-    type(t_elementDistribution), pointer :: p_relementDistrDest
+    ! Source and destination element / transformation
+    integer(I32) :: celemSource,celemDest
+    integer(I32) :: ctrafoTypeSource
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dderivatives
@@ -4337,7 +4327,7 @@ contains
     ! Pointers to the X-, Y- and Z-derivative vector
     real(DP), dimension(:), pointer :: p_DxDeriv, p_DyDeriv, p_DzDeriv
 
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL
 
     ! Pointer to an array that counts if an edge has been visited.
@@ -4394,11 +4384,14 @@ contains
 
     ! The source vector must be either pure Q1, P1 or mixed Q1/P1
     p_rdiscrSource => rvectorScalar%p_rspatialDiscr
-    do j = 1, p_rdiscrSource%inumFESpaces
-      select case (elem_getPrimaryElement (p_rdiscrSource%RelementDistr(j)%celement))
+    do j = 1, spdiscr_getNelemGroups(p_rdiscrSource)
+
+      call spdiscr_getElemGroupInfo (p_rdiscrSource,j,celemSource)
+    
+      select case (elem_getPrimaryElement (celemSource))
       case (EL_Q1_2D, EL_Q1_3D, EL_P1_1D, EL_P1_2D, EL_P1_3D)
 
-      case DEFAULT
+      case default
         call output_line ('Only Q1, and P1 supported as' // &
             ' discretisation for the source vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
@@ -4410,11 +4403,13 @@ contains
     do i = 1, min(rvectorGradient%nblocks,&
                   rvectorScalar%p_rspatialDiscr%ndimension)
       p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
-      do j = 1, p_rdiscrDest%inumFESpaces
-        select case(elem_getPrimaryElement(p_rdiscrDest%RelementDistr(j)%celement))
+      do j = 1, spdiscr_getNelemGroups(p_rdiscrDest)
+        call spdiscr_getElemGroupInfo (p_rdiscrDest,j,celemDest)
+      
+        select case(elem_getPrimaryElement(celemDest))
         case (EL_Q1T_2D, EL_Q1T_3D, EL_P1T_2D)
 
-        case DEFAULT
+        case default
           call output_line ('Only Q1T, and P1T supported as' // &
               ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
@@ -4464,7 +4459,7 @@ contains
       call lalg_clearVector (p_DyDeriv)
       call lalg_clearVector (p_DzDeriv)
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       call sys_halt()
@@ -4493,38 +4488,42 @@ contains
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
       call sys_halt()
     end select
 
-    ! Now loop over the different element distributions (=combinations
+    ! Now loop over the different element groups (=combinations
     ! of trial and test functions) in the discretisation.
 
-    do icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
+    do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscrSource)
 
-      ! Activate the current element distribution
-      p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
-      p_relementDistrDest => p_rdiscrDest%RelementDistr(icurrentElementDistr)
+      ! Activate the current element group.
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call spdiscr_getElemGroupInfo (p_rdiscrSource,ielemGroup,&
+          celemSource,NEL,p_IelementList,ctrafoTypeSource)
 
-      ! If the element distribution is empty, skip it
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! If the element group is empty, skip it
+      if (NEL .eq. 0) cycle
+
+      call spdiscr_getElemGroupInfo (p_rdiscrDest,ielemGroup,celemDest)
 
       ! Get the number of local DOF`s for trial functions
       ! in the source and destination vector.
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
-      indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
+      indofTrial = elem_igetNDofLoc(celemSource)
+      indofDest = elem_igetNDofLoc(celemDest)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
+      NVE = elem_igetNVE(celemSource)
 
       ! Initialise the cubature formula.
       ! That is a special trick here! The FE space of the destination vector
       ! is either P1 or Q1. We create the gradients in the midpoints of the edges
       ! by taking the limited average of the gradients of the source vector!
 
-      select case (elem_getPrimaryElement(p_relementDistrDest%celement))
+      select case (elem_getPrimaryElement(celemDest))
       case (EL_P1T)
         call cub_getCubPoints(CUB_G3_T, nlocalDOFsDest, Dxi, Domega)
 
@@ -4540,7 +4539,7 @@ contains
 
         nlocalDOFsDest = 4
 
-      case DEFAULT
+      case default
         call output_line ('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
         call sys_halt()
@@ -4548,7 +4547,7 @@ contains
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      icoordinatesystem = elem_igetCoordSystem(p_relementDistribution%celement)
+      icoordinatesystem = elem_igetCoordSystem(celemSource)
 
       ! Allocate memory and get local references to it.
       ! We abuse the system of cubature points here for the evaluation.
@@ -4583,7 +4582,7 @@ contains
       allocate(Dderivatives(nlocalDOFsDest,nelementsPerBlock,2))
 
       ! Check if one of the trial/test elements is nonparametric
-      bnonparTrial  = elem_isNonparametric(p_relementDistribution%celement)
+      bnonparTrial  = elem_isNonparametric(celemSource)
 
       ! Let p_DcubPtsTest point either to p_DcubPtsReal or
       ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -4592,14 +4591,6 @@ contains
       else
         p_DcubPtsTrial => p_DcubPtsRef
       end if
-
-      ! Get the number of elements in the element distribution.
-      NEL = p_relementDistribution%NEL
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
 
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -4632,8 +4623,7 @@ contains
         ! At first, get the coordinates of the corners of all the
         ! elements in the current set.
 
-        call trafo_getCoords_sim (&
-            p_rdiscrSource%RelementDistr(icurrentElementDistr)%ctrafoType,&
+        call trafo_getCoords_sim (ctrafoTypeSource,&
             p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
 
         ! Depending on the type of transformation, we must now choose
@@ -4641,13 +4631,12 @@ contains
         ! In case we use a nonparametric element, we need the
         ! coordinates of the points on the real element, too.
         call trafo_calctrafo_sim (&
-              p_rdiscrSource%RelementDistr(icurrentElementDistr)%ctrafoType,&
-              IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
+              ctrafoTypeSource,IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
               p_DcubPtsReal)
 
         ! Prepare the call to the evaluation routine of the analytic function.
-        !rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielemGroupibution = ielemGroup
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
 
@@ -4659,7 +4648,7 @@ contains
           ! into Dderivatives(:,:,1).
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV1D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
@@ -4692,13 +4681,13 @@ contains
           ! Dderivatives(:,:,2)
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_Y,&
               Dderivatives(:,1:IELmax-IELset+1,2))
 
@@ -4737,19 +4726,19 @@ contains
           ! and the Z-derivatives into Dderivatives(:,:,3).
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Y,&
               Dderivatives(:,1:IELmax-IELset+1,2))
 
           call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_relementDistribution%celement, IdofsTrial, &
+              celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Z,&
               Dderivatives(:,1:IELmax-IELset+1,3))
 
@@ -4787,7 +4776,7 @@ contains
             end do
           end do
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
           call sys_halt()
@@ -4802,7 +4791,7 @@ contains
       deallocate(IdofsDest)
       deallocate(IdofsTrial)
 
-    end do ! icurrentElementDistr
+    end do ! ielemGroup
 
     ! Release temp data
     call storage_free (h_IcontributionsAtDOF)

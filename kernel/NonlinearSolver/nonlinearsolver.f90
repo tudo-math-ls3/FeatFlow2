@@ -476,7 +476,7 @@ contains
 
       end if
 
-    case DEFAULT
+    case default
       ! Standard stopping criterion.
       ! Iteration stops if both the absolute and the relative criterium holds.
       loutput = .true.
@@ -1014,7 +1014,7 @@ contains
           call linsol_precondDefect(rsolverNode%p_rlinsolNode,rd)
           bsuccess = rsolverNode%p_rlinsolNode%iresult .eq. 0
 
-        case DEFAULT
+        case default
           ! User defined or no preconditioning.
           ! Is a callback function available?
           if (present(fcb_precondDefect)) then

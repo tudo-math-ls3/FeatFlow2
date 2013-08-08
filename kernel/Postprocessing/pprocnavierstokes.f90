@@ -423,8 +423,8 @@ contains
 
     ! What is the actual element that is used for the discretisation?
 
-    ielemU = p_rdiscrU%RelementDistr(1)%celement
-    ielemP = p_rdiscrP%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rdiscrU,1,ielemU)
+    call spdiscr_getElemGroupInfo (p_rdiscrP,1,ielemP)
 
     ! So far so good, we have checked that the assumptions for the integration
     ! are fulfilled. Now we can start the actual integration.
@@ -983,8 +983,8 @@ contains
     p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscr
 
     ! What is the actual element that is used for the discretisation?
-    ielemU = p_rdiscrU%RelementDistr(1)%celement
-    ielemP = p_rdiscrP%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rdiscrU,1,ielemU)
+    call spdiscr_getElemGroupInfo (p_rdiscrP,1,ielemP)
 
     ! So far so good, we have checked that the assumptions for the integration
     ! are fulfilled. Now we can start the actual integration.
@@ -1411,10 +1411,10 @@ contains
   ! Edges in the BC-region, local index
   integer, dimension(:), allocatable, target :: IedgesLocal
 
-  ! Element distributions and current discretisation
-  integer :: ieldistr
+  ! element groups and current discretisation
+  integer :: ielemGroup
   type(t_spatialDiscretisation), pointer :: p_rdiscr
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
 
   ! A t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -1561,24 +1561,25 @@ contains
     DintU = 0.0_DP
     DintP = 0.0_DP
 
-    ! Loop over the element distributions of the velocity vectors
+    ! Loop over the element groups of the velocity vectors
     p_rdiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
-    do ieldistr = 1,p_rdiscr%inumFESpaces
+    do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscr)
 
       ! Find all elements within this element discribution.
       ! Save them in IelementsInRegion. This array will therefore receive
       ! all the elements we can handle simultaneously.
-      if (p_rdiscr%h_IelementDistr .eq. ST_NOHANDLE) then
+      call spdiscr_getElemGroupIDs(p_rdiscr,p_IelemGroupIDs)
+
+      if (.not. associated(p_IelemGroupIDs)) then
         nelements = nelementsInRegion
         call lalg_copyVector(IelementsInRegion,IcurrentElementSet)
         do iel=1,nelements
           IelementPointer(iel) = iel
         end do
       else
-        call storage_getbase_int(p_rdiscr%h_IelementDistr,p_IelementDistr)
         nelements = 0
         do iel = 1,nelementsInRegion
-          if (p_IelementDistr(IcurrentElementSet(iel)) .eq. ieldistr) then
+          if (p_IelemGroupIDs(IcurrentElementSet(iel)) .eq. ielemGroup) then
             nelements = nelements + 1
             IcurrentElementSet(nelements) = IcurrentElementSet(iel)
             IelementPointer(nelements) = iel
@@ -1586,11 +1587,8 @@ contains
         end do
       end if
 
-      ! What is the current element type?
-      celement = p_rdiscr%RelementDistr(ieldistr)%celement
-
-      ! Transformation
-      ctrafotype = p_rdiscr%RelementDistr(ieldistr)%ctrafotype
+      ! What is the current element type? Transformation
+      call spdiscr_getElemGroupInfo (p_rdiscr,ielemGroup,celement,ctrafoType=ctrafoType)
 
       ! Figure out the coordinate system used in the current element set
       icoordSystem = elem_igetCoordSystem(celement)
@@ -1637,7 +1635,7 @@ contains
           call domint_allocTempMemory (rintSubset,ntempArrays)
         end if
 
-        !rintSubset%ielementDistribution = ieldistr
+        !rintSubset%ielemGroupibution = ielemGroup
         rintSubset%ielementStartIdx = 1
         rintSubset%p_Ielements => IcurrentElementSet(1:nelements)
         rintSubset%p_IdofsTrial => Idofs
@@ -1685,24 +1683,25 @@ contains
 
     ! Now do the same for the pressure.
 
-    ! Loop over the element distributions of the velocity vectors
+    ! Loop over the element groups of the velocity vectors
     p_rdiscr => rvector%p_rblockDiscr%RspatialDiscr(3)
-    do ieldistr = 1,p_rdiscr%inumFESpaces
+    do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscr)
 
       ! Find all elements within this element discribution.
       ! Save them in IelementsInRegion. This array will therefore receive
       ! all the elements we can handle simultaneously.
-      if (p_rdiscr%h_IelementDistr .eq. ST_NOHANDLE) then
+      call spdiscr_getElemGroupIDs(p_rdiscr,p_IelemGroupIDs)
+      
+      if (.not. associated(p_IelemGroupIDs)) then
         nelements = nelementsInRegion
         call lalg_copyVector(IelementsInRegion,IcurrentElementSet)
         do iel=1,nelements
           IelementPointer(iel) = iel
         end do
       else
-        call storage_getbase_int(p_rdiscr%h_IelementDistr,p_IelementDistr)
         nelements = 0
         do iel = 1,nelementsInRegion
-          if (p_IelementDistr(IcurrentElementSet(iel)) .eq. ieldistr) then
+          if (p_IelemGroupIDs(IcurrentElementSet(iel)) .eq. ielemGroup) then
             nelements = nelements + 1
             IcurrentElementSet(nelements) = IcurrentElementSet(iel)
             IelementPointer(nelements) = iel
@@ -1710,11 +1709,8 @@ contains
         end do
       end if
 
-      ! What is the current element type?
-      celement = p_rdiscr%RelementDistr(ieldistr)%celement
-
-      ! Transformation
-      ctrafotype = p_rdiscr%RelementDistr(ieldistr)%ctrafotype
+      ! What is the current element type? Transformation?
+      call spdiscr_getElemGroupInfo (p_rdiscr,ielemGroup,celement,ctrafoType=ctrafoType)
 
       ! Figure out the coordinate system used in the current element set
       icoordSystem = elem_igetCoordSystem(celement)
@@ -2160,8 +2156,8 @@ contains
 
     ! What is the actual element that is used for the discretisation?
 
-    ielemU = p_rdiscrU%RelementDistr(1)%celement
-    ielemP = p_rdiscrP%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (p_rdiscrU,1,ielemU)
+    call spdiscr_getElemGroupInfo (p_rdiscrP,1,ielemP)
 
     ! So far so good, we have checked that the assumptions for the integration
     ! are fulfilled. Now we can start the actual integration.
@@ -2582,12 +2578,9 @@ contains
       call sys_halt()
     end if
 
-    ieltype1 = rvector%p_rblockDiscr% &
-        RspatialDiscr(1)%RelementDistr(1)%celement
-    ieltype2 = rvector%p_rblockDiscr% &
-        RspatialDiscr(2)%RelementDistr(1)%celement
-    ieltypeDest = rdestVector%p_rspatialDiscr% &
-        RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(1),1,ieltype1)
+    call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(2),1,ieltype2)
+    call spdiscr_getElemGroupInfo (rdestVector%p_rspatialDiscr,1,ieltypeDest)
 
     if (elem_getPrimaryElement(ieltype1) .ne. EL_Q1T) then
       call output_line ("rvector must be discretised with Q1~!", &
@@ -2998,7 +2991,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP, NVE
+    integer :: i,k,ielemGroup, ICUBP, NVE
     integer :: IEL, IELmax, IELset
     real(DP) :: OM, DN1, DN2, dpp
     real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,dalx,daly
@@ -3030,12 +3023,10 @@ contains
     ! Arrays for saving Jacobian determinants and matrices
     real(DP), dimension(:,:), pointer :: p_Ddetj
 
-    ! Current element distribution
-    type(t_elementDistribution), pointer :: p_relementDistributionU
-    type(t_elementDistribution), pointer :: p_relementDistributionP
-    type(t_elementDistribution), pointer :: p_relementDistributionA
+    ! Element types
+    integer(I32) :: celemU, celemP, celemA
 
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
@@ -3113,38 +3104,36 @@ contains
       
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (iinfoBlock,rcubatureInfo,rvector%p_rblockDiscr%RspatialDiscr(1),&
-          icurrentElementDistr,ccubature=ccubature,NEL=NEL)
+          ielemGroup,ccubature=ccubature,NEL=NEL)
 
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
 
-      ! Activate the current element distribution
-      p_relementDistributionU => &
-      rvector%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(icurrentElementDistr)
-
-      p_relementDistributionA =>&
-      rcharfct%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
-
-      p_relementDistributionP => &
-      rvector%p_rblockDiscr%RspatialDiscr(3)%RelementDistr(icurrentElementDistr)
-
+      ! Activate the current element group.
+      !
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there.
+      !
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(1),ielemGroup,celemU,&
+          NEL,p_IelementList,ctrafoType)
+      call spdiscr_getElemGroupInfo (rcharfct%p_rspatialDiscr,ielemGroup,celemA)
+      call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(3),ielemGroup,celemP)
+      
       ! Get the number of local DOFs for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
-      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
-      indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
+      indofTrial = elem_igetNDofLoc(celemU)
+      indofFunc1 = elem_igetNDofLoc(celemA)
+      indofFunc2 = elem_igetNDofLoc(celemP)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistributionU%celement)
+      NVE = elem_igetNVE(celemU)
 
-      if (NVE .ne. elem_igetNVE(p_relementDistributionA%celement)) then
+      if (NVE .ne. elem_igetNVE(celemA)) then
         call output_line ("Element spaces incompatible!", &
             OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_vol")
         call sys_halt()
       end if
-
-      ! Get from the trial element space the type of coordinate system
-      ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistributionU%celement)
 
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
@@ -3187,21 +3176,13 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistributionU%celement)
-      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionP%celement))
-      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))
+      cevaluationTag = elem_getEvaluationTag(celemU)
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(celemP))
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(celemA))
 
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistributionU%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of elements there.
-      NEL = p_relementDistributionU%NEL
 
       ! We assemble the integral contributions separately
       DintU = 0.0_DP
@@ -3254,11 +3235,11 @@ contains
             call domint_setTempMemory (rintSubset,p_DtempArrays)
           end if
 
-          !rintSubset%ielementDistribution = icurrentElementDistr
+          !rintSubset%ielemGroupibution = ielemGroup
           rintSubset%ielementStartIdx = 1
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial => IdofsTrial
-          rintSubset%celement = p_relementDistributionU%celement
+          rintSubset%celement = celemU
           call ffunctionReference (DER_FUNC,rvector%p_rblockDiscr%RspatialDiscr(1), &
                     IELmax-IELset+1,ncubp,revalElementSet%p_DpointsReal, &
                     IdofsTrial,rintSubset,Dpf1(:,:),rcollection)
@@ -3288,39 +3269,33 @@ contains
 
         ! Build the p matrix
         call fevl_evaluate_sim3 (rvector%RvectorBlock(3), revalElementSet, &
-                p_relementDistributionP%celement, &
+                celemP, &
                 IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))
 
         ! Build the jacobi matrix of this (u1,u2,u3)
         ! First Row -------------------------------
         ! Save the result to Dcoefficients(:,:,2:4)
         call fevl_evaluate_sim3 (rvector%RvectorBlock(1), revalElementSet, &
-                p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+            celemU, IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
         call fevl_evaluate_sim3 (rvector%RvectorBlock(1), revalElementSet, &
-                p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))
+            celemU, IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))
 
         ! Second Row -------------------------------
         ! Save the result to Dcoefficients(:,:,4:5)
         call fevl_evaluate_sim3 (rvector%RvectorBlock(2), revalElementSet, &
-                p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))
+            celemU, IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
         call fevl_evaluate_sim3 (rvector%RvectorBlock(2), revalElementSet, &
-                p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))
+            celemU, IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))
 
         ! Build the alpha vector
         ! Save the result to Dcoefficients(:,:,6:7)
         call fevl_evaluate_sim3 (rcharfct, revalElementSet,&
-                p_relementDistributionA%celement, IdofsFunc1, DER_DERIV2D_X,&
-                Dcoefficients(:,1:IELmax-IELset+1_I32,6))
+            celemA, IdofsFunc1, DER_DERIV2D_X,Dcoefficients(:,1:IELmax-IELset+1_I32,6))
 
         call fevl_evaluate_sim3 (rcharfct, revalElementSet,&
-                p_relementDistributionA%celement, IdofsFunc1, DER_DERIV2D_Y,&
-                Dcoefficients(:,1:IELmax-IELset+1_I32,7))
+            celemA, IdofsFunc1, DER_DERIV2D_Y,Dcoefficients(:,1:IELmax-IELset+1_I32,7))
 
         select case (cform)
         case (PPNAVST_GRADIENTTENSOR_SIMPLE,PPNAVST_GRADIENTTENSOR)
@@ -3450,7 +3425,7 @@ contains
         deallocate(p_DtempArrays)
       end if
 
-    end do ! icurrentElementDistr
+    end do ! ielemGroup
 
     Dforces = 0.0_DP
     Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (DintU(:) + DintP(:))

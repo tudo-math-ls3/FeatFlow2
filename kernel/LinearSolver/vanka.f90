@@ -332,7 +332,7 @@ module vanka
     ! Total number of local DOF`s
     integer :: ndofsPerElement
 
-    ! Number of local DOF`s in the element distributions of all blocks.
+    ! Number of local DOF`s in the element groups of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
     integer, dimension(:), pointer :: p_InDofsLocal => null()
@@ -973,9 +973,9 @@ contains
     ! Which type of VANKA should be used?
     select case (rvanka%cproblemClass)
     case (VANKAPC_GENERAL)
-      ! Use the general VANKA. This one handles the element distributions
+      ! Use the general VANKA. This one handles the element groups
       ! internally, so afterwards we can jump out of the loop without handling
-      ! the other element distributions.
+      ! the other element groups.
 
       call vanka_general (rvanka%rvankaGeneral, rvector, rrhs, domega, rperfconfig)
 
@@ -1054,6 +1054,7 @@ contains
     logical :: bfirst
     integer :: nblocks,i,j,nmaxLocalDOFs,ndofsPerElement
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    integer(I32) :: celement
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -1146,8 +1147,9 @@ contains
             ! We need some information for calculating DOF`s later.
             ! Get the number of local DOF`s in the current block.
             ! Note that we restrict to uniform discretisations!
-            rvankaGeneral%p_InDofsLocal(i) = elem_igetNDofLoc(p_rdiscretisation% &
-                                                RelementDistr(1)%celement)
+            call spdiscr_getElemGroupInfo (p_rdiscretisation,1,celement)
+            
+            rvankaGeneral%p_InDofsLocal(i) = elem_igetNDofLoc(celement)
 
             ! Calculate the maximum number of local DOF`s
             nmaxLocalDOFs = max(nmaxLocalDOFs,rvankaGeneral%p_InDofsLocal(i))
@@ -1258,7 +1260,7 @@ contains
 
   ! local variables
   integer :: i,j
-  integer :: IELmax, IELset, iel, ieldistr
+  integer :: IELmax, IELset, iel, ielemGroup, NEL
   integer, dimension(:), pointer :: p_IelementList
   real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
   integer, dimension(:), pointer :: p_Ipermutation
@@ -1285,23 +1287,22 @@ contains
   ! element groups...
   p_rdiscretisation => rvector%RvectorBlock(1)%p_rspatialDiscr
 
-  ! Loop over the element distributions/groups
-  do ieldistr = 1,p_rdiscretisation%inumFEspaces
+  ! Loop over the element groups/groups
+  do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscretisation)
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions.
-    call storage_getbase_int (p_rdiscretisation% &
-                              RelementDistr(ieldistr)%h_IelementList, &
-                              p_IelementList)
+    call spdiscr_getElemGroupInfo (p_rdiscretisation,ielemGroup,&
+        NEL=NEL,p_IelementList=p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, NEL, p_rperfconfig%NELEMSIM
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! Loop over the blocks in the block vector to get the DOF`s everywhere.
 
@@ -1346,7 +1347,7 @@ contains
 
     end do
 
-  end do ! ieldistr
+  end do ! ielemGroup
 
   end subroutine
 
@@ -1945,19 +1946,19 @@ contains
     rvanka%rvanka2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
     rvanka%rvanka2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
 
-    if (rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
-        rvanka%rvanka2DNavSt%p_rspatialDiscrV%inumFESpaces) then
+    if (spdiscr_getNelemGroups(rvanka%rvanka2DNavSt%p_rspatialDiscrU) .ne. &
+        spdiscr_getNelemGroups(rvanka%rvanka2DNavSt%p_rspatialDiscrV)) then
       call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
       call sys_halt()
     end if
 
-    if ((rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .ne. &
-          rvanka%rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%rvanka2DNavSt%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%rvanka2DNavSt%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%rvanka2DNavSt%p_rspatialDiscrU))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -2048,43 +2049,35 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ielementdist
+    integer :: ielemGroup
+    integer(I32) :: celementU, celementV, celementP
     integer, dimension(:), pointer :: p_IelementList
-    type(t_elementDistribution), pointer :: p_relementDistrU
-    type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrP
 
     ! 2D Navier Stokes problem.
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka2DNavSt%p_rspatialDiscrU)
 
-      ! Get the corresponding element distributions of U, V and P.
-      p_relementDistrU => &
-          rvanka2DNavSt%p_rspatialDiscrU%RelementDistr(ielementdist)
-      p_relementDistrV => &
-          rvanka2DNavSt%p_rspatialDiscrV%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka2DNavSt%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka2DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka2DNavSt%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Which element combination do we have now?
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka2DNavSt%p_rspatialDiscrU,ielemGroup,celementU,&
+          p_IelementList=p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka2DNavSt%p_rspatialDiscrV,ielemGroup,celementV)
 
-      ! Which element combination do we have now?
-      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0)) then
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka2DNavSt%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka2DNavSt%p_rspatialDiscrP,ielemGroup,celementP)
+      else
+        call spdiscr_getElemGroupInfo (rvanka2DNavSt%p_rspatialDiscrP,1,celementP)
+      end if
+
+      if ((elem_getPrimaryElement(celementU) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celementV) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celementP) .eq. EL_Q0)) then
         ! Q1~/Q1~/Q0 discretisation
 
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
@@ -2093,7 +2086,7 @@ contains
           ! Diagonal VANKA; check if A12 exists.
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! Uniform discretisation
               call vanka_2DSPQ1TQ0simple (rvanka2DNavSt, &
                   rvector, rrhs, domega)
@@ -2113,7 +2106,7 @@ contains
           ! Diagonal VANKA. Solution based if possible. Check if A12 exists.
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! Uniform discretisation
               call vanka_2DSPQ1TQ0simpleSol (rvanka2DNavSt, &
                   rvector, rrhs, domega,rvanka2DNavSt%rtempVector)
@@ -2134,7 +2127,7 @@ contains
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
             ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! uniform discretisation;
               ! here, use the same as for the general conformal discretisation.
               ! Could be speeded up by introducing another variant...
@@ -2168,9 +2161,9 @@ contains
         end select
 
       ! Which element combination do we have now?
-      else if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_P1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_P1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_P0)) then
+      else if ((elem_getPrimaryElement(celementU) .eq. EL_P1T) .and. &
+               (elem_getPrimaryElement(celementV) .eq. EL_P1T) .and. &
+               (elem_getPrimaryElement(celementP) .eq. EL_P0)) then
         ! Q1~/Q1~/Q0 discretisation
 
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
@@ -2193,7 +2186,7 @@ contains
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
             ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! uniform discretisation;
               ! here, use the same as for the general conformal discretisation.
               ! Could be speeded up by introducing another variant...
@@ -2227,9 +2220,9 @@ contains
         end select
 
       else if &
-        ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q2) .and.&
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q2) .and.&
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_QP1)) then
+        ((elem_getPrimaryElement(celementU) .eq. EL_Q2) .and.&
+         (elem_getPrimaryElement(celementV) .eq. EL_Q2) .and.&
+         (elem_getPrimaryElement(celementP) .eq. EL_QP1)) then
         ! Q2/Q2/QP1 discretisation
 
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
@@ -2238,7 +2231,7 @@ contains
           ! Diagonal VANKA; check if A12 exists.
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! Uniform discretisation
               call vanka_2DSPQ2QP1simple (rvanka2DNavSt, &
                   rvector, rrhs, domega)
@@ -2258,7 +2251,7 @@ contains
           ! Full VANKA; check if A12 exists.
           if (.not. associated(rvanka2DNavSt%p_DA12)) then
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            if (rvanka2DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups( rvanka2DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! Uniform discretisation
               call vanka_2DSPQ2QP1full (rvanka2DNavSt, &
                   rvector, rrhs, domega)
@@ -9298,19 +9291,19 @@ contains
     rvanka%rvanka2DNavStOptC%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(2)
     rvanka%rvanka2DNavStOptC%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
 
-    if (rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces .ne. &
-        rvanka%rvanka2DNavStOptC%p_rspatialDiscrV%inumFESpaces) then
+    if (spdiscr_getNelemGroups(rvanka%rvanka2DNavStOptC%p_rspatialDiscrU) .ne. &
+        spdiscr_getNelemGroups(rvanka%rvanka2DNavStOptC%p_rspatialDiscrV)) then
       call output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
       call sys_halt()
     end if
 
-    if ((rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .ne. &
-          rvanka%rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%rvanka2DNavStOptC%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%rvanka2DNavStOptC%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%rvanka2DNavStOptC%p_rspatialDiscrU))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -9367,43 +9360,35 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ielementdist
+    integer :: ielemGroup
+    integer(I32) :: celementU, celementV, celementP
     integer, dimension(:), pointer :: p_IelementList
-    type(t_elementDistribution), pointer :: p_relementDistrU
-    type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrP
 
     ! 2D Navier Stokes problem.
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka2DNavStOptC%p_rspatialDiscrU%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka2DNavStOptC%p_rspatialDiscrU)
 
-      ! Get the corresponding element distributions of U, V and P.
-      p_relementDistrU => &
-          rvanka2DNavStOptC%p_rspatialDiscrU%RelementDistr(ielementdist)
-      p_relementDistrV => &
-          rvanka2DNavStOptC%p_rspatialDiscrV%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka2DNavStOptC%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka2DNavStOptC%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka2DNavStOptC%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Which element combination do we have now?
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka2DNavStOptC%p_rspatialDiscrU,ielemGroup,celementU,&
+          p_IelementList=p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka2DNavStOptC%p_rspatialDiscrV,ielemGroup,celementV)
 
-      ! Which element combination do we have now?
-      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0)) then
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka2DNavStOptC%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka2DNavStOptC%p_rspatialDiscrP,ielemGroup,celementP)
+      else
+        call spdiscr_getElemGroupInfo (rvanka2DNavStOptC%p_rspatialDiscrP,1,celementP)
+      end if
+      
+      if ((elem_getPrimaryElement(celementU) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celementV) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celementP) .eq. EL_Q0)) then
 
         ! Q1~/Q1~/Q0 discretisation
 
@@ -12649,21 +12634,21 @@ contains
     rvanka%rvanka3DNavSt%p_rspatialDiscrW => p_rblockDiscr%RspatialDiscr(3)
     rvanka%rvanka3DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(4)
 
-    if ((rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrV%inumFESpaces) .or. &
-        (rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .ne. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrW%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrU) .ne. &
+         spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrV)) .or. &
+        (spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrU) .ne. &
+         spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrW))) then
       call output_line (&
           'Discretisation structures of X-, Y- and Z-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
       call sys_halt()
     end if
 
-    if ((rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .ne. &
-         rvanka%rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%rvanka3DNavSt%p_rspatialDiscrU))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -12726,47 +12711,37 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ielementdist
+    integer :: ielemGroup
+    integer(I32) :: celementU, celementV, celementW, celementP
     integer, dimension(:), pointer :: p_IelementList
-    type(t_elementDistribution), pointer :: p_relementDistrU
-    type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrW
-    type(t_elementDistribution), pointer :: p_relementDistrP
 
     ! 3D Navier Stokes problem.
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka3DNavSt%p_rspatialDiscrU)
 
-      ! Get the corresponding element distributions of U, V, W and P.
-      p_relementDistrU => &
-          rvanka3DNavSt%p_rspatialDiscrU%RelementDistr(ielementdist)
-      p_relementDistrV => &
-          rvanka3DNavSt%p_rspatialDiscrV%RelementDistr(ielementdist)
-      p_relementDistrW => &
-          rvanka3DNavSt%p_rspatialDiscrW%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka3DNavSt%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka3DNavSt%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka3DNavSt%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Which element combination do we have now?
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y- and Z-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka3DNavSt%p_rspatialDiscrU,ielemGroup,celementU,&
+          p_IelementList=p_IelementList)
+      call spdiscr_getElemGroupInfo (rvanka3DNavSt%p_rspatialDiscrV,ielemGroup,celementV)
+      call spdiscr_getElemGroupInfo (rvanka3DNavSt%p_rspatialDiscrW,ielemGroup,celementW)
 
-      ! Which element combination do we have now?
-      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T_3D) .and. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T_3D) .and. &
-          (elem_getPrimaryElement(p_relementDistrW%celement) .eq. EL_Q1T_3D) .and. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0_3D)) then
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka3DNavSt%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka3DNavSt%p_rspatialDiscrP,ielemGroup,celementP)      
+      else
+        call spdiscr_getElemGroupInfo (rvanka3DNavSt%p_rspatialDiscrP,1,celementP)      
+      end if
+      
+      if ((elem_getPrimaryElement(celementU) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(celementV) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(celementW) .eq. EL_Q1T_3D) .and. &
+          (elem_getPrimaryElement(celementP) .eq. EL_Q0_3D)) then
         ! Q1~/Q1~/Q1~/Q0 discretisation
 
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
@@ -12775,7 +12750,7 @@ contains
 !          ! Diagonal VANKA; check if A12 exists.
 !          IF (.NOT. ASSOCIATED(rvanka3DNavSt%p_DA12)) THEN
             ! Call the VANKA subsolver to apply VANKA to our current element list.
-            if (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups(rvanka3DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! Uniform discretisation
               call vanka_3DSPQ1TQ0simple (rvanka3DNavSt, &
                   rvector, rrhs, domega)
@@ -12796,7 +12771,7 @@ contains
 !          IF (.NOT. ASSOCIATED(rvanka3DNavSt%p_DA12)) THEN
             ! Call the VANKA subsolver to apply VANKA to our current element list.
             ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-            if (rvanka3DNavSt%p_rspatialDiscrU%inumFESpaces .eq. 1) then
+            if (spdiscr_getNelemGroups(rvanka3DNavSt%p_rspatialDiscrU) .eq. 1) then
               ! uniform discretisation;
               ! here, use the same as for the general conformal discretisation.
               ! Could be speeded up by introducing another variant...

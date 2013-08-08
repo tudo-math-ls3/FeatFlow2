@@ -576,7 +576,8 @@ contains
       call sys_halt()
     end if
 
-    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,1,celement)
+    
     if ((rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
         (elem_getPrimaryElement(celement) .ne. EL_Q1T)) then
       call output_line ("Unsupported discretisation!", &
@@ -1470,7 +1471,6 @@ contains
 
     ! local variables
     integer :: icomponent
-    integer(I32) :: celement
     real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
     real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
 
@@ -1503,7 +1503,6 @@ contains
       call sys_halt()
     end if
 
-    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
       call output_line ("Unsupported discretisation!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
@@ -1817,8 +1816,8 @@ contains
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
-  ! One and only element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
+  ! element type
+  integer(I32) :: celement
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
@@ -1863,6 +1862,7 @@ contains
 
   ! Cubature formula
   integer(I32) :: ccubature
+  integer :: NEL
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
@@ -1873,6 +1873,17 @@ contains
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags
@@ -1888,10 +1899,6 @@ contains
     ! Shortcut to the spatial discretisation
     p_rdiscretisation => rmatrix%p_rspatialDiscrTest
 
-    ! Get the element distribution. Here, we can find information about
-    ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
@@ -1901,29 +1908,21 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
 
+    ! Get cubature information.
+    ! Cubature formula. Only one cubature formula supported.
+    call spdiscr_getStdDiscrInfo (1,p_rcubatureInfo,p_rdiscretisation,&
+        celement=celement,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList,&
+        ctrafoType=ctrafoType)
+
     ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%celement)
+    indof = elem_igetNDofLoc(celement)
 
     ! Get the number of local DOF`s Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofALE = elem_igetNDofLoc(celement)
 
     ! Number of local DOF`s
-    NVE = elem_igetNVE(p_relementDistribution%celement)
-
-    ! Do we have an assembly structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscretisation,&
-          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
-    ! Cubature formula. Only one cubature formula supported.
-    ccubature = p_rcubatureInfo%p_RinfoBlocks(1)%ccubature
+    NVE = elem_igetNVE(celement)
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -1950,10 +1949,6 @@ contains
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-    ! Get from the trial element space the type of coordinate system
-    ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
-
     ! Get the number of cubature points for the cubature formula
     ncubp = cub_igetNumPts(ccubature)
 
@@ -1972,7 +1967,7 @@ contains
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
-    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
@@ -2050,20 +2045,15 @@ contains
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                              p_IelementList)
-
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -2207,7 +2197,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
 
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -2226,8 +2216,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -2805,7 +2794,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp,NEL
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -2833,9 +2822,6 @@ contains
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
-
-  ! One and only element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
@@ -2873,6 +2859,12 @@ contains
 
   ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
+  
+  ! Cubature
+  integer(I32) :: ccubature
+
+  ! Element type
+  integer(I32) :: celement
 
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -2914,10 +2906,6 @@ contains
     ! Shortcut to the spatial discretisation
     p_rdiscretisation => rmatrix%p_rspatialDiscrTest
 
-    ! Get the element distribution. Here, we can find information about
-    ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
@@ -2927,15 +2915,21 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
 
+    ! Get cubature information.
+    ! Cubature formula. Only one cubature formula supported.
+    call spdiscr_getStdDiscrInfo (1,p_rcubatureInfo,p_rdiscretisation,&
+        celement=celement,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList,&
+        ctrafoType=ctrafoType)
+
     ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%celement)
+    indof = elem_igetNDofLoc(celement)
 
     ! Get the number of local DOF`s Q1 -- we need them for ALE.
-    indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
+    indofALE = elem_igetNDofLoc(celement)
 
     ! Number of local DOF`s
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -2963,10 +2957,6 @@ contains
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-    ! Get from the trial element space the type of coordinate system
-    ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
-
     ! Get the number of cubature points for the cubature formula
     ncubp = cub_igetNumPts(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature)
 
@@ -2985,7 +2975,7 @@ contains
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
-    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
@@ -3063,20 +3053,15 @@ contains
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                              p_IelementList)
-
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -3220,7 +3205,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
 
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -3239,8 +3224,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -3765,7 +3749,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
     real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
@@ -3868,8 +3851,6 @@ contains
       end if
     end if
 
-    celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
-                RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then
       call output_line ("Unsupported discretisation!", &
@@ -4154,7 +4135,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp,NEL
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -4188,9 +4169,6 @@ contains
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
-
-  ! One and only element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
@@ -4249,6 +4227,7 @@ contains
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
   integer(I32) :: ccubature
+  integer(I32) :: celement
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -4257,6 +4236,17 @@ contains
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags
@@ -4275,10 +4265,6 @@ contains
     ! We assume the same for all, A11, A12, A21 and A22.
     p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest
 
-    ! Get the element distribution. Here, we can find information about
-    ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
@@ -4288,26 +4274,21 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
 
+    ! Get cubature information.
+    ! Cubature formula. Only one cubature formula supported.
+    call spdiscr_getStdDiscrInfo (1,p_rcubatureInfo,p_rdiscretisation,&
+        celement=celement,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList,&
+        ctrafoType=ctrafoType)
+
     ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%celement)
+    indof = elem_igetNDofLoc(celement)
 
     ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1)
 
     ! Number of local DOF`s
-    NVE = elem_igetNVE(p_relementDistribution%celement)
-
-    ! Do we have an assembly structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscretisation,&
-          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
+    NVE = elem_igetNVE(celement)
 
     ! Cubature
     ccubature = p_rcubatureInfo%p_RinfoBlocks(1)%ccubature
@@ -4365,7 +4346,7 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the number of cubature points for the cubature formula
     ncubp = cub_igetNumPts(ccubature)
@@ -4399,7 +4380,7 @@ contains
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
 
-    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
@@ -4516,12 +4497,6 @@ contains
     dumaxr = 1.0_DP/dumax
     !%omp end single
 
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                              p_IelementList)
-
-
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
@@ -4529,14 +4504,14 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -4568,8 +4543,7 @@ contains
       ! In case ALE is used, do this also for the ALE stuff.
       if (bALE) then
         call dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementList(IELset:IELmax), &
-                                    IdofsALE)
+            p_IelementList(IELset:IELmax),IdofsALE)
       end if
 
       ! Calculate local DELTA`s for streamline diffusion method.
@@ -4754,7 +4728,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
       cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(EL_Q1))
 
       ! In the first loop, calculate the coordinates on the reference element.
@@ -4786,8 +4760,7 @@ contains
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a
       ! parametric or nonparametric element.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -6418,7 +6391,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: celement
     integer, dimension(3) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
@@ -6492,7 +6464,6 @@ contains
       call sys_halt()
     end if
 
-    celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
       call output_line ("Unsupported discretisation!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
@@ -6751,7 +6722,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp,NEL
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -6779,9 +6750,6 @@ contains
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
-
-  ! One and only element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
@@ -6819,6 +6787,9 @@ contains
 
   ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
+  
+  ! Element type
+  integer(I32) :: celement
 
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
@@ -6830,6 +6801,7 @@ contains
   ! Cubature information structure
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  integer(I32) :: ccubature
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -6837,6 +6809,7 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
+    ! DO we have a cubature structure?
     ! If we do not have it, create a cubature info structure that
     ! defines how to do the assembly.
     if (.not. present(rcubatureInfo)) then
@@ -6861,10 +6834,6 @@ contains
     ! Shortcut to the spatial discretisation
     p_rdiscretisation => rmatrix%p_rspatialDiscrTest
 
-    ! Get the element distribution. Here, we can find information about
-    ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
@@ -6874,15 +6843,21 @@ contains
     !call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
     !                            p_IedgesAtElement)
 
+    ! Get cubature information.
+    ! Cubature formula. Only one cubature formula supported.
+    call spdiscr_getStdDiscrInfo (1,p_rcubatureInfo,p_rdiscretisation,&
+        celement=celement,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList,&
+        ctrafoType=ctrafoType)
+
     ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%celement)
+    indof = elem_igetNDofLoc(celement)
 
     ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1_3D)
 
     ! Number of local DOF`s
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -6913,7 +6888,7 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the number of cubature points for the cubature formula
     ncubp = cub_igetNumPts(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature)
@@ -6933,8 +6908,7 @@ contains
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
-    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
-             ncubp,nelementsPerBlock))
+    allocate(Dbas(indof,elem_getMaxDerivative(celement), ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
@@ -7013,20 +6987,15 @@ contains
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
 
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                              p_IelementList)
-
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -7058,8 +7027,7 @@ contains
       ! In case ALE is used, do this also for the ALE stuff.
       if (bALE) then
         call dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementList(IELset:IELmax), &
-                                    IdofsALE)
+            p_IelementList(IELset:IELmax),IdofsALE)
       end if
 
       ! Calculate local DELTA`s for streamline diffusion method.
@@ -7184,7 +7152,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
       cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(EL_Q1_3D))
 
       ! In the first loop, calculate the coordinates on the reference element.
@@ -7204,8 +7172,7 @@ contains
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -7632,7 +7599,7 @@ contains
   subroutine conv_streamlineDiffusionBlk3d (rvecPrimary, rvecSecondary,&
                                    dprimWeight, dsecWeight, rconfig, cdef, &
                                    rmatrix, rsolution, rdefect, DmeshVelocity,&
-                                   rperfconfig)
+                                   rcubatureInfo,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -7708,6 +7675,10 @@ contains
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -7733,7 +7704,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rsolZ,&
@@ -7893,8 +7863,6 @@ contains
       end if
     end if
 
-    celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest% &
-                RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then
       call output_line ("Unsupported discretisation!", &
@@ -7949,21 +7917,22 @@ contains
       call lsyssc_getbase_double (p_rdefectZ,p_DdefectZ)
 
       call conv_strdiff3dALEblk_double (&
-              p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2, &
-              dprimWeight, dsecWeight, rmatrix,cdef, rconfig%dupsam, &
-              rconfig%dnu, rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
-              rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE, &
-              p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,&
-              DmeshVelocity,rperfconfig)
+          p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2, &
+          dprimWeight, dsecWeight, rmatrix,cdef, rconfig%dupsam, &
+          rconfig%dnu, rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
+          rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE, &
+          p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,&
+          DmeshVelocity,rcubatureInfo,rperfconfig)
 
     else
 
       call conv_strdiff3dALEblk_double ( &
-                    p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
-                    dprimWeight,dsecWeight, rmatrix, cdef, rconfig%dupsam, &
-                    rconfig%dnu,rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
-                    rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE,&
-                    DmeshVelocity=DmeshVelocity,rperfconfig=rperfconfig)
+          p_DvelX1,p_DvelY1,p_DvelZ1,p_DvelX2,p_DvelY2,p_DvelZ2,&
+          dprimWeight,dsecWeight, rmatrix, cdef, rconfig%dupsam, &
+          rconfig%dnu,rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
+          rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE,&
+          DmeshVelocity=DmeshVelocity,rcubatureInfo=rcubatureInfo,&
+          rperfconfig=rperfconfig)
 
     end if
 
@@ -7982,7 +7951,7 @@ contains
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,dweight1,dweight2,&
                   rmatrix,cdef,dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
                   clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity,&
-                  rperfconfig)
+                  rcubatureInfo, rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -8137,6 +8106,10 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -8165,7 +8138,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp,NEL
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -8198,9 +8171,6 @@ contains
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
-
-  ! One and only element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
 
   ! For every cubature point on the reference element,
   ! the corresponding cubature weight
@@ -8256,9 +8226,17 @@ contains
   ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
 
+  ! Element type
+  integer(I32) :: celement
+
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
   integer(I32) :: cevaluationTag
+
+  ! Cubature data
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  integer(I32) :: ccubature
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -8267,6 +8245,17 @@ contains
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags
@@ -8286,10 +8275,6 @@ contains
     ! We assume the same for all Aij.
     p_rdiscretisation => rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest
 
-    ! Get the element distribution. Here, we can find information about
-    ! the cubature formula etc...
-    p_relementDistribution => p_rdiscretisation%RelementDistr(1)
-
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
@@ -8299,15 +8284,21 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IfacesAtElement,&
                                 p_IfacesAtElement)
 
+    ! Get cubature information.
+    ! Cubature formula. Only one cubature formula supported.
+    call spdiscr_getStdDiscrInfo (1,p_rcubatureInfo,p_rdiscretisation,&
+        celement=celement,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList,&
+        ctrafoType=ctrafoType)
+
     ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
-    indof = elem_igetNDofLoc(p_relementDistribution%celement)
+    indof = elem_igetNDofLoc(celement)
 
     ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1_3D)
 
     ! Number of local DOF`s
-    NVE = elem_igetNVE(p_relementDistribution%celement)
+    NVE = elem_igetNVE(celement)
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -8353,17 +8344,17 @@ contains
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(ccubature,p_DcubPtsRef, Domega)
 
     ! OpenMP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
@@ -8384,7 +8375,7 @@ contains
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
-    allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
+    allocate(Dbas(indof,elem_getMaxDerivative(celement), &
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
@@ -8501,12 +8492,6 @@ contains
     dumaxr = 1.0_DP/dumax
     !%omp end single
 
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                              p_IelementList)
-
-
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
@@ -8514,14 +8499,14 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), nelementsPerBlock
+    do IELset = 1, NEL, nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -8553,8 +8538,7 @@ contains
       ! In case ALE is used, do this also for the ALE stuff.
       if (bALE) then
         call dof_locGlobMapping_mult(p_rdiscretisation, &
-                                    p_IelementList(IELset:IELmax), &
-                                    IdofsALE)
+            p_IelementList(IELset:IELmax), IdofsALE)
       end if
 
       ! Calculate local DELTA`s for streamline diffusion method.
@@ -8676,9 +8660,8 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-      cevaluationTag = ior(cevaluationTag,&
-                      elem_getEvaluationTag(EL_Q1_3D))
+      cevaluationTag = elem_getEvaluationTag(celement)
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(EL_Q1_3D))
 
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -8709,8 +8692,7 @@ contains
       ! coordinates on the reference element (the same for all elements)
       ! or on the real element - depending on whether this is a
       ! parametric or nonparametric element.
-      call elem_generic_sim2 (p_relementDistribution%celement, &
-          revalElementSet, Bder, Dbas)
+      call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
       ! We want to set up the nonlinear part of the matrix
       !
@@ -9628,6 +9610,11 @@ contains
 
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
     deallocate(DlocalDelta)
     if (dnewton .ne. 0.0_DP) then
@@ -11114,7 +11101,7 @@ contains
     ! Variables specifying the current element set
     integer :: IELset,IELmax
 
-    ! Number of DOF`s in the current element distribution
+    ! Number of DOF`s in the current element group
     integer :: indof
 
     ! Maximum norm of the vector field and its reciprocal
@@ -11142,8 +11129,8 @@ contains
     type(t_vectorBlock) :: rvelocitytemp
 
     ! Current assembly block, cubature formula, element type,...
-    integer :: ielementDistr,icubatureBlock,NEL
-    integer(I32) :: cevalTag, celement, ccubature, ctrafoType
+    integer :: ielemGroup,icubatureBlock,NEL
+    integer(I32) :: celement, ccubature, ctrafoType
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     type(t_stdCubatureData) :: rcubatureData
@@ -11159,6 +11146,16 @@ contains
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags. We need function values and
@@ -11225,22 +11222,12 @@ contains
 
     end if
 
-    ! Do we have an assembly structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Loop over the element blocks. Each defines a separate cubature formula.
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
-          ielementDistr,celement,ccubature,NEL,p_IelementList)
+          ielemGroup,celement,ccubature,NEL,p_IelementList)
 
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
@@ -11269,7 +11256,7 @@ contains
       call easminfo_initStdFEBasisEval(celement,&
           elem_getMaxDerivative(celement),rcubatureData%ncubp,nelementsPerBlock,rfeBasisEvalData)
 
-      ! Get the basic element shape in the element distribution;
+      ! Get the basic element shape in the element group;
       ! 3=triangles, 4=quads
       NVE = rfeBasisEvalData%NVE
 
@@ -11484,7 +11471,7 @@ contains
             call domint_setTempMemory (rintSubset,p_DtempArrays)
           end if
 
-          !rintSubset%ielementDistribution = ielementDistr
+          !rintSubset%ielemGroupibution = ielemGroup
           rintSubset%ielementStartIdx = IELset
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial => p_Idofs

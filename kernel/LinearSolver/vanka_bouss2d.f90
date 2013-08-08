@@ -474,19 +474,19 @@ contains
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
     rvanka%p_rspatialDiscrT => p_rblockDiscr%RspatialDiscr(4)
 
-    if (rvanka%p_rspatialDiscrU%inumFESpaces .ne. &
-        rvanka%p_rspatialDiscrV%inumFESpaces) then
+    if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrU) .ne. &
+        spdiscr_getNelemGroups(rvanka%p_rspatialDiscrV)) then
       call output_line (&
           "Discretisation structures of X- and Y-velocity incompatible!",&
           OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
-    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
-        (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
-          rvanka%p_rspatialDiscrU%inumFESpaces)) then
+    if ((spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. 1) .and. &
+        (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .ne. &
+         spdiscr_getNelemGroups(rvanka%p_rspatialDiscrU))) then
       ! Either there must be only one element type for the pressure, or there one
-      ! pressure element distribution for every velocity element distribution!
+      ! pressure element group for every velocity element group!
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
@@ -566,12 +566,9 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: ielementdist
+  integer :: ielemGroup, NEL
   integer, dimension(:), pointer :: p_IelementList
-  type(t_elementDistribution), pointer :: p_relementDistrU
-  type(t_elementDistribution), pointer :: p_relementDistrV
-  type(t_elementDistribution), pointer :: p_relementDistrP
-  type(t_elementDistribution), pointer :: p_relementDistrT
+  integer(I32) :: celemU, celemV, celemP, celemT
 
     ! Do we use the pressure-DOF based Vanka?
     if(csubtype .eq. VANKATP_BOUSS2D_PDOF) then
@@ -601,38 +598,37 @@ contains
 
     end if
 
-    ! Loop through the element distributions of the velocity.
-    do ielementdist = 1,rvanka%p_rspatialDiscrU%inumFESpaces
+    ! Loop through the element groups of the velocity.
+    do ielemGroup = 1,spdiscr_getNelemGroups(rvanka%p_rspatialDiscrU)
 
-      ! Get the corresponding element distributions of U, V and P.
-      p_relementDistrU => &
-          rvanka%p_rspatialDiscrU%RelementDistr(ielementdist)
-      p_relementDistrV => &
-          rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
-      p_relementDistrT => &
-          rvanka%p_rspatialDiscrT%RelementDistr(ielementdist)
-
-      ! Either the same element for P everywhere, or there must be given one
-      ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
-      else
-        p_relementDistrP => &
-            rvanka%p_rspatialDiscrP%RelementDistr(1)
-      end if
-
+      ! Get the corresponding element types of U, V and P.
+      !
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as "primary" element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
-      call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      call spdiscr_getElemGroupInfo (&
+          rvanka%p_rspatialDiscrU,ielemGroup,celemU,NEL,p_IelementList)
 
+      ! Skip if empty
+      if (NEL .eq. 0) cycle
+
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrV,ielemGroup,celemV)
+      call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrT,ielemGroup,celemT)
+      
+      ! Either the same element for P everywhere, or there must be given one
+      ! element group in the pressure for every velocity element group.
+      if (spdiscr_getNelemGroups(rvanka%p_rspatialDiscrP) .gt. 1) then
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,ielemGroup,celemP)
+      else
+        call spdiscr_getElemGroupInfo (rvanka%p_rspatialDiscrP,1,celemP)
+      end if
+      
       ! Which element combination do we have now?
-      if ((elem_getPrimaryElement(p_relementDistrU%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrV%celement) .eq. EL_Q1T) .and. &
-          (elem_getPrimaryElement(p_relementDistrP%celement) .eq. EL_Q0) .and. &
-          (elem_getPrimaryElement(p_relementDistrT%celement) .eq. EL_Q1)) then
+      if ((elem_getPrimaryElement(celemU) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celemV) .eq. EL_Q1T) .and. &
+          (elem_getPrimaryElement(celemP) .eq. EL_Q0) .and. &
+          (elem_getPrimaryElement(celemT) .eq. EL_Q1)) then
         ! Q1~/Q1~/Q0/Q1 discretisation
 
         ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?

@@ -426,7 +426,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,k,icurrentElementDistr, ICUBP
+    integer :: i,k,ielemGroup, ICUBP
     integer :: IEL, IELmax, IELset
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(dp), dimension(:), pointer :: p_Ddata
@@ -434,6 +434,7 @@ contains
     integer(I32) :: ccub
     real(dp), dimension(:), pointer :: p_Dweight
     integer :: iactualorder
+    integer(I32) :: celement
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
@@ -461,10 +462,7 @@ contains
     ! the reference element for all elements in a set.
     real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
 
-    ! Current element distribution
-    type(t_elementDistribution), pointer :: p_relementDistribution
-
-    ! Number of elements in the current element distribution
+    ! Number of elements in the current element group
     integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
@@ -534,23 +532,26 @@ contains
         ST_DOUBLE, h_Dweight, ST_NEWBLOCK_ZERO)
     call storage_getbase_double(h_Dweight,p_Dweight)
 
-    ! Now loop over the different element distributions (=combinations
+    ! Now loop over the different element groups (=combinations
     ! of trial and test functions) in the discretisation.
 
-    do icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
+    do ielemGroup = 1,spdiscr_getNelemGroups(p_rdiscretisation)
 
-      ! Activate the current element distribution
-      p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
+      ! Activate the current element group
+      !
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call spdiscr_getElemGroupInfo (p_rdiscretisation,ielemGroup,celement,NEL,p_IelementList)
 
-      ! Cancel if this element distribution is empty.
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! Cancel if this element group is empty.
+      if (NEL .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial functions
-      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTrial = elem_igetNDofLoc(celement)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      ctrafoType = elem_igetTrafoType(celement)
 
       ! Now a big element and dimension dependent part: Evaluation points of the
       ! node functionals. The DOF`s of most finite elements can be filled by the
@@ -565,7 +566,7 @@ contains
       ! mean value based variant, we have to evaluate line integrals.
       ! Exception: If the 'order' is to low, we also take midpoint values
       ! in the integral mean value case of Q1~.
-      select case (p_relementDistribution%celement)
+      select case (celement)
 
       case (EL_E030,EL_EM30)
         if (iactualorder .eq. 1) then
@@ -652,7 +653,7 @@ contains
         ! the evaluation points coincide with the cubature points of that
         ! cubature formula that lump the mass matrix in that FE space.
         ! So try to get them...
-        ccub = spdiscr_getLumpCubature (p_relementDistribution%celement)
+        ccub = spdiscr_getLumpCubature (celement)
         if (ccub .eq. 0) then
           ! That FE space does not support lumped mass matrix and so
           ! we have no point coordinates available to get the DOF values :(
@@ -700,14 +701,6 @@ contains
       ! etc. are not needed since we do not evaluate...
       cevaluationTag = EL_EVLTAG_COORDS + EL_EVLTAG_REFPOINTS + EL_EVLTAG_REALPOINTS
 
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of elements there.
-      NEL = p_relementDistribution%NEL
-
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
 
@@ -743,11 +736,11 @@ contains
           call domint_setTempMemory (rintSubset,p_DtempArrays)
         end if
 
-        !rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielemGroupibution = ielemGroup
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => IdofsTrial
-        rintSubset%celement = p_relementDistribution%celement
+        rintSubset%celement = celement
 
         ! It is time to call our coefficient function to calculate the
         ! function values in the cubature points:  u(x,y)
@@ -758,7 +751,7 @@ contains
                     Dcoefficients(:,1:IELmax-IELset+1),rcollection)
 
         ! Another element dependent part: evaluation of the functional.
-        select case (p_relementDistribution%celement)
+        select case (celement)
 
         case (EL_E030,EL_EM30)
 
@@ -847,7 +840,7 @@ contains
         deallocate(p_DtempArrays)
       end if
 
-    end do ! icurrentElementDistr
+    end do ! ielemGroup
 
     ! Take the mean value in all entries. We just summed up all contributions and now
     ! this divides by the number of contributions...
@@ -892,45 +885,50 @@ contains
 
 !</subroutine>
 
+    integer(I32) :: celement, celement2
+    
     ! This task is a bit tricky and depends on the discretisation.
     ! We have to bypass DOFMapping!
     !
     ! We only support a special set of discretisations, it get`s too
     ! complicated otherwise...
-    if (rvector%p_rspatialDiscr%inumFESpaces .eq. 1) then
+    if (spdiscr_getNelemGroups(rvector%p_rspatialDiscr) .eq. 1) then
 
-      if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P1_2D) .or. &
-          (rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_Q1_2D)) then
+      call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,1,celement)
+
+      if ((celement .eq. EL_P1_2D) .or. &
+          (celement .eq. EL_Q1_2D)) then
         ! P1 or Q1
         call charFctRealBdComp2d_P1Q1 (rboundaryRegion,rvector)
         return
 
-      else if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P2_2D) .or. &
-               (rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_Q2_2D)) then
+      else if ((celement .eq. EL_P2_2D) .or. &
+               (celement .eq. EL_Q2_2D)) then
         ! P2 or Q2
         call charFctRealBdComp2d_P2Q2 (rboundaryRegion,rvector)
         return
 
-      else if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P3_2D) .or. &
-               (rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_Q3_2D)) then
+      else if ((celement .eq. EL_P3_2D) .or. &
+               (celement .eq. EL_Q3_2D)) then
         ! P3 or Q3
         call charFctRealBdComp2d_P3Q3 (rboundaryRegion,rvector)
         return
 
-      else if ((elem_getPrimaryElement(rvector%p_rspatialDiscr%RelementDistr(1)%celement) &
-               .eq. EL_Q1T_2D) .or. &
-               (elem_getPrimaryElement(rvector%p_rspatialDiscr%RelementDistr(1)%celement) &
-               .eq. EL_Q1TB_2D)) then
+      else if ((elem_getPrimaryElement(celement) .eq. EL_Q1T_2D) .or. &
+               (elem_getPrimaryElement(celement) .eq. EL_Q1TB_2D)) then
         ! Q1~ or Q1~bubble
         call charFctRealBdComp2d_Ex3x (rboundaryRegion,rvector)
         return
 
       end if
 
-    else if (rvector%p_rspatialDiscr%inumFESpaces .eq. 2) then
+    else if (spdiscr_getNelemGroups(rvector%p_rspatialDiscr) .eq. 2) then
+    
+      call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,1,celement)
+      call spdiscr_getElemGroupInfo (rvector%p_rspatialDiscr,2,celement2)
 
-      if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P1_2D) .and. &
-          (rvector%p_rspatialDiscr%RelementDistr(2)%celement .eq. EL_Q1_2D)) then
+      if ((celement .eq. EL_P1_2D) .and. &
+          (celement2 .eq. EL_Q1_2D)) then
         ! Mixed P1/Q1
         call charFctRealBdComp2d_P1Q1 (rboundaryRegion,rvector)
         return

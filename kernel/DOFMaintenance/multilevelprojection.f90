@@ -245,7 +245,7 @@ module multilevelprojection
   ! or interpolation to be used. The information is (of course) element
   ! dependent.
   ! One t_interlevelProjectionScalar structure is associated to one
-  ! t_elementDistribution structure of a spatial discretisation.
+  ! element group of a spatial discretisation.
   ! t_interlevelProjectionScalar is not part if the t_spatialDiscretisation
   ! structure, as t_interlevelProjectionScalar resides "between" levels:
   ! If there is one t_spatialDiscretisation structure for level 3 and
@@ -435,7 +435,7 @@ module multilevelprojection
   ! in the discretisation.
   ! The structure contains a 2-dimensional array: There is one
   ! t_interlevelProjectionScalar structure for every equation and
-  ! for every element distribution in the equation.
+  ! for every element group in the equation.
   !
   ! The default initialisation initialises this structure with the
   ! usual values for the whole grid transfer process. If there is special
@@ -445,7 +445,7 @@ module multilevelprojection
   type t_interlevelProjectionBlock
 
     ! A list of t_interlevelProjectionScalar structures for every
-    ! equation and every element distribution in the discretisation.
+    ! equation and every element group in the discretisation.
     ! DIMENSION(1..#FE-spaces, 1..#equations)
     type(t_interlevelProjectionScalar), dimension(:,:), pointer :: RscalarProjection => null()
 
@@ -540,7 +540,7 @@ contains
     nequations = size(RspatialDiscr)
     nFEspaces = 0
     do i=1,nequations
-      nFEspaces = max(nFEspaces,RspatialDiscr(i)%inumFESpaces)
+      nFEspaces = max(nFEspaces,spdiscr_getNelemGroups(RspatialDiscr(i)))
     end do
 
     ! Allocate spatial discretisation structures for all the subblocks
@@ -776,8 +776,8 @@ contains
 
 !<subroutine>
 
-  subroutine mlprj_getProjectionStrategy (rprojection,releDistrCoarse,releDistrFine,&
-                                          ractProjection)
+  subroutine mlprj_getProjectionStrategy (rprojection,&
+      rdiscrCoarse, rdiscrFine, ielemGroup, ractProjection)
 
 !<description>
   ! Internal subroutine. This creates a projection structure ractProjection
@@ -796,11 +796,14 @@ contains
   ! The t_interlevelProjectionScalar structure which is used as a template
   type(t_interlevelProjectionScalar), intent(in) :: rprojection
 
-  ! One element distribution structure on the coarse grid
-  type(t_elementDistribution), intent(in) :: releDistrCoarse
+  ! Discretisation on the coarse mesh.
+  type(t_spatialDiscretisation), intent(in) :: rdiscrCoarse
 
-  ! One element distribution structure on the fine grid
-  type(t_elementDistribution), intent(in) :: releDistrFine
+  ! Discretisation on the fine mesh.
+  type(t_spatialDiscretisation), intent(in) :: rdiscrFine
+  
+  ! Current element group
+  integer, intent(in) :: ielemGroup
 !</input>
 
 !<output>
@@ -810,10 +813,17 @@ contains
 !</output>
 
 !</subroutine>
+    
+    ! local variables
+    integer(I32) :: celemCoarse, celemFine
+
+    ! Coarse and fine element
+    call spdiscr_getElemGroupInfo (rdiscrCoarse,ielemGroup,celemCoarse)
+    call spdiscr_getElemGroupInfo (rdiscrFine,ielemGroup,celemFine)
 
     ! Check to see if the two discretisation structures fit together
-    if (releDistrCoarse%celement .ne. releDistrFine%celement) then
-      call output_line ("Element distributions on the coarse and fine grid incompatible!", &
+    if (celemCoarse .ne. celemFine) then
+      call output_line ("Elements on the coarse and fine grid incompatible!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
@@ -823,38 +833,38 @@ contains
 
     ! Is any element type to be replaced according to a discretisation?
     if (ractProjection%ielementTypeProlongation .eq. EL_UNDEFINED) then
-      ractProjection%ielementTypeProlongation = releDistrCoarse%celement
+      ractProjection%ielementTypeProlongation = celemCoarse
     end if
 
     if (ractProjection%ielementTypeRestriction .eq. EL_UNDEFINED) then
-      ractProjection%ielementTypeRestriction = releDistrCoarse%celement
+      ractProjection%ielementTypeRestriction = celemCoarse
     end if
 
     if (ractProjection%ielementTypeInterpolation .eq. EL_UNDEFINED) then
-      ractProjection%ielementTypeInterpolation = releDistrCoarse%celement
+      ractProjection%ielementTypeInterpolation = celemCoarse
     end if
 
     ! Check to see if the discretisation structures fit to the projection structure
-    if (ractProjection%ielementTypeProlongation .ne. releDistrCoarse%celement) then
+    if (ractProjection%ielementTypeProlongation .ne. celemCoarse) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+      call output_line ("element group of the grid and interlevel projection incompatible!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
-    if (ractProjection%ielementTypeRestriction .ne. releDistrCoarse%celement) then
+    if (ractProjection%ielementTypeRestriction .ne. celemCoarse) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+      call output_line ("element group of the grid and interlevel projection incompatible!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
-    if (ractProjection%ielementTypeInterpolation .ne. releDistrCoarse%celement) then
+    if (ractProjection%ielementTypeInterpolation .ne. celemCoarse) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+      call output_line ("element group of the grid and interlevel projection incompatible!", &
           OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
@@ -877,13 +887,13 @@ contains
 !<input>
   ! The t_interlevelProjectionScalar structure which configures
   ! the projection between rdiscrCoarse and rdiscrFine
-  ! for each of the element distributions in rdiscrCoarse /rdiscrFine
+  ! for each of the element groups in rdiscrCoarse /rdiscrFine
   type(t_interlevelProjectionScalar), dimension(:), intent(in) :: RprojectionScalar
 
-  ! The element distribution structure of the equation on the coarse grid.
+  ! The element group structure of the equation on the coarse grid.
   type(t_spatialDiscretisation), intent(in) :: rdiscrCoarse
 
-  ! The element distribution structure of the equation on the fine grid.
+  ! The element group structure of the equation on the fine grid.
   type(t_spatialDiscretisation), intent(in) :: rdiscrFine
 !</input>
 
@@ -954,7 +964,7 @@ contains
 
 !<input>
   ! Projection structure that configures the grid transfer for all equations
-  ! and all element distributions in each equation.
+  ! and all element groups in each equation.
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
 
   ! List of disretisation structures for the equations on the Coarse grid
@@ -1019,7 +1029,7 @@ contains
 
 !<input>
   ! Projection structure that configures the grid transfer for all equations
-  ! and all element distributions in each equation.
+  ! and all element groups in each equation.
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
 
   ! Coarse grid vector. Must have the discretisation structure of the
@@ -1083,7 +1093,7 @@ contains
 
 !<input>
   ! Projection structure that configures the grid transfer for all equations
-  ! and all element distributions in each equation.
+  ! and all element groups in each equation.
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
 
   ! Coarse grid matrix. Must have the discretisation structure of the
@@ -1307,11 +1317,9 @@ contains
       ! Use the first projection structure as template and create
       ! the actual projection structure for our situation.
       ! Remember, in a uniform grid we only have one projection structure
-      ! and one element distribution!
+      ! and one element group!
       call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-            p_rdiscrCoarse%RelementDistr(1), &
-            p_rdiscrFine%RelementDistr(1), &
-            ractProjection)
+          p_rdiscrCoarse, p_rdiscrFine, 1, ractProjection)
 
       ! Is the vector sorted?
       bsorted = rcoarseVector%RvectorBlock(i)%bisSorted
@@ -1873,11 +1881,9 @@ contains
       ! Use the first projection structure as template and create
       ! the actual projection structure for our situation.
       ! Remember, in a uniform grid we only have one projection structure
-      ! and one element distribution!
+      ! and one element group!
       call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-            p_rdiscrCoarse%RelementDistr(1), &
-            p_rdiscrFine%RelementDistr(1), &
-            ractProjection)
+          p_rdiscrCoarse,p_rdiscrFine,1,ractProjection)
 
       ! Is the vector sorted?
       bsorted = rfineVector%RvectorBlock(i)%bisSorted
@@ -2437,11 +2443,9 @@ contains
       ! Use the first projection structure as template and create
       ! the actual projection structure for our situation.
       ! Remember, in a uniform grid we only have one projection structure
-      ! and one element distribution!
+      ! and one element group!
       call mlprj_getProjectionStrategy (rprojection%RscalarProjection(1,i), &
-            p_rdiscrCoarse%RelementDistr(1), &
-            p_rdiscrFine%RelementDistr(1), &
-            ractProjection)
+          p_rdiscrCoarse,p_rdiscrFine,1,ractProjection)
 
       ! Is the vector sorted?
       bsorted = rfineVector%RvectorBlock(i)%bisSorted

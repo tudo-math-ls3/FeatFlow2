@@ -204,12 +204,12 @@ contains
       call matio_writeMatrix79_DP (p_Da, p_Kcol, p_Kld, &
                                       rmatrix%NEQ, rmatrix%NCOLS, sarray, &
                                       bnoZero, ifile, sfile, sformat,dthres)
-    case DEFAULT
+    case default
       call output_line ('Unsupported matrix precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
       call sys_halt()
     end select
-  case DEFAULT
+  case default
     call output_line ('Unknown matrix format!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
     call sys_halt()
@@ -763,12 +763,12 @@ contains
       call matio_writeMapleMatrix79_D (p_Da, p_Kcol, p_Kld, &
                                        rmatrix%NEQ, rmatrix%NEQ, sarray, &
                                        ifile, sfile, sformat)
-    case DEFAULT
+    case default
       call output_line ('Unsupported matrix precision!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
       call sys_halt()
     end select
-  case DEFAULT
+  case default
     call output_line ('Unknown matrix format!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
     call sys_halt()
@@ -1121,7 +1121,7 @@ contains
         cstat="REPLACE"; cpos="ASIS"
       case (IO_OLD)
         cstat="OLD"; cpos="APPEND"
-      case DEFAULT
+      case default
         cstat="UNKNOWN"; cpos ="ASIS"
       end select
     else
@@ -1168,7 +1168,7 @@ contains
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
                 rmatrix%NVAR,p_Kld,p_Kcol,sformat,p_Da,dthres,nnz)
-          case DEFAULT
+          case default
             call output_line ('Unsupported interleave matrix type!', &
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
@@ -1185,14 +1185,14 @@ contains
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_single(iunit,rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
                 rmatrix%NVAR,p_Kld,p_Kcol,sformat,p_Fa,dthres,nnz)
-          case DEFAULT
+          case default
             call output_line ('Unsupported interleave matrix type!', &
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
           end select
           write(UNIT=iunit,FMT=20)
 
-        case DEFAULT
+        case default
           call output_line ('Unsupported matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
@@ -1212,7 +1212,7 @@ contains
         case (LSYSSC_MATRIX1)
           call do_spy_mat79mat1_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
               rmatrix%NVAR,p_Kld,p_Kcol,sformat)
-        case DEFAULT
+        case default
           call output_line ('Unsupported interleave matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
@@ -1242,7 +1242,7 @@ contains
               p_Kld,p_Kcol,sformat,p_Fa,dthres,nnz)
           write(UNIT=iunit,FMT=20)
 
-        case DEFAULT
+        case default
           call output_line ('Unsupported matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
@@ -1289,7 +1289,7 @@ contains
           end do
           write(UNIT=iunit,FMT=20)
 
-        case DEFAULT
+        case default
           call output_line ('Unsupported matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
@@ -1326,7 +1326,7 @@ contains
           call do_spy_mat1_single(iunit,rmatrix%NEQ,rmatrix%NCOLS,sformat,p_Fa,dthres,nnz)
           write(UNIT=iunit,FMT=20)
 
-        case DEFAULT
+        case default
           call output_line ('Unsupported matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
@@ -1344,7 +1344,7 @@ contains
 
       end if
 
-    case DEFAULT
+    case default
       call output_line ('Unsupported matrix format!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
       call sys_halt()

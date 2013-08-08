@@ -116,7 +116,7 @@ contains
     if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
  
       ! Uniform discretisation - fall back to the old FEAT mapping
-      celement = rdiscretisation%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
       
       select case(elem_igetDimension(celement))
       case (NDIM1D)
@@ -136,13 +136,13 @@ contains
       !
       ! From the first available element, we get the dimension
       ! of the space.
-      celement = rdiscretisation%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
 
       select case(elem_igetDimension(celement))
       case (NDIM1D)
         dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
 
-        if (rdiscretisation%inumFESpaces .ne. 1) then
+        if (spdiscr_getNelemGroups(rdiscretisation) .ne. 1) then
           call output_line("Conformal discretisation not completely supported!",&
                           OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
         end if
@@ -150,9 +150,9 @@ contains
       case (NDIM2D)
         ! Conformal discretisation. That is a little bit tricky!
         ! At first, we support only the case where two element types are mixed.
-        if (rdiscretisation%inumFESpaces .eq. 2) then
-          Celements(1) = rdiscretisation%RelementDistr(1)%celement
-          Celements(2) = rdiscretisation%RelementDistr(2)%celement
+        if (spdiscr_getNelemGroups(rdiscretisation) .eq. 2) then
+          call spdiscr_getElemGroupInfo (rdiscretisation,1,Celements(1))
+          call spdiscr_getElemGroupInfo (rdiscretisation,2,Celements(2))
 
           dof_igetNDofGlob = NDFG_conformal2D_2el (&
               rdiscretisation%p_rtriangulation, Celements(1:2))
@@ -164,7 +164,7 @@ contains
         ! Currently, only uniform discretisations are supported.
         dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
 
-        if (rdiscretisation%inumFESpaces .ne. 1) then
+        if (spdiscr_getNelemGroups(rdiscretisation) .ne. 1) then
           call output_line("Conformal discretisation not completely supported!",&
               OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
         end if
@@ -636,7 +636,7 @@ contains
       ! structure (if necessary) to prevent another call using pointers...
       ! The number of global DOF`s depends on the element type...
 
-      celement = rdiscretisation%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
 
       select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
@@ -689,7 +689,7 @@ contains
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF`s depends on the element type...
 
-        celement = rdiscretisation%RelementDistr(1)%celement
+        call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
 
         select case (elem_getPrimaryElement(celement))
         case (EL_P0, EL_Q0)
@@ -832,10 +832,10 @@ contains
 
         ! Conformal discretisation. That is a little bit tricky!
         ! At first, we support only the case where two element types are mixed.
-        if (rdiscretisation%inumFESpaces .eq. 2) then
+        if (spdiscr_getNelemGroups(rdiscretisation) .eq. 2) then
 
-          Celements(1) = rdiscretisation%RelementDistr(1)%celement
-          Celements(2) = rdiscretisation%RelementDistr(2)%celement
+          call spdiscr_getElemGroupInfo (rdiscretisation,1,Celements(1))
+          call spdiscr_getElemGroupInfo (rdiscretisation,2,Celements(2))
 
           ! Get the primary element type(s)
           Celements = elem_getPrimaryElement(Celements)
@@ -914,7 +914,7 @@ contains
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF`s depends on the element type...
-        celement = rdiscretisation%RelementDistr(1)%celement
+        call spdiscr_getElemGroupInfo (rdiscretisation,1,celement)
 
         select case (elem_getPrimaryElement(celement))
         case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
@@ -3327,8 +3327,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
-    type(t_elementDistribution), pointer :: p_relementDistr
+    integer :: i,NEL
+    integer(I32) :: celement
 
     ! General information:
     call output_line ("Dimension:                    "&
@@ -3342,28 +3342,28 @@ contains
       call output_line ("conformal",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
       call output_line ("mixed",cdateTimeLogPolicy=OU_DTP_NONE)
-    case DEFAULT
+    case default
       call output_line ("undefined",cdateTimeLogPolicy=OU_DTP_NONE)
     end select
     call output_line ("#DOFs:                        "&
         //trim(sys_siL(dof_igetNDofGlob(rspatialDiscr),16)))
     call output_line ("#finite element spaces:       "&
-        //trim(sys_siL(rspatialDiscr%inumFESpaces,10)))
+        //trim(sys_siL(spdiscr_getNelemGroups(rspatialDiscr),10)))
 
     ! Print out detailed information about the FE spaces.
     call output_line ("Discretisation details:")
     call output_line ("FE-space #elements       NVE   trial-element   test-element")
 
-    ! Loop through all element distributions
-    do i=1,rspatialDiscr%inumFESpaces
+    ! Loop through all element groups
+    do i=1,spdiscr_getNelemGroups(rspatialDiscr)
 
-      p_relementDistr => rspatialDiscr%RelementDistr(i)
+      call spdiscr_getElemGroupInfo (rspatialDiscr,i,celement,NEL)
 
       call output_line ( " " &
         // sys_siL(i,8) &
-        // sys_siL(p_relementDistr%NEL,16) &
-        // sys_siL(elem_igetNVE(p_relementDistr%celement),6) &
-        // sys_siL(int(iand(elem_getPrimaryElement(p_relementDistr%celement),&
+        // sys_siL(NEL,16) &
+        // sys_siL(elem_igetNVE(celement),6) &
+        // sys_siL(int(iand(elem_getPrimaryElement(celement),&
                    not(EL_DIMENSION))),16) )
 
     end do
@@ -3408,7 +3408,7 @@ contains
       call output_line ("conformal",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
       call output_line ("mixed",cdateTimeLogPolicy=OU_DTP_NONE)
-    case DEFAULT
+    case default
       call output_line ("undefined",cdateTimeLogPolicy=OU_DTP_NONE)
     end select
     call output_line ("#DOFs:                        "&
@@ -3447,7 +3447,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ndoflocal,i,j,ieldistr,ipos
+    integer :: ndoflocal,i,j,ielgroup,ipos,NEL
+    integer(I32) :: celement
     integer, dimension(:,:), allocatable :: IelementDofs
     integer, dimension(:), pointer :: p_IelementDofs,p_IelementDofIdx,p_IelementList
     type(t_triangulation), pointer :: p_rtriangulation
@@ -3470,13 +3471,15 @@ contains
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
 
-      ! Build that array by looping through the element distributions and
+      ! Build that array by looping through the element groups and
       ! counting the number of local DOF`s.
-      do ieldistr = 1,rdiscretisation%inumFESpaces
-        call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
-            p_IelementList)
-        ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
-        do i = 1,rdiscretisation%RelementDistr(ieldistr)%NEL
+      do ielgroup = 1,spdiscr_getNelemGroups(rdiscretisation)
+        
+        call spdiscr_getElemGroupInfo (rdiscretisation,ielgroup,&
+            celement,NEL,p_IelementList)
+        
+        ndoflocal = elem_igetNDofLoc(celement)
+        do i = 1,NEL
           p_IelementDofIdx(1+p_IelementList(i)) = ndoflocal
         end do
       end do
@@ -3493,19 +3496,19 @@ contains
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)
 
-      do ieldistr = 1,rdiscretisation%inumFESpaces
+      do ielgroup = 1,spdiscr_getNelemGroups(rdiscretisation)
 
-        call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
-            p_IelementList)
-        ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
+        call spdiscr_getElemGroupInfo (rdiscretisation,ielgroup,&
+            celement,NEL,p_IelementList)
+        ndoflocal = elem_igetNDofLoc(celement)
 
         ! Allocate temp memory for the DOF`s. Write them to this array at first
         ! and copy them later to the actual array.
-        allocate(IelementDofs(ndoflocal,rdiscretisation%RelementDistr(ieldistr)%NEL))
+        allocate(IelementDofs(ndoflocal,NEL))
 
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, IelementDofs)
 
-        do i = 1,rdiscretisation%RelementDistr(ieldistr)%NEL
+        do i = 1,NEL
           ipos = p_IelementDofIdx(p_IelementList(i))
           do j=1,ndoflocal
             p_IelementDofs(ipos+j-1) = IelementDofs(j,i)

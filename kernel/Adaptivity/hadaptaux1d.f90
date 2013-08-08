@@ -471,7 +471,7 @@ contains
                               rcollection, fcb_hadaptCallback)
         p_Imarker(iel) = MARK_ASIS
 
-      case DEFAULT
+      case default
         call output_line('Invalid element refinement marker!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refine1D')
         call sys_halt()
@@ -546,7 +546,7 @@ contains
         call coarsen_2Line1Line(rhadapt, iel, p_Imarker(iel),&
                                 rcollection, fcb_hadaptCallback)
 
-      case DEFAULT
+      case default
         call output_line('Invalid recoarsening marker!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen1D')
         call sys_halt()
@@ -1256,7 +1256,7 @@ contains
         call fcb_hadaptCallback(HADAPT_OPR_CRS_2LINE1LINE, rcollection)
       end if
 
-    case DEFAULT
+    case default
       call output_line('Invalid element coarsening marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
       call sys_halt()

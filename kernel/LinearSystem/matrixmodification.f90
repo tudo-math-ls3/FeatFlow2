@@ -158,7 +158,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format9')
         call sys_halt()
@@ -225,7 +225,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format7')
         call sys_halt()
@@ -333,7 +333,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'removeOffdiags_format9')
         call sys_halt()
@@ -384,7 +384,7 @@ contains
 
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'removeOffdiags_format7')
         call sys_halt()
@@ -471,7 +471,7 @@ contains
           p_FA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_SP
         end do
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLinesZero_format97')
         call sys_halt()
@@ -595,7 +595,7 @@ contains
         if (bsymmetric) call mergeColumns_format7(rmatrix, p_ImergeWithRow)
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
     end select
@@ -618,7 +618,7 @@ contains
         call storage_realloc('mmod_mergeLines', rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR,&
             rmatrix%h_DA, ST_NEWBLOCK_ZERO, .false.)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
       end select

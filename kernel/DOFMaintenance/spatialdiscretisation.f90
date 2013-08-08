@@ -70,7 +70,7 @@
 !#         (mostly for debugging)
 !#
 !# 17.) spdiscr_infoElementDistr
-!#      -> Outputs information about the element distribution
+!#      -> Outputs information about the element group
 !#         (mostly for debugging)
 !#
 !# 18.) spdiscr_igetNDofLocMax
@@ -102,7 +102,7 @@
 !#      -> Checks whether two spatial discretisation structures are compatible
 !#
 !# 26.) spdiscr_isElemDistrCompatible
-!#      -> Checks whether two element distribution structures are compatible
+!#      -> Checks whether two element group structures are compatible
 !#
 !# 25.) spdiscr_createDefCubStructure
 !#      -> Create a default cubature information structure based on a
@@ -321,7 +321,7 @@ module spatialdiscretisation
 
 !<typeblock>
 
-  ! Element distribution structure. This structure collects for one type
+  ! element group structure. This structure collects for one type
   ! of element (e.g. <tex>$Q_1$</tex>), on which geometric element primitives it is
   ! to be used. In the t_spatialDiscretisation there is a list of these
   ! element structures for each type of element. This e.g. allows to use
@@ -411,16 +411,16 @@ module spatialdiscretisation
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants
     integer                          :: ccomplexity            = SPDISC_UNIFORM
 
-    ! Handle to the element distribution identifier list.
-    ! For every geometric element i, IelementDistr(i) specifies the
-    ! number of the element distribution that contains that element.
+    ! Handle to the element group identifier list.
+    ! For every geometric element i, ielemGroup(i) specifies the
+    ! number of the element group that contains that element.
     ! That way one can easily access information; e.g. retrieving the
     ! element type would be possible as follows:
-    !   RelementDistr(IelementDistr(i))%itrialElement
+    !   RelementDistr(ielemGroup(i))%itrialElement
     ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
     ! handle is ST_NOHANDLE as all elements are in the
-    ! element distribution 1.
-    integer                          :: h_IelementDistr       = ST_NOHANDLE
+    ! element group 1.
+    integer                          :: h_ielemGroup       = ST_NOHANDLE
 
     ! Handle to an 'element counter' array. For every element of every
     ! type, there is a unique running number given to that element in the
@@ -442,7 +442,7 @@ module spatialdiscretisation
     ! This is the number of elements occupied in RelementDistibution.
     integer                          :: inumFESpaces           = 0
 
-    ! List of element distribution structures for every element type
+    ! List of element group structures for every element type
     ! that is used in the discretisation.
     type(t_elementDistribution), dimension(:), pointer :: RelementDistr => null()
 
@@ -497,7 +497,7 @@ module spatialdiscretisation
     ! SPDISC_CONFORMAL = Elements of different FE spaces are mixed,
     !   but the DOF`s 'fit together'. Each discretisation substructure
     !   RspatialDiscr(:) has exactly the same number of element
-    !   distributions, and each element distribution
+    !   distributions, and each element group
     !     RspatialDiscr(1)%Relementistributions(i),
     !     RspatialDiscr(2)%Relementistributions(i),
     !     RspatialDiscr(3)%Relementistributions(i),...
@@ -545,13 +545,13 @@ module spatialdiscretisation
 
     ! Array of length (#combinations+1). Defines the start positions in Iedges
     ! of every block of edges that have the same type of elements adjacent.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! #combinations = #element groups * (#element groups+1)/2
     integer :: h_IdistPositions
 
     ! Array of dimension(2,#combinations/2).
     ! Returns for each block described by IdistPositions the number of the
-    ! element distributions of the elements on each side of the edge.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! element groups of the elements on each side of the edge.
+    ! #combinations = #element groups * (#element groups+1)/2
     integer :: h_Idistributions
   end type
 
@@ -570,7 +570,7 @@ module spatialdiscretisation
     integer(I32) :: ctrafoType = TRAFO_ID_UNKNOWN
 
     ! Id of the element set, this assembly block refers to.
-    integer :: ielementDistr = 0
+    integer :: ielemGroup = 0
     
     ! Number of elements in this block.
     ! =-1: structure not initialised.
@@ -578,9 +578,9 @@ module spatialdiscretisation
 
     ! If h_IelementList != ST_NOHANDLE, this specifies a handle to a list of elements 
     ! where to apply the above cubature rule. All elements shall be in the element set
-    ! ielementDistr!
+    ! ielemGroup!
     ! If h_IelementList=ST_NOHANDLE, the element list for the above cubature rule 
-    ! is the complete list of elements in the element distribution ielementDistr.
+    ! is the complete list of elements in the element group ielemGroup.
     integer :: h_IelementList = ST_NOHANDLE
 
     ! Ownership flag. This flag is set to .true. by the routines in this module
@@ -619,8 +619,8 @@ module spatialdiscretisation
     ! Cubature rule to use.
     integer(I32) :: ccubature = CUB_UNDEFINED
 
-    ! Id of the element set, this assembly block refers to.
-    integer :: ielementDistr = 0
+    ! Id of the element group, this assembly block refers to.
+    integer :: ielemGroup = 0
     
     ! Id of the transformation block, this assembly block refers to.
     integer :: itrafoBlock = 0
@@ -631,9 +631,9 @@ module spatialdiscretisation
 
     ! If h_IelementList != ST_NOHANDLE, this specifies a handle to a list of elements 
     ! where to apply the above cubature rule. All elements shall be in the element set
-    ! ielementDistr!
+    ! ielemGroup!
     ! If h_IelementList=ST_NOHANDLE, the element list for the above cubature rule 
-    ! is the complete list of elements in the element distribution ielementDistr.
+    ! is the complete list of elements in the element group ielemGroup.
     integer :: h_IelementList = ST_NOHANDLE
 
     ! Ownership flag. This flag is set to .true. by the routines in this module
@@ -694,6 +694,7 @@ module spatialdiscretisation
   
   public :: spdiscr_getNelemGroups
   public :: spdiscr_getElemGroupInfo
+  public :: spdiscr_getElemGroupIDs
 
   public :: t_scalarCubatureInfoBlock
   public :: t_scalarCubatureInfo
@@ -789,7 +790,7 @@ contains
 !  integer :: NVE, idim
 !  logical :: bcompatible
 !
-!  ! Get from the element distribution the trial space and from that
+!  ! Get from the element group the trial space and from that
 !  ! the number of vertices, the element expects.
 !  NVE = elem_igetNVE(celement)
 !  idim = elem_igetDimension(celement)
@@ -885,7 +886,7 @@ contains
         ! Use Gauss-4
         ccubType = CUB_G4_1D
 
-      case DEFAULT
+      case default
         ccubType = 0
       end select
 
@@ -952,11 +953,11 @@ contains
         ! Use midpoint rule
         ccubType = CUB_MIDAREA_3D
 
-      case DEFAULT
+      case default
         ccubType = 0
       end select
 
-    case DEFAULT
+    case default
       ccubType = 0
     end select
 
@@ -1808,9 +1809,9 @@ contains
 !  DO i=1,rtriangulation%NEL
 !    p_Iarray(i) = celement
 !  END DO
-  rspatialDiscr%h_IelementDistr = ST_NOHANDLE
+  rspatialDiscr%h_ielemGroup = ST_NOHANDLE
 
-  ! Initialise the first element distribution
+  ! Initialise the first element group
   rspatialDiscr%inumFESpaces = 1
   allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
   p_relementDistr => rspatialDiscr%RelementDistr(1)
@@ -1824,7 +1825,7 @@ contains
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(celement)
 
-  ! Check the cubature formula against the element distribution.
+  ! Check the cubature formula against the element group.
   ! This stops the program if this is not fulfilled.
   call spdiscr_checkCubature(ccub,celement)
 
@@ -1911,9 +1912,9 @@ contains
   !  DO i=1,rtriangulation%NEL
   !    p_Iarray(i) = celement
   !  END DO
-    rspatialDiscr%h_IelementDistr = ST_NOHANDLE
+    rspatialDiscr%h_ielemGroup = ST_NOHANDLE
 
-    ! Initialise the first element distribution
+    ! Initialise the first element group
     rspatialDiscr%inumFESpaces = 1
     allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
     p_relementDistr => rspatialDiscr%RelementDistr(1)
@@ -2076,11 +2077,11 @@ contains
   end if
   rspatialDiscr%ccomplexity      = SPDISC_CONFORMAL
 
-  ! Allocate an array containing the element distribution for each element
+  ! Allocate an array containing the element group for each element
   call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_ielemGroup,   &
       ST_NEWBLOCK_NOINIT)
-  call storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
+  call storage_getbase_int (rspatialDiscr%h_ielemGroup,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
@@ -2096,14 +2097,14 @@ contains
     ! There are quads and probably triangles in the mesh
     do i = 1, rtriangulation%NEL
       if (p_IverticesAtElement (4,i) .eq. 0) then
-        ! Triangular elements are in element distribution 1
+        ! Triangular elements are in element group 1
         p_Iarray(i) = 1
 
         ! This is the IelemCount(1)-th triangle
         IelemCount(1) = IelemCount(1)+1
         p_IelementCounter(i) = IelemCount(1)
       else
-        ! Quad elements are in element distribution 2
+        ! Quad elements are in element group 2
         p_Iarray(i) = 2
 
         ! This is the IelemCount(2)-th quad
@@ -2114,7 +2115,7 @@ contains
   else
     ! Pure triangular mesh
     do i = 1, rtriangulation%NEL
-      ! Triangular elements are in element distribution 1
+      ! Triangular elements are in element group 1
       p_Iarray(i) = 1
 
       ! This is the IelemCount(1)-th triangle
@@ -2123,7 +2124,7 @@ contains
     end do
   end if
 
-  ! Initialise the first element distribution
+  ! Initialise the first element group
   rspatialDiscr%inumFESpaces = 2
   allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
   p_relementDistrTria => rspatialDiscr%RelementDistr(1)
@@ -2144,7 +2145,7 @@ contains
   p_relementDistrTria%ctrafoType = elem_igetTrafoType(ieltypTri)
   p_relementDistrQuad%ctrafoType = elem_igetTrafoType(ieltypQuad)
 
-  ! Check the cubature formula against the element distribution.
+  ! Check the cubature formula against the element group.
   ! This stops the program if this is not fulfilled.
   call spdiscr_checkCubature(ccubTri,ieltypTri)
   call spdiscr_checkCubature(ccubQuad,ieltypQuad)
@@ -2158,7 +2159,7 @@ contains
   ! assembly of matrices/vectors.
 
   ! We have to collect all triangles to the first and all quads to the second
-  ! element distribution. j counts how many elements we found
+  ! element group. j counts how many elements we found
   !
   ! Collect all triangles
   j = 0
@@ -2274,11 +2275,11 @@ contains
   end if
   rspatialDiscr%ccomplexity      = SPDISC_CONFORMAL
 
-  ! Allocate an array containing the element distribution for each element
+  ! Allocate an array containing the element group for each element
   call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_ielemGroup,   &
       ST_NEWBLOCK_NOINIT)
-  call storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
+  call storage_getbase_int (rspatialDiscr%h_ielemGroup,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
@@ -2294,14 +2295,14 @@ contains
     ! There are quads and probably triangles in the mesh
     do i = 1, rtriangulation%NEL
       if (p_IverticesAtElement (4,i) .eq. 0) then
-        ! Triangular elements are in element distribution 1
+        ! Triangular elements are in element group 1
         p_Iarray(i) = 1
 
         ! This is the IelemCount(1)-th triangle
         IelemCount(1) = IelemCount(1)+1
         p_IelementCounter(i) = IelemCount(1)
       else
-        ! Quad elements are in element distribution 2
+        ! Quad elements are in element group 2
         p_Iarray(i) = 2
 
         ! This is the IelemCount(2)-th quad
@@ -2312,7 +2313,7 @@ contains
   else
     ! Pure triangular mesh
     do i = 1, rtriangulation%NEL
-      ! Triangular elements are in element distribution 1
+      ! Triangular elements are in element group 1
       p_Iarray(i) = 1
 
       ! This is the IelemCount(1)-th triangle
@@ -2321,7 +2322,7 @@ contains
     end do
   end if
 
-  ! Initialise the first element distribution
+  ! Initialise the first element group
   rspatialDiscr%inumFESpaces = 2
   allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
   p_relementDistrTria => rspatialDiscr%RelementDistr(1)
@@ -2344,7 +2345,7 @@ contains
   ! assembly of matrices/vectors.
 
   ! We have to collect all triangles to the first and all quads to the second
-  ! element distribution. j counts how many elements we found
+  ! element group. j counts how many elements we found
   !
   ! Collect all triangles
   j = 0
@@ -2485,7 +2486,7 @@ contains
   call spdiscr_releaseDiscr(rdestDiscr)
 
   if (ccub .ne. SPDISC_CUB_NOCHANGE) then
-    ! Check the cubature formula against the element distribution.
+    ! Check the cubature formula against the element group.
     ! This stops the program if this is not fulfilled.
     call spdiscr_checkCubature(ccub,celement)
   end if
@@ -2494,7 +2495,7 @@ contains
   ! This copies all handles and hence all dynamic information
   rdestDiscr = rsourceDiscr
 
-  ! Allocate a new element distribution and copy content from source
+  ! Allocate a new element group and copy content from source
   allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
   rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
       rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
@@ -2598,7 +2599,7 @@ contains
   ! This copies all handles and hence all dynamic information
   rdestDiscr = rsourceDiscr
 
-  ! Allocate a new element distribution and copy content from source
+  ! Allocate a new element group and copy content from source
   allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
   rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
       rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
@@ -2715,7 +2716,7 @@ contains
     ! Release old information if present
     call spdiscr_releaseDiscr(rdestDiscr)
 
-    ! Check the cubature formula against the element distribution.
+    ! Check the cubature formula against the element group.
     ! This stops the program if this is not fulfilled.
     call spdiscr_checkCubature(ccubTri,ieltypTri)
     call spdiscr_checkCubature(ccubQuad,ieltypQuad)
@@ -2724,12 +2725,12 @@ contains
     ! This copies all handles and hence all dynamic information
     rdestDiscr = rsourceDiscr
 
-    ! Allocate a new element distribution
+    ! Allocate a new element group
     allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
     rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
         rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
 
-    ! Loop through the element distributions...
+    ! Loop through the element groups...
     do idistr = 1,rdestDiscr%inumFESpaces
 
       ! Check the element there. If it is a triangular element,
@@ -2844,12 +2845,12 @@ contains
     ! This copies all handles and hence all dynamic information
     rdestDiscr = rsourceDiscr
 
-    ! Allocate a new element distribution
+    ! Allocate a new element group
     allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
     rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
         rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
 
-    ! Loop through the element distributions...
+    ! Loop through the element groups...
     do idistr = 1,rdestDiscr%inumFESpaces
 
       ! Check the element there. If it is a triangular element,
@@ -2910,21 +2911,21 @@ contains
 
     if (.not. rspatialDiscr%bisCopy) then
 
-      ! Release element distribution lists.
+      ! Release element group lists.
       if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-        call storage_free (rspatialDiscr%h_IelementDistr)
+        call storage_free (rspatialDiscr%h_ielemGroup)
       end if
 
     else
-      rspatialDiscr%h_IelementDistr = ST_NOHANDLE
+      rspatialDiscr%h_ielemGroup = ST_NOHANDLE
     end if
 
-    ! Loop through all element distributions
+    ! Loop through all element groups
     do i = 1, rspatialDiscr%inumFESpaces
 
       p_relementDistr => rspatialDiscr%RelementDistr(i)
 
-      ! If the element distribution is empty, skip it
+      ! If the element group is empty, skip it
       if (p_relementDistr%NEL .ne. 0) then
 
         ! Release the element list there.
@@ -3015,7 +3016,7 @@ contains
     ! Copy all information
     rdestDiscr = rsourceDiscr
 
-    ! Duplicate the element distribution structure
+    ! Duplicate the element group structure
     allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
     rdestDiscr%RelementDistr = rsourceDiscr%RelementDistr
     
@@ -3032,10 +3033,10 @@ contains
 
       rdestDiscr%bisCopy = .false.
 
-      ! Element distributions?
-      if (rsourceDiscr%h_IelementDistr .ne. ST_NOHANDLE) then
-        rdestDiscr%h_IelementDistr = ST_NOHANDLE
-        call storage_copy(rsourceDiscr%h_IelementDistr, rdestDiscr%h_IelementDistr)
+      ! element groups?
+      if (rsourceDiscr%h_ielemGroup .ne. ST_NOHANDLE) then
+        rdestDiscr%h_ielemGroup = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_ielemGroup, rdestDiscr%h_ielemGroup)
       end if
 
       ! Element counters?
@@ -3206,8 +3207,8 @@ contains
          //trim(sys_siL(rspatialDiscr%ccomplexity,1)))
      call output_line ('inumFESpaces:           '&
          //trim(sys_siL(rspatialDiscr%inumFESpaces,15)))
-     call output_line ('h_IelementDistr:        '&
-         //trim(sys_siL(rspatialDiscr%h_IelementDistr,15)))
+     call output_line ('h_ielemGroup:        '&
+         //trim(sys_siL(rspatialDiscr%h_ielemGroup,15)))
      call output_line ('h_IelementCounter:      '&
          //trim(sys_siL(rspatialDiscr%h_IelementCounter,15)))
 
@@ -3230,7 +3231,7 @@ contains
 !</description>
 
 !<input>
-     ! element distribution
+     ! element group
      type(t_elementDistribution), intent(in) :: relementDistr
 !</input>
 !</subroutine>
@@ -3294,7 +3295,7 @@ contains
 
     imax = 0
 
-    ! Loop through the element distributions and calculate the maximum
+    ! Loop through the element groups and calculate the maximum
     do i=1,rdiscretisation%inumFESpaces
       imax = max(imax,elem_igetNDofLoc(rdiscretisation%RelementDistr(i)%celement))
     end do
@@ -3333,13 +3334,13 @@ contains
 
     ! Array of length (#combinations+1). Defines the start positions in Iedges
     ! of every block of edges that have the same type of elements adjacent.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! #combinations = #element groups * (#element groups+1)/2
     integer, dimension(:), pointer :: p_IdistPositions
 
     ! Array of dimension(2,#combinations/2).
     ! Returns for each block described by IdistPositions the number of the
-    ! element distributions of the elements on each side of the edge.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! element groups of the elements on each side of the edge.
+    ! #combinations = #element groups * (#element groups+1)/2
     integer, dimension(:,:), pointer :: p_Idistributions
 
     integer, dimension(2) :: Isize
@@ -3422,14 +3423,14 @@ contains
 
     ! Array of length (#combinations+1). Defines the start positions in Iedges
     ! of every block of edges that have the same type of elements adjacent.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! #combinations = #element groups * (#element groups+1)/2
     integer, dimension(:), intent(out) :: IdistPositions
 
     ! Array of dimension(2,#combinations/2).
     ! Returns for each block described by IdistPositions the number of the
-    ! element distributions of the elements on each side of the edge.
+    ! element groups of the elements on each side of the edge.
     ! Idistributions(2,:) is =0 for boundary edges.
-    ! #combinations = #element distributions * (#element distributions+1)/2
+    ! #combinations = #element groups * (#element groups+1)/2
     integer, dimension(:,:), intent(out) :: Idistributions
   !</output>
 
@@ -3439,7 +3440,7 @@ contains
     integer :: i,j,k
     type(t_triangulation), pointer :: p_rtria
     integer, dimension(:,:), allocatable :: IsortArray
-    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_ielemGroup
     integer, dimension(:,:), pointer :: p_IelementsAtEdge
 
     p_rtria => rdiscretisation%p_rtriangulation
@@ -3457,7 +3458,7 @@ contains
     end if
 
     ! Get some arrays
-    call storage_getbase_int(rdiscretisation%h_IelementDistr,p_IelementDistr)
+    call storage_getbase_int(rdiscretisation%h_ielemGroup,p_ielemGroup)
     call storage_getbase_int2d(p_rtria%h_IelementsAtEdge,p_IelementsAtEdge)
 
     ! Generate an array that contains all edge numbers and the adjacent
@@ -3469,7 +3470,7 @@ contains
     ! Put the id of the 2nd FE space to coordinate 3.
     do i=1,p_rtria%NMT
       IsortArray(1,i) = i
-      j = p_IelementDistr(p_IelementsAtEdge(1,i))
+      j = p_ielemGroup(p_IelementsAtEdge(1,i))
 
       ! The edge may be a boundary edge.
       if (p_IelementsAtEdge(2,i) .eq. 0) then
@@ -3478,7 +3479,7 @@ contains
         IsortArray(2,i) = j
         IsortArray(3,i) = k
       else
-        k = p_IelementDistr(p_IelementsAtEdge(2,i))
+        k = p_ielemGroup(p_IelementsAtEdge(2,i))
 
         if (j .lt. k) then
           IsortArray(2,i) = j
@@ -3694,7 +3695,7 @@ contains
   ! - they have the same complexity,
   ! - they have the same number of different FE spaces,
   ! - they have both precomputed DOF-mapping or not,
-  ! - they have the same structure of element distributions
+  ! - they have the same structure of element groups
 !</description>
 
 !<input>
@@ -3739,7 +3740,7 @@ contains
       end if
     end if
 
-    ! All element distributions must be compatible.
+    ! All element groups must be compatible.
     do i = 1, rdiscr1%inumFESpaces
       call spdiscr_isElemDistrCompatible(rdiscr1%RelementDistr(i),&
           rdiscr2%RelementDistr(i), bcompatible)
@@ -3754,8 +3755,8 @@ contains
   subroutine spdiscr_isElemDistrCompatible (relemDistr1,relemDistr2,bcompatible)
 
 !<description>
-  ! Checks whether two element distributions are compatible to each other.
-  ! Twoelement distributions are compatible if
+  ! Checks whether two element groups are compatible to each other.
+  ! Twoelement groups are compatible if
   ! - they have the same type of element,
   ! - they have the same cubature formulas,
   ! - they have the same type of transformation,
@@ -3763,7 +3764,7 @@ contains
 !</description>
 
 !<input>
-  ! The first element distribution
+  ! The first element group
   type(t_elementDistribution), intent(in) :: relemDistr1
 
   ! The second spatial discretisation
@@ -3772,7 +3773,7 @@ contains
 
 !<output>
   ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending
-  ! on whether the element distributions are compatible or not.
+  ! on whether the element groups are compatible or not.
   ! If not given, an error will inform the user if the two element
   ! distributions are not compatible and the program will halt.
   logical, intent(out), optional :: bcompatible
@@ -3783,7 +3784,7 @@ contains
   ! We assume that we are compatible
     if (present(bcompatible)) bcompatible = .true.
 
-    ! Element distributions structures must have the same dimension,
+    ! element groups structures must have the same dimension,
     ! complexity, number of components and DOF-mapping must be precomputed
     ! either for both discretisations or not.
     if ((relemDistr1%celement .ne. relemDistr2%celement) .or.&
@@ -3793,7 +3794,7 @@ contains
         bcompatible = .false.
         return
       else
-        call output_line('Element distributions are not compatible!', &
+        call output_line('element groups are not compatible!', &
             OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_isElemDistrCompatible')
         call sys_halt()
       end if
@@ -3856,7 +3857,7 @@ contains
 
       ! Loop through the element sets and insert the default cubature formula.
       do i = 1,rcubatureInfo%ninfoBlockCount
-        rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = i
+        rcubatureInfo%p_RinfoBlocks(i)%ielemGroup = i
 
         ! Handle all elements in the same way...
         rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
@@ -3875,8 +3876,8 @@ contains
 
       ! Loop through the element sets and insert the default cubature formula.
       do i = 1,rcubatureInfo%ninfoBlockCount
-        rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = &
-            rtrafoInfo%p_RinfoBlocks(i)%ielementDistr
+        rcubatureInfo%p_RinfoBlocks(i)%ielemGroup = &
+            rtrafoInfo%p_RinfoBlocks(i)%ielemGroup
 
         ! Handle all elements in the same way...
         rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = &
@@ -3995,7 +3996,7 @@ contains
 
 !</subroutine>
     ! local variables
-    integer :: i,ielementDistr
+    integer :: i,ielemGroup
 
     ! Loop through the element sets and insert the default cubature formula.
     select case (cub_isExtended(ccubType))
@@ -4003,19 +4004,19 @@ contains
       ! Not generic. Check every cubature formula if it is valid
       ! for the current element. If yes, initialise.
       do i = 1,rcubatureInfo%ninfoBlockCount
-        ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+        ielemGroup = rcubatureInfo%p_RinfoBlocks(i)%ielemGroup
         call spdiscr_checkCubature (ccubType,&
-            rdiscretisation%RelementDistr(ielementDistr)%celement)
+            rdiscretisation%RelementDistr(ielemGroup)%celement)
         rcubatureInfo%p_RinfoBlocks(i)%ccubature = ccubType
       end do
 
     case (1)
       ! Generic, resolve using the element shape.
       do i = 1,rcubatureInfo%ninfoBlockCount
-        ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+        ielemGroup = rcubatureInfo%p_RinfoBlocks(i)%ielemGroup
         rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
             cub_resolveGenericCubType(&
-              elem_igetShape(rdiscretisation%RelementDistr(ielementDistr)%celement),&
+              elem_igetShape(rdiscretisation%RelementDistr(ielemGroup)%celement),&
               ccubType)
       end do
 
@@ -4026,17 +4027,17 @@ contains
       case (CUB_GEN_AUTO)
         ! Standard cubature formula for that element set.
         do i = 1,rcubatureInfo%ninfoBlockCount
-          ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+          ielemGroup = rcubatureInfo%p_RinfoBlocks(i)%ielemGroup
           rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
-              spdiscr_getStdCubature(rdiscretisation%RelementDistr(ielementDistr)%celement)
+              spdiscr_getStdCubature(rdiscretisation%RelementDistr(ielemGroup)%celement)
         end do
 
       case (CUB_GEN_AUTO_LUMPMASS)
         ! Standard cubature formula that lumps the mass matrix
         do i = 1,rcubatureInfo%ninfoBlockCount
-          ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+          ielemGroup = rcubatureInfo%p_RinfoBlocks(i)%ielemGroup
           rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
-              spdiscr_getLumpCubature(rdiscretisation%RelementDistr(ielementDistr)%celement)
+              spdiscr_getLumpCubature(rdiscretisation%RelementDistr(ielemGroup)%celement)
         end do
 
       end select
@@ -4138,7 +4139,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfo,rdiscretisation,&
-      ielementDistr,celement,ccubature,NEL,p_IelementList,&
+      ielemGroup,celement,ccubature,NEL,p_IelementList,&
       rtrafoInfo,itrafoBlock,ctrafoType)
 
 !<description>
@@ -4163,8 +4164,8 @@ contains
 !</input>
 
 !<output>
-  ! Id of the underlying element distribution in the discretisation.
-  integer, intent(out), optional :: ielementDistr
+  ! Id of the underlying element group in the discretisation.
+  integer, intent(out), optional :: ielemGroup
 
   ! Element identifier of that block
   integer(I32), intent(out), optional :: celement
@@ -4195,7 +4196,7 @@ contains
     integer(I32) :: ccub
     type(t_elementDistribution), pointer :: p_relementDistr
 
-    ielementDistLocal = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielementDistr
+    ielementDistLocal = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielemGroup
     itrafoBlk = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%itrafoBlock
     ccub =  rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature
 
@@ -4207,8 +4208,8 @@ contains
     end if
 
     ! Return all information specified in the parameters
-    if (present(ielementDistr)) then
-      ielementDistr = ielementDistLocal
+    if (present(ielemGroup)) then
+      ielemGroup = ielementDistLocal
     end if
 
     if (present(rdiscretisation)) then
@@ -4255,7 +4256,7 @@ contains
       nullify(p_IelementList)
       if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .ne. 0) then
         ! If the handle of the info block structure is not associated,
-        ! take all elements of the corresponding element distribution.
+        ! take all elements of the corresponding element group.
         if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .ne. ST_NOHANDLE) then
           call storage_getbase_int(&
               rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList,&
@@ -4308,7 +4309,7 @@ contains
 
     ! Loop through the element sets and insert the default cubature formula.
     do i = 1,rtrafoInfo%ninfoBlockCount
-      rtrafoInfo%p_RinfoBlocks(i)%ielementDistr = i
+      rtrafoInfo%p_RinfoBlocks(i)%ielemGroup = i
 
       ! Handle all elements in the same way...
       rtrafoInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
@@ -4354,7 +4355,7 @@ contains
 
     ! Loop through the element sets and insert the default cubature formula.
     do i = 1,rtrafoInfo%ninfoBlockCount
-      rtrafoInfo%p_RinfoBlocks(i)%ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+      rtrafoInfo%p_RinfoBlocks(i)%ielemGroup = rcubatureInfo%p_RinfoBlocks(i)%ielemGroup
 
       ! Handle all elements in the same way...
       rtrafoInfo%p_RinfoBlocks(i)%h_IelementList = rcubatureInfo%p_RinfoBlocks(i)%h_IelementList
@@ -4396,16 +4397,16 @@ contains
 
 !</subroutine>
     ! local variables
-    integer :: i,ielementDistr
+    integer :: i,ielemGroup
     integer(I32) :: ccubature
 
     if (present(rdiscretisation)) then
 
       ! Resolve using the element routines.
       do i = 1,rtrafoInfo%ninfoBlockCount
-        ielementDistr = rtrafoInfo%p_RinfoBlocks(i)%ielementDistr
+        ielemGroup = rtrafoInfo%p_RinfoBlocks(i)%ielemGroup
         rtrafoInfo%p_RinfoBlocks(i)%ctrafoType = &
-            elem_igetTrafoType(rdiscretisation%RelementDistr(ielementDistr)%celement)
+            elem_igetTrafoType(rdiscretisation%RelementDistr(ielemGroup)%celement)
       end do
 
     else if (present(rcubatureInfo)) then
@@ -4511,7 +4512,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_getStdTrafoInfo (itrafoBlock,rtrafoInfo,rdiscretisation,&
-      ielementDistr,celement,ctrafoType,NEL,p_IelementList)
+      ielemGroup,celement,ctrafoType,NEL,p_IelementList)
 
 !<description>
   ! Returns typically used information for a transformation block.
@@ -4530,8 +4531,8 @@ contains
 !</input>
 
 !<output>
-  ! Id of the underlying element distribution in the discretisation.
-  integer, intent(out), optional :: ielementDistr
+  ! Id of the underlying element group in the discretisation.
+  integer, intent(out), optional :: ielemGroup
 
   ! Element identifier of that block
   integer(I32), intent(out), optional :: celement
@@ -4553,7 +4554,7 @@ contains
     integer :: ielementDistLocal
     type(t_elementDistribution), pointer :: p_relementDistr
 
-    ielementDistLocal = rtrafoInfo%p_RinfoBlocks(itrafoBlock)%ielementDistr
+    ielementDistLocal = rtrafoInfo%p_RinfoBlocks(itrafoBlock)%ielemGroup
     p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
 
     ! Structure initialised?
@@ -4564,8 +4565,8 @@ contains
     end if
 
     ! Return all information specified in the parameters
-    if (present(ielementDistr)) then
-      ielementDistr = ielementDistLocal
+    if (present(ielemGroup)) then
+      ielemGroup = ielementDistLocal
     end if
 
     if (present(celement)) then
@@ -4584,7 +4585,7 @@ contains
       nullify(p_IelementList)
       if (rtrafoInfo%p_RinfoBlocks(itrafoBlock)%NEL .ne. 0) then
         ! If the handle of the info block structure is not associated,
-        ! take all elements of the corresponding element distribution.
+        ! take all elements of the corresponding element group.
         if (rtrafoInfo%p_RinfoBlocks(itrafoBlock)%h_IelementList .ne. ST_NOHANDLE) then
           call storage_getbase_int(&
               rtrafoInfo%p_RinfoBlocks(itrafoBlock)%h_IelementList,&
@@ -4653,7 +4654,7 @@ contains
     call output_line ('------------------')
     call output_line ('blocalElementList: '//trim(sys_sl(rcubatureInfoBlock%blocalElementList)))
     call output_line ('ccubature:         '//trim(sys_siL(int(rcubatureInfoBlock%ccubature),15)))
-    call output_line ('ielementDistr:     '//trim(sys_siL(rcubatureInfoBlock%ielementDistr,15)))
+    call output_line ('ielemGroup:     '//trim(sys_siL(rcubatureInfoBlock%ielemGroup,15)))
     call output_line ('itrafoBlock:       '//trim(sys_siL(rcubatureInfoBlock%itrafoBlock,15)))
     call output_line ('NEL:               '//trim(sys_siL(rcubatureInfoBlock%NEL,15)))
     call output_line ('h_IelementList:    '//trim(sys_siL(rcubatureInfoBlock%h_IelementList,15)))
@@ -4714,7 +4715,7 @@ contains
     call output_line ('---------------')
     call output_line ('blocalElementList: '//trim(sys_sl(rtrafoInfoBlock%blocalElementList)))
     call output_line ('ctrafoType:        '//trim(sys_siL(int(rtrafoInfoBlock%ctrafoType),15)))
-    call output_line ('ielementDistr:     '//trim(sys_siL(rtrafoInfoBlock%ielementDistr,15)))
+    call output_line ('ielemGroup:     '//trim(sys_siL(rtrafoInfoBlock%ielemGroup,15)))
     call output_line ('NEL:               '//trim(sys_siL(rtrafoInfoBlock%NEL,15)))
     call output_line ('h_IelementList:    '//trim(sys_siL(rtrafoInfoBlock%h_IelementList,15)))
 
@@ -4818,4 +4819,42 @@ contains
     
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getElemGroupIDs (rspatialDiscr,p_IelemGroupIDs)
+
+!<description>
+  ! Returns a pointer to a list that tells for every element the group ID,
+  ! the element belongs to.
+!</description>
+
+!<input>
+  ! Discretisation structure
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+!</input>
+
+!<output>
+  ! Pointer to a list associating a group ID to each element.
+  integer, dimension(:), pointer, optional :: p_IelemGroupIDs
+!</output>
+
+!</subroutine>
+
+    ! Structure initialised?
+    if (rspatialDiscr%inumFESpaces .le. 0) then
+      call output_line ("Structure not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_getElemGroupIDs")
+      call sys_halt()
+    end if
+
+    if (rspatialDiscr%h_ielemGroup .ne. ST_NOHANDLE) then
+      call storage_getbase_int(rspatialDiscr%h_ielemGroup, p_IelemGroupIDs)
+    else
+      nullify(p_IelemGroupIDs)
+    end if
+    
+  end subroutine
+  
 end module
