@@ -1276,8 +1276,7 @@ contains
     if (rsolution%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
         
-      ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
-                RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rsolution%p_rblockDiscr%RspatialDiscr(1),1,ieltype)
 
       select case (elem_getPrimaryElement(ieltype))
 
@@ -1781,8 +1780,7 @@ contains
     ! If we have a simple Q1 discretisation in the pressure, write it out as it is
     if (rvector%p_rblockDiscr%RspatialDiscr(3)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
-      ieltype = rvector%p_rblockDiscr%RspatialDiscr(3)% &
-                RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(3),1,ieltype)
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
         call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
@@ -1810,9 +1808,8 @@ contains
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
         
-      ieltype = rvector%p_rblockDiscr%RspatialDiscr(1)% &
-                RelementDistr(1)%celement
-                
+      call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(1),1,ieltype)
+
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
           
         call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
