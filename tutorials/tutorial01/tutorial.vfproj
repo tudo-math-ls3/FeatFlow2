@@ -113,6 +113,7 @@
 		<File RelativePath=".\src\tutorial004j.f90"/>
 		<File RelativePath=".\src\tutorial004k.f90"/>
 		<File RelativePath=".\src\tutorial004l.f90"/>
+		<File RelativePath=".\src\tutorial004m.f90"/>
 		<File RelativePath=".\src\tutorial005a.f90"/>
 		<File RelativePath=".\src\tutorial005b.f90"/>
 		<File RelativePath=".\src\tutorial005c.f90"/>
