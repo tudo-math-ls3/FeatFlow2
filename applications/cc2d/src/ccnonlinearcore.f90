@@ -1246,10 +1246,10 @@ contains
         ! structure of rx/rb. Derive block vectors in that structure that
         ! share their memory with the scalar temp vectors. Note that the
         ! temp vectors are created large enough by our parent!
-        call lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
+        call lsysbl_createVector (p_rvectorTemp,rtemp1)
         call lsysbl_enforceStructure (rb,rtemp1)
 
-        call lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
+        call lsysbl_createVector (p_rvectorTemp2,rtemp2)
         call lsysbl_enforceStructure (rb,rtemp2)
 
         ! Calculate the omega

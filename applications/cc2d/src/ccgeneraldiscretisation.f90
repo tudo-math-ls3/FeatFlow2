@@ -1260,7 +1260,7 @@ contains
       ! vector on that level, based on the block discretisation structure.
       ! It is used for building the matrices on lower levels.
       if (i .lt. rproblem%NLMAX) then
-        call lsysbl_createVecBlockByDiscr (&
+        call lsysbl_createVector (&
             rproblem%RlevelInfo(i)%rdiscretisation,&
             rproblem%RlevelInfo(i)%rtempVector,.true.)
       end if
@@ -1274,10 +1274,10 @@ contains
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    call lsysbl_createVecBlockByDiscr (&
+    call lsysbl_createVector (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.true.)
         
-    call lsysbl_createVecBlockByDiscr (&
+    call lsysbl_createVector (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.true.)
 
   end subroutine
@@ -1934,7 +1934,7 @@ contains
       end if
       
       ! Create a basic block vector that takes our solution.
-      call lsysbl_createVectorBlock (&
+      call lsysbl_createVector (&
           rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.false.)
       
       ! Can we directly read in the solution?
@@ -1971,7 +1971,7 @@ contains
             rsourceDiscretisation=rdiscretisationInitSol)
        
         ! Create a temp vector and read the solution
-        call lsysbl_createVectorBlock (&
+        call lsysbl_createVector (&
             rdiscretisationInitSol,rvector2,.false.)
         call vecio_readBlockVectorHR (&
           rvector2, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
@@ -2010,7 +2010,7 @@ contains
       do while (ilev .lt. rproblem%NLMAX)
         
         ! Initialise a vector for the higher level and a prolongation structure.
-        call lsysbl_createVectorBlock (&
+        call lsysbl_createVector (&
             rproblem%RlevelInfo(ilev+1)%rdiscretisation,rvector2,.false.)
         
         call mlprj_initProjectionVec (rprojection,rvector2)
@@ -2064,7 +2064,7 @@ contains
       rlinform%Idescriptors(1) = DER_FUNC
       
       ! Create a temp vector as RHS.
-      call lsysbl_createVectorBlock (&
+      call lsysbl_createVector (&
           rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector1,.false.)
       
       ! Assemble the RHS.
@@ -2117,7 +2117,7 @@ contains
       ! We solve separately for the three components.
       ! Prepare the solver for the velocity.
       ! Prepare the solver for the X-velocity.
-      call lsysbl_createMatFromScalar(&
+      call lsysbl_createMatrix(&
           rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMass,rmassBlock)
       call linsol_setMatrix (p_rsolverNode,rmassBlock)
       call linsol_initStructure (p_rsolverNode,ierror)
@@ -2125,8 +2125,8 @@ contains
 
       ! -----
       ! Solve for the X-velocity.
-      call lsysbl_createVecFromScalar(rvector1%RvectorBlock(1),rsingleRHS)
-      call lsysbl_createVecFromScalar(rvector%RvectorBlock(1),rsingleSol)
+      call lsysbl_createVector(rvector1%RvectorBlock(1),rsingleRHS)
+      call lsysbl_createVector(rvector%RvectorBlock(1),rsingleSol)
       call lsysbl_duplicateVector (rsingleSol,rvector2,&
           LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
     
@@ -2149,8 +2149,8 @@ contains
         if (rproblem%MSHOW_Initialisation .ge. 1) &
           call output_line("Solving L2 projection for U2...")
 
-        call lsysbl_createVecFromScalar(rvector1%RvectorBlock(2),rsingleRHS)
-        call lsysbl_createVecFromScalar(rvector%RvectorBlock(2),rsingleSol)
+        call lsysbl_createVector(rvector1%RvectorBlock(2),rsingleRHS)
+        call lsysbl_createVector(rvector%RvectorBlock(2),rsingleSol)
 
         call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
         
@@ -2173,7 +2173,7 @@ contains
             call output_line("Solving L2 projection for P...")
 
           ! Attach a new matrix.
-          call lsysbl_createMatFromScalar(&
+          call lsysbl_createMatrix(&
               rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,rmassBlock)
 
           call linsol_doneData (p_rsolverNode,ierror)
@@ -2185,8 +2185,8 @@ contains
           call linsol_initData (p_rsolverNode,ierror)
           
           ! Create references to the pressure part and solve.
-          call lsysbl_createVecFromScalar(rvector1%RvectorBlock(3),rsingleRHS)
-          call lsysbl_createVecFromScalar(rvector%RvectorBlock(3),rsingleSol)
+          call lsysbl_createVector(rvector1%RvectorBlock(3),rsingleRHS)
+          call lsysbl_createVector(rvector%RvectorBlock(3),rsingleSol)
           call lsysbl_duplicateVector (rsingleSol,rvector2,&
               LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
           
@@ -2284,7 +2284,7 @@ contains
     do ilev = rproblem%NLMAX,iwriteSolutionLevel+1,-1
       
       ! Initialise a vector for the lower level and a prolongation structure.
-      call lsysbl_createVectorBlock (&
+      call lsysbl_createVector (&
           rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.false.)
       
       call mlprj_initProjectionVec (rprojection,rvector2)

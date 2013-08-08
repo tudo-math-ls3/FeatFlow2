@@ -442,7 +442,7 @@ contains
     case (3,4)
     
       ! Create a RHS vector and read it from the file.
-      call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector)
+      call lsysbl_createVector (rdiscretisation,rrhsAssembly%rrhsVector)
       
       ! Read in the RHS now?
       if (rrhsAssembly%ctype .eq. 3) then
@@ -453,7 +453,7 @@ contains
       else
         ! Create also the 2nd vector. Both vectors are used as temp vectors
         ! when reading in the RHS during the simulation.
-        call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector2)
+        call lsysbl_createVector (rdiscretisation,rrhsAssembly%rrhsVector2)
       end if
 
     ! Is the RHS given analytically?

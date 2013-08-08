@@ -1170,7 +1170,7 @@ contains
       case (4)
     
         ! Create a characteristic function of the boundary segment
-        call lsyssc_createVecByDiscr (&
+        call lsyssc_createVector (&
             rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(1),&
             rcharfct,.true.)
             
@@ -1283,7 +1283,7 @@ contains
       case (EL_Q1T, EL_P1T)
       
         ! Create a temporary vector
-        call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
+        call lsyssc_createVector (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
         ! Calculate divergence = D1 u1 + D2 u2
@@ -1654,7 +1654,7 @@ contains
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
-    call lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.false.)
+    call lsysbl_createVector (rprjDiscretisation,rprjVector,.false.)
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
@@ -1951,7 +1951,7 @@ contains
     do ilev = rproblem%NLMAX,ilevelFilm+1,-1
       
       ! Initialise a vector for the lower level and a prolongation structure.
-      call lsysbl_createVectorBlock (&
+      call lsysbl_createVector (&
           rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.false.)
       
       call mlprj_initProjectionVec (rprojection,rvector2)

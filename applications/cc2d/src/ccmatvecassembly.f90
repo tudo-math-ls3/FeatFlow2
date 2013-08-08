@@ -1802,12 +1802,6 @@ contains
     type(t_vectorBlock), pointer :: p_ry
     type(t_matrixBlock) :: rmatrix
     
-    ! DEBUG!!!
-    real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
-    
-    call lsysbl_getbase_double (rx,p_DdataX)
-    call lsysbl_getbase_double (rd,p_DdataD)
-    
     p_ry => rx
     if (present(ry)) p_ry => ry
 
@@ -1947,12 +1941,6 @@ contains
     integer, dimension(:), pointer :: p_IedgesDirichletBC
     type(t_scalarCubatureInfo) :: rcubatureInfo
     
-    ! DEBUG!!!
-    real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
-    
-    call lsysbl_getbase_double (rvector,p_DdataX)
-    call lsysbl_getbase_double (rdefect,p_DdataD)
-
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
