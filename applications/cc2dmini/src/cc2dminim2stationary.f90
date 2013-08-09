@@ -939,6 +939,7 @@ contains
     integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
     type(t_spatialDiscretisation), pointer :: p_rdiscr
+    integer(I32) :: celement
 
     ! Error indicator during initialisation of the solver
     integer :: ierror
@@ -1080,11 +1081,12 @@ contains
       ! uniform Q1~ discretisation - the matrix restriction does not support
       ! other cases.
       p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscr(1)
+      
+      call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
+      
       if ((p_rdiscr%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-          ((p_rdiscr%RelementDistr(1)%celement .ne. EL_E030) .and. &
-           (p_rdiscr%RelementDistr(1)%celement .ne. EL_E031) .and. &
-           (p_rdiscr%RelementDistr(1)%celement .ne. EL_EM30) .and. &
-           (p_rdiscr%RelementDistr(1)%celement .ne. EL_EM31))) then
+          ((celement .ne. EL_E030) .and. (celement .ne. EL_E031) .and. &
+           (celement .ne. EL_EM30) .and. (celement .ne. EL_EM31))) then
         i = 0
       end if
       
