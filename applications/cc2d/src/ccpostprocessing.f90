@@ -837,12 +837,12 @@ contains
         ! Use the callback function "fcalc_error".
         rlocalCollection%IquickAccess(2) = 1  ! component
         call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
-                          fcalc_error,rproblem%rcollection,&
+                          fcalc_error,rlocalCollection,&
                           rcubatureInfo=rcubatureInfoUV)
 
         rlocalCollection%IquickAccess(2) = 2  ! component
         call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
-                          fcalc_error,rproblem%rcollection,&
+                          fcalc_error,rlocalCollection,&
                           rcubatureInfo=rcubatureInfoUV)
                       
         derrorVel = -1.0_DP     
@@ -852,7 +852,7 @@ contains
         
         rlocalCollection%IquickAccess(2) = 3  ! component
         call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
-                          fcalc_error,rproblem%rcollection,&
+                          fcalc_error,rlocalCollection,&
                           rcubatureInfo=rcubatureInfoP)
 
         derrorP = -1.0_DP
