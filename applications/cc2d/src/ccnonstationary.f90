@@ -488,9 +488,9 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
 
-    rnonlinearCCMatrix%dmass = -1.0_DP
-    rnonlinearCCMatrix%dstokes = -rtimestepping%dweightMatrixRHS
-    rnonlinearCCMatrix%dconvection = -rtimestepping%dweightMatrixRHS * &
+    rnonlinearCCMatrix%dmass = 1.0_DP
+    rnonlinearCCMatrix%dstokes = rtimestepping%dweightMatrixRHS
+    rnonlinearCCMatrix%dconvection = rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
 
     rnonlinearCCMatrix%dgradient = 0.0_DP
@@ -499,11 +499,11 @@ contains
     ! Fully implicit pressure? There is only a difference if Crank-Nicolson
     ! is used.
     if (ipressureFullyImplicit .ne. 1) then
-      rnonlinearCCMatrix%dgradient = -rtimestepping%dweightMatrixRHS
+      rnonlinearCCMatrix%dgradient = rtimestepping%dweightMatrixRHS
     end if
 
-    ! Calculate   rtempVectorRhs := -rnonlinearCCMatrix rvector + rtempVectorRhs
-    call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP,rproblem)
+    ! Calculate   rtempVectorRhs := rnonlinearCCMatrix rvector + rtempVectorRhs
+    call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,1.0_DP,1.0_DP,rproblem)
 
     ! -------------------------------------------
     ! Switch to the next point in time.
