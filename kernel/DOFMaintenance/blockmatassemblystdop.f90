@@ -9636,9 +9636,9 @@ contains
     ! The vector field including first derivatives must be provided in 
     ! revalVectors. The routine only supports vector-valued, non-interleaved vectors:
     ! - If the FEM space is scalar-valued, revalVectors must be set up
-    !   using fev2_addVectorFieldToEvalList.
+    !   using fev2_addVectorToEvalList.
     ! - If the FEM space is vector-valued, revalVectors must be set up
-    !   using fev2_addVectorToEvalList providing the complete vector field
+    !   using fev2_addVectorFieldToEvalList providing the complete vector field
     !   in one FE function.
 !</description>
 
