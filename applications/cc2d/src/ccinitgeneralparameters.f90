@@ -426,6 +426,9 @@ contains
     call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
         "drhsMultiplyY",rrhsAssembly%dmultiplyY,1.0_DP)
     
+    call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
+        "drhsMultiplyP",rrhsAssembly%dmultiplyP,1.0_DP)
+    
     call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
         "sfilenameRHS",rrhsAssembly%sfilename,"",bdequote=.true.)
 

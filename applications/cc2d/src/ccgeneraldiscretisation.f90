@@ -1602,6 +1602,10 @@ contains
             rrhsAssembly%rrhsVector%RvectorBlock(2), &
             rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
         
+        call lsyssc_matVec (rasmTemplates%rmatrixMassPressure, &
+            rrhsAssembly%rrhsVector%RvectorBlock(3), &
+            rrhs%RVectorBlock(3), rrhsAssembly%dmultiplyP, 0.0_DP, .false.)
+        
       ! *****************************************
       ! Nonstationary RHS, given in a sequence
       ! of files
@@ -1662,24 +1666,19 @@ contains
         ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
         
         call lsyssc_matVec (rasmTemplates%rmatrixMass, &
-            rrhsAssembly%rrhsVector%RvectorBlock(1), &
-            rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX, 0.0_DP, .false.)
+            rrhsAssembly%rrhsVector2%RvectorBlock(1), &
+            rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX*dtimeweight, &
+            (1.0_DP-dtimeweight), .false.)
 
         call lsyssc_matVec (rasmTemplates%rmatrixMass, &
-            rrhsAssembly%rrhsVector%RvectorBlock(2), &
-            rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
-
-        if (dtimeweight .gt. 0.0_DP) then
-          call lsyssc_matVec (rasmTemplates%rmatrixMass, &
-              rrhsAssembly%rrhsVector2%RvectorBlock(1), &
-              rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX*dtimeweight, &
-              (1.0_DP-dtimeweight), .false.)
-
-          call lsyssc_matVec (rasmTemplates%rmatrixMass, &
-              rrhsAssembly%rrhsVector2%RvectorBlock(2), &
-              rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY*dtimeweight, &
-              (1.0_DP-dtimeweight), .false.)
-        end if
+            rrhsAssembly%rrhsVector2%RvectorBlock(2), &
+            rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY*dtimeweight, &
+            (1.0_DP-dtimeweight), .false.)
+        
+        call lsyssc_matVec (rasmTemplates%rmatrixMassPressure, &
+            rrhsAssembly%rrhsVector2%RvectorBlock(3), &
+            rrhs%RVectorBlock(3), rrhsAssembly%dmultiplyP*dtimeweight, &
+            (1.0_DP-dtimeweight), .false.)
 
         !call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhs)
 !        if (dtimeweight .gt. 0.0_DP) then

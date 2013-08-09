@@ -217,6 +217,9 @@ module ccbasic
     ! Multiplier for the Y-component
     real(DP) :: dmultiplyY = 1.0_DP
 
+    ! Multiplier for the P-component
+    real(DP) :: dmultiplyP = 1.0_DP
+
   end type
 
 !</typeblock>

@@ -261,6 +261,11 @@ drhsMultiplyX = 1.0
 
 drhsMultiplyY = 1.0
 
+# Multiplier for the RHS, P/divergence-component. If a RHS was read from a file sequence, 
+# it is multiplied by this value before being used.
+
+drhsMultiplyP = 1.0
+
 # ------------------------------------------------------------------------
 
 # Type of element pair to use for the discretisation.
