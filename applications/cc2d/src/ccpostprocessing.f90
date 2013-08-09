@@ -799,11 +799,11 @@ contains
       
         ! Perform error analysis to calculate and add ||u-z||_{H^1}.
         call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
-                          ffunction_TargetX,rlocalCollection,&
+                          ffunction_TargetX,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoUV)
 
         call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
-                          ffunction_TargetY,rlocalCollection,&
+                          ffunction_TargetY,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoUV)
                       
         derrorVel = -1.0_DP     
@@ -812,7 +812,7 @@ contains
         end if
         
         call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
-                          ffunction_TargetP,rlocalCollection,&
+                          ffunction_TargetP,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoP)
 
         derrorP = -1.0_DP
