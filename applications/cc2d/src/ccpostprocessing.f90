@@ -81,6 +81,11 @@ module ccpostprocessing
   use pprocnavierstokes
   use pprocerror
   
+  use blockmatassemblybase
+  use blockmatassembly
+  use blockmatassemblystdop
+  use feevaluation2
+  
   use ccboundaryconditionparser
   use ccgeneraldiscretisation
   use ccmatvecassembly
@@ -1270,9 +1275,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: ieltype
+    integer(I32) :: ieltype,icuberror
+    character(LEN=SYS_STRLEN) :: stemp
+    real(DP) :: ddivergence
+    type(t_fev2Vectors) :: revalVectors
     type(t_vectorScalar), target :: rtempVector
-    
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+
     if (rsolution%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
         
@@ -1293,18 +1302,51 @@ contains
         call lsyssc_matVec (&
             rproblem%RlevelInfo(rproblem%nlmax)%rasmTempl%rmatrixD2, rsolution%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
-        
-        call output_lbrk()
-        call output_line ("Divergence")
-        call output_line ("----------")
-        call output_line ("Divergence = " &
-            //trim(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)),&
-          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             
+        ddivergence = lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
+        
         call lsyssc_releaseVector (rtempVector)
       
+      case default
+
+        ! Set up the cubature      
+        call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+                                    "scubError",stemp,"")
+        if (stemp .eq. "") then
+          call parlst_getvalue_int (rproblem%rparamList,"CC-POSTPROCESSING",&
+                                    "icubError",icubError,int(CUB_GEN_AUTO))
+        else
+          icubError = cub_igetID(stemp)
+        end if
+
+        ! Create an cubature info structure which contains our cubature rule
+        call spdiscr_createDefCubStructure(&
+            rsolution%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfo,int(icubError,I32))
+        
+        ! Calculate the divergence via block assembly methods.
+        call fev2_addVectorFieldToEvalList (revalVectors,1,&
+            rsolution%RvectorBlock(1),rsolution%RvectorBlock(2))
+        
+        call bma_buildIntegral (ddivergence,BMA_CALC_STANDARD,&
+            bma_fcalc_divergenceL2norm, revalVectors=revalVectors,&
+            rcubatureInfo=rcubatureInfo)
+           
+        call fev2_releaseVectorList (revalVectors)
+        
+        ! Release cubature
+        call spdiscr_releaseCubStructure(rcubatureInfo)
+      
+        ! Taking the square root gives the L2 norm
+        ddivergence = sqrt(ddivergence)
+            
       end select
       
+      call output_lbrk()
+      call output_line ("Divergence")
+      call output_line ("----------")
+      call output_line ("Divergence = " &
+          //trim(sys_sdEP(ddivergence,15,6)),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+          
     end if
     
   end subroutine
