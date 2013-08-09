@@ -422,8 +422,7 @@ contains
     if (rsolution%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
         
-      ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
-                RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rsolution%p_rblockDiscr%RspatialDiscr(1),1,ieltype)
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T_3D) then
       
