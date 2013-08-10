@@ -36,7 +36,7 @@
 
 module hydro_preprocessing
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

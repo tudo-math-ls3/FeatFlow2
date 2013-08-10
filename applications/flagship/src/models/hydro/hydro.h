@@ -14,7 +14,7 @@
 !##############################################################################
 #endif
 
-#include "../../flagship.h"
+#include "flagship.h"
 
 
 #if 0
@@ -173,7 +173,7 @@
 #define THERMODYN_GAMMA HYDRO_GAMMA
 #endif
 
-#include "../../kernel/thermodynamics.h"
+#include "kernel/thermodynamics.h"
 
 
 #if 0

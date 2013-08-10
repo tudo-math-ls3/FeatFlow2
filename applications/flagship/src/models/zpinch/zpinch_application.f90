@@ -38,7 +38,7 @@
 
 module zpinch_application
 
-#include "../../flagship.h"
+#include "flagship.h"
 
 !$use omp_lib
   use basicgeometry

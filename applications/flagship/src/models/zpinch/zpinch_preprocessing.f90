@@ -22,8 +22,8 @@
 
 module zpinch_preprocessing
 
-#include "../../flagship.h"
-#include "hydro.h"
+#include "flagship.h"
+#include "modles/preprocessing/hydro.h"
 
 !$use omp_lib
   use collection

@@ -11,7 +11,7 @@
 
 module timestepaux
 
-#include "../flagship.h"
+#include "flagship.h"
 
 !$use omp_lib
   use fsystem

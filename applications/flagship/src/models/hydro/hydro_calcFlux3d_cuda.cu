@@ -17,15 +17,15 @@
 #include <iostream>
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
-#include "../../cudaGatherScatter.h"
+#include "cudaGatherScatter.h"
 #ifdef HAS_INLINE_PTX
-#include "../../cudaDMA.h"
+#include "cudaDMA.h"
 #endif
 
-#include "../../flagship.h"
-#include "../../cudaMacros.h"
+#include "flagship.h"
+#include "cudaMacros.h"
 
-#include "hydro.h"
+#include "models/hydro/hydro.h"
 
 // Define CUDA kernel which does not make use of the CUDADMA library
 // and is applied to the remaining edges which are not processed in groups
@@ -168,61 +168,61 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -231,61 +231,61 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2T(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2T(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
-			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
+			IDX2(Fxi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi);
 	    
-			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
-			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			IDX2(Fxj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -313,60 +313,60 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -375,61 +375,61 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2T(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2T(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
-			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
+			IDX2(Fyi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi);
 	
-			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
-			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			IDX2(Fyj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -457,60 +457,60 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) = INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
       }
@@ -519,61 +519,61 @@ namespace hydro3d_cuda
 		if (btransposeDest) {
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
-			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
-			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2T(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2T(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
-			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
-			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
-			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
+			IDX2(Fzi,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi);
 	
-			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
-			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,1,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,2,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,3,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,4,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			IDX2(Fzj,5,iposDest,NVAR3D,nedgesimDest) += INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
       }
@@ -601,76 +601,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3t,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3t,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -680,76 +680,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3t,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3t,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2T(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fx_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 			IDX2(Fx_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-			  INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+			  INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj);
 		  }
 		}
       }
@@ -777,76 +777,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -856,76 +856,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2T(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fy_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 			IDX2(Fy_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-			  INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+			  INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj);
 		  }
 		}
       }
@@ -953,76 +953,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) =
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
       }
@@ -1032,76 +1032,76 @@ namespace hydro3d_cuda
 		  if (btransposeSrc) {
 			// Both source and destination vector are transposed
 			IDX2T(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX2T(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2T(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
 		else {
 		  if (btransposeSrc) {
 			// Source vector is transposed
 			IDX2(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX2(Fz_ij,1,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,2,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,3,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,4,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 			IDX2(Fz_ij,5,iposDest,NVAR3D,nedgesimDest) +=
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-			  INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+			  INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj);
 		  }
 		}
       }
@@ -1180,32 +1180,32 @@ namespace hydro3d_cuda
       if (btransposeSrc) {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
       if (boverwrite) {
@@ -1233,32 +1233,32 @@ namespace hydro3d_cuda
       if (btransposeSrc) {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       
       if (boverwrite) {
@@ -1286,32 +1286,32 @@ namespace hydro3d_cuda
       if (btransposeSrc) {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       
       if (boverwrite) {
@@ -1339,32 +1339,32 @@ namespace hydro3d_cuda
       if (btransposeSrc) {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
       if (boverwrite) {
@@ -1392,32 +1392,32 @@ namespace hydro3d_cuda
       if (btransposeSrc) {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
       else {
 		aux = scale *
 		  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
+		   INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
+		   INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj)
 		   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
+		   INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
+		   INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
+		   INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)
 		   -IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-		   INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
+		   INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,3,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi));
       }
 
       if (boverwrite) {
@@ -1450,233 +1450,233 @@ namespace hydro3d_cuda
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		}
 		else {
@@ -1684,233 +1684,233 @@ namespace hydro3d_cuda
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) = scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) = -scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		}
       }
@@ -1921,233 +1921,233 @@ namespace hydro3d_cuda
 			// Both source and destination vector are transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Destination vector is transposed
 			IDX3T(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3T(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3T(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3T(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		}
 		else {
@@ -2155,233 +2155,233 @@ namespace hydro3d_cuda
 			// Source vector is transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3T,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		  else {
 			// Both vectors are not transposed
 			IDX3(FluxesAtEdge,1,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,1,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX1_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX1_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX1_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX1_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX1_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX1_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,2,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,2,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX2_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX2_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX2_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX2_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX2_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX2_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,3,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,3,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX3_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX3_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX3_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX3_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX3_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX3_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 	    
 			IDX3(FluxesAtEdge,4,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,4,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX4_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX4_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX4_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX4_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX4_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX4_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 
 	    
 			IDX3(FluxesAtEdge,5,1,iposDest,NVAR3D,2,nedgesimDest) += scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 	    
 			IDX3(FluxesAtEdge,5,2,iposDest,NVAR3D,2,nedgesimDest) -= scale *
 			  (IDX3_COEFFSATEDGE(CoeffsAtEdge,1,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
-				INVISCIDFLUX5_XDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
+			   (INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,ui,pi)-
+				INVISCIDFLUX5_XDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,uj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,2,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
-				INVISCIDFLUX5_YDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
+			   (INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,vi,pi)-
+				INVISCIDFLUX5_YDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,vj,pj))
 			   +IDX3_COEFFSATEDGE(CoeffsAtEdge,3,2,iedge,3,ncoeff,nedge)*
-			   (INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
-				INVISCIDFLUX5_ZDIR3(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
+			   (INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,1,iposSrc,NVAR3D,2,nedgesimSrc,wi,pi)-
+				INVISCIDFLUX5_ZDIR3_3D(DataAtEdge,IDX3,2,iposSrc,NVAR3D,2,nedgesimSrc,wj,pj)));
 		  }
 		}
       }

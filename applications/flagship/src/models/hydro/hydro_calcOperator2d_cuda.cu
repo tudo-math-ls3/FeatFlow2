@@ -17,13 +17,13 @@
 #include <iostream>
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
-#include "../../cudaGatherScatter.h"
+#include "cudaGatherScatter.h"
 #ifdef HAS_INLINE_PTX
-#include "../../cudaDMA.h"
+#include "cudaDMA.h"
 #endif
 
-#include "../../flagship.h"
-#include "../../cudaMacros.h"
+#include "flagship.h"
+#include "cudaMacros.h"
 
 #include "hydro.h"
 
@@ -1231,7 +1231,7 @@ namespace hydro2d_cuda
 		// Compute velocities and energy
 		Tm ui = XVELOCITY2_2D(DataAtDiag,IDX2,1,NVAR2D*NVAR2D,1);
 		Tm vi = YVELOCITY2_2D(DataAtDiag,IDX2,1,NVAR2D*NVAR2D,1);
-		Tm Ei = SPECIFICTOTALENERGY2(DataAtDiag,IDX2,1,NVAR2D*NVAR2D,1);
+		Tm Ei = SPECIFICTOTALENERGY2_2D(DataAtDiag,IDX2,1,NVAR2D*NVAR2D,1);
 	
 		// Compute Galerkin coefficient $K_ii$
 		InviscidFluxJacobiMatrix<SYSTEM_ALLCOUPLED>::
@@ -1396,8 +1396,8 @@ namespace hydro2d_cuda
 		  Tm vj = YVELOCITY2_2D(DataAtEdge,IDX2,2,NVAR2D,2);
 	  
 		  // Compute specific energies
-		  Tm Ei = SPECIFICTOTALENERGY2(DataAtEdge,IDX2,1,NVAR2D,2);
-		  Tm Ej = SPECIFICTOTALENERGY2(DataAtEdge,IDX2,2,NVAR2D,2);
+		  Tm Ei = SPECIFICTOTALENERGY2_2D(DataAtEdge,IDX2,1,NVAR2D,2);
+		  Tm Ej = SPECIFICTOTALENERGY2_2D(DataAtEdge,IDX2,2,NVAR2D,2);
 	  
 		  if (idissipation == DISSIPATION_ZERO) {
 	    

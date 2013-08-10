@@ -37,7 +37,7 @@
 
 module hydro_basic
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

@@ -14,6 +14,7 @@
 #include <coproc_storage_cuda.h>
 
 #include "flagship.h"
+#include "kernel/System/idxmanager.h"
 
 /*******************************************************************************
  * VectorBase - one-dimensional array (basic facilities and specialisations)

@@ -210,7 +210,7 @@
 
 module mhd_callback3d
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

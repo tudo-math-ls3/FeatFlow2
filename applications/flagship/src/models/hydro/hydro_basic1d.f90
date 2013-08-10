@@ -22,7 +22,7 @@
 
 module hydro_basic1d
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

@@ -103,7 +103,7 @@
 
 module hydro_callback
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 #include "hydro_callback.h"
 

@@ -24,7 +24,7 @@
 
 module mhd_postprocessing
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

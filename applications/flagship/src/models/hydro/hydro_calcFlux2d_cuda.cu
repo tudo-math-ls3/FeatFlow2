@@ -17,15 +17,15 @@
 #include <iostream>
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
-#include "../../cudaGatherScatter.h"
+#include "cudaGatherScatter.h"
 #ifdef HAS_INLINE_PTX
-#include "../../cudaDMA.h"
+#include "cudaDMA.h"
 #endif
 
-#include "../../flagship.h"
-#include "../../cudaMacros.h"
+#include "flagship.h"
+#include "cudaMacros.h"
 
-#include "hydro.h"
+#include "models/hydro/hydro.h"
 
 // Define CUDA kernel which does not make use of the CUDADMA library
 // and is applied to the remaining edges which are not processed in groups

@@ -30,7 +30,7 @@
 
 module transport_meshadaptation
 
-#include "../../flagship.h"
+#include "flagship.h"
 
 !$use omp_lib
   use basicgeometry

@@ -20,10 +20,10 @@
 !##############################################################################
 #endif
 
-#include "../../kernel/feat2constants.h"
-#include "../../kernel/feat2macros.h"
-#include "../../kernel/System/fmath.h"
-#include "../../kernel/System/idxmanager.h"
+#include "kernel/feat2constants.h"
+#include "kernel/feat2macros.h"
+#include "kernel/System/fmath.h"
+#include "kernel/System/idxmanager.h"
 
 #if 0
 !##############################################################################

@@ -72,7 +72,7 @@
 
 module solverlinear
 
-#include "../flagship.h"
+#include "flagship.h"
 
 !$use omp_lib
 #ifndef ENABLE_AGMG

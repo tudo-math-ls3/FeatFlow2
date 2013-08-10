@@ -14,7 +14,7 @@
 !##############################################################################
 #endif
 
-#include "../../flagship.h"
+#include "flagship.h"
 
 
 #if 0
@@ -264,7 +264,7 @@
 #define MAGNETOHYDRODYN_VACUUM_PERM MHD_VACUUM_PERM
 #endif
 
-#include "../../kernel/magnetohydrodynamics.h"
+#include "kernel/magnetohydrodynamics.h"
 
 
 #if 0

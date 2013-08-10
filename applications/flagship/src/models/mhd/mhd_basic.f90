@@ -37,7 +37,7 @@
 
 module mhd_basic
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

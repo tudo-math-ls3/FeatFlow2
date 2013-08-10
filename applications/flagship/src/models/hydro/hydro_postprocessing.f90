@@ -24,7 +24,7 @@
 
 module hydro_postprocessing
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

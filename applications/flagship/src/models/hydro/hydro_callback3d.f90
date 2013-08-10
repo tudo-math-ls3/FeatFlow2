@@ -199,7 +199,7 @@
 
 module hydro_callback3d
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

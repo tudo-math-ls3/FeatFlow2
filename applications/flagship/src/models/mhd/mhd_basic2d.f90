@@ -22,7 +22,7 @@
 
 module mhd_basic2d
 
-#include "../../flagship.h"
+#include "flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

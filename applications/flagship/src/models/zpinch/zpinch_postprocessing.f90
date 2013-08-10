@@ -25,8 +25,8 @@
 
 module zpinch_postprocessing
 
-#include "../../flagship.h"
-#include "hydro.h"
+#include "flagship.h"
+#include "models/preprocessing/hydro.h"
 
 !$use omp_lib
   use basicgeometry

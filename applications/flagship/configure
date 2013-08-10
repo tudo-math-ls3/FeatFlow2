@@ -26,7 +26,7 @@ SRCEXTRA_APP=" "
 
 ################################################################
 # Clear application specific flags 
-APPONLYFLAGS=""
+APPONLYFLAGS="-Isrc"
 
 ################################################################
 # Define global memory layout
