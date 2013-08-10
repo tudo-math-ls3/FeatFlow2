@@ -13,12 +13,14 @@
 !##############################################################################
 #endif
 
-#include "feat2constants.h"
+#include "kernel/feat2constants.h"
 
 #if 0
+!###############################################################################
 ! External module files cannot be included by the standard use
 ! statement since the configure script would generate a rule for
 ! compiling the file mymod.mod from mymod.f90 which, does not exist.
+!###############################################################################
 #endif
 
 #define FEAT2_PP_EXTERNAL_USE(module) use module
@@ -194,20 +196,20 @@
 #endif
 
 #define FEAT2_PP_CONST_LANG(value,precision,language)   FEAT2_PP_CONST_LANG_I(value,precision,language)
-#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST##_##precision##_##language(value)
+#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_##precision##_##language(value)
 
-#define FEAT2_PP_CONST_1_1(value) value##L
-#define FEAT2_PP_CONST_2_1(value) value##E
-#define FEAT2_PP_CONST_3_1(value) value##F
+#define FEAT2_PP_CONST_1_1(value) value##l
+#define FEAT2_PP_CONST_2_1(value) value##e
+#define FEAT2_PP_CONST_3_1(value) value##f
 #ifdef ENABLE_LARGEINT
-#define FEAT2_PP_CONST_4_1(value) value##L
+#define FEAT2_PP_CONST_4_1(value) value##l
 #else
 #define FEAT2_PP_CONST_4_1(value) value
 #endif
 #define FEAT2_PP_CONST_5_1(value) value
 #define FEAT2_PP_CONST_6_1(value) value
 #define FEAT2_PP_CONST_7_1(value) value
-#define FEAT2_PP_CONST_8_1(value) value##L
+#define FEAT2_PP_CONST_8_1(value) value##l
 
 #define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value##_##prec_f
 #define FEAT2_PP_CONST_CONCAT_F(value,prec_f) FEAT2_PP_CONST_CONCAT_F_I(value,prec_f)
@@ -239,5 +241,50 @@
 #define FEAT2_PP_ID3(id1,id2,id3,base)         FEAT2_PP_ID2(id1,FEAT2_PP_ID2(id2,id3,base),base)
 #define FEAT2_PP_ID4(id1,id2,id3,id4,base)     FEAT2_PP_ID2(id1,FEAT2_PP_ID3(id2,id3,id4,base),base)
 #define FEAT2_PP_ID5(id1,id2,id3,id4,id5,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID4(id2,id3,id4,id5,base),base)
+
+
+#if 0
+!###############################################################################
+! The following macro concatenates two tokens
+!
+! Example: FEAT2_PP_CONCAT(prefix_,suffix)
+!          expands to prefix_suffix
+!
+! Note that use of this macro is recommended since '##' is not supported by all
+! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
+! cpp in traditional mode which does not support concatenation using '##'.
+!###############################################################################
+#endif
+
+#define FEAT2_PP_CONCAT(prefix,suffix) FEAT2_PP_CONCAT_I(prefix,suffix)
+
+#if (defined(__GFORTRAN__) || defined(__G95__) || defined(_LANGUAGE_FORTRAN)) && !defined(__STDC__)
+#define FEAT2_PP_CONCAT_I(prefix,suffix) prefix/**/suffix
+#else
+#define FEAT2_PP_CONCAT_I(prefix,suffix) prefix##suffix
+#endif
+
+
+#if 0
+!###############################################################################
+! The following macro concatenates two tokens
+!
+! Example: FEAT2_PP_STRING(string)
+!          expands to "string"
+!
+! Note that use of this macro is recommended since '#' is not supported by all
+! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
+! cpp in traditional mode which does not support stringification using '#'.
+!###############################################################################
+#endif
+
+#define FEAT2_PP_STRING(string) FEAT2_PP_STRING_I(string)
+
+#define FEAT2_PP_STRING_I(string) FEAT2_PP_STRING_II(string)
+#if (defined(__GFORTRAN__) || defined(__G95__) || defined(_LANGUAGE_FORTRAN)) && !defined(__STDC__)
+#define FEAT2_PP_STRING_II(string) "string"
+#else
+#define FEAT2_PP_STRING_II(string) #string
+#endif
 
 #endif
