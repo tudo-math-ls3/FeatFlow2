@@ -199,7 +199,7 @@
 #define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_##precision##_##language(value)
 
 #define FEAT2_PP_CONST_1_1(value) value##l
-#define FEAT2_PP_CONST_2_1(value) value##e
+#define FEAT2_PP_CONST_2_1(value) value
 #define FEAT2_PP_CONST_3_1(value) value##f
 #ifdef ENABLE_LARGEINT
 #define FEAT2_PP_CONST_4_1(value) value##l
