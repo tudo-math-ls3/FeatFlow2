@@ -27,7 +27,8 @@
 
 program preproctest
 
-#include "../../kernel/feat2constants.h"
+#include "kernel/feat2constants.h"
+#include "kernel/feat2macros.h"
 #include "preproctest.h"
 
   implicit none
@@ -77,7 +78,7 @@ program preproctest
   !          This test extends Test #2 in the following sense. The preprocessor
   !          must not add extra lines after the expanded macro call because then
   !          the Fortran compiler may complain about unbalance parantheses.
-  !          For this reasons, newer versions of the GNU cpp must be envoked
+  !          For this reasons, newer versions of the GNU cpp must be invoked with
   !          the '--traditional' flag. Otherwise, the following test fails.
 
   write(*,*) "Test #3: Call to a macro inside other arguments"
@@ -134,32 +135,36 @@ program preproctest
   write(*,*)
 
   
-  ! Test #6: Stringification of a macro argument. This feature is supported
-  !          by GNU cpp if NOT envoked in traditional mode as well as Fortran
-  !          preprocessors (tested with Intel and SUN fpp). However, newer
-  !          versions of the GNU cpp preprocessor must be envoked with the
-  !          '--traditional flag' enabled in order to handle Test #3 correctly.
-  !          Therefore, stringification of macro arguments is not a feature
-  !          that has to be supported on all platforms, and thus, it should
-  !          not be used in the Featflow2 source code.
+  ! Test #6: Stringification of a macro argument. This feature is
+  !          supported by all preprocessors which support ANSI C. The
+  !          internal preprocessor of GNU gfortran and g95 invokes cpp
+  !          with the '-traditional' flag turned on. In this case
+  !          stringification works if the argument to the
+  !          stringification macro is fixed.
 
-!!$  write(*,*) "Test #6: Stringification of macro arguments"
-!!$  write(*,*) stringify(print)
-!!$  write(*,*)
+  write(*,*) "Test #6: Stringification of macro arguments"
+  write(*,*) FEAT2_PP_STRING(print)
+  write(*,*)
 
   
-  ! Test #7: Concatenation of two arguments. This feature is supported by
-  !          GNU cpp if NOT envoked in traditional mode as well as the
-  !          Intel Fortran preprocessor. It is not supported by the SUN
-  !          Fortran preprocessor and the GNU cpp envoked in traditional
-  !          mode. Therefore, concatenation of strings is not a feature
-  !          that has to be supported on all platforms, and thus, it should
-  !          not be used in the Featflow2 source code.
+  ! Test #7: Concatenation of two arguments.
 
-!!$  write(*,*) "Test #7: Concatenation of two macro arguments"
-!!$  write(*,*) concatenate(foo,bar)
-!!$  write(*,*)
+  write(*,*) "Test #7: Concatenation of two macro arguments"
+  write(*,*) FEAT2_PP_CONCAT(1,0)
+  write(*,*)
 
+
+  ! Test #8: Stringification of a macro argument which is the result
+  !          of further macros. This feature is supported by all
+  !          preprocessors which support ANSI C. However, the
+  !          traditional cpp used internally by GNU gfortran and g95
+  !          is not able to evaluating the arguments prior to
+  !          converting them into string.
+
+  write(*,*) "Test #8: Concatenation of two macro arguments"
+  write(*,*) FEAT2_PP_STRING(FEAT2_PP_CONCAT(foo,bar))
+  write(*,*)
+  
 contains
 
   subroutine writeTwoArguments(a,b)

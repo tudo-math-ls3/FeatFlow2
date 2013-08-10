@@ -20,17 +20,3 @@
 #define combine(a,b)\
   (a+MYNEWLINE\
    b)
-
-
-#if 0
-! Stringify the given argument
-#endif
-
-#define stringify(arg) #arg
-
-
-#if 0
-! Concatenate two arguments
-#endif
-
-#define concatenate(a,b) stringify(a ## b)
