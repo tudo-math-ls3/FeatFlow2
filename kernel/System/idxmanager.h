@@ -1,8 +1,8 @@
 #ifndef _IDXMANAGER_H_
 #define _IDXMANAGER_H_
 
-#include "../feat2constants.h"
-#include "../feat2macros.h"
+#include "kernel/feat2constants.h"
+#include "kernel/feat2macros.h"
 
 #if 0
 !##############################################################################

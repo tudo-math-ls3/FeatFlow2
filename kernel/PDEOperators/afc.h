@@ -1,4 +1,4 @@
-#include "../feat2constants.h" 
+#include "kernel/feat2constants.h" 
 
 #define LANGUAGE LANGUAGE_F
 

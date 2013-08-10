@@ -129,8 +129,8 @@
 
 module storage
 
-#include "../feat2macros.h"
-#include "../feat2constants.h"
+#include "kernel/feat2macros.h"
+#include "kernel/feat2constants.h"
 
 !$use omp_lib
   use fsystem

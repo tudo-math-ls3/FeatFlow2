@@ -220,7 +220,7 @@
 !# </purpose>
 !##############################################################################
 
-#include "../template.h"
+#include "kernel/template.h"
 
   implicit none
 

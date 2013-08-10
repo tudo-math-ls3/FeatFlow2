@@ -1,4 +1,4 @@
-#include "../feat2constants.h"
+#include "kernel/feat2constants.h"
 
 ! ------------------------------------------------------------------------------
 ! Convention: all internal identifiers have two leading and two
@@ -87,46 +87,46 @@
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 #undef __NVAR__
 
     end select
@@ -167,46 +167,46 @@
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_lax9rowc.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h"
 #undef __NVAR__
 
     end select
@@ -246,46 +246,46 @@
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_lax79intl1.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h"
 #undef __NVAR__
 
     end select
@@ -325,46 +325,46 @@
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_lax79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_lax79intld.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_lax79intld.h"
 #undef __NVAR__
 
     end select
@@ -396,46 +396,46 @@ select case(NVAR)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_latxd.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_latxd.h"
 #undef __NVAR__
 
     end select
@@ -475,46 +475,46 @@ select case(NVAR)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 
     case(2)
 #define __NVAR__ 2
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(3)
 #define __NVAR__ 3
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(4)
 #define __NVAR__ 4
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(5)
 #define __NVAR__ 5
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(6)
 #define __NVAR__ 6
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(7)
 #define __NVAR__ 7
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case(8)
 #define __NVAR__ 8
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     case default
 #define __NVAR__ NVAR
-#include "lsyssc_scalarMatVec_ltx79.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVec_ltx79.h"
 #undef __NVAR__
 
     end select

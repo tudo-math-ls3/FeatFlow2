@@ -106,7 +106,8 @@ endif
 # Check if Fortran source code files are preprocessed by F90CPP script.
 # Otherwise, set additional flags to enforce use of CPP preprocessor.
 ifeq ($(strip $(F90CPP)),)
-CFLAGSF77 := $(CFLAGSF77) -fpp -e
+CFLAGSF77 := $(CFLAGSF77) -fpp -e -I$(FEAT2BASEDIR)
+MODOPTION  = -moddir=
 endif
 
 

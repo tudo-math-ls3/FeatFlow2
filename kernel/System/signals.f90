@@ -13,7 +13,7 @@
 !##############################################################################
 module signals
 
-#include "../feat2macros.h"
+#include "kernel/feat2macros.h"
 
 !$use omp_lib
   use genoutput

@@ -1,6 +1,6 @@
-#include "../feat2macros.h" 
-#include "../template.h" 
-#include "afc.h"
+#include "kernel/feat2macros.h" 
+#include "kernel/template.h" 
+#include "kernel/PDEOperators/afc.h"
 
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes the standard way, as

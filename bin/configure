@@ -1796,6 +1796,7 @@ sub create_feastAppMakefile {
             "# Coprocessor-specific special options\n" .
 	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
 	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
+        "INC          := -I\$(FEAT2BASEDIR)/librariesNEW/coproc \$(INC)\n" .
 	    "LIBS         := -lcoproc \$(LIBS)\n" .
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
