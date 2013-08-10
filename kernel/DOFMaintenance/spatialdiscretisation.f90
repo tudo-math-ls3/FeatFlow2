@@ -1549,8 +1549,13 @@ contains
 !</subroutine>
 
     ! Initialise a new block discretisation with one component.
-    call spdiscr_initBlockDiscr (rblockDiscr, 1,&
-        rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary)
+    if (associated(rspatialDiscr%p_rboundary)) then
+      call spdiscr_initBlockDiscr (rblockDiscr, 1,&
+          rspatialDiscr%p_rtriangulation, rspatialDiscr%p_rboundary)
+    else
+      call spdiscr_initBlockDiscr (rblockDiscr, 1,&
+          rspatialDiscr%p_rtriangulation)
+    end if
 
     ! Put a copy of the spatial discretisation to first component
     ! of the the block discretisation. Share the data.

@@ -482,13 +482,22 @@ contains
       if (p_rdiscretisation%ndimension .eq. 0) then
         select case(isystemFormat)
         case (SYSTEM_INTERLEAVEFORMAT)
-          call spdiscr_initBlockDiscr(p_rdiscretisation, 1,&
-              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          if (associated(rproblemLevel%p_rproblem%rboundary)) then
+            call spdiscr_initBlockDiscr(p_rdiscretisation, 1,&
+                p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          else
+            call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
+          end if
           
         case (SYSTEM_BLOCKFORMAT)
-          call spdiscr_initBlockDiscr(p_rdiscretisation,&
-              hydro_getNVAR(rproblemLevel), p_rtriangulation,&
-              rproblemLevel%p_rproblem%rboundary)
+          if (associated(rproblemLevel%p_rproblem%rboundary)) then
+            call spdiscr_initBlockDiscr(p_rdiscretisation,&
+                hydro_getNVAR(rproblemLevel), p_rtriangulation,&
+                rproblemLevel%p_rproblem%rboundary)
+          else
+            call spdiscr_initBlockDiscr(p_rdiscretisation,&
+                hydro_getNVAR(rproblemLevel), p_rtriangulation)
+          end if
 
         case default
           call output_line('Unsupported system format!',&
@@ -512,22 +521,43 @@ contains
       ! Get spatial dimension
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
-
-      case (NDIM2D)
-        if (size(Celement) .eq. 1) then
+        if (associated(rproblemLevel%p_rproblem%rboundary)) then
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
               Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         else
-          call spdiscr_initDiscr_triquad(&
-              p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
-              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+              Celement(1), p_rtriangulation)
+        end if
+
+      case (NDIM2D)
+        if (size(Celement) .eq. 1) then
+          if (associated(rproblemLevel%p_rproblem%rboundary)) then
+            call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+                Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          else
+            call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+                Celement(1), p_rtriangulation)
+          end if
+        else
+          if (associated(rproblemLevel%p_rproblem%rboundary)) then
+            call spdiscr_initDiscr_triquad(&
+                p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
+                p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          else
+            call spdiscr_initDiscr_triquad(&
+                p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
+                p_rtriangulation)
+          end if
         end if
 
       case (NDIM3D)
-        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+        if (associated(rproblemLevel%p_rproblem%rboundary)) then
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+              Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+        else
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+              Celement(1), p_rtriangulation)
+        end if
       
       case default
         call output_line('Invalid number of spatial dimensions',&
