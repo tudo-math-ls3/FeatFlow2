@@ -20,7 +20,7 @@
 
 
 # inherit flags that are prone to changes
-CFLAGSCOPROC = $(CFLAGSCOPROC_FROM_FEAST) $(APPONLYFLAGS)
+CFLAGSCOPROC = $(CFLAGSCOPROC_FROM_FEAT2) $(APPONLYFLAGS)
 
 # Only use parameter checking if Fortran code does the same
 ifneq (,$(findstring -DENABLE_PARAMETER_CHECK,$(CFLAGSF90) $(APPONLYFLAGS)))
@@ -71,9 +71,9 @@ libcoproc.a:	$(COPROCLIB)
 # Explicitly take precautions to reflect the considerations in Section 11.3 of 
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAST regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
 # attempts to create the archive should not happen. Try to avoid it with the
-# usual FEAST lock file mechanism.
+# usual FEAT2 lock file mechanism.
 include ../create_library.mk
 $(COPROCLIB):  LOCKFILE = ../LOCK.creating.libcoproc.a
 $(COPROCLIB):  WAITTIME = 15

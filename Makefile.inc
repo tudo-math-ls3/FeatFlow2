@@ -15,10 +15,10 @@
 #                                                                      #
 ########################################################################
 
-# Path to this FEAST installation main directory
-ifeq ($(strip $(FEASTBASEDIR)),)
-FEASTBASEDIR:=.
+# Path to this FEAT2 installation main directory
+ifeq ($(strip $(FEAT2BASEDIR)),)
+FEAT2BASEDIR:=.
 endif
 
-include $(FEASTBASEDIR)/Makefile.buildID.inc
-include $(FEASTBASEDIR)/Makefile.cpu.inc
+include $(FEAT2BASEDIR)/Makefile.buildID.inc
+include $(FEAT2BASEDIR)/Makefile.cpu.inc

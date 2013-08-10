@@ -184,7 +184,7 @@ endef
 # Recursively remove directories. For the first two directory levels
 # print an error message if removal failed. (The restriction to two
 # levels is rather arbitrary. It's the least number of directory levels
-# created by a FEAST Makefile. To show an error message unconditionally
+# created by a FEAT2 Makefile. To show an error message unconditionally
 # is not desired as one would eventually always get an error message, at
 # least when trying to remove /)
 # The for loop is to deal with given directory wildcards like object/pc-*-*-*.
