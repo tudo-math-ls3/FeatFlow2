@@ -18113,7 +18113,7 @@ contains
           call coproc_combineDoubleOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_DOUBLE_BYTES, istreamTmp)
         case (ST_QUAD)
-          call coproc_combineQPOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
+          call coproc_combineQuadOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_QUAD_BYTES, istreamTmp)
         case (ST_INT)
           call coproc_combineIntegerOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
