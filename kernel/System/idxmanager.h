@@ -319,10 +319,10 @@
 #define GET_IDX2_2_1(a,i1,i2,n1,n2) IDX2_REVERSE(a,i1,i2,n1,n2)
 #define GET_IDX2_2_2(a,i1,i2,n1,n2) IDX2_FORWARD(a,i1,i2,n1,n2)
 
-#define GET_IDX2T_1_1(a,i1,i2,n1,n2) IDX2T_REVERSE(a,i1,i2,n1,n2)
-#define GET_IDX2T_1_2(a,i1,i2,n1,n2) IDX2T_FORWARD(a,i1,i2,n1,n2)
-#define GET_IDX2T_2_1(a,i1,i2,n1,n2) IDX2T_FORWARD(a,i1,i2,n1,n2)
-#define GET_IDX2T_2_2(a,i1,i2,n1,n2) IDX2T_REVERSE(a,i1,i2,n1,n2)
+#define GET_IDX2T_1_1(a,i1,i2,n1,n2) IDX2_REVERSE(a,i1,i2,n1,n2)
+#define GET_IDX2T_1_2(a,i1,i2,n1,n2) IDX2_FORWARD(a,i1,i2,n1,n2)
+#define GET_IDX2T_2_1(a,i1,i2,n1,n2) IDX2_FORWARD(a,i1,i2,n1,n2)
+#define GET_IDX2T_2_2(a,i1,i2,n1,n2) IDX2_REVERSE(a,i1,i2,n1,n2)
 
 #if 0
 !##############################################################################
@@ -358,10 +358,10 @@
 #define GET_IDX3_2_1(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
 #define GET_IDX3_2_2(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
 
-#define GET_IDX3T_1_1(a,i1,i2,i3,n1,n2,n3) IDX3T_REVERSE(a,i1,i2,i3,n1,n2,n3)
-#define GET_IDX3T_1_2(a,i1,i2,i3,n1,n2,n3) IDX3T_FORWARD(a,i1,i2,i3,n1,n2,n3)
-#define GET_IDX3T_2_1(a,i1,i2,i3,n1,n2,n3) IDX3T_FORWARD(a,i1,i2,i3,n1,n2,n3)
-#define GET_IDX3T_2_2(a,i1,i2,i3,n1,n2,n3) IDX3T_REVERSE(a,i1,i2,i3,n1,n2,n3)
+#define GET_IDX3T_1_1(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
+#define GET_IDX3T_1_2(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
+#define GET_IDX3T_2_1(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
+#define GET_IDX3T_2_2(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
 
 
 #if 0
