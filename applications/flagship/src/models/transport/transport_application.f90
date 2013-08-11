@@ -133,6 +133,7 @@ module transport_application
   use boundaryfilter
   use collection
   use flagship_basic
+  use flagship_signals
   use fparser
   use genoutput
   use graph
@@ -706,7 +707,6 @@ contains
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
-    integer, external :: signal_SIGINT
 
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
@@ -904,7 +904,7 @@ contains
     timeloop: do
 
       ! Check for user interaction
-      if (signal_SIGINT(-1) > 0 )&
+      if (flagship_SIGINT(-1) > 0 )&
           call transp_outputSolution(rparlist, ssectionName,&
           p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 

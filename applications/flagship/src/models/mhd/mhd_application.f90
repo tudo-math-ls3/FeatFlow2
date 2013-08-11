@@ -62,6 +62,7 @@ module mhd_application
   use boundaryfilter
   use collection
   use flagship_basic
+  use flagship_signals
   use fparser
   use genoutput
   use graph
@@ -505,7 +506,6 @@ contains
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat, discretisation
     integer :: ipreadapt, npreadapt, irhstype, ndimension
-    integer, external :: signal_SIGINT
 
 
     ! Get timer structures
@@ -719,7 +719,7 @@ contains
     timeloop: do
 
       ! Check for user interaction
-      if (signal_SIGINT(-1) > 0 )&
+      if (flagship_SIGINT(-1) > 0 )&
           call mhd_outputSolution(rparlist, ssectionName,&
           p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 

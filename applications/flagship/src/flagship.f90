@@ -35,6 +35,7 @@ program flagship
   use storage
 
   use flagship_basic
+  use flagship_signals
   use hydro_application
   use mhd_application
   use transport_application
@@ -51,7 +52,6 @@ program flagship
   character(LEN=SYS_STRLEN) :: sparameterfile,sperfconfigfile
   character(LEN=10) :: stime
   character(LEN=8)  :: sdate
-  integer, external :: signal_SIGINT, signal_SIGQUIT
   integer :: iunit
   logical :: bexit
 
@@ -81,8 +81,8 @@ program flagship
   call fparser_init()
 
   ! Initialise signal handler for SIGINT and SIGQUIT
-  call fsignal(SIGINT, signal_SIGINT)
-  call fsignal(SIGQUIT, signal_SIGQUIT)
+  call fsignal(SIGINT, flagship_SIGINT)
+  call fsignal(SIGQUIT, flagship_SIGQUIT)
 
   ! Print welcome screen
   call output_lbrk()
@@ -353,79 +353,3 @@ contains
   end subroutine flagship_parseCmdlArguments
 
 end program flagship
-
-!*****************************************************************************
-
-!<function>
-
-function signal_SIGINT(signum) result(sigcount)
-
-  use fsystem
-  use genoutput
-  use signals
-
-!<description>
-  ! This subroutine performs signal handling for SIGINT. In essence,
-  ! it counts the number if SIGINT`s received and terminates if user
-  ! sent SIGINT more than three times.
-!</description>
-
-!<input>
-  integer, intent(in) :: signum
-!</input>
-
-!<result>
-  ! signal
-  integer :: sigcount
-!</result>
-!</function>
-
-  ! local variables
-  integer, save :: icount = 0
-
-  sigcount = icount
-
-  if (signum .eq. -1) then
-
-    ! Reset counter
-    icount = 0
-
-  elseif (signum .eq. SIGINT) then
-
-    ! Increase counter
-    icount = icount+1
-    if (icount .ge. 3) then
-      call output_line('Simulation terminated due to user interruption (SIGINT)')
-      call sys_halt()
-    end if
-
-  end if
-end function signal_SIGINT
-
-!*****************************************************************************
-
-!<function>
-
-function signal_SIGQUIT(signum) result(sigcount)
-
-  use fsystem
-  use genoutput
-  use signals
-
-!<description>
-  ! This subroutine performs signal handling for SIGQUIT.
-!</description>
-
-!<input>
-  integer, intent(in) :: signum
-!</input>
-
-!<result>
-  ! signal
-  integer :: sigcount
-!</result>
-!</function>
-
-  call output_line('Simulation terminated due to user interruption (SIGQUIT)')
-  stop
-end function signal_SIGQUIT
