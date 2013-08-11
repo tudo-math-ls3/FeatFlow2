@@ -16,17 +16,6 @@
 
 #if 0
 !##############################################################################
-! Default configuration: Fortran programming language and index mapping style
-!##############################################################################
-#endif
-
-#include "kernel/feat2constants.h"
-#include "kernel/feat2macros.h"
-#include "kernel/System/fmath.h"
-#include "kernel/System/idxmanager.h"
-
-#if 0
-!##############################################################################
 !# Configuration of global data arrays in host and device memory
 !##############################################################################
 #endif

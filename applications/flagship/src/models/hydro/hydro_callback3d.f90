@@ -201,6 +201,7 @@ module hydro_callback3d
 
 #include "flagship.h"
 #include "hydro.h"
+#include "kernel/System/fmath.h"
 
 !$use omp_lib
   use basicgeometry

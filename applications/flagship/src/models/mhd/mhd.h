@@ -15,6 +15,8 @@
 #endif
 
 #include "flagship.h"
+#include "kernel/System/fmath.h"
+#include "kernel/System/idxmanager.h"
 
 
 #if 0

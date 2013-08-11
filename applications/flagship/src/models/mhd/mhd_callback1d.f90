@@ -209,6 +209,7 @@ module mhd_callback1d
 
 #include "flagship.h"
 #include "mhd.h"
+#include "kernel/System/fmath.h"
 
 !$use omp_lib
   use basicgeometry

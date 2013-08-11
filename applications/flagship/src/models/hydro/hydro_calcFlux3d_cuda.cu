@@ -26,6 +26,7 @@
 #include "cudaMacros.h"
 
 #include "models/hydro/hydro.h"
+#include "kernel/System/fmath.h"
 
 // Define CUDA kernel which does not make use of the CUDADMA library
 // and is applied to the remaining edges which are not processed in groups
