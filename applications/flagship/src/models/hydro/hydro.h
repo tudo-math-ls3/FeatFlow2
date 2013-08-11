@@ -281,17 +281,21 @@
 #define INVISCIDFLUXJACOBIMATRIX12_2D(dscale,CX,CY,u,v,E) dscale*CX
 #define INVISCIDFLUXJACOBIMATRIX13_2D(dscale,CX,CY,u,v,E) dscale*CY
 #define INVISCIDFLUXJACOBIMATRIX14_2D(dscale,CX,CY,u,v,E) DCONST(0.0)
-#define INVISCIDFLUXJACOBIMATRIX21_2D(dscale,CX,CY,u,v,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v)-MYNEWLINE u*u)*CX-u*v*CY)
+#define INVISCIDFLUXJACOBIMATRIX21_2D(dscale,CX,CY,u,v,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v)-MYNEWLINE \
+                                                                   u*u)*CX-u*v*CY)
 #define INVISCIDFLUXJACOBIMATRIX22_2D(dscale,CX,CY,u,v,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*u*CX+v*CY)
 #define INVISCIDFLUXJACOBIMATRIX23_2D(dscale,CX,CY,u,v,E) dscale*(u*CY-((DCONST(HYDRO_GAMMA))-DCONST(1.0))*v*CX)
 #define INVISCIDFLUXJACOBIMATRIX24_2D(dscale,CX,CY,u,v,E) dscale*((DCONST(HYDRO_GAMMA))-DCONST(1.0))*CX
-#define INVISCIDFLUXJACOBIMATRIX31_2D(dscale,CX,CY,u,v,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v)-v*v)*CY-MYNEWLINE u*v*CX)
+#define INVISCIDFLUXJACOBIMATRIX31_2D(dscale,CX,CY,u,v,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v)-v*v)*CY-MYNEWLINE \
+                                                                  u*v*CX)
 #define INVISCIDFLUXJACOBIMATRIX32_2D(dscale,CX,CY,u,v,E) dscale*(v*CX-((DCONST(HYDRO_GAMMA))-DCONST(1.0))*u*CY)
 #define INVISCIDFLUXJACOBIMATRIX33_2D(dscale,CX,CY,u,v,E) dscale*(u*CX+(DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*v*CY)
 #define INVISCIDFLUXJACOBIMATRIX34_2D(dscale,CX,CY,u,v,E) dscale*((DCONST(HYDRO_GAMMA))-DCONST(1.0))*CY
 #define INVISCIDFLUXJACOBIMATRIX41_2D(dscale,CX,CY,u,v,E) dscale*(((DCONST(HYDRO_GAMMA))-DCONST(1.0))*(u*u+v*v)-(DCONST(HYDRO_GAMMA))*E)*(u*CX+v*CY)
-#define INVISCIDFLUXJACOBIMATRIX42_2D(dscale,CX,CY,u,v,E) dscale*(((DCONST(HYDRO_GAMMA))*E-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v))*CX-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*u*(u*CX+v*CY))
-#define INVISCIDFLUXJACOBIMATRIX43_2D(dscale,CX,CY,u,v,E) dscale*(((DCONST(HYDRO_GAMMA))*E-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v))*CY-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*v*(u*CX+v*CY))
+#define INVISCIDFLUXJACOBIMATRIX42_2D(dscale,CX,CY,u,v,E) dscale*(((DCONST(HYDRO_GAMMA))*E-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v))*CX-MYNEWLINE \
+                                                                  ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*u*(u*CX+v*CY))
+#define INVISCIDFLUXJACOBIMATRIX43_2D(dscale,CX,CY,u,v,E) dscale*(((DCONST(HYDRO_GAMMA))*E-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(u*u+v*v))*CY-MYNEWLINE \
+                                                                  ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*v*(u*CX+v*CY))
 #define INVISCIDFLUXJACOBIMATRIX44_2D(dscale,CX,CY,u,v,E) dscale*((DCONST(HYDRO_GAMMA))*(u*CX+v*CY))
 
 #if 0
@@ -418,27 +422,59 @@
 #define INVISCIDFLUXJACOBIMATRIX13_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*CY
 #define INVISCIDFLUXJACOBIMATRIX14_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*CZ
 #define INVISCIDFLUXJACOBIMATRIX15_3D(dscale,CX,CY,CZ,u,v,w,E) DCONST(0.0)
-#define INVISCIDFLUXJACOBIMATRIX21_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE ui*vi*CY-MYNEWLINE ui*wi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX22_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX23_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CY-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*CX)
-#define INVISCIDFLUXJACOBIMATRIX24_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CZ-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*CX)
+#define INVISCIDFLUXJACOBIMATRIX21_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE \
+                                                                       ui*vi*CY-MYNEWLINE \
+                                                                       ui*wi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX22_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*ui*CX+MYNEWLINE \
+                                                                       vi*CY+MYNEWLINE \
+                                                                       wi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX23_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CY-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*CX)
+#define INVISCIDFLUXJACOBIMATRIX24_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CZ-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*CX)
 #define INVISCIDFLUXJACOBIMATRIX25_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(HYDRO_GAMMA))-DCONST(1.0))*CX
-#define INVISCIDFLUXJACOBIMATRIX31_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE ui*vi*CX-MYNEWLINE vi*wi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX32_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CX-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*CY)
-#define INVISCIDFLUXJACOBIMATRIX33_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*vi*CY+MYNEWLINE ui*CX+MYNEWLINE wi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX34_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CZ-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*CY)
+#define INVISCIDFLUXJACOBIMATRIX31_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE \
+                                                                       ui*vi*CX-MYNEWLINE \
+                                                                       vi*wi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX32_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CX-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*CY)
+#define INVISCIDFLUXJACOBIMATRIX33_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*vi*CY+MYNEWLINE \
+                                                                       ui*CX+MYNEWLINE \
+                                                                       wi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX34_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CZ-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*CY)
 #define INVISCIDFLUXJACOBIMATRIX35_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(HYDRO_GAMMA))-DCONST(1.0))*CY
-#define INVISCIDFLUXJACOBIMATRIX41_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE ui*wi*CX-MYNEWLINE vi*wi*CY)
-#define INVISCIDFLUXJACOBIMATRIX42_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CX-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*CZ)
-#define INVISCIDFLUXJACOBIMATRIX43_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CY-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX44_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*wi*CZ+MYNEWLINE ui*CX+MYNEWLINE vi*CY)
+#define INVISCIDFLUXJACOBIMATRIX41_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE \
+                                                                       ui*wi*CX-MYNEWLINE \
+                                                                       vi*wi*CY)
+#define INVISCIDFLUXJACOBIMATRIX42_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CX-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*CZ)
+#define INVISCIDFLUXJACOBIMATRIX43_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CY-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX44_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(3.0)-(DCONST(HYDRO_GAMMA)))*wi*CZ+MYNEWLINE \
+                                                                       ui*CX+MYNEWLINE \
+                                                                       vi*CY)
 #define INVISCIDFLUXJACOBIMATRIX45_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(HYDRO_GAMMA))-DCONST(1.0))*CZ
-#define INVISCIDFLUXJACOBIMATRIX51_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))-DCONST(1.0))*(ui*ui+vi*vi+wi*wi)-MYNEWLINE (DCONST(HYDRO_GAMMA))*Ei)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ)
-#define INVISCIDFLUXJACOBIMATRIX52_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
-#define INVISCIDFLUXJACOBIMATRIX53_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
-#define INVISCIDFLUXJACOBIMATRIX54_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
-#define INVISCIDFLUXJACOBIMATRIX55_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(HYDRO_GAMMA))*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
-
+#define INVISCIDFLUXJACOBIMATRIX51_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))-DCONST(1.0))*(ui*ui+vi*vi+wi*wi)-MYNEWLINE \
+                                                                       (DCONST(HYDRO_GAMMA))*Ei)*(ui*CX+MYNEWLINE \
+                                                                                                  vi*CY+MYNEWLINE \
+                                                                                                  wi*CZ)
+#define INVISCIDFLUXJACOBIMATRIX52_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*ui*(ui*CX+MYNEWLINE \
+                                                                                                               vi*CY+MYNEWLINE \
+                                                                                                               wi*CZ))
+#define INVISCIDFLUXJACOBIMATRIX53_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*vi*(ui*CX+MYNEWLINE \
+                                                                                                               vi*CY+MYNEWLINE \
+                                                                                                               wi*CZ))
+#define INVISCIDFLUXJACOBIMATRIX54_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((DCONST(HYDRO_GAMMA))*Ei-((DCONST(HYDRO_GAMMA))-DCONST(1.0))/DCONST(2.0)*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE \
+                                                                       ((DCONST(HYDRO_GAMMA))-DCONST(1.0))*wi*(ui*CX+MYNEWLINE \
+                                                                                                               vi*CY+MYNEWLINE \
+                                                                                                               wi*CZ))
+#define INVISCIDFLUXJACOBIMATRIX55_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((DCONST(HYDRO_GAMMA))*(ui*CX+MYNEWLINE \
+                                                                                              vi*CY+MYNEWLINE \
+                                                                                              wi*CZ))
+      
 #if 0
 ! Flux Jacobian matrix in x-direction for inviscid hydrodynamics in 2D
 #endif

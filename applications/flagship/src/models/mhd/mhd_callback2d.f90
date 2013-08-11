@@ -1664,17 +1664,17 @@ contains
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj+&
                       DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-MYNEWLINE \
                                       IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2)*cf1j+&
-                                  POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+                                  POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-MYNEWLINE \
                                       IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2)*cf2j),&
                   abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui+&
                       DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+                 DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-MYNEWLINE \
                                       IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2)*cf1i+&
-                                  POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+                                  POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-MYNEWLINE \
                                       IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2)*cf2i) )
 #else
        ! Compute scalar dissipation
@@ -1934,19 +1934,19 @@ contains
       ! which does not include the symmetric boundary contribution
       d_ij = max( abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_))*uj)+&
-              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,_,_,_)-MYNEWLINE \
                                    IDX3(DcoeffsAtEdge,1,2,idx,_,_,_),2))*cf1j+&
                   abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_))*vj)+&
-              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,_,_,_)-MYNEWLINE \
                                    IDX3(DcoeffsAtEdge,2,2,idx,_,_,_),2))*cf2j,&
                   abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_))*ui)+&
-              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,_,_,_)-MYNEWLINE \
                                    IDX3(DcoeffsAtEdge,1,1,idx,_,_,_),2))*cf1i+&
                   abs(DCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_))*vi)+&
-              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-
+              DCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,_,_,_)-MYNEWLINE \
                                    IDX3(DcoeffsAtEdge,2,1,idx,_,_,_),2))*cf2i)
 #else
       ! Compute scalar dissipation with dimensional splitting
