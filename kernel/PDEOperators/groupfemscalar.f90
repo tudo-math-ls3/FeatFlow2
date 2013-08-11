@@ -2707,7 +2707,7 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j)&
+      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
