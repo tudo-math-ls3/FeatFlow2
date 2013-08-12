@@ -1656,7 +1656,7 @@ contains
 !
 !      NULLIFY(p_IelemGroupIDs)
 !    ELSE
-!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_ielemGroup,&
+!      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelemGroupIDs,&
 !          p_IelemGroupIDs)
 !    END IF
 !

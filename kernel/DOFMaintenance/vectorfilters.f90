@@ -675,7 +675,7 @@ contains
           p_Ddata(iel) = p_Ddata(iel) - C
         end do
 
-      case (EL_QP1)
+      case (EL_QP1,EL_QP1NP)
 
         ! Ok, quadrilateral P1 element. Get from the triangulation the AREA-array for
         ! calculating a simple integral of rx:
