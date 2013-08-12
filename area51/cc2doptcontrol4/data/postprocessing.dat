@@ -1,0 +1,188 @@
+# ========================================================================
+# Configures various postprocessing settings
+# ------------------------------------------------------------------------
+
+#####################
+[TIME-POSTPROCESSING]
+#####################
+
+# Type of output file to generate from solutions.
+# 0=disabled
+# 1=GMV
+# 2=AVS
+# 3=Paraview (VTK)
+
+ioutputUCD = 3
+
+# Filename prefix for visualisation output.
+# ="": Disable visualisation output
+
+sfilenameUCD = "gmv/u"
+
+# Output format for the primal solution.
+# =0: don"t write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
+
+cwritePrimalSol = 0
+
+# Output format for the dual solution.
+# =0: don"t write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
+
+cwriteDualSol = 0
+
+# Output format for the final control.
+# =0: don"t write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
+
+cwriteControl = 1
+
+# Filename prefix for output of the primal solution vector. If this is "",
+# the solution vector is not written out.
+
+sfilenamePrimalSol = ""
+
+# Filename prefix for output of the dual solution vector. If this is "",
+# the solution vector is not written out.
+
+sfilenameDualSol = ""
+
+# Filename prefix for output of the control vector. If this is "",
+# the control vector is not written out.
+
+sfilenameControl = "./ns/control"
+
+# ------------------------------------------------------------------------
+# Statistical values concerning the functional J(.) to minimise
+
+# Whether to calculate functional values (J(.)) during and after the computation.
+
+icalcFunctionalValues = 1
+
+# Write a file with the statistics about the calculation of the functional J(.).
+# =0: Do not calculate / write
+# =1: Write values
+
+cwriteFunctionalStatistics = 1
+
+# Filename which receives the statistics
+
+sfunctionalStatisticsFilename = "./ns/functional"
+
+
+# ------------------------------------------------------------------------
+# Error analysis
+
+# Whether or not calculate the error of the solution.
+# =0: No error analysis.
+# =1: Calculate the error to a given analytical expression 
+#     specified by the section in ssectionReferenceFunction below.
+
+icalcError = 0
+
+# Name of a section containing the definition of the reference function
+# to use if icalcError <> 0
+
+ssectionReferenceFunction = REFERENCE-FUNCTION
+
+# ------------------------------------------------------------------------
+# Body forces
+
+# Whether or not calculate drag/lift forces
+
+icalcForces = 1
+
+# Number of the boundary component where to calculate the body forces.
+# For flow around cylinder, this is =2 e.g.
+
+ibodyForcesBdComponent = 2
+
+# 1st coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 1/RE is assumed.
+
+# dbdForcesCoeff1 = 0.001
+
+# 2nd coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 0.004 is assumed (corresonds to flow 
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
+
+# dbdForcesCoeff2 = 0.004
+
+# Whether to write the body forces to a file
+
+iwriteBodyForces = 1
+
+# Filename for the body forces
+
+sfilenameBodyForces = "ns/bdforces"
+
+# ------------------------------------------------------------------------
+# Flux values
+
+# Whether to calculate flux integrals
+
+icalcFlux = 0
+
+# Start/End coordinates of the lines along which to calculate the flux.
+# The line contains four numbers: x-start y-start x-end y-end
+
+dfluxline = 0.0 0.0 0.0 0.0
+
+# Whether to write the flux to a file
+
+iwriteFlux = 0
+
+# Filename for the flux
+
+sfilenameFlux = "ns/flux"
+
+# Whether to calculate the kinetic energy
+
+icalcKineticEnergy = 0
+
+# Whether to write the kinetic energy to a file
+
+iwriteKineticEnergy = 0
+
+# Filename for the kinetic energy
+
+sfilenameKineticEnergy = "ns/kineticenergy"
+
+# ------------------------------------------------------------------------
+# Point values
+
+# Calculate the value of different quantities in a number of points
+# y evaluating the solution. The number in braces "(n)" defines the number
+# of points to evaluate. Afterwards follows a list of points in the
+# format
+#   "x y type der"
+# with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
+# der=derivative quantifier. Here:
+#   der =0: function value, =1: x-derivative, =2: y-derivative
+# Stokes/Navier Stokes
+#   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure
+# Heat equation
+#   type=1: primal solution
+#
+# Example: Don"t evaluate anything:
+#   cevaluatePointValuesPrimal(0) =
+#
+# Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
+#   cevaluatePointValuesPrimal(2) =
+#     0.15 0.2 3 0
+#     0.25 0.2 3 0
+
+cevaluatePointValuesPrimal(0) =
+
+# Whether to write the point values to a file
+
+iwritePointValues = 0
+
+# Filename for the point values
+
+sfilenamePointValuesPrimal = "%{ssolutiondirectory}/pointvalues_primal"
+

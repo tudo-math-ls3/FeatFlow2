@@ -1,0 +1,636 @@
+# ========================================================================
+# The following section defines the configuration of the linear solver,
+# which is used as preconditioner in each nonlinear iteration.
+
+# ------------------------------------------------------------------------
+# Linear solver for the forward iteration
+# ------------------------------------------------------------------------
+
+#####################
+[CC-LINEARSOLVERFORW]
+#####################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERFORW"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 4
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 3
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+# ------------------------------------------------------------------------
+# Linear solver for the forward iteration, backup solver
+# ------------------------------------------------------------------------
+
+######################
+[CC-LINEARSOLVERFORW2]
+######################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERFORW"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+# ========================================================================
+# The following section specifies the parameters for the solver.
+
+########################
+[CC-MULTIGRIDSOLVERFORW]
+########################
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 100
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-12
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-13
+
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
+
+# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
+# not used if MG is the linear solver.
+
+domega             = 1.0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages 
+# =-1:no output (standard)
+
+ioutputLevel       = 0 # -1
+
+# How to check residuals.
+# =0: Check in Euclidian norm (like in old CC).
+
+iresNorm = 2
+
+# ------General multigrid parameters, coarse grid correction--------------
+#
+# The following parameters are multigrid specific
+#
+# Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+icycle             = 0
+
+# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
+# parameter for the coarse grid correction.
+# =0: use constant 1.0 = standard for conforming elements.
+# =1: use energy minimisation = standard for Q1~/Q0 discretisation
+# =2: use defect minimisation
+
+ccorrectionTypeAlpha = 0
+
+# lower limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=-10.0
+
+dalphaMin          = -10.0
+
+# upper limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=10.0
+
+dalphaMax          = 10.0
+
+
+# ------------------------------------------------------------------------
+# Linear solver for the backward iteration
+# ------------------------------------------------------------------------
+######################
+[CC-LINEARSOLVERBACKW]
+######################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERBACKW"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 4
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 3
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+
+# ------------------------------------------------------------------------
+# Linear solver for the backward iteration, backup solver
+# ------------------------------------------------------------------------
+#######################
+[CC-LINEARSOLVERBACKW2]
+#######################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERBACKW"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+# ========================================================================
+# The following section specifies the parameters for the solver.
+
+#########################
+[CC-MULTIGRIDSOLVERBACKW]
+#########################
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 100
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-12
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-13
+
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
+
+# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
+# not used if MG is the linear solver.
+
+domega             = 1.0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages 
+# =-1:no output (standard)
+
+ioutputLevel       = 0 # -1
+
+# How to check residuals.
+# =0: Check in Euclidian norm (like in old CC).
+
+iresNorm = 2
+
+# ------General multigrid parameters, coarse grid correction--------------
+#
+# The following parameters are multigrid specific
+#
+# Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+icycle             = 0
+
+# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
+# parameter for the coarse grid correction.
+# =0: use constant 1.0 = standard for conforming elements.
+# =1: use energy minimisation = standard for Q1~/Q0 discretisation
+# =2: use defect minimisation
+
+ccorrectionTypeAlpha = 0
+
+# lower limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=-10.0
+
+dalphaMin          = -10.0
+
+# upper limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=10.0
+
+dalphaMax          = 10.0
+
+
+# ------------------------------------------------------------------------
+# Linear solver for the linearised forward/backward iterations
+# ------------------------------------------------------------------------
+####################
+[CC-LINEARSOLVERLIN]
+####################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERLIN"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 4
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 3
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+
+# ------------------------------------------------------------------------
+# Linear solver for the linearised forward/backward iterations.
+# Backup solver
+# ------------------------------------------------------------------------
+#####################
+[CC-LINEARSOLVERLIN2]
+#####################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = "CC-MULTIGRIDSOLVERLIN"
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = "CC-SMOOTHER"
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
+
+
+# ========================================================================
+# The following section specifies the parameters for the solver.
+
+#######################
+[CC-MULTIGRIDSOLVERLIN]
+#######################
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 100
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-12
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-13
+
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
+
+# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
+# not used if MG is the linear solver.
+
+domega             = 1.0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages 
+# =-1:no output (standard)
+
+ioutputLevel       = 0 # -1
+
+# How to check residuals.
+# =0: Check in Euclidian norm (like in old CC).
+
+iresNorm = 2
+
+# ------General multigrid parameters, coarse grid correction--------------
+#
+# The following parameters are multigrid specific
+#
+# Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+icycle             = 0
+
+# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
+# parameter for the coarse grid correction.
+# =0: use constant 1.0 = standard for conforming elements.
+# =1: use energy minimisation = standard for Q1~/Q0 discretisation
+# =2: use defect minimisation
+
+ccorrectionTypeAlpha = 0
+
+# lower limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=-10.0
+
+dalphaMin          = -10.0
+
+# upper limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=10.0
+
+dalphaMax          = 10.0
+
+
+# ------------------------------------------------------------------------
+# The other solver components
+# ------------------------------------------------------------------------
+
+# ========================================================================
+# The following section specifies the parameters for the smoother.
+
+#############
+[CC-SMOOTHER]
+#############
+
+# Number of pre- and postsmoothing steps
+
+nsmoothingSteps    = 4
+
+# Relaxation parameter
+
+domega             = 1.0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
+
+ioutputLevel       = 0
+
+# ========================================================================
+# The following section specifies teh parameters for the 
+# coarse grid solver.
+
+#####################
+[CC-COARSEGRIDSOLVER]
+#####################
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 1000
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-15
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-0
+
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 0
+
+# Output level of the solver
+# = 2:extended output
+# = 1:minimal output
+# = 0:no output except for warning messages (standard)
+# =-1:no output
+
+ioutputLevel       = 0
+
+# Relaxation parameter
+
+domega             = 1.0
+
+# Section in this file that defines the parameters of the preconditioner
+
+spreconditionerSection = "CC-COARSEGRID-PRECONDITIONER"
+
+##############################
+[CC-COARSEGRID-PRECONDITIONER]
+##############################
+
+# Relaxation parameter
+
+domega             = 0.8

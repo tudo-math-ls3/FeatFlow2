@@ -1,0 +1,203 @@
+# ========================================================================
+# Physics of the primal equation
+#
+# The following parameters configure tha underlying physics in the primal
+# equation.
+
+############
+[CC-PHYSICS]
+############
+
+# Type of equation (ISTOKES).
+# =0: Navier Stokes
+# =1: Stokes
+# =2: Heat equation
+# =3: Nonlinear heat equation example: y_t -Laplace(y) + y^3 = u
+
+cequation = 0
+
+# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+
+csubEquation = 0
+
+# Model to use for the viscosity.
+# A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
+# =0: Constant viscosity NU = 1/RE (standard)
+# =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+# =2: Bingham fluid: nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+# =3: General viscoplastic fluid: nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1), 
+#     nu_0 = 1/RE, z = ||D(u)||^2 + dviscoEps^2
+# >3: User defined viscosity defined in the callback function 
+#     cccallback.f90: getNonconstantViscosity
+
+cviscoModel = 0
+
+# Exponent parameter for the viscosity model
+
+dviscoexponent = 2.0
+
+# Epsilon regularisation for the viscosity model
+
+dviscoEps = 0.01
+
+# Yield stress constant for Bingham fluid
+
+dviscoyield = 1.0
+
+# Viscosity parmeter 1/NU
+
+RE = 1000
+
+
+# ========================================================================
+# Spatial discretization
+#
+# This following parameters parameters configure the spatial 
+# discretization of the problem.
+
+###################
+[CC-DISCRETISATION]
+###################
+
+# minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
+
+NLMIN              = 1
+
+# maximum mg-level = level of computation of nonlinear iteration
+
+NLMAX              = 4
+
+# ------------------------------------------------------------------------
+
+# Type of element pair to use for the discretisation.
+# For the Heat equation:
+# 0 = Q1
+# 1 = Q2
+# For the Stokes/Navier-Stokes equations:
+# 0 = Q1~(E031) / Q1~(E031) / Q0
+# 1 = Q1~(E030) / Q1~(E030) / Q0
+# 2 = Q1~(EM31) / Q1~(EM31) / Q0
+# 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+# 4 = Q2 (E013) / Q2 (E013) / QP1
+# 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+# (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (QP1  = Quadrilateral discontinuous P1 element)
+
+iElementType       = 3
+
+# ------------------------------------------------------------------------
+
+# Type of stabilization of the convective term. 
+# 3=Streamline Diffusion (new implementation)
+# iUpwind1 holds for the primal equation, iUpwind2 for the dual one.
+
+iUpwind1           = 0
+iUpwind2           = 0
+
+# Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
+# Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
+# dUpsam1 holds for the primal equation, dUpsam2 for the dual one.
+
+dUpsam1            = 0.0
+dUpsam2            = 0.0
+
+# Defines whether or not the EOJ stabilisation is applied to the boundary.
+# =0: Stabilisation is not applied to the boundary.
+# =1: Stabilisation is applied to all Boundary edges (default).
+
+ceojStabilOnBoundary = 1
+
+# Definbes whether the convection operator of the dual equation is included
+# into the solution.
+# =0: no, =1: yes
+cconvectionOnBoundaryDefect = 1
+
+# Definbes whether the convection operator of the dual equation is set up
+# for the preconditioners on the boundary.
+# =0: no, =1: yes
+cconvectionOnBoundaryMatrix = 1
+
+# Type of bdry. conditions.
+# 0=DIRICHLET stationary, 
+# 1=Pressure drop nonstationary, 
+# 2=NEUMANN part. nonstationary (standard)
+# Must be >= 1 for moving fictitious boundary components and/or 
+# nonstationary boundary conditions.
+
+iBoundary          = 2
+
+# Support for integral mean value constraints (e.g. in pure Neumann/Dirichlet
+# problems).
+# If set =1, integral mean value constraints are supported. The matrix
+# structure is enlarged appropriately. This slows down the computation.
+
+csupportIntMeanConstr = 0
+
+# ------------------------------------------------------------------------
+
+# cubature formula for Mass matrix
+
+scubMass           = G5X5
+
+# cubature formula for Stokes/Laplacian matrix
+
+scubStokes         = G5X5
+
+# cubature formula for Pressure matrices B
+
+scubB              = G5X5
+
+# cubature formula for RHS F
+
+scubF              = G5X5
+
+
+# ========================================================================
+# The following section describes the interlevel projection (prolongation/
+# restriction) that should be used when a solution must be projected
+# to a higher or lower level in the discretisation
+# (e.g. when solving with a multigrid solver).
+
+#############
+[CC-PROLREST]
+#############
+
+# Order of the prolongation/restriction to use for velocity components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderVel   = -1
+
+# Order of the prolongation/restriction to use for pressurte components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderPress = -1
+
+# Prolongation/restriction variant for nonconforming elements 
+# E030/EM30/E031/EM31 for the velocity.
+# = 0: Use default prol/rest,
+# = 1: Use standard prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 2: Use extended prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 3: Use extended prol/rest, weighted by element size (L2 projection),
+# = 4: Use extended prol/rest, weighted by element size of neighbour element
+# To activate extended prol/rest, set this to >= 2 after initialising the
+# interlevel projection structure!
+
+iinterpolationVariantVel = 0
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iinterpolationVariant >= 2.
+# Aspect-ratio indicator; controls switching to constant prolongation.
+# <=1: switch depending on aspect ratio of current element (standard),
+#  =2: switch depending on aspect ratio of current element and
+#      neighbour element
+
+iintARIndicatorEX3YVel   = 1
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iprolEX3Yvariant >= 2.
+# Upper bound aspect ratio; for all elements with higher AR
+# the prolongation is switched to constant prol/rest.
+# standard = 20.0
+
+dintARboundEX3YVel       = 20.0

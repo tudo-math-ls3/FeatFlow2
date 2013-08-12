@@ -1,0 +1,199 @@
+# ========================================================================
+# this file defines the boundary conditions in the problem.
+
+###############
+[BDEXPRESSIONS]
+###############
+
+# At first we define a list of expressions that can be evaluated
+# on the boundary. The number in braces "(n)" specifies
+# how many expressions are defined here. The following n lines define
+# n constant values in the form
+#   "name" type value
+# with
+#   "name" : an arbitrary name; case insensitive
+#   type   : -3=analytic reference solution. An integer value defines the 
+#               solution id of the function to be used on the boundary
+#               (see user_flows.f90)
+#            -2=name of a hardcoded expression realised by callback routines
+#               in the code
+#            -1=general text expression to be evaluated
+#             0=double precision constant, 
+#             1=integer constant
+#             2=parabolic profile with given maximum value
+#   value  : the value associated to the name
+#
+# The following variables are allowed in an expression:
+#    L = local parameter value of an edge, [0..1].
+#    R = parameter value on the boundary, 0-1 parametrisation,
+#        relative to the segment (i.e. always starts with 0.0 an
+#        ends with 1.0)
+#    S = parameter value on the boundary, length parametrisation,
+#        relative to the segment (i.e. starts with 0.0 and ends
+#        with the segment length)
+#    x = x-coordinate of the point on the boundary
+#    y = y-coordinate of the point on the boundary
+#   NX = X-component of the normal vector for boundary points
+#   NY = Y-component of the normal vector for boundary points
+#
+# The following constants are defined:
+#
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+#
+# Moreover, all commands from the fparser.f90 are possible here,
+# e.g. if, min, max, sin, cos, tan, ceil, floor, exp, log, log10, sqrt,...
+#
+# Note: An expression defining Dirichlet boundary conditions may return
+# _INFTY at some points (x,y) on the boundary. This return value will
+# make the corresponding part on the boundary be treated as Neumann
+# boundary! Thus by defining an expression relative to a parameter
+# value and the time, it"s possible to create moving boundary conditions.
+
+bdExpressions(6) =
+  "pi"             0    3.14159265358979
+  "Umax"           0    1.0
+  "Dirichlet0"    -1    "0.0"
+  "ParProfile"     2    0.3
+  "ParProfileNeg"  2    -1.5
+  "ParProfExpr"   -1    "(3.0/2.0)*Y*(0.1-Y)/((0.1/2.0)**2)"
+  
+
+#####################
+[BDCONDITIONS_PRIMAL]
+#####################
+
+# Boundary conditions for the primal equation
+
+# Whether there are Neumann boundary components in the domain.
+# =-1 : automatic detection (standard; does not work for moving boundary conditions!)
+# =0  : The boundary is pure Dirichlet.
+# =1  : There are Neumann or pressure drop boundary segments on the domain.
+
+ineumannBoundary = -1
+
+# For each boundary component, a bondary component specifier 
+# "bdComponentX([n])" must exist. [n] defined the number of sub-segments
+# that follow. A sub-segment either corresponds to an actual boundary
+# segment or is a "free" boundary segment anywhere on the boundary.
+# To each sub-segment, a boundary condition is associated.
+#
+# Definition of boundary segments always start at parameter value 0.0.
+# Each specified sub-segment allows to specify the end parameter
+# value of the segment:
+# "    0  4.0  3  [bdcid] ..."
+#   Creates a boundary condition segment starting from the "current" 
+#   parameter value, ending at parameter value "4.0". "3" specifies 
+#   that both, starting and ending point should belong to the segment.
+#   "1" is the number X of the boundary condition "bdExpressionX"
+#   defined above.
+#   Using a parameter value which is larger than the maximum parameter
+#   value will result in a "wrap around", of the boundary condition
+#   segment, letting it start at the beginning of the boundary component
+#   again.
+# The last values in the list "x y a [bdcid] ..." have the following 
+# meaning:
+#  a = 0: Start- and endpoint don"t belong to the interval
+#    = 1: Include startpoint of the interval
+#    = 2: Include endpoint of the interval
+#    = 3: Include start- and endpoint
+#  [bdcid] = 0 : Do-nothing boundary condition for all directions
+#          = 1 : Simple Dirichlet boundary condition for all
+#                main solution components (e.g. velocity) component.
+#                For every component, an expression identifier follows
+#                that defines the value on that part of the boundary.
+#                Example:  1.0  3  1  "Dirichlet0"  "Dirichlet0"  
+#                          2.0  3  1  "Dirichlet1"  "Dirichlet0"  
+#                Dirichlet-0-values between parameter value 0..1 for primal X- and
+#                Y-velocity. Between parameter value 1..2: Dirichlet-1-value for primal X-vel., 
+#                Dirichlet-0-value for Y-vel.
+#                The dual X/Y-velocity is always set to zero.
+#          = 4 : Simple Dirichlet boundary condition for all
+#                main solution components (e.g. velocity) component.
+#                For every component, an expression identifier follows
+#                that defines the value on that part of the boundary.
+#                Example:  1.0  3  1  "Dirichlet0"  "Dirichlet0"  "Dirichlet0"  "Dirichlet0" 
+#                          2.0  3  1  "Dirichlet1"  "Dirichlet0"  "Dirichlet0"  "Dirichlet0" 
+#                Dirichlet-0-values between parameter value 0..1 for primal X- and
+#                Y-velocity, dual X- and Y-velocity. Between parameter 
+#                value 1..2: Dirichlet-1-value for primal X-vel., 
+#                Dirichlet-0-value for Y-vel., dual X- and Y-velocity.
+#                The definition of the dual X-/Y-velocity is optional; if not defined,
+#                0-boundary conditions are assumed.
+#          = 5 : Dirichlet-conditions for primal equation, do-nothing conditions for dual eqn.
+#          = 6 : Dirichlet-conditions for dual equation, do-nothing conditions for primal eqn.
+#          = 7 : L2 Dirichlet boundary control boundary conditions, relative to a
+#                given inflow.
+#                Example:  1.0  0  7  "Dirichlet0"  "Dirichlet0"  
+#          = 8 : H^1/2 Dirichlet boundary control boundary conditions, relative to a
+#                given inflow.
+#                Example:  1.0  0  7  "Dirichlet0"  "Dirichlet0"  
+#          = 9 : Inhomogeneous Neumann boudary conditions. The inhomogenity has to be
+#                specified with expressions.
+#                Example:  1.0  3  8  "Dirichlet1"  "Dirichlet1"  
+
+
+#bdComponent1(3)=
+#  2.0  3  1  "Dirichlet0"  "Dirichlet0" # [0.0,1.0] : Dirichlet-0 boundary
+#  3.0  3  1  "Dirichlet1"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  2  1  "Dirichlet0"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
+
+bdComponent1(4)=
+  1.0  3  1  "Dirichlet0"  "Dirichlet0" # [0.0,1.0] : Dirichlet-0 boundary
+  2.0  0  0                             # ]1.0,2.0[ : Neumann boundary = do-nothing
+  3.0  2  1  "Dirichlet0"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
+  4.0  3  1  "ParProfile"  "Dirichlet0" # [3.0,4.0] : parabolic profile
+
+bdComponent2(1)=
+  4.0  3  1  "Dirichlet0"  "Dirichlet0"  # Complete boundary component Dirichlet-0 boundary
+
+###################
+[BDCONDITIONS_DUAL]
+###################
+
+# Boundary conditions for the dual equation.
+# The shape of the dual Boundary conditions shall met the shape of the
+# primal boundary conditions. However, the type "automatic" can be chosen.
+# This defines the boundary conditions according to the primal equation.
+# The additional "automatic" boundary condition type is defined as follows:
+#  [bdcid] = -1: automatic boundary condition.
+#                This holds only for the dual equation. Chooses the boundary
+#                condition according to the primal equation.
+# Alternatively, specifying a "-1" as only value determines the complete
+# boundary condition automatically.
+
+bdComponent1 = -1
+
+bdComponent2 = -1
+
+
+########################
+[BDCONDITIONS_PRIMALLIN]
+########################
+
+# Boundary conditions for the linearised primal equation
+
+bdComponent1 = -1
+
+bdComponent2 = -1
+
+######################
+[BDCONDITIONS_DUALLIN]
+######################
+
+# Boundary conditions for the linearised dual equation.
+
+bdComponent1 = -1
+
+bdComponent2 = -1
+
+########################
+[BDCONDITIONS_PCSTEKLOV]
+########################
+
+# Boundary conditions for the Poincare-Steklov projection
+
+bdComponent1 = -1
+
+bdComponent2 = -1
