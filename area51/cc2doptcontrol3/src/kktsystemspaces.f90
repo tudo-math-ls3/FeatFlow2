@@ -23,12 +23,13 @@ module kktsystemspaces
   use bcassemblybase
   
   use scalarpde
+  use boundary
+  use triangulation
   use linearformevaluation
   use bilinearformevaluation
   use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
-  use subdomainfem
   use collection
   
   use spacetimevectors
@@ -41,6 +42,7 @@ module kktsystemspaces
   use assemblytemplates
   
   use spacediscretisation
+  use subdomainfem
   
   implicit none
   

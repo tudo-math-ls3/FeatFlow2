@@ -1351,6 +1351,7 @@ contains
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
     type(t_vectorBlock), pointer :: p_rcontrol
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+    integer(I32) :: celement
     
     ! Get the assembly information structure.
     call sbc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
@@ -1396,7 +1397,9 @@ contains
           ! Quick and dirty implementation...
           
           ! Element type?
-          select case (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp)%RelementDistr(1)%celement)
+          call spdiscr_getElemGroupInfo (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp),1,celement)
+          
+          select case (celement)
           case (EL_P2_1D)
             
             ! Type of info?
@@ -1485,7 +1488,9 @@ contains
           ! Quick and dirty implementation...
           
           ! Element type?
-          select case (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp)%RelementDistr(1)%celement)
+          call spdiscr_getElemGroupInfo (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp),1,celement)
+          
+          select case (celement)
           case (EL_P2_1D)
             
             ! Type of info?

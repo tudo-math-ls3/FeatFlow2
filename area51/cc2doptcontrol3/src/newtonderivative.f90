@@ -1060,7 +1060,7 @@ contains
     if (rcollection%IquickAccess(3) .gt. 0) then
       
       ! Get the underlying element
-      celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+      call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTest,1,celement)
       
       ! Get the cubature formula.
       call spdiscr_getStdDiscrInfo(1,rcubatureInfoAdapt,&

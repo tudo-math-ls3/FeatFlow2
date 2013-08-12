@@ -30,6 +30,10 @@ module optcanalysis
   use genoutput
   
   use mprimitives
+  use derivatives
+  use boundary
+  use cubature
+  use triangulation
   use spatialdiscretisation
   use timediscretisation
   use linearalgebra
@@ -170,7 +174,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcana_fcalc_diffToTarget(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine optcana_fcalc_diffToTarget(Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -200,8 +204,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the values of the integral
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !<subroutine>
@@ -273,7 +277,7 @@ contains
       call getTargetData (2,p_Dz2)
 
       ! Calculate the integral...
-      dintvalue = 0.0_DP
+      Dintvalues(:) = 0.0_DP
       
       ! Loop over the elements in the current set.
       do iel = 1,nelements
@@ -292,7 +296,7 @@ contains
                
             ! Multiply the values by the cubature weight and sum up
             ! into the (squared) L2 error:
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                 ( ( p_Dy1(icubp,iel)-p_Dz1(icubp,iel) )**2 + &
                   ( p_Dy2(icubp,iel)-p_Dz2(icubp,iel) )**2 )
                   
@@ -316,7 +320,7 @@ contains
       call getTargetData (1,p_Dz1)
 
       ! Calculate the integral...
-      dintvalue = 0.0_DP
+      Dintvalues(:) = 0.0_DP
       
       ! Loop over the elements in the current set.
       do iel = 1,nelements
@@ -335,7 +339,7 @@ contains
 
             ! Multiply the values by the cubature weight and sum up
             ! into the (squared) L2 error:
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                   ( p_Dy1(icubp,iel)-p_Dz1(icubp,iel) )**2
                   
           end if

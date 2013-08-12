@@ -18,6 +18,7 @@ module spacematvecassembly
   use genoutput
   
   use linearalgebra
+  use derivatives
   use spatialdiscretisation
   use timediscretisation
   use linearsystemscalar

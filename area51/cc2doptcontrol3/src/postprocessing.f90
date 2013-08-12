@@ -38,6 +38,10 @@ module postprocessing
   use mprimitives
   
   use basicgeometry
+  use boundary
+  use triangulation
+  use derivatives
+  use cubature
   use spatialdiscretisation
   use timediscretisation
   use linearalgebra

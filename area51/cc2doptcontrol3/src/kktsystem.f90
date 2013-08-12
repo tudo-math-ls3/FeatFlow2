@@ -16,6 +16,8 @@ module kktsystem
   use genoutput
   
   use mprimitives
+  use derivatives
+  use boundary
   use spatialdiscretisation
   use timediscretisation
   use element
@@ -1915,6 +1917,7 @@ end subroutine
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd,NEQlocal
     real(DP) :: dnu
+    integer(I32) :: celement
     
     p_rdiscr => rdualSol%p_rblockDiscr%RspatialDiscr(1)
     
@@ -1943,7 +1946,10 @@ end subroutine
       call sys_halt()
     end if
 
-    select case (p_rdiscr%RelementDistr(1)%celement)
+    ! Element type?
+    call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
+
+    select case (celement)
     case (EL_Q2)
     
       ! Set up a list of points where to evaluate on the boundary.
@@ -2152,6 +2158,7 @@ end subroutine
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd,NEQlocal
     real(DP) :: dnu
+    integer(I32) :: celement
     
     type(t_vectorScalar) :: rvecQ1
     type(t_spatialDiscretisation) :: rdiscrQ1
@@ -2184,7 +2191,10 @@ end subroutine
       call sys_halt()
     end if
 
-    select case (p_rdiscr%RelementDistr(1)%celement)
+    ! Element type?
+    call spdiscr_getElemGroupInfo (p_rdiscr,1,celement)
+
+    select case (celement)
     case (EL_Q2)
     
       ! Set up a list of points where to evaluate on the boundary.
@@ -2390,6 +2400,7 @@ end subroutine
     integer, dimension(:), pointer :: p_IverticesOnBoundary
     integer, dimension(:), pointer :: p_IedgesOnBoundary
     real(DP), dimension(:), pointer :: p_Ddata
+    integer(I32) :: celement
     
     ! Allocate an integer set for canceling out entries
     call nsets_initDASet (rset,dof_igetNDofGlob(rspatialDiscr))
@@ -2419,7 +2430,9 @@ end subroutine
     ! Quick and dirty implementation...
     
     ! Element type?
-    select case (rcontrol%p_rblockDiscr%RspatialDiscr(icomp)%RelementDistr(1)%celement)
+    call spdiscr_getElemGroupInfo (rcontrol%p_rblockDiscr%RspatialDiscr(icomp),1,celement)
+
+    select case (celement)
     
     case (EL_P2_1D)
       ! Next step: Loop through all vertices/edges on the boundary = DOFs in the
