@@ -412,15 +412,12 @@ module spatialdiscretisation
     integer                          :: ccomplexity            = SPDISC_UNIFORM
 
     ! Handle to the element group identifier list.
-    ! For every geometric element i, ielemGroup(i) specifies the
+    ! For every geometric element i, IelemGroupIDs(i) specifies the
     ! number of the element group that contains that element.
-    ! That way one can easily access information; e.g. retrieving the
-    ! element type would be possible as follows:
-    !   RelementDistr(ielemGroup(i))%itrialElement
     ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
     ! handle is ST_NOHANDLE as all elements are in the
     ! element group 1.
-    integer                          :: h_ielemGroup       = ST_NOHANDLE
+    integer                          :: h_IelemGroupIDs       = ST_NOHANDLE
 
     ! Handle to an 'element counter' array. For every element of every
     ! type, there is a unique running number given to that element in the
@@ -1814,7 +1811,7 @@ contains
 !  DO i=1,rtriangulation%NEL
 !    p_Iarray(i) = celement
 !  END DO
-  rspatialDiscr%h_ielemGroup = ST_NOHANDLE
+  rspatialDiscr%h_IelemGroupIDs = ST_NOHANDLE
 
   ! Initialise the first element group
   rspatialDiscr%inumFESpaces = 1
@@ -1917,7 +1914,7 @@ contains
   !  DO i=1,rtriangulation%NEL
   !    p_Iarray(i) = celement
   !  END DO
-    rspatialDiscr%h_ielemGroup = ST_NOHANDLE
+    rspatialDiscr%h_IelemGroupIDs = ST_NOHANDLE
 
     ! Initialise the first element group
     rspatialDiscr%inumFESpaces = 1
@@ -2084,9 +2081,9 @@ contains
 
   ! Allocate an array containing the element group for each element
   call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-      rtriangulation%NEL, ST_INT, rspatialDiscr%h_ielemGroup,   &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelemGroupIDs,   &
       ST_NEWBLOCK_NOINIT)
-  call storage_getbase_int (rspatialDiscr%h_ielemGroup,p_Iarray)
+  call storage_getbase_int (rspatialDiscr%h_IelemGroupIDs,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
@@ -2282,9 +2279,9 @@ contains
 
   ! Allocate an array containing the element group for each element
   call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-      rtriangulation%NEL, ST_INT, rspatialDiscr%h_ielemGroup,   &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelemGroupIDs,   &
       ST_NEWBLOCK_NOINIT)
-  call storage_getbase_int (rspatialDiscr%h_ielemGroup,p_Iarray)
+  call storage_getbase_int (rspatialDiscr%h_IelemGroupIDs,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
@@ -2918,11 +2915,11 @@ contains
 
       ! Release element group lists.
       if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-        call storage_free (rspatialDiscr%h_ielemGroup)
+        call storage_free (rspatialDiscr%h_IelemGroupIDs)
       end if
 
     else
-      rspatialDiscr%h_ielemGroup = ST_NOHANDLE
+      rspatialDiscr%h_IelemGroupIDs = ST_NOHANDLE
     end if
 
     ! Loop through all element groups
@@ -3039,9 +3036,9 @@ contains
       rdestDiscr%bisCopy = .false.
 
       ! element groups?
-      if (rsourceDiscr%h_ielemGroup .ne. ST_NOHANDLE) then
-        rdestDiscr%h_ielemGroup = ST_NOHANDLE
-        call storage_copy(rsourceDiscr%h_ielemGroup, rdestDiscr%h_ielemGroup)
+      if (rsourceDiscr%h_IelemGroupIDs .ne. ST_NOHANDLE) then
+        rdestDiscr%h_IelemGroupIDs = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_IelemGroupIDs, rdestDiscr%h_IelemGroupIDs)
       end if
 
       ! Element counters?
@@ -3212,8 +3209,8 @@ contains
          //trim(sys_siL(rspatialDiscr%ccomplexity,1)))
      call output_line ('inumFESpaces:           '&
          //trim(sys_siL(rspatialDiscr%inumFESpaces,15)))
-     call output_line ('h_ielemGroup:        '&
-         //trim(sys_siL(rspatialDiscr%h_ielemGroup,15)))
+     call output_line ('h_IelemGroupIDs:        '&
+         //trim(sys_siL(rspatialDiscr%h_IelemGroupIDs,15)))
      call output_line ('h_IelementCounter:      '&
          //trim(sys_siL(rspatialDiscr%h_IelementCounter,15)))
 
@@ -3463,7 +3460,7 @@ contains
     end if
 
     ! Get some arrays
-    call storage_getbase_int(rdiscretisation%h_ielemGroup,p_ielemGroup)
+    call storage_getbase_int(rdiscretisation%h_IelemGroupIDs,p_ielemGroup)
     call storage_getbase_int2d(p_rtria%h_IelementsAtEdge,p_IelementsAtEdge)
 
     ! Generate an array that contains all edge numbers and the adjacent
@@ -4854,8 +4851,8 @@ contains
       call sys_halt()
     end if
 
-    if (rspatialDiscr%h_ielemGroup .ne. ST_NOHANDLE) then
-      call storage_getbase_int(rspatialDiscr%h_ielemGroup, p_IelemGroupIDs)
+    if (rspatialDiscr%h_IelemGroupIDs .ne. ST_NOHANDLE) then
+      call storage_getbase_int(rspatialDiscr%h_IelemGroupIDs, p_IelemGroupIDs)
     else
       nullify(p_IelemGroupIDs)
     end if
