@@ -2009,12 +2009,12 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+          .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
           rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+          .false.,.false.,.true.,.true.)
 
     ! ***********************************************************
     ! Heat equation
@@ -2024,7 +2024,7 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+          .false.,.false.,.true.,.true.)
 
     end select
     
@@ -2071,12 +2071,12 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+          .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
           rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+          .false.,.false.,.true.,.true.)
 
     ! ***********************************************************
     ! Heat equation
@@ -2086,7 +2086,7 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+          .false.,.false.,.true.,.true.)
 
     end select
     
@@ -2133,12 +2133,12 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB1,&
           rmatrix%RmatrixBlock(1,3),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,3))
+          .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB2,&
           rmatrix%RmatrixBlock(2,3),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,3))
+          .false.,.false.,.true.,.true.)
           
     end select
     
@@ -2185,12 +2185,12 @@ contains
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD1,&
           rmatrix%RmatrixBlock(3,1),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(3,1))
+          .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD2,&
           rmatrix%RmatrixBlock(3,2),dweight,1.0_DP,&
-          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(3,2))
+          .false.,.false.,.true.,.true.)
 
     end select
     
