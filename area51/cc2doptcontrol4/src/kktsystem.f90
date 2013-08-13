@@ -1042,13 +1042,13 @@ end subroutine
   subroutine kkt_dualToControl (rkktsystem,rcontrol,rkktSubsolvers,rstatistics)
   
 !<description>
-  ! Calculates the intermediate control
-  !    u_intermed = -1/alpha lambda
+  ! Calculates the control
+  !    u = -1/alpha lambda
   ! 
-  ! Applies the projection and saves the intermediate control
+  ! If necessary, applies the projection and saves the control
   ! in rcontrol:
   !
-  !   rcontrol = P(u_intermed)
+  !   u = P(-1/alpha lambda)
 !</description>
   
 !<inputoutput>
@@ -1203,7 +1203,7 @@ end subroutine
               ! ----------------------------------------------------------
               case (1)
               
-                ! Applying the projection to the intermediate control gives the control:
+                ! Applying the projection gives the control:
                 !
                 !   u = P(-1/alpha lambda)
                 
@@ -1250,7 +1250,7 @@ end subroutine
 
                 ! The first two components of the control read
                 !
-                !    u  =  1/alpha ( nu dn lambda - xi n )
+                !    u_intermed  =  1/alpha ( nu dn lambda - xi n )
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
@@ -1259,20 +1259,6 @@ end subroutine
                 ! Release local boundary conditions
                 call sbc_resetBCstructure(roptcBDCSpace)
                 
-                ! Calculate
-                !    u_intermed = 1/alpha u_intermed
-                icomp = icomp + 1
-                call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                    0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                    p_rintermedControlSpace%RvectorBlock(icomp))
-
-                icomp = icomp + 1
-                call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                    0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                    p_rintermedControlSpace%RvectorBlock(icomp))
-                    
                 ! Do we have constraints?
                 select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
 
@@ -1287,16 +1273,20 @@ end subroutine
                     call sys_halt()
                   end if
                   
-                  icomp = icomp - 2                
+                  ! Calculate
+                  !    u_intermed = 1/alpha u_intermed
+                  icomp = icomp + 1
+                  call lsyssc_vectorLinearComb ( &
+                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
+                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                   icomp = icomp + 1
-                  call lsyssc_copyVector (&
-                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
-
-                  icomp = icomp + 1
-                  call lsyssc_copyVector (&
-                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
-
+                  call lsyssc_vectorLinearComb ( &
+                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
+                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      
                 ! ----------------------------------------------------------
                 ! Box constraints, implemented by DOF
                 ! ----------------------------------------------------------
@@ -1305,8 +1295,6 @@ end subroutine
                   ! Applying the projection to the intermediate control gives the control:
                   !
                   !   u = P(u_intermed)
-                  
-                  icomp = icomp - 2
                   
                   dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
                   dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
@@ -1532,7 +1520,7 @@ end subroutine
                 ! rcontrol contains the intermediate control as well.
                 ! Applying the projection gives the control:
                 !
-                !   u = P(u_intermed)
+                !   u = P(-1/alpha lambda)
 
                 icomp = icomp - 1
               
@@ -2923,8 +2911,7 @@ end subroutine
               ! The actual linearised control is calculated by
               ! applying an appropriate projection:
               !
-              !    u~ = DP(u_intermed) (u_intermed~) 
-              !       = DP(u_intermed) ( u~ + 1/alpha lambda~ )
+              !    u~ = DP(-1/alpha lambda) (-1/alpha lambda~) 
 
               ! ----------------------------------------------------------
               ! Constraints in the distributed control
@@ -2946,7 +2933,7 @@ end subroutine
               
                 ! The linearised control equation reads
                 !
-                !    u~ = - 1/alphalambda~
+                !    u~ = - 1/alpha lambda~
                 !
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
@@ -2967,22 +2954,8 @@ end subroutine
               
                 ! The linearised control equation reads
                 !
-                !    u~ = - 1/alpha DP(u_intermed) ( lambda~ )
+                !    u~ = - 1/alpha DP(-1/alpha lambda) ( lambda~ )
                 !
-                icomp = icomp + 1
-                call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
-
-                icomp = icomp + 1
-                call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
-
-                icomp = icomp - 2
-
                 ! Create the "restricted" control.
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
@@ -3065,8 +3038,6 @@ end subroutine
                 ! ----------------------------------------------------------
                 case (1)
                 
-                  icomp = icomp - 2
-
                   ! Create the "restricted" control.
                   dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
                   dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
@@ -3282,7 +3253,7 @@ end subroutine
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                    1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               ! ----------------------------------------------------------
@@ -3290,15 +3261,13 @@ end subroutine
               ! ----------------------------------------------------------
               case (1)
               
-                icomp = icomp - 1
-              
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
 
               case default          
                 call output_line("Unknown constraints",&

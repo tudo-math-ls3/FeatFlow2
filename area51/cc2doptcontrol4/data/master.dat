@@ -163,10 +163,10 @@ dobservationArea =
 
 [CONSTRAINTS_DISTCTRL]
 cconstraints = 1
-dmin1 = -0.2
-dmax1 = 0.2
-dmin2 = -0.2
-dmax2 = 0.2
+dmin1 = -1.0
+dmax1 = 1.0
+dmin2 = -1.0
+dmax2 = 1.0
 
 [CONSTRAINTS_L2BDC]
 cconstraints = 0
