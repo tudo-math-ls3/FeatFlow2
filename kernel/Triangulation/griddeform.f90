@@ -166,6 +166,10 @@ module griddeform
 
     type(t_matrixBlock) :: rmatDeform
 
+    ! A scalar cubature information structure that specifies the cubature
+    ! formula(s) to use.
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+    
     ! A block vector to store the are distribution
     type(t_vectorBlock)  :: rvectorAreaBlockQ1
         ! A block vector where we store the monitor function
@@ -876,6 +880,8 @@ contains
 
     call spdiscr_releaseBlockDiscr(rgridLevels(i)%rdiscretisation)
 
+    call spdiscr_releaseCubStructure(rgridLevels(i)%rcubatureInfo)
+
   end do
 
   ! release the local working copy of the grid
@@ -1095,7 +1101,7 @@ contains
     p_DvertexCoords)
 
   ! Set up an empty block vector
-  call lsysbl_createVecBlockByDiscr(rdiscretisation,&
+  call lsysbl_createVector(rdiscretisation,&
        rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1,.true.)
 
   ! Get a pointer just not to write such a long name
@@ -1233,14 +1239,14 @@ contains
   call storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)
 
   do i=NLMIN,NLMAX
-      call spdiscr_initBlockDiscr (rgriddefInfo%p_rhLevels(i)%rdiscretisation,1,&
-           rgriddefInfo%p_rhLevels(i)%p_rtriangulation, rgriddefInfo%p_rboundary)
+    call spdiscr_initBlockDiscr (rgriddefInfo%p_rhLevels(i)%rdiscretisation,1,&
+          rgriddefInfo%p_rhLevels(i)%p_rtriangulation, rgriddefInfo%p_rboundary)
 
-      call spdiscr_initDiscr_simple (rgriddefInfo%p_rhLevels(i)%rdiscretisation%RspatialDiscr(1),&
-                                     EL_E011,CUB_G2X2,&
-                                     rgriddefInfo%p_rhLevels(i)%p_rtriangulation,&
-                                     rgriddefInfo%p_rboundary)
+    call spdiscr_initDiscr_simple (rgriddefInfo%p_rhLevels(i)%rdiscretisation%RspatialDiscr(1),&
+        EL_E011,rgriddefInfo%p_rhLevels(i)%p_rtriangulation,rgriddefInfo%p_rboundary)
 
+    call spdiscr_createDefCubStructure (rgriddefInfo%p_rhLevels(i)%rdiscretisation%RspatialDiscr(1),&
+        rgriddefInfo%p_rhLevels(i)%rcubatureInfo,CUB_GEN_AUTO_G2)        
   end do
 
   ! loop over adaption cycles
@@ -1307,7 +1313,7 @@ contains
 
     ! now allocate memory for the parameters
     call storage_new('griddef_computeAdapSteps','rgriddefInfo%h_DblendPar',&
-          rgriddefInfo%nadaptionSteps,ST_doUBLE,rgriddefInfo%h_DblendPar,&
+          rgriddefInfo%nadaptionSteps,ST_DOUBLE,rgriddefInfo%h_DblendPar,&
           ST_NEWBLOCK_ZERO)
 
     call storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)
@@ -1328,8 +1334,7 @@ contains
 
 !<subroutine>
   subroutine griddef_performOneDefStep(rgriddefInfo,&
-                                       dblendpar, ilevelODE, ilevel,&
-                                       def_monitorfct,rperfconfig)
+      dblendpar, ilevelODE, ilevel, def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
@@ -1614,7 +1619,7 @@ contains
     ! Do we have (enough) memory for that array?
     if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementVolume2D', 'DAREA', &
-          int(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL+1,I32), ST_doUBLE, &
+          int(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL+1,I32), ST_DOUBLE, &
           rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
     end if
 
@@ -1965,7 +1970,7 @@ contains
 !<subroutine>
 
   subroutine griddef_normaliseFctsInvAux(rgriddefInfo,iLevel,&
-                                         dValue1,dValue2,dOm,rperfconfig)
+      dValue1,dValue2,dOm,rperfconfig)
 
 !<description>
   !
@@ -2011,7 +2016,7 @@ contains
 
   type(t_blockDiscretisation), pointer :: rdiscretisation
 
-  integer :: i,k,icurrentElementDistr, ICUBP, NVE
+  integer :: i,k,ielemGroup, ICUBP, NVE, icubatureBlock
   integer :: IEL, IELmax, IELset, IdoFE
   real(dp) :: OM
 
@@ -2041,11 +2046,14 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(dp), dimension(:,:), pointer :: p_Ddetj
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relementDistribution
-
-  ! Number of elements in the current element distribution
+  ! Number of elements in the current element group
   integer :: NEL
+  
+  ! Element type
+  integer(I32) :: celement
+
+  ! Cubature formula
+  integer(I32) :: ccubature
 
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -2069,7 +2077,10 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
-
+  
+  ! Cubature structure
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -2077,6 +2088,7 @@ contains
     end if
 
     rdiscretisation => rgriddefInfo%p_rhLevels(iLevel)%rdiscretisation
+    p_rcubatureInfo => rgriddefInfo%p_rhLevels(iLevel)%rcubatureInfo
 
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
@@ -2108,30 +2120,30 @@ contains
     dValue2 = 0.0_DP
     dOm     = 0.0_DP
 
-    ! Now loop over the different element distributions (=combinations
-    ! of trial and test functions) in the discretisation.
+    ! Loop over the element blocks. Each defines a separate cubature formula.
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-    do icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
+      ! Get typical information: Number of elements, element list,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,&
+          rdiscretisation%RspatialDiscr(1),&
+          ielemGroup,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList)
 
-      ! Activate the current element distribution
-      p_relementDistribution => rdiscretisation%RspatialDiscr(1)%RelementDistr(icurrentElementDistr)
-
-      ! Cancel if this element distribution is empty.
-      if (p_relementDistribution%NEL .eq. 0) cycle
+      ! Cancel if this element group is empty.
+      if (NEL .eq. 0) cycle
 
       ! Get the number of local doF`s for trial functions
-      indofTest = elem_igetNDofLoc(p_relementDistribution%celement)
+      indofTest = elem_igetNDofLoc(celement)
 
       ! Get the number of corner vertices of the element
-      NVE = elem_igetNVE(p_relementDistribution%celement)
+      NVE = elem_igetNVE(celement)
 
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
-      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      call cub_getCubPoints(ccubature, ncubp, Dxi, Domega)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      ctrafoType = elem_igetTrafoType(celement)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -2144,7 +2156,7 @@ contains
       end do
 
       ! Allocate arrays for the values of the test functions.
-      allocate(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
+      allocate(DbasTest(indofTest,elem_getMaxDerivative(celement),&
                ncubp,nelementsPerBlock))
 
       ! Allocate memory for the doF`s of all the elements.
@@ -2156,19 +2168,11 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(celement)
 
 
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
-
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that combination of trial functions
-      call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of elements there.
-      NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -2200,8 +2204,7 @@ contains
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
         ! Calculate the values of the basis functions.
-        call elem_generic_sim2 (p_relementDistribution%celement, &
-            rintSubset, Bder, DbasTest)
+        call elem_generic_sim2 (celement, rintSubset, Bder, DbasTest)
 
         do IEL=1,IELmax-IELset+1
 
@@ -2238,7 +2241,7 @@ contains
 
       deallocate(p_DcubPtsRef)
 
-    end do ! icurrentElementDistr
+    end do ! icubatureblock
 
   end subroutine ! griddef_normaliseFctsInvAux
 
@@ -2359,7 +2362,9 @@ contains
   !****************************************************************************
 
 !<subroutine>
+  
   subroutine griddef_createRhs (rgriddefInfo,iLevel,rperfconfig)
+  
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
   ! The discretisation is assumed to be conformal, i.e. the doF`s
@@ -2395,7 +2400,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k,icurrentElementDistr, ICUBP
+  integer :: i,k,ielemGroup, ICUBP, icubatureblock
   integer :: IEL, IELmax, IELset, IdoFE
   real(dp) :: OM
 
@@ -2451,12 +2456,14 @@ contains
   ! Entries of the right hand side
   real(dp), dimension(:), pointer :: p_Ddata
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_elementDistribution
-  type(t_elementDistribution), pointer :: p_elementDistributionFunc
+  ! Current element group data
+  integer(I32) :: celement, celementFunc
   type(t_blockDiscretisation), pointer :: rdiscretisation
+  
+  ! Cubature formula
+  integer(I32) :: ccubature
 
-  ! Number of elements in the current element distribution
+  ! Number of elements in the current element group
   integer :: NEL
 
   ! Number of elements in a block. Normally =NELEMSIM,
@@ -2474,6 +2481,9 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
+  
+  ! Cubature structure
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
   if (present(rperfconfig)) then
     p_rperfconfig => rperfconfig
@@ -2485,6 +2495,7 @@ contains
   rvectorArea => rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1%RvectorBlock(1)
   rvectorMon  => rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1%RvectorBlock(1)
   rdiscretisation => rgriddefInfo%p_rhLevels(iLevel)%rdiscretisation
+  p_rcubatureInfo => rgriddefInfo%p_rhLevels(iLevel)%rcubatureInfo
 
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDER
@@ -2500,8 +2511,6 @@ contains
   call lsyssc_getbase_double(rvectorMon,p_DdataMon)
   call lsyssc_getbase_double(rvectorArea,p_DdataArea)
 
-
-
   ! Get a pointer to the triangulation - for easier access.
   p_rtriangulation => rdiscretisation%p_rtriangulation
 
@@ -2511,35 +2520,38 @@ contains
   ! NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
-  ! Now loop over the different element distributions (=combinations
+  ! Now loop over the different element groups (=combinations
   ! of trial and test functions) in the discretisation.
   !call ZTIME(DT(2))
 
-  do icurrentElementDistr = 1,rdiscretisation%RspatialDiscr(1)%inumFESpaces
+  ! Loop over the element blocks. Each defines a separate cubature formula.
+  do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-    ! Activate the current element distribution
-    p_elementDistribution => &
-        rvectorRhs%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
-    p_elementDistributionFunc => &
-        rvectorMon%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
+    ! Get typical information: Number of elements, element list,...
+    call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,&
+        rvectorRhs%p_rspatialDiscr,&
+        ielemGroup,ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList)
 
-    ! Cancel if this element distribution is empty.
-    if (p_elementDistribution%NEL .eq. 0) cycle
+    ! Cancel if this element group is empty.
+    if (NEL .eq. 0) cycle
+
+    call spdiscr_getElemGroupInfo (rvectorMon%p_rspatialDiscr,&
+        ielemGroup,celementFunc)
 
     ! Get the number of local doF`s for trial and test functions
-    indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
-    indofFunc = elem_igetNDofLoc(p_elementDistributionFunc%celement)
+    indofTest = elem_igetNDofLoc(celement)
+    indofFunc = elem_igetNDofLoc(celementFunc)
 
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Allocate some memory to hold the cubature points on the reference element
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    call cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    call cub_getCubPoints(ccubature, ncubp, Dxi, Domega)
 
     ! Reformat the cubature points; they are in the wrong shape!
     do i=1,ncubp
@@ -2555,9 +2567,9 @@ contains
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
-    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
+    allocate(DbasTest(indofTest,elem_getMaxDerivative(celement),&
              ncubp,nelementsPerBlock))
-    allocate(DbasFunc(indofTest,elem_getMaxDerivative(p_elementDistributionFunc%celement),&
+    allocate(DbasFunc(indofTest,elem_getMaxDerivative(celementFunc),&
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the doF`s of all the elements.
@@ -2571,13 +2583,6 @@ contains
     bcubPtsInitialised = .false.
 
     !call ZTIME(DT(3))
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_elementDistribution%h_IelementList, &
-                              p_IelementList)
-
-    ! Get the number of elements there.
-    NEL = p_elementDistribution%NEL
 
     ! Loop over the elements - blockwise.
     do IELset = 1, NEL, p_rperfconfig%NELEMSIM
@@ -2613,9 +2618,8 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
-      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%celement)
-      cevaluationTag = ior(elem_getEvaluationTag(p_elementDistributionFunc%celement),&
-      cevaluationTag)
+      cevaluationTag = elem_getEvaluationTag(celement)
+      cevaluationTag = ior(elem_getEvaluationTag(celementFunc),cevaluationTag)
 
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
@@ -2642,10 +2646,8 @@ contains
       p_Ddetj => revalSubset%p_Ddetj
 
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_elementDistribution%celement, &
-          revalSubset, Bder, DbasTest)
-      call elem_generic_sim2 (p_elementDistributionFunc%celement, &
-          revalSubset, Bder, DbasFunc)
+      call elem_generic_sim2 (celement,revalSubset, Bder, DbasTest)
+      call elem_generic_sim2 (celementFunc, revalSubset, Bder, DbasFunc)
 
       ! --------------------- doF COMBINATION PHASE ------------------------
 
@@ -2702,7 +2704,7 @@ contains
 
     deallocate(p_DcubPtsRef)
 
-  end do ! icurrentElementDistr
+  end do ! icubatureblock
 
   end subroutine ! griddef_createRHS
 
@@ -3821,9 +3823,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! local variables
   integer :: cnonmesh
-  integer :: ieltype,indof,nve,ibas
+  integer :: celement,indof,nve,ibas
   integer :: iel
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
   logical, dimension(el_maxnder) :: Bder
 
   real(dp), dimension(:), pointer :: p_ddatamon
@@ -3839,42 +3841,36 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(DP), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
 
-  ! List of element distributions in the discretisation structure
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
   ! Evaluation structure and tag
   type(t_evalElement) :: revalElement
   integer :: cevaluationTag
-
-  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
 
   ! for uniform discretisations, we get the element type in advance...
   if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
 
     ! Element type
-    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,1,celement)
 
     ! get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! number of vertices on the element
-    nve = elem_igetNDofLoc(ieltype)
+    nve = elem_igetNDofLoc(celement)
 
     ! type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the element evaluation tag; neccessary for preparation
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
-    nullify(p_IelementDistr)
+    nullify(p_IelemGroupIDs)
   else
-     call storage_getbase_int (&
-          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    call spdiscr_getElemGroupIDs (rvecMon%p_rspatialDiscr,p_IelemGroupIDs)
   end if
 
   ! get the data vector
   select case (rvecMon%cdataType)
-  case (ST_doUBLE)
+  case (ST_DOUBLE)
     call lsyssc_getbase_double(rvecMon,p_DdataMon)
     call lsyssc_getbase_double(rvecArea,p_DdataArea)
     call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
@@ -3903,20 +3899,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if
 
   ! get the type of the element iel
-  if(associated(p_ielementdistr))then
-    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+  if(associated(p_IelemGroupIDs))then
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
     ! Get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
 
     ! Type of transformation from /to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
   end if
 
   ! Calculate the global doF`s on that element into IdofsTest.
@@ -3938,7 +3934,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(celement, revalElement, Bder, Dbas)
 
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4021,9 +4017,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! local variables
   integer :: cnonmesh
-  integer :: ieltype,indof,nve,ibas
+  integer :: celement,indof,nve,ibas
   integer :: iel
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
   logical, dimension(el_maxnder) :: Bder
 
   real(dp), dimension(:), pointer :: p_ddatamon
@@ -4040,42 +4036,37 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(DP), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
 
-  ! List of element distributions in the discretisation structure
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
   ! Evaluation structure and tag
   type(t_evalElement) :: revalElement
   integer :: cevaluationTag
 
-  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
-
   ! for uniform discretisations, we get the element type in advance...
   if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
 
     ! Element type
-    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,1,celement)
 
     ! get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! number of vertices on the element
-    nve = elem_igetNDofLoc(ieltype)
+    nve = elem_igetNDofLoc(celement)
 
     ! type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the element evaluation tag; neccessary for preparation
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
-    nullify(p_IelementDistr)
+    nullify(p_IelemGroupIDs)
   else
-     call storage_getbase_int (&
-          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    call spdiscr_getElemGroupIDs (rvecMon%p_rspatialDiscr,p_IelemGroupIDs)
   end if
 
   ! get the data vector
   select case (rvecMon%cdataType)
-  case (ST_doUBLE)
+  case (ST_DOUBLE)
     call lsyssc_getbase_double(rvecMon,p_DdataMon)
     call lsyssc_getbase_double(rvecArea,p_DdataArea)
     call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
@@ -4105,20 +4096,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if
 
   ! get the type of the element iel
-  if(associated(p_ielementdistr))then
-    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+  if(associated(p_IelemGroupIDs))then
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
     ! Get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
 
     ! Type of transformation from /to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
   end if
 
   ! Calculate the global doF`s on that element into IdofsTest.
@@ -4140,7 +4131,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(celement, revalElement, Bder, Dbas)
 
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4212,9 +4203,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !</subroutine>
 
   ! local variables
-  integer :: ieltype,indof,nve,ibas
+  integer :: celement,indof,nve,ibas
   integer :: iel
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
   logical, dimension(el_maxnder) :: Bder
 
   real(dp), dimension(:), pointer :: p_DdataMon
@@ -4230,42 +4221,36 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
 
-  ! List of element distributions in the discretisation structure
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
   ! Evaluation structure and tag
   type(t_evalElement) :: revalElement
   integer :: cevaluationTag
-
-  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
 
   ! for uniform discretisations, we get the element type in advance...
   if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
 
     ! Element type
-    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,1,celement)
 
     ! get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! number of vertices on the element
-    nve = elem_igetNDofLoc(ieltype)
+    nve = elem_igetNDofLoc(celement)
 
     ! type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the element evaluation tag; neccessary for preparation
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
-    nullify(p_IelementDistr)
+    nullify(p_IelemGroupIDs)
   else
-     call storage_getbase_int (&
-          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    call spdiscr_getElemGroupIDs (rvecMon%p_rspatialDiscr,p_IelemGroupIDs)
   end if
 
   ! get the data vector
   select case (rvecMon%cdataType)
-  case (ST_doUBLE)
+  case (ST_DOUBLE)
     call lsyssc_getbase_double(rvecMon,p_DdataMon)
     call lsyssc_getbase_double(rvecArea,p_DdataArea)
     call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
@@ -4304,20 +4289,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if
 
   ! get the type of the element iel
-  if(associated(p_IelementDistr))then
-    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+  if(associated(p_IelemGroupIDs))then
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
     ! Get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
 
     ! Type of transformation from /to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
   end if
 
   ! Calculate the global doF`s on that element into IdofsTest.
@@ -4339,7 +4324,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(celement, revalElement, Bder, Dbas)
 
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4412,9 +4397,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !</subroutine>
 
   ! local variables
-  integer :: ieltype,indof,nve,ibas
+  integer :: celement,indof,nve,ibas
   integer :: iel
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
   logical, dimension(el_maxnder) :: Bder
 
   real(dp), dimension(:), pointer :: p_DdataMon
@@ -4430,42 +4415,36 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
 
-  ! List of element distributions in the discretisation structure
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
   ! Evaluation structure and tag
   type(t_evalElement) :: revalElement
   integer :: cevaluationTag
-
-  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
 
   ! for uniform discretisations, we get the element type in advance...
   if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
 
     ! Element type
-    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,1,celement)
 
     ! get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! number of vertices on the element
-    nve = elem_igetNDofLoc(ieltype)
+    nve = elem_igetNDofLoc(celement)
 
     ! type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the element evaluation tag; neccessary for preparation
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
-    nullify(p_IelementDistr)
+    nullify(p_IelemGroupIDs)
   else
-     call storage_getbase_int (&
-          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    call spdiscr_getElemGroupIDs (rvecMon%p_rspatialDiscr,p_IelemGroupIDs)
   end if
 
   ! get the data vector
   select case (rvecMon%cdataType)
-  case (ST_doUBLE)
+  case (ST_DOUBLE)
     call lsyssc_getbase_double(rvecMon,p_DdataMon)
     call lsyssc_getbase_double(rvecArea,p_DdataArea)
     call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
@@ -4507,20 +4486,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if
 
   ! get the type of the element iel
-  if(associated(p_IelementDistr))then
-    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+  if(associated(p_IelemGroupIDs))then
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
     ! Get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
 
     ! Type of transformation from /to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
   end if
 
   ! Calculate the global doF`s on that element into IdofsTest.
@@ -4542,7 +4521,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(celement, revalElement, Bder, Dbas)
 
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4606,9 +4585,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !</subroutine>
 
   ! local variables
-  integer :: ieltype,indof,nve,ibas
+  integer :: celement,indof,nve,ibas
   integer :: iel
-  integer, dimension(:), pointer :: p_IelementDistr
+  integer, dimension(:), pointer :: p_IelemGroupIDs
   logical, dimension(el_maxnder) :: Bder
 
   real(dp), dimension(:), pointer :: p_DdataMon
@@ -4624,42 +4603,36 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
   integer, dimension(EL_MAXNBAS) :: Idofs
 
-  ! List of element distributions in the discretisation structure
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
   ! Evaluation structure and tag
   type(t_evalElement) :: revalElement
   integer :: cevaluationTag
-
-  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
 
   ! for uniform discretisations, we get the element type in advance...
   if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
 
     ! Element type
-    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,1,celement)
 
     ! get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! number of vertices on the element
-    nve = elem_igetNDofLoc(ieltype)
+    nve = elem_igetNDofLoc(celement)
 
     ! type of transformation from/to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! Get the element evaluation tag; neccessary for preparation
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
 
-    nullify(p_IelementDistr)
+    nullify(p_IelemGroupIDs)
   else
-     call storage_getbase_int (&
-          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    call spdiscr_getElemGroupIDs (rvecMon%p_rspatialDiscr,p_IelemGroupIDs)
   end if
 
   ! get the data vector
   select case (rvecMon%cdataType)
-  case (ST_doUBLE)
+  case (ST_DOUBLE)
     call lsyssc_getbase_double(rvecMon,p_DdataMon)
     call lsyssc_getbase_double(rvecArea,p_DdataArea)
     call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
@@ -4679,20 +4652,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   iel = iinelement
 
   ! get the type of the element iel
-  if(associated(p_IelementDistr))then
-    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+  if(associated(p_IelemGroupIDs))then
+    call spdiscr_getElemGroupInfo (rvecMon%p_rspatialDiscr,p_IelemGroupIDs(iel),celement)
 
     ! Get the number of local doF`s for trial and test functions
-    indof = elem_igetNDofLoc(ieltype)
+    indof = elem_igetNDofLoc(celement)
 
     ! Number of vertices on the element
-    nve = elem_igetNVE(ieltype)
+    nve = elem_igetNVE(celement)
 
     ! Type of transformation from /to the reference element
-    ctrafoType = elem_igetTrafoType(ieltype)
+    ctrafoType = elem_igetTrafoType(celement)
 
     ! get the element evaluation tag; necessary for the preparation of the element
-    cevaluationTag = elem_getEvaluationTag(ieltype)
+    cevaluationTag = elem_getEvaluationTag(celement)
   end if
 
   ! Calculate the global doF`s on that element into IdofsTest.
@@ -4714,7 +4687,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   ! Call the element to calculate the values of the basis functions
   ! in the point
-  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  call elem_generic2(celement, revalElement, Bder, Dbas)
 
   ! Combine the basis functions to get the function value
   Dvalues(:) = 0.0_DP
@@ -4788,7 +4761,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! Do we have (enough) memory for that array?
     if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DelementVolume .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementVolume2D', 'DAREA', &
-          int(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %NEL+1,I32), ST_doUBLE, &
+          int(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %NEL+1,I32), ST_DOUBLE, &
           rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
     end if
 
@@ -5276,8 +5249,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
 !<subroutine>
   subroutine griddef_performOneDefStep3D(rgriddefInfo,&
-                                         dblendpar, ilevelODE, ilevel,&
-                                         def_monitorfct,rperfconfig)
+      dblendpar, ilevelODE, ilevel, def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
