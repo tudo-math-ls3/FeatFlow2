@@ -786,6 +786,8 @@ contains
       ! or to any configured step-length control rule.
       call newtonit_updateControl (&
           rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
+          
+      call kkt_projectControl (p_rsolution)
 
 !    ! DEBUG!!!      
 !    call kktsp_dualLinearComb (&
