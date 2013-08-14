@@ -31,10 +31,11 @@ program preproctest
 #include "kernel/feat2macros.h"
 #include "preproctest.h"
 
+  use fsystem
   implicit none
 
-  real, dimension(8) :: AVeryLongVariableName = 1
-  real, dimension(8) :: YetAnotherVeryLongVariableName = 1
+  real(DP), dimension(8) :: AVeryLongVariableName = 1
+  real(DP), dimension(8) :: YetAnotherVeryLongVariableName = 1
 
   ! Test #1: Call to macro with very long variable names so that the maximum
   !          length of 132 characters per line is exceeded. There exist the
@@ -164,11 +165,13 @@ program preproctest
   write(*,*) "Test #8: Concatenation of two macro arguments"
   write(*,*) FEAT2_PP_STRING(FEAT2_PP_CONCAT(foo,bar))
   write(*,*)
+
+  write(*,*) FEAT2_PP_CONST(1.0,DOUBLE_PREC)
   
 contains
 
   subroutine writeTwoArguments(a,b)
-    real, intent(in) :: a,b
+    real(DP), intent(in) :: a,b
 
     write(*,*) a,b
 
