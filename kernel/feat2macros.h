@@ -135,6 +135,20 @@
 
 #if 0
 !###############################################################################
+! The following macro tries to detect of the preprocessur supports the
+! ANSI C standard or if it is run in traditional mode with less features.
+!###############################################################################
+#endif
+
+#if (defined(__GFORTRAN__) || defined(__G95__) || defined(_LANGUAGE_FORTRAN)) && !defined(__STDC__)
+#define FEAT2_PP_PREPROC_IS_TRADITIONAL() 1
+#else
+#define FEAT2_PP_PREPROC_IS_TRADITIONAL() 0
+#endif
+
+
+#if 0
+!###############################################################################
 ! The following evaluates the given expression
 !
 ! Example: FEAT2_PP_EVAL(expression)
@@ -143,6 +157,78 @@
 #endif
 
 #define FEAT2_PP_EVAL(expression) expression
+
+
+#if 0
+!###############################################################################
+! The following macro concatenates two tokens
+!
+! Example: FEAT2_PP_STRING(string)
+!          expands to "string"
+!
+! Note that use of this macro is recommended since '#' is not supported by all
+! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
+! cpp in traditional mode which does not support stringification using '#'.
+!###############################################################################
+#endif
+
+#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
+#define FEAT2_PP_STRING(string) "string"
+#else
+#define FEAT2_PP_STRING(string) #string
+#endif
+
+
+
+#if 0
+!###############################################################################
+! The following macro concatenates two tokens
+!
+! Example: FEAT2_PP_CONCAT(prefix_,suffix)
+!          expands to prefix_suffix
+!
+! Note that use of this macro is recommended since '##' is not supported by all
+! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
+! cpp in traditional mode which does not support concatenation using '##'.
+!###############################################################################
+#endif
+
+#define FEAT2_PP_CONCAT(prefix,suffix)  FEAT2_PP_CONCAT2_I(prefix,suffix)
+#define FEAT2_PP_CONCAT2(token1,token2) FEAT2_PP_CONCAT2_I(token1,token2)
+#define FEAT2_PP_CONCAT3(token1,token2,token3) FEAT2_PP_CONCAT3_I(token1,token2,token3)
+#define FEAT2_PP_CONCAT4(token1,token2,token3,token4) FEAT2_PP_CONCAT4_I(token1,token2,token3,token4)
+#define FEAT2_PP_CONCAT5(token1,token2,token3,token4,token5) FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5)
+#define FEAT2_PP_CONCAT6(token1,token2,token3,token4,token5,token6) FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6)
+#define FEAT2_PP_CONCAT7(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7)
+#define FEAT2_PP_CONCAT8(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8)
+#define FEAT2_PP_CONCAT9(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9)
+#define FEAT2_PP_CONCAT10(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10)
+
+#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
+
+#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1/**/token2)
+#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1/**/token2/**/token3)
+#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4)
+#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5)
+#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6)
+#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7)
+#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8)
+#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9)
+#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9/**/token10)
+
+#else
+
+#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1##token2)
+#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1##token2##token3)
+#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1##token2##token3##token4)
+#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1##token2##token3##token4##token5)
+#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6)
+#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7)
+#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8)
+#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9)
+#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9##token10)
+
+#endif
 
 
 #if 0
@@ -167,20 +253,18 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_CONCAT2(FEAT2_PP_GET_LANGUAGE_,language)()
+#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_CONCAT2(FEAT2_PP_GET_LANGUAGE_,language())
 #define FEAT2_PP_GET_LANGUAGE_1()                LANGUAGE_C
 #define FEAT2_PP_GET_LANGUAGE_2()                LANGUAGE_F
-#define FEAT2_PP_GET_LANGUAGE(language)          FEAT2_PP_GET_LANGUAGE_I(language)
-#define FEAT2_PP_GET_LANGUAGE_I(language)        FEAT2_PP_CONCAT2(FEAT2_PP_GET_LANGUAGE_,language)()
 
 #if defined(USE_PREPROC_F90CPP) ||                     \
     defined(__GFORTRAN__) || defined(__G95__) ||       \
     defined(_LANGUAGE_FORTRAN) ||                      \
     defined(__SUNPRO_F90) || defined (__SUNPRO_F95) || \
     defined(__INTEL_COMPILER) && !defined(__ICC)
-#define FEAT2_PP_GET_LANGUAGE_LANGUAGE()  LANGUAGE_F
+#define FEAT2_PP_GET_LANGUAGE_()  LANGUAGE_F
 #else
-#define FEAT2_PP_GET_LANGUAGE_LANGUAGE()  LANGUAGE_C
+#define FEAT2_PP_GET_LANGUAGE_()  LANGUAGE_C
 #endif
 
 
@@ -193,6 +277,10 @@
 !
 !          FEAT2_PP_CONST(2.0, SINGLE_PREC)
 !          expands to 2.0_SP in Fortran-mode and 2.0F in C-mode
+!
+! If you want to specify the programming language by hand use macro
+! FEAT2_PP_CONST_C and FEAT2_PP_CONST_F for C- and Fortran-type
+! constants, respectively.
 !###############################################################################
 #endif
 
@@ -255,72 +343,9 @@
 #define FEAT2_PP_ID5(id1,id2,id3,id4,id5,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID4(id2,id3,id4,id5,base),base)
 
 
-#if 0
-!###############################################################################
-! The following macro concatenates two tokens
-!
-! Example: FEAT2_PP_CONCAT(prefix_,suffix)
-!          expands to prefix_suffix
-!
-! Note that use of this macro is recommended since '##' is not supported by all
-! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
-! cpp in traditional mode which does not support concatenation using '##'.
-!###############################################################################
-#endif
-
-#define FEAT2_PP_CONCAT(prefix,suffix) FEAT2_PP_CONCAT_I(prefix,suffix)
-#define FEAT2_PP_CONCAT2(token1,token2) FEAT2_PP_CONCAT2_I(token1,token2)
-#define FEAT2_PP_CONCAT3(token1,token2,token3) FEAT2_PP_CONCAT3_I(token1,token2,token3)
-#define FEAT2_PP_CONCAT4(token1,token2,token3,token4) FEAT2_PP_CONCAT4_I(token1,token2,token3,token4)
-#define FEAT2_PP_CONCAT5(token1,token2,token3,token4,token5) FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5)
-#define FEAT2_PP_CONCAT6(token1,token2,token3,token4,token5,token6) FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6)
-#define FEAT2_PP_CONCAT7(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7)
-#define FEAT2_PP_CONCAT8(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8)
-#define FEAT2_PP_CONCAT9(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9)
-#define FEAT2_PP_CONCAT10(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10)
-
-#if (defined(__GFORTRAN__) || defined(__G95__) || defined(_LANGUAGE_FORTRAN)) && !defined(__STDC__)
-#define FEAT2_PP_CONCAT_I(prefix,suffix) FEAT2_PP_EVAL(prefix/**/suffix)
-#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1/**/token2)
-#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1/**/token2/**/token3)
-#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4)
-#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5)
-#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6)
-#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7)
-#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8)
-#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9)
-#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9/**/token10)
-#else
-#define FEAT2_PP_CONCAT_I(prefix,suffix) FEAT2_PP_EVAL(prefix##suffix)
-#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1##token2)
-#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1##token2##token3)
-#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1##token2##token3##token4)
-#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1##token2##token3##token4##token5)
-#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6)
-#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7)
-#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8)
-#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9)
-#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9##token10)
-#endif
 
 
-#if 0
-!###############################################################################
-! The following macro concatenates two tokens
-!
-! Example: FEAT2_PP_STRING(string)
-!          expands to "string"
-!
-! Note that use of this macro is recommended since '#' is not supported by all
-! compiler suites, e.g., gfortran/g95 if invoked with -cpp flag internally call
-! cpp in traditional mode which does not support stringification using '#'.
-!###############################################################################
-#endif
 
-#if (defined(__GFORTRAN__) || defined(__G95__) || defined(_LANGUAGE_FORTRAN)) && !defined(__STDC__)
-#define FEAT2_PP_STRING(string) "string"
-#else
-#define FEAT2_PP_STRING(string) #string
-#endif
+
 
 #endif
