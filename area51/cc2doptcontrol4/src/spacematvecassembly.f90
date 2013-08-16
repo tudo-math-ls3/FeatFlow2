@@ -638,7 +638,7 @@ contains
       case (0)
 
         call output_line("Old 1-step-scheme not implemented",&
-            OU_CLASS_ERROR,OU_MODE_STD,"smva_getRhs_Primal")
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
         call sys_halt()
 
       ! ***********************************************************
@@ -854,7 +854,7 @@ contains
       case (0)
 
         call output_line("Old 1-step-scheme not implemented",&
-            OU_CLASS_ERROR,OU_MODE_STD,"smva_getRhs_Primal")
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
         call sys_halt()
 
       ! ***********************************************************
@@ -3713,8 +3713,8 @@ contains
 
             if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
-              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
-              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(2),rrhs%RvectorBlock(2),1.0_DP,1.0_DP)
+              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),dweight,1.0_DP)
+              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(2),rrhs%RvectorBlock(2),dweight,1.0_DP)
             end if
 
           end if
@@ -3750,7 +3750,7 @@ contains
 
             if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
-              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
+              call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),dweight,1.0_DP)
             end if
 
           end if
@@ -5399,58 +5399,58 @@ contains
         
         end do ! iel
 
-        ! ------------------------------------------------
-        ! Calculate the problem-specific RHS
-        ! ------------------------------------------------
-
-        ! For the primal equation, the right-hand side reads
-        !
-        !    rhs = (user defined) + u
-        !
-        ! with u being the control. The control is already evaluated
-        ! in the cubature points, we can just take the values.
-        
-        ! Check the regularisation parameter ALPHA. Do we have
-        ! distributed control?
-        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
-        
-        dweight2 = dweight * &
-            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
-
-        if (dalpha .ge. 0.0_DP) then
-
-          ! Get the control.
-          p_Du1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOFs i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rvectorData1%ndofTest
-              
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                
-                ! Get the values of the control.
-                du1 = p_Du1(icubp,iel,DER_FUNC2D)
-                
-                ! Calculate the entries in the RHS.
-                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    du1 * dbasI 
-
-              end do ! jdofe
-
-            end do ! icubp
-          
-          end do ! iel
-          
-        end if
+!        ! ------------------------------------------------
+!        ! Calculate the problem-specific RHS
+!        ! ------------------------------------------------
+!
+!        ! For the primal equation, the right-hand side reads
+!        !
+!        !    rhs = (user defined) + u
+!        !
+!        ! with u being the control. The control is already evaluated
+!        ! in the cubature points, we can just take the values.
+!        
+!        ! Check the regularisation parameter ALPHA. Do we have
+!        ! distributed control?
+!        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
+!        
+!        dweight2 = dweight * &
+!            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+!
+!        if (dalpha .ge. 0.0_DP) then
+!
+!          ! Get the control.
+!          p_Du1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+!
+!          ! Loop over the elements in the current set.
+!          do iel = 1,nelements
+!
+!            ! Loop over all cubature points on the current element
+!            do icubp = 1,npointsPerElement
+!
+!              ! Outer loop over the DOFs i=1..ndof on our current element,
+!              ! which corresponds to the (test) basis functions Phi_i:
+!              do idofe=1,p_rvectorData1%ndofTest
+!              
+!                ! Fetch the contributions of the (test) basis functions Phi_i
+!                ! into dbasI
+!                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+!                
+!                ! Get the values of the control.
+!                du1 = p_Du1(icubp,iel,DER_FUNC2D)
+!                
+!                ! Calculate the entries in the RHS.
+!                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+!                    dweight2 * p_DcubWeight(icubp,iel) * &
+!                    du1 * dbasI 
+!
+!              end do ! jdofe
+!
+!            end do ! icubp
+!          
+!          end do ! iel
+!          
+!        end if
             
       ! ***********************************************************
       ! Linearised forward equation.
@@ -5468,47 +5468,47 @@ contains
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
 
-        if (dalpha .ge. 0.0_DP) then
-
-          ! Get the linearised control u"
-          p_DuLin1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
-
-          ! Get the data arrays of the subvector
-          p_rvectorData1 => RvectorData(1)
-          
-          p_DlocalVector1 => RvectorData(1)%p_Dentry
-          
-          p_DbasTest => RvectorData(1)%p_DbasTest
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOFs i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rvectorData1%ndofTest
-              
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                
-                ! Get the values of lambda"
-                duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
-
-                ! Calculate the entries in the RHS.
-                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    dulin1 * dbasI 
-
-              end do ! jdofe
-
-            end do ! icubp
-          
-          end do ! iel
-            
-        end if
+!        if (dalpha .ge. 0.0_DP) then
+!
+!          ! Get the linearised control u"
+!          p_DuLin1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+!
+!          ! Get the data arrays of the subvector
+!          p_rvectorData1 => RvectorData(1)
+!          
+!          p_DlocalVector1 => RvectorData(1)%p_Dentry
+!          
+!          p_DbasTest => RvectorData(1)%p_DbasTest
+!
+!          ! Loop over the elements in the current set.
+!          do iel = 1,nelements
+!
+!            ! Loop over all cubature points on the current element
+!            do icubp = 1,npointsPerElement
+!
+!              ! Outer loop over the DOFs i=1..ndof on our current element,
+!              ! which corresponds to the (test) basis functions Phi_i:
+!              do idofe=1,p_rvectorData1%ndofTest
+!              
+!                ! Fetch the contributions of the (test) basis functions Phi_i
+!                ! into dbasI
+!                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+!                
+!                ! Get the values of lambda"
+!                duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
+!
+!                ! Calculate the entries in the RHS.
+!                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+!                    dweight2 * p_DcubWeight(icubp,iel) * &
+!                    dulin1 * dbasI 
+!
+!              end do ! jdofe
+!
+!            end do ! icubp
+!          
+!          end do ! iel
+!            
+!        end if
 
       ! ***********************************************************
       ! Backward equation.
