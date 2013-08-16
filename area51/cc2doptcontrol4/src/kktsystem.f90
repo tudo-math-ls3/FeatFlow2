@@ -1191,9 +1191,8 @@ end subroutine
                 !
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
 
                 ! For visualisation output, copy this to the "intermediate" control
                 call lsyssc_copyVector (p_rcontrolSpaceOutput%RvectorBlock(icomp),&
@@ -1201,9 +1200,8 @@ end subroutine
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
                     
                 ! For visualisation output, copy this to the "intermediate" control
                 call lsyssc_copyVector (p_rcontrolSpaceOutput%RvectorBlock(icomp),&
@@ -1296,15 +1294,13 @@ end subroutine
                   !    u_intermed = 1/alpha u_intermed
                   icomp = icomp + 1
                   call lsyssc_vectorLinearComb ( &
-                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                      1.0_DP/p_rsettingsOptControl%dalphaL2BdC,0.0_DP)
 
                   icomp = icomp + 1
                   call lsyssc_vectorLinearComb ( &
-                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                      1.0_DP/p_rsettingsOptControl%dalphaL2BdC,0.0_DP)
                       
                 ! ----------------------------------------------------------
                 ! Box constraints, implemented by DOF
@@ -1385,9 +1381,8 @@ end subroutine
                 !
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
 
               ! ----------------------------------------------------------
               ! Box constraints, implemented by DOF
@@ -4003,9 +3998,11 @@ end subroutine
         rkktSubsolvers,rstatistics)
 
     ! b) rrhs = -rrhs + u~
-    call kktsp_controlLinearComb (&
-        rkktsystemDirDeriv%p_rcontrolLin,1.0_DP,&
-        rrhs,-1.0_DP)
+!    call kktsp_controlLinearComb (&
+!        rkktsystemDirDeriv%p_rcontrolLin,1.0_DP,&
+!        rrhs,-1.0_DP)
+    call kkt_controlToRhsSpace (rkktsystemDirDeriv%p_rkktsystem,&
+        rkktsystemDirDeriv%p_rcontrolLin,1.0_DP,rrhs,-1.0_DP)
 
   end subroutine
 
