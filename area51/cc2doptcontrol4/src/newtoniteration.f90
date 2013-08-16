@@ -787,7 +787,7 @@ contains
       call newtonit_updateControl (&
           rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
           
-      call kkt_projectControl (p_rsolution)
+!      call kkt_projectControl (p_rsolution)
 
 !    ! DEBUG!!!      
 !    call kktsp_dualLinearComb (&
