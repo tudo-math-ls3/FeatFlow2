@@ -3712,7 +3712,7 @@ contains
             ! -----------------------------------------
 
             if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector1)
+              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
               call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
               call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(2),rrhs%RvectorBlock(2),1.0_DP,1.0_DP)
             end if
