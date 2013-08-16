@@ -436,7 +436,7 @@ contains
     call linsol_initUMFPACK4 (p_rcoarseGridSolver)
     
     p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-    p_rlevelInfo%p_RfilterChain => Rlevels(1)%RfilterChain
+    p_rlevelInfo%p_RfilterChain => Rlevels(NLMIN)%RfilterChain
     
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
