@@ -3308,19 +3308,6 @@ contains
           call fev2_addDummyVectorToEvalList(rvectorEval)
           call fev2_addDummyVectorToEvalList(rvectorEval)
           
-          ! Vector 3+4 = dual velocity -- for the calculation of distributed control
-          ! in the velocity space.
-          ! Only add this if we have distributed control. Otherwise add dummy
-          ! vectors which take no time in being computed.
-          if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-            call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
-          else
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-          end if
-          
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
@@ -3337,8 +3324,8 @@ contains
 
           if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
-            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
-            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(2),rrhs%RvectorBlock(2),1.0_DP,1.0_DP)
+            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(1),rrhs%RvectorBlock(1),dweight,1.0_DP)
+            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(2),rrhs%RvectorBlock(2),dweight,1.0_DP)
           end if
 
           ! -----------------------------------------
@@ -3373,17 +3360,6 @@ contains
           ! Vector 1 = Temp-vectors for the RHS.
           call fev2_addDummyVectorToEvalList(rvectorEval)
           
-          ! Vector 2 = control -- for the calculation of distributed control
-          ! in the solution space.
-          ! Only add this if we have distributed control. Otherwise add a dummy
-          ! vector which takes no time in being computed.
-          if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-            call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-          else
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-          end if
-          
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
@@ -3400,7 +3376,7 @@ contains
 
           if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
-            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
+            call lsyssc_vectorLinearComb(p_rvector1%RvectorBlock(1),rrhs%RvectorBlock(1),dweight,1.0_DP)
           end if
 
           ! -----------------------------------------
@@ -3725,27 +3701,11 @@ contains
           ! There is no control in the 0th timestep since this is the initial
           ! condition.
           if (idoftime .gt. 1) then
-            ! Add the dual velocity if we have distributed control. Otherwise add dummy
-            ! vectors which take no time in being computed.
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-
-              ! Position 1+2 = update for the control
-              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),0)
-
-            else
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-            end if
 
             ! Build the vector
             call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
                 smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
                 rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
-            
-            ! Cleanup
-            call fev2_releaseVectorList(rvectorEval)
             
             ! -----------------------------------------
             ! Add the control RHS: b = b + u
@@ -3778,33 +3738,18 @@ contains
           ! There is no control in the 0th timestep since this is the initial
           ! condition.
           if (idoftime .gt. 1) then
-            ! Add the dual velocity if we have distributed control. Otherwise add dummy
-            ! vectors which take no time in being computed.
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-              
-              ! Position 1 = update for the control
-              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
-              call lsysbl_getbase_double (p_rvector2,p_Dx1)
-
-            else
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-            end if
 
             ! Build the vector
             call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
                 smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
                 rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
             
-            ! Cleanup
-            call fev2_releaseVectorList(rvectorEval)
-            
             ! -----------------------------------------
             ! Add the control RHS: b = b + u
             ! -----------------------------------------
 
             if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
-              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector1)
+              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
               call lsyssc_vectorLinearComb(p_rvector2%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,1.0_DP)
             end if
 
