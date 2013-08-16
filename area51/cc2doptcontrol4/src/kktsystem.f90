@@ -1453,7 +1453,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine kkt_projectControl (rkktsystem)
+  subroutine kkt_projectControl (rkktsystem,drelax)
   
 !<description>
   ! Projects a control into the admissible space:
@@ -1465,13 +1465,16 @@ end subroutine
   ! Structure defining the KKT system.
   ! The control in this structure is projected into the admissible set.
   type(t_kktsystem), intent(inout), target :: rkktsystem
+  
+  ! Optional: Relaxation factor for the bounds.
+  real(DP), intent(in), optional :: drelax
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
     integer :: icomp,istep,ierror
-    real(DP) :: dtheta,dwmin,dwmax,dtime
+    real(DP) :: dtheta,dwmin,dwmax,dtime,dfactor
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
     type(t_spaceTimeVector), pointer :: p_rdualSol
 
@@ -1479,6 +1482,9 @@ end subroutine
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
 
     type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    dfactor = 1.0_DP
+    if (present(drelax)) dfactor = drelax
 
     ! Fetch some structures
     p_rphysics => &
@@ -1584,16 +1590,16 @@ end subroutine
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor,&
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor)
 
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor,&
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor)
 
               case default          
                 call output_line("Unknown constraints",&
@@ -1642,16 +1648,16 @@ end subroutine
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor,&
+                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor)
 
                   dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
                   dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor,&
+                      1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor)
 
                 case default          
                   call output_line("Unknown constraints",&
@@ -1730,8 +1736,8 @@ end subroutine
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor,&
+                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),dwmin*dfactor,dwmax*dfactor)
 
               case default          
                 call output_line("Unknown constraints",&
@@ -1858,7 +1864,7 @@ end subroutine
       case (0)
 
         call output_line("Old 1-step-scheme not implemented",&
-            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
         call sys_halt()
 
       ! ***********************************************************
@@ -1932,7 +1938,7 @@ end subroutine
             if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
               call output_line("H^1/2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
               call sys_halt()
 
             end if ! alphaH12BdC
@@ -1978,7 +1984,7 @@ end subroutine
             if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
 
               call output_line("L2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
               call sys_halt()
 
             end if
@@ -1989,7 +1995,7 @@ end subroutine
             if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
               call output_line("H^1/2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
               call sys_halt()
 
             end if
@@ -2102,7 +2108,7 @@ end subroutine
       case (0)
 
         call output_line("Old 1-step-scheme not implemented",&
-            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlApplyPCSteklow")
         call sys_halt()
 
       ! ***********************************************************
@@ -2158,7 +2164,7 @@ end subroutine
             if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
               call output_line("H^1/2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlApplyPCSteklow")
               call sys_halt()
 
             end if ! alphaH12BdC
@@ -2190,7 +2196,7 @@ end subroutine
             if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
               call output_line("H^1/2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlApplyPCSteklow")
               call sys_halt()
 
             end if
@@ -3359,7 +3365,7 @@ end subroutine
                 
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),dwmin,dwmax,&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
                     1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
                 
                 icomp = icomp + 1
@@ -3372,7 +3378,7 @@ end subroutine
                 
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),dwmin,dwmax,&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
                     1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
 
                 ! The linearised control equation reads
@@ -3771,7 +3777,7 @@ end subroutine
 
             if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
               call output_line("Alpha=0 not possible without contraints",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
               call sys_halt()
             end if
           
@@ -3855,7 +3861,7 @@ end subroutine
 
           if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
             call output_line("Alpha=0 not possible without contraints",&
-                OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
             call sys_halt()
           end if
         
@@ -3884,7 +3890,7 @@ end subroutine
         if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
               call output_line("H^1/2 Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
               call sys_halt()
 
         end if ! alpha
@@ -3911,7 +3917,7 @@ end subroutine
 
             if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
               call output_line("Alpha=0 not possible without contraints",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
               call sys_halt()
             end if
           
