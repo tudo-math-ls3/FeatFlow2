@@ -5566,7 +5566,7 @@ contains
     
     ! Solve the least-squares minimisation problem using QR or LQ
     ! factorisation. It is assumed that matrix A has full rank.
-    call fgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Fa, ndim1,&
+    call sgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Fa, ndim1,&
                p_Fb, naux, p_Fwork, nwork, info)
 
     ! Check if solution procedure terminated without errors
@@ -5633,11 +5633,11 @@ contains
       ! Do we have an optional tolerance paramter?
       if (present(frcondOpt)) then
         ! Solve the least-squares minimisation problem using SVD.
-        call fgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+        call sgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
                     frcondOpt, irank, p_Fwork, nwork, info)
       else
         ! Solve the least-squares minimisation problem using SVD.
-        call fgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+        call sgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
                     1e-12_SP, irank, p_Fwork, nwork, info)
       end if
 
