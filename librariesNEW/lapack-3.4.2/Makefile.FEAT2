@@ -37,7 +37,9 @@ SRCLIST=INSTALL/dlamch.f \
 	SRC/iladlc.f \
 	SRC/iladlr.f \
 	SRC/ilaenv.f \
-	SRC/iparmq.f
+	SRC/iparmq.f \
+	SRC/ilaslr.f \
+	SRC/ilaslc.f
 
 # Double/single precision Lapack routines
 SRCLIST+=SRC/dgbtf2.f SRC/sgbtf2.f \
