@@ -5633,11 +5633,11 @@ contains
       ! Do we have an optional tolerance paramter?
       if (present(frcondOpt)) then
         ! Solve the least-squares minimisation problem using SVD.
-        call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+        call fgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
                     frcondOpt, irank, p_Fwork, nwork, info)
       else
         ! Solve the least-squares minimisation problem using SVD.
-        call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+        call fgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
                     1e-12_SP, irank, p_Fwork, nwork, info)
       end if
 
