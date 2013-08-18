@@ -58,7 +58,6 @@ test -z "$USER" && USER="$LOGNAME"
 # Username contained in path name?
 FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/^.*\/$USER\//\//;"`;
 
-echo $FEAT2INSTDIR
 # Step 2:
 #   remove "Featflow2/" and "Featflow2.gitsvn", case-insensitively
 FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/\/Featflow2\//\//i; s/\/Featflow2.gitsvn\//\//i; "`;
