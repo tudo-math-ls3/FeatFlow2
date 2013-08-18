@@ -5566,7 +5566,7 @@ contains
     
     ! Solve the least-squares minimisation problem using QR or LQ
     ! factorisation. It is assumed that matrix A has full rank.
-    call dgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Fa, ndim1,&
+    call fgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Fa, ndim1,&
                p_Fb, naux, p_Fwork, nwork, info)
 
     ! Check if solution procedure terminated without errors
