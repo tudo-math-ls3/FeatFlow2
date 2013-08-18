@@ -1342,26 +1342,26 @@ contains
       call stat_clearTimer(rtimer)
       call stat_startTimer(rtimer)
       
-      ! Attach the system matrices to the solver.
-      !
-      ! For this purpose, create a matrix set structure that contains
-      ! links to our system matrices.
-      call linsol_newMatrixSet (rnonlinearIteration%rmatrixSet,NLMAX-NLMIN+1)
-
-      do i=NLMIN,NLMAX
-        call linsol_addMatrix (rnonlinearIteration%rmatrixSet,&
-            rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
-      end do
-      
-      call linsol_setMatrices(&
-          rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-          rnonlinearIteration%rmatrixSet)
-          
-      ! Initialise structure/data of the solver. This allows the
-      ! solver to allocate memory / perform some precalculation
-      ! to the problem.
       if (binit) then
       
+        ! Attach the system matrices to the solver.
+        !
+        ! For this purpose, create a matrix set structure that contains
+        ! links to our system matrices.
+        call linsol_newMatrixSet (rnonlinearIteration%rmatrixSet,NLMAX-NLMIN+1)
+
+        do i=NLMIN,NLMAX
+          call linsol_addMatrix (rnonlinearIteration%rmatrixSet,&
+              rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+        end do
+        
+        call linsol_setMatrices(&
+            rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+            rnonlinearIteration%rmatrixSet)
+
+        ! Initialise structure/data of the solver. This allows the
+        ! solver to allocate memory / perform some precalculation
+        ! to the problem.
         call linsol_initStructure (&
             rnonlinearIteration%rpreconditioner%p_rsolverNode,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
@@ -1387,7 +1387,7 @@ contains
       rproblem%rstatistics%dtimeLinearSolverFactorisation = &
         rproblem%rstatistics%dtimeLinearSolverFactorisation + rtimer%delapsedReal
       
-    case DEFAULT
+    case default
       
       ! Unknown preconditioner
       call output_line ("Unknown preconditioner for nonlinear iteration!", &

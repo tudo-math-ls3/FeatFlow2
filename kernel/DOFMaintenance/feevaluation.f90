@@ -2129,6 +2129,11 @@ contains
     call elprep_releaseElementSet(revalElementSet)
     deallocate(Idofs)
 
+    ! Get the coordinates of all points on the reference element
+    if (.not. present(DpointsRef)) then
+      deallocate(p_DpointsRef)
+    end if
+
   end subroutine
 
   ! ***************************************************************************
