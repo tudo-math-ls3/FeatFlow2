@@ -1049,7 +1049,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine kkt_dualToControl (rkktsystem,rcontrol,rkktSubsolvers,rstatistics)
+  subroutine kkt_dualToControl (rkktsystem,rcontrol) !,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Calculates the control
@@ -1071,12 +1071,12 @@ end subroutine
   type(t_controlSpace), intent(inout) :: rcontrol
   
   ! KKT subsolver structure.
-  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+  !type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
   ! Statistics structure
-  type(t_spaceslSolverStat), intent(out) :: rstatistics
+  !type(t_spaceslSolverStat), intent(out) :: rstatistics
 !<output>
 
 !</subroutine>
@@ -1198,9 +1198,8 @@ end subroutine
                 !
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
 
                 ! For visualisation output, copy this to the "intermediate" control
                 call lsyssc_copyVector (p_rcontrolSpaceOutput%RvectorBlock(icomp),&
@@ -1208,9 +1207,8 @@ end subroutine
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
                     
                 ! For visualisation output, copy this to the "intermediate" control
                 call lsyssc_copyVector (p_rcontrolSpaceOutput%RvectorBlock(icomp),&
@@ -1303,15 +1301,13 @@ end subroutine
                   !    u_intermed = 1/alpha u_intermed
                   icomp = icomp + 1
                   call lsyssc_vectorLinearComb ( &
-                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                      1.0_DP/p_rsettingsOptControl%dalphaL2BdC,0.0_DP)
 
                   icomp = icomp + 1
                   call lsyssc_vectorLinearComb ( &
-                      p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                      0.0_DP,1.0_DP/p_rsettingsOptControl%dalphaL2BdC,&
-                      p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                      1.0_DP/p_rsettingsOptControl%dalphaL2BdC,0.0_DP)
                       
                 ! ----------------------------------------------------------
                 ! Box constraints, implemented by DOF
@@ -1392,9 +1388,8 @@ end subroutine
                 !
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                    0.0_DP,-1.0_DP/p_rsettingsOptControl%dalphaDistC,&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,0.0_DP)
 
               ! ----------------------------------------------------------
               ! Box constraints, implemented by DOF
@@ -3402,7 +3397,7 @@ end subroutine
     !   d  =  -J'(u)  =  P ( -1/alpha lambda )  -  u
     !
     ! Transfer it to rresidual and apply the projection.
-    call kkt_dualToControl (rkktsystem,rresidual,rkktSubsolvers,rstatistics)
+    call kkt_dualToControl (rkktsystem,rresidual) !,rkktSubsolvers,rstatistics)
     
     ! Add -u:   rresidual = rresidual - u
     ! Calculate the norm of the residual.
