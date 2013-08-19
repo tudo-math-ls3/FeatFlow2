@@ -1,0 +1,313 @@
+# Aktuelles Problem: Der adaptive Newton funktioniert noch nicht.
+# Liegt daran, dass das Abbruchkriterium des Raum-Lösers falsch
+# eingestellt wird. Das Abbruchkriterium wird anhand des Residuums
+# der Kontrollgleichung (u) eingestellt. Das hat jedoch überhaupt
+# nichts mit Residuum in der primalen / dualen Gleichung zu tun,
+# was benötigt wird, um in der Kontrollgleichung ein bestimmtes
+# Residuum zu erhalten. Das Residuum der Kontrollgleichung ist
+# mindestens über den Faktor ALPHA mit der dualen Gleichung gekoppelt --
+# aber wie das bei mehreren Kontrollen aussieht, steht auf einem anderen
+# Blatt. In wieweit das Residuum der primalen mit der Kontrollgleichgung 
+# verglichen werden kann, ist ebenfalls fragwürdig. Hier muss
+# insgesamt nochmal nachgedacht werden, wie die Abbruchkriterien
+# der Raumlöser geändert werden müssen -- und ob überhaupt.
+# So wie"s jetzt ist, geht nix, da geht sie quadratische Konvergenz flöten.
+
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Directory for visualisation files
+spostdirectory = %{sappdirectory}/gmv
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = %{sappdirectory}/ns
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/pre
+
+# Files to import
+
+simportdatafiles(11) = 
+  "main.dat"
+  "bdconditions.dat"
+  "discretisation.dat"
+  "flows.dat"
+  "linsol.dat"
+  "optcontrol.dat"
+  "output.dat"
+  "paramtriang.dat"
+  "postprocessing.dat"
+  "spacetimesolver.dat"
+  "timediscr.dat"
+
+[BDEXPRESSIONS]
+bdExpressions(6) =
+  "Dirichlet0"    0    0.0
+  "Dirichlet1"    0    1.0
+  "DirichletP"   -1    "4*X*(1-X)"
+  "DirichletYP"   -1    "-X*Y^2"
+  "DirichletXD"   -1    "2*Y"
+  "DirichletYD"   -1    "-2*X"
+
+[BDCONDITIONS_PRIMAL]
+bdComponent1(3)=
+  2.0  1  1  "Dirichlet0"  "Dirichlet0"
+  3.0  3  1  "DirichletP"  "Dirichlet0"
+  4.0  2  1  "Dirichlet0"  "Dirichlet0"
+
+#  3.0  3  1  "Dirichlet1"  "Dirichlet0"
+
+[BDCONDITIONS_DUAL]
+bdComponent1=-1
+
+[BDCONDITIONS_PRIMALLIN]
+bdComponent1=-1
+
+[BDCONDITIONS_DUALLIN]
+bdComponent1=-1
+
+[RIGHTHANDSIDE_PRIMAL]
+ctype = 0
+ncomponents = 3
+sexpression(3) =
+  "-2*Y"
+  "2*X" 
+  "0"
+
+[RIGHTHANDSIDE_DUAL]
+ctype = 0
+ncomponents = 3
+sexpression(3) =
+  "0"
+  "4*X" 
+  "0"
+
+[INITIALCONDITION]
+ctype = 0
+#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes.sol"
+sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes_bub.sol"
+ilevel = 8
+ielementType = 4
+
+[OPTCTARGETFUNCTION]
+ctype = 1
+#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol"
+sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes_bub.sol"
+ilevel = 8
+ielementType = 4
+
+[INITIALCONDITION_old]
+ctype = 0
+
+[OPTCTARGETFUNCTION_old]
+ctype = 3
+ncomponents = 2
+sexpression(2) =
+  "X^2*Y"
+  "-X*Y^2" 
+
+[CC-PHYSICS]
+cequation = 0
+RE = 400
+
+[CC-DISCRETISATION]
+NLMIN              = 4
+NLMAX              = 5
+iElementType       = 4
+scubMass           = G4X4
+scubStokes         = G4X4
+scubB              = G4X4
+scubF              = G4X4
+csupportIntMeanConstr = 1
+
+[TIME-DISCRETISATION]
+dtimeInit = 0.0
+dtimeMax = 1.0
+niterations = 10
+TIMENLMIN = 2
+TIMENLMAX = 2
+dtimeStepTheta = 1.0
+
+# Für lineare FD in der Zeit brauchen wir eine konstante
+# Prolognation/Restriktion, welche die Zeit-Richtung
+# beachtet. Insbesondere bei der Restriktion erhalten wir
+# sonst GG-Probleme, die der Löser nicht richtig verarbeiten
+# kann.
+
+ctimeProjectionProl = 1
+ctimeProjectionRest = 0
+ctimeProjectionInterp = 1
+
+#Die RHS auf level 1 sollte beim TG umd beim Eingitter gleich
+#sein. Wir haben konstante Restriktion und eine Nullösung als
+#Startlösung. Dazu reines Zeit-MG.
+#Geht aber nicht :-((((((((((((
+
+[DEBUG]
+dprimalDualCoupling = 1.0
+ddualPrimalCoupling = 1.0
+dtimeCoupling = 1.0
+cwriteUmfpackMatrix = 0
+
+[OPTIMALCONTROL]
+dalphaDistC = 0.01
+dalphaL2BdC = -0.01
+dobservationArea =
+
+[CONSTRAINTS_DISTCTRL]
+cconstraints = 0
+dmin1 = -0.5
+dmax1 = 0.5
+dmin2 = -0.5
+dmax2 = 0.5
+
+[CONSTRAINTS_L2BDC]
+cconstraints = 1
+dmin1 = -1E10
+dmax1 = 1E10
+dmin2 = 0.0
+dmax2 = 0.0
+
+
+[TIME-POSTPROCESSING]
+ioutputUCD = 4
+#sfilenameControl = "./ns/control5"
+sfilenameControl = ""
+
+[SPACETIME-REFINEMENT]
+ispacelevelcoupledtotimelevel = 2
+
+[SPACETIME-SOLVER]
+ctypeIteration = 3
+dtolrel = 1E-10
+dtolAbs = 1E-10
+nmaxIterations = 15
+ioutputlevel = 3
+cpostprocessIterates = 3
+cspatialInitCondPolicy = 0
+
+[SPACETIME-ADAPTIVENEWTON]
+cpartialNewton = 2
+nminPartialNewtonIterations = 1 # 3
+nmaxPartialNewtonIterations = 1 # 3
+dinexactNewtonTolRel = 1.0E-2
+dinexactNewtonTolAbs = 5E-11
+
+[SPACETIME-LINSOLVER]
+ioutputlevel = 2
+csolverType = 2
+cspatialInitCondPolicy = 0
+nminIterations     = 1
+nmaxIterations     = 10
+dtolRel            = 1E-2
+dtolAbs            = 1E-12
+domega = 1.0
+
+[SPACETIME-MULTIGRID]
+nsmPre = 0
+nsmPost = 4
+ccycle = 1 # 0
+csmoother = 2
+ccoarseGridSolver = 2
+#ccoarseGridSolver = 1
+
+[SPACETIME-SMOOTHER]
+domega = 1.0
+ioutputlevel = 2
+brealres = 0
+
+[SPACETIME-COARSEGRIDSOLVER]
+dtolRel = 1E-3
+ctolMode = 4
+dtolAbs = 1E-13
+nminiterations = 1
+nmaxiterations = 100
+#nmaxiterations = 50
+domega = 1.0
+ioutputlevel = 2
+nstagIter = 3
+dstagRate = 1.05
+brealres = 0
+
+[CC-NONLINEARSOLVER]
+ctypeIteration = 2
+dtolrel = 1E-13
+#dtolabs = 1E-5
+ioutputLevel = 0
+
+[CC-LINEARSOLVERFORW]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+#ioutputlevel = 1
+
+[CC-LINEARSOLVERBACKW]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-LINEARSOLVERLIN]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-LINEARSOLVERFORW2]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+#ioutputlevel = 1
+
+[CC-LINEARSOLVERBACKW2]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-LINEARSOLVERLIN2]
+isolverType = 0
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-MULTIGRIDSOLVERFORW]
+depsRel            = 1E-15
+ioutputlevel=0
+
+[CC-MULTIGRIDSOLVERBACKW]
+depsRel            = 1E-15
+ioutputlevel=0
+
+[CC-MULTIGRIDSOLVERLIN]
+depsRel            = 1E-15
+ioutputlevel=0
+
+[CC-SMOOTHER]
+nsmoothingSteps    = 4
+domega             = 1.0
+
+[CC-COARSEGRIDSOLVER]
+nmaxiterations = 1000
+ioutputlevel = 0
+depsrel = 1E-15
+
+[INITIALITERATE]
+ctype = 0
+iid = 0
+ncomponents = 2
+ilevel = %{CC-DISCRETISATION.NLMAX}
+ielementType = -1
+sfunctionFile = "./ns/control5"
+idelta = 1
+ntimesteps = 20
+dstartTime = %{TIME-DISCRETISATION.dtimeInit}
+dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
+ifileformat = 0
