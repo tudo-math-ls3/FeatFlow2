@@ -33,6 +33,7 @@ LAPACKLIB = $(OBJDIR)/liblapack.a
 
 # Auxiliary Lapack routines
 SRCLIST=INSTALL/dlamch.f \
+	SRC/slamch.f \
 	SRC/ieeeck.f \
 	SRC/iladlc.f \
 	SRC/iladlr.f \
