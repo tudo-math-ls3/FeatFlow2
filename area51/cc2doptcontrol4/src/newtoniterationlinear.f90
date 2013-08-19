@@ -256,6 +256,9 @@ module newtoniterationlinear
     ! More temporary memory
     type(t_kktsystemDirDeriv) :: rp
     
+    ! More temporary memory
+    type(t_kktsystemDirDeriv) :: rz
+
     ! Use real residual in the iteration.
     logical :: brealres = .true.
     
@@ -972,7 +975,7 @@ contains
 
     real(DP) :: dalpha,dbeta,dgamma,dgammaOld,dtemp,dres
     type(t_controlSpace), pointer :: p_rr,p_rAp
-    type(t_kktsystemDirDeriv), pointer :: p_rp
+    type(t_kktsystemDirDeriv), pointer :: p_rp,p_rz
     type(t_newtonlinSolverStat) :: rlocalStat
     type(t_iterationControl) :: rlocaliter
     logical :: brealres
@@ -985,6 +988,7 @@ contains
     p_rAp => rlinsolParam%p_rsubnodeCG%rAp
     p_rr => rlinsolParam%p_rsubnodeCG%rr
     p_rp => rlinsolParam%p_rsubnodeCG%rp
+    p_rz => rlinsolParam%p_rsubnodeCG%rz
 
     ! Initialise used vectors with zero
     call kktsp_clearControl(p_rr)
@@ -1007,51 +1011,40 @@ contains
         
     call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
         
-    call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
-
-    ! Scalar product of rp.
-    dgamma = kktsp_scalarProductControl(p_rr,p_rr)
-
-    ! Apply the loop is a do loop...
+    ! Apply the loop...
     call itc_initIteration(rlinsolParam%riter)
 
-    do while (.true.)
+    do
     
-!      if ((mod(rlinsolParam%riter%niterations,5) .eq. 0) .and.&
-!          (rlinsolParam%riter%niterations .ne. 0)) then
-!        ! Restart
-!
-!        ! Initialization
-!        dalpha = 1.0_DP
-!        dbeta  = 1.0_DP
-!        dgamma = 1.0_DP
-!        dgammaOld = 1.0_DP
-!        
-!        ! DEBUG!!!
-!        !call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
-!        
-!        ! Create the initial defect in rd
-!        call output_line ("Space-time CG: Restart.")
-!        !output_iautoOutputIndent = output_iautoOutputIndent + 2
-!        !call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
-!        !output_iautoOutputIndent = output_iautoOutputIndent - 2
-!            
-!        !call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
-!
-!        ! DEBUG!!!
-!        !call kktsp_controlCompare (p_rr,p_rp%p_rcontrolLin)
-!            
-!        call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
-!
-!        ! Scalar product of rp.
-!        dgamma = kktsp_scalarProductControl(p_rr,p_rr)
-!
-!        ! Initialise used vectors with zero
-!        !call kktsp_clearControl(p_rr)
-!        call kktsp_clearControl(p_rAp)
-!
-!      end if
-    
+      ! Create preconditioned residual
+      call kktsp_controlCopy (p_rr,p_rz%p_rcontrolLin)
+      call kkt_controlDirDerivPrecond (rkktsystemDirDeriv%p_rkktsystem,p_rz%p_rcontrolLin)
+      
+      ! Scalar product of rr/rz.
+      dgammaOld = dgamma
+      dgamma = kktsp_scalarProductControl(p_rr,p_rz%p_rcontrolLin)
+
+      ! Initialisation in 1st iteration
+      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+        
+        call kktsp_controlCopy (p_rz%p_rcontrolLin,p_rp%p_rcontrolLin)
+      
+      else
+      
+        dbeta = dgamma / dgammaOld
+      
+        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+          call output_line ("Space-time CG: GAMMA_NEW = "// &
+              trim(sys_sdEL(dgammaold,10)))
+          call output_line ("Space-time CG: BETA      = "// &
+              trim(sys_sdEL(dbeta,10)))
+        end if
+
+        ! Update rp.
+        call kktsp_controlLinearComb (p_rz%p_rcontrolLin,1.0_DP,p_rp%p_rcontrolLin,dbeta)
+
+      end if
+
       ! -------------------------------------------------------------
       ! Norm of the residual
       ! -------------------------------------------------------------
@@ -1075,75 +1068,11 @@ contains
             trim(sys_sdEL(dres,10)))
       end if
       
-      ! -------------------------------------------------------------
-      ! Check for convergence / divergence / ...
-      ! -------------------------------------------------------------
-      if ((.not. brealres) .and. (ifinalResRestart .ne. 0) .and. &
-          (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
-        
-        ! Apply a restart to check if we really reached the residual
-
-        ! Create the defect in rd
-        call output_line ("Space-time CG: Restart for final residual check.")
-            
-        output_iautoOutputIndent = output_iautoOutputIndent + 2
-        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
-        call kkt_controlResidualNorm (&
-            rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
-            p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
-        output_iautoOutputIndent = output_iautoOutputIndent - 2
-            
-        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
-        
-        rlocaliter = rlinsolParam%riter
-        call itc_resetResidualQueue (rlocaliter)
-        call itc_repushResidual(rlocaliter,dres)
-
-        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
-          call output_line ("Space-time CG: Iteration "// &
-              trim(sys_siL(rlinsolParam%riter%niterations,10))// &
-              ", ||res(u)|| = "// &
-              trim(sys_sdEL(dres,10)))
-        end if
-
-        if (rlocaliter%cstatus .eq. ITC_STATUS_CONTINUE) then
-          ! Restart, continue the iteration
-          call output_line ("Space-time CG: Not converged. Continuing...")
-
-          ! Restart
-          dalpha = 1.0_DP
-          dbeta  = 1.0_DP
-          dgamma = 1.0_DP
-          dgammaOld = 1.0_DP
-          
-          if (ifinalResRestart .eq. 2) then
-            ! Continue with the real residual.
-            brealres = .true.
-          end if
-          
-          call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
-
-          ! Scalar product of rp.
-          dgamma = kktsp_scalarProductControl(p_rr,p_rr)
-
-          ! Initialise used vectors with zero
-          call kktsp_clearControl(p_rAp)
-
-          ! Reset the statistics
-          rlinsolParam%riter = rlocaliter
-
-        end if
-
-      end if
-      
       if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
       
       ! -------------------------------------------------------------
-      ! Update of the solution
+      ! Calculate the update
       ! -------------------------------------------------------------
-      ! From:
-      !    http://en.wikipedia.org/wiki/Conjugate_gradient_method
-      ! and the Num-I script of Prof, Turek.
 
       ! Calculate Ap.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1156,8 +1085,6 @@ contains
       dtemp = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
       if (abs(dtemp) .gt. SYS_MINREAL_DP) then
         dalpha = dgamma / dtemp
-        !dalpha = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rr)
-        !dalpha = dalpha / dtemp
       else
         dalpha = 0.0_DP
       end if
@@ -1187,27 +1114,209 @@ contains
         output_iautoOutputIndent = output_iautoOutputIndent - 2
       end if
           
-      ! Calculate beta
-      dgammaOld = dgamma
-      dgamma = kktsp_scalarProductControl(p_rr,p_rr)
-      !dgamma = kktsp_scalarProductControl(p_rr,p_rp%p_rcontrolLin)
-      dbeta = dgamma / dgammaOld
-      
-      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-        call output_line ("Space-time CG: GAMMA_NEW = "// &
-            trim(sys_sdEL(dgamma,10)))
-        call output_line ("Space-time CG: BETA      = "// &
-            trim(sys_sdEL(dbeta,10)))
-      end if
-      
-      ! Update rp.
-      call kktsp_controlLinearComb (p_rr,1.0_DP,p_rp%p_rcontrolLin,dbeta)
-    
       ! -------------------------------------------------------------
       ! Proceed with the iteration
       ! -------------------------------------------------------------
-    
     end do
+        
+!    call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+!
+!    ! Scalar product of rp.
+!    dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+!
+!    do
+!    
+!!      if ((mod(rlinsolParam%riter%niterations,5) .eq. 0) .and.&
+!!          (rlinsolParam%riter%niterations .ne. 0)) then
+!!        ! Restart
+!!
+!!        ! Initialization
+!!        dalpha = 1.0_DP
+!!        dbeta  = 1.0_DP
+!!        dgamma = 1.0_DP
+!!        dgammaOld = 1.0_DP
+!!        
+!!        ! DEBUG!!!
+!!        !call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+!!        
+!!        ! Create the initial defect in rd
+!!        call output_line ("Space-time CG: Restart.")
+!!        !output_iautoOutputIndent = output_iautoOutputIndent + 2
+!!        !call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+!!        !output_iautoOutputIndent = output_iautoOutputIndent - 2
+!!            
+!!        !call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+!!
+!!        ! DEBUG!!!
+!!        !call kktsp_controlCompare (p_rr,p_rp%p_rcontrolLin)
+!!            
+!!        call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+!!
+!!        ! Scalar product of rp.
+!!        dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+!!
+!!        ! Initialise used vectors with zero
+!!        !call kktsp_clearControl(p_rr)
+!!        call kktsp_clearControl(p_rAp)
+!!
+!!      end if
+!    
+!      ! -------------------------------------------------------------
+!      ! Norm of the residual
+!      ! -------------------------------------------------------------
+!
+!      call kkt_controlResidualNorm (&
+!          rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+!          p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
+!
+!      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+!        ! Remember the initial residual
+!        call itc_initResidual(rlinsolParam%riter,dres)
+!      else
+!        ! Push the residual, increase the iteration counter
+!        call itc_pushResidual(rlinsolParam%riter,dres)
+!      end if
+!
+!      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+!        call output_line ("Space-time CG: Iteration "// &
+!            trim(sys_siL(rlinsolParam%riter%niterations,10))// &
+!            ", ||res(u)|| = "// &
+!            trim(sys_sdEL(dres,10)))
+!      end if
+!      
+!      ! -------------------------------------------------------------
+!      ! Check for convergence / divergence / ...
+!      ! -------------------------------------------------------------
+!      if ((.not. brealres) .and. (ifinalResRestart .ne. 0) .and. &
+!          (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
+!        
+!        ! Apply a restart to check if we really reached the residual
+!
+!        ! Create the defect in rd
+!        call output_line ("Space-time CG: Restart for final residual check.")
+!            
+!        output_iautoOutputIndent = output_iautoOutputIndent + 2
+!        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+!        call kkt_controlResidualNorm (&
+!            rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+!            p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
+!        output_iautoOutputIndent = output_iautoOutputIndent - 2
+!            
+!        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+!        
+!        rlocaliter = rlinsolParam%riter
+!        call itc_resetResidualQueue (rlocaliter)
+!        call itc_repushResidual(rlocaliter,dres)
+!
+!        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+!          call output_line ("Space-time CG: Iteration "// &
+!              trim(sys_siL(rlinsolParam%riter%niterations,10))// &
+!              ", ||res(u)|| = "// &
+!              trim(sys_sdEL(dres,10)))
+!        end if
+!
+!        if (rlocaliter%cstatus .eq. ITC_STATUS_CONTINUE) then
+!          ! Restart, continue the iteration
+!          call output_line ("Space-time CG: Not converged. Continuing...")
+!
+!          ! Restart
+!          dalpha = 1.0_DP
+!          dbeta  = 1.0_DP
+!          dgamma = 1.0_DP
+!          dgammaOld = 1.0_DP
+!          
+!          if (ifinalResRestart .eq. 2) then
+!            ! Continue with the real residual.
+!            brealres = .true.
+!          end if
+!          
+!          call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+!
+!          ! Scalar product of rp.
+!          dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+!
+!          ! Initialise used vectors with zero
+!          call kktsp_clearControl(p_rAp)
+!
+!          ! Reset the statistics
+!          rlinsolParam%riter = rlocaliter
+!
+!        end if
+!
+!      end if
+!      
+!      if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+!      
+!      ! -------------------------------------------------------------
+!      ! Update of the solution
+!      ! -------------------------------------------------------------
+!      ! From:
+!      !    http://en.wikipedia.org/wiki/Conjugate_gradient_method
+!      ! and the Num-I script of Prof, Turek.
+!
+!      ! Calculate Ap.
+!      output_iautoOutputIndent = output_iautoOutputIndent + 2
+!      call newtonlin_applyOperator (rlinsolParam,p_rp,p_rAp,rlocalStat)
+!      output_iautoOutputIndent = output_iautoOutputIndent - 2
+!      
+!      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+!
+!      ! Calculate the parameter ALPHA
+!      dtemp = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
+!      if (abs(dtemp) .gt. SYS_MINREAL_DP) then
+!        dalpha = dgamma / dtemp
+!        !dalpha = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rr)
+!        !dalpha = dalpha / dtemp
+!      else
+!        dalpha = 0.0_DP
+!      end if
+!      
+!      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+!        call output_line ("Space-time CG: <p,Ap>    = "// &
+!            trim(sys_sdEL(dtemp,10)))
+!        call output_line ("Space-time CG: GAMMA     = "// &
+!            trim(sys_sdEL(dgamma,10)))
+!        call output_line ("Space-time CG: ALPHA     = "// &
+!            trim(sys_sdEL(dalpha,10)))
+!      end if
+!
+!      ! Add the residual (damped) to the current control.
+!      ! This updates the current control.
+!      call kktsp_controlLinearComb (p_rp%p_rcontrolLin,dalpha,&
+!          rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
+!
+!      ! Update the residual
+!      if (.not. brealres) then
+!        ! Pseudo-residual
+!        call kktsp_controlLinearComb (p_rAp,-dalpha,p_rr,1.0_DP)
+!      else
+!        ! Real residual
+!        output_iautoOutputIndent = output_iautoOutputIndent + 2
+!        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+!        output_iautoOutputIndent = output_iautoOutputIndent - 2
+!      end if
+!          
+!      ! Calculate beta
+!      dgammaOld = dgamma
+!      dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+!      !dgamma = kktsp_scalarProductControl(p_rr,p_rp%p_rcontrolLin)
+!      dbeta = dgamma / dgammaOld
+!      
+!      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+!        call output_line ("Space-time CG: GAMMA_NEW = "// &
+!            trim(sys_sdEL(dgamma,10)))
+!        call output_line ("Space-time CG: BETA      = "// &
+!            trim(sys_sdEL(dbeta,10)))
+!      end if
+!      
+!      ! Update rp.
+!      call kktsp_controlLinearComb (p_rr,1.0_DP,p_rp%p_rcontrolLin,dbeta)
+!    
+!      ! -------------------------------------------------------------
+!      ! Proceed with the iteration
+!      ! -------------------------------------------------------------
+!    
+!    end do
     
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -3343,9 +3452,9 @@ contains
     call lsysbl_getbase_double (rsol,p_Dx)
     
     ! Matrix-vector multiplication with the mass matix
-    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass,&
+    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMassPrimal,&
         rvector%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,0.0_DP)
-    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass,&
+    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMassPrimal,&
         rvector%RvectorBlock(2),rrhs%RvectorBlock(2),1.0_DP,0.0_DP)
     call lsyssc_copyVector (rvector%RvectorBlock(1),rsol%RvectorBlock(1))
     call lsyssc_copyVector (rvector%RvectorBlock(2),rsol%RvectorBlock(2))
@@ -3354,9 +3463,9 @@ contains
 
     ! Set up a block matrix
     call lsysbl_createEmptyMatrix (rmatrix,3,3)
-    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMassPrimal,rmatrix%RmatrixBlock(1,1),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMassPrimal,rmatrix%RmatrixBlock(2,2),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rasmTemplates%rmatrixB1,rmatrix%RmatrixBlock(1,3),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -3896,6 +4005,9 @@ contains
       call kkt_initKKTsystemDirDeriv (&
           rlinsolParam%p_rsubnodeCG%rp,p_rkktsystem)
 
+      call kkt_initKKTsystemDirDeriv (&
+          rlinsolParam%p_rsubnodeCG%rz,p_rkktsystem)
+
     ! -----------------------------------------------------
     ! GMRES initialisation
     ! -----------------------------------------------------
@@ -3958,6 +4070,7 @@ contains
 
       ! Cleanup
       call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeCG%rp)
+      call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeCG%rz)
 
     ! -------------------------------
     ! GMRES smoother/solver

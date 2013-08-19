@@ -2007,12 +2007,12 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
           rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.)
 
@@ -2022,7 +2022,7 @@ contains
     case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.)
 
@@ -7107,7 +7107,7 @@ contains
         call smva_simpleL2Projection (&
             rdiscreteInitCond%rsolution%RvectorBlock(1),&
             rdiscreteInitCond%rrhs%RvectorBlock(1),&
-            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,ioutputlevel)
 
         if (ioutputLevel .ge. 2) then
           call output_line ("Invoking L2-projection")
@@ -7115,7 +7115,7 @@ contains
         call smva_simpleL2Projection (&
             rdiscreteInitCond%rsolution%RvectorBlock(2),&
             rdiscreteInitCond%rrhs%RvectorBlock(2),&
-            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,ioutputlevel)
 
         if (ioutputLevel .ge. 2) then
           call output_line ("Invoking L2-projection")
@@ -7166,7 +7166,7 @@ contains
         call smva_simpleL2Projection (&
             rdiscreteInitCond%rsolution%RvectorBlock(1),&
             rdiscreteInitCond%rrhs%RvectorBlock(1),&
-            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPrimal,ioutputlevel)
 
       end select ! Equation
 

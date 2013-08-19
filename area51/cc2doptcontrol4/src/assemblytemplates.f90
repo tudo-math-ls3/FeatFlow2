@@ -128,13 +128,19 @@ module assemblytemplates
     type(t_matrixScalar) :: rmatrixD2T
 
     ! Precalculated mass matrix
-    type(t_matrixScalar) :: rmatrixMass
+    type(t_matrixScalar) :: rmatrixMassPrimal
 
     ! Precalculated lumped mass matrix.
     type(t_matrixScalar) :: rmatrixMassLumpInt
 
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! Precalculated mass; control space
+    type(t_matrixScalar) :: rmatrixMassDistC
+
+    ! Precalculated lumped mass; control space
+    type(t_matrixScalar) :: rmatrixMassDistCLumped
 
     ! Precalculated mass matrix for the pressure space.
     ! Extended structure applicable for UMFPACK on pure Dirichlet problems.

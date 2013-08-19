@@ -269,7 +269,8 @@ contains
         rsettingsSolver%rspaceAsmHierarchy,&
         rsettingsSolver%rsettingsSpaceDiscr,&
         rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rfeHierarchyDual,&
-        rsettingsSolver%rfeHierarchyControl,rsettingsSolver%rphysics)
+        rsettingsSolver%rfeHierarchyControl,&
+        rsettingsSolver%rsettingsOptControl,rsettingsSolver%rphysics)
         
     ! Set up operator assembly structures for the assembly of KKT stuff
     call smva_createOpAsmHier(rsettingsSolver%roperatorAsmHier,rsettingsSolver)
@@ -291,7 +292,7 @@ contains
     
     call inmat_calcStaticLevelAsmHier (&
         rsettingsSolver%rspaceAsmHierarchy,rsettingsSolver%rsettingsSpaceDiscr,&
-        rsettingsSolver%rphysics,ioutputlevel .ge. 1)
+        rsettingsSolver%rsettingsOptControl,rsettingsSolver%rphysics,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
       call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)

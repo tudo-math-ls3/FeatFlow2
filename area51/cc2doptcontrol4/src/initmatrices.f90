@@ -57,7 +57,10 @@ module initmatrices
   
   use constantsdiscretisation
   use structuresdiscretisation
+  use structuresoptcontrol
   use assemblytemplates
+  
+  use lumping
   
   implicit none
   
@@ -206,7 +209,7 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_allocStaticMatrices (rstaticAsmTemplates,rsettingsSpaceDiscr,rphysics)
+  subroutine inmat_allocStaticMatrices (rstaticAsmTemplates,rsettingsSpaceDiscr,roptControl,rphysics)
   
 !<description>
   ! Allocates memory and generates the structure of all static matrices
@@ -217,8 +220,11 @@ contains
   ! Physics of the problem
   type(t_settings_physics), intent(in) :: rphysics
 
-   ! Structure with discretisation settings
-   type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+  ! Structure with discretisation settings
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+ 
+  ! Optimal control data
+  type(t_settings_optcontrol), intent(in) :: roptControl
 !</input>
 
 !<inputoutput>
@@ -350,8 +356,8 @@ contains
       ! Generate mass matrix. The matrix has basically the same structure as
       ! our template FEM matrix, so we can take that.
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-          rstaticAsmTemplates%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMass,LSYSSC_SETM_UNDEFINED)
+          rstaticAsmTemplates%rmatrixMassPrimal,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPrimal,LSYSSC_SETM_UNDEFINED)
 
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure,&
           rstaticAsmTemplates%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -365,6 +371,30 @@ contains
       call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixMassPressureExtStruc,1)
       call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
           LSYSSC_SETM_UNDEFINED)
+
+      call lsyssc_createDiagMatrixStruc (rstaticAsmTemplates%p_rdiscrPressure,&
+          LSYSSC_MATRIXD,rstaticAsmTemplates%rmatrixMassPressureLumpInt)
+      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressureLumpInt,&
+          LSYSSC_SETM_UNDEFINED)
+          
+      ! -----------------------------------------------------------------------
+      ! Mass matrices in the control space
+      ! -----------------------------------------------------------------------
+      if (roptControl%dalphaDistC .ge. 0.0_DP) then
+        ! Distributed control
+        !
+        ! Mass matrix
+        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
+            rstaticAsmTemplates%rmatrixMassDistC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassDistC,LSYSSC_SETM_UNDEFINED)
+        
+        ! Lumped counterpart
+        call lsyssc_createDiagMatrixStruc (rstaticAsmTemplates%p_rdiscr,&
+            LSYSSC_MATRIXD,rstaticAsmTemplates%rmatrixMassDistCLumped)
+
+        call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassDistCLumped,&
+            LSYSSC_SETM_UNDEFINED)
+      end if
           
     ! ---------------------------------------------------------------
     ! Heat equation
@@ -412,8 +442,8 @@ contains
       ! Generate mass matrix. The matrix has basically the same structure as
       ! our template FEM matrix, so we can take that.
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-          rstaticAsmTemplates%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMass,LSYSSC_SETM_UNDEFINED)
+          rstaticAsmTemplates%rmatrixMassPrimal,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPrimal,LSYSSC_SETM_UNDEFINED)
 
     end select
       
@@ -437,12 +467,18 @@ contains
 !</subroutine>
 
     ! If there is an existing mass matrix, release it.
-    if (rstaticAsmTemplates%rmatrixMass%NEQ .ne. 0) &
-      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMass)
+    if (rstaticAsmTemplates%rmatrixMassPrimal%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPrimal)
     if (rstaticAsmTemplates%rmatrixMassPressure%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressure)
     if (rstaticAsmTemplates%rmatrixMassPressureExtStruc%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc)
+    
+    if (rstaticAsmTemplates%rmatrixMassDistC%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassDistC)
+    if (rstaticAsmTemplates%rmatrixMassDistCLumped%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassDistCLumped)
+      
     if (rstaticAsmTemplates%rmatrixMassPressureLumpInt%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureLumpInt)
     if (rstaticAsmTemplates%rmatrixMassLumpInt%NEQ .ne. 0) &
@@ -481,7 +517,8 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_generateStaticMatrices (rstaticAsmTemplates,rsettingsSpaceDiscr,rphysics)
+  subroutine inmat_generateStaticMatrices (&
+      rstaticAsmTemplates,rsettingsSpaceDiscr,roptControl,rphysics)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
@@ -497,6 +534,9 @@ contains
   ! Settings controlling the spatial discretisation (stabilisation parameters).
   ! This must coincide with the structure passed to inmat_initSpaceLevel.
   type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Optimal control data
+  type(t_settings_optcontrol), intent(in) :: roptControl
 
   ! Physics of the problem
   type(t_settings_physics), intent(in) :: rphysics
@@ -553,7 +593,7 @@ contains
       ! -----------------------------------------------------------------------
 
       ! Call the standard matrix setup routine to build the mass matrices.
-      call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMass,&
+      call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPrimal,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMass)
 
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
@@ -562,24 +602,37 @@ contains
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
           
-      ! Create a lumped mass matrix that represents the integral over the domain
-      ! if being multiplied to a FEM function and summed up.
-      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
-          rstaticAsmTemplates%rmatrixMassPressureLumpInt,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-          
       select case (rsettingsSpaceDiscr%ielementType)
       case (4)
         ! QP1 pressure. The matrix is created in a slightly different way
         ! to represent the integral over the domain
-        call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumpInt,&
-            LSYSSC_LUMP_STD,.true.)
+        call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixMassPressureLumpInt)
+        call lump_sumToDiagonal(rstaticAsmTemplates%rmatrixMassPressure,&
+            rstaticAsmTemplates%rmatrixMassPressureLumpInt)
+
         nel = rstaticAsmTemplates%rmatrixMassPressureLumpInt%p_rspatialDiscrTest%p_rtriangulation%NEL
         call lsyssc_getbase_double (rstaticAsmTemplates%rmatrixMassPressureLumpInt,p_Ddata)
         call lalg_clearVector (p_Ddata(NEL+1:))
       case default
-        call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumpInt,&
-            LSYSSC_LUMP_DIAG,.true.)
+
+        call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixMassPressureLumpInt)
+        call lump_sumToDiagonal(rstaticAsmTemplates%rmatrixMassPressure,&
+            rstaticAsmTemplates%rmatrixMassPressureLumpInt)
       end select
+          
+      ! -----------------------------------------------------------------------
+      ! Mass matrices in the control space
+      ! -----------------------------------------------------------------------
+      if (roptControl%dalphaDistC .ge. 0.0_DP) then
+        ! Main mass matrix
+        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMassPrimal,&
+          rstaticAsmTemplates%rmatrixMassDistC,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          
+        ! Lumped counterpart
+        call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixMassDistCLumped)
+        call lump_sumToDiagonal(rstaticAsmTemplates%rmatrixMassPrimal,&
+            rstaticAsmTemplates%rmatrixMassDistCLumped)
+      end if
           
     ! ---------------------------------------------------------------
     ! Heat equation
@@ -599,12 +652,12 @@ contains
       ! have them available.
       ! -----------------------------------------------------------------------
 
-      call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMass,&
+      call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPrimal,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMass)
 
       ! Create a lumped mass matrix that represents the integral over the domain
       ! if being multiplied to a FEM function and summed up.
-      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMass,&
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMassPrimal,&
           rstaticAsmTemplates%rmatrixMassLumpInt,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
       call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassLumpInt,&
@@ -715,7 +768,7 @@ contains
 !<subroutine>
 
   subroutine inmat_initStaticAsmTemplHier(rhierarchy,rsettingsSpaceDiscr,&
-      rfeHierarchyPrimal,rfeHierarchyDual,rfeHierarchyControl,rphysics)
+      rfeHierarchyPrimal,rfeHierarchyDual,rfeHierarchyControl,roptcontrol,rphysics)
   
 !<description>
   ! Initialises the static matrices on all levels.
@@ -733,6 +786,9 @@ contains
 
   ! Settings controlling the spatial discretisation (cubature)
   type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Optimal control data
+  type(t_settings_optcontrol), intent(in) :: roptControl
 
   ! Physics of the problem
   type(t_settings_physics), intent(in) :: rphysics
@@ -761,7 +817,7 @@ contains
           rfeHierarchyControl%p_rfeSpaces(ilevel)%p_rdiscretisation)
           
       call inmat_allocStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),&
-          rsettingsSpaceDiscr,rphysics)
+          rsettingsSpaceDiscr,roptcontrol,rphysics)
     end do
 
   end subroutine
@@ -801,7 +857,8 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_calcStaticLevelAsmHier(rhierarchy,rsettingsSpaceDiscr,rphysics,bprint)
+  subroutine inmat_calcStaticLevelAsmHier(&
+      rhierarchy,rsettingsSpaceDiscr,roptControl,rphysics,bprint)
   
 !<description>
   ! Calculates the static matrices on all levels.
@@ -818,6 +875,9 @@ contains
   ! Settings controlling the spatial discretisation (stabilisation parameters).
   ! This must coincide with the structure passed to inmat_initSpaceLevel.
   type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Optimal control data
+  type(t_settings_optcontrol), intent(in) :: roptControl
 
   ! Physics of the problem
   type(t_settings_physics), intent(in) :: rphysics
@@ -846,7 +906,7 @@ contains
       end if
 
       call inmat_generateStaticMatrices (&
-          rhierarchy%p_RasmTemplList(ilevel),rsettingsSpaceDiscr,rphysics)
+          rhierarchy%p_RasmTemplList(ilevel),rsettingsSpaceDiscr,roptcontrol,rphysics)
 
     end do
 
@@ -921,9 +981,9 @@ contains
       call lsysbl_createMatBlockByDiscr (rblockDiscr,rmassMatrix)
       
       ! Plug in the mass matrices
-      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPrimal,rmassMatrix%RmatrixBlock(1,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(2,2),&
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPrimal,rmassMatrix%RmatrixBlock(2,2),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPressure,rmassMatrix%RmatrixBlock(3,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -936,7 +996,7 @@ contains
       call lsysbl_createMatBlockByDiscr (rblockDiscr,rmassMatrix)
       
       ! Plug in the mass matrices
-      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(1,1),&
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPrimal,rmassMatrix%RmatrixBlock(1,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
           
     end select

@@ -284,6 +284,9 @@ module kktsystem
 
   ! Clear a KKT derivative structure
   public :: kkt_clearDirDeriv
+  
+  ! Preconditioning in the control space of the control derivatives
+  public :: kkt_controlDirDerivPrecond
 
   ! Calculates the norm of a residual in the control space,
   ! weighted by the corresponding weighting factors.
@@ -1075,7 +1078,7 @@ end subroutine
 !</subroutine>
 
     ! local variables
-    integer :: icomp,istep,ierror
+    integer :: icomp,istep
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rintermedControlSpace
     type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
@@ -1473,8 +1476,8 @@ end subroutine
 !</subroutine>
 
     ! local variables
-    integer :: icomp,istep,ierror
-    real(DP) :: dtheta,dwmin,dwmax,dtime,dfactor
+    integer :: icomp,istep
+    real(DP) :: dtheta,dwmin,dwmax,dfactor
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
     type(t_spaceTimeVector), pointer :: p_rdualSol
 
@@ -1813,8 +1816,8 @@ end subroutine
 !</subroutine>
 
     ! local variables
-    integer :: icomp,istep,ierror,iindex
-    real(DP) :: dtheta,dwmin,dwmax,dtime,drhsmul
+    integer :: icomp,istep,iindex
+    real(DP) :: dtheta,drhsmul
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rrhs
     type(t_spaceTimeVector), pointer :: p_rdualSol
 
@@ -1916,11 +1919,11 @@ end subroutine
             
               ! Multiply with mass matrices.
               icomp = icomp + 1
-              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                   p_rcontrolSpace%RvectorBlock(icomp), p_rrhs%RvectorBlock(icomp), dcontrol, drhsmul)
 
               icomp = icomp + 1
-              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                   p_rcontrolSpace%RvectorBlock(icomp), p_rrhs%RvectorBlock(icomp), dcontrol, drhsmul)
 
             end if ! alphaDistC
@@ -1973,7 +1976,7 @@ end subroutine
 
               ! Multiply with mass matrices.
               icomp = icomp + 1
-              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+              call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                   p_rcontrolSpace%RvectorBlock(icomp), p_rrhs%RvectorBlock(icomp), dcontrol, drhsmul)
 
             end if ! alpha
@@ -2023,6 +2026,257 @@ end subroutine
 
 !<subroutine>
 
+  subroutine kkt_controlDirDerivPrecond (rkktsystem,rcontrol)
+  
+!<description>
+  ! Applies preconditioning in the control space of the derivatives.
+  ! Multiplication with inverted lumped mass matrix.
+!</description>
+  
+!<inputoutput>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+  
+  ! Control to be projected.
+  type(t_controlSpace), intent(inout) :: rcontrol
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icomp,istep
+    real(DP) :: dtheta,dwmin,dwmax
+    type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
+    type(t_spaceTimeVector), pointer :: p_rdualSol
+
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
+
+    ! Get the underlying space and time discretisation structures.
+    call stoh_getOpAsm_slvtlv (roperatorAsm,&
+        rkktsystem%p_roperatorAsmHier,rkktsystem%ispacelevel,rkktsystem%itimelevel)
+
+    ! This is strongly equation and problem dependent
+    ! and may imply a projection to the admissible set.
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    !
+    ! Which timestep scheme do we have?
+    
+    p_rdualSol => rkktsystem%p_rdualSol%p_rvector
+    
+    ! Timestepping technique?
+    select case (p_rdualSol%p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rdualSol%p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rdualSol%p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! Loop over all timesteps.
+        do istep = 1,p_rdualSol%p_rtimeDiscr%nintervals+1
+        
+          ! Which equation do we have?
+          select case (p_rphysics%cequation)
+          
+          ! -------------------------------------------------------------
+          ! Stokes/Navier Stokes.
+          ! -------------------------------------------------------------
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            
+            ! Get the current control
+            call sptivec_getVectorFromPool (&
+                rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
+
+            ! Dual solution, for checking bounds
+            call sptivec_getVectorFromPool (&
+                rkktSystem%p_rdualSol%p_rvectorAccess,istep,p_rdualSpace)
+            
+            ! icomp counts the component in the control
+            icomp = 0
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+            
+              ! Do we have constraints?
+              select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  call sys_halt()
+                end if
+              
+                ! Multiply with inverted lumped mass matrices.
+                icomp = icomp + 1
+                call lsyssc_invertedDiagMatVec (roperatorAsm%p_rasmTemplates%rmatrixMassDistCLumped,&
+                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,p_rcontrolSpace%RvectorBlock(icomp))
+
+                icomp = icomp + 1
+                call lsyssc_invertedDiagMatVec (roperatorAsm%p_rasmTemplates%rmatrixMassDistCLumped,&
+                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,p_rcontrolSpace%RvectorBlock(icomp))
+
+              ! ----------------------------------------------------------
+              ! Box constraints, implemented by DOF.
+              ! ----------------------------------------------------------
+              case (1)
+              
+                ! Multiply with inverted lumped mass matrices.
+                icomp = icomp + 1
+                call lsyssc_invertedDiagMatVec (roperatorAsm%p_rasmTemplates%rmatrixMassDistCLumped,&
+                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,p_rcontrolSpace%RvectorBlock(icomp))
+
+                ! If bounds are active, apply the projection to zero on
+                ! the active set.
+                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                
+!                call nwder_applyMinMaxProjByDof (&
+!                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
+!                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+!                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                ! 2nd component
+                icomp = icomp + 1
+                call lsyssc_invertedDiagMatVec (roperatorAsm%p_rasmTemplates%rmatrixMassDistCLumped,&
+                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,p_rcontrolSpace%RvectorBlock(icomp))
+
+                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                
+!                call nwder_applyMinMaxProjByDof (&
+!                    p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,&
+!                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+!                    1.0_DP,p_rcontrolSpace%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                    
+              end select
+
+            end if ! alphaDistC
+          
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+            end if ! alphaL2BdC
+
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
+              call sys_halt()
+
+            end if ! alphaH12BdC
+
+            call sptivec_commitVecInPool (rcontrol%p_rvectorAccess,istep)
+          
+          ! -------------------------------------------------------------
+          ! Heat equation
+          ! -------------------------------------------------------------
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+            
+            ! Get the current control
+            call sptivec_getVectorFromPool (&
+                rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
+
+            ! icomp counts the component in the control
+            icomp = 0
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+
+              ! Multiply with mass matrices.
+              icomp = icomp + 1
+              call lsyssc_invertedDiagMatVec (roperatorAsm%p_rasmTemplates%rmatrixMassDistCLumped,&
+                  p_rcontrolSpace%RvectorBlock(icomp),1.0_DP,p_rcontrolSpace%RvectorBlock(icomp))
+
+            end if ! alpha
+
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+              call output_line("L2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
+              call sys_halt()
+
+            end if
+            
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlToRhsSpace")
+              call sys_halt()
+
+            end if
+            
+            ! Save the new control
+            call sptivec_commitVecInPool (rcontrol%p_rvectorAccess,istep)
+          
+          end select ! equation
+          
+        end do ! istep
+
+      end select
+    
+    end select    
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine kkt_controlApplyPCSteklow (rkktsystem,rcontrolPC,rkktSubsolvers,&
       rstatistics)
   
@@ -2054,8 +2308,8 @@ end subroutine
 !</subroutine>
 
     ! local variables
-    integer :: icomp,istep,ierror,iindex
-    real(DP) :: dtheta,dtime
+    integer :: icomp,istep,iindex
+    real(DP) :: dtheta
     type(t_vectorBlock), pointer :: p_rtempVec, p_rcontrolSpace
     type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
     type(t_spaceTimeVector), pointer :: p_rdualSol
@@ -3181,7 +3435,7 @@ end subroutine
 !</subroutine>
    
     ! local variables
-    integer :: icomp,istep,ierror
+    integer :: icomp,istep
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpaceLin, p_rcontrolSpaceLin, p_rdualSpace
     type(t_vectorBlock), pointer :: p_rcontrolSpaceLinOutput, p_rintermedControl
@@ -3333,12 +3587,12 @@ end subroutine
 !                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
                 icomp = icomp + 1
-                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                     p_rdualSpaceLin%RvectorBlock(icomp), p_rcontrolSpaceLinOutput%RvectorBlock(icomp), &
                     -1.0_DP/p_rsettingsOptControl%dalphaDistC, 0.0_DP)
 
                 icomp = icomp + 1
-                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                     p_rdualSpaceLin%RvectorBlock(icomp), p_rcontrolSpaceLinOutput%RvectorBlock(icomp), &
                     -1.0_DP/p_rsettingsOptControl%dalphaDistC, 0.0_DP)
 
@@ -3359,7 +3613,7 @@ end subroutine
 
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
-                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                     p_rdualSpaceLin%RvectorBlock(icomp), p_rcontrolSpaceLinOutput%RvectorBlock(icomp), &
                     -1.0_DP/p_rsettingsOptControl%dalphaDistC, 0.0_DP)
                 
@@ -3372,7 +3626,7 @@ end subroutine
 
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
-                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMass,&
+                call lsyssc_matVec (roperatorAsm%p_rasmTemplates%rmatrixMassPrimal,&
                     p_rdualSpaceLin%RvectorBlock(icomp), p_rcontrolSpaceLinOutput%RvectorBlock(icomp), &
                     -1.0_DP/p_rsettingsOptControl%dalphaDistC, 0.0_DP)
                 
