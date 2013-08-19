@@ -432,11 +432,14 @@ contains
 
 !</subroutine>
 
-    ! Currectly, this is just a linear combination of the control variables.
+    ! -------------------------------------------------------------
+    ! Calculate the control on the active set.
+    ! -------------------------------------------------------------
+    call kkt_dualToControlOnActiveSet (rkktsystem)
+
+    ! Add the correction on the inactive set.
     !
     !    u_n+1  =  u_n + g_n
-    !
-    ! Later, a step length control can be added here.
     
     call kktsp_controlLinearComb (&
         rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
@@ -787,7 +790,7 @@ contains
       call newtonit_updateControl (&
           rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
           
-      call kkt_projectControl (p_rsolution)
+      !call kkt_projectControl (p_rsolution)
 
 !    ! DEBUG!!!      
 !    call kktsp_dualLinearComb (&
