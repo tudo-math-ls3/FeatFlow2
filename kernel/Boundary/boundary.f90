@@ -2016,6 +2016,7 @@ contains
 
     ! If the parameter value exceeds the parameter interval on the boundary
     ! component, truncate the parameter value!
+    dtmax = 0.0_DP
     select case (cparTypeSource)
     case (BDR_PAR_01)
       dtmax = real(p_IsegCount(iboundCompIdx),DP)
