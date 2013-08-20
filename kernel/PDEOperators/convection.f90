@@ -1875,17 +1875,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! Do we have a cubature structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscretisation,&
-          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -1907,6 +1896,17 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! Get cubature information.
     ! Cubature formula. Only one cubature formula supported.
@@ -2883,16 +2883,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
-          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -2914,6 +2904,16 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
+
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! Get cubature information.
     ! Cubature formula. Only one cubature formula supported.
@@ -4238,17 +4238,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! Do we have a cubature structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscretisation,&
-          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -4273,6 +4262,17 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! Get cubature information.
     ! Cubature formula. Only one cubature formula supported.
@@ -6809,17 +6809,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! DO we have a cubature structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
-          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC3D) = .true.
@@ -6842,6 +6831,17 @@ contains
                                 p_IverticesAtElement)
     !call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
     !                            p_IedgesAtElement)
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! Get cubature information.
     ! Cubature formula. Only one cubature formula supported.
@@ -8247,17 +8247,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! Do we have a cubature structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscretisation,&
-          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC3D) = .true.
@@ -8283,6 +8272,17 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IfacesAtElement,&
                                 p_IfacesAtElement)
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! Get cubature information.
     ! Cubature formula. Only one cubature formula supported.
@@ -11148,16 +11148,6 @@ contains
       p_rperfconfig => conv_perfconfig
     end if
 
-    ! Do we have a cubature structure?
-    ! If we do not have it, create a cubature info structure that
-    ! defines how to do the assembly.
-    if (.not. present(rcubatureInfo)) then
-      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
-      p_rcubatureInfo => rtempCubatureInfo
-    else
-      p_rcubatureInfo => rcubatureInfo
-    end if
-
     ! Initialise the derivative flags. We need function values and
     ! 1st order derivatives.
     Bder = .false.
@@ -11177,6 +11167,16 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
+
+    ! Do we have a cubature structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
     ! How complex is our nonlinearity.
     inonlinComplexity = 0

@@ -445,16 +445,17 @@ contains
       loutput = .false.
 
       ! Absolute convergence criterion? Check the norm directly.
-      if (rsolverNode%DepsAbs(i) .ne. 0.0_DP) then
-        bok = .false.
-        do i=1,nblocks
+      bok = .false.
+      
+      do i=1,nblocks
+        if (rsolverNode%DepsAbs(i) .ne. 0.0_DP) then
           bok = bok .or. (.not. (DvecNorm(i) .gt. rsolverNode%DepsAbs(i)))
-        end do
-        if (bok) then
-          loutput = .true.
-          return
+          if (bok) then
+            loutput = .true.
+            return
+          end if
         end if
-      end if
+      end do
 
       ! Relative convergence criterion? Multiply with initial residuum
       ! and check the norm.
@@ -462,19 +463,18 @@ contains
       ! (May happen in the first step of 'flow around cylinder'
       !  where we have only convection in the X-direction, not in the Y-direction
       !  and a still fluid.)
-      if ((rsolverNode%DepsRel(i) .ne. 0.0_DP) .and. &
-          (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL_DP)) then
-        bok = .false.
-        do i=1,nblocks
+      do i=1,nblocks
+        if ((rsolverNode%DepsRel(i) .ne. 0.0_DP) .and. &
+            (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL_DP)) then
           bok = bok .or. (.not. (DvecNorm(i) .gt. &
               rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)))
-        end do
+        end if
         if (bok) then
           loutput = .true.
           return
         end if
 
-      end if
+      end do
 
     case default
       ! Standard stopping criterion.
