@@ -309,7 +309,7 @@ module kktsystem
   public :: kkt_controlApplyPCSteklow
   
   ! Implements contraints into a defect
-  public :: kkt_implConstraintsToDefect
+  public :: kkt_imposeActiveSetConditions
 
 contains
 
@@ -1460,10 +1460,11 @@ end subroutine
 
 !<subroutine>
 
-  subroutine kkt_implConstraintsToDefect (rkktsystem,rdefect)
+  subroutine kkt_imposeActiveSetConditions (rkktsystem,rdefect,rsolution,rrhs)
   
 !<description>
-  ! Foces the defect to zero where constraints are active.
+  ! Imposes active set conditions (similar to Dirichlet boundary conditions)
+  ! into a solution, RHS and/or defect vector.
 !</description>
   
 !<inputoutput>
@@ -1473,7 +1474,13 @@ end subroutine
   type(t_kktsystem), intent(inout), target :: rkktsystem
 
   ! Defect vector to be modified.
-  type(t_controlSpace), intent(inout) :: rdefect
+  type(t_controlSpace), intent(inout), optional :: rdefect
+
+  ! Solution vector to be modified.
+  type(t_controlSpace), intent(inout), optional :: rsolution
+
+  ! RHS vector to be modified.
+  type(t_controlSpace), intent(inout), optional :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -1482,7 +1489,7 @@ end subroutine
     integer :: icomp,istep,ierror
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpace
-    type(t_vectorBlock), pointer :: p_rdefect
+    type(t_vectorBlock), pointer :: p_rdefect,p_rsolution,p_rrhs
     type(t_spaceTimeVector), pointer :: p_rdualSol
     type(t_optcBDCSpace) :: roptcBDCspace
     type(t_spaceslSolverStat) :: rstatLocal
@@ -1548,8 +1555,20 @@ end subroutine
           call sptivec_getVectorFromPool (&
               rkktsystem%p_rdualSol%p_rvectorAccess,istep,p_rdualSpace)
 
-          call sptivec_getVectorFromPool (&
-              rdefect%p_rvectorAccess,istep,p_rdefect)
+          if (present(rdefect)) then
+            call sptivec_getVectorFromPool (&
+                rdefect%p_rvectorAccess,istep,p_rdefect)
+          end if
+
+          if (present(rsolution)) then
+            call sptivec_getVectorFromPool (&
+                rsolution%p_rvectorAccess,istep,p_rsolution)
+          end if
+
+          if (present(rrhs)) then
+            call sptivec_getVectorFromPool (&
+                rrhs%p_rvectorAccess,istep,p_rrhs)
+          end if
 
           ! icomp counts the component in the control
           icomp = 0
@@ -1593,22 +1612,64 @@ end subroutine
                 ! Applying the projection gives the control:
                 !
                 !   u = P(-1/alpha lambda)
-                
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rdefect%RvectorBlock(icomp),1.0_DP,&
-                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                if (present(rdefect)) then
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
 
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rdefect%RvectorBlock(icomp),1.0_DP,&
-                    -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                end if
+
+                if (present(rrhs)) then
+                  ! RHS is forced to the bounds on the active set.
+                  
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+                end if
+
+                if (present(rsolution)) then
+                  ! Solution is forced to the bounds on the active set.
+                  ! Matches the RHS.
+                
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      -1.0_DP/p_rsettingsOptControl%dalphaDistC,p_rdualSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                end if
 
               case default          
                 call output_line("Unknown constraints",&
@@ -1775,8 +1836,18 @@ end subroutine
           end select ! equation
           
           ! Save the new control
-          call sptivec_commitVecInPool (rdefect%p_rvectorAccess,istep)
+          if (present(rdefect)) then
+            call sptivec_commitVecInPool (rdefect%p_rvectorAccess,istep)
+          end if
         
+          if (present(rsolution)) then
+            call sptivec_commitVecInPool (rsolution%p_rvectorAccess,istep)
+          end if
+
+          if (present(rrhs)) then
+            call sptivec_commitVecInPool (rrhs%p_rvectorAccess,istep)
+          end if
+
         end do ! istep
 
       end select
@@ -3406,7 +3477,7 @@ end subroutine
         
     ! The residual is forced to zero where the constraints are active,
     ! as the control will be forced there to the bounds.
-    call kkt_implConstraintsToDefect (rkktsystem,rresidual)
+    call kkt_imposeActiveSetConditions (rkktsystem,rresidual)
     
     ! Calculate the norm
     call kkt_controlResidualNorm (&

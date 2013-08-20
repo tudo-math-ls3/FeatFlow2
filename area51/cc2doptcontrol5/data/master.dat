@@ -91,14 +91,14 @@ sexpression(3) =
 
 [INITIALCONDITION]
 ctype = 1
-#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes.sol"
+#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes_bub.sol"
 sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes_bub.sol"
 ilevel = 8
 ielementType = 4
 
 [OPTCTARGETFUNCTION]
 ctype = 1
-#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol"
+#sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes_bub.sol"
 sfunctionfile = "./ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes_bub.sol"
 ilevel = 8
 ielementType = 4
@@ -163,10 +163,10 @@ dobservationArea =
 
 [CONSTRAINTS_DISTCTRL]
 cconstraints = 1
-dmin1 = -1.0
-dmax1 = 1.0
-dmin2 = -1.0
-dmax2 = 1.0
+dmin1 = -0.5
+dmax1 = 0.5
+dmin2 = -0.5
+dmax2 = 0.5
 
 [CONSTRAINTS_L2BDC]
 cconstraints = 0
@@ -185,16 +185,16 @@ sfilenameControl = ""
 ispacelevelcoupledtotimelevel = 2
 
 [SPACETIME-SOLVER]
-ctypeIteration = 2
-dtolrel = 1E-10
-dtolAbs = 1E-10
+ctypeIteration = 3
+dtolrel = 1E-6
+dtolAbs = 1E-6
 nmaxIterations = 15
 ioutputlevel = 3
 cpostprocessIterates = 3
 cspatialInitCondPolicy = 0
 
 [SPACETIME-ADAPTIVENEWTON]
-cpartialNewton = 0
+cpartialNewton = 2
 nminPartialNewtonIterations = 1 # 3
 nmaxPartialNewtonIterations = 1 # 3
 dinexactNewtonTolRel = 1.0E-2
@@ -224,11 +224,11 @@ ioutputlevel = 2
 brealres = 0
 
 [SPACETIME-COARSEGRIDSOLVER]
-dtolRel = 1E-3
+dtolRel = 1E-2
 ctolMode = 4
 dtolAbs = 1E-13
 nminiterations = 1
-nmaxiterations = 100
+nmaxiterations = 20
 #nmaxiterations = 50
 domega = 1.0
 ioutputlevel = 2

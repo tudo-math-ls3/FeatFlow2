@@ -435,7 +435,8 @@ contains
     ! -------------------------------------------------------------
     ! Calculate the control on the active set.
     ! -------------------------------------------------------------
-    call kkt_dualToControlOnActiveSet (rkktsystem)
+    !call kkt_dualToControlOnActiveSet (rkktsystem)
+    call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
 
     ! Add the correction on the inactive set.
     !
@@ -766,6 +767,7 @@ contains
       ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       
+      ! Apply the preconditioning
       call newtonlin_precond (rsolver%rlinsolParam,&
           rsolver%p_rdirDerivHierarchy,p_rdescentDir,rstatisticsLinSol)
       
