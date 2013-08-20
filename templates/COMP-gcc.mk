@@ -147,11 +147,16 @@ ifeq ($(call optimise), YES)
 #                             compile time or upon entry to the loop.
 #  -static                  : static binary
 #  -fno-second-underscore   : do not prepend second underscore
-#  -Wuninitialized          : warn uninitialised variables
+#  -Wuninitialized          : warn uninitialised variables (from GCC 4.7 onwards warn even about
+#                             possibly uninitialised variables, yielding a lot of false positives)
 CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static -fno-second-underscore
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -Wuninitialized
+ifeq ($(call gfortranminversion,4,7),yes)
+# Reduce number of false positives with GCC 4.7 and 4.8
+CFLAGSF90     := $(CFLAGSF90) -Wno-maybe-uninitialized
+endif
 CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static
@@ -164,8 +169,13 @@ CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
 		 -Wline-truncation -Wsurprising  \
 		 -Wunreachable-code -Wunused-label -Wunused-variable
+		 -Wuninitialized
 		 # -Wnonstd-intrinsics: not available in 4.4.0
-		 # -Wuninitialized -Wimplicit-interface -Wunused-variable
+		 # -Wimplicit-interface -Wunused-variable
+ifeq ($(call gfortranminversion,4,7),yes)
+# Reduce number of false positives with GCC 4.7 and 4.8
+CFLAGSF90     := $(CFLAGSF90) -Wno-maybe-uninitialized
+endif
 # Do not specify:
 # * -std=f95
 #   as it gives conflicts with LAM/MPI's mpif.h
