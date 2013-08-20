@@ -1273,7 +1273,7 @@ contains
   real(DP) :: drho1,drho0
   type(t_newtonlinSolverStat) :: rlocalStat
   type(t_iterationControl) :: rlocaliter
-  logical :: ifinalResRestart
+  integer :: ifinalResRestart
 
   ! Our structure
   type(t_linsolBiCGStab), pointer :: p_rsubnode

@@ -32,7 +32,6 @@ module structuresoptflow
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
-  use subdomainfem
 
   use spacetimevectors
   use analyticsolution
