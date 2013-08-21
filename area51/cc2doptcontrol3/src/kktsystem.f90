@@ -3908,6 +3908,13 @@ end subroutine
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
         rresidual,1.0_DP)
         
+    ! The residual is forced to zero where the constraints are active,
+    ! as the control will be forced there to the bounds.
+    !
+    ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
+    ! up before going down. Probably, this has an error? I do not know.
+    ! call kkt_imposeActiveSetConditions (rkktsystemDirDeriv%p_rkktsystem,rresidual)
+        
     if (present(dres)) then
       call kkt_controlResidualNorm (&
           rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
