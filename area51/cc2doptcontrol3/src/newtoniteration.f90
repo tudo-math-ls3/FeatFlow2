@@ -436,7 +436,7 @@ contains
     ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
     ! up before going down. Probably, this has an error or has to be after
     ! the linear combination below? I do not know.
-    call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
+    ! call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
 
     ! Currectly, this is just a linear combination of the control variables.
     !
