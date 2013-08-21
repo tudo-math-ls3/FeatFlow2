@@ -285,6 +285,12 @@ module structuresoptcontrol
 
     ! $\delta$ parameter of the terminal condition
     real(DP) :: ddeltaC = 0.0_DP
+    
+    ! $\sigma$-parameter that controls the blending in
+    ! $F(u) = u - P( u-\sigma(\alpha u + \lambda) )$. Defaults to 1.0.
+    ! A value of sigma=1/alpha would give
+    ! $F(u) = u - P( -1/alpha \lambda) )$ which seems to be more instable.
+    real(DP) :: dsigmaC = 1.0_DP
   
     ! Formulation of the Space-time problem.
     ! =0: usual formulation as specified in the DFG applicance
@@ -515,6 +521,10 @@ contains
     character(len=SYS_STRLEN) :: sstring,stoken
     integer :: ntokens,istart,itoken
 
+    ! Sigma-parameter that controls the formulation.
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dsigmaC",roptcontrol%dsigmaC,roptcontrol%dsigmaC)
+        
     ! Alpha/Gamma parameters.
     !
     ! These parameters may have two types: either it is a single

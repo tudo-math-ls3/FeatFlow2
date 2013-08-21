@@ -51,6 +51,12 @@ ssectionConstrH12BdC = CONSTRAINTS_H12BDC
 # Name of the section defining the constraints in the state control
 ssectionConstrState = CONSTRAINTS_STATE
 
+# sigma-parameter that controls the blending in
+# F(u) = u - P( u-\sigma(\alpha u + \lambda) ). Defaults to 1.0.
+# A value of sigma=1/alpha would give
+# F(u) = u - P( -1/alpha \lambda) ) which seems to be more instable.
+dsigmaC = 1.0
+
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
 # -1.0 = no distributed control
 # It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".

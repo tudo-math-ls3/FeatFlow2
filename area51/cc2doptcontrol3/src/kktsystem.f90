@@ -300,6 +300,9 @@ module kktsystem
   
   ! Applies the Poincare-Steklow operator to all control DOFs in time.
   public :: kkt_controlApplyPCSteklow
+  
+  ! Imposes active set conditions into a defect, solution and/or RHS.
+  public :: kkt_imposeActiveSetConditions
 
 contains
 
@@ -1171,19 +1174,21 @@ end subroutine
 
               ! The first two components of the control read
               !
-              !    u_intermed = u - (lambda + alpha u)
-              !               = (1-alpha) u - lambda
+              !    u_intermed = u - sigma (lambda + alpha u)
+              !               = (1-sigma alpha) u - sigma lambda
               !
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                  -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                   p_rintermedControlSpace%RvectorBlock(icomp))
 
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                  -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                   p_rintermedControlSpace%RvectorBlock(icomp))
                   
               ! Do we have constraints?
@@ -1264,8 +1269,8 @@ end subroutine
 
                 ! The first two components of the control read
                 !
-                !    u_intermed  =  u - [ alpha u - (nu dn lambda - xi n) ]
-                !                =  (1-alpha) u + nu dn lambda - xi n
+                !    u_intermed  =  u - sigma [ alpha u - (nu dn lambda - xi n) ]
+                !                =  (1-sigma alpha) u + sigma (nu dn lambda - xi n)
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
@@ -1279,13 +1284,15 @@ end subroutine
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaL2BdC,&
+                    1.0_DP*p_rsettingsOptControl%dsigmaC,&
                     p_rintermedControlSpace%RvectorBlock(icomp))
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
-                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaL2BdC,&
+                    1.0_DP*p_rsettingsOptControl%dsigmaC,&
                     p_rintermedControlSpace%RvectorBlock(icomp))
                     
                 ! Do we have constraints?
@@ -1517,13 +1524,14 @@ end subroutine
 
               ! The first two components of the control read
               !
-              !    u_intermed = u - (lambda + alpha u)
-              !               = (1-alpha) u - lambda
+              !    u_intermed = u - sigma (lambda + alpha u)
+              !               = (1-sigma alpha) u - sigma lambda
               !
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                  -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                   p_rintermedControlSpace%RvectorBlock(icomp))
 
               ! Do we have constraints?
@@ -2473,6 +2481,449 @@ end subroutine
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_imposeActiveSetConditions (rkktsystem,rdefect,rsolution,rrhs)
+  
+!<description>
+  ! Whereever the intermediate control violates the bounds, this routine
+  ! imposes appropriate conditions into a defect, solution and/or RHS vector
+  ! (zero for defect, min/max value for solution and RHS)
+!</description>
+  
+!<inputoutput>
+  ! Structure defining the KKT system.
+  ! The control, primal and dual variable in this structure are used to
+  ! calculate the residual.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+
+  ! Defect vector to be modified.
+  type(t_controlSpace), intent(inout), optional :: rdefect
+
+  ! Solution vector to be modified.
+  type(t_controlSpace), intent(inout), optional :: rsolution
+
+  ! RHS vector to be modified.
+  type(t_controlSpace), intent(inout), optional :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icomp,istep,ierror
+    real(DP) :: dtheta,dwmin,dwmax,dtime
+    type(t_vectorBlock), pointer :: p_rintermedControl
+    type(t_vectorBlock), pointer :: p_rdefect,p_rsolution,p_rrhs
+    type(t_spaceTimeVector), pointer :: p_rdualSol
+    type(t_optcBDCSpace) :: roptcBDCspace
+    type(t_spaceslSolverStat) :: rstatLocal
+
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
+
+    ! Get the underlying space and time discretisation structures.
+    call stoh_getOpAsm_slvtlv (roperatorAsm,&
+        rkktsystem%p_roperatorAsmHier,rkktsystem%ispacelevel,rkktsystem%itimelevel)
+
+    ! This is strongly equation and problem dependent
+    ! and may imply a projection to the admissible set.
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    !
+    ! Which timestep scheme do we have?
+    
+    p_rdualSol => rkktsystem%p_rdualSol%p_rvector
+    
+    ! Timestepping technique?
+    select case (p_rdualSol%p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rdualSol%p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rdualSol%p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! Loop over all timesteps.
+        do istep = 1,p_rdualSol%p_rtimeDiscr%nintervals+1
+        
+          ! Fetch the dual and control vectors.
+          call sptivec_getVectorFromPool (&
+              rkktsystem%p_rintermedControl%p_rvectorAccess,istep,p_rintermedControl)
+
+          if (present(rdefect)) then
+            call sptivec_getVectorFromPool (&
+                rdefect%p_rvectorAccess,istep,p_rdefect)
+          end if
+
+          if (present(rsolution)) then
+            call sptivec_getVectorFromPool (&
+                rsolution%p_rvectorAccess,istep,p_rsolution)
+          end if
+
+          if (present(rrhs)) then
+            call sptivec_getVectorFromPool (&
+                rrhs%p_rvectorAccess,istep,p_rrhs)
+          end if
+
+          ! icomp counts the component in the control
+          icomp = 0
+          
+          ! Which equation do we have?
+          select case (p_rphysics%cequation)
+          
+          ! -------------------------------------------------------------
+          ! Stokes/Navier Stokes.
+          ! -------------------------------------------------------------
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+                
+                ! nothing to do
+
+              ! ----------------------------------------------------------
+              ! Box constraints, implemented by DOF
+              ! ----------------------------------------------------------
+              case (1)
+              
+                ! Applying the projection gives the control:
+                !
+                !   u = P(-1/alpha lambda)
+                if (present(rdefect)) then
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                end if
+
+                if (present(rrhs)) then
+                  ! RHS is forced to the bounds on the active set.
+                  
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+                end if
+
+                if (present(rsolution)) then
+                  ! Solution is forced to the bounds on the active set.
+                  ! Matches the RHS.
+                
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                end if
+
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                call sys_halt()
+
+              end select ! constraints
+
+            end if ! alphaDistC
+          
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+              ! No control in the initial solution
+              if (istep .gt. 1) then
+
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
+
+                ! Do we have constraints?
+                select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
+
+                ! ----------------------------------------------------------
+                ! No constraints
+                ! ----------------------------------------------------------
+                case (0)
+
+                  if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
+                    call output_line("Alpha=0 not possible without contraints",&
+                        OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                    call sys_halt()
+                  end if
+                  
+                  ! nothing to do
+                      
+                ! ----------------------------------------------------------
+                ! Box constraints, implemented by DOF
+                ! ----------------------------------------------------------
+                case (1)
+                
+                ! Applying the projection gives the control:
+                !
+                !   u = P(-1/alpha lambda)
+                if (present(rdefect)) then
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+                end if
+
+                if (present(rrhs)) then
+                  ! RHS is forced to the bounds on the active set.
+                  
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rrhs%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
+                end if
+
+                if (present(rsolution)) then
+                  ! Solution is forced to the bounds on the active set.
+                  ! Matches the RHS.
+                
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                end if
+
+                case default          
+                  call output_line("Unknown constraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+
+                end select ! constraints
+                
+              end if
+
+            end if ! alphaL2BdC
+
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call sys_halt()
+
+            end if ! alphaH12BdC
+
+          ! -------------------------------------------------------------
+          ! Heat equation
+          ! -------------------------------------------------------------
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+                
+                ! nothing to do
+
+              ! ----------------------------------------------------------
+              ! Box constraints, implemented by DOF
+              ! ----------------------------------------------------------
+              case (1)
+              
+                ! rcontrol contains the intermediate control as well.
+                ! Applying the projection gives the control:
+                !
+                !   u = P(-1/alpha lambda)
+
+                icomp = icomp - 1
+              
+                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                icomp = icomp + 1
+                call nwder_applyMinMaxProjByDof (&
+                    p_rdefect%RvectorBlock(icomp),1.0_DP,&
+                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                    1.0_DP,p_rdefect%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                call sys_halt()
+
+              end select ! constraints
+
+            end if ! alpha
+
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+              call output_line("L2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call sys_halt()
+
+            end if
+            
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call sys_halt()
+
+            end if
+            
+          end select ! equation
+          
+          ! Save the new control
+          if (present(rdefect)) then
+            call sptivec_commitVecInPool (rdefect%p_rvectorAccess,istep)
+          end if
+        
+          if (present(rsolution)) then
+            call sptivec_commitVecInPool (rsolution%p_rvectorAccess,istep)
+          end if
+
+          if (present(rrhs)) then
+            call sptivec_commitVecInPool (rrhs%p_rvectorAccess,istep)
+          end if
+
+        end do ! istep
+
+      end select
+    
+    end select    
+
+  end subroutine
+
 !  ! ***************************************************************************
 !
 !!<subroutine>
@@ -2615,6 +3066,14 @@ end subroutine
     call kktsp_controlLinearComb (&
         rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP)
    
+    ! The residual is forced to zero where the constraints are active,
+    ! as the control will be forced there to the bounds.
+    !
+    ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
+    ! up before going down. Probably, this has an error? I do not know.
+    ! call kkt_imposeActiveSetConditions (rkktsystem,rresidual)
+
+    ! Calculate the norm or the residual
     call kkt_controlResidualNorm (&
         rkktsystem%p_roperatorAsmHier%ranalyticData,&
         rresidual,dres,iresnorm)
@@ -2950,32 +3409,34 @@ end subroutine
 
               ! The linearised control equation reads
               !
-              !    u~ - DP(u_intermed) ( u~ - (lambda~ + alpha u~) )  =  0
+              !    u~ - DP(u_intermed) ( u~ - sigma (lambda~ + alpha u~) )  =  0
               !
               ! The "linearised intermediate control" reads
               !
-              !    u_intermed~ = u~ - (lambda~ + alpha u~)
-              !                = (1-alpha) u~ - lambda~
+              !    u_intermed~ = u~ - sigma (lambda~ + alpha u~)
+              !                = (1-sigma alpha) u~ - sigma lambda~
               !
               ! Calculate that.
               !
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                  -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                   p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                 1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                 1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                 -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                  p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               ! The actual linearised control is calculated by
               ! applying an appropriate projection:
               !
               !    u~ = DP(u_intermed) (u_intermed~) 
-              !       = DP(u_intermed) ( u~ - (lambda~ + alpha u~) )
+              !       = DP(u_intermed) ( u~ - sigma (lambda~ + alpha u~) )
 
               ! ----------------------------------------------------------
               ! Constraints in the distributed control
@@ -3046,8 +3507,8 @@ end subroutine
 
                 ! The first two components of the control read
                 !
-                !    u_intermed~  =  u~ - [ alpha u~ - (nu dn lambda~ - xi~ n) ]
-                !                 =  (1-alpha) u~ + nu dn lambda~ - xi~ n
+                !    u_intermed~  =  u~ - sigma [ alpha u~ - (nu dn lambda~ - xi~ n) ]
+                !                 =  (1-sigma alpha) u~ + sigma (nu dn lambda~ - xi~ n)
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
@@ -3061,13 +3522,15 @@ end subroutine
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
-                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaL2BdC,&
+                    1.0_DP*p_rsettingsOptControl%dsigmaC,&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
-                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaL2BdC,&
+                    1.0_DP*p_rsettingsOptControl%dsigmaC,&
                     p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
                     
                 ! Do we have constraints?
@@ -3286,18 +3749,19 @@ end subroutine
 
               ! The linearised control equation reads
               !
-              !    u~ - DP(u_intermed) ( u~ - (lambda~ + alpha u~) )  =  0
+              !    u~ - DP(u_intermed) ( u~ - sigma (lambda~ + alpha u~) )  =  0
               !
               ! The "linearised intermediate control" reads
               !
-              !    u_intermed~ = u~ - (lambda~ + alpha u~)
-              !                = (1-alpha) u~ - lambda~
+              !    u_intermed~ = u~ - sigma (lambda~ + alpha u~)
+              !                = (1-sigma alpha) u~ - sigma lambda~
               !
               ! Calculate that.
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dsigmaC*p_rsettingsOptControl%dalphaDistC,&
+                  -1.0_DP*p_rsettingsOptControl%dsigmaC,&
                   p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               ! Do we have constraints?
