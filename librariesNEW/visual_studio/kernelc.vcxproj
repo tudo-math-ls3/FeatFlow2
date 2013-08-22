@@ -108,7 +108,7 @@
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..;$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -132,7 +132,7 @@
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..;$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -160,7 +160,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..;$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -190,7 +190,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..;$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

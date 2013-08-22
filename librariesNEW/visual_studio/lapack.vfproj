@@ -92,6 +92,8 @@
 		<File RelativePath="..\lapack-3.4.2\SRC\iladlc.f"/>
 		<File RelativePath="..\lapack-3.4.2\SRC\iladlr.f"/>
 		<File RelativePath="..\lapack-3.4.2\SRC\ilaenv.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\ilaslc.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\ilaslr.f"/>
 		<File RelativePath="..\lapack-3.4.2\SRC\iparmq.f"/>
 		<File RelativePath="..\lapack-3.4.2\SRC\lsamen.f"/>
 		<File RelativePath="..\lapack-3.4.2\SRC\sgbtf2.f"/>
