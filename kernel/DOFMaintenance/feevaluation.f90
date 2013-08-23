@@ -3984,7 +3984,7 @@ contains
 
 !<description>
 
-  ! This subroutine is an extension of fevl_evaluateBdr2d1(). It
+  ! This subroutine is an extension of fevl_evaluateBdr1d1(). It
   ! simultaneously evaluates several types of function values (given
   ! by CderType) for all components of a multivariate FE function
   ! (given by rvectorBlock) in a set of points on the boundary
@@ -4045,7 +4045,7 @@ contains
 
     ! local variables
     integer :: icoordSystem
-    integer :: ipoint,indof,nve,ibas,ider,iblock,iblMin,iblMax
+    integer :: indof,nve,ibas,ider,iblock,iblMin,iblMax
     integer(I32) :: celement
     integer :: iel,idx
     integer, dimension(:), pointer :: p_IelemGroupIDs
@@ -4072,6 +4072,13 @@ contains
     ! Evaluation structure and tag
     type(t_evalElement) :: revalElement
     integer(I32) :: cevaluationTag
+
+    ! Check that only one point is present
+    if (size(Dvalues,3) .ne. 1) then
+      call output_line ("This subroutine can only handle one point at a time!",&
+          OU_CLASS_ERROR, OU_MODE_STD, "fevl_evaluateBdr1d4")
+      call sys_halt()
+    end if
 
     if (present(iblockMin)) then
       iblMin = iblockMin
@@ -4169,6 +4176,7 @@ contains
         DpointRef = 1.0
       end if
 
+
       ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           cevaluationTag, p_rspatialDiscr%p_rtriangulation,&
@@ -4183,7 +4191,7 @@ contains
 
       ! calculate function values by multiplying the FE-coefficients with the values of
       ! the basis functions and summing up
-      Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
+      Dvalues(iblMin:iblMax,:,1) = 0.0_DP
       if (rvectorBlock%cdataType .eq. ST_DOUBLE) then
         do ider = 1,size(CderType)
           do iblock = iblMin,iblMax
@@ -4192,7 +4200,7 @@ contains
               dval = dval +   p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
                             * Dbas(ibas,CderType(ider))
             end do
-            Dvalues(iblock, ider, ipoint) = dval
+            Dvalues(iblock, ider, 1) = dval
           end do
         end do
       else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
@@ -4203,7 +4211,7 @@ contains
               dval = dval +   p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
                             * Dbas(ibas,CderType(ider))
             end do
-            Dvalues(iblock, ider, ipoint) = dval
+            Dvalues(iblock, ider, 1) = dval
           end do
         end do
       end if
