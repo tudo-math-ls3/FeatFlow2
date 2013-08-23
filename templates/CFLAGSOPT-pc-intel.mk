@@ -679,11 +679,11 @@ endif
 # enhanced 3DNow!, ABM and 64-bit instruction set extensions.)
 ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE3
-CFLAGSOPTF90  := -xSSE3
-CFLAGSOPTC    := -xSSE3
-CFLAGSOPTCXX  := -xSSE3
-LDFLAGSOPT    := -xSSE3
+CFLAGSOPTF77  := -msse3
+CFLAGSOPTF90  := -msse3
+cflagsoptc    := -msse3
+CFLAGSOPTCXX  := -msse3
+LDFLAGSOPT    := -mSSE3
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
@@ -700,11 +700,11 @@ endif
 # instruction set extensions.)
 ifeq ($(call match,$(ID),(pc|pc64)-bulldozer-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE4.2
-CFLAGSOPTF90  := -xSSE4.2
-CFLAGSOPTC    := -xSSE4.2
-CFLAGSOPTCXX  := -xSSE4.2
-LDFLAGSOPT    := -xSSE4.2
+CFLAGSOPTF77  := -msse4.2
+CFLAGSOPTF90  := -msse4.2
+CFLAGSOPTC    := -msse4.2
+CFLAGSOPTCXX  := -msse4.2
+LDFLAGSOPT    := -msse4.2
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
@@ -721,11 +721,11 @@ endif
 # ABM and 64-bit instruction set extensions.)
 ifeq ($(call match,$(ID),(pc|pc64)-piledriver-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE4.2
-CFLAGSOPTF90  := -xSSE4.2
-CFLAGSOPTC    := -xSSE4.2
-CFLAGSOPTCXX  := -xSSE4.2
-LDFLAGSOPT    := -xSSE4.2
+CFLAGSOPTF77  := -msse4.2
+CFLAGSOPTF90  := -msse4.2
+CFLAGSOPTC    := -msse4.2
+CFLAGSOPTCXX  := -msse4.2
+LDFLAGSOPT    := -msse4.2
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
@@ -742,11 +742,11 @@ endif
 # ABM and 64-bit instruction set extensions.
 ifeq ($(call match,$(ID),(pc|pc64)-steamroller-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE4.2
-CFLAGSOPTF90  := -xSSE4.2
-CFLAGSOPTC    := -xSSE4.2
-CFLAGSOPTCXX  := -xSSE4.2
-LDFLAGSOPT    := -xSSE4.2
+CFLAGSOPTF77  := -msse4.2
+CFLAGSOPTF90  := -msse4.2
+CFLAGSOPTC    := -msse4.2
+CFLAGSOPTCXX  := -msse4.2
+LDFLAGSOPT    := -msse4.2
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
@@ -762,11 +762,11 @@ endif
 # ABM and 64-bit instruction set extensions.)
 ifeq ($(call match,$(ID),(pc|pc64)-bobcat-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE4.1
-CFLAGSOPTF90  := -xSSE4.1
-CFLAGSOPTC    := -xSSE4.1
-CFLAGSOPTCXX  := -xSSE4.1
-LDFLAGSOPT    := -xSSE4.1
+CFLAGSOPTF77  := -msse4.1
+CFLAGSOPTF90  := -msse4.1
+CFLAGSOPTC    := -msse4.1
+CFLAGSOPTCXX  := -msse4.1
+LDFLAGSOPT    := -msse4.1
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
@@ -784,11 +784,11 @@ endif
 # instruction set extensions.
 ifeq ($(call match,$(ID),(pc|pc64)-jaguar-.*-intel-.*),yes)
 ifeq ($(call intelminversion,11,1),yes)
-CFLAGSOPTF77  := -xSSE4.2
-CFLAGSOPTF90  := -xSSE4.2
-CFLAGSOPTC    := -xSSE4.2
-CFLAGSOPTCXX  := -xSSE4.2
-LDFLAGSOPT    := -xSSE4.2
+CFLAGSOPTF77  := -msse4.2
+CFLAGSOPTF90  := -msse4.2
+CFLAGSOPTC    := -msse4.2
+CFLAGSOPTCXX  := -msse4.2
+LDFLAGSOPT    := -msse4.2
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
