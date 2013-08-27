@@ -6230,7 +6230,7 @@ contains
     
     ! Initialize starting residuum
       
-    rsolverNode%dinitialDefect = dres
+    rsolverNode%dinitialDefect = dres*dresscale
     rsolverNode%dlastDefect = 0.0_DP
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -6243,7 +6243,7 @@ contains
 
       call sptivec_clearVector(p_rx)
       ite = 0
-      rsolverNode%dfinalDefect = dres
+      rsolverNode%dfinalDefect = dres*dresscale
           
     else
 
@@ -6251,7 +6251,7 @@ contains
         if (bprec .and. .not. bstopOnRealResiduum) then
           call output_line ('Space-Time-BiCGStab: Iteration '// &
               trim(sys_siL(0,10))//',  !!RES(scaled)!! = '//&
-              trim(sys_sdEL(rsolverNode%dinitialDefect*dresscale,15)) )
+              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
               
           if (rsolverNode%ioutputLevel .ge. 3) then
           
@@ -6445,9 +6445,12 @@ contains
           ! Take the preconditioned residuum
           dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
         end if
-     
+
+        ! Always scale the residual by dresscale.
+        ! If we do not do that, an absolute stopping criterion (needed for the
+        ! adaptive Newton) would not cancel correctly at all.
         rsolverNode%dlastDefect = rsolverNode%dfinalDefect
-        rsolverNode%dfinalDefect = dfr
+        rsolverNode%dfinalDefect = dfr*dresscale
 
         ! Test if the iteration is diverged
         if (sptils_testDivergence(rsolverNode,dfr)) then
@@ -6471,7 +6474,7 @@ contains
           if (bprec .and. .not. bstopOnRealResiduum) then
             call output_line ('Space-Time-BiCGStab: Iteration '// &
                 trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
-                trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
 
             if (rsolverNode%ioutputLevel .ge. 3) then
             
@@ -6508,7 +6511,7 @@ contains
 
       if (ite .gt. rsolverNode%nmaxIterations) &
         ite = rsolverNode%nmaxIterations
-
+        
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
 
@@ -6519,7 +6522,7 @@ contains
         if (bprec .and. .not. bstopOnRealResiduum) then
           call output_line ('Space-Time-BiCGStab: Iteration '// &
               trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
-              trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
 
           if (rsolverNode%ioutputLevel .ge. 3) then
           
