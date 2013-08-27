@@ -14,6 +14,6 @@ module listInt_DP
 #define D_STORAGE  ST_DOUBLE
 #define D_TYPE     real(DP)
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module

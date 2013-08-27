@@ -10,6 +10,6 @@ module mapSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

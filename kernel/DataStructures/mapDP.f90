@@ -10,6 +10,6 @@ module mapDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

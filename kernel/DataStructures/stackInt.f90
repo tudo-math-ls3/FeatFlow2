@@ -9,6 +9,6 @@ module stackInt
 #define T_STORAGE  ST_INT
 #define T_TYPE     integer
 
-#include "stack.h"
+#include "kernel/DataStructures/stack.h"
 
 end module

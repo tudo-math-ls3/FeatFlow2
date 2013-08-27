@@ -38,7 +38,7 @@ contains
 
 #define MatDT DOUBLE_PREC
 #define VecDT DOUBLE_PREC
-#include "lsyssc_scalarMatVecAux.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVecAux.h"
 #undef MatDT
 #undef VecDT
 
@@ -46,7 +46,7 @@ contains
 
 #define MatDT DOUBLE_PREC
 #define VecDT SINGLE_PREC
-#include "lsyssc_scalarMatVecAux.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVecAux.h"
 #undef MatDT
 #undef VecDT
 
@@ -54,7 +54,7 @@ contains
 
 #define MatDT SINGLE_PREC
 #define VecDT DOUBLE_PREC
-#include "lsyssc_scalarMatVecAux.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVecAux.h"
 #undef MatDT
 #undef VecDT
 
@@ -62,7 +62,7 @@ contains
 
 #define MatDT SINGLE_PREC
 #define VecDT SINGLE_PREC
-#include "lsyssc_scalarMatVecAux.h"
+#include "kernel/LinearSystem/lsyssc_scalarMatVecAux.h"
 #undef MatDT
 #undef VecDT
 

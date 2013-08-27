@@ -10,6 +10,6 @@ module arraylistSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "arraylist.h"
+#include "kernel/DataStructures/arraylist.h"
 
 end module

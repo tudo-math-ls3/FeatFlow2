@@ -10,6 +10,6 @@ module arraylistDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "arraylist.h"
+#include "kernel/DataStructures/arraylist.h"
 
 end module

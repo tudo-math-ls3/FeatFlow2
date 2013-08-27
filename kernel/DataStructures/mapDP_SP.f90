@@ -14,6 +14,6 @@ module mapDP_SP
 #define D_STORAGE  ST_SINGLE
 #define D_TYPE     real(SP)
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

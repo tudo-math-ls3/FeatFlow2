@@ -14,6 +14,6 @@ module listSP_SP
 #define D_STORAGE  ST_SINGLE
 #define D_TYPE     real(SP)
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module

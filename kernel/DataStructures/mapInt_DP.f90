@@ -14,6 +14,6 @@ module mapInt_DP
 #define D_STORAGE  ST_DOUBLE
 #define D_TYPE     real(DP)
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

@@ -10,6 +10,6 @@ module octreeSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "octree.h"
+#include "kernel/DataStructures/octree.h"
 
 end module

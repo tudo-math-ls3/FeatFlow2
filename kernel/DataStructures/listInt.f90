@@ -10,6 +10,6 @@ module listInt
 #define T_STORAGE  ST_INT
 #define T_TYPE     integer
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module

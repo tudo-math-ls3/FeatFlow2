@@ -9,6 +9,6 @@ module stackDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "stack.h"
+#include "kernel/DataStructures/stack.h"
 
 end module

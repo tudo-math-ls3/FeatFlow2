@@ -9,6 +9,6 @@ module stackSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "stack.h"
+#include "kernel/DataStructures/stack.h"
 
 end module

@@ -14,6 +14,6 @@ module arraylistInt_Int
 #define D_STORAGE  ST_INT
 #define D_TYPE     integer
 
-#include "arraylist.h"
+#include "kernel/DataStructures/arraylist.h"
 
 end module

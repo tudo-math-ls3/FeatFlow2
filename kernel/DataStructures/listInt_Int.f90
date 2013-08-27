@@ -14,6 +14,6 @@ module listInt_Int
 #define D_STORAGE  ST_INT
 #define D_TYPE     integer
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module

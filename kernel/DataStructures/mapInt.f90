@@ -10,6 +10,6 @@ module mapInt
 #define T_STORAGE  ST_INT
 #define T_TYPE     integer
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

@@ -10,6 +10,6 @@ module arraylistInt
 #define T_STORAGE  ST_INT
 #define T_TYPE     integer
 
-#include "arraylist.h"
+#include "kernel/DataStructures/arraylist.h"
 
 end module

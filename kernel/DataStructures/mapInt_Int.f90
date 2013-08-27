@@ -14,6 +14,6 @@ module mapInt_Int
 #define D_STORAGE  ST_INT
 #define D_TYPE     integer
 
-#include "map.h"
+#include "kernel/DataStructures/map.h"
 
 end module

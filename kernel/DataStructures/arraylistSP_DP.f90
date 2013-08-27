@@ -14,6 +14,6 @@ module arraylistSP_DP
 #define D_STORAGE  ST_DOUBLE
 #define D_TYPE     real(DP)
 
-#include "arraylist.h"
+#include "kernel/DataStructures/arraylist.h"
 
 end module

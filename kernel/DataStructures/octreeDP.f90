@@ -10,6 +10,6 @@ module octreeDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "octree.h"
+#include "kernel/DataStructures/octree.h"
 
 end module

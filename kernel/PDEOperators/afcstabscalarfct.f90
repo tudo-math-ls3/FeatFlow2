@@ -979,15 +979,15 @@ contains
     ! suggested by Boris and Book in their first FCT algorithm
 
 #define TemplateType_AFC QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doStdPrelimit.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doStdPrelimit.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doStdPrelimit.h"
 #undef TemplateType_AFC
 
 
@@ -996,15 +996,15 @@ contains
     ! Prelimit the raw antidiffusive fluxes using minmod limiter
 
 #define TemplateType_AFC QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
 #undef TemplateType_AFC
 
 
@@ -1014,15 +1014,15 @@ contains
     ! antidiffusive fluxes without prelimiting
 
 #define TemplateType_AFC QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doADIncrements.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doADIncrements.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doADIncrements.h"
 #undef TemplateType_AFC
 
 
@@ -1032,37 +1032,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -1073,37 +1073,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -1114,37 +1114,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -1155,15 +1155,15 @@ contains
     ! nodal correction factors and the sign of antidiffusive fluxes
 
 #define TemplateType_AFC    QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
 #undef TemplateType_AFC
 
 
@@ -1174,15 +1174,15 @@ contains
     ! and implicit raw antidiffusive fluxes
 
 #define TemplateType_AFC    QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
 #undef TemplateType_AFC
 
 
@@ -1192,37 +1192,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -1234,37 +1234,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#include "kernel/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -2702,37 +2702,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
@@ -2747,37 +2747,37 @@ contains
 #define TemplateType_Matrix QUAD_PREC
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 #undef TemplateType_Matrix
@@ -2786,37 +2786,37 @@ contains
 #define TemplateType_Matrix DOUBLE_PREC
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 #undef TemplateType_Matrix
@@ -2825,37 +2825,37 @@ contains
 #define TemplateType_Matrix SINGLE_PREC
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 #undef TemplateType_Matrix
@@ -3006,37 +3006,37 @@ contains
 
 #define TemplateType_AFC    QUAD_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    DOUBLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 
 #define TemplateType_AFC    SINGLE_PREC
 #define TemplateType_Vector QUAD_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector DOUBLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #define TemplateType_Vector SINGLE_PREC
-#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#include "kernel/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h"
 #undef TemplateType_Vector
 #undef TemplateType_AFC
 

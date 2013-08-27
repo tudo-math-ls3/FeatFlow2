@@ -10,6 +10,6 @@ module quadtreeDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "quadtree.h"
+#include "kernel/DataStructures/quadtree.h"
 
 end module

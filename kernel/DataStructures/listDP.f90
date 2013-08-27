@@ -10,6 +10,6 @@ module listDP
 #define T_STORAGE  ST_DOUBLE
 #define T_TYPE     real(DP)
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module

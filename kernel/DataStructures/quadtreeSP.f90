@@ -10,6 +10,6 @@ module quadtreeSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "quadtree.h"
+#include "kernel/DataStructures/quadtree.h"
 
 end module

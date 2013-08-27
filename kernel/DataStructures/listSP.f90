@@ -10,6 +10,6 @@ module listSP
 #define T_STORAGE  ST_SINGLE
 #define T_TYPE     real(SP)
 
-#include "list.h"
+#include "kernel/DataStructures/list.h"
 
 end module
