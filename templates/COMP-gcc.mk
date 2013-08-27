@@ -168,7 +168,7 @@ CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O0 -g -fno-second-underscore \
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
 		 -Wline-truncation -Wsurprising  \
-		 -Wunreachable-code -Wunused-label -Wunused-variable
+		 -Wunreachable-code -Wunused-label -Wunused-variable \
 		 -Wuninitialized
 		 # -Wnonstd-intrinsics: not available in 4.4.0
 		 # -Wimplicit-interface -Wunused-variable
