@@ -8894,9 +8894,9 @@ contains
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
-    integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ibct, isegment
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx,p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic,p_IbdrCondPeriodic
+    integer :: ibct,isegment,idissipationtype
     integer(I32) :: ccubTypeBdr
 
     ! Evaluate linear form for boundary integral and return if
@@ -8917,6 +8917,8 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'ccubTypeBdr', ccubTypeBdr)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'idissipationtype', idissipationtype)
 
     ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
@@ -8926,7 +8928,8 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(4) = int(ccubTypeBdr)
+    rcollectionTmp%IquickAccess(1) = idissipationtype
+    rcollectionTmp%IquickAccess(2) = int(ccubTypeBdr)
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -8967,9 +8970,9 @@ contains
         
         ! Prepare further quick access arrays of temporal collection
         ! structure with boundary component, type and maximum expressions
-        rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
-        rcollectionTmp%IquickAccess(2) = isegment
-        rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
+        rcollectionTmp%IquickAccess(3) = p_IbdrCondType(isegment)
+        rcollectionTmp%IquickAccess(4) = isegment
+        rcollectionTmp%IquickAccess(5) = rboundaryCondition%nmaxExpressions
         
         ! Initialise the linear form
         rform%itermCount = 1
@@ -9108,10 +9111,11 @@ contains
     !   rvectorQuickAccess1: solution vector
     !   DquickAccess(1):     simulation time
     !   DquickAccess(2):     scaling parameter
-    !   IquickAccess(1):     boundary type
-    !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     maximum number of expressions
-    !   IquickAccess(4):     cubature rule
+    !   IquickAccess(1):     disipation type
+    !   IquickAccess(2):     cubature rule
+    !   IquickAccess(3):     boundary type
+    !   IquickAccess(4):     segment number
+    !   IquickAccess(5):     maximum number of expressions
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
@@ -9136,12 +9140,13 @@ contains
     real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas,Dflux,Ddiff
     real(DP), dimension(:,:,:), pointer :: DstateI,DstateM,Dcoords
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
-    real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM
-    real(DP) :: hI,hM,l1,l2,l3,l4,pI,pM,rI,rM,uI,uM,vI,vM,w1,w2,w3,w4
-    real(DP) :: aux,aux1,aux2,u_IM,v_IM,H_IM,vel_IM,q_IM,c_IM,c2_IM
-    integer :: ibdrtype,isegment,nmaxExpr
-    integer :: iel,icubp,ipoint,npoints,ivar,nvar,iexpr,ivt,nve,neq
+    real(DP) :: dmaxParam,dmaxParamMirror,dminParam,dminParamMirror
+    real(DP) :: dscale,dtime,dvnI,dvnM,dvtI,dvtM
+    real(DP) :: eI,eM,cI,cM,hI,hM,pI,pM,rI,rM,uI,uM,vI,vM
+    real(DP) :: aux,aux1,aux2,l1,l2,l3,l4,w1,w2,w3,w4
+    real(DP) :: H_IM,c2_IM,c_IM,d_IM,q_IM,u_IM,v_IM,vel_IM
+    integer :: ibdrtype,idissipationtype,isegment,nmaxExpr
+    integer :: icubp,iel,iexpr,ipoint,ivar,ivt,neq,npoints,nvar,nve
     integer(I32) :: ccubType
     
 
@@ -9183,14 +9188,16 @@ contains
     dscale = rcollection%DquickAccess(2)
 
     ! The first three quick access integer values hold:
+    ! - the type of the dissipation
     ! - the type of boundary condition
     ! - the segment number
     ! - the maximum number of expressions
     ! - the cubature rule
-    ibdrtype = rcollection%IquickAccess(1)
-    isegment = rcollection%IquickAccess(2)
-    nmaxExpr = rcollection%IquickAccess(3)
-    ccubType = int(rcollection%IquickAccess(4),I32)
+    idissipationtype = rcollection%IquickAccess(1)
+    ccubType         = int(rcollection%IquickAccess(2),I32)
+    ibdrtype         = rcollection%IquickAccess(3)
+    isegment         = rcollection%IquickAccess(4)
+    nmaxExpr         = rcollection%IquickAccess(5)
     
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge
@@ -9883,134 +9890,516 @@ contains
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
     allocate(DlocalData(nvar))
 #endif
-    
-    do iel = 1, nelements
+
+    ! What type of dissipation are we?
+    select case(idissipationtype)
+
+    case (DISSIPATION_SCALAR)
+
+      !-------------------------------------------------------------------------
+      ! Solve the boundary Riemann problem at the boundary using
+      ! scalar dissipation proportional to the spectral radius of the
+      ! Roe matrix
       
       ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
-      do ipoint = 1, npoints
-        
-        !-----------------------------------------------------------------------
-        ! Solve the boundary Riemann problem by Roe`s approximate Riemann solver
-        !-----------------------------------------------------------------------
-
-        ! Compute velocities and pressure from internal state
-        uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
-        vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
-        pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
-        rI = DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
-        hI = (TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)/rI
-        
-        ! Compute velocities and pressure from mirrored state
-        uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
-        vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
-        pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
-        rM = DENSITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
-        hM = (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)/rM
-
-        ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
-        Dflux(1,ipoint) = Dnx(ipoint,iel)*&
-                          (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
-                           XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
-                        + Dny(ipoint,iel)*&
-                          (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
-                           YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
-        Dflux(2,ipoint) = Dnx(ipoint,iel)*&
-                          (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
-                           XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
-                        + Dny(ipoint,iel)*&
-                          (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
-                           XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
-        Dflux(3,ipoint) = Dnx(ipoint,iel)*&
-                          (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
-                           YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
-                        + Dny(ipoint,iel)*&
-                          (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
-                           YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
-        Dflux(4,ipoint) = Dnx(ipoint,iel)*&
-                          ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
-                           (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
-                        + Dny(ipoint,iel)*&
-                          ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
-                           (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
-
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(rI,rM)
-        u_IM = ROE_MEAN_VALUE(uI,uM,aux)
-        v_IM = ROE_MEAN_VALUE(vI,vM,aux)
-        H_IM = ROE_MEAN_VALUE(hI,hM,aux)
-      
-        ! Compute auxiliary variables
-        vel_IM = Dnx(ipoint,iel)*u_IM + Dny(ipoint,iel)*v_IM
-        q_IM   = DCONST(0.5)*(u_IM*u_IM+v_IM*v_IM)
-
-        ! Compute the speed of sound
-        c2_IM = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP)
-        c_IM  = sqrt(c2_IM)
-        
-        ! Compute eigenvalues
-        l1 = abs(vel_IM-c_IM)
-        l2 = abs(vel_IM)
-        l3 = abs(vel_IM+c_IM)
-        l4 = abs(vel_IM)
-      
-        ! Compute solution difference U_M-U_I
-        Ddiff(:,ipoint) = IDX3(DstateM,:,ipoint,iel,_,_,_)-&
-                          IDX3(DstateI,:,ipoint,iel,_,_,_)
-      
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_IM*Ddiff(1,ipoint)&
-                                           -u_IM*Ddiff(2,ipoint)&
-                                           -v_IM*Ddiff(3,ipoint)&
-                                                +Ddiff(4,ipoint))/DCONST(2.0)/c2_IM
-        aux2 =        (vel_IM*Ddiff(1,ipoint)&
-             -Dnx(ipoint,iel)*Ddiff(2,ipoint)&
-             -Dny(ipoint,iel)*Ddiff(3,ipoint))/DCONST(2.0)/c_IM
-      
-        ! Compute characteristic variables multiplied by the
-        ! corresponding eigenvalue
-        w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_IM/c2_IM)*Ddiff(1,ipoint)&
-                                     +((HYDRO_GAMMA)-DCONST(1.0))*(u_IM*Ddiff(2,ipoint)&
-                                                                  +v_IM*Ddiff(3,ipoint)&
-                                                                       -Ddiff(4,ipoint))/c2_IM)
-        w3 = l3 * (aux1 - aux2)
-        w4 = l4 * ((Dnx(ipoint,iel)*v_IM-Dny(ipoint,iel)*u_IM)*Ddiff(1,ipoint)&
-                                              +Dny(ipoint,iel)*Ddiff(2,ipoint)&
-                                              -Dnx(ipoint,iel)*Ddiff(3,ipoint))
-      
-        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-        Ddiff(1,ipoint) = w1 + w2 + w3
-        Ddiff(2,ipoint) = (u_IM-c_IM*Dnx(ipoint,iel))*w1 + u_IM*w2 +&
-                          (u_IM+c_IM*Dnx(ipoint,iel))*w3 + Dny(ipoint,iel)*w4
-        Ddiff(3,ipoint) = (v_IM-c_IM*Dny(ipoint,iel))*w1 + v_IM*w2 +&
-                          (v_IM+c_IM*Dny(ipoint,iel))*w3 - Dnx(ipoint,iel)*w4
-        Ddiff(4,ipoint) = (H_IM-c_IM*vel_IM)*w1 + q_IM*w2 + (H_IM+c_IM*vel_IM)*w3 +&
-                          (u_IM*Dny(ipoint,iel)-v_IM*Dnx(ipoint,iel))*w4
-      end do
-        
-#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
-      ! Loop over the cubature points and interpolate the Galerkin
-      ! fluxes from the DOFs to the cubature points, where they are
-      ! needed by the linear form assembly routine
-      do icubp = 1, npointsPerElement
-        
-        DlocalData = DCONST(0.0)
-        
-        ! Loop over the DOFs and interpolate the Galerkin fluxes
+      do iel = 1, nelements
         do ipoint = 1, npoints
-          DlocalData = DlocalData + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          
+          ! Compute velocities and pressure from internal state
+          uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          rI = DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          hI = (TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)/rI
+          
+          ! Compute velocities and pressure from mirrored state
+          uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          rM = DENSITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          hM = (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)/rM
+          
+          ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
+                          + Dny(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
+                          + Dny(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
+
+          ! Compute Roe mean values
+          aux  = ROE_MEAN_RATIO(rI,rM)
+          u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+          v_IM = ROE_MEAN_VALUE(vI,vM,aux)
+          H_IM = ROE_MEAN_VALUE(hI,hM,aux)
+
+          ! Compute auxiliary variables
+          vel_IM = Dnx(ipoint,iel)*u_IM + Dny(ipoint,iel)*v_IM
+          q_IM   = DCONST(0.5)*(u_IM*u_IM+v_IM*v_IM)
+          
+          ! Compute the speed of sound
+          c_IM = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP))
+
+          ! Compute scalar dissipation
+          d_IM = abs(vel_IM) + c_IM
+
+          ! Multiply solution difference U_M-U_I by the scalar dissipation
+          Ddiff(:,ipoint) = d_IM*(IDX3(DstateM,:,ipoint,iel,_,_,_)-&
+                                  IDX3(DstateI,:,ipoint,iel,_,_,_))
+        end do
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          DlocalData = DCONST(0.0)
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData&
+                + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
+#else
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) =&
+              dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
+#endif
+      end do
+
+    case (DISSIPATION_SCALAR_DSPLIT)
+
+      !-------------------------------------------------------------------------
+      ! Solve the boundary Riemann problem at the boundary using
+      ! scalar dissipation proportional to the spectral radius of the
+      ! Roe matrix, whereby dimensional splitting is employed
+      
+      ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Compute velocities and pressure from internal state
+          uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          rI = DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          hI = (TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)/rI
+          
+          ! Compute velocities and pressure from mirrored state
+          uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          rM = DENSITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          hM = (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)/rM
+          
+          ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
+                          + Dny(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
+                          + Dny(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
+
+          ! Compute Roe mean values
+          aux  = ROE_MEAN_RATIO(rI,rM)
+          u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+          v_IM = ROE_MEAN_VALUE(vI,vM,aux)
+          H_IM = ROE_MEAN_VALUE(hI,hM,aux)
+
+          ! Compute auxiliary variables
+          q_IM   = DCONST(0.5)*(u_IM*u_IM+v_IM*v_IM)
+          
+          ! Compute the speed of sound
+          c_IM = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP))
+
+          ! Compute scalar dissipation with dimensional splitting
+          d_IM = ( abs(Dnx(ipoint,iel)*u_IM) + abs(Dnx(ipoint,iel))*c_IM +&
+                   abs(Dny(ipoint,iel)*v_IM) + abs(Dny(ipoint,iel))*c_IM )
+
+          ! Multiply solution difference U_M-U_I by the scalar dissipation
+          Ddiff(:,ipoint) = d_IM*(IDX3(DstateM,:,ipoint,iel,_,_,_)-&
+                                  IDX3(DstateI,:,ipoint,iel,_,_,_))
+        end do
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          DlocalData = DCONST(0.0)
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData&
+                + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
+#else
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) =&
+              dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
+#endif
+      end do
+
+    case (DISSIPATION_ROE)
+      !-------------------------------------------------------------------------
+      ! Solve the boundary Riemann problem at the boundary using
+      ! tensorial dissipation of Roe-type
+      
+      ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Compute velocities and pressure from internal state
+          uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          rI = DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          hI = (TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)/rI
+          
+          ! Compute velocities and pressure from mirrored state
+          uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          rM = DENSITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          hM = (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)/rM
+          
+          ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
+                          + Dny(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
+                          + Dny(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
+
+          ! Compute Roe mean values
+          aux  = ROE_MEAN_RATIO(rI,rM)
+          u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+          v_IM = ROE_MEAN_VALUE(vI,vM,aux)
+          H_IM = ROE_MEAN_VALUE(hI,hM,aux)
+          
+          ! Compute auxiliary variables
+          vel_IM = Dnx(ipoint,iel)*u_IM + Dny(ipoint,iel)*v_IM
+          q_IM   = DCONST(0.5)*(u_IM*u_IM+v_IM*v_IM)
+          
+          ! Compute the speed of sound
+          c2_IM = max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP)
+          c_IM  = sqrt(c2_IM)
+          
+          ! Compute eigenvalues
+          l1 = abs(vel_IM-c_IM)
+          l2 = abs(vel_IM)
+          l3 = abs(vel_IM+c_IM)
+          l4 = abs(vel_IM)
+          
+          ! Compute solution difference U_M-U_I
+          Ddiff(:,ipoint) = IDX3(DstateM,:,ipoint,iel,_,_,_)-&
+                            IDX3(DstateI,:,ipoint,iel,_,_,_)
+          
+          ! Compute auxiliary quantities for characteristic variables
+          aux1 = ((HYDRO_GAMMA)-DCONST(1.0))*(q_IM*Ddiff(1,ipoint)&
+                                             -u_IM*Ddiff(2,ipoint)&
+                                             -v_IM*Ddiff(3,ipoint)&
+                                                  +Ddiff(4,ipoint))/DCONST(2.0)/c2_IM
+          aux2 =        (vel_IM*Ddiff(1,ipoint)&
+               -Dnx(ipoint,iel)*Ddiff(2,ipoint)&
+               -Dny(ipoint,iel)*Ddiff(3,ipoint))/DCONST(2.0)/c_IM
+          
+          ! Compute characteristic variables multiplied by the
+          ! corresponding eigenvalue
+          w1 = l1 * (aux1 + aux2)
+          w2 = l2 * ((DCONST(1.0)-((HYDRO_GAMMA)-DCONST(1.0))*q_IM/c2_IM)*Ddiff(1,ipoint)&
+                                       +((HYDRO_GAMMA)-DCONST(1.0))*(u_IM*Ddiff(2,ipoint)&
+                                                                    +v_IM*Ddiff(3,ipoint)&
+                                                                         -Ddiff(4,ipoint))/c2_IM)
+          w3 = l3 * (aux1 - aux2)
+          w4 = l4 * ((Dnx(ipoint,iel)*v_IM-Dny(ipoint,iel)*u_IM)*Ddiff(1,ipoint)&
+                                                +Dny(ipoint,iel)*Ddiff(2,ipoint)&
+                                                -Dnx(ipoint,iel)*Ddiff(3,ipoint))
+          
+          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+          Ddiff(1,ipoint) = w1 + w2 + w3
+          Ddiff(2,ipoint) = (u_IM-c_IM*Dnx(ipoint,iel))*w1 + u_IM*w2 +&
+                            (u_IM+c_IM*Dnx(ipoint,iel))*w3 + Dny(ipoint,iel)*w4
+          Ddiff(3,ipoint) = (v_IM-c_IM*Dny(ipoint,iel))*w1 + v_IM*w2 +&
+                            (v_IM+c_IM*Dny(ipoint,iel))*w3 - Dnx(ipoint,iel)*w4
+          Ddiff(4,ipoint) = (H_IM-c_IM*vel_IM)*w1 + q_IM*w2 + (H_IM+c_IM*vel_IM)*w3 +&
+                            (u_IM*Dny(ipoint,iel)-v_IM*Dnx(ipoint,iel))*w4
         end do
         
-        ! Store flux in the cubature points
-        Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
-      end do
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          DlocalData = DCONST(0.0)
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData&
+                + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
 #else
-      ! Loop over the cubature points and store the fluxes
-      do ipoint = 1, npointsPerElement
-        Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
-      end do
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) =&
+              dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
 #endif
-    end do
+      end do
+
+    case (DISSIPATION_RUSANOV)
+
+      !-------------------------------------------------------------------------
+      ! Solve the boundary Riemann problem at the boundary using
+      ! scalar dissipation of Rusanov-type
+      
+      ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Compute velocities and pressure from internal state
+          uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          
+          ! Compute velocities and pressure from mirrored state
+          uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          
+          ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
+                          + Dny(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
+                          + Dny(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
+
+          ! Compute specific energies
+          eI = SPECIFICTOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          eM = SPECIFICTOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          
+          ! Compute the speed of sound
+          cI = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+              (eI-DCONST(0.5)*(uI*uI+vI*vI)), SYS_EPSREAL_DP))
+          cM = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+              (eM-DCONST(0.5)*(uM*uM+vM*vM)), SYS_EPSREAL_DP))
+          
+          ! Compute scalar dissipation
+          d_IM = max( abs(Dnx(ipoint,iel)*uI) + abs(Dny(ipoint,iel)*vI) + cI,&
+                      abs(Dnx(ipoint,iel)*uM) + abs(Dny(ipoint,iel)*vM) + cM )
+
+          ! Multiply solution difference U_M-U_I by the scalar dissipation
+          Ddiff(:,ipoint) = d_IM*(IDX3(DstateM,:,ipoint,iel,_,_,_)-&
+                                  IDX3(DstateI,:,ipoint,iel,_,_,_))
+        end do
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          DlocalData = DCONST(0.0)
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData&
+                + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
+#else
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) =&
+              dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
+#endif
+      end do
+
+    case (DISSIPATION_RUSANOV_DSPLIT)
+
+      !-------------------------------------------------------------------------
+      ! Solve the boundary Riemann problem at the boundary using
+      ! scalar dissipation of Rusanov-type, whereby dimensional
+      ! splitting is employed
+      
+      ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Compute velocities and pressure from internal state
+          uI = XVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          vI = YVELOCITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          pI = PRESSURE3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          
+          ! Compute velocities and pressure from mirrored state
+          uM = XVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          vM = YVELOCITY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          pM = PRESSURE3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          
+          ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_))
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+pI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM+pM)&
+                          + Dny(ipoint,iel)*&
+                            (XMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+&
+                             XMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*uI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*uM)&
+                          + Dny(ipoint,iel)*&
+                            (YMOMENTUM3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*vI+pI+&
+                             YMOMENTUM3_2D(DstateM,IDX3,ipoint,iel,_,_,_)*vM+pM)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*uI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*uM)&
+                          + Dny(ipoint,iel)*&
+                            ((TOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)+pI)*vI+&
+                             (TOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)+pM)*vM)
+
+          ! Compute specific energies
+          eI = SPECIFICTOTALENERGY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)
+          eM = SPECIFICTOTALENERGY3_2D(DstateM,IDX3,ipoint,iel,_,_,_)
+          
+          ! Compute the speed of sound
+          cI = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+              (eI-DCONST(0.5)*(uI*uI+vI*vI)), SYS_EPSREAL_DP))
+          cM = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(HYDRO_GAMMA)*&
+              (eM-DCONST(0.5)*(uM*uM+vM*vM)), SYS_EPSREAL_DP))
+          
+          ! Compute scalar dissipation
+          d_IM = max( abs(Dnx(ipoint,iel)*uI) + abs(Dnx(ipoint,iel))*cI,&
+                      abs(Dnx(ipoint,iel)*uM) + abs(Dnx(ipoint,iel))*cM )&
+               + max( abs(Dny(ipoint,iel)*vI) + abs(Dny(ipoint,iel))*cI,&
+                      abs(Dny(ipoint,iel)*vM) + abs(Dny(ipoint,iel))*cM )
+
+          ! Multiply solution difference U_M-U_I by the scalar dissipation
+          Ddiff(:,ipoint) = d_IM*(IDX3(DstateM,:,ipoint,iel,_,_,_)-&
+                                  IDX3(DstateI,:,ipoint,iel,_,_,_))
+        end do
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          DlocalData = DCONST(0.0)
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData&
+                + Dbas(ipoint,icubp)*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
+#else
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) =&
+              dscale*DCONST(0.5)*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
+#endif
+      end do
+
+    case default
+      call output_line('Invalid type of dissipation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
+      call sys_halt()
+    end select
 
     ! Deallocate temporal memory
     deallocate(Dnx,Dny,DstateI,DstateM,Dflux,Ddiff)

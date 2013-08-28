@@ -214,6 +214,7 @@ module hydro_callback1d
   use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
+  use paramlist
   use problem
   use scalarpde
   use solveraux
@@ -4933,10 +4934,11 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
-    integer :: ibct
+    integer :: ibct,idissipationtype
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -4949,6 +4951,14 @@ contains
       call sys_halt()
     end if
 
+    ! Get pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'idissipationtype', idissipationtype)
+
     ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
@@ -4957,6 +4967,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
+    rcollectionTmp%IquickAccess(1) = idissipationtype
     
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -4982,9 +4993,9 @@ contains
 
       ! Prepare further quick access arrays of temporal collection
       ! structure with boundary component, type and maximum expressions
-      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibct)
-      rcollectionTmp%IquickAccess(2) = ibct
-      rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
+      rcollectionTmp%IquickAccess(2) = p_IbdrCondType(ibct)
+      rcollectionTmp%IquickAccess(3) = ibct
+      rcollectionTmp%IquickAccess(4) = rboundaryCondition%nmaxExpressions
       
       ! Initialise the linear form
       rform%itermCount = 1
@@ -5072,9 +5083,10 @@ contains
     !   rvectorQuickAccess1: solution vector
     !   DquickAccess(1):     simulation time
     !   DquickAccess(2):     scaling parameter
-    !   IquickAccess(1):     boundary type
-    !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     maximum number of expressions
+    !   IquickAccess(1):     dissipation type
+    !   IquickAccess(2):     boundary type
+    !   IquickAccess(3):     segment number
+    !   IquickAccess(4):     maximum number of expressions
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
@@ -5098,6 +5110,7 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvnM,w1,w3
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
+    integer :: idissipationtype
 
 #ifndef HYDRO_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -5130,12 +5143,14 @@ contains
     dscale = rcollection%DquickAccess(2)
 
     ! The first three quick access integer values hold:
+    ! - the type of the dissipation
     ! - the type of boundary condition
     ! - the segment number
     ! - the maximum number of expressions
-    ibdrtype = rcollection%IquickAccess(1)
-    isegment = rcollection%IquickAccess(2)
-    nmaxExpr = rcollection%IquickAccess(3)
+    idissipationtype = rcollection%IquickAccess(1)
+    ibdrtype         = rcollection%IquickAccess(2)
+    isegment         = rcollection%IquickAccess(3)
+    nmaxExpr         = rcollection%IquickAccess(4)
 
     if (p_rsolution%nblocks .eq. 1) then
 
@@ -5236,7 +5251,16 @@ contains
             DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5270,7 +5294,16 @@ contains
             DstateM(3) = DstateI(3)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5317,7 +5350,16 @@ contains
             DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5408,7 +5450,16 @@ contains
             DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5475,7 +5526,16 @@ contains
             DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5504,7 +5564,16 @@ contains
             DstateM(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5623,7 +5692,16 @@ contains
             DstateI(3) = Daux2(ipoint,iel,3)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5657,7 +5735,16 @@ contains
             DstateM(3) = DstateI(3)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5704,7 +5791,16 @@ contains
             DstateI(3) = Daux2(ipoint,iel,33)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5794,7 +5890,16 @@ contains
             DstateI(3) = Daux2(ipoint,iel,3)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5861,7 +5966,16 @@ contains
             DstateI(3) = Daux2(ipoint,iel,3)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            select case(idissipationtype)
+            case(DISSIPATION_ZERO)
+              stop
+            case(DISSIPATION_SCALAR)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_ROE)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            case(DISSIPATION_RUSANOV)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+            end select
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
@@ -5889,14 +6003,32 @@ contains
             DstateM(2) = Daux2(ipoint,iel,2)
             DstateM(3) = Daux2(ipoint,iel,3)
 
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
+            ! Invoke Riemann solver to compute flux in the cubature point
+            select case(idissipationtype)
+            case (DISSIPATION_ZERO)
+              call doSolveRPAtBdrGalerkin(DstateI, DstateM, dnx, Dflux)
+              Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*Dflux
+              
+            case (DISSIPATION_SCALAR,DISSIPATION_SCALAR_DSPLIT)
+              call doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+              Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
+              
+            case (DISSIPATION_ROE,DISSIPATION_ROE_DSPLIT)
+              call doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+              Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
+              
+            case (DISSIPATION_RUSANOV,DISSIPATION_RUSANOV_DSPLIT)
+              call doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+              Dcoefficients(:,1,ipoint,iel) = dscale*DCONST(0.5)*(Dflux-Diff)
+
+            case default
+              call output_line('Invalid type of dissipation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
+              call sys_halt()
+            end select
           end do
         end do
-          
+        
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
@@ -5914,18 +6046,106 @@ contains
     ! Here come the working routines
 
     !***************************************************************************
-    ! Approximate Riemann solver along the outward unit normal
-    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal using
+    ! no artificial viscosity, aka, pure Galerkin flux
+    ! ***************************************************************************
     
-    subroutine doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
-
+    pure subroutine doSolveRPAtBdrGalerkin(DstateI, DstateM, dnx, Dflux)
+      
       ! input parameters
       real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
       real(DP), intent(in) :: dnx
+      
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux
+      
+      ! local variables
+      real(DP) :: pI,pM,uI,uM
+      
+      ! Compute auxiliary quantities
+      uI = XVELOCITY1_1D(DstateI,IDX1)
+      pI = PRESSURE1_1D(DstateI,IDX1)
+      
+      ! Compute auxiliary quantities
+      uM = XVELOCITY1_1D(DstateM,IDX1)
+      pM = PRESSURE1_1D(DstateM,IDX1)
 
+      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+      Dflux(1) = dnx*(DstateI(2) + DstateM(2))
+      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)
+      Dflux(3) = dnx*((DstateI(3)+pI)*uI + (DstateM(3)+pM)*uM)
+
+    end subroutine doSolveRPAtBdrGalerkin
+
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal using
+    ! scalar artificial viscosity proportional to the spectral radius
+    ! of the Roe matrix
+    ! ***************************************************************************
+    
+    pure subroutine doSolveRPAtBdrScDiss(DstateI, DstateM, dnx, Dflux, Diff)
+      
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx
+      
       ! output parameters
       real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
+      
+      ! local variables
+      real(DP) :: aux,hI,hM,pI,pM,rI,rM,uI,uM
+      real(DP) :: H_IM,c_IM,d_IM,q_IM,u_IM
+      
+      ! Compute auxiliary quantities
+      uI = XVELOCITY1_1D(DstateI,IDX1)
+      pI = PRESSURE1_1D(DstateI,IDX1)
+      rI = DENSITY1_1D(DstateI,IDX1)
+      hI = (TOTALENERGY1_1D(DstateI,IDX1)+pI)/rI
+      
+      ! Compute auxiliary quantities
+      uM = XVELOCITY1_1D(DstateM,IDX1)
+      pM = PRESSURE1_1D(DstateM,IDX1)
+      rM = DENSITY1_1D(DstateM,IDX1)
+      hM = (TOTALENERGY1_1D(DstateM,IDX1)+pM)/rM
 
+      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+      Dflux(1) = dnx*(DstateI(2) + DstateM(2))
+      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)
+      Dflux(3) = dnx*((DstateI(3)+pI)*uI + (DstateM(3)+pM)*uM)
+
+      ! Compute Roe mean values
+      aux  = ROE_MEAN_RATIO(rI,rM)
+      u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+      H_IM = ROE_MEAN_VALUE(hI,hM,aux)
+      
+      ! Compute auxiliary variable
+      q_IM  = DCONST(0.5)*u_IM*u_IM
+
+      ! Compute the speed of sound
+      c_IM  = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*(H_IM-q_IM), SYS_EPSREAL_DP))
+
+      ! Compute scalar dissipation
+      d_IM = abs(dnx*u_IM) + abs(dnx)*c_IM
+      
+      ! Multiply the solution difference by the scalar dissipation
+      Diff = d_IM*(DstateM-DstateI)
+
+    end subroutine doSolveRPAtBdrScDiss
+
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal using
+    ! tensorial artificial viscosities of Roe-type
+    ! ***************************************************************************
+    
+    pure subroutine doSolveRPAtBdrRoeDiss(DstateI, DstateM, dnx, Dflux, Diff)
+      
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx
+      
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
+      
       ! local variables
       real(DP) :: hI,hM,uI,pI,uM,pM,rI,rM
       real(DP) :: cPow2,c_IM,H_IM,q_IM,u_IM
@@ -5948,7 +6168,6 @@ contains
       Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)
       Dflux(3) = dnx*((DstateI(3)+pI)*uI + (DstateM(3)+pM)*uM)
 
-      
       ! Compute Roe mean values
       aux  = ROE_MEAN_RATIO(rI,rM)
       u_IM = ROE_MEAN_VALUE(uI,uM,aux)
@@ -5994,13 +6213,60 @@ contains
       Diff(3) = (H_IM-c_IM*dveln)*w1 + q_IM*w2 +&
                 (H_IM+c_IM*dveln)*w3
 
-    end subroutine doRiemannSolver
+    end subroutine doSolveRPAtBdrRoeDiss
+
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal using
+    ! scalar artificial viscosities of Rusanov-type
+    ! ***************************************************************************
+    
+    pure subroutine doSolveRPAtBdrRusDiss(DstateI, DstateM, dnx, Dflux, Diff)
+      
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx
+      
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
+      
+      ! local variables
+      real(DP) :: cI,cM,eI,eM,d_IM,pI,pM,uI,uM
+      
+      ! Compute auxiliary quantities
+      uI = XVELOCITY1_1D(DstateI,IDX1)
+      pI = PRESSURE1_1D(DstateI,IDX1)
+      eI = SPECIFICTOTALENERGY1_1D(DstateI,IDX1)
+      
+      ! Compute auxiliary quantities
+      uM = XVELOCITY1_1D(DstateM,IDX1)
+      pM = PRESSURE1_1D(DstateM,IDX1)
+      eM = SPECIFICTOTALENERGY1_1D(DstateM,IDX1)
+
+      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+      Dflux(1) = dnx*(DstateI(2) + DstateM(2))
+      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)
+      Dflux(3) = dnx*((DstateI(3)+pI)*uI + (DstateM(3)+pM)*uM)
+
+      ! Compute the speed of sound
+      cI = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(eI-DCONST(0.5)*uI*uI), SYS_EPSREAL_DP))
+      cM = sqrt(max(((HYDRO_GAMMA)-DCONST(1.0))*&
+          (HYDRO_GAMMA)*(EM-DCONST(0.5)*uM*uM), SYS_EPSREAL_DP))
+
+      ! Compute scalar dissipation
+      d_IM = max(abs(dnx*uI)+abs(dnx)*cI,&
+                 abs(dnx*uM)+abs(dnx)*cM )
+
+      ! Multiply the solution difference by the scalar dissipation
+      Diff = d_IM*(DstateM-DstateI)
+      
+    end subroutine doSolveRPAtBdrRusDiss
 
     !***************************************************************************
     ! Compute the Galerkin flux (used for supersonic outflow)
     !***************************************************************************
 
-    subroutine doGalerkinFlux(Dstate, dnx, Dflux)
+    pure subroutine doGalerkinFlux(Dstate, dnx, Dflux)
 
       ! input parameters
       real(DP), dimension(NVAR1D), intent(in) :: Dstate
@@ -6011,7 +6277,6 @@ contains
 
       ! local variables
       real(DP) :: u,p
-      
       
       ! Compute auxiliary quantities
       u = XVELOCITY1_1D(Dstate,IDX1)
