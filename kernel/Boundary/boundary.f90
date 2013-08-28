@@ -3358,7 +3358,7 @@ contains
 
 !<subroutine>
 
-  subroutine boundary_getNormal2D (rfparser,iseg,isegType,cpar,&
+  subroutine boundary_getNormal2D (p_rfparser,iseg,isegType,cpar,&
       dparLoc,dseglength,istartidx,IsegInfo,DsegInfo,dnx,dny)
 
 !<description>
@@ -3367,8 +3367,8 @@ contains
 
     !<input>
 
-    ! Funciton parser
-    type(t_fparser), intent(in) :: rfparser
+    ! Funciton parser; Must be associated for isegType = BOUNDARY_TYPE_EXPRESSION
+    type(t_fparser), pointer :: p_rfparser
 
     ! Segment number (0,1,2,...) of the segment
     integer, intent(in) :: iseg
@@ -3447,6 +3447,13 @@ contains
 
       ! case of analytic expression
     case (BOUNDARY_TYPE_EXPRESSION)
+    
+      ! Make sure we have a function parser
+      if(.not. associated(p_rfparser)) then
+        call output_line ('Function parser required for isegType=BOUNDARY_TYPE_EXPRESSION', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getNormal2D')
+        call sys_halt()
+      end if
       
       ! Rescale dparloc with the length of the arc to get a value
       ! between 0 and 1; important for sin/cos functions later.
@@ -3458,9 +3465,9 @@ contains
 
       ! Calculate the x/y coordinates from the function parser.
       D1 = (/dploc/)
-      call fparser_evalFunction(rfparser, icomp+3, D1, dny0)
+      call fparser_evalFunction(p_rfparser, icomp+3, D1, dny0)
       dny0 = -dny0
-      call fparser_evalFunction(rfparser, icomp+4, D1, dnx0)
+      call fparser_evalFunction(p_rfparser, icomp+4, D1, dnx0)
 
     case default
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
