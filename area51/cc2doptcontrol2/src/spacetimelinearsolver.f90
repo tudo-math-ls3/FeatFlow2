@@ -6453,7 +6453,7 @@ contains
         rsolverNode%dfinalDefect = dfr*dresscale
 
         ! Test if the iteration is diverged
-        if (sptils_testDivergence(rsolverNode,dfr)) then
+        if (sptils_testDivergence(rsolverNode,rsolverNode%dfinalDefect)) then
           call output_line ('Space-Time-BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
           exit
