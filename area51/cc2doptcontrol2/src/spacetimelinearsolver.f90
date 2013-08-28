@@ -6463,7 +6463,7 @@ contains
         if (ite .ge. nminIterations) then
         
           ! Check if the iteration converged
-          if (sptils_testConvergence(rsolverNode,dfr)) exit
+          if (sptils_testConvergence(rsolverNode,dfr*dresscale)) exit
           
         end if
 
