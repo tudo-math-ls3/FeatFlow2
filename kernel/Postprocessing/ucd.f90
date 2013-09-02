@@ -4062,13 +4062,13 @@ contains
 
     ! The export structure with all information
     type(t_ucdExport), intent(inout) :: rexport
-    integer :: i,j,ipoints,ipart
+    integer :: i,j,ipoints,ipart, ipolypoints, isurfpoints, ko
     real(DP), dimension(:,:), pointer :: p_Ddata2D
     integer, dimension(:,:), pointer :: p_Itriangles
     integer, dimension(:), pointer :: p_IsurfData
     character(LEN=SYS_STRLEN) :: sfilepoly
-    integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect
-    integer :: ioffset1,ioffset2,ilengthPolylist,ioffset,ipolygonsTotal
+    integer, dimension(:), pointer :: iconnect
+    integer :: ioffset1,ioffset2,ilengthPolylist,ipolygonsTotal,ioffset
     ! Get file name
     sfilepoly = rexport%sfilepolyvtk
 
@@ -4103,31 +4103,39 @@ contains
     write(rexport%iunit, '(A)') "DATASET POLYDATA"
 
     ! calculate the number of total points
-    ipoints = GEOM_STANDARD_VCOUNT * rexport%npolygons
-
+    ipolypoints = 0
+    do ipart=1,rexport%npolygons
+      call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
+      ipolypoints = ipolypoints + ubound(p_Ddata2D,2)
+    end do
+    
+    isurfpoints = 0
     do ipart=1,rexport%nsurfTri
       call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)
-      ipoints = ipoints + p_IsurfData(1)
+      isurfpoints = isurfpoints + p_IsurfData(1)
     end do
+    
+    ipoints = ipolypoints + isurfpoints
     write(rexport%iunit, '(A,I10,A)') "POINTS", ipoints, " double"
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write vertices of simple polygons
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     do ipart=1,rexport%npolygons
       call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
-      do j=1,GEOM_STANDARD_VCOUNT
+      do j=1,ubound(p_Ddata2D,2)
          write(rexport%iunit, '(3E15.7)') p_Ddata2D(1, j),p_Ddata2D(2, j), 0.0_DP
       end do
     end do
 
-    do j=1,GEOM_STANDARD_VCOUNT
+    allocate(iconnect(ipoints))
+    do j=1,ipoints
       iconnect(j)=j-1
     end do
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write vertices of surface triangulations
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ioffset = GEOM_STANDARD_VCOUNT * rexport%npolygons
+    ioffset = ipolypoints
     do ipart=1,rexport%nsurfTri
       call storage_getbase_double2D(rexport%p_HsurfTris(ipart),p_Ddata2D)
       call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)
@@ -4140,7 +4148,7 @@ contains
     ! Write list of simple polygons
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ipolygonsTotal=rexport%npolygons
-    ilengthPolylist=rexport%npolygons*(GEOM_STANDARD_VCOUNT+1)
+    ilengthPolylist=rexport%npolygons + ipolypoints
     do i=1,rexport%nsurfTri
       call storage_getbase_int(rexport%p_HsurfData(i),p_IsurfData)
       ipolygonsTotal  = ipolygonsTotal+p_IsurfData(2)
@@ -4148,11 +4156,13 @@ contains
     end do
 
     write(rexport%iunit, '(A,2I10)') "POLYGONS", ipolygonsTotal, ilengthPolylist
+    
+    ko = 1
     do ipart=1,rexport%npolygons
-        write(rexport%iunit, '(65I10)') GEOM_STANDARD_VCOUNT, iconnect(:)
-        do j=1,GEOM_STANDARD_VCOUNT
-          iconnect(j)=iconnect(j)+GEOM_STANDARD_VCOUNT
-        end do
+      call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
+      i = ubound(p_Ddata2D,2)
+      write(rexport%iunit, '(65I10)') i, iconnect(ko:ko+i-1)
+      ko = ko+i
     end do
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write list of triangles
@@ -4169,12 +4179,12 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write list of lines
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    write(rexport%iunit,'(A,2I10)')"LINES",rexport%npolygons,rexport%npolygons*2+rexport%npolygons
-    do ipart=1,rexport%npolygons
-        ioffset1=(ipart-1)*GEOM_STANDARD_VCOUNT
-        ioffset2=ioffset1+GEOM_STANDARD_VCOUNT/2
-        write(rexport%iunit, '(3I10)') 2, ioffset1, ioffset2
-    end do
+    !write(rexport%iunit,'(A,2I10)')"LINES",rexport%npolygons,rexport%npolygons*2+rexport%npolygons
+    !do ipart=1,rexport%npolygons
+    !    ioffset1=(ipart-1)*GEOM_STANDARD_VCOUNT
+    !    ioffset2=ioffset1+GEOM_STANDARD_VCOUNT/2
+    !    write(rexport%iunit, '(3I10)') 2, ioffset1, ioffset2
+    !end do
 
     ! first we write the polygons and lines then the triangles
     if (sfilepoly .ne. '') then
@@ -4182,6 +4192,8 @@ contains
       close (rexport%iunit)
       rexport%iunit = 0
     end if
+    
+    deallocate(iconnect)
 
 
     end subroutine
