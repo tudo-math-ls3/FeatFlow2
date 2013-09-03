@@ -671,7 +671,7 @@ contains
       p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
       ! read the velocity
       du = p_rparticlecollection%p_rparticles(ipart)%Dtransvelx
-      dv = p_rparticlecollection%p_rparticles(ipart)%Dtransvelx
+      dv = p_rparticlecollection%p_rparticles(ipart)%Dtransvely
       ! Loop over all elements and calculate the corresponding Lambda value
       do iel=1,nelements
         do icup=1,npointsperelement 
@@ -685,6 +685,8 @@ contains
       end do !(loop over elements)
     
     end select
+    
+    
     
   end subroutine  
   
@@ -963,7 +965,7 @@ contains
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dcoefficients(1,:,:),rcollection)
-
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1246,7 +1248,15 @@ contains
     ! local variables
     real(DP) :: dtime,dtimeMax
     integer :: itimedependence
-
+    real(DP) :: du,dv,dlambda
+    integer :: iel,icup,iin,ipenalty,ipart
+    real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
+    integer, dimension(:,:), pointer :: p_iverticesatelement
+    type(t_particlecollection), pointer :: p_rparticlecollection
+    type(t_geometryobject), pointer :: p_rgeometryobject
+    type(t_parlist), pointer :: p_rparlst
+    type (t_problem) :: rproblem
+    
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
@@ -1258,8 +1268,43 @@ contains
       dtime = 0.0_DP
       dtimeMax = 0.0_DP
     end if
+    !
+    !Dvalues(:,:) =  0.0_dp
+    !ipenalty = rcollection%Iquickaccess(4)
+    !
+    !select case (ipenalty)
+    !case (1)
+    !  p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
+    !  dlambda = rcollection%Dquickaccess(4)
+    !  ! Get the triangulation array for the point coordinates
+    !  call storage_getbase_double2d (rdiscretisation%p_rtriangulation%h_dvertexcoords,&
+    !                                 p_dvertexcoordinates)
+    !  call storage_getbase_int2d (rdiscretisation%p_rtriangulation%h_iverticesatelement,&
+    !                              p_iverticesatelement)  
+    !  ! Pointer to collect all variables about the object/s. We will get data about origin, shape,
+    !  ! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
+    !  p_rparticlecollection => collct_getvalue_particles(rcollection,'particles')
+    !  ! Find the geometry of the object   
+    !  ipart=1
+    !  p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+    !  ! read the velocity
+    !  du = p_rparticlecollection%p_rparticles(ipart)%Dtransvelx
+    !  dv = p_rparticlecollection%p_rparticles(ipart)%Dtransvely
+    !  ! Loop over all elements and calculate the corresponding Lambda value
+    !
+    !  do iel=1,nelements
+    !    do icup=1,npointsperelement 
+    !    ! get the distance to the center
+    !    call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
+    !      ! check if it is inside      
+    !      if (iin .eq. 1)then 
+    !        Dvalues(iel,icup) = dlambda * du
+    !      end if
+    !    end do
+    !  end do !(loop over elements)
+    !end select
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) =  0.0_dp
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1642,8 +1687,8 @@ contains
     dxcenter = 0.2
     dycenter = 0.2
     dradius  = 0.05
-    
-    ! Loop through the points where to evaluate:
+
+      ! Loop through the points where to evaluate:
     do idx = 1,Revaluation(1)%nvalues
     
       ! Get the number of the point to process; may also be number of an
@@ -2055,7 +2100,6 @@ contains
   type (t_problem) :: rproblem
   !</local variables>
 
-  ! Get the parameter list.
   p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
   ipenalty = rcollection%Iquickaccess(4)
   dlambda = rcollection%Dquickaccess(4)
@@ -2080,9 +2124,7 @@ contains
 
     ! Find the geometry of the object   
     p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
-    !print *,"dx =", p_rgeometryObject%RCOORD2D%dorigin(1)
-    !print *,"dy =", p_rgeometryObject%RCOORD2D%dorigin(2)
-    !
+
     ! Which method is used to implement the penalty matrix? 
     ! Loop over all elements and calculate the corresponding Lambda value
     select case(ipenalty)
@@ -2095,6 +2137,7 @@ contains
         ! check if it is inside      
         if (iin .eq. 1)then 
           dcoefficients(1,icup,iel) = dlambda
+          !print *,"iel =", iel
          else
             dcoefficients(1,icup,iel) = 0.0_dp
           end if

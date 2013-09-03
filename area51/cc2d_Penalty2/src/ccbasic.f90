@@ -513,6 +513,7 @@ module ccbasic
     ! Penalty parameters
     real(DP) :: dLambda 
     integer :: ipenalty
+    integer :: ishape
     
     type(t_particleCollection) :: rparticleCollection
     

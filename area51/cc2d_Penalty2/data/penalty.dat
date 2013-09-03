@@ -1,6 +1,11 @@
 ############
 [CC-PENALTY]
 ############
+# Shape of penalty object(s)
+# - 0 - standard case: circle particle 
+# - 1 - polygon shape
+
+ishape = 1
 
 # Activate penalty method and choose the way of calculating penalty parameter
 #   - 0.0 - not active

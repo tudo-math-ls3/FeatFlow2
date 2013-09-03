@@ -1614,7 +1614,7 @@ end if
         p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
       do ipart=1,p_rparticleCollection%nparticles
          p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-         call geom_polygonise(p_rgeometryObject,ipolyHandle)
+         call geom_polygonise(p_rgeometryObject,ipolyHandle, ndesiredVerticeCount = 12)
         
          ! Get the vertices
          call storage_getbase_double2D(ipolyHandle, p_Dvertices)

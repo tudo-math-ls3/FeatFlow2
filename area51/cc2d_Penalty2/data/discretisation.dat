@@ -123,7 +123,7 @@ NLMAX              = 5
 
 # Activate fbm
 
-ifbm = 1
+ifbm = 0
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 

@@ -75,30 +75,25 @@ contains
 
   !</subroutine>
   ! locals
-  integer :: i, iparticle
-  real(dp) :: dx,dy,drho,drad,du,dv
-  type(t_parlist) :: rparlist
+  integer :: i,iparticle
+  real(dp) :: dx,dy,drho,drad
 
   rPDescriptor%iparticles = 1
-  allocate(rPDescriptor%pparameters(6,rPDescriptor%iparticles))
+  allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
   drad = 0.05_dp
   drho = 1.0_dp
-  dx = 1.1_dp
+  dx = 0.2_dp
   dy = 0.2_dp
-  ! Velocity components
-  du = SYS_PI*0.125_DP
-  dv = 0.0_DP
   
+  ! Velocity components
   do i=1,rPDescriptor%iparticles
     rPDescriptor%pparameters(1,i)= dx
     rPDescriptor%pparameters(2,i)= dy
     rPDescriptor%pparameters(3,i)= drad
     rPDescriptor%pparameters(4,i)= drho
-    rPDescriptor%pparameters(5,i)= du
-    rPDescriptor%pparameters(6,i)= dv
-!    dx = dx + 1.0_dp
-!    dy = dy + 0.5_dp
+    dx = dx + 1.0_dp
+    dy = dy + 0.5_dp
   end do
   
 end subroutine ! end cc_initParticleDescriptor
@@ -349,6 +344,7 @@ end subroutine ! end cc_initParticleDescriptor
     ! read in penalty parameters
     call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY','dlambda',rproblem%dLambda,1E3_DP)
     call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','ipenalty',rproblem%ipenalty,1)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','ishape',rproblem%ishape,0)
 
     ! Type of boundary conditions
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&

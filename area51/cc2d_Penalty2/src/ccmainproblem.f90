@@ -55,6 +55,8 @@ module ccmainproblem
   use ccnonstationary
   use ccboundarycondition
   
+  use geometry
+  
   implicit none
   
 contains
@@ -105,6 +107,9 @@ contains
     type(t_timer) :: rtimerSolver
     type(t_ParticleDescriptor) :: rParticleDescriptor
     integer :: i
+    real(DP) :: Dpoints(2,3)
+    real(DP) :: Dorigin
+    type(t_geometryObject) :: rgeomObject
     
     ! Ok, let us start.
     
@@ -144,22 +149,136 @@ contains
     ! structure for global access.
     call cc_initParameters (p_rproblem)
     
+    
     ! Number of particles
     p_rproblem%iParticles = 1
+    call cc_initParticleDescriptor(rParticleDescriptor)
 
+    ! Which shape (standard is 0 for circle particle)
     if(p_rproblem%iParticles .gt. 0)then
-      call cc_initParticleDescriptor(rParticleDescriptor)
-      
-      ! initialize the particles
-      call geom_initParticleCollct(p_rproblem%rparticleCollection,rParticleDescriptor)
-      ! Initial velocity
-      p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvelx = rParticleDescriptor%pparameters(5,1)
-      p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvely = rParticleDescriptor%pparameters(6,1)
-      
-      deallocate(rParticleDescriptor%pparameters)
-      ! we put the geometry object into the collection to make it easily accessible
-      call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
-                                     p_rproblem%rparticleCollection,.true.)
+      select case (p_rproblem%ishape)
+      case default ! circle
+        ! initialize the particles
+        call geom_initParticleCollct(p_rproblem%rparticleCollection,rParticleDescriptor)
+        !! Initial velocity
+        !p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvelx = rParticleDescriptor%pparameters(5,1)
+        !p_rproblem%rparticleCollection%p_rparticles(1)%Dtransvely = rParticleDescriptor%pparameters(6,1)
+        
+        deallocate(rParticleDescriptor%pparameters)
+        ! we put the geometry object into the collection to make it easily accessible
+        call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
+                                       p_rproblem%rparticleCollection,.true.)
+        
+        case (1) ! polygon
+        
+        Dpoints(1,1) = 0.20_DP
+        Dpoints(2,1) = 0.20_DP 
+        Dpoints(1,2) = 0.25_DP
+        Dpoints(2,2) = 0.15_DP
+        Dpoints(1,3) = 0.25_DP
+        Dpoints(2,3) = 0.25_DP 
+
+        
+        !Dpoints(1,1) = 0.38_DP
+        !Dpoints(2,1) = 0.20_DP 
+        !Dpoints(1,2) = 0.38_DP
+        !Dpoints(2,2) = 0.17_DP
+        !Dpoints(1,3) = 0.40_DP
+        !Dpoints(2,3) = 0.15_DP 
+        !Dpoints(1,4) = 0.42_DP
+        !Dpoints(2,4) = 0.14_DP 
+        !Dpoints(1,5) = 0.46_DP
+        !Dpoints(2,5) = 0.14_DP 
+        !Dpoints(1,6) = 0.49_DP
+        !Dpoints(2,6) = 0.15_DP 
+        !Dpoints(1,7) = 0.52_DP
+        !Dpoints(2,7) = 0.17_DP 
+        !Dpoints(1,8) = 0.56_DP
+        !Dpoints(2,8) = 0.19_DP 
+        !Dpoints(1,9) = 0.58_DP
+        !Dpoints(2,9) = 0.22_DP 
+        !Dpoints(1,10) = 0.60_DP
+        !Dpoints(2,10) = 0.24_DP 
+        !Dpoints(1,11) = 0.61_DP
+        !Dpoints(2,11) = 0.26_DP 
+        !Dpoints(1,12) = 0.62_DP
+        !Dpoints(2,12) = 0.26_DP 
+        !Dpoints(1,13) = 0.62_DP
+        !Dpoints(2,13) = 0.24_DP 
+        !Dpoints(1,14) = 0.62_DP
+        !Dpoints(2,14) = 0.21_DP 
+        !Dpoints(1,15) = 0.62_DP
+        !Dpoints(2,15) = 0.19_DP
+        !Dpoints(1,16) = 0.62_DP
+        !Dpoints(2,16) = 0.16_DP 
+        !Dpoints(1,17) = 0.62_DP
+        !Dpoints(2,17) = 0.14_DP 
+        !Dpoints(1,18) = 0.61_DP
+        !Dpoints(2,18) = 0.14_DP 
+        !Dpoints(1,19) = 0.60_DP
+        !Dpoints(2,19) = 0.16_DP 
+        !Dpoints(1,20) = 0.58_DP
+        !Dpoints(2,20) = 0.18_DP 
+        !Dpoints(1,21) = 0.56_DP
+        !Dpoints(2,21) = 0.21_DP 
+        !Dpoints(1,22) = 0.52_DP
+        !Dpoints(2,22) = 0.23_DP 
+        !Dpoints(1,23) = 0.49_DP
+        !Dpoints(2,23) = 0.25_DP 
+        !Dpoints(1,24) = 0.46_DP
+        !Dpoints(2,24) = 0.26_DP 
+        !Dpoints(1,25) = 0.42_DP
+        !Dpoints(2,25) = 0.26_DP 
+        !Dpoints(1,26) = 0.40_DP
+        !Dpoints(2,26) = 0.25_DP 
+        !Dpoints(1,27) = 0.38_DP
+        !Dpoints(2,27) = 0.23_DP 
+       
+          !Dpoints(1,1) = 0.38
+          !Dpoints(2,1) = 0.20 
+          !Dpoints(1,2) = 0.38
+          !Dpoints(2,2) = 0.18 
+          !Dpoints(1,3) = 0.39
+          !Dpoints(2,3) = 0.16 
+          !Dpoints(1,4) = 0.40
+          !Dpoints(2,4) = 0.15 
+          !Dpoints(1,5) = 0.42
+          !Dpoints(2,5) = 0.14 
+          !Dpoints(1,6) = 0.45
+          !Dpoints(2,6) = 0.14 
+          !Dpoints(1,7) = 0.47
+          !Dpoints(2,7) = 0.15 
+          !Dpoints(1,8) = 0.50
+          !Dpoints(2,8) = 0.16 
+          !Dpoints(1,9) = 0.52
+          !Dpoints(2,9) = 0.18 
+          !Dpoints(1,10) = 0.54
+          !Dpoints(2,10) = 0.20 
+          !Dpoints(1,11) = 0.52
+          !Dpoints(2,11) = 0.22 
+          !Dpoints(1,12) = 0.50
+          !Dpoints(2,12) = 0.24 
+          !Dpoints(1,13) = 0.47
+          !Dpoints(2,13) = 0.25 
+          !Dpoints(1,14) = 0.45
+          !Dpoints(2,14) = 0.26 
+          !Dpoints(1,15) = 0.42
+          !Dpoints(2,15) = 0.26 
+          !Dpoints(1,16) = 0.40
+          !Dpoints(2,16) = 0.25 
+          !Dpoints(1,17) = 0.39
+          !Dpoints(2,17) = 0.24 
+          !Dpoints(1,18) = 0.38
+          !Dpoints(2,18) = 0.22 
+
+          
+          call geom_initParticleCollct(p_rproblem%rparticleCollection,rParticleDescriptor)
+          call geom_init_polygon(p_rproblem%rparticleCollection%p_rparticles(1)%rgeometryObject,Dpoints,GEOM_POLYGON_GENERAL,&
+                                 (/ 0.0_DP,0.0_DP /))  
+          call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
+                                         p_rproblem%rparticleCollection,.true.)
+         
+      end select
     end if
 
     ! So now the different steps - one after the other.

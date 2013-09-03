@@ -145,7 +145,7 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 1
+ierrorAnalysisL2 = 0
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
@@ -218,7 +218,7 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 1
+iwriteBodyForces = 0
 
 # Filename for the body forces
 

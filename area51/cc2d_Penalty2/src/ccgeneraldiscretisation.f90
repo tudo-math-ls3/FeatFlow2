@@ -2493,16 +2493,7 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: istrongDerivativeBmatrix
-
-    ! Structure for a precomputed jump stabilisation matrix
-    type(t_jumpStabilisation) :: rjumpStabil
-    
     ! Cubature information structure for the cubature formula
-    type(t_scalarCubatureInfo) :: rcubatureInfoMass
-    type(t_scalarCubatureInfo) :: rcubatureInfoStokes
-    type(t_scalarCubatureInfo) :: rcubatureInfoB
     type(t_scalarCubatureInfo) :: rcubatureInfoPenalty, rcubatureInfoPenaltyAdapt
     
     ! Structure for the bilinear form for assembling Penalty,...
@@ -2521,9 +2512,6 @@ contains
      type(t_matrixScalar) :: rmatrixTemp
      h_IelementList = ST_NOHANDLE
 
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
-
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
@@ -2541,12 +2529,6 @@ contains
       p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
       ! For more then 1 particle, do loop
       p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
-      !print *,"dx =", p_rgeometryObject%RCOORD2D%dorigin(1)
-      !print *,"dy =", p_rgeometryObject%RCOORD2D%dorigin(2)
-      !
-    ! If there is an existing penalty matrix, release it.
-!    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
-!    call lsyssc_releaseMatrix (rmatrixTemp)
 
     ! Generate penalty matrix. The matrix has basically the same structure as
     ! our template FEM matrix, so we can take that.
