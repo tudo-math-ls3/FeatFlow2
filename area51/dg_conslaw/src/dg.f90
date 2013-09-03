@@ -52,11 +52,11 @@ program dg
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-!  ! Call the problem to solve. Scalar hyperbolic conservation law:
-!  call output_lbrk ()
-!  call output_line ('Calculating scalar hyperbolic conservation problem with DG')
-!  call output_line ('----------------------------------------------------------')
-!  call dg2d_0_simple
+  ! Call the problem to solve. Scalar hyperbolic conservation law:
+  call output_lbrk ()
+  call output_line ('Calculating scalar hyperbolic conservation problem with DG')
+  call output_line ('----------------------------------------------------------')
+  call dg2d_0_simple
   
 !  ! Call the problem to solve. Hyperbolic conservation law, system case:
 !  call output_lbrk ()
@@ -95,11 +95,11 @@ program dg
 !  call output_line ('----------------------------------')
 !  call dg2d_dgmpd_run
 
-  ! Call the problem to solve. Convection diffusion:
-  call output_lbrk ()
-  call output_line ('Convection diffusion equation, multigrid solver')
-  call output_line ('-----------------------------------------------')
-  call dg2d_dgmcd_run
+!  ! Call the problem to solve. Convection diffusion:
+!  call output_lbrk ()
+!  call output_line ('Convection diffusion equation, multigrid solver')
+!  call output_line ('-----------------------------------------------')
+!  call dg2d_dgmcd_run
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

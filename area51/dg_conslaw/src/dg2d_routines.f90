@@ -156,7 +156,7 @@ contains
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvectorScalar%bissorted) then
        call output_line('Vector must be unsorted!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
        call sys_halt()
@@ -1700,6 +1700,8 @@ contains
     integer :: NVBD
 
     integer, dimension(:), pointer :: p_InodalProperty
+    
+    real(dp) :: dtemp
 
     ! Get pointer to the solution data
     call lsyssc_getbase_double (rvector,p_Ddata)
@@ -1833,10 +1835,16 @@ contains
           ! of all elements containing this vertex
           if (ddu > 0.0_dp) then
              dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
+             
+!             dtemp = min(200.0_dp, (duimax(nvert)-duc)/ddu)
+!             dalphatemp = 0.5_dp*(1.0_dp+dtemp - sqrt((1.0_dp-dtemp)**2.0_dp +0.001))
 
              !if (abs(duimax(nvert)-duc)<abs(0.1*duc)) dalphatemp = 1.0_dp
           elseif (ddu < 0.0_dp) then
              dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
+             
+!             dtemp = min(200.0_dp,(duimin(nvert)-duc)/ddu)
+!             dalphatemp = 0.5_dp*(1.0_dp+dtemp - sqrt((1.0_dp-dtemp)**2.0_dp +0.001))
 
              !if (abs(duimin(nvert)-duc)<abs(0.1*duc)) dalphatemp = 1.0_dp
           else ! (dui==duc)
@@ -1844,6 +1852,8 @@ contains
           end if
 
           dalpha = min(dalphatemp,dalpha)
+          
+!          dalpha = 0.5_dp*(dalpha+dalphatemp - sqrt((dalpha-dalphatemp)**2.0_dp +0.00001))
 
 
        end do ! ivert
@@ -9552,7 +9562,7 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrix%isortStrategy .gt. 0) then
+    if (rmatrix%bcolumnsSorted.or.rmatrix%browsSorted) then
        call output_line ('Matrix-structure must be unsorted!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
        call sys_halt()
@@ -10811,7 +10821,8 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrix%RmatrixBlock(1,1)%isortStrategy .gt. 0) then
+    if (rmatrix%RmatrixBlock(1,1)%bcolumnsSorted.or.&
+        rmatrix%RmatrixBlock(1,1)%browsSorted) then
        call output_line ('Matrix-structure must be unsorted!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
        call sys_halt()
@@ -12634,7 +12645,8 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrix%RmatrixBlock(1,1)%isortStrategy .gt. 0) then
+    if (rmatrix%RmatrixBlock(1,1)%bcolumnsSorted.or.&
+        rmatrix%RmatrixBlock(1,1)%browsSorted) then
        call output_line ('Matrix-structure must be unsorted!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
        call sys_halt()
@@ -14033,7 +14045,8 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrix%isortStrategy .gt. 0) then
+    if (rmatrix%bcolumnsSorted.or.&
+        rmatrix%browsSorted) then
        call output_line ('Matrix-structure must be unsorted!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
        call sys_halt()
@@ -16203,7 +16216,8 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrix%isortStrategy .gt. 0) then
+    if (rmatrix%bcolumnsSorted.or.&
+        rmatrix%browsSorted) then
        call output_line ('Matrix-structure must be unsorted!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
        call sys_halt()
@@ -17328,7 +17342,7 @@ contains
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvectorScalar%bissorted) then
        call output_line('Vector must be unsorted!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
        call sys_halt()

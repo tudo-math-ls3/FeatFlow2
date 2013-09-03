@@ -119,7 +119,7 @@
     ! rform%ballCoeffConstant = .false.
     ! rform%BconstantCoeff = .false.
     ! call bilf_dg_buildMatrixScEdge2D_ss (rform, CUB_G5_1D, .false., rmatrix,&
-          rsol, raddTriaData, flux_dg_buildMatrixScEdge2D_sim,rcollection)
+    !        rsol, raddTriaData, flux_dg_buildMatrixScEdge2D_sim,rcollection)
     
     
   !</description>

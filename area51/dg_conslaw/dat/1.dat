@@ -1,7 +1,8 @@
+<<<<<<< .mine
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmin = 1
+nlmin = 8
 nlmax = 8
 
 # Name of the parametrisation file
@@ -52,13 +53,13 @@ triname = ./pre/QUAD.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 4
+FEkind = 2
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 1000000000000
+dt = 0.001
 
 # Final time
 ttfinal = 3.0
@@ -117,7 +118,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d
@@ -133,4 +134,5 @@ outtype = 2
 makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
+=======
 videotimestep = 0.005

@@ -346,6 +346,25 @@ contains
 
 
     Dvalues(:,:) = 0.0_dp
+    
+    
+    
+! Scalar circular convection
+  do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+       dx = Dpoints(1,i,j)
+       dy = Dpoints(2,i,j)
+       
+       ! Unsteady
+       drad = sqrt((1.0_dp-dx)*(1.0_dp-dx)+dy*dy)
+       if ((0.25_dp.le.drad).and.(0.75.ge.drad))  Dvalues(i,j) = 1.0_dp
+       
+!       ! Smooth
+!       dr = sqrt((1.0_dp-dx)**2.0_dp+dy*dy)
+!       Dvalues(i,j) = exp(-30.0_dp*(dr-0.5_dp)**2.0_dp)
+       
+    end do
+    end do
 
 
 !! Euler: Isentropic vortex
@@ -360,15 +379,15 @@ contains
 !    end do
 !    end do
 
-! Linear convection
-  do i = 1, size(Dvalues,1)
-    do j = 1, size(Dvalues,2)
-       dx = Dpoints(1,i,j)
-       dy = Dpoints(2,i,j)
-       drad = sqrt(dx*dx+dy*dy)
-       Dvalues(i,j) = drad**3.0_dp !min(drad,1.0_dp)
-    end do
-    end do
+!! Linear convection
+!  do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       dx = Dpoints(1,i,j)
+!       dy = Dpoints(2,i,j)
+!       drad = sqrt(dx*dx+dy*dy)
+!       Dvalues(i,j) = drad**3.0_dp !min(drad,1.0_dp)
+!    end do
+!    end do
 
 
 
@@ -1801,7 +1820,29 @@ contains
           dr = abs( sqrt((dx-1.00_dp)*(dx-1.00_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
           !dr = abs( sqrt((dx-1.00_dp-1.0_dp/64.0_dp)*(dx-1.00_dp-1.0_dp/64.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
           ! if ((dy.le.0.0_dp))
-          if (IelementList(iel)==0) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
+          !if (IelementList(iel)==0) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
+          
+!          if (IelementList(iel)==0) Dsolutionvalues(2,ipoint,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
+
+
+
+!! Unsteady circular convection
+!if (IelementList(iel)==0) then
+!  Dsolutionvalues(2,ipoint,iel) = 0.0_DP
+!  
+!  if (abs(dx-0.5_dp)<0.25_dp) then
+!    Dsolutionvalues(2,ipoint,iel) = 1.0_DP
+!  end if
+!
+!end if
+
+
+
+! Smooth circular convection
+if (IelementList(iel)==0) then
+  dr = sqrt((1.0_dp-dx)**2.0_dp+dy*dy)
+  Dsolutionvalues(2,ipoint,iel) = exp(-30.0_dp*(dr-0.5_dp)**2.0_dp)
+end if
 
 
 
@@ -1816,14 +1857,14 @@ contains
           !          DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
           !        end if
 
-          !      ! BC for circular convection
-          !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
-          !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
-          !        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
-          !          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
-          !        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
-          !          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
-          !        end if
+!                ! BC for circular convection
+!                if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
+!                  dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
+!                  if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
+!                    Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
+!                  elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
+!                    Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+!                  end if
 
           !      ! BC for circular sinus convection
           !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
@@ -1835,11 +1876,18 @@ contains
 
 
 
+!          ! Upwind flux
+!          if (dvn.ge.0) then
+!             Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
+!          else
+!             Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel)
+!          end if
+          
           ! Upwind flux
           if (dvn.ge.0) then
              Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
           else
-             Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel)
+             Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(2,ipoint,iel)
           end if
 
           ! Centered Flux

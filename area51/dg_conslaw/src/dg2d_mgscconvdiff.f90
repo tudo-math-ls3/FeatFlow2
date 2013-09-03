@@ -31,7 +31,7 @@
 !# where \sigma_{F,K} = p(p+1) |F|_{d-1}/|T|_d
 !# with p = polynomial degree, |.|_{d/d-1} the d(-1) dimensional
 !# Hausdorff measure. On the boundary \sigma_F=\sigma_{F,T} and
-!# on an interior face we take the average.!#
+!# on an interior face we take the average.
 !#
 !# 
 !# Adding the terms for the convection part 
@@ -200,7 +200,7 @@ contains
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
     
     ! Set convection and diffusion parameters
-    rproblem%dnu = 2.0_dp**(-8_dp)  !1.0_dp/1024.0_dp
+    rproblem%dnu      = 1.0_dp**(-0_dp)
     rproblem%Dbeta(1) = 1.0_dp
     rproblem%Dbeta(2) = 1.0_dp
 
@@ -331,6 +331,9 @@ contains
     case (4)
        ielementType = EL_DG_Q2_2D
        rproblem%ipolDeg = 4
+   case (5)
+       ielementType = EL_DG_T3_2D
+       rproblem%ipolDeg = 3
     end select
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -473,8 +476,8 @@ contains
             dgmcd_flux_dg_MatrixScalarMgEdge,&
             rproblem%rcollection)!, cconstrType)
 
-!       call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1), '',&
-!                                  .true., 0, 'test.txt','(E20.10)')
+       call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1), '',&
+                                  .true., 0, 'test.txt','(E20.10)')
   
     end do
     
@@ -581,7 +584,7 @@ contains
     
 
     ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rsmoother2
+    type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rsmoother2, p_rsmoother3
 !    type(t_linsolPointer), dimension(:), allocatable :: p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -739,7 +742,7 @@ contains
 
         ! Set up UMFPACK coarse grid solver.
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)
-
+        
       else
         ! Setting up Jacobi smoother for multigrid would be:
         ! CALL linsol_initJacobi (p_rsmoother)
@@ -753,7 +756,7 @@ contains
 !        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
         
         
-!        nullify(p_rpreconditioner)
+        nullify(p_rpreconditioner)
 !        call linsol_initJacobi (p_rpreconditioner)
 !        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
 !         call linsol_initBlockJac (p_rpreconditioner)
@@ -765,15 +768,21 @@ contains
 !        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
 !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
 !        call linsol_initSSOR (p_rsmoother, 1.0_dp)
+!        call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
 
-!        call linsol_convertToSmoother (p_rsmoother,1,1.0_DP)
+!        call linsol_convertToSmoother (p_rsmoother,2,1.0_DP)
+
+        call linsol_initMILUs1x1 (p_rsmoother2,0,0.0_DP)
+        call linsol_convertToSmoother (p_rsmoother2,2,1.0_DP)
 
 
         call linsol_initBlockUpwGS (p_rsmoother, rproblem%Dbeta, &
                 rproblem%RlevelInfo(i)%p_rdiscretisation%p_rtriangulation, &
                 rproblem%RlevelInfo(i)%raddTriaData%p_Dnormals)
 
-        call linsol_convertToSmoother (p_rsmoother,1,1.0_DP)
+        call linsol_convertToSmoother (p_rsmoother,2,1.0_DP)
+        
+        
         
       end if
     
@@ -781,9 +790,9 @@ contains
       ! for pre- and post-smoothing.
       call linsol_getMultigrid2Level (p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
       p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-      p_rlevelInfo%p_rpresmoother => null() !p_rsmoother
-      p_rlevelInfo%p_rpostsmoother => p_rsmoother
-      
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother2
+     
       ! Attach our user-defined projection to the level. (Matrices)
       call linsol_initProjMultigrid2Level(p_rlevelInfo, &
                                           rproblem%RlevelInfo(i)%rprojection)
@@ -799,8 +808,11 @@ contains
 !    ! Set to W-cycle
 !    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
 
-    ! Set to V-cycle
-    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 1
+!    ! Set to V-cycle
+!    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 1
+
+    ! Set to F-cycle
+    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 0
 
     ! Attach the system matrices to the solver.
     !
@@ -871,6 +883,7 @@ contains
     p_rsolverNode1%depsAbs = 0.0_dp
     p_rsolverNode1%nmaxIterations = 5000
     p_rsolverNode1%iresNorm = 0
+    
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -1171,11 +1184,11 @@ contains
     
     sofile = './gmv/u2d'
 
-!    ! Output solution to gmv file
-!    call dg2gmv(p_rvector%Rvectorblock(1),3,sofile,-1)
-!
-!    ! Output solution to vtk file
-!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+    ! Output solution to gmv file
+    call dg2gmv(p_rvector%Rvectorblock(1),0,sofile,-1)
+
+    ! Output solution to vtk file
+    call dg2vtk(p_rvector%Rvectorblock(1),0,sofile,-1)
     
     write(*,*) ''
    
