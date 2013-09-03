@@ -29405,7 +29405,7 @@ contains
           nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
     else
       call storage_getsize(h_IedgeListIdx, isize)
-      if (isize .lt. nmaxColor) then
+      if (isize .lt. nmaxColor+1) then
         call storage_free(h_IedgeListIdx)
         call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
             nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
