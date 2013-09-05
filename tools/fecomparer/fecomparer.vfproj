@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{6CB95B8D-1FFF-4D88-8BD2-96BCB5E33BF7}">
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{4613323E-7EE1-4264-A19E-0FA0423D7BD2}">
 	<Platforms>
 		<Platform Name="Win32"/>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32d.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="dbg|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x86-dbg">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x86-dbg.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -14,19 +14,9 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32r.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
-				<Tool Name="VFResourceCompilerTool"/>
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
-				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64d.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="dbg|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x64-dbg">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x64-dbg.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -34,19 +24,9 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64r.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
-				<Tool Name="VFResourceCompilerTool"/>
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
-				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Debug-OpenMP|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32d-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="dbg-omp|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x86-dbg-omp">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x86-dbg-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -54,9 +34,9 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Debug-OpenMP|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64d-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="dbg-omp|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x64-dbg-omp">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x64-dbg-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -64,9 +44,9 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release-OpenMP|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32r-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="opt|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x86-opt">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Optimization="optimizeFull" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x86-opt.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -74,9 +54,29 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Release-OpenMP|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64r-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+		<Configuration Name="opt|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x64-opt">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Optimization="optimizeFull" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x64-opt.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="opt-omp|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x86-opt-omp">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Optimization="optimizeFull" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x86-opt-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="opt-omp|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName).if12-x64-opt-omp">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Optimization="optimizeFull" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\.." OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName).if12-x64-opt-omp.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -85,35 +85,11 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
-		<Filter Name="Data Files" Filter="dat"/>
+		<Filter Name="Data Files" Filter="dat">
+		<File RelativePath=".\data\fecomparer.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath=".\src\tutorial.f90"/>
-		<File RelativePath=".\src\tutorial001a.f90"/>
-		<File RelativePath=".\src\tutorial001b.f90"/>
-		<File RelativePath=".\src\tutorial001c.f90"/>
-		<File RelativePath=".\src\tutorial001d.f90"/>
-		<File RelativePath=".\src\tutorial001e.f90"/>
-		<File RelativePath=".\src\tutorial001f.f90"/>
-		<File RelativePath=".\src\tutorial002a.f90"/>
-		<File RelativePath=".\src\tutorial002b.f90"/>
-		<File RelativePath=".\src\tutorial003a.f90"/>
-		<File RelativePath=".\src\tutorial003b.f90"/>
-		<File RelativePath=".\src\tutorial003c.f90"/>
-		<File RelativePath=".\src\tutorial003d.f90"/>
-		<File RelativePath=".\src\tutorial003e.f90"/>
-		<File RelativePath=".\src\tutorial004a.f90"/>
-		<File RelativePath=".\src\tutorial005a.f90"/>
-		<File RelativePath=".\src\tutorial005b.f90"/>
-		<File RelativePath=".\src\tutorial005c.f90"/>
-		<File RelativePath=".\src\tutorial006a.f90"/>
-		<File RelativePath=".\src\tutorial006b.f90"/>
-		<File RelativePath=".\src\tutorial006c.f90"/>
-		<File RelativePath=".\src\tutorial006d.f90"/>
-		<File RelativePath=".\src\tutorial006e.f90"/>
-		<File RelativePath=".\src\tutorial006f.f90"/>
-		<File RelativePath=".\src\tutorial006g.f90"/>
-		<File RelativePath=".\src\tutorial006h.f90"/>
-		<File RelativePath=".\src\tutorial006i.f90"/>
-		<File RelativePath=".\src\tutorial006j.f90"/>
-		</Filter></Files>
+		<File RelativePath=".\src\fecomparer.f90"/>
+		<File RelativePath=".\src\fecompbase.f90"/>
+		<File RelativePath=".\src\q1projection.f90"/>
+		<File RelativePath=".\src\solutions.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

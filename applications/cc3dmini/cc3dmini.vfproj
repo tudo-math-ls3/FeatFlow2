@@ -86,34 +86,8 @@
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<Filter Name="1D">
-		<File RelativePath=".\src\poisson1d_callback.f90"/>
-		<File RelativePath=".\src\poisson1d_method0_simple.f90"/>
-		<File RelativePath=".\src\poisson1d_method1_mg.f90"/></Filter>
-		<Filter Name="2D">
-		<File RelativePath=".\src\poisson2d_callback.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_block.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_cmsort.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_neumann.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_ravthomas.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_simple.f90"/>
-		<File RelativePath=".\src\poisson2d_method0_smart.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_em30.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_fbc.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_hadapt.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_l2prj.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_mg.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_ncc.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_prolmat.f90"/>
-		<File RelativePath=".\src\poisson2d_method1_robin.f90"/>
-		<File RelativePath=".\src\poisson2d_method2.f90"/>
-		<File RelativePath=".\src\poisson2d_method2_cmsort.f90"/>
-		<File RelativePath=".\src\poisson2d_method2_collect.f90"/>
-		<File RelativePath=".\src\poisson2d_method2_mg.f90"/></Filter>
-		<Filter Name="3D">
-		<File RelativePath=".\src\poisson3d_callback.f90"/>
-		<File RelativePath=".\src\poisson3d_method0_simple.f90"/>
-		<File RelativePath=".\src\poisson3d_method1_em30.f90"/>
-		<File RelativePath=".\src\poisson3d_method1_mg.f90"/></Filter>
-		<File RelativePath=".\src\poisson.f90"/></Filter></Files>
+		<File RelativePath=".\src\cc3dmini.f90"/>
+		<File RelativePath=".\src\cc3dmini_aux.f90"/>
+		<File RelativePath=".\src\cc3dmini_callback.f90"/>
+		<File RelativePath=".\src\cc3dmini_method1.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

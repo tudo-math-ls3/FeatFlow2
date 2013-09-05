@@ -4,36 +4,36 @@
 		<Platform Name="Win32"/>
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+		<Configuration Name="dbg|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-dbg" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32d.lib"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-dbg.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
-		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32.lib"/>
+		<Configuration Name="opt|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-opt.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
-		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+		<Configuration Name="dbg|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-dbg" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64d.lib"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-dbg.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
-		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64.lib"/>
+		<Configuration Name="opt|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-opt.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>

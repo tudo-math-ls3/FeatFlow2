@@ -4,8 +4,8 @@ rem ***************************************************************************
 rem Compile Win32 libraries
 rem ***************************************************************************
 
-call .\bin\buildlib_win.cmd Debug Win32
-call .\bin\buildlib_win.cmd Release Win32
+call .\bin\buildlib_win.cmd dbg Win32
+call .\bin\buildlib_win.cmd opt Win32
 
 
 rem ***************************************************************************

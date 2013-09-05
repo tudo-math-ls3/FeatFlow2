@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "anisodiff", "anisodiff.vfproj", "{46BE5248-7E4C-4207-81E8-0F0D42901BB1}"
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "cc2dmini", "cc2dmini.vfproj", "{46BE5248-7E4C-4207-81E8-0F0D42901BB1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E} = {E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}
 	EndProjectSection

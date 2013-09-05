@@ -4,8 +4,8 @@ rem ***************************************************************************
 rem Compile Win64 libraries
 rem ***************************************************************************
 
-call .\bin\buildlib_win.cmd Debug Win64
-call .\bin\buildlib_win.cmd Release Win64
+call .\bin\buildlib_win.cmd dbg x64
+call .\bin\buildlib_win.cmd opt x64
 
 
 rem ***************************************************************************
