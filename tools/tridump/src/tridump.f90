@@ -13,7 +13,7 @@ program tridump
 
   type(t_boundary) :: rbnd
   type(t_triangulation) :: rtria
-  character(len=256) :: sarg, smesh, sname
+  character(len=256) :: sarg, smesh, sname, spredir
   integer :: i, iarg, nref, ndim
   real(DP) :: ddist, dline, dalpha
   real(DP), dimension(2) :: Dbox
@@ -30,6 +30,8 @@ program tridump
 
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
+  
+  if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./mesh"
 
   ! print help
   if(sys_ncommandLineArgs() .lt. 1) then
@@ -149,13 +151,13 @@ program tridump
   if(.not. bgen) then
     ! read boundary and mesh
     if(ndim .eq. 2) then
-      call output_line("Reading mesh from './mesh/"//trim(smesh)//".tri'...")
-      call boundary_read_prm(rbnd, './mesh/' // trim(smesh) // '.prm')
-      call tria_readTriFile2D (rtria, './mesh/' // trim(smesh) // '.tri', rbnd)
+      call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
+      call boundary_read_prm(rbnd, trim(spredir)//"/"// trim(smesh) // '.prm')
+      call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri', rbnd)
       bbnd = .true.
     else if(ndim .eq. 3) then
-      call output_line("Reading mesh from './mesh/"//trim(smesh)//".tri'...")
-      call tria_readTriFile3D (rtria, './mesh/' // trim(smesh) // '.tri')
+      call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
+      call tria_readTriFile3D (rtria, trim(spredir)//"/"// trim(smesh) // '.tri')
       bbnd = .false.
     else
       call output_line("ERROR: no input mesh specified")
