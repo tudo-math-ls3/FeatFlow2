@@ -1615,11 +1615,11 @@ contains
   logical, intent(in), optional :: bshare
 !</input>
 
-!<intputoutput>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing information in rdestDiscr is released if necessary.
   type(t_blockDiscretisation), intent(inout), target :: rdestDiscr
-!</intputoutput>
+!</inputoutput>
 
 !</subroutine>
 

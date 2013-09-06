@@ -3090,6 +3090,7 @@ contains
   ! True if given data is not-a-number
   logical :: sys_isNANQP
 !</result>
+!</function>
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANQP = ieee_is_nan(qx)
@@ -3137,6 +3138,7 @@ contains
   ! True if given data is not-a-number
   logical :: sys_isNANDP
 !</result>
+!</function>
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANDP = ieee_is_nan(dx)
@@ -3177,6 +3179,7 @@ contains
   ! True if given data is not-a-number
   logical :: sys_isNANSP
 !</result>
+!</function>
 
 #ifdef HAS_INTRINSIC_IEEE_ARITHMETIC
   sys_isNANSP = ieee_is_nan(fx)
