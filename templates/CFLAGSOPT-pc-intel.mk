@@ -464,6 +464,36 @@ LDFLAGSOPT   := -xS
 endif
 endif
 
+ifeq ($(call match,$(ID),(pc|pc64)-sandybridge_ep-.*-intel-.*),yes)
+ifeq ($(shell grep "\bavx\b" /proc/cpuinfo),)
+# No AVX support in kernel, only available from 2.6.30 onwards
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: CPU has AVX features, but the (current) kernel not yet. Disabling AVX optimisations.'; \
+	    echo '***          In case of cross-compilation, this auto-disabling might be wrong if the target kernel'; \
+	    echo '***          is newer than the kernel of the current machine, namely >= 2.6.30'; \
+CFLAGSOPTF77 := -D__pentium4 -D__pentium4__ -D__tune_pentium4__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -D__SSE__ -D__MMX__
+CFLAGSOPTF90 := -D__pentium4 -D__pentium4__ -D__tune_pentium4__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -D__SSE__ -D__MMX__
+CFLAGSOPTC   := -D__pentium4 -D__pentium4__ -D__tune_pentium4__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -D__SSE__ -D__MMX__
+CFLAGSOPTCXX := -D__pentium4 -D__pentium4__ -D__tune_pentium4__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -D__SSE__ -D__MMX__
+LDFLAGSOPT   := -D__pentium4 -D__pentium4__ -D__tune_pentium4__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -D__SSE__ -D__MMX__
+else
+ifeq ($(call intelminversion,11,1),yes)
+# AVX support in kernel and compiler version
+CFLAGSOPTF77 := -xAVX
+CFLAGSOPTF90 := -xAVX
+CFLAGSOPTC   := -xAVX
+CFLAGSOPTCXX := -xAVX
+LDFLAGSOPT   := -xAVX
+else
+CFLAGSOPTF77 := -xS
+CFLAGSOPTF90 := -xS
+CFLAGSOPTC   := -xS
+CFLAGSOPTCXX := -xS
+LDFLAGSOPT   := -xS
+endif
+endif
+endif
+
 # Intel Core CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3,
 # SSE4.1, SSE4.2, AVX, AES, PCLMUL, FSGSBASE, RDRND and F16C
 # instruction set support.
