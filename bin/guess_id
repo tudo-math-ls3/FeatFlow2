@@ -300,7 +300,7 @@ case ${id} in
 			    core="westmere"
 			    ;;
 			42|45)
-		            # Core i3-{2125,2140} + i5-2467M + i7-2600
+		            # Core i3-{2125,2140} + i5-2467M + i7-2600, Xeon E5-4620
 			    cpu="sandybridge"
 			    ;;
 			58|62)
