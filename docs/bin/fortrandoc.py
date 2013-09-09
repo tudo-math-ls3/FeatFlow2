@@ -2,16 +2,22 @@
 #
 # encoding:utf-8
 #
-# Fortrandoc
+# Fortrandoc.py (v1.0.0)
 #
-# Python-based parser for FEAT2 documentation.
+# Python-based parser for FEAST/FEATFLOW documentation.
 #
-# (c) 2006,2007 Thomas Rohkaemper <thomas.rohkaemper@uni-dortmund.de>
+# (c) 2006-2013 Thomas Rohkaemper <thomas.rohkaemper@tu-dortmund.de>
 #
-# Last change: November, 12th 2007
+# v1.0.0 (07.09.2013):
+#
+#   * unified feast and featflow version of fortrandoc.py
+#   * introduced a description tag for groups/constantblocks which can
+#     be used for multiline descriptions instead of the description-attribute
 #
 """
-Python-based parser for FEAT2 documentation.
+fortrandoc.py
+
+Python-based parser for FEAST documentation.
 
 usage: fortrandoc.py <output types> [options] <files>
 
@@ -22,6 +28,8 @@ options:
   -s, --strip-extension
                         strip extension from the filename
   -e, --exit-on-error   exit on first error
+  -f, --force           continue after errors
+  -v, --verbose         show verbose information about the extraction process
 
   output types:
     -t, --tex           generate LaTeX output
@@ -30,7 +38,7 @@ options:
     -g HEADERFILE, --generate-latex-definitions=HEADERFILE
                         generate LaTeX definitions
 
-(c) 2006,2007 Thomas Rohkaemper
+(c) 2006-2013 Thomas Rohkaemper
 """
 
 # Workaround for different versions of Python
@@ -49,6 +57,13 @@ def error(error_code, msg):
     if not options.force:
         from sys import exit
         exit(error_code)
+
+def verbose_msg(msg):
+    "Print error message if --verbose was set."
+
+    global options
+    if options.verbose:
+        print '  *', msg
 
 # =================================================================
 
@@ -563,7 +578,7 @@ class LaTeXExporter:
         if module.publics:
             f.writelines([self.cmd('sectionpublics'), '\n\n'])
             for var in module.publics:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if module.types:
             f.writelines(['\sectiontypes\n\n'])
@@ -573,17 +588,17 @@ class LaTeXExporter:
         if module.constants:
             f.writelines([self.cmd('sectionconstants'), '\n\n'])
             for var in module.constants:
-                self.write_item_or_group(var, f, 'constant')
+                self.write_variable_or_group(var, f, 'constant')
 
         if module.global_variables:
             f.writelines([self.cmd('sectionglobals'), '\n\n'])
             for var in module.global_variables:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if module.private_variables:
             f.writelines([self.cmd('sectionprivates'), '\n\n'])
             for var in module.private_variables:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if module.interfaces:
             f.writelines([self.cmd('sectioninterfaces'), '\n\n'])
@@ -619,7 +634,7 @@ class LaTeXExporter:
                 self.end('desc')
             ])
         for var in typedef.variables:
-            self.write_item_or_group(var, f)
+            self.write_variable_or_group(var, f)
         f.writelines([ self.end('typedef'), '\n\n' ])
 
     def write_subroutine(self, sub, f):
@@ -638,17 +653,17 @@ class LaTeXExporter:
         if sub.inputvars:
             f.writelines([self.cmd('sectionvariables', 'Input variables'), '\n\n'])
             for var in sub.inputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if sub.inoutputvars:
             f.writelines([self.cmd('sectionvariables', 'Input/Output variables'), '\n\n'])
             for var in sub.inoutputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if sub.outputvars:
             f.writelines([self.cmd('sectionvariables', 'Output variables'), '\n\n'])
             for var in sub.outputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if sub.errors:
             f.writelines([self.cmd('sectionerrors'), '\n\n'])
@@ -660,7 +675,7 @@ class LaTeXExporter:
         #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
 
         if sub.remarks:
-            f.writelines([self.cmd('sectionvariables', 'Remarks'), '\n\n', self.begin('desc'), self.texify(sub.remarks), '\n', self.end('desc'), '\n'])
+            f.writelines([self.cmd('sectionremarks'), '\n\n', self.begin('desc'), self.texify(sub.remarks), '\n', self.end('desc'), '\n'])
             
         f.writelines([
             self.end('subroutinedef'), '\n\n',
@@ -690,17 +705,17 @@ class LaTeXExporter:
         if fn.inputvars:
             f.writelines([self.cmd('sectionvariables', 'Input variables'), '\n\n'])
             for var in fn.inputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if fn.inoutputvars:
             f.writelines([self.cmd('sectionvariables', 'Input/Output variables'), '\n\n'])
             for var in fn.inoutputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if fn.outputvars:
             f.writelines([self.cmd('sectionvariables', 'Output variables'), '\n\n'])
             for var in fn.outputvars:
-                self.write_item_or_group(var, f)
+                self.write_variable_or_group(var, f)
 
         if fn.errors:
             f.writelines([self.cmd('sectionerrors'), '\n\n'])
@@ -722,7 +737,7 @@ class LaTeXExporter:
             r'\pagebreak[0]', '\n\n'
         ])
                 
-    def write_item_or_group(self, vg, f, texvarid='variable'):
+    def write_variable_or_group(self, vg, f, texvarid='variable'):
         if isinstance(vg, Group):
             f.writelines([self.begin('vargroup', vg.description), '\n'])
             for var in vg.variables:
@@ -763,13 +778,12 @@ class LaTeXExporter:
         (r'<ul>.+?</ul>', lambda s, t: t.replace('<ul>','\\underline{').replace('</ul>', '}')),
         (r'<it>.+?</it>', lambda s, t: t.replace('<it>','\\textit{').replace('</it>', '}')),
         ('\\$', '\\$'),
-        (r'_',  '\\textunderscore '),
+        (r'_', '\\textunderscore{}'),
         (r'\\', '\\\\'),
         (r'#', '\\#'),
         (r'%', '\\%'),
-        (r'\s->\s', ' $\\to$ '),
-        (r' -> ', ' $\\to$ '),
-        (r' => ', ' $\\,\\Rightarrow\\,$ '),
+        (r'\s?-+>\s?', ' $\\to$ '),
+        (r'\s?=>\s?', ' $\\,\\Rightarrow\\,$ '),
         (re.escape(r'^'), '\\symbol{94}'),
         (re.escape(r'&'), '\\&'),
         ('.', lambda s, t: t)
@@ -806,7 +820,7 @@ class LaTeXExporter:
         return "\\begin{%s}\n" % name
 
     def end(self, name):
-        r"Create a string of the formn \end{name}."
+        r"Create a string of the form \end{name}."
         return "\\end{%s}\n" % name
 
 # =================================================================
@@ -991,12 +1005,10 @@ class Module:
             name = node.get_name()
             if name == 'name':
                 self.name = node.get_text().strip()
+                verbose_msg('Module %s.' % self.name)
             elif name == 'purpose':
                 self.purpose = self.clean_description(node.get_text())
-            elif name == 'remark':
-                text = self.clean_description(node.get_text())
-                self.remarks = text.strip()
-            elif name == 'remarks':
+            elif name == 'remark' or name == "remarks":
                 text = self.clean_description(node.get_text())
                 self.remarks = text.strip()
             elif name == 'subroutine':
@@ -1036,6 +1048,7 @@ class Module:
                 params.remove('')
             fn = Function(m.group("name"), params)
             self.subroutines.append(fn)
+            verbose_msg('Adding subroutine %s.' % fn.name)
             
             for n in node:
                 t = n.get_name()
@@ -1050,14 +1063,12 @@ class Module:
                 elif t == 'description':
                     text = self.clean_description(n.get_text())
                     fn.description = text.strip()
-                elif t == 'remark':
-                    text = self.clean_description(n.get_text())
-                    fn.remarks = text.strip()
-                elif t == 'remarks':
+                elif t == 'remark' or t == 'remarks':
                     text = self.clean_description(n.get_text())
                     fn.remarks = text.strip()
                 elif t == 'errors':
                     text = self.clean_description(n.get_text())
+
                     # filter out error tags with 'none'
                     if text.strip().find('none') >= 0:
                         fn.errors.append(('', 'none'))
@@ -1075,7 +1086,7 @@ class Module:
         else:
             error(12, 'Subroutine: Pattern did not match: %.120s...' % text)
                         
-    FUNCTION = re.compile(r"\A\s*?(?P<retval>.+?)\s*?function\s+(?P<name>\w+)\s*\((?P<params>[^\)]*)\)\s*?")
+    FUNCTION = re.compile(r"\A\s*?(?P<retval>.+?)\s*?function\s+?(?P<name>\w+)\s*\((?P<params>[^\)]*)\)\s*?")
 
     # regular expressions for code cleanup
     RE_XMLCOMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
@@ -1094,9 +1105,9 @@ class Module:
 
     # regular expressions for description cleanup
     # RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]*', re.MULTILINE)
-    RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]?', re.MULTILINE)
+    RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]*', re.MULTILINE)
     RE_ONLY_HASH = re.compile(r'^[ \t]*#+[ \t]*$', re.MULTILINE)
-    RE_BEGIN_HASH = re.compile(r'^[ \t]*#[ \t]?', re.MULTILINE)
+    RE_BEGIN_HASH = re.compile(r'^[ \t]*#[ \t]*', re.MULTILINE)
     RE_END_HASH = re.compile(r'[ \t]*#[ \t]*$', re.MULTILINE)
 
     def clean_description(self, text):
@@ -1122,6 +1133,7 @@ class Module:
                 params.remove('')
             fn = Function(m.group("name"), params, m.group("retval").strip())
             self.functions.append(fn)
+            verbose_msg('Adding function %s.' % fn.name)
             
             for n in node:
                 t = n.get_name()
@@ -1136,10 +1148,7 @@ class Module:
                 elif t == 'description':
                     text = self.clean_description(n.get_text())
                     fn.description = text.strip()
-                elif t == 'remark':
-                    text = self.clean_description(n.get_text())
-                    fn.remarks = text.strip()
-                elif t == 'remarks':
+                elif t == 'remark' or t == 'remarks':
                     text = self.clean_description(n.get_text())
                     fn.remarks = text.strip()
                 elif t == 'errors':
@@ -1169,6 +1178,7 @@ class Module:
         text = self.clean_code(text)
 
         DESCRIPTION = re.compile(r'description\s*=\s*"(.*?)"', re.DOTALL)
+        DESCRIPTIONTAG = re.compile(r'\<description\>(.*?)\<\/description\>', re.DOTALL)
         self.active_group = None
         self.current_comment = ''
 
@@ -1179,10 +1189,9 @@ class Module:
                 error(15, 'Found invalid <group>: %s' % token)
             if not m:
                 #error(16, 'Group does not have a valid description: %s' % token)
-                self.active_group =  Group('Miscellaneous')
+                self.active_group =  Group('Miscelleaneous')
             else:
-                self.active_group =  Group(m.group(1))
-                print "Group", m.group(1)
+                self.active_group =  Group(self.clean_description(m.group(1)))
             l.append(self.active_group)
 
         def end_group(scanner, token):
@@ -1193,6 +1202,13 @@ class Module:
 
         def commentblock(scanner, token):
             self.current_comment += token.strip()
+
+        def descriptionblock(scanner, token):
+            if not self.active_group:
+                error(17, '<description> tags are only valid in groups or constantblocks.')
+            m = re.search(DESCRIPTIONTAG, token)
+            if m:
+                self.active_group.description = self.clean_description(m.group(1)).strip()
 
         def blank_lines(scanner, token):
             self.current_comment = ''
@@ -1208,6 +1224,7 @@ class Module:
                     v = Variable(m[2], vartype, self.current_comment)
                 else:
                     v = Variable(m[2], vartype)
+                verbose_msg('Adding variable entry for %s.' % v.name)
                 dim = re.search(r"(dimension\(.*?\))", m[1])
                 if dim:
                     v.dimension = dim.group(1)
@@ -1225,19 +1242,20 @@ class Module:
             print "[%s]\n" % token,
 
         VARSCANNER = Scanner([
-            (r'(?m)^[ \t]*?\n', blank_lines),
-            (r'(?m)^[ \t]*![^\n]*?\<[ \t]*\/group[^\>]*\>[^\n$]*', end_group),
-            (r'(?m)^[ \t]*![^\<]*\<[ \t]*group[ \t]+[^\>]*\>[^\n]*\n', begin_group),
-            (r'(?m)[^\n]*\<\s*\/constantblock[^>]*\>', end_group),
-            (r'(?m)[^\n]*\<\s*constantblock[^>]*\>', begin_group),
-            (r'(?m)([ \t]*![^\n]*\n)+', commentblock),
-            (r'(?m)[^\n!]*::[^\n]*\n', variable_definition),
-            #(r'(?m)^[^!\n]*?::.*?$', variable_definition),
-            (r'(?m)\n', None),
+            (r'^[ \t]*?\n', blank_lines),
+            (r'^[ \t]*![^\n]*?\<description\>(.|\n)*\<\/description\>', descriptionblock),
+            (r'^[ \t]*![^\n]*?\<[ \t]*\/group[^\>]*\>[^\n$]*', end_group),
+            (r'^[ \t]*![^\<]*\<[ \t]*group[ \t]*[^\>]*\>[^\n]*\n', begin_group),
+            (r'^[ \t]*![^\n]*?\<[ \t]*\/constantblock[^\>]*\>[^\n$]*', end_group),
+            (r'^[ \t]*![^\<]*\<[ \t]*constantblock[^\>]*\>', begin_group),
+            (r'([ \t]*![^\n]*\n)+', commentblock),
+            (r'^[^\n!]*?::.*?$', variable_definition),
+            #(r'^[^!\n]*?::.*?$', variable_definition),
+            (r'\n', None),
             (r'.', None)
             #(r'(?m)\n', None),
-        ])
-        #], re.MULTILINE)
+        #])
+        ], re.MULTILINE)
         VARSCANNER.scan(text)
 
     INTERFACE = re.compile(r'((?:^\s*![^\n]*\n)+)?(?:^\s*interface\s+(\w+)[ \t]*\n)', re.MULTILINE)
@@ -1248,16 +1266,17 @@ class Module:
         m = re.findall(self.INTERFACE, text)
         for comment, interface in m:
             comment = self.clean_description(comment)
+            verbose_msg('Adding interface %s.' % interface)
             self.interfaces.append((interface, comment))
 
     def extract_types(self, node):
         "Extract information from <types>."
         for n in node:
             name = n.get_name()
-            if name == 'type' or name == 'typeblock':
+            if name == 'type':
                 self.extract_type(n.get_text())
 
-    TYPE = re.compile(r'((?:\A\s*!.*\n)*)\s+type(?:block)?(?:,[ \t]*private)?(?:\s*\:\:)?\s+(?P<type>\S*?)\s*?\n\s+?(.*)\s+end\s+type\s+(?P=type)?', re.DOTALL)
+    TYPE = re.compile(r'((?:\A\s*!.*\n)*)\s+type(?:,[ \t]*private)?(?:\s*\:\:)?\s+(?P<type>\S*?)\s*?\n\s+?(.*)\s+end\s+type\s+(?P=type)?', re.DOTALL)
 
     def extract_type(self, text):
         "Extract type information from source."
@@ -1270,6 +1289,7 @@ class Module:
             description = re.sub("\n\s*!\s*", "\n", description).strip()
             name = m.group("type")
             typedef = Type(name, description)
+            verbose_msg('Adding type %s.' % typedef.name)
             self.extract_variables(m.group(3), typedef.variables)
             self.types.append(typedef)
         else:
@@ -1319,8 +1339,9 @@ def main():
     op.add_option('-d', '--output-dir', dest='outputdir', default=None, help='write all output files to the specified directory')
     op.add_option('-s', '--strip-extension', action='store_true', dest='stripextension', default=False, help='strip extension from the filename')
     op.add_option('-f', '--force', action='store_true', dest='force', default=False, help='continue after errors')
+    op.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False, help='show verbose messages')
     op.set_usage('%prog <output types> [options] <files>')
-    op.set_description('A parser for FEAT2 documentation.')
+    op.set_description('A parser for FEAST documentation.')
 
     # options are globally accessible
     global options
@@ -1424,4 +1445,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
