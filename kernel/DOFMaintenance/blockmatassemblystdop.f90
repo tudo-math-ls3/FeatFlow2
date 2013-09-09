@@ -3878,7 +3878,7 @@ contains
     ! If rvectorField is specified, it describes the underlying vector field.
 !</description>
 
-!</remarks>
+!<remarks>
     ! Remark 1:
     ! The routine currently assumes that all velocity components are discretised
     ! with the same FEM space.
@@ -4333,7 +4333,7 @@ contains
     ! If rvectorField is specified, it describes the underlying vector field.
 !</description>
 
-!</remarks>
+!<remarks>
     ! Remark 1:
     ! The routine currently assumes that all velocity components are discretised
     ! with the same FEM space.
@@ -5049,7 +5049,7 @@ contains
     ! If rvectorField is specified, it describes the underlying vector field.
 !</description>
 
-!</remarks>
+!<remarks>
     ! Remark 1:
     ! The routine currently assumes that all velocity components are discretised
     ! with the same FEM space.
@@ -5715,7 +5715,7 @@ contains
     ! If rvectorField is specified, it describes the underlying vector field.
 !</description>
 
-!</remarks>
+!<remarks>
     ! Remark 1:
     ! The routine currently assumes that all velocity components are discretised
     ! with the same FEM space.
@@ -6510,7 +6510,7 @@ contains
     ! If rvectorField is specified, it describes the underlying vector field.
 !</description>
 
-!</remarks>
+!<remarks>
     ! Remark 1:
     ! The routine currently assumes that all velocity components are discretised
     ! with the same FEM space.
