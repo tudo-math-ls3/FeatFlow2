@@ -447,6 +447,9 @@ contains
     call kktsp_controlLinearComb (&
         rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
         
+    ! Project to the admissible set
+    ! call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
+        
   end subroutine
 
   ! ***************************************************************************
