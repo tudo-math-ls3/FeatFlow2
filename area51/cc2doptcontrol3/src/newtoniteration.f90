@@ -432,11 +432,14 @@ contains
 
 !</subroutine>
 
-    ! Impose active set conditions to the solution (like Dirichlet boundary conditions)
+    ! Impose active set conditions to the correction.
+    ! As a result, we get a correction which, when being added to the solution,
+    ! gives the bounds on the active set.
     ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
     ! up before going down. Probably, this has an error or has to be after
     ! the linear combination below? I do not know.
-    ! call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
+    call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol,&
+        rcorrection=rcorrection)
 
     ! Currectly, this is just a linear combination of the control variables.
     !

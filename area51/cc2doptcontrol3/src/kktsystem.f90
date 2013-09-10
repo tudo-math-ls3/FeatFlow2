@@ -2485,7 +2485,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine kkt_imposeActiveSetConditions (rkktsystem,rdefect,rsolution,rrhs)
+  subroutine kkt_imposeActiveSetConditions (rkktsystem,rdefect,rsolution,rrhs,rcorrection)
   
 !<description>
   ! Whereever the intermediate control violates the bounds, this routine
@@ -2503,10 +2503,15 @@ end subroutine
   type(t_controlSpace), intent(inout), optional :: rdefect
 
   ! Solution vector to be modified.
+  ! If rcorrection is specified, rsolution is not modified.
   type(t_controlSpace), intent(inout), optional :: rsolution
 
   ! RHS vector to be modified.
   type(t_controlSpace), intent(inout), optional :: rrhs
+
+  ! Correction vector to be modified. If specified, the corresponding
+  ! solution rsolution must also be present.
+  type(t_controlSpace), intent(inout), optional :: rcorrection
 !</inputoutput>
 
 !</subroutine>
@@ -2515,7 +2520,7 @@ end subroutine
     integer :: icomp,istep,ierror
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rintermedControl
-    type(t_vectorBlock), pointer :: p_rdefect,p_rsolution,p_rrhs
+    type(t_vectorBlock), pointer :: p_rdefect,p_rsolution,p_rrhs,p_rcorrection
     type(t_spaceTimeVector), pointer :: p_rdualSol
     type(t_optcBDCSpace) :: roptcBDCspace
     type(t_spaceslSolverStat) :: rstatLocal
@@ -2594,6 +2599,11 @@ end subroutine
           if (present(rrhs)) then
             call sptivec_getVectorFromPool (&
                 rrhs%p_rvectorAccess,istep,p_rrhs)
+          end if
+
+          if (present(rcorrection)) then
+            call sptivec_getVectorFromPool (&
+                rcorrection%p_rvectorAccess,istep,p_rcorrection)
           end if
 
           ! icomp counts the component in the control
@@ -2676,25 +2686,52 @@ end subroutine
                       1.0_DP,p_rrhs%RvectorBlock(icomp),dwmin,dwmax)
                 end if
 
-                if (present(rsolution)) then
-                  ! Solution is forced to the bounds on the active set.
-                  ! Matches the RHS.
-                
-                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
-                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
-                  icomp = icomp + 1
-                  call nwder_applyMinMaxProjByDof (&
-                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                if (.not. present(rcorrection)) then
+                  if (present(rsolution)) then
+                    ! Solution is forced to the bounds on the active set.
+                    ! Matches the RHS.
+                  
+                    dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                    dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                    icomp = icomp + 1
+                    call nwder_applyMinMaxProjByDof (&
+                        p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                        1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                        1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
 
-                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
-                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
-                  icomp = icomp + 1
-                  call nwder_applyMinMaxProjByDof (&
-                      p_rsolution%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                    dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                    dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                    icomp = icomp + 1
+                    call nwder_applyMinMaxProjByDof (&
+                        p_rsolution%RvectorBlock(icomp),1.0_DP,&
+                        1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                        1.0_DP,p_rsolution%RvectorBlock(icomp),dwmin,dwmax)
+                  end if
+                else
+                
+                  ! Modify the correction. We need: rcorrection = min/max - rsolution
+                  ! on the active set. Then, adding rcorrection to the solution
+                  ! gives the bounds on the active set.
+                  if (present(rsolution)) then
+                    dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin1
+                    dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax1
+                    icomp = icomp + 1
+                    call nwder_applyMinMaxProjByDof (&
+                        p_rcorrection%RvectorBlock(icomp),1.0_DP,&
+                        1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                        1.0_DP,p_rcorrection%RvectorBlock(icomp),dwmin,dwmax,&
+                        dwAdd=0.0_DP,dwAddMin=-1.0_DP,dwAddMax=-1.0_DP,rfunctionAdd=p_rsolution%RvectorBlock(icomp))
+
+                    dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
+                    dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
+                    icomp = icomp + 1
+                    call nwder_applyMinMaxProjByDof (&
+                        p_rcorrection%RvectorBlock(icomp),1.0_DP,&
+                        1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                        1.0_DP,p_rcorrection%RvectorBlock(icomp),dwmin,dwmax,&
+                        dwAdd=0.0_DP,dwAddMin=-1.0_DP,dwAddMax=-1.0_DP,rfunctionAdd=p_rsolution%RvectorBlock(icomp))
+                  end if
+                
                 end if
 
               case default          
@@ -2908,8 +2945,12 @@ end subroutine
             call sptivec_commitVecInPool (rdefect%p_rvectorAccess,istep)
           end if
         
-          if (present(rsolution)) then
-            call sptivec_commitVecInPool (rsolution%p_rvectorAccess,istep)
+          if (present(rcorrection)) then
+            call sptivec_commitVecInPool (rcorrection%p_rvectorAccess,istep)
+          else
+            if (present(rsolution)) then
+              call sptivec_commitVecInPool (rsolution%p_rvectorAccess,istep)
+            end if
           end if
 
           if (present(rrhs)) then
@@ -3071,7 +3112,7 @@ end subroutine
     !
     ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
     ! up before going down. Probably, this has an error? I do not know.
-    ! call kkt_imposeActiveSetConditions (rkktsystem,rresidual)
+    call kkt_imposeActiveSetConditions (rkktsystem,rresidual)
 
     ! Calculate the norm or the residual
     call kkt_controlResidualNorm (&
@@ -3913,7 +3954,7 @@ end subroutine
     !
     ! Gives currently worse results for sigma=1. The nonlinear residual always jumps
     ! up before going down. Probably, this has an error? I do not know.
-    ! call kkt_imposeActiveSetConditions (rkktsystemDirDeriv%p_rkktsystem,rresidual)
+    call kkt_imposeActiveSetConditions (rkktsystemDirDeriv%p_rkktsystem,rresidual)
         
     if (present(dres)) then
       call kkt_controlResidualNorm (&
