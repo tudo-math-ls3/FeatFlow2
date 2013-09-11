@@ -441,18 +441,165 @@ contains
     call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol,&
         rcorrection=rcorrection)
 
-    ! Currectly, this is just a linear combination of the control variables.
-    !
-    !    u_n+1  =  u_n + g_n
-    !
-    ! Later, a step length control can be added here.
+    ! Type of step length control
+    select case (rsolver%rnewtonParams%radaptiveNewton%cstepLengthStrategy)
+    case (0)
+
+      ! No step length control
+      !
+      !    u_n+1  =  u_n + omega g_n
+      !
+      ! with omega from the solver structure.
+
+      call kktsp_controlLinearComb (&
+          rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
+
+    case (1)
     
-    call kktsp_controlLinearComb (&
-        rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
+      ! The first nstepLengthSteps iterations, take the alternative step length.
+      ! Then, switch to full Newton.
+      if (rsolver%riter%niterations .lt. rsolver%rnewtonParams%radaptiveNewton%nstepLengthSteps) then
+        call output_line ("Step length strategy 1: Using step length domega = "//&
+            trim(sys_sdEL(rsolver%rnewtonParams%radaptiveNewton%dstepLengthOmega,10)))
+            
+        call kktsp_controlLinearComb (&
+            rcorrection,rsolver%rnewtonParams%radaptiveNewton%dstepLengthOmega,&
+            rkktsystem%p_rcontrol,1.0_DP)
+      else
+        call output_line ("Step length strategy 1: Using step length domega = "//&
+            trim(sys_sdEL(rsolver%rnewtonParams%domega,10)))
+
+        call kktsp_controlLinearComb (&
+            rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
+      end if      
+    
+    end select
         
-    ! Project to the admissible set
-    ! call kkt_imposeActiveSetConditions (rkktsystem,rsolution=rkktsystem%p_rcontrol)
-        
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonit_smoothIterate (rsolver,rkktsystem,rstatistics)
+  
+!<description>
+  ! Applies smoothing to the current control
+!</description>
+  
+!<inputoutput>
+  ! Parameters for the Newton iteration.
+  type(t_spacetimeNewton), intent(inout) :: rsolver
+
+  ! Structure defining the KKT system. The control in this structure
+  ! defines the current "state" of the Newton algorithm.
+  ! On output, the primal and dual solution are updated.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+!</inputoutput>
+
+
+!<output>
+  ! Statistic structure. 
+  type(t_newtonitSolverStat), intent(out) :: rstatistics
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP), dimension(:), pointer :: p_Ddata
+    type(t_spaceslSolverStat) :: rlocalStat
+    
+    call stat_startTimer (rstatistics%rtotalTime)
+    
+    call sptivec_getVectorFromPool(rkktsystem%p_rcontrol%p_rvectorAccess,1,p_rvector)
+    call lsysbl_getbase_double (p_rvector,p_Ddata)
+
+    ! -------------------------------------------------------------
+    ! Step 1: Solve the primal system
+    ! -------------------------------------------------------------
+
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+      call output_line ("Nonlinear Smoothing: Solving the primal equation")
+    end if
+
+    ! Solve the primal equation, update the primal solution.
+    output_iautoOutputIndent = output_iautoOutputIndent + 2
+
+    call kkt_solvePrimal (rkktsystem,&
+        rsolver%cspatialInitCondPolicy,rsolver%rkktSubsolvers,rlocalStat)
+
+    output_iautoOutputIndent = output_iautoOutputIndent - 2
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
+
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
+      call output_line ("Nonlin. space-time Residual: Time for solving      : "//&
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      
+      call output_line ("Nonlin. space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
+    end if
+    
+    ! Add time to the time of the forward equation
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForward)
+
+    ! -------------------------------------------------------------
+    ! Step 2: Solve the dual system
+    ! -------------------------------------------------------------
+
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+      call output_line ("Nonlinear Smoothing: Solving the dual equation")
+    end if
+
+    ! Solve the dual equation, update the dual solution.
+    output_iautoOutputIndent = output_iautoOutputIndent + 2
+
+    call kkt_solveDual (rkktsystem,&
+        rsolver%cspatialInitCondPolicy,rsolver%rkktSubsolvers,rlocalStat)
+
+    output_iautoOutputIndent = output_iautoOutputIndent - 2
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
+    
+    ! Add time to the time of the backward equation
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackward)
+
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
+      call output_line ("Nonlinear Smoothing: Time for solving      : "//&
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+
+      call output_line ("Nonlinear Smoothing: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Nonlinear Smoothing:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Nonlinear Smoothing: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Nonlinear Smoothing: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
+      call output_line ("Nonlinear Smoothing: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
+    end if
+
+    ! -------------------------------------------------------------
+    ! Step 3: Calculate the control
+    ! -------------------------------------------------------------
+
+    call kkt_dualToControl (rkktsystem,rkktsystem%p_rcontrol,rsolver%rkktSubsolvers,rlocalStat)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
+
+    call stat_stopTimer (rstatistics%rtotalTime)
+
   end subroutine
 
   ! ***************************************************************************
@@ -577,6 +724,7 @@ contains
     type(t_newtonlinSolverStat) :: rstatisticsLinSol
     real(DP) :: delapsedReal, dres
     type(t_newtonitSolverStat) :: rlocalStat
+    integer :: ismooth
 
     ! Measure the total computational time
     call stat_startTimer(rtotalTime)
@@ -695,9 +843,11 @@ contains
         select case (rsolver%rnewtonParams%radaptiveNewton%cpartialNewton)
         case (NEWTN_PN_FULLNEWTON)
           rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
-          call output_line (&
-              "Partial Newton not used. Better use partial Newton (dual) in the first step!",&
-              OU_CLASS_WARNING,OU_MODE_STD,"newtonit_solve")
+          if (rsolver%riter%niterations .le. 1) then
+            call output_line (&
+                "Partial Newton not used. Better use partial Newton (dual) in the first step!",&
+                OU_CLASS_WARNING,OU_MODE_STD,"newtonit_solve")
+          end if
 
         case (NEWTN_PN_PARTIALNEWTON)
           rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_NONEWTON
@@ -798,6 +948,12 @@ contains
       ! or to any configured step-length control rule.
       call newtonit_updateControl (&
           rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
+          
+      ! Perform a couple of smoothing steps if desired.
+      do ismooth = 1,rsolver%rnewtonParams%radaptiveNewton%nsmoothingSteps
+        ! This is just: Calculate primal, calculate dual, calculate control from the dual.
+        call newtonit_smoothIterate (rsolver,p_rsolution,rstatistics)
+      end do
 
 !    ! DEBUG!!!      
 !    call kktsp_dualLinearComb (&

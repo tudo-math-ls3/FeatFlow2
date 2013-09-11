@@ -65,7 +65,7 @@ module structuresnewton
     ! the full Newton
     integer :: nminPartialNewtonIterations = 0
 
-    ! Maximum number of partial newton iterations before switching to
+    ! Maximum number of partial Newton iterations before switching to
     ! the full Newton
     integer :: nmaxPartialNewtonIterations = 0
 
@@ -104,6 +104,20 @@ module structuresnewton
     ! Lower bound for the absolute residual. Subproblems are not solved
     ! more exact than this.
     real(DP) :: dinexactNewtonTolAbs = 1E-15_DP
+    
+    ! Number of smoothing steps after a Newton step.
+    integer :: nsmoothingSteps = 0
+
+    ! Step length strategy.
+    ! =0: No step length control.
+    ! =1: Damp with domega for the first nsteplengthSteps steps, then switch to full Newton.
+    integer :: cstepLengthStrategy = 0
+
+    ! Damping parameter
+    real(DP) :: dstepLengthOmega = 1.0_DP
+
+    ! Number of steps
+    integer :: nstepLengthSteps = 0
 
   end type
   
@@ -364,6 +378,26 @@ contains
           "dinexactNewtonTolAbs", &
           rsolver%radaptiveNewton%dinexactNewtonTolAbs, &
           rsolver%radaptiveNewton%dinexactNewtonTolAbs)
+
+      call parlst_getvalue_int (rparamList, snewton, &
+          "nsmoothingSteps", &
+          rsolver%radaptiveNewton%nsmoothingSteps, &
+          rsolver%radaptiveNewton%nsmoothingSteps)
+
+      call parlst_getvalue_int (rparamList, snewton, &
+          "cstepLengthStrategy", &
+          rsolver%radaptiveNewton%cstepLengthStrategy, &
+          rsolver%radaptiveNewton%cstepLengthStrategy)
+
+      call parlst_getvalue_int (rparamList, snewton, &
+          "nstepLengthSteps", &
+          rsolver%radaptiveNewton%nstepLengthSteps, &
+          rsolver%radaptiveNewton%nstepLengthSteps)
+
+      call parlst_getvalue_double (rparamList, snewton, &
+          "dstepLengthOmega", &
+          rsolver%radaptiveNewton%dstepLengthOmega, &
+          rsolver%radaptiveNewton%dstepLengthOmega)
 
     end if
 
