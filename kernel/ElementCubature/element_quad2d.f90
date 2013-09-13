@@ -1087,10 +1087,59 @@ contains
     !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
     !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
     !
-    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! ***** ORIGINAL ERRONEOUS ASSUMPTION *****
+    ! Now the big assumption: We assume that our mapping s is bilinear!
     ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
     ! vanishes. We clearly point out that this is of course not true for
     ! isoparametric mappings!
+    !
+    ! ***** CORRECTION AND FURTHER INFORMATION *****
+    ! Unfortunately, the preceeding assumption is wrong. The Hessian matrix
+    ! Hs^{-1}(x) vanishes only if the mapping s is *linear*, but it does not do
+    ! so if the mapping is truly bilinear :(
+    !
+    ! Fortunately, it is possible to compute the basis Hessian Hf(x) even in
+    ! the case of nonlinear mappings s. Unfortunately, this requires the
+    ! Hessian Hs(y) of the transformation, which is currently not implemented
+    ! in FEAT2.
+    !
+    ! However, if someone ever gets bored enough and wants to implement the
+    ! evaluation of Hs(y), here comes the index-abomination required to compute
+    ! the second order derivatives of the basis function:
+    !
+    ! In the following, we denote by
+    !  - s : the transformation mapping between the reference and the
+    !        real element; s = (s_1, s_2)
+    !  - y : the evaluation point in reference coordinates
+    !  - x : the evaluation point in real coordinates, i.e. x := s(y)
+    !  - g : a basis function on the reference element
+    !  - f : the basis function on thr real element,
+    !        i.e. f(x) := g(s^{-1}(x) = g(y)
+    !  - Js : the inverse Jacobian matrix of s in the point y, which coincides
+    !         with the Jacobian matrix of s^{-1} in the point x
+    !  - Hs : the Hessian tensor of s in the point x,
+    !         i.e. Hs(y)_hij := d_{x_j} d_{x_i} s_h(y)
+    !  - Dg : the gradient of g in the point y, i.e. Dg(y)_i := d_{x_i} g(y)
+    !  - Hg : the Hessian matrix of g in the point y,
+    !         i.e. Hg(y)_ij := d_{x_j} d_{x_i} g(y)
+    !
+    ! With all of that, let (i,j) in { (2,0);(1,1);(0,2) } denote the
+    ! multi-index of the derivative of f which we want to compute, then we have:
+    !
+    ! d_{x_j} d_{x_j} f(x) =
+    !   sum_{p,q=1}^2 [ Js_{pi} * Js_{qj} * ( Hg_{pq}
+    !   - sum_{k=1}^2 [ Hs_{kpq} * sum_{l=1}^2 Dg_l * Js_{lk} ] ) ]
+    !
+    ! P.S.: No warranty!
+    !
+    ! ***** NEW ASSUMPTION *****
+    ! Now the big assumption: We assume that our mapping s is linear!
+    ! This implies that s^{-1} is also linear and therfore its Hessian matrix
+    ! Hs^{-1} vanishes. In consequence, this implementation will only produce
+    ! correct results for affine equivalent meshes, i.e. when all
+    ! quadrilaterals are actually parallelograms.
+    !
+    ! ***** REST OF ORIGINAL DESCRIPTION *****
     !
     ! With this assumption, we continue:
     !
@@ -1351,65 +1400,6 @@ contains
   ! if xx-, xy or yy-derivatives are desired
   if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
 
-    !x- and y-derivatives on reference element
-
-    ! Now we have to compute the derivatives on the real element by those on
-    ! the reference element. This is a little bit tricky!
-    !
-    ! Let us assume, out finite element function on the real element is
-    ! f(x) and the corresponding function on the reference element g(y),
-    ! so x is the real coordinate and y the reference coordinate.
-    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
-    ! It is inverse s^{-1} maps to the reference element.
-    ! We have:
-    !
-    !   f(x) = g(y) = g(s^{-1}(x))
-    !
-    ! We want to compute the hessian
-    !
-    !   Hf(x) = [ f11 f12 ]
-    !           [ f21 f22 ]
-    !
-    ! with fij = di dj f. By the chain rule, we have:
-    !
-    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
-    !         =  D [ D ( g(s^{-1}(x)) ) ]
-    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
-    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
-    !
-    ! Now the big assumption: We assume that out mapping s is bilinear!
-    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
-    ! vanishes. We clearly point out that this is of course not true for
-    ! isoparametric mappings!
-    !
-    ! With this assumption, we continue:
-    !
-    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
-    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
-    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
-    !
-    ! This is computable now. Let us write:
-    !
-    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
-    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
-    !
-    ! then we get:
-    !
-    !  Hf(x) = 1/det^2
-    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
-    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
-    !
-    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
-    !
-    !  = 1/det^2
-    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
-    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
-    !
-    ! so we have
-    !
-    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
-    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
-    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
 
     !x- and y-derivatives on reference element
     Dxj(:) = 1.0E0_DP / Ddetj(1:npoints)
@@ -1706,66 +1696,6 @@ contains
 
   ! if xx-, xy or yy-derivatives are desired
   if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
-
-    !x- and y-derivatives on reference element
-
-    ! Now we have to compute the derivatives on the real element by those on
-    ! the reference element. This is a little bit tricky!
-    !
-    ! Let us assume, out finite element function on the real element is
-    ! f(x) and the corresponding function on the reference element g(y),
-    ! so x is the real coordinate and y the reference coordinate.
-    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
-    ! It is inverse s^{-1} maps to the reference element.
-    ! We have:
-    !
-    !   f(x) = g(y) = g(s^{-1}(x))
-    !
-    ! We want to compute the hessian
-    !
-    !   Hf(x) = [ f11 f12 ]
-    !           [ f21 f22 ]
-    !
-    ! with fij = di dj f. By the chain rule, we have:
-    !
-    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
-    !         =  D [ D ( g(s^{-1}(x)) ) ]
-    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
-    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
-    !
-    ! Now the big assumption: We assume that out mapping s is bilinear!
-    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
-    ! vanishes. We clearly point out that this is of course not true for
-    ! isoparametric mappings!
-    !
-    ! With this assumption, we continue:
-    !
-    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
-    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
-    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
-    !
-    ! This is computable now. Let us write:
-    !
-    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
-    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
-    !
-    ! then we get:
-    !
-    !  Hf(x) = 1/det^2
-    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
-    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
-    !
-    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
-    !
-    !  = 1/det^2
-    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
-    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
-    !
-    ! so we have
-    !
-    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
-    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
-    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
 
     !x- and y-derivatives on reference element
     !$omp parallel do default(shared)&
