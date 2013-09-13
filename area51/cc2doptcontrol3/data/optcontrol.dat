@@ -100,6 +100,13 @@ dalphaEndTimeC = 0.0  # 1.0
 # Penalty parameter for the dirichlet boundary control
 ddirichletBCPenalty = 4.0
 
+# Penalty parameter for the end time condition in the dual equation.
+# This value is added to the weight of the mass matrix in the last timestep
+# of the dual equation. Standard=0.0, which implements the 
+# "first-optimise-then-discretise = first-discretise-then-optimise" strategy.
+# A higher value can be used to impose lamnda(T)=0.
+dendTimeCondDualPenalty = 0.0
+
 # Formulation of the Space-time problem.
 # =0: Formulation for the generation of reference results from papers
 # =1: usual formulation as specified in the DFG applicance

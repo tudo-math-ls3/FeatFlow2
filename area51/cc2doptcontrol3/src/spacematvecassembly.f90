@@ -1103,6 +1103,7 @@ contains
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
+    real(DP) :: dpenaltyDualMass
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddest,p_Dx
@@ -1213,6 +1214,9 @@ contains
             case (SPINITCOND_PREVITERATE)
               ! Nothing to do
             end select
+            
+            ! Penalty parameter for the mass matrix
+            dpenaltyDualMass = 0.0_DP
 
           else
           
@@ -1234,6 +1238,9 @@ contains
               ! Nothing to do
             end select
             
+            ! Penalty parameter for the mass matrix
+            dpenaltyDualMass = roperatorAsm%p_ranalyticData%p_rsettingsOptControl%dendTimeCondDualPenalty 
+
           end if
             
           ! ***********************************************
@@ -1268,7 +1275,7 @@ contains
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
             call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
-                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep + dpenaltyDualMass)
           end if
           
           ! -----------------------------------------
@@ -1717,6 +1724,7 @@ contains
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
+    real(DP) :: dpenaltyDualMass
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddest,p_Dx
@@ -1804,7 +1812,7 @@ contains
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
               call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
-                  -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
+                  -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep + dpenaltyDualMass)
             end if
             
             ! -----------------------------------------
@@ -1829,6 +1837,9 @@ contains
               ! Nothing to do
             end select
             
+            ! Penalty parameter for the mass matrix
+            dpenaltyDualMass = 0.0_DP
+
           else
           
             ! Get the timestep length from the last timestep
@@ -1848,6 +1859,9 @@ contains
             case (SPINITCOND_PREVITERATE)
               ! Nothing to do
             end select
+
+            ! Penalty parameter for the mass matrix
+            dpenaltyDualMass = roperatorAsm%p_ranalyticData%p_rsettingsOptControl%dendTimeCondDualPenalty 
 
           end if
             
@@ -1883,7 +1897,7 @@ contains
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
             call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
-                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep + dpenaltyDualMass)
           end if
           
           ! -----------------------------------------

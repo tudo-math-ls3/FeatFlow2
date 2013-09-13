@@ -142,6 +142,24 @@ dtolAbsPartialNewton = 1E99
 # Value = 0.0: Disable check.
 dtolRelPartialNewton = 1.0E-1
 
+# Number of smoothing steps after a Newton step.
+nsmoothingSteps = 0
+
+# --------------
+# Step length strategy
+# --------------
+
+# Step length strategy.
+# =0: No step length control.
+# =1: Damp with dstepLengthOmega for the first nsteplengthSteps steps, then switch to full Newton.
+cstepLengthStrategy = 0
+
+# Damping parameter
+dstepLengthOmega = 1.0
+
+# Number of steps
+nstepLengthSteps = 0
+
 # --------------
 # inexact Newton
 # --------------

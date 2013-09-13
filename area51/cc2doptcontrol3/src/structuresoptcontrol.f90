@@ -280,6 +280,9 @@ module structuresoptcontrol
     ! Penalty parameter for the dirichlet boundary control
     real(DP) :: ddirichletBCPenalty = 100.0_DP
     
+    ! Penalty parameter for the end time condition in the dual equation.
+    real(DP) :: dendTimeCondDualPenalty = 0.0_DP
+
     ! $\gamma$ parameter of the nonstationary optimal control functional
     real(DP) :: dalphaEndTimeC = 0.0_DP
 
@@ -623,9 +626,13 @@ contains
       end do
     end if
 
-            
+    ! Penalty parameter for the dirichlet boundary control            
     call parlst_getvalue_double (rparlist,ssectionOptC,&
         "ddirichletBCPenalty",roptcontrol%ddirichletBCPenalty,100.0_DP)
+     
+    # Penalty parameter for the end time condition in the dual equation.
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dendTimeCondDualPenalty",roptcontrol%dendTimeCondDualPenalty,0.0_DP)
         
     ! Type of the formulation
     call parlst_getvalue_int (rparlist,ssectionOptC,&
