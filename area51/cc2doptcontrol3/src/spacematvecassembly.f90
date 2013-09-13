@@ -1215,7 +1215,7 @@ contains
               ! Nothing to do
             end select
             
-            ! Penalty parameter for the mass matrix
+            ! Penalty parameter for the mass matrix in the last timestep
             dpenaltyDualMass = 0.0_DP
 
           else
@@ -1238,7 +1238,7 @@ contains
               ! Nothing to do
             end select
             
-            ! Penalty parameter for the mass matrix
+            ! Penalty parameter for the mass matrix in the last timestep
             dpenaltyDualMass = roperatorAsm%p_ranalyticData%p_rsettingsOptControl%dendTimeCondDualPenalty 
 
           end if
@@ -1837,7 +1837,7 @@ contains
               ! Nothing to do
             end select
             
-            ! Penalty parameter for the mass matrix
+            ! Penalty parameter for the mass matrix in the last timestep
             dpenaltyDualMass = 0.0_DP
 
           else
@@ -1860,7 +1860,7 @@ contains
               ! Nothing to do
             end select
 
-            ! Penalty parameter for the mass matrix
+            ! Penalty parameter for the mass matrix in the last timestep
             dpenaltyDualMass = roperatorAsm%p_ranalyticData%p_rsettingsOptControl%dendTimeCondDualPenalty 
 
           end if
@@ -6285,6 +6285,7 @@ contains
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     integer, dimension(1) :: Irows
+    real(DP) :: dpenaltyDualMass
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
@@ -6349,10 +6350,17 @@ contains
           ! Clear the temporary matrix
           call lsysbl_clearMatrix (rmatrix)
           
+          ! Penalty parameter for the mass matrix in the last timestep
+          if (idofTime .lt. rprimalSol%p_rvector%NEQtime) then          
+            dpenaltyDualMass = 0.0_DP
+          else
+            dpenaltyDualMass = roperatorAsm%p_ranalyticData%p_rsettingsOptControl%dendTimeCondDualPenalty 
+          end if
+
           ! -----------------------------------------
           ! Mass matrix for timestepping
           call smva_getMassMatrix (roperatorAsm,rmatrix,&
-              roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
+              roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep + dpenaltyDualMass)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
