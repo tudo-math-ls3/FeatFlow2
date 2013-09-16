@@ -2,6 +2,15 @@
 
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
+#
+# Logic:
+# If a lock file exists, there is already a concurrent process unpacking the
+# tarball. In this case, we merely need to inform the user why this process
+# won't extract the tarball - to catch case where the lock file wrongfully
+# lingers. But by design it is not necessary to afterwards start extracting
+# the tarball, too.
+# If no lock file exists, extract the tarball and patch the sources, if
+# necessary.
 UNPACK=if test -f $(LOCKFILE); then \
 	    loop=0; \
 	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
