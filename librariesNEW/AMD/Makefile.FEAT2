@@ -226,7 +226,7 @@ $(AMD_TARBALL):
 # Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
 
-SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.2.0.tar.gz
+SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.2.1.tar.gz
 
 # List of required source files from SuiteSparse_config package. Purpose: let
 # them share a single common prerequisite that in turn is created by unpacking
@@ -243,9 +243,9 @@ LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_co
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME     = "SuiteSparse_config 4.2.0 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME     = "SuiteSparse_config 4.2.1 sources"
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.2.0.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.2.1.tar.gz
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD = echo
@@ -253,9 +253,9 @@ $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.2.0.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.2.1.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.2.0.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.2.1.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
 $(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
 $(SUITESPARSE_CONFIG_TARBALL):
