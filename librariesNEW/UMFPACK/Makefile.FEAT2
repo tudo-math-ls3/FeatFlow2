@@ -626,3 +626,4 @@ purge:
                 ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
                 ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_GPU.mk \
                 ../SuiteSparse_config/SuiteSparse_config_Mac.mk ../SuiteSparse_config/xerbla
+	-rmdir ../SuiteSparse_config
