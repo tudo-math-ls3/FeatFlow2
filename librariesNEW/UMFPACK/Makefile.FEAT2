@@ -424,7 +424,7 @@ SRC_AMD = ../AMD/Include/amd_internal.h ../AMD/Include/amd.h
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/Source/amd_valid.c
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/MATLAB/amd_mex.c
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 # To catch the case where several applications simultaneously
@@ -466,7 +466,7 @@ SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
 # existence indicates that the SuiteSparse_config tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.c
+LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.h
 # Avoid (in this case harmless) warning of kind:
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
@@ -515,7 +515,7 @@ SRC_UMFPACK = Include/umfpack.h \
 # existence indicates that the UMFPACK tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Doc/ChangeLog
+LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/README.txt
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL) $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.6.2 sources"
@@ -526,7 +526,7 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
 # Fortunately, sed on NEC's gateway is a sed that supports in place editing.
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.5 sources for NEC..."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.6 sources for NEC..."
 else
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
 endif

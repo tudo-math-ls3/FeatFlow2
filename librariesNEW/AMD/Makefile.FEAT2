@@ -196,7 +196,7 @@ SRC_AMD = Include/amd_internal.h Include/amd.h \
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/Source/amd_valid.c
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/MATLAB/amd_mex.c
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 # To catch the case where several applications simultaneously
@@ -238,7 +238,7 @@ SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
 # existence indicates that the SuiteSparse_config tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.c
+LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.h
 # Avoid (in this case harmless) warning of kind:
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
