@@ -12,6 +12,12 @@
     <ClCompile Include="..\..\kernel\System\high_res_clock.c">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\kernel\System\isdirectory.c">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\kernel\System\mkdir_recursive.c">
+      <Filter>System</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\kernel\System\storage_malloc.c">
       <Filter>System</Filter>
     </ClCompile>

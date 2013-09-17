@@ -3,8 +3,20 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
-
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
 #include "../feat2macros.h"
+
+int mkdir_wrapper(const char* buff)
+{
+  /* catch MSC compiler; this does not support the POSIX-style mkdir */
+#ifdef _MSC_VER
+  return _mkdir(buff);
+#else
+  return mkdir(buff, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+}
 
 /* This function does about the same as "mkdir -p":
  * It assumes *path_name to contain the path to a directory.
@@ -56,9 +68,9 @@ void mkdir_recursive(const char *path_name, int* ierr)
     /* this is to catch double / in paths */
     if (
 #if FEAT2_PP_OS_IS_WIN()
-	slash[-1] == '\\' ||
+  slash[-1] == '\\' ||
 #endif
-	slash[-1] == '/') {
+  slash[-1] == '/') {
       continue;
     }
     *slash = 0;
@@ -68,19 +80,19 @@ void mkdir_recursive(const char *path_name, int* ierr)
       /* path already exists, skip it */
       *ierr = EEXIST;
     } else {
-      rc = mkdir(buff, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+      rc = mkdir_wrapper(buff);
       *ierr = (rc) ? errno : 0;
     }
 
     switch(*ierr) {
       case 0:
-	count++;
+  count++;
       case EEXIST:
-	break;
+  break;
       case ENOTDIR:
       case EACCES:
       default:
-	goto quit;
+  goto quit;
     }
     *slash = '/';
   }

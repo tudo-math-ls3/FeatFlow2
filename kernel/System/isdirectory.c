@@ -1,6 +1,4 @@
-#include <sys/stat.h>
 #include <string.h>
-
 
 /* Several functions to detect whether a given string identifies a valid
  * file system object.
@@ -15,6 +13,38 @@
  */
 
 /* Detect whether given string identifies an existing directory */
+
+#ifdef _MSC_VER /* Windows implementation */
+
+#include <Windows.h>
+
+void isdirectory(char *name, int *isdir, int *ierr)
+{
+  *ierr = 0;
+  *isdir = 0;
+
+  if(strlen(name) <= 0)
+    *ierr = 1;
+  else
+  {
+    DWORD attribs = GetFileAttributes(name);
+    if(attribs == INVALID_FILE_ATTRIBUTES)
+    {
+      /* failed to retrieve attibutes */
+      *ierr = 2;
+    }
+    else
+    {
+      /* if bit 4 is set, the name identifies a directory */
+      *isdir = ((attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) ? 1 : 0;
+    }
+  }
+}
+
+#else /* POSIX conformant implementation */
+
+#include <sys/stat.h>
+
 void isdirectory(char *name, int *isdir, int *ierr)
 {
   struct stat sb;
@@ -31,24 +61,25 @@ void isdirectory(char *name, int *isdir, int *ierr)
       /* working code, but does not conform to C99, i.e.
        * gives an error when compiling with 'gcc -std=c99'. */
       /* switch (sb.st_mode & S_IFMT) {
-      	  case S_IFDIR:
-      	    *isdir = 1;
-      	    break;
-      	  case S_IFBLK:
-      	  case S_IFCHR:
-      	  case S_IFIFO:
-      	  case S_IFLNK:
-      	  case S_IFREG:
-      	  case S_IFSOCK:
-      	  default:
-      	    break;
-	} */
+          case S_IFDIR:
+            *isdir = 1;
+            break;
+          case S_IFBLK:
+          case S_IFCHR:
+          case S_IFIFO:
+          case S_IFLNK:
+          case S_IFREG:
+          case S_IFSOCK:
+          default:
+            break;
+  } */
 
       /* conforming to C99 */
       *isdir = S_ISDIR(sb.st_mode);
     }
   }
 }
+#endif
 
 void isdirectory_(char *name, int *isdir, int *ierr)
 {

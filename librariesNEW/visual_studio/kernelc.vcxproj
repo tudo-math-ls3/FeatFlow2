@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\kernel\Postprocessing\gmvwritef.c" />
     <ClCompile Include="..\..\kernel\System\high_res_clock.c" />
+    <ClCompile Include="..\..\kernel\System\isdirectory.c" />
+    <ClCompile Include="..\..\kernel\System\mkdir_recursive.c" />
     <ClCompile Include="..\..\kernel\System\storage_malloc.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
