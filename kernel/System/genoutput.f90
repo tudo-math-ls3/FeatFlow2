@@ -453,14 +453,14 @@ contains
 
     integer :: istatus ! status variable for opening procedure
 
-    if (trim(sfilename) .eq. "") then
-      write (*,'(A)') 'Error: io_openFileForWriting. sfilename undefined!'
+    if (len_trim(sfilename) .eq. 0) then
+      write (*,'(A)') 'Error: output_openLogfile. sfilename undefined!'
       return
     endif
 
     iunit = sys_getFreeUnit()
     if (iunit .eq. -1) then
-      write (*,'(A)') 'Error: io_openFileForWriting. No output channel available!'
+      write (*,'(A)') 'Error: output_openLogfile. No output channel available!'
       return
     endif
 
@@ -469,7 +469,7 @@ contains
 
     if (istatus .ne. 0) then
       write (unit=*, fmt=*) &
-          'Error: io_openFileForWriting. Error while opening file "',&
+          'Error: output_openLogfile. Error while opening file "',&
           trim(sfilename), '". ***'
       iunit = -1
     endif
