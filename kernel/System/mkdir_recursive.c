@@ -48,7 +48,7 @@ void mkdir_recursive(const char *path_name, int* ierr)
 #endif
 
 
-  len = strlen(path_name);  /* der Wert, der rauskommt, ist zu groß */
+  len = strlen(path_name);
   buff = (char *)malloc((len+1) * sizeof(char *));
   if (buff == NULL) {
     *ierr = -EINVAL;
