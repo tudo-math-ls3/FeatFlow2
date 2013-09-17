@@ -434,11 +434,12 @@ contains
 
   end function
 
+
   ! ***************************************************************************
 
-  !<function>
 
-  function io_isDirectory (spath) result (bexists)
+!<function>
+  function io_isDirectory (spath) result (bisDir)
 
   !<description>
     ! Checks whether a given string is a directory
@@ -451,37 +452,23 @@ contains
 
   !<result>
     ! Is .TRUE. if the given string is an existing directory
-    logical :: bexists
+    logical :: bisDir
   !</result>
 
-  !</function>
+!</function>
 
-    ! local variables
-    integer :: iunit,ios
+    integer(I32) :: ierr
+    integer(I32) :: iisdir
 
-    iunit = sys_getFreeUnit()
+    ! use wrapper for C system call stat() in kernel/arch/sysutils.c
+    external isdirectory
+    ierr = 0
+    bisDir = .FALSE.
+    call isdirectory(trim(spath) // achar(0), iisdir, ierr)
+    if (ierr .ge. 0) then
+      bisDir = (iisdir .gt. 0)
+    endif
 
-    inquire(file=trim(spath), exist=bexists, iostat=ios)
-
-    if (bexists) then
-
-      ! A file exists with given name
-      bexists = .false.
-
-    else
-
-      ! Try to open the 'non-existing' file
-      open(iunit, file=trim(spath), status='old',&
-          action='read', iostat=ios); close(iunit)
-
-      ! If we succeeded then the string is an existing directory
-      if (ios .eq. 0) bexists = .true.
-
-      ! Otherwise, no further action is required as bexists is
-      ! already set to .FALSE.
-
-    end if
-
-  end function
+  end function io_isDirectory
 
 end module io
