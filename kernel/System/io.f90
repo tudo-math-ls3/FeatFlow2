@@ -29,6 +29,9 @@
 !# 7.) io_isDirectory
 !#     -> Checks whether a given string is a directory
 !#
+!# 8.) io_makeDirectory
+!#     -> Creates a directory (including parent directories if needed)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -180,11 +183,11 @@ contains
 
 !<output>
 
-    !unit of the opened file
+    ! unit of the opened file
     integer, intent(out) :: iunit
 
-    !optional parameter (see description)
-    logical, intent(out),optional :: bfileExists
+    ! optional parameter (see description)
+    logical, intent(out), optional :: bfileExists
 
 !</output>
 !</subroutine>
@@ -192,17 +195,20 @@ contains
     logical :: bexists !true, if the file to be written in exists
     integer :: istatus !status variable for opening procedure
 
-    if (trim(sfilename) .eq. "") then
+    ! the result "dirname(sfilename)" would yield
+    character(len=len(sfilename)) :: sfilepath
+
+    if (len_trim(sfilename) .eq. 0) then
       call error_print(ERR_IO_EMPTYFILENAME, "io_openFileForWriting", ERR_NOT_CRITICAL, &
                        sarg1 = "sfilename")
       return
-    endif
+    end if
 
     iunit = sys_getFreeUnit()
     if (iunit .eq. -1) then
       call error_print(ERR_IO_NOFREEUNIT, "io_openFileForWriting", ERR_NOT_CRITICAL)
       return
-    endif
+    end if
 
     inquire(file=trim(sfilename), exist=bexists)
     if (.not. present(bformatted)) then
@@ -210,9 +216,14 @@ contains
         open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
             action="write")
       else
+        ! Ensure that the path up to the given file name does exist
+        call io_pathExtract(sfilename, sfilepath)
+        if (.not. io_isDirectory(sfilepath)) then
+          call io_makeDirectory(sfilepath)
+        end if
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
             position="append")
-      endif
+      end if
     else
       if (bexists .and. cflag .eq. SYS_REPLACE) then
         if (bformatted) then
@@ -223,6 +234,12 @@ contains
               action="write", form="unformatted")
         end if
       else
+        ! Ensure that the path up to the given file name does exist. If it does not,
+        ! create it
+        call io_pathExtract(sfilename, sfilepath)
+        if (.not. io_isDirectory(sfilepath)) then
+          call io_makeDirectory(sfilepath)
+        end if
         if (bformatted) then
           open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
               position="append", form="formatted")
@@ -230,15 +247,15 @@ contains
           open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
               position="append", form="unformatted")
         end if
-      endif
+      end if
     end if
     if (present(bfileExists)) then
       bfileExists = bexists
-    endif
+    end if
     if (istatus .ne. 0) then
       write(unit=*,fmt=*) "*** Error while opening file '", trim(sfilename), "'. ***"
       iunit = -1
-    endif
+    end if
 
   end subroutine io_openFileForWriting
 
@@ -460,7 +477,7 @@ contains
     integer(I32) :: ierr
     integer(I32) :: iisdir
 
-    ! use wrapper for C system call stat() in kernel/arch/sysutils.c
+    ! use wrapper for C system call stat() in kernel/System/isdirectory.c
     external isdirectory
     ierr = 0
     bisDir = .FALSE.
@@ -470,5 +487,46 @@ contains
     endif
 
   end function io_isDirectory
+
+
+  ! ***************************************************************************
+
+
+!<subroutine>
+  subroutine io_makeDirectory (spath)
+
+  !<description>
+    ! Portably creates directories (even recursively)
+  !</description>
+
+  !<input>
+    ! Path to the file.
+    character(len=*), intent(in) :: spath
+  !</input>
+
+!</subroutine>
+
+    external mkdir_recursive
+
+    ! status variable for (recursive) directory creation
+    ! > 0: number of subdirectories created
+    ! < 0: -errno
+    integer :: istatus
+
+
+    if (len_trim(spath) .eq. 0) then
+      call error_print(ERR_IO_EMPTYFILENAME, "io_makeDirectory", ERR_NOT_CRITICAL, &
+                       sarg1 = spath)
+      return
+    end if
+
+    ! Ensure to explicitly NULL-terminate the string when calling C function!
+    call mkdir_recursive(trim(spath) // achar(0), istatus)
+    if (istatus .lt. 0) then
+      call error_print(ERR_IO_MKDIR_P_FAILED, "io_makeDirectory", ERR_NOT_CRITICAL, &
+                       sarg1 = spath)
+    end if
+
+  end subroutine io_makeDirectory
 
 end module io

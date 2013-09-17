@@ -173,6 +173,7 @@ INC           = -I$(FEAT2BASEDIR)
 SRCEXTRA      = $(FEAT2BASEDIR)/kernel/Postprocessing/gmvwritef.c \
 		$(FEAT2BASEDIR)/kernel/System/high_res_clock.c \
 		$(FEAT2BASEDIR)/kernel/System/isdirectory.c \
+		$(FEAT2BASEDIR)/kernel/System/mkdir_recursive.c \
 		$(FEAT2BASEDIR)/kernel/System/signal_ccode.c \
 		$(FEAT2BASEDIR)/kernel/System/storage_malloc.c
 

@@ -451,7 +451,15 @@ contains
 
 !</subroutine>
 
+    integer :: i
     integer :: istatus ! status variable for opening procedure
+    character(len=len(sfilename)) :: sfilepath
+
+    ! use wrapper for C system call stat() in kernel/System/isdirectory.c
+    external isdirectory
+    ! use wrapper for C system call mkdir() in kernel/System/mkdir_recursive.c
+    external mkdir_recursive
+
 
     if (len_trim(sfilename) .eq. 0) then
       write (*,'(A)') 'Error: output_openLogfile. sfilename undefined!'
@@ -463,6 +471,34 @@ contains
       write (*,'(A)') 'Error: output_openLogfile. No output channel available!'
       return
     endif
+
+    ! Ensure that the path up to the given file name does exist
+    ! In short, this could be realised by
+    !    call io_pathExtract(sfilename, sfilepath)
+    !    if (.not. io_isDirectory(sfilepath)) then
+    !      call io_makeDirectory(sfilepath)
+    !    end if
+    ! but as this would introduce circular module dependencies inline ethe relevant code
+    ! here manually.
+    i = scan(sfilename, "/\\", .TRUE.)
+    if (i .ne. 0) then
+      ! Directory ends at position i.
+      sfilepath = sfilename(1:i-1)
+      call isdirectory(trim(sfilepath) // achar(0), i, istatus)
+      if (istatus .ge. 0) then
+        if (i .le. 0) then
+          ! Path does not exist, create it
+          call mkdir_recursive(trim(sfilepath) // achar(0), istatus)
+          if (istatus .lt. 0) then
+            write (*,'(A)') 'Error: output_openLogfile. Could not (auto-)create path to',&
+                            ' output file "', trim(sfilename), '". ***'
+          endif
+        endif
+      end if
+
+    else
+      ! No subdirectory contained in log file, no path needs creation
+    end if
 
     open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
           action="write")

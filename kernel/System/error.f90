@@ -46,14 +46,17 @@ module error
   !empty file name
   integer, parameter, public :: ERR_IO_EMPTYFILENAME      = 1403
 
+  !'mkdir -p' failed
+  integer, parameter, public :: ERR_IO_MKDIR_P_FAILED     = 1404
+
   !no free unit found in subroutine sys_getFreeunit
-  integer, parameter, public :: ERR_IO_NOFREEUNIT         = 1404
+  integer, parameter, public :: ERR_IO_NOFREEUNIT         = 1405
 
   !file not found error
-  integer, parameter, public :: ERR_IO_NOSUCHFILE         = 1405
+  integer, parameter, public :: ERR_IO_NOSUCHFILE         = 1406
 
   !trying to export a non-assembled matrix to disk
-  integer, parameter, public :: ERR_IO_MATRIX_UNASSEMBLED = 1406
+  integer, parameter, public :: ERR_IO_MATRIX_UNASSEMBLED = 1407
 
 !*********************************** 29 solver *************************************
 
@@ -311,6 +314,13 @@ contains
         Smessage(5) = "File name <" // trim(sarg1) // "> empty."
       else
         Smessage(5) = "File name empty."
+      endif
+
+    case (ERR_IO_MKDIR_P_FAILED)
+      if (present(sarg1)) then
+        Smessage(5) = "Could not (auto-)create path <" // trim(sarg1) // ">."
+      else
+        Smessage(5) = "Could not (auto-)create path to output file."
       endif
 
     case (ERR_IO_WRONGSTRUCT)
