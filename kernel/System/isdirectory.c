@@ -85,3 +85,8 @@ void isdirectory_(char *name, int *isdir, int *ierr)
 {
   isdirectory(name, isdir, ierr);
 }
+
+void isdirectory__(char *name, int *isdir, int *ierr)
+{
+  isdirectory(name, isdir, ierr);
+}
