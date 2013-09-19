@@ -29,8 +29,8 @@ SRCEXTRA_APP=" "
 APPONLYFLAGS="-Isrc"
 
 ################################################################
-# Define global memory layout
-APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
+# Define global memory layout and index addressing
+APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER -DIDXADDR=IDXADDR_F"
 
 ################################################################
 # Enable auto-tuning using genetic algorithms.
