@@ -166,7 +166,10 @@ program preproctest
   write(*,*) FEAT2_PP_STRING(FEAT2_PP_CONCAT(foo,bar))
   write(*,*)
 
+  ! Test #9: Conversion of floating point number to double precision constant
+  write(*,*) "Test #9: Conversion of FP-number to double precision constant"
   write(*,*) FEAT2_PP_CONST(1.0,DOUBLE_PREC)
+  write(*,*)
   
 contains
 
