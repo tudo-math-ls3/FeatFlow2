@@ -226,9 +226,9 @@
 #endif
 
 #define FEAT2_PP_GET_LANGUAGE1(language)          FEAT2_PP_GET_LANGUAGE1_I(language)
-#define FEAT2_PP_GET_LANGUAGE1_I(language)        FEAT2_PP_GET_LANGUAGE_##language()
+#define FEAT2_PP_GET_LANGUAGE1_I(language)        FEAT2_PP_EVAL(FEAT2_PP_GET_LANGUAGE_##language())
 #define FEAT2_PP_GET_LANGUAGE2(language,global)   FEAT2_PP_GET_LANGUAGE2_I(language,global)
-#define FEAT2_PP_GET_LANGUAGE2_I(language,global) FEAT2_PP_GET_LANGUAGE_##global(language)
+#define FEAT2_PP_GET_LANGUAGE2_I(language,global) FEAT2_PP_EVAL(FEAT2_PP_GET_LANGUAGE_##global(language))
 
 #define FEAT2_PP_GET_LANGUAGE_1(language)         LANGUAGE_C
 #define FEAT2_PP_GET_LANGUAGE_2(language)         LANGUAGE_F
