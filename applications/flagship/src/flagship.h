@@ -24,9 +24,9 @@
 #define SOA  1
 
 #if 0
-! !!! DO NOT EDIT THESE SETTINGS !!!
-! All kernel/application host routines rely on these settings.
-! !!! DO NOT EDIT THESE SETTINGS !!!
+! !!!!!!!!!!!!!!!!!!!!!!!!! DO NOT EDIT THESE SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!
+! !!! All kernel/application host routines rely on these settings.           !!!
+! !!!!!!!!!!!!!!!!!!!!!!!!! DO NOT EDIT THESE SETTINGS !!!!!!!!!!!!!!!!!!!!!!!!!
 #endif
 #define DIAGLIST_HOST     AOS
 #define EDGELIST_HOST     AOS
