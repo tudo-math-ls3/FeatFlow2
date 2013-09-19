@@ -179,7 +179,6 @@
 #endif
 
 
-
 #if 0
 !###############################################################################
 ! The following macro concatenates two tokens
@@ -207,16 +206,18 @@
 ! The following macro tries to detect the programming language automatically
 !
 ! Example: FEAT2_PP_AUTO_LANGUAGE()
-!          expands to the content of the global variable LANGUAGE if defined;
-!          if variable LANGUAGE is not set then we try to identify the
+!          expands to the content of the LANGUAGE variable if defined;
+!          if variable LANGUAGE is not defined then we try to identify the
 !          programming language by checking various preprocessor macros which
 !          are typically predefined by Fortran compilers.
 !          It is also possible to overwrite the global LANGUAGE variable by
 !          hand by passing the optional argument language.
+!
+! Note that this macro is supported in pure traditional mode!
 !###############################################################################
 #endif
 
-#define FEAT2_PP_AUTO_LANGUAGE(language) FEAT2_PP_GET_LANGUAGE_OVERRIDE(language)
+#define FEAT2_PP_AUTO_LANGUAGE(language) FEAT2_PP_GET_LANGUAGE2(language,LANGUAGE)
 
 #if 0
 !-------------------------------------------------------------------------------
@@ -224,22 +225,23 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
-#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_GET_LANGUAGE_/**/language()
-#else
-#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_GET_LANGUAGE_##language()
-#endif
-#define FEAT2_PP_GET_LANGUAGE_1()                LANGUAGE_C
-#define FEAT2_PP_GET_LANGUAGE_2()                LANGUAGE_F
+#define FEAT2_PP_GET_LANGUAGE1(language)          FEAT2_PP_GET_LANGUAGE1_I(language)
+#define FEAT2_PP_GET_LANGUAGE1_I(language)        FEAT2_PP_GET_LANGUAGE_##language()
+#define FEAT2_PP_GET_LANGUAGE2(language,global)   FEAT2_PP_GET_LANGUAGE2_I(language,global)
+#define FEAT2_PP_GET_LANGUAGE2_I(language,global) FEAT2_PP_GET_LANGUAGE_##global(language)
+
+#define FEAT2_PP_GET_LANGUAGE_1(language)         LANGUAGE_C
+#define FEAT2_PP_GET_LANGUAGE_2(language)         LANGUAGE_F
+#define FEAT2_PP_GET_LANGUAGE_LANGUAGE(language)  FEAT2_PP_GET_LANGUAGE1(language)
 
 #if defined(USE_PREPROC_F90CPP) ||                     \
     defined(__GFORTRAN__) || defined(__G95__) ||       \
     defined(_LANGUAGE_FORTRAN) ||                      \
     defined(__SUNPRO_F90) || defined (__SUNPRO_F95) || \
     defined(__INTEL_COMPILER) && !defined(__ICC)
-#define FEAT2_PP_GET_LANGUAGE_()  LANGUAGE_F
+#define FEAT2_PP_GET_LANGUAGE_(language) LANGUAGE_F
 #else
-#define FEAT2_PP_GET_LANGUAGE_()  LANGUAGE_C
+#define FEAT2_PP_GET_LANGUAGE_(language) LANGUAGE_C
 #endif
 
 
@@ -270,29 +272,12 @@
 #endif
 
 #define FEAT2_PP_CONST_LANG(value,precision,language)   FEAT2_PP_CONST_LANG_I(value,precision,language)
+#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_EVAL(FEAT2_PP_CONST_##precision##_##language(value))
 
-#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
-
-#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_/**/precision/**/_/**/language(value)
-#define FEAT2_PP_CONST_LANG_PREC(value,langprec)        FEAT2_PP_CONST_/**/langprec(value)
-#define FEAT2_PP_CONST_1_1(value) value/**/l
-#define FEAT2_PP_CONST_2_1(value) value
-#define FEAT2_PP_CONST_3_1(value) value/**/l
-#ifdef ENABLE_LARGEINT
-#define FEAT2_PP_CONST_4_1(value) value/**/l
-#else
-#define FEAT2_PP_CONST_4_1(value) value
+#if 0
+! Definition of constants in C
 #endif
-#define FEAT2_PP_CONST_5_1(value) value
-#define FEAT2_PP_CONST_6_1(value) value
-#define FEAT2_PP_CONST_7_1(value) value
-#define FEAT2_PP_CONST_8_1(value) value/**/l
-#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value/**/_/**/prec_f
 
-#else
-
-#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_##precision##_##language(value)
-#define FEAT2_PP_CONST_LANG_PREC(value,langprec)        FEAT2_PP_CONST_##langprec(value)
 #define FEAT2_PP_CONST_1_1(value) value##l
 #define FEAT2_PP_CONST_2_1(value) value
 #define FEAT2_PP_CONST_3_1(value) value##f
@@ -305,10 +290,10 @@
 #define FEAT2_PP_CONST_6_1(value) value
 #define FEAT2_PP_CONST_7_1(value) value
 #define FEAT2_PP_CONST_8_1(value) value##l
-#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value##_##prec_f
-#endif
 
-#define FEAT2_PP_CONST_CONCAT_F(value,prec_f) FEAT2_PP_CONST_CONCAT_F_I(value,prec_f)
+#if 0
+! Definition of constants in Fortran
+#endif
 
 #define FEAT2_PP_CONST_1_2(value) FEAT2_PP_CONST_CONCAT_F(value,QUAD_PREC_F)
 #define FEAT2_PP_CONST_2_2(value) FEAT2_PP_CONST_CONCAT_F(value,DOUBLE_PREC_F)
@@ -319,6 +304,8 @@
 #define FEAT2_PP_CONST_7_2(value) FEAT2_PP_CONST_CONCAT_F(value,INT32_PREC_F)
 #define FEAT2_PP_CONST_8_2(value) FEAT2_PP_CONST_CONCAT_F(value,INT64_PREC_F)
 
+#define FEAT2_PP_CONST_CONCAT_F(value,prec_f)   FEAT2_PP_CONST_CONCAT_F_I(value,prec_f)
+#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value##_##prec_f
 
 #if 0
 !###############################################################################
@@ -337,11 +324,5 @@
 #define FEAT2_PP_ID3(id1,id2,id3,base)         FEAT2_PP_ID2(id1,FEAT2_PP_ID2(id2,id3,base),base)
 #define FEAT2_PP_ID4(id1,id2,id3,id4,base)     FEAT2_PP_ID2(id1,FEAT2_PP_ID3(id2,id3,id4,base),base)
 #define FEAT2_PP_ID5(id1,id2,id3,id4,id5,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID4(id2,id3,id4,id5,base),base)
-
-
-
-
-
-
 
 #endif

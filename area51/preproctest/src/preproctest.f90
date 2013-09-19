@@ -170,6 +170,34 @@ program preproctest
   write(*,*) "Test #9: Conversion of FP-number to double precision constant"
   write(*,*) FEAT2_PP_CONST(1.0,DOUBLE_PREC)
   write(*,*)
+
+  ! Test #10: Automatic language detection (including manual overriding)
+  write(*,*) "Test #10: Automatic language detection feature"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_F"
+
+#define LANGUAGE LANGUAGE_F
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_F"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_F"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_F "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_F"
+#undef LANGUAGE
+
+#define LANGUAGE LANGUAGE_C
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_F"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_C "//&
+                                       "but with global variable LANGUAGE set to LANGUAGE_C"
+#undef LANGUAGE
+
+
+
+  write(*,*)
   
 contains
 
