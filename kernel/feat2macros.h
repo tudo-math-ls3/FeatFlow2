@@ -193,41 +193,12 @@
 !###############################################################################
 #endif
 
-#define FEAT2_PP_CONCAT(prefix,suffix)  FEAT2_PP_CONCAT2_I(prefix,suffix)
-#define FEAT2_PP_CONCAT2(token1,token2) FEAT2_PP_CONCAT2_I(token1,token2)
-#define FEAT2_PP_CONCAT3(token1,token2,token3) FEAT2_PP_CONCAT3_I(token1,token2,token3)
-#define FEAT2_PP_CONCAT4(token1,token2,token3,token4) FEAT2_PP_CONCAT4_I(token1,token2,token3,token4)
-#define FEAT2_PP_CONCAT5(token1,token2,token3,token4,token5) FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5)
-#define FEAT2_PP_CONCAT6(token1,token2,token3,token4,token5,token6) FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6)
-#define FEAT2_PP_CONCAT7(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7)
-#define FEAT2_PP_CONCAT8(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8)
-#define FEAT2_PP_CONCAT9(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9)
-#define FEAT2_PP_CONCAT10(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10)
+#define FEAT2_PP_CONCAT(prefix,suffix)  FEAT2_PP_CONCAT_I(prefix,suffix)
 
 #if FEAT2_PP_PREPROC_IS_TRADITIONAL()
-
-#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1/**/token2)
-#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1/**/token2/**/token3)
-#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4)
-#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5)
-#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6)
-#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7)
-#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8)
-#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9)
-#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1/**/token2/**/token3/**/token4/**/token5/**/token6/**/token7/**/token8/**/token9/**/token10)
-
+#define FEAT2_PP_CONCAT_I(token1,token2) FEAT2_PP_EVAL(token1/**/token2)
 #else
-
-#define FEAT2_PP_CONCAT2_I(token1,token2) FEAT2_PP_EVAL(token1##token2)
-#define FEAT2_PP_CONCAT3_I(token1,token2,token3) FEAT2_PP_EVAL(token1##token2##token3)
-#define FEAT2_PP_CONCAT4_I(token1,token2,token3,token4) FEAT2_PP_EVAL(token1##token2##token3##token4)
-#define FEAT2_PP_CONCAT5_I(token1,token2,token3,token4,token5) FEAT2_PP_EVAL(token1##token2##token3##token4##token5)
-#define FEAT2_PP_CONCAT6_I(token1,token2,token3,token4,token5,token6) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6)
-#define FEAT2_PP_CONCAT7_I(token1,token2,token3,token4,token5,token6,token7) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7)
-#define FEAT2_PP_CONCAT8_I(token1,token2,token3,token4,token5,token6,token7,token8) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8)
-#define FEAT2_PP_CONCAT9_I(token1,token2,token3,token4,token5,token6,token7,token8,token9) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9)
-#define FEAT2_PP_CONCAT10_I(token1,token2,token3,token4,token5,token6,token7,token8,token9,token10) FEAT2_PP_EVAL(token1##token2##token3##token4##token5##token6##token7##token8##token9##token10)
-
+#define FEAT2_PP_CONCAT_I(token1,token2) FEAT2_PP_EVAL(token1##token2)
 #endif
 
 
@@ -253,7 +224,11 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_CONCAT2(FEAT2_PP_GET_LANGUAGE_,language())
+#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
+#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_GET_LANGUAGE_/**/language()
+#else
+#define FEAT2_PP_GET_LANGUAGE_OVERRIDE(language) FEAT2_PP_GET_LANGUAGE_##language()
+#endif
 #define FEAT2_PP_GET_LANGUAGE_1()                LANGUAGE_C
 #define FEAT2_PP_GET_LANGUAGE_2()                LANGUAGE_F
 
@@ -295,23 +270,44 @@
 #endif
 
 #define FEAT2_PP_CONST_LANG(value,precision,language)   FEAT2_PP_CONST_LANG_I(value,precision,language)
-#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONCAT4(FEAT2_PP_CONST_,precision,_,language)(value)
 
-#define FEAT2_PP_CONST_LANG_PREC(value,langprec) FEAT2_PP_CONCAT2(FEAT2_PP_CONST_,langprec)(value)
-#define FEAT2_PP_CONST_1_1(value) FEAT2_PP_CONCAT2(value,l)
+#if FEAT2_PP_PREPROC_IS_TRADITIONAL()
+
+#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_/**/precision/**/_/**/language(value)
+#define FEAT2_PP_CONST_LANG_PREC(value,langprec)        FEAT2_PP_CONST_/**/langprec(value)
+#define FEAT2_PP_CONST_1_1(value) value/**/l
 #define FEAT2_PP_CONST_2_1(value) value
-#define FEAT2_PP_CONST_3_1(value) FEAT2_PP_CONCAT2(value,f)
+#define FEAT2_PP_CONST_3_1(value) value/**/l
 #ifdef ENABLE_LARGEINT
-#define FEAT2_PP_CONST_4_1(value) FEAT2_PP_CONCAT2(value,l)
+#define FEAT2_PP_CONST_4_1(value) value/**/l
 #else
 #define FEAT2_PP_CONST_4_1(value) value
 #endif
 #define FEAT2_PP_CONST_5_1(value) value
 #define FEAT2_PP_CONST_6_1(value) value
 #define FEAT2_PP_CONST_7_1(value) value
-#define FEAT2_PP_CONST_8_1(value) FEAT2_PP_CONCAT2(value,l)
+#define FEAT2_PP_CONST_8_1(value) value/**/l
+#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value/**/_/**/prec_f
 
-#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) FEAT2_PP_CONCAT3(value,_,prec_f)
+#else
+
+#define FEAT2_PP_CONST_LANG_I(value,precision,language) FEAT2_PP_CONST_##precision##_##language(value)
+#define FEAT2_PP_CONST_LANG_PREC(value,langprec)        FEAT2_PP_CONST_##langprec(value)
+#define FEAT2_PP_CONST_1_1(value) value##l
+#define FEAT2_PP_CONST_2_1(value) value
+#define FEAT2_PP_CONST_3_1(value) value##f
+#ifdef ENABLE_LARGEINT
+#define FEAT2_PP_CONST_4_1(value) value##l
+#else
+#define FEAT2_PP_CONST_4_1(value) value
+#endif
+#define FEAT2_PP_CONST_5_1(value) value
+#define FEAT2_PP_CONST_6_1(value) value
+#define FEAT2_PP_CONST_7_1(value) value
+#define FEAT2_PP_CONST_8_1(value) value##l
+#define FEAT2_PP_CONST_CONCAT_F_I(value,prec_f) value##_##prec_f
+#endif
+
 #define FEAT2_PP_CONST_CONCAT_F(value,prec_f) FEAT2_PP_CONST_CONCAT_F_I(value,prec_f)
 
 #define FEAT2_PP_CONST_1_2(value) FEAT2_PP_CONST_CONCAT_F(value,QUAD_PREC_F)
