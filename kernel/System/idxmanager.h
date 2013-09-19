@@ -120,15 +120,15 @@
 !###############################################################################
 #endif
 
-#define FEAT2_PP_AUTO_IDXOFFSET(language)        FEAT2_PP_GET_IDXOFFSET(FEAT2_PP_AUTO_LANGUAGE(language),FEAT2_PP_AUTO_IDXADDR(language))
-#define FEAT2_PP_GET_IDXOFFSET(language,idxaddr) FEAT2_PP_GET_IDXOFFSET_I(language,idxaddr)
+#define FEAT2_PP_AUTO_IDXOFFSET(language) FEAT2_PP_GET_IDXOFFSET(FEAT2_PP_AUTO_LANGUAGE(language),FEAT2_PP_AUTO_IDXADDR(language))
 
 #if 0
 !-------------------------------------------------------------------------------
 ! Auxiliary macros that should not be called directly
 !-------------------------------------------------------------------------------
 #endif
-
+  
+#define FEAT2_PP_GET_IDXOFFSET(language,idxaddr)   FEAT2_PP_GET_IDXOFFSET_I(language,idxaddr)
 #define FEAT2_PP_GET_IDXOFFSET_I(language,idxaddr) FEAT2_PP_EVAL(FEAT2_PP_GET_IDXOFFSET_##language##_##idxaddr)
 
 #define FEAT2_PP_GET_IDXOFFSET_1_1 ZERO
@@ -147,8 +147,8 @@
 !##############################################################################
 #endif
 
-#define IDX1_C(i1) FEAT2_PP_GET_IDX1_C(i1,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,AUTO_IDXADDR(LANGUAGE_C)))
-#define IDX1_F(i1) FEAT2_PP_GET_IDX1_F(i1,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,AUTO_IDXADDR(LANGUAGE_F)))
+#define IDX1_C(i1) FEAT2_PP_GET_IDX1_C(i1,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C)))
+#define IDX1_F(i1) FEAT2_PP_GET_IDX1_F(i1,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F)))
 
 #if 0
 !-------------------------------------------------------------------------------
@@ -173,8 +173,8 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define IDX2_C(i1,i2,n1,n2) FEAT2_PP_GET_IDX2_C(i1,i2,n1,n2,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,AUTO_IDXADDR(LANGUAGE_C)))
-#define IDX2_F(i1,i2,n1,n2) FEAT2_PP_GET_IDX2_F(i1,i2,n1,n2,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,AUTO_IDXADDR(LANGUAGE_F)))
+#define IDX2_C(i1,i2,n1,n2) FEAT2_PP_GET_IDX2_C(i1,i2,n1,n2,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C)))
+#define IDX2_F(i1,i2,n1,n2) FEAT2_PP_GET_IDX2_F(i1,i2,n1,n2,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F)))
 
 #if 0
 !-------------------------------------------------------------------------------
@@ -199,8 +199,8 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define IDX3_C(i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3_C(i1,i2,i3,n1,n2,n3,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,AUTO_IDXADDR(LANGUAGE_C)))
-#define IDX3_F(i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3_F(i1,i2,i3,n1,n2,n3,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,AUTO_IDXADDR(LANGUAGE_F)))
+#define IDX3_C(i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3_C(i1,i2,i3,n1,n2,n3,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_C,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C)))
+#define IDX3_F(i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3_F(i1,i2,i3,n1,n2,n3,FEAT2_PP_GET_IDXOFFSET(LANGUAGE_F,FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F)))
 
 #if 0
 !-------------------------------------------------------------------------------
@@ -267,11 +267,11 @@
 #define IDX1_REVERSE_2(a,i1)           a(IDX1_F(i1))
 
 
-#define IDX1(a,i1) FEAT2_PP_GET_IDX1(a,i1,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX1(a,i1) FEAT2_PP_GET_IDX1(a,i1,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX1(a,i1,language,memorylayout)   FEAT2_PP_GET_IDX1_I(a,i1,language,memorylayout)
 #define FEAT2_PP_GET_IDX1_I(a,i1,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX1_##language##_##memorylayout(a,i1))
 
-#define IDX1T(a,i1) FEAT2_PP_GET_IDX1T(a,i1,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX1T(a,i1) FEAT2_PP_GET_IDX1T(a,i1,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX1T(a,i1,language,memorylayout)   FEAT2_PP_GET_IDX1T_I(a,i1,language,memorylayout)
 #define FEAT2_PP_GET_IDX1T_I(a,i1,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX1T_##language##_##memorylayout(a,i1))
 
@@ -306,11 +306,11 @@
 #define IDX2_REVERSE_2(a,i1,i2,n1,n2)           a(IDX2_F(i2,i1,n2,n1))
 
 
-#define IDX2(a,i1,i2,n1,n2) FEAT2_PP_GET_IDX2(a,i1,i2,n1,n2,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX2(a,i1,i2,n1,n2) FEAT2_PP_GET_IDX2(a,i1,i2,n1,n2,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX2(a,i1,i2,n1,n2,language,memorylayout)   FEAT2_PP_GET_IDX2_I(a,i1,i2,n1,n2,language,memorylayout)
 #define FEAT2_PP_GET_IDX2_I(a,i1,i2,n1,n2,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX2_##language##_##memorylayout(a,i1,i2,n1,n2))
 
-#define IDX2T(a,i1,i2,n1,n2) FEAT2_PP_GET_IDX2T(a,i1,i2,n1,n2,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX2T(a,i1,i2,n1,n2) FEAT2_PP_GET_IDX2T(a,i1,i2,n1,n2,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX2T(a,i1,i2,n1,n2,language,memorylayout)   FEAT2_PP_GET_IDX2T_I(a,i1,i2,n1,n2,language,memorylayout)
 #define FEAT2_PP_GET_IDX2T_I(a,i1,i2,n1,n2,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX2T_##language##_##memorylayout(a,i1,i2,n1,n2))
 
@@ -345,11 +345,11 @@
 #define IDX3_REVERSE_2(a,i1,i2,i3,n1,n2,n3)           a(IDX3_F(i3,i2,i1,n3,n2,n1))
 
 
-#define IDX3(a,i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3(a,i1,i2,i3,n1,n2,n3,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX3(a,i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3(a,i1,i2,i3,n1,n2,n3,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX3(a,i1,i2,i3,n1,n2,n3,language,memorylayout)   FEAT2_PP_GET_IDX3_I(a,i1,i2,i3,n1,n2,n3,language,memorylayout)
 #define FEAT2_PP_GET_IDX3_I(a,i1,i2,i3,n1,n2,n3,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX3_##language##_##memorylayout(a,i1,i2,i3,n1,n2,n3))
 
-#define IDX3T(a,i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3T(a,i1,i2,i3,n1,n2,n3,FEAT2_PP_AUTO_LANGUAGE(),AUTO_MEMORY_LAYOUT())
+#define IDX3T(a,i1,i2,i3,n1,n2,n3) FEAT2_PP_GET_IDX3T(a,i1,i2,i3,n1,n2,n3,FEAT2_PP_AUTO_LANGUAGE(),FEAT2_PP_AUTO_MEMORY_LAYOUT())
 #define FEAT2_PP_GET_IDX3T(a,i1,i2,i3,n1,n2,n3,language,memorylayout)   FEAT2_PP_GET_IDX3T_I(a,i1,i2,i3,n1,n2,n3,language,memorylayout)
 #define FEAT2_PP_GET_IDX3T_I(a,i1,i2,i3,n1,n2,n3,language,memorylayout) FEAT2_PP_EVAL(FEAT2_PP_GET_IDX3T_##language##_##memorylayout(a,i1,i2,i3,n1,n2,n3))
 
