@@ -697,7 +697,7 @@ CFLAGSOPTF77  := -msse3
 CFLAGSOPTF90  := -msse3
 cflagsoptc    := -msse3
 CFLAGSOPTCXX  := -msse3
-LDFLAGSOPT    := -mSSE3
+LDFLAGSOPT    := -msse3
 else
 CFLAGSOPTF77  := -xT
 CFLAGSOPTF90  := -xT
