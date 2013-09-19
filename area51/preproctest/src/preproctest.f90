@@ -29,6 +29,7 @@ program preproctest
 
 #include "kernel/feat2constants.h"
 #include "kernel/feat2macros.h"
+#include "kernel/System/idxmanager.h"
 #include "preproctest.h"
 
   use fsystem
@@ -166,39 +167,242 @@ program preproctest
   write(*,*) FEAT2_PP_STRING(FEAT2_PP_CONCAT(foo,bar))
   write(*,*)
 
-  ! Test #9: Conversion of floating point number to double precision constant
-  write(*,*) "Test #9: Conversion of FP-number to double precision constant"
-  write(*,*) FEAT2_PP_CONST(1.0,DOUBLE_PREC)
+  ! Test #9: Conversion of floating point number to constant
+  write(*,*) "Test #9: Conversion of FP-number to single precision constant"
+  write(*,*) FEAT2_PP_CONST(1.0/3.0,SINGLE_PREC)
+  write(*,*) "         Conversion of FP-number to double precision constant"
+  write(*,*) FEAT2_PP_CONST(1.0/3.0,DOUBLE_PREC)
+  write(*,*) "         Conversion of FP-number to quad precision constant"
+  write(*,*) FEAT2_PP_CONST(1.0/3.0,QUAD_PREC)
   write(*,*)
 
   ! Test #10: Automatic language detection (including manual overriding)
   write(*,*) "Test #10: Automatic language detection feature"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_F"
-
-#define LANGUAGE LANGUAGE_F
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_F"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_F"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_F "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_F"
-#undef LANGUAGE
+  write(*,*) "Global variable LANGUAGE unset:"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
 
 #define LANGUAGE LANGUAGE_C
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "auto-detected language without parameter "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_C"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "auto-detected language with parameter LANGUAGE_C "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_F"
-  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "auto-detected language with parameter LANGUAGE_C "//&
-                                       "but with global variable LANGUAGE set to LANGUAGE_C"
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C:"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
 #undef LANGUAGE
 
-
-
+#define LANGUAGE LANGUAGE_F
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F:"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_LANGUAGE(LANGUAGE_F), "with parameter LANGUAGE_C"
   write(*,*)
+#undef LANGUAGE
+
+  ! Test #11: Automatic detection of index manager addressing
+  write(*,*) "Test #11: Automatic detection of index manager addressing"
+  write(*,*) "Global variables LANGUAGE and IDXADDR unset:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+
+#define LANGUAGE LANGUAGE_C
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and IDXADDR unset:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
   
+#define LANGUAGE LANGUAGE_F
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and IDXADDR unset:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+
+#define IDXADDR IDXADDR_C
+  write(*,*) "Global variable LANGUAGE unset and and IDXADDR set to IDXADDR_C:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+
+#define IDXADDR IDXADDR_F
+  write(*,*) "Global variable LANGUAGE unset and and IDXADDR set to IDXADDR_F:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+
+#define LANGUAGE LANGUAGE_C
+#define IDXADDR IDXADDR_C
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and IDXADDR set to IDXADDR_C:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+#define IDXADDR IDXADDR_F
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and IDXADDR set to IDXADDR_F:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+#undef LANGUAGE
+
+#define LANGUAGE LANGUAGE_F
+#define IDXADDR IDXADDR_C
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and IDXADDR set to IDXADDR_C:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+#define IDXADDR IDXADDR_F
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and IDXADDR set to IDXADDR_F:"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXADDR(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef IDXADDR
+#undef LANGUAGE
+
+  ! Test #12: Automatic detection of index manager memory layout
+  write(*,*) "Test #11: Automatic detection of index manager memory layout"
+  write(*,*) "Global variables LANGUAGE and MEMORY_LAYOUT unset:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+
+#define LANGUAGE LANGUAGE_C
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and MEMORY_LAYOUT unset:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+
+#define LANGUAGE LANGUAGE_F
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and MEMORY_LAYOUT unset:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+
+#define MEMORY_LAYOUT ROW_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE unset and and MEMORY_LAYOUT set to ROW_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+
+#define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE unset and and MEMORY_LAYOUT set to COLUMN_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+
+#define LANGUAGE LANGUAGE_C
+#define MEMORY_LAYOUT ROW_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and MEMORY_LAYOUT set to ROW_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+#define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_C and MEMORY_LAYOUT set to COLUMN_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+#undef LANGUAGE
+
+#define LANGUAGE LANGUAGE_F
+#define MEMORY_LAYOUT ROW_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and MEMORY_LAYOUT set to ROW_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+#define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
+  write(*,*) "Global variable LANGUAGE set to LANGUAGE_F and MEMORY_LAYOUT set to COLUMN_MAJOR_ORDER:"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_MEMORY_LAYOUT(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef MEMORY_LAYOUT
+#undef LANGUAGE
+
+  ! Test #13: Automatic detection of offset for index addressing
+  !           For this test to work properly we need to define the following macros
+#define ZERO      " 0 "
+#define PLUS_ONE  "+1 " 
+#define MINUS_ONE "-1 " 
+
+  write(*,*) "Test #11: Automatic detection of offset for index addressing"
+  write(*,*) "Global variables LANGUAGE and IDXADDR unset:"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+
+#define LANGUAGE LANGUAGE_C
+#define IDXADDR IDXADDR_C
+  write(*,*) "Global variables LANGUAGE set to LANGUAGE_C and IDXADDR set to IDXADDR_C:"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+#undef IDXADDR
+
+#define LANGUAGE LANGUAGE_F
+#define IDXADDR IDXADDR_C
+  write(*,*) "Global variables LANGUAGE set to LANGUAGE_F and IDXADDR set to IDXADDR_C:"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+#undef IDXADDR
+
+#define LANGUAGE LANGUAGE_C
+#define IDXADDR IDXADDR_F
+  write(*,*) "Global variables LANGUAGE set to LANGUAGE_C and IDXADDR set to IDXADDR_F:"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+#undef IDXADDR
+
+#define LANGUAGE LANGUAGE_F
+#define IDXADDR IDXADDR_F
+  write(*,*) "Global variables LANGUAGE set to LANGUAGE_F and IDXADDR set to IDXADDR_F:"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(), "without parameter"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_C), "with parameter LANGUAGE_C"
+  write(*,*) FEAT2_PP_AUTO_IDXOFFSET(LANGUAGE_F), "with parameter LANGUAGE_F"
+  write(*,*)
+#undef LANGUAGE
+#undef IDXADDR
+
+
+
 contains
 
   subroutine writeTwoArguments(a,b)
