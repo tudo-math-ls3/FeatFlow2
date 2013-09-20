@@ -543,6 +543,12 @@ $(UMFPACK_TARBALL):
 	@$(call DOWNLOAD)
 
 
+#-------------------------------------------------------------------------------
+# Automatically download tarballs when required.
+#-------------------------------------------------------------------------------
+getlib:   $(AMD_TARBALL) $(SUITESPARSE_CONFIG_TARBALL) $(UMFPACK_TARBALL)
+getlibs:  getlib
+
 
 #-------------------------------------------------------------------------------
 # Clean up targets

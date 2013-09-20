@@ -643,6 +643,7 @@ if ($#{$entry} >= 0 &&
 	"clean-app:\n" .
 	"clean-libs:\n" .
 	"clean:\n" .
+	"getlibs:\n" .
 	"id:\n" .
 	"idonly:\n" .
 	"libs:\n" .
@@ -2725,9 +2726,13 @@ sub create_feastAppMakefile {
         "# Check also whether compiler or compile settings changed\n" .
         "\$(LIB): | check-or-store-settings\n\n" .
 
+    # separate rule to download third party library tarballs
+	"# separate rule to download third party library tarballs\n" .
+        "getlibs:\t\$(ALLLIB:%=get-%)\n\n" .
+
     # coproc library path settings
         "# coproc library path settings\n" .
-        "\$(OBJDIR_LIB)/libcoproc.a clean-coproc purge-coproc: \\\n" .
+        "\$(OBJDIR_LIB)/libcoproc.a clean-coproc get-coproc purge-coproc: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/coproc\n\n" .
 
     # coproc library
@@ -2757,7 +2762,7 @@ sub create_feastAppMakefile {
 
     # metis library path settings
         "# metis library path settings\n" .
-        "\$(OBJDIR_LIB)/libmetis.a clean-metis purge-metis: \\\n" .
+        "\$(OBJDIR_LIB)/libmetis.a clean-metis get-metis purge-metis: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/metis-5.0\n\n" .
 
     # metis library
@@ -2773,7 +2778,7 @@ sub create_feastAppMakefile {
 
     # umfpack library path settings
         "# umfpack library path settings\n" .
-        "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack purge-umfpack: \\\n" .
+        "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack get-umfpack purge-umfpack: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/UMFPACK\n\n" .
 
     # umfpack library
@@ -2789,7 +2794,7 @@ sub create_feastAppMakefile {
 
     # AMD library path settings
         "# AMD library path settings\n" .
-        "\$(OBJDIR_LIB)/libamd.a clean-amd purge-amd: \\\n" .
+        "\$(OBJDIR_LIB)/libamd.a clean-amd get-amd purge-amd: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AMD\n\n" .
 
     # AMD library
@@ -2805,7 +2810,7 @@ sub create_feastAppMakefile {
 
     # blas path settings
         "# blas library path settings\n" .
-        "\$(OBJDIR_LIB)/libblas.a clean-blas purge-blas: \\\n" .
+        "\$(OBJDIR_LIB)/libblas.a clean-blas get-blas purge-blas: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/BLAS\n\n" .
 
     # blas library
@@ -2821,7 +2826,7 @@ sub create_feastAppMakefile {
 
     # lapack path settings
         "# lapack library path settings\n" .
-        "\$(OBJDIR_LIB)/liblapack.a clean-lapack purge-lapack: \\\n" .
+        "\$(OBJDIR_LIB)/liblapack.a clean-lapack get-lapack purge-lapack: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/lapack-3.4.2\n\n" .
 
     # lapack library
@@ -2840,7 +2845,7 @@ sub create_feastAppMakefile {
 
     # splib path settings
         "# splib library path settings\n" .
-        "\$(OBJDIR_LIB)/libsplib.a clean-splib purge-splib: \\\n" .
+        "\$(OBJDIR_LIB)/libsplib.a clean-splib get-splib purge-splib: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/splib\n\n" .
 
     # splib library
@@ -2856,7 +2861,7 @@ sub create_feastAppMakefile {
 
     # inshape2d path settings
         "# inshape2d library path settings\n" .
-        "\$(OBJDIR_LIB)/libinshape2d.a clean-inshape2d purge-inshape2d: \\\n" .
+        "\$(OBJDIR_LIB)/libinshape2d.a clean-inshape2d get-inshape2d purge-inshape2d: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/inshape\n\n" .
 
     # inshape2d library
@@ -2871,7 +2876,7 @@ sub create_feastAppMakefile {
 
     # AGMG path settings
         "# AGMG library path settings\n" .
-        "\$(OBJDIR_LIB)/libagmg.a clean-agmg purge-agmg: \\\n" .
+        "\$(OBJDIR_LIB)/libagmg.a clean-agmg get-agmg purge-agmg: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AGMG_3.1.2\n\n" .
 
     # AGMG library
@@ -2884,6 +2889,12 @@ sub create_feastAppMakefile {
 	"\t\tFORTRAN=\"\$(PREF90) eval \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
+
+    # Download rule for every library
+    print MAKEFILE_HDL
+	"# Download rule for every library\n" .
+        "\$(ALLLIB:%=get-%):\n" .
+	"\t(cd \$(DIR) && \$(MAKE) -f Makefile.FEAT2 getlibs)\n\n";
 
     # Clean rule for every library
     print MAKEFILE_HDL
@@ -3631,6 +3642,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"  all            compile application (default)\"\n" .
         "\t\@echo \"  debug          compile application without optimisation flags,\"\n" .
         "\t\@echo \"                   include debugging symbols\"\n" .
+        "\t\@echo \"  getlibs        download all third party libraries currently missing\"\n" .
         "\t\@echo \"  libs           compile all libraries specified in variable BUILDLIB\"\n" .
         "\t\@echo \"                   (currently: \$(BUILDLIB))\"\n" .
         "\t\@echo \"  clean          remove all object files and libraries\"\n" .

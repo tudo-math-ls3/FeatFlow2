@@ -112,3 +112,7 @@ clean:
 purge:
 	-$(foreach file, $(patsubst %.c, $(OBJDIR)/%.o, $(filter %.c, $(SRC_COMPLETE))), $(remove_file))
 	-$(foreach file, $(patsubst %.cu, $(OBJDIR)/%.o, $(filter %.cu, $(SRC_COMPLETE))), $(remove_file))
+
+# Empty targets in order for all third party libraries to provide the same
+getlib:
+getlibs:

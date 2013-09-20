@@ -353,3 +353,10 @@ $(BLAS_TARBALL):  WAITTIME = 15
 $(BLAS_TARBALL):  RETRIES  = 24
 $(BLAS_TARBALL):
 	@$(call DOWNLOAD)
+
+
+#-------------------------------------------------------------------------------
+# Automatically download tarballs when required.
+#-------------------------------------------------------------------------------
+getlib:   $(BLAS_TARBALL)
+getlibs:  getlib

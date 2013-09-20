@@ -209,3 +209,10 @@ $(METIS_TARBALL):  WAITTIME = 15
 $(METIS_TARBALL):  RETRIES  = 24
 $(METIS_TARBALL):
 	@$(call DOWNLOAD)
+
+
+#-------------------------------------------------------------------------------
+# Automatically download tarballs when required.
+#-------------------------------------------------------------------------------
+getlib:   $(METIS_TARBALL)
+getlibs:  getlib

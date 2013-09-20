@@ -264,6 +264,13 @@ $(LAPACK_TARBALL):
 	@$(call DOWNLOAD)
 
 
+#-------------------------------------------------------------------------------
+# Automatically download tarballs when required.
+#-------------------------------------------------------------------------------
+getlib:   $(LAPACK_TARBALL)
+getlibs:  getlib
+
+
 
 # include ../make.inc
 

@@ -412,9 +412,6 @@ $(OBJDIR)/%.o: libmetis/%.c
 $(OBJDIR):
 	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
 
-# Override implicit rule for GKlib/util.o to prevent attempts to compile it
-$(OBJDIR)/util.o: libmetis/util.c
-	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -IGKlib -Ilibmetis -c $< -o $@
-
-$(OBJDIR)/metis5_f95wrapper_feast.o: metis5_f95wrapper_feast.c
-	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -c $< -o $@
+# Empty targets in order for all third party libraries to provide the same
+getlib:
+getlibs:
