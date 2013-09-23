@@ -1031,8 +1031,8 @@ contains
     Dbas(1,DER_DERIV1D_X) = 0.75_DP*(Dpoint(1)**2 - 1.0_DP)*dxj
     Dbas(2,DER_DERIV1D_X) = 0.75_DP*(1.0_DP - Dpoint(1)**2)*dxj
     ! Q1, Q2
-    Dbas(3,DER_DERIV1D_X) = 0.25_DP*(3.0_DP*Dpoint(1)**2 - Dpoint(1) - 1.0_DP)
-    Dbas(4,DER_DERIV1D_X) = 0.25_DP*(3.0_DP*Dpoint(1)**2 + Dpoint(1) - 1.0_DP)
+    Dbas(3,DER_DERIV1D_X) = 0.25_DP*(3.0_DP*Dpoint(1) + 1.0_DP)*(Dpoint(1) - 1.0_DP)
+    Dbas(4,DER_DERIV1D_X) = 0.25_DP*(3.0_DP*Dpoint(1) - 1.0_DP)*(Dpoint(1) + 1.0_DP)
 !  endif
 
   end subroutine
@@ -1124,10 +1124,8 @@ contains
         dxj = 1.0_DP / Ddetj(i)
         Dbas(1,DER_DERIV1D_X,i) = 0.75_DP*(Dpoints(1,i)**2 - 1.0_DP)*dxj
         Dbas(2,DER_DERIV1D_X,i) = 0.75_DP*(1.0_DP - Dpoints(1,i)**2)*dxj
-        Dbas(3,DER_DERIV1D_X,i) = 0.25_DP*(3.0_DP*Dpoints(1,i)**2 - &
-                                           Dpoints(1,i) - 1.0_DP)
-        Dbas(4,DER_DERIV1D_X,i) = 0.25_DP*(3.0_DP*Dpoints(1,i)**2 + &
-                                           Dpoints(1,i) - 1.0_DP)
+        Dbas(3,DER_DERIV1D_X,i) = 0.25_DP*(3.0_DP*Dpoints(1,i) + 1.0_DP)*(Dpoints(1,i) - 1.0_DP)
+        Dbas(4,DER_DERIV1D_X,i) = 0.25_DP*(3.0_DP*Dpoints(1,i) - 1.0_DP)*(Dpoints(1,i) + 1.0_DP)
       end do
     endif
 
@@ -1259,10 +1257,8 @@ contains
           dxj = 1.0_DP / Ddetj(i,j)
           Dbas(1,DER_DERIV1D_X,i,j) = 0.75_DP*(Dpoints(1,i,j)**2 - 1.0_DP)*dxj
           Dbas(2,DER_DERIV1D_X,i,j) = 0.75_DP*(1.0_DP - Dpoints(1,i,j)**2)*dxj
-          Dbas(3,DER_DERIV1D_X,i,j) = 0.25_DP*(3.0_DP*Dpoints(1,i,j)**2 - &
-                                               Dpoints(1,i,j) - 1.0_DP)
-          Dbas(4,DER_DERIV1D_X,i,j) = 0.25_DP*(3.0_DP*Dpoints(1,i,j)**2 + &
-                                               Dpoints(1,i,j) - 1.0_DP)
+          Dbas(3,DER_DERIV1D_X,i,j) = 0.25_DP*(3.0_DP*Dpoints(1,i,j) + 1.0_DP)*(Dpoints(1,i,j) - 1.0_DP)
+          Dbas(4,DER_DERIV1D_X,i,j) = 0.25_DP*(3.0_DP*Dpoints(1,i,j) - 1.0_DP)*(Dpoints(1,i,j) + 1.0_DP)
         end do
 
       end do
