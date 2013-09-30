@@ -900,7 +900,7 @@ contains
 
       case (EL_P1T)
         ! Use Gauss-3pt
-        ccubType = CUB_G3_T
+        ccubType = CUB_Collatz
 
       case (EL_Q0)
         ! Use Gauss 1X1
