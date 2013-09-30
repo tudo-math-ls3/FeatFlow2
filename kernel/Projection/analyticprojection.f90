@@ -647,6 +647,35 @@ contains
         p_DcubPtsRef(2,9) =  0.0_DP
 
         ncubp = 9
+        
+      case (EL_P2)
+        ! Get the coordinates of that points.
+        ! Here, we have to follow the order of the local DOFs of P2!
+        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+
+        ! vertices
+        p_DcubPtsRef(1,1) = 1.0_DP
+        p_DcubPtsRef(2,1) = 0.0_DP
+        p_DcubPtsRef(3,1) = 0.0_DP
+        p_DcubPtsRef(1,2) = 0.0_DP
+        p_DcubPtsRef(2,2) = 1.0_DP
+        p_DcubPtsRef(3,2) = 0.0_DP
+        p_DcubPtsRef(1,3) = 0.0_DP
+        p_DcubPtsRef(2,3) = 0.0_DP
+        p_DcubPtsRef(3,3) = 1.0_DP
+
+        ! edge midpoints
+        p_DcubPtsRef(1,4) = 0.5_DP
+        p_DcubPtsRef(2,4) = 0.5_DP
+        p_DcubPtsRef(3,4) = 0.0_DP
+        p_DcubPtsRef(1,5) = 0.0_DP
+        p_DcubPtsRef(2,5) = 0.5_DP
+        p_DcubPtsRef(3,5) = 0.5_DP
+        p_DcubPtsRef(1,6) = 0.5_DP
+        p_DcubPtsRef(2,6) = 0.0_DP
+        p_DcubPtsRef(3,6) = 0.5_DP
+
+        ncubp = 6
 
       case default
         ! For most of the standard finite elements based on point values,
