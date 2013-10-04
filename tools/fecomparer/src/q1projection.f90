@@ -7,6 +7,7 @@ module q1projection
   use basicgeometry
   
   use cubature
+  use derivatives
   use triangulation
   use triasearch
   use spatialdiscretisation
