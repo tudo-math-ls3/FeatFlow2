@@ -616,11 +616,11 @@ fb_customise() {
 		    COMPILERNAME="Intel 11.0"
 		    ;;
 
-		# Intel compiler suite 11.1.075
+		# Intel compiler suite 11.1.080
 		pc64-penryn-linux-intel-*11.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl intel/cce/11.1.075 intel/fce/11.1.075"
+		    modules="$modules intel/mkl intel/cce/11.1.080 intel/fce/11.1.080"
 		    LIDOJOBNAMEPREFIX=ff2-intel111
 		    COMPILERNAME="Intel 11.1"
 		    ;;
@@ -634,11 +634,11 @@ fb_customise() {
 		    COMPILERNAME="Intel 12.0"
 		    ;;
 
-		# Intel compiler suite 12.1.5.339
+		# Intel compiler suite 12.1.7.367
 		pc64-penryn-linux-intel-*12.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl intel/cce/12.1.5.339 intel/fce/12.1.5.339"
+		    modules="$modules intel/mkl intel/cce/12.1.7.367 intel/fce/12.1.7.367"
 		    LIDOJOBNAMEPREFIX=ff2-intel121
 		    COMPILERNAME="Intel 12.1"
 		    ;;
@@ -661,11 +661,11 @@ fb_customise() {
 		    COMPILERNAME="Intel 13.1"
 		    ;;
 
-		# Intel compiler suite 14.0.0.051beta
+		# Intel compiler suite 14.0.0.080
 		pc64-penryn-linux-intel-*14.)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl intel/cce/14.0.0.051beta intel/fce/14.0.0.051beta"
+		    modules="$modules intel/mkl intel/cce/14.0.0.080 intel/fce/14.0.0.080"
 		    LIDOJOBNAMEPREFIX=ff2-intel140
 		    COMPILERNAME="Intel 14.0"
 		    ;;
