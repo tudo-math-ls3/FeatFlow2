@@ -7,7 +7,7 @@
 for directory in applications area51 tutorials kernel librariesNEW;
 do
   # Loop over all file extensions which represent source code files
-  for fileext in F bib c cpp csh cu dat data def f f90 fbconf fbdef h html in inc indat m mk msg prm py sh tex tri txt;
+  for fileext in F bib c configure cpp csh cu dat data def f f90 fbconf fbdef h html in inc indat m mk msg prm py sh tex tri txt;
   do
 
     echo "Processing file extension $fileext in directory $directory."
