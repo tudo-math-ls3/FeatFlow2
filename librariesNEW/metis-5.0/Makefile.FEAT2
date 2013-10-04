@@ -82,14 +82,6 @@ $(OBJDIR)/libmetis.a:  RETRIES  = 24
 $(OBJDIR)/libmetis.a: $(OBJS)
 	@$(CREATE_LIB)
 
-# All object files go to a single object directory in FEAT2 and in that case
-# either the object code of libmetis/util.c or GKlib/util.c is lost. So, avoid
-# that GKlib/util.c gets compiled and instead compile its copy named
-# GKlib/gk_util.c
-GKlib/gk_util.c: GKlib/util.c
-	cp -p GKlib/util.c GKlib/gk_util.c
-
-
 # Function to delete a single file at once
 define remove_file
  rm -f $(file)
@@ -200,6 +192,11 @@ $(LAST_FILE_FROM_METIS_TARBALL):  PATCHCMD   = cat ../metis-5.0_fix_pgi_compile_
 $(LAST_FILE_FROM_METIS_TARBALL):  PATCHTEXT1 = "\# Patching METIS 5.0 sources to prevent compile errors with PGI 7.1-6 up to 11.7."
 $(LAST_FILE_FROM_METIS_TARBALL): | $(METIS_TARBALL)
 	@$(call UNPACK)
+        # All object files go to a single object directory in FEAST and in that case
+        # either the object code of libmetis/util.c or GKlib/util.c is lost. So, avoid
+        # that GKlib/util.c gets compiled and instead compile its copy named
+        # GKlib/gk_util.c
+	cp -p GKlib/util.c GKlib/gk_util.c
 
 # Try to download tar ball if not present
 $(METIS_TARBALL):  URL      = http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.0.tar.gz
