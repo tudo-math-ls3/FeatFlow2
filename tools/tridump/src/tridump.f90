@@ -83,7 +83,7 @@ program tridump
   
   ! loop over all arguments
   iarg = 1
-  do while(iarg .lt. nargs())
+  do while(iarg .lt. sys_ncommandLineArgs())
     ! fetch argument string
     call sys_getcommandLineArg(iarg, sarg)
     iarg = iarg + 1

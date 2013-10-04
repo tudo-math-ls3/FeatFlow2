@@ -46,7 +46,7 @@ type(t_ucdExport) :: rexport
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
   
-  if (nargs() .lt. 2) then
+  if (sys_ncommandLineArgs() .lt. 2) then
     call output_line('USAGE: basisdump <element>')
     call exit
   end if
