@@ -2100,7 +2100,8 @@ contains
 
     do
       if (ifunctionIndex .gt. ifunctionLength) then
-        call output_line('Invalid function string!',&
+        call output_line('Invalid function string '//&
+              trim(adjustl(sfunctionString))//' !',&
             OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
@@ -2112,7 +2113,8 @@ contains
       if (c .eq. '-' .or. c .eq. '!') then
         ifunctionIndex = ifunctionIndex+1
         if (ifunctionIndex .gt. ifunctionLength) then
-          call output_line('Premature end of string!',&
+          call output_line('Premature end of string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2125,7 +2127,8 @@ contains
         ! Math function found
         ifunctionIndex = ifunctionIndex+len_trim(Funcs(n))
         if (ifunctionIndex > ifunctionLength) then
-          call output_line('Premature end of string!',&
+          call output_line('Premature end of string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2137,14 +2140,16 @@ contains
         end if
         ifunctionIndex2 = ifunctionIndex+1
         if (ifunctionIndex2 .gt. ifunctionLength) then
-          call output_line('Premature end of string!',&
+          call output_line('Premature end of string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex2:ifunctionIndex2) .eq. ')') then
           ifunctionIndex = ifunctionIndex2+1
           if (ifunctionIndex .gt. ifunctionLength) then
-            call output_line('Premature end of string!',&
+            call output_line('Premature end of string '//&
+              trim(adjustl(sfunctionString))//' !',&
                 OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
             call sys_halt()
           end if
@@ -2163,12 +2168,14 @@ contains
         iparenthCount = iparenthCount+1
         ifunctionIndex = ifunctionIndex+1
         if (ifunctionIndex .gt. ifunctionLength) then
-          call output_line('Premature end of string!',&
+          call output_line('Premature end of string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex:ifunctionIndex) .eq. ')') then
-          call output_line('Empty parantheses!',&
+          call output_line('Empty parantheses in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2179,7 +2186,8 @@ contains
       if (scan(c,'0123456789.') .gt. 0) then
         dnumber = RealNum (sfunctionString(ifunctionIndex:), ib, in, berror)
         if (berror) then
-          call output_line('Invalid number format!',&
+          call output_line('Invalid number format in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2190,7 +2198,8 @@ contains
         ! Check for constant
         n = ConstantIndex (sfunctionString(ifunctionIndex:))
         if (n .eq. 0) then
-          call output_line('Invalid constant!',&
+          call output_line('Invalid constant in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2201,7 +2210,8 @@ contains
         ! Check for expression
         n = ExpressionIndex (sfunctionString(ifunctionIndex:))
         if (n .eq. 0) then
-          call output_line('Invalid expression!',&
+          call output_line('Invalid expression in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2213,7 +2223,8 @@ contains
         ! Check for variable
         n = VariableIndex (sfunctionString(ifunctionIndex:), Svariables, ib, in)
         if (n .eq. 0) then
-          call output_line('Invalid element!',&
+          call output_line('Invalid element in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2230,12 +2241,14 @@ contains
         end if
         iparenthCount = iparenthCount-1
         if (iparenthCount .lt. 0) then
-          call output_line('Mismatched parenthesis!',&
+          call output_line('Mismatched parenthesis in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex-1:ifunctionIndex-1) .eq. '(') then
-          call output_line('Empty parentheses!',&
+          call output_line('Empty parentheses in string '//&
+              trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
@@ -2260,7 +2273,8 @@ contains
         iopSize = isOperator(sfunctionString(ifunctionIndex:))
       end if
       if (iopSize .eq. 0) then
-        call output_line('Operator expected!',&
+        call output_line('Operator expected in string '//&
+              trim(adjustl(sfunctionString))//' !',&
             OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
@@ -2270,7 +2284,8 @@ contains
       ifunctionIndex = ifunctionIndex+iopSize
     end do
     if (iparenthCount .gt. 0) then
-      call output_line('Missing )!',&
+      call output_line('Missing ) in string '//&
+              trim(adjustl(sfunctionString))//' !',&
           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
       call sys_halt()
     end if
