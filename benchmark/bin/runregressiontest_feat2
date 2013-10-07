@@ -662,7 +662,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 14.0.0.080
-		pc64-penryn-linux-intel-*14.)
+		pc64-penryn-linux-intel-*14.0)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/14.0.0.080 intel/fce/14.0.0.080"
