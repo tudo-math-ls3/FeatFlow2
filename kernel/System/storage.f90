@@ -335,6 +335,9 @@ module storage
     ! The name of the array that is associated to that handle
     character(LEN=SYS_NAMELEN) :: sname = ''
 
+    ! The caller that allocated the storage node
+    character(LEN=SYS_STRLEN) :: scaller = ''
+
     ! Amount of memory (in bytes) associated to this block.
     integer(I64) :: imemBytes = 0_I64
 
@@ -1928,7 +1931,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-  character(LEN=SYS_NAMELEN) :: snameBackup
+  character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
 
     if (isize .eq. 0) then
       call output_line ('isize=0!', &
@@ -1951,6 +1954,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle.
     ihandle = storage_newhandle (p_rheap)
@@ -1962,6 +1966,7 @@ contains
     p_rnode%idataType = ST_DUMMY
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
     p_rnode%imemBytes = isize
 
     !$omp critical(storage_global_heap_modify)
@@ -2022,7 +2027,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-  character(LEN=SYS_NAMELEN) :: snameBackup
+  character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
   integer :: i,ier
 
     if (isize .eq. 0) then
@@ -2046,6 +2051,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle.
     ihandle = storage_newhandle (p_rheap)
@@ -2058,6 +2064,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
 
@@ -2224,7 +2231,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   integer :: i,isize
-  character(LEN=SYS_NAMELEN) :: snameBackup
+  character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
 
     ! Can we use the standard routine?
     if (ilbound .eq. 1) then
@@ -2255,6 +2262,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle
     ihandle = storage_newhandle (p_rheap)
@@ -2266,6 +2274,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
     call storage_nullify(p_rnode%chostMemPtr)
@@ -2380,7 +2389,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-  character(LEN=SYS_NAMELEN) :: snameBackup
+  character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
   integer :: i,ier
 
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0)) then
@@ -2404,6 +2413,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle
     ihandle = storage_newhandle (p_rheap)
@@ -2416,6 +2426,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 2
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
 
@@ -2583,7 +2594,7 @@ contains
     type(t_storageNode), pointer :: p_rnode
     integer, dimension(2) :: Isize
     integer :: i
-    character(LEN=SYS_NAMELEN) :: snameBackup
+    character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
 
     ! Can we use the standard routine?
     if (all(Ilbound .eq. 1)) then
@@ -2614,6 +2625,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle
     ihandle = storage_newhandle (p_rheap)
@@ -2626,6 +2638,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 2
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
     call storage_nullify(p_rnode%chostMemPtr)
@@ -2740,7 +2753,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-  character(LEN=SYS_NAMELEN) :: snameBackup
+  character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
   integer :: i,ier
 
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
@@ -2764,6 +2777,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle
     ihandle = storage_newhandle (p_rheap)
@@ -2776,6 +2790,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 3
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
 
@@ -2963,7 +2978,7 @@ contains
     type(t_storageNode), pointer :: p_rnode
     integer, dimension(3) :: Isize
     integer :: i
-    character(LEN=SYS_NAMELEN) :: snameBackup
+    character(LEN=SYS_NAMELEN) :: snameBackup, scallBackup
 
     ! Can we use the standard routine?
     if (all(Ilbound .eq. 1)) then
@@ -2994,6 +3009,7 @@ contains
     ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
+    scallBackup = scall
 
     ! Get a new handle
     ihandle = storage_newhandle (p_rheap)
@@ -3006,6 +3022,7 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 3
     p_rnode%sname = snameBackup
+    p_rnode%scaller = scallBackup
 
 #ifdef USE_C_PTR_STORAGE
     call storage_nullify(p_rnode%chostMemPtr)
@@ -3162,52 +3179,52 @@ contains
 
       select case (p_rnode%idataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Fsingle1D,1),&
                           ubound(p_rnode%p_Fsingle1D,1),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Ddouble1D,1),&
                           ubound(p_rnode%p_Ddouble1D,1),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Qquad1D,1),&
                           ubound(p_rnode%p_Qquad1D,1),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Iinteger1D,1),&
                           ubound(p_rnode%p_Iinteger1D,1),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Iint8_1D,1),&
                           ubound(p_rnode%p_Iint8_1D,1),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Iint16_1D,1),&
                           ubound(p_rnode%p_Iint16_1D,1),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Iint32_1D,1),&
                           ubound(p_rnode%p_Iint32_1D,1),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Iint64_1D,1),&
                           ubound(p_rnode%p_Iint64_1D,1),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Blogical1D,1),&
                           ubound(p_rnode%p_Blogical1D,1),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect',sname,&
+        call storage_new (scall,sname,&
                           lbound(p_rnode%p_Schar1D,1),&
                           ubound(p_rnode%p_Schar1D,1),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -3217,52 +3234,52 @@ contains
 
       select case (p_rnode%IdataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Fsingle2D),&
                           ubound(p_rnode%p_Fsingle2D),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Ddouble2D),&
                           ubound(p_rnode%p_Ddouble2D),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Qquad2D),&
                           ubound(p_rnode%p_Qquad2D),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iinteger2D),&
                           ubound(p_rnode%p_Iinteger2D),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint8_2D),&
                           ubound(p_rnode%p_Iint8_2D),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint16_2D),&
                           ubound(p_rnode%p_Iint16_2D),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint32_2D),&
                           ubound(p_rnode%p_Iint32_2D),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint64_2D),&
                           ubound(p_rnode%p_Iint64_2D),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Blogical2D),&
                           ubound(p_rnode%p_Blogical2D),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Schar2D),&
                           ubound(p_rnode%p_Schar2D),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -3272,52 +3289,52 @@ contains
 
       select case (p_rnode%IdataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Fsingle3D),&
                           ubound(p_rnode%p_Fsingle3D),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Ddouble3D),&
                           ubound(p_rnode%p_Ddouble3D),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Qquad3D),&
                           ubound(p_rnode%p_Qquad3D),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iinteger3D),&
                           ubound(p_rnode%p_Iinteger3D),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint8_3D),&
                           ubound(p_rnode%p_Iint8_3D),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint16_3D),&
                           ubound(p_rnode%p_Iint16_3D),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint32_3D),&
                           ubound(p_rnode%p_Iint32_3D),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Iint64_3D),&
                           ubound(p_rnode%p_Iint64_3D),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Blogical3D),&
                           ubound(p_rnode%p_Blogical3D),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect', sname,&
+        call storage_new (scall, sname,&
                           lbound(p_rnode%p_Schar3D),&
                           ubound(p_rnode%p_Schar3D),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -14780,13 +14797,15 @@ contains
                    'Handle ' // trim(sys_siL(i,10)) // ', 1D, Length=' // &
                    trim(sys_smemL(p_rheap%p_Rdescriptors(i)%imemBytes)) //&
                    ', Type=' // trim(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
-                   ' Name=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%sname)) )
+                   ', Name=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%sname)) //&
+                   ', Caller=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%scaller)))
             else
               call output_line ( &
                    'Handle ' // trim(sys_siL(i,10)) // ', 2D, Length=' // &
                    trim(sys_smemL(p_rheap%p_Rdescriptors(i)%imemBytes)) // &
                    ', Type=' // trim(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
-                   ' Name=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%sname)) )
+                   ', Name=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%sname)) //&
+                   ', Caller=' // trim(adjustl(p_rheap%p_Rdescriptors(i)%scaller)))
             end if
           end if
         end do
