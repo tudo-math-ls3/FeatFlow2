@@ -178,7 +178,7 @@ contains
     call parlst_init(rparams)
  
     ! Get the data file.
-    call sys_getcommandLineArg(1,smaster,sdefault='./dat/anisotropicdiffusion.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/anisotropicdiffusion.dat')
     call parlst_readfromfile (rparams, smaster)
     
     ! Get the parameters...

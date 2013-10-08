@@ -85,6 +85,8 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
+		<Filter Name="Data Files">
+		<File RelativePath=".\data\anisotropicdiffusion.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath=".\src\anisotropicdiffusion.f90"/>
 		<File RelativePath=".\src\anisotropicdiffusion_callback.f90"/>
