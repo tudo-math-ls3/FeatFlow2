@@ -15,15 +15,18 @@
 !#        matrix of a FE space to calculate the consistent <tex>$ L_2 $</tex>
 !#        projection of an analytically given function.
 !#
-!# 2.) anprj_discrDirect
+!# 2.) anprj_analytRewProjection
+!#     -> Performs a restricted element-wise L2-projection of an analytically
+!#        given function.
+!#
+!# 3.) anprj_discrDirect
 !#     -> Evaluates an analytically given function and creates the
 !#        corresponding FE representation.
 !#
-!# 3.) anprj_charFctRealBdComp
+!# 4.) anprj_charFctRealBdComp
 !#     -> Calculate the characteristic function of a boundary region
 !#
-!#
-!# 4.) anprj_analytL2projectionConstr
+!# 5.) anprj_analytL2projectionConstr
 !#     -> Performs an L2-projection using the lumped mass matrix and applies
 !#        constrained mass antidiffusive to improve the resolution
 !# </purpose>
@@ -64,8 +67,23 @@ module analyticprojection
   public :: t_configL2ProjectionByMass
   public :: anprj_analytL2projectionByMass
   public :: anprj_analytL2projectionConstr
+  public :: anprj_analytRewProjection
   public :: anprj_discrDirect
   public :: anprj_charFctRealBdComp
+  
+!<constants>
+
+!<constantblock description="averaging specifiers for rew-projection">
+
+  ! use arithmetic average for rew-projection
+  integer, parameter, public :: ANPRJ_REW_ARITHMETIC = 0
+  
+  ! use volume average for rew-projection
+  integer, parameter, public :: ANPRJ_REW_VOLUME     = 1
+
+!</constantblock>
+
+!</constants>
 
 !<types>
 
@@ -357,7 +375,247 @@ contains
     end if
 
   end subroutine
+  
+  ! ***************************************************************************
 
+!<subroutine>
+
+  subroutine anprj_analytRewProjection(rvector, fcoeff_buildVectorSc_sim, &
+                                       rcubature, cavrgType, rcollection, rperfconfig)
+
+!<description>
+  ! Projects an analytically given function fcoeff_buildVectorSc_sim
+  ! to a finite element vector rvector by using restricted element-wise
+  ! L2-projection.
+!</description>
+
+!<input>
+  ! A callback routine for the function to be discretised. The callback routine
+  ! has the same syntax as that for evaluating analytic functions for the
+  ! computation of RHS vectors.
+  include '../DOFMaintenance/intf_coefficientVectorSc.inc'
+
+  ! A cubature info structure describing the cubature rule to be used
+  ! for integration.
+  type(t_scalarCubatureInfo), intent(in) :: rcubature
+  
+  ! OPTIONAL: An averaging specifier, one of the ANPRJ_REW_XXX constants.
+  ! If not given, ANPRJ_REW_VOLUME is used.
+  integer, optional, intent(in) :: cavrgType
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is
+  ! given to the callback function.
+  type(t_collection), optional, intent(inout) :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+  ! A scalar vector that receives the rew-projection of the function.
+  type(t_vectorScalar), target, intent(inout) :: rvector
+!</output>
+
+  ! local variables
+  type(t_linearForm) :: rform
+  type(t_vectorScalar) :: rvecWeight
+  type(t_spatialDiscretisation), pointer :: p_rdisc
+  type(t_elementDistribution), pointer :: p_relDist
+  real(DP), dimension(:), pointer :: p_Dx, p_Dw, Domega, Dval
+  real(DP), dimension(:,:), pointer :: DcubPtsRef, p_Ddetj, Dmass, Dvec
+  real(DP), dimension(:,:,:), pointer :: Dcoeff
+  real(DP), dimension(:,:,:,:), pointer :: Dbas
+  integer, dimension(:), pointer :: p_IelemList, Ipivot
+  integer, dimension(:,:), pointer :: Idofs
+  type(t_domainIntSubset) :: rintSubset
+  type(t_evalElementSet) :: reval
+  real(DP) :: dom, daux, dvol
+  integer :: ctype, ielDist, ndof, ncubp, nelTodo, nelDone, nelSize, &
+      iel, icpt,i,j, info, iblockSize
+  integer(I32) :: celement, ctrafo, cevalTag, ccubature
+  logical, dimension(EL_MAXNDER) :: Bder
+    
+    ! choose averaging type
+    ctype = ANPRJ_REW_VOLUME
+    if(present(cavrgType)) ctype = cavrgType
+    
+    ! choose a block size
+    if(present(rperfconfig)) then
+      iblockSize = rperfconfig%NELEMSIM
+    else
+      iblockSize = anprj_perfconfig%NELEMSIM
+    end if
+    
+    ! set up a linearform descriptor
+    Bder = .false.
+    Bder(DER_FUNC) = .true.
+    rform%itermCount = 1
+    rform%Idescriptors(1) = DER_FUNC
+    
+    ! fetch the discretisation
+    p_rdisc => rvector%p_rspatialDiscr
+    
+    ! allocate a weight vector
+    call lsyssc_createVector(rvecWeight, rvector%NEQ, .true.)
+    call lsyssc_getbase_double(rvector, p_Dx)
+    call lsyssc_getbase_double(rvecWeight, p_Dw)
+    
+    ! loop over all element distributions
+    do ielDist = 1, p_rdisc%inumFESpaces
+    
+      ! fetch the element distribution
+      p_relDist => p_rdisc%RelementDistr(ielDist)
+      
+      if(p_relDist%NEL .eq. 0) cycle
+      nelTodo = 1
+      
+      ! fetch the element list
+      call storage_getbase_int(p_relDist%h_IelementList, p_IelemList)
+      
+      ! fetch the element and trafo type
+      celement = p_relDist%celement
+      ccubature = rcubature%p_RinfoBlocks(ielDist)%ccubature
+      ctrafo = elem_igetTrafoType(celement)
+      cevalTag = ior(elem_getEvaluationTag(celement), EL_EVLTAG_REALPOINTS)
+      
+      ! fetch the number of dofs and cubature points
+      ndof = elem_igetNDofLoc(celement)
+      ncubp = cub_igetNumPts(ccubature)
+      
+      ! allocate two arrays for the cubature formula
+      allocate(Domega(ncubp))
+      allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafo),ncubp))
+
+      ! Get the cubature formula
+      call cub_getCubature(ccubature,DcubPtsRef, Domega)
+      
+      ! allocate basis function array
+      allocate(Dbas(ndof,elem_getMaxDerivative(celement), ncubp, iblockSize))
+
+      ! Allocate memory for the DOF`s of all the elements.
+      allocate(Idofs(ndof,iblockSize))
+
+      ! Allocate memory for the coefficients.
+      allocate(Dcoeff(1,ncubp,iblockSize))
+      
+      allocate(Dmass(ndof, ndof))
+      allocate(Dvec(ndof,iblockSize))
+      allocate(Ipivot(ndof))
+      allocate(Dval(ndof))
+      
+      ! initialise weighting values for arithmetic average
+      if(ctype .eq. ANPRJ_REW_ARITHMETIC) &
+        Dval = 1.0_DP
+  
+      ! Initialisation of the element set.
+      call elprep_init(reval)
+      
+      ! loop over all element blocks
+      do nelDone = 0, p_relDist%NEL, iblockSize
+      
+        ! compute the number of elements to be processed
+        nelTodo = min(p_relDist%NEL, neldone+iblockSize)
+        nelSize = nelTodo - nelDone
+        
+        ! perform dof-mapping
+        call dof_locGlobMapping_mult(p_rdisc, p_IelemList(nelDone+1:nelTodo), Idofs)
+        
+        ! prepare element for evaluation
+        call elprep_prepareSetForEvaluation (reval, cevalTag, p_rdisc%p_rtriangulation,&
+            p_IelemList(nelDone+1:nelTodo), ctrafo, DcubPtsRef)
+        p_Ddetj => reval%p_Ddetj
+        
+        ! prepare domain integration
+        call domint_initIntegrationByEvalSet (reval,rintSubset)
+        rintSubset%ielementStartIdx     =  nelDone+1
+        rintSubset%p_Ielements          => p_IelemList(nelDone:nelTodo)
+        rintSubset%p_IdofsTrial         => Idofs
+        rintSubset%celement             =  celement
+      
+        ! evaluate callback function
+        call fcoeff_buildVectorSc_sim (p_rdisc,rform, &
+            nelTodo-nelDone+1,ncubp,reval%p_DpointsReal(:,:,1:nelSize), &
+            Idofs,rintSubset, Dcoeff(:,:,1:nelSize), rcollection)
+
+        ! release domain integration
+        call domint_doneIntegration(rintSubset)
+        
+        ! Calculate the values of the basis functions.
+        call elem_generic_sim2 (celement, reval, Bder, Dbas)
+        
+        ! loop over all elements in the current batch
+        do iel = 1, nelSize
+        
+          ! clear local vector, mass matrix and element volume
+          Dvec(:,iel) = 0.0_DP
+          Dmass = 0.0_DP
+          dvol = 0.0_DP
+          
+          ! loop over all cubature points
+          do icpt = 1, ncubp
+          
+            ! compute integration weight
+            dom = Domega(icpt) * abs(p_Ddetj(icpt, iel))
+            
+            ! get the function value pre-multiplied by integration weight
+            daux = dom * Dcoeff(1, icpt, iel)
+            
+            ! update element volume
+            dvol = dvol + dom
+            
+            ! loop over all local dofs and build the local mass matrix and rhs vector
+            do i = 1, ndof
+              ! build rhs vector entry
+              Dvec(i,iel) = Dvec(i,iel) + daux * Dbas(i,DER_FUNC,icpt,iel)
+              do j = 1, ndof
+                ! build mass matrix entry
+                Dmass(i,j) = Dmass(i,j) + dom * Dbas(i,DER_FUNC,icpt,iel)*Dbas(j,DER_FUNC,icpt,iel)
+              end do
+            end do
+          end do
+          
+          ! solve the local system
+          call DGESV(ndof,1, Dmass,ndof, Ipivot, Dvec(:,iel), ndof, info)
+          
+          ! choose weights
+          if(ctype .eq. ANPRJ_REW_VOLUME) &
+            Dval = dvol
+          
+          ! incorporate local solution into global vector
+          do i = 1, ndof
+            j = Idofs(i, iel)
+            ! update solution
+            p_Dx(j) = p_Dx(j) + Dval(i)*Dvec(i,iel)
+            ! update weights
+            p_Dw(j) = p_Dw(j) + Dval(i)
+          end do
+        
+        end do ! iel
+        
+      end do
+      
+      deallocate(Ipivot)
+      deallocate(Dvec)
+      deallocate(Dmass)
+      deallocate(Dcoeff)
+      deallocate(Idofs)
+      deallocate(Dbas)
+      deallocate(DcubPtsRef)
+      deallocate(Domega)
+      
+    end do
+    
+    ! scale solution by sumed weights
+    do i = 1, rvector%NEQ
+      p_Dx(i) = p_Dx(i) / p_Dw(i)
+    end do
+    
+    ! release weight vector
+    call lsyssc_releaseVector(rvecWeight)
+    
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>
