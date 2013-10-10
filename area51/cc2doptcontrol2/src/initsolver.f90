@@ -1213,7 +1213,9 @@ contains
   contains
   
     subroutine getProlRest (rprojection, rparamList, sname)
-    
+
+    use paramlist
+
     ! Initialises an existing interlevel projection structure rprojection
     ! with parameters from the INI/DAT files. sname is the section in the
     ! parameter list containing parameters about prolongation restriction.
