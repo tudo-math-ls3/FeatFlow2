@@ -85,7 +85,6 @@ module chemotaxis_blowup
     use analyticprojection
     use meshregion
     use io
-    use error
     use myTestModule
 
     use chemotaxis_callback_blowup
@@ -518,9 +517,9 @@ module chemotaxis_blowup
 
         auxStepsDigits = 5
         if(ntimesteps+istartIteration > 99999) then
-            auxStepsDigitsReal = Real( auxStepsDigits )
+            auxStepsDigitsReal = real( auxStepsDigits )
             auxStepsDigitsReal = log10( auxStepsDigitsReal )
-            auxStepsDigits = 1+Int( auxStepsDigitsReal )
+            auxStepsDigits = 1+int( auxStepsDigitsReal )
         end if
         if ( iResume /=1 ) then
             istartIteration = 0
@@ -820,7 +819,7 @@ module chemotaxis_blowup
             ! If we compute a negative solution, we'll export the actual negativ solutions and exit the computations
             if ( checkneg .eq. 1) then
             checkneg_loop :  do i=1,rtriangulation%NVT
-                if( p_vectordata(i) < negthres .AND. .NOT.quit) then
+                if( p_vectordata(i) < negthres .and. .not.quit) then
                         select case (gmvfolder)
 
                         case (0)
@@ -849,7 +848,7 @@ module chemotaxis_blowup
             ! We approximate our time-derivative with the first order accurate difference quotient.
             ! d sol/ dt ~ (sol_n - sol_{n-1})/dtstep
             if(steps == 0) then
-                if(tol >= uerror .AND. tol >=cerror)  then
+                if(tol >= uerror .and. tol >=cerror)  then
                     print *, "tolerance threshold reached-----simulation ends up in 'nearly' steady state."
                     print *,"############ differnece to steady state in c ################"
                     print *,cerror
@@ -862,7 +861,7 @@ module chemotaxis_blowup
             end if
                                     
             if( quit ) then
-                EXIT
+                exit
             end if
             
         end do timeloop
@@ -874,14 +873,16 @@ module chemotaxis_blowup
 !
 ! ----------------------------
 !
-       if(steps .NE. 0 .OR. (.NOT.(quit))) then
+       if(steps .ne. 0 .or. (.not.(quit))) then
             itimestep = itimestep -1
         end if
  ! write the steady_state_array in a file
 print*,"filename = ",stat_ouput
     call io_openFileForWriting(stat_ouput, iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "steady_state_array"
             write (iunit, '(A, ES8.1, A, ES8.1)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
@@ -909,7 +910,9 @@ print*,"filename = ",stat_ouput
 
     call io_openFileForWriting(stat_ouput//"_abs_error", iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "absolute_error"
             write (iunit, '(A, ES8.1, A, ES8.1)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
@@ -1945,10 +1948,10 @@ print*,"filename = ",stat_ouput
         ! (!matrix style 9) Correction of the discrete convection operator
         iedge = 0
         iaux (:) = p_Kld(:)
-        DO i = 1,nvt
+        do i = 1,nvt
             ii_loc = p_Kdiagonal ( i )
 
-            DO ij_loc = p_Kdiagonal(i)+1, p_Kld(i+1)-1
+            do ij_loc = p_Kdiagonal(i)+1, p_Kld(i+1)-1
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )
             ji_loc = iaux ( j )
@@ -1958,7 +1961,7 @@ print*,"filename = ",stat_ouput
 	    dk_ji=p_Da ( ji_loc )
             
             ! Artificial diffusion coefficient
-            d_ij = MAX( -dk_ij, 0.0_DP, -dk_ji )
+            d_ij = max( -dk_ij, 0.0_DP, -dk_ji )
 
             ! Elimination of negative entries
             p_Da ( ij_loc ) = p_Da ( ij_loc ) + d_ij
@@ -1970,15 +1973,15 @@ print*,"filename = ",stat_ouput
 	    if( dk_ji.gt.dk_ij ) then
               kedge ( 1, iedge ) = i
               kedge ( 2, iedge ) = j
-	      dedge ( iedge ) = MIN(d_ij, dk_ji+d_ij)
+	      dedge ( iedge ) = min(d_ij, dk_ji+d_ij)
 	    else
               kedge ( 1, iedge ) = j
               kedge ( 2, iedge ) = i
-	      dedge ( iedge ) = MIN(d_ij, dk_ij+d_ij)
+	      dedge ( iedge ) = min(d_ij, dk_ij+d_ij)
 	    endif
 
-            END DO
-        END DO
+            end do
+        end do
 
         nedge = iedge
 
@@ -2043,17 +2046,17 @@ print*,"filename = ",stat_ouput
         call lsyssc_getbase_double( rdefVector, p_defVectorentries )
 
         !Constructing fluxes
-        DO iedge = 1,nedge
+        do iedge = 1,nedge
 	    i = kedge (1,iedge)
 	    j = kedge (2,iedge)
 
             daux = dedge(iedge)*(p_vectorentries(i)-p_vectorentries(j))
 
-	    rp(i)=rp(i)+MAX(0.0_DP,daux)
-	    rm(i)=rm(i)+MIN(0.0_DP,daux)
-        END DO
+	    rp(i)=rp(i)+max(0.0_DP,daux)
+	    rm(i)=rm(i)+min(0.0_DP,daux)
+        end do
 
-        DO i = 1,nvt
+        do i = 1,nvt
             
 	    pp=rp(i)
 	    pm=rm(i)
@@ -2065,7 +2068,7 @@ print*,"filename = ",stat_ouput
 	    rm(i)=0.0_DP
 
 	    !ii_loc = p_Kdiagonal ( i )
-            DO iloc = p_Kld(i)+1, p_Kld(i+1)-1
+            do iloc = p_Kld(i)+1, p_Kld(i+1)-1
 
 		!matrix style 9 => skip the diagonal entry
 		if( iloc.eq.p_Kdiagonal (i) ) then
@@ -2075,21 +2078,21 @@ print*,"filename = ",stat_ouput
             	j = p_Kcol ( iloc )
 		daux = p_Da ( iloc )*(p_vectorentries(j)-p_vectorentries(i))
 
-		qp=qp+MAX(0.0_DP, daux)
-		qm=qm+MIN(0.0_DP, daux)
-	    END DO
+		qp=qp+max(0.0_DP, daux)
+		qm=qm+min(0.0_DP, daux)
+	    end do
 
             if ( pp > eps ) then
-		rp(i) = MIN ( 1.0_DP, qp/pp )
+		rp(i) = min ( 1.0_DP, qp/pp )
 	    endif
             if ( pm < -eps ) then
-		rm(i) = MIN ( 1.0_DP, qm/pm )
+		rm(i) = min ( 1.0_DP, qm/pm )
 	    endif
 	    	
-	END DO
+	end do
 
         ! Correction of the low-order solution
-        DO iedge = 1 , nedge
+        do iedge = 1 , nedge
 
             ! Node numbers for the current edge
             i = kedge ( 1 , iedge )
@@ -2098,16 +2101,16 @@ print*,"filename = ",stat_ouput
             ! Antidiffusive flux to be limeted
             daux = dedge(iedge)*(p_vectorentries(i)-p_vectorentries(j))
 
-            IF ( daux > 0 ) THEN
+            if ( daux > 0 ) then
                 daux = dtstep*rp(i)*daux
-            ELSE
+            else
 		daux = dtstep*rm(i)*daux
-            END IF
+            end if
 	
 	    !high-order resolution
 	    p_defVectorentries ( i ) = p_defVectorentries ( i ) + daux
 	    p_defVectorentries ( j ) = p_defVectorentries ( j ) - daux
-        END DO
+        end do
 
         ! Cleaning up the memory
         deallocate ( rm )
@@ -2135,10 +2138,10 @@ print*,"filename = ",stat_ouput
         
         na = size ( rp )
 
-        DO i = 1, na
+        do i = 1, na
 	    rp ( i ) = 0.0_DP
 	    rm ( i ) = 0.0_DP
-        END DO
+        end do
 
         print *,">>end of the subroutine chemo_initAuxArrays ... "
     end subroutine
@@ -2205,7 +2208,7 @@ print*,"filename = ",stat_ouput
     
                 sbuf = adjustl(sdata)
     
-                if ( len(sbuf) >= 5 .AND. sbuf(1:5) .eq. "nodes" ) then
+                if ( len(sbuf) >= 5 .and. sbuf(1:5) .eq. "nodes" ) then
                     sbuf = adjustl(sbuf(6:len(sbuf)))
                     read(sbuf,*) iNODES
                     if (iNODES /= iNEQ) then
@@ -2218,7 +2221,7 @@ print*,"filename = ",stat_ouput
                     end if
                 else
                     ! read till we got the right lines
-                    if (len(sbuf) >= 8 .AND.sbuf(1:8) .eq. "variable") then
+                    if (len(sbuf) >= 8 .and.sbuf(1:8) .eq. "variable") then
                         ! the following lines determine the datas (e.g. the values at the nodes)
                         found = 1
                         exit
@@ -2250,7 +2253,7 @@ print*,"filename = ",stat_ouput
                     end if
     
                     sbuf = adjustl(sdata)
-                    if (.NOT. (len(sbuf) >= 7 .AND. sbuf(1:7).eq."endvars")) then
+                    if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                         ! convert the string to the double precision vector entry
     !                     dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
                         dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")
@@ -2290,7 +2293,7 @@ print*,"filename = ",stat_ouput
                                 end if
                 
                                 sbuf = adjustl(sdata)
-                                if (.NOT. (len(sbuf) >= 7 .AND. sbuf(1:7).eq."endvars")) then
+                                if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                                     ! convert the string to the double precision vector entry
     !                                 dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
                                     dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")

@@ -85,7 +85,6 @@ module chemotaxis_pattern_FCT
     use analyticprojection
     use meshregion
     use io
-    use error
 
     use myTestModule
     use chemotaxis_callback
@@ -799,7 +798,7 @@ module chemotaxis_pattern_FCT
             ! If we compute a negative solution, we'll export the actual negativ solutions and exit the computations
             if ( checkneg .eq. 1) then
             checkneg_loop :  do i=1,rtriangulation%NVT
-                if( p_vectordata(i) < negthres .AND. .NOT.quit) then
+                if( p_vectordata(i) < negthres .and. .not.quit) then
                         select case (gmvfolder)
 
                         case (0)
@@ -833,7 +832,7 @@ module chemotaxis_pattern_FCT
             ! We approximate our time-derivative with the first order accurate difference quotient.
             ! d sol/ dt ~ (sol_n - sol_{n-1})/dtstep
             if(steps == 0) then
-                if(tol >= uerror .AND. tol >=cerror)  then
+                if(tol >= uerror .and. tol >=cerror)  then
                     print *, "tolerance threshold reached-----simulation ends up in 'nearly' steady state."
                     print *,"############ differnece to steady state in c ################"
                     print *,cerror
@@ -846,7 +845,7 @@ module chemotaxis_pattern_FCT
             end if
                                     
             if( quit ) then
-                EXIT
+                exit
             end if
             
         end do timeloop
@@ -857,13 +856,15 @@ module chemotaxis_pattern_FCT
 !
 ! ----------------------------
 !
-       if(steps .NE. 0 .OR. (.NOT.(quit))) then
+       if(steps .ne. 0 .or. (.not.(quit))) then
             itimestep = itimestep -1
         end if
  ! write the steady_state_array in a file
     call io_openFileForWriting(stat_ouput, iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "steady_state_array"
             write (iunit, '(A, F5.3, A, F5.3)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
@@ -889,7 +890,9 @@ module chemotaxis_pattern_FCT
 
     call io_openFileForWriting(stat_ouput//"_abs_error", iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "absolute_error"
             write (iunit, '(A, F5.3, A, F5.3)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
@@ -1634,7 +1637,7 @@ print*,"inat = ", inat
             print *,'!!!!!!!!!!!!!!!!!! c_z=',dnorm_z
             !!!!!!!!!!!!!!!!!!!!!! finish to evaluate the gradient of c (in rtempVect) !!!!!!!!!!!!!!!!!!!!!!!!!!
 
-            IF((itimestep.eq.1).OR.(itimestep.eq.5).OR.(itimestep.eq.10).OR.(itimestep.eq.20).OR.(itimestep.eq.30).OR.(itimestep.eq.40)) THEN
+            if((itimestep.eq.1).or.(itimestep.eq.5).or.(itimestep.eq.10).or.(itimestep.eq.20).or.(itimestep.eq.30).or.(itimestep.eq.40)) then
             !IF(itimestep.eq.20) THEN
                 print *,''
             endif
@@ -1928,17 +1931,17 @@ print*,"inat = ", inat
         ! Correction of the discrete convection operator
         iedge = 0
         iaux ( : ) = p_Kld( : )
-        DO i = 1,nvt
+        do i = 1,nvt
             ii_loc = p_Kdiagonal ( i )
 
-            DO ij_loc = iaux ( i )+1 ,p_Kld( i+1 ) - 1
+            do ij_loc = iaux ( i )+1 ,p_Kld( i+1 ) - 1
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )
             ji_loc = iaux ( j )
             iaux ( j )=iaux ( j )+1
             
             ! Artificial diffusion coefficient
-            d_ij = MAX( -p_Da ( ij_loc ), 0.0_DP, -p_Da ( ji_loc ) )
+            d_ij = max( -p_Da ( ij_loc ), 0.0_DP, -p_Da ( ji_loc ) )
 
             ! Elimination of negative entries
             p_Da ( ij_loc ) = p_Da ( ij_loc ) + d_ij
@@ -1952,8 +1955,8 @@ print*,"inat = ", inat
             kedge ( 2, iedge ) = j
             aedge_mass( iedge ) =  p_Da_mass( ij_loc )
             
-            END DO
-        END DO
+            end do
+        end do
 
         nedge = iedge
 
@@ -2027,18 +2030,18 @@ print*,"inat = ", inat
         call lsyssc_getbase_double( ru_dot, p_udot )
 
         !Constructing fluxes
-        DO iedge = 1,nedge
+        do iedge = 1,nedge
             flux ( iedge ) = aedge_mass (iedge) * ( p_udot ( kedge (1,iedge) ) - &
                                         p_udot ( kedge (2,iedge) ) ) + &
                                 dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
                                         p_vectorentries ( kedge (2,iedge) ) )
             !flux ( iedge ) = dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
             !                         p_vectorentries ( kedge (2,iedge) ) )
-        END DO
+        end do
 
 
         ! Now the actual implementation of the FCT stabilization for the Keller-Segel model starts
-        DO iedge = 1 , nedge
+        do iedge = 1 , nedge
             i = kedge ( 1, iedge )
             j = kedge ( 2, iedge )
 
@@ -2052,24 +2055,24 @@ print*,"inat = ", inat
             end if
 
             ! Positive/negative edge contributions
-            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij )
-            pp ( j ) = pp ( j ) + MAX ( 0.0_DP , -f_ij )
-            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij )
-            pm ( j ) = pm ( j ) + MIN ( 0.0_DP , -f_ij )
+            pp ( i ) = pp ( i ) + max ( 0.0_DP , f_ij )
+            pp ( j ) = pp ( j ) + max ( 0.0_DP , -f_ij )
+            pm ( i ) = pm ( i ) + min ( 0.0_DP , f_ij )
+            pm ( j ) = pm ( j ) + min ( 0.0_DP , -f_ij )
 
             ! Maximum / minimum solution increments
-            qp ( i ) = MAX ( qp ( i ) , du )
-            qp ( j ) = MAX ( qp ( j ) , -du )
-            qm ( i ) = MIN ( qm ( i ) , du )
-            qm ( j ) = MIN ( qm ( j ) , -du )
-        END DO
+            qp ( i ) = max ( qp ( i ) , du )
+            qp ( j ) = max ( qp ( j ) , -du )
+            qm ( i ) = min ( qm ( i ) , du )
+            qm ( j ) = min ( qm ( j ) , -du )
+        end do
 
         ! Computation of nodal correction factors
-        WHERE ( pp > eps )  rp = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
-        WHERE ( pm < -eps ) rm = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
+        where ( pp > eps )  rp = min ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
+        where ( pm < -eps ) rm = min ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
                 
         ! Correction of the right-hand side
-        DO iedge = 1 , nedge
+        do iedge = 1 , nedge
             ! Node numbers for the current edge
             i = kedge ( 1 , iedge )
             j = kedge ( 2 , iedge )
@@ -2079,22 +2082,22 @@ print*,"inat = ", inat
 
             ! Multiplication by alpha_ij
             ! f_ij = alpha_ij * f_ij
-            IF ( f_ij  > 0 ) THEN
-                f_ij = MIN ( rp ( i ) , rm ( j ) ) * f_ij
-            ELSE
-                f_ij = MIN ( rm ( i ) , rp ( j ) ) * f_ij
-            END IF
+            if ( f_ij  > 0 ) then
+                f_ij = min ( rp ( i ) , rm ( j ) ) * f_ij
+            else
+                f_ij = min ( rm ( i ) , rp ( j ) ) * f_ij
+            end if
 
             ! Insertion into the global vector
             f ( i ) = f ( i ) + f_ij
             f ( j ) = f ( j ) - f_ij
-        END DO
+        end do
 
-        DO i = 1, neq
+        do i = 1, neq
             ! The actual reconstruction to the "mid-order" solution
             ! u_i ^{n+1} = u_i ^L + \Delta t * f_i (u^L , u^n) / m_i
             p_vectorentries ( i ) = p_vectorentries ( i ) + dtstep * ( f ( i ) / p_Da ( p_Kdiagonal ( i ) ) )
-        END DO
+        end do
 
         ! Cleaning up the memory
         deallocate ( pp )
@@ -2133,7 +2136,7 @@ print*,"inat = ", inat
         
         na = size ( pp )
 
-        DO i = 1, na
+        do i = 1, na
             pp ( i ) = 0.0_DP
             pm ( i ) = 0.0_DP
             qp ( i ) = 0.0_DP
@@ -2141,7 +2144,7 @@ print*,"inat = ", inat
             rp ( i ) = 1.0_DP
             rm ( i ) = 1.0_DP
             f ( i ) = 0.0_DP
-        END DO
+        end do
 
         print *,">>end of the subroutine chemo_initAuxArrays ... "
     end subroutine

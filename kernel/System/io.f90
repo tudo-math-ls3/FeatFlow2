@@ -39,7 +39,7 @@ module io
 
 !$use omp_lib
   use fsystem
-  use error
+  use genoutput
 
   implicit none
 
@@ -113,15 +113,15 @@ contains
 
 
     if (trim(sfilename) .eq. "") then
-      call error_print(ERR_IO_EMPTYFILENAME, "io_openFileForReading", ERR_NOT_CRITICAL, &
-                       sarg1 = "sfilename")
+      call output_line('File name <'//trim(adjustl(sfilename))//'> empty.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForReading')
       return
     endif
 
     iunit = sys_getFreeUnit()
     if (iunit .eq. -1) then
-      call error_print(ERR_IO_NOFREEUNIT, "io_openFileForReading", ERR_NOT_CRITICAL)
-
+      call output_line('No free unit found. Not able to open the file.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForReading')
       !give it up
       return
     endif
@@ -140,15 +140,16 @@ contains
              form="unformatted")
       end if
       if (istatus .ne. 0) then
-        write(unit=*,fmt=*) "*** Error while opening file '",trim(sfilename),"'. ***"
+        call output_line('Error while opening file <'//trim(adjustl(sfilename))//'> for reading.', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForReading')
         iunit = -1
       end if
 
     else
 
-      call error_print(ERR_IO_NOSUCHFILE, "io_openFileForReading", ERR_CRITICAL, &
-                      sarg1 = sfilename)
-
+      call output_line('File <'//trim(adjustl(sfilename))//'> does not exists.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForReading')
+      call sys_halt()
     endif
 
   end subroutine io_openFileForReading
@@ -199,14 +200,15 @@ contains
     character(len=len(sfilename)) :: sfilepath
 
     if (len_trim(sfilename) .eq. 0) then
-      call error_print(ERR_IO_EMPTYFILENAME, "io_openFileForWriting", ERR_NOT_CRITICAL, &
-                       sarg1 = "sfilename")
+      call output_line('File name <'//trim(adjustl(sfilename))//'> empty.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
       return
     end if
 
     iunit = sys_getFreeUnit()
     if (iunit .eq. -1) then
-      call error_print(ERR_IO_NOFREEUNIT, "io_openFileForWriting", ERR_NOT_CRITICAL)
+      call output_line('No free unit found. Not able to open the file.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
       return
     end if
 
@@ -253,7 +255,8 @@ contains
       bfileExists = bexists
     end if
     if (istatus .ne. 0) then
-      write(unit=*,fmt=*) "*** Error while opening file '", trim(sfilename), "'. ***"
+      call output_line('Error while opening file <'//trim(adjustl(sfilename))//'> for writing.', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
       iunit = -1
     end if
 
@@ -515,16 +518,17 @@ contains
 
 
     if (len_trim(spath) .eq. 0) then
-      call error_print(ERR_IO_EMPTYFILENAME, "io_makeDirectory", ERR_NOT_CRITICAL, &
-                       sarg1 = spath)
+      call output_line('Path name <'//trim(adjustl(spath))//'> empty.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_makeDirectory')
       return
     end if
 
     ! Ensure to explicitly NULL-terminate the string when calling C function!
     call mkdir_recursive(trim(spath) // achar(0), istatus)
     if (istatus .lt. 0) then
-      call error_print(ERR_IO_MKDIR_P_FAILED, "io_makeDirectory", ERR_NOT_CRITICAL, &
-                       sarg1 = spath)
+      call output_line('Could not (auto-)create path <'//trim(adjustl(spath))//'>.', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'io_makeDirectory')
+      call sys_halt()
     end if
 
   end subroutine io_makeDirectory

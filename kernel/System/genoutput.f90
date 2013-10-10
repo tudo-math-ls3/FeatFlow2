@@ -480,7 +480,7 @@ contains
     !    end if
     ! but as this would introduce circular module dependencies inline ethe relevant code
     ! here manually.
-    i = scan(sfilename, "/\\", .TRUE.)
+    i = scan(sfilename, "/\\", .true.)
     if (i .ne. 0) then
       ! Directory ends at position i.
       sfilepath = sfilename(1:i-1)

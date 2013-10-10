@@ -85,7 +85,6 @@ module chemotaxis_blowup
     use analyticprojection
     use meshregion
     use io
-    use error
 
     use chemotaxis_callback
 
@@ -495,7 +494,7 @@ module chemotaxis_blowup
         call ucd_write (rexport)
         call ucd_release (rexport)
 
-        if (INFO_LEVEL .GT. 1) then
+        if (INFO_LEVEL .gt. 1) then
             ! here I calculate the analytical L_2 error
             call pperr_scalar (rchemoattract,PPERR_L1ERROR,Derr_chemoL2,&
                         ffunction_Target_Chemo)
@@ -552,7 +551,7 @@ module chemotaxis_blowup
         call ucd_release (rexport)
 
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
                 ! Setting the time init stats
                 time_accum = 0.0_DP
                 time_max = 0.0_DP
@@ -600,9 +599,9 @@ module chemotaxis_blowup
 
         auxStepsDigits = 5
         if(ntimesteps+istartIteration > 99999) then
-            auxStepsDigitsReal = Real( ntimesteps+istartIteration )
+            auxStepsDigitsReal = real( ntimesteps+istartIteration )
             auxStepsDigitsReal = log10( auxStepsDigitsReal )
-            auxStepsDigits = 1+Int( auxStepsDigitsReal )
+            auxStepsDigits = 1+int( auxStepsDigitsReal )
         end if
         if ( iResume /=1 ) then
             istartIteration = 0
@@ -752,10 +751,10 @@ module chemotaxis_blowup
                 ! we use linsol_solveAdaptively. If b is a defect
                 ! RHS and x a defect update to be added to a solution vector,
 
-                if (INFO_LEVEL .GT. 2) then
+                if (INFO_LEVEL .gt. 2) then
                     p_rsolverNode%ioutputLevel = 2
                 else
-                    if(INFO_LEVEL .GT. 1) then
+                    if(INFO_LEVEL .gt. 1) then
                         p_rsolverNode%ioutputLevel = 1
                     else
                         p_rsolverNode%ioutputLevel = 0
@@ -767,7 +766,7 @@ module chemotaxis_blowup
 
                 call linsol_solveAdaptively (p_rsolverNode,rvectorBlockchemo,rrhsBlockchemo,rtempBlock)
 
-                if (INFO_LEVEL .GT. 1) then
+                if (INFO_LEVEL .gt. 1) then
                     ! Store the iterationstats
                     if ( p_rsolverNode%iiterations >=  iteration_c_max ) then
                         iteration_c_max = p_rsolverNode%iiterations
@@ -871,7 +870,7 @@ module chemotaxis_blowup
             uerror=uerror/dtstep
             steady_state_array(1,itimestep) = uerror
             steady_state_array(2,itimestep) = cerror
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
                 print *,' ############  Rel_chemo_diff=', cerror
                 print *,' ############  Rel_cells_diff=', uerror
             end if
@@ -879,7 +878,7 @@ module chemotaxis_blowup
             ! calculate the difference: (c_analyt - c_numeric)
 !             call lsyssc_vectorLinearComb (ranalytChemo,rchemoattract,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)
             dnorm = lsyssc_vectorNorm (rchemoattract, CTRLNORM)
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
                 print*,''
                 print *,' >>>>>>>>>>  (CTRL)-Norm_chemo=', dnorm
             end if
@@ -887,13 +886,13 @@ module chemotaxis_blowup
             ! calculate the difference: (u_analyt - u_numeric)
 !             call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)
             dnorm = lsyssc_vectorNorm (rcell, CTRLNORM)
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
                 print *,' >>>>>>>>>>  (CTRL)-Norm_cells=', dnorm
                 print*,''
             end if
             absolute_error(1,itimestep) = dnorm
 
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
             ! here I calculate the analytical L_1 error
                 call pperr_scalar (rchemoattract,PPERR_L1ERROR,Derr_chemoL2,&
                             ffunction_Target_Chemo)
@@ -912,7 +911,7 @@ module chemotaxis_blowup
 !             print *,' \\\\\\\\\\\  Diff_H1_chemo=', Derr_chemoH1
 !             print *,' \\\\\\\\\\\  Diff_H1_cells=', Derr_cellsH1
 
-            if (INFO_LEVEL .GT. 0) then
+            if (INFO_LEVEL .gt. 0) then
                 ! time statistics
                 call cpu_time(time_stop)
                 time_accum = time_accum+( time_stop-time_start )
@@ -929,7 +928,7 @@ module chemotaxis_blowup
             ! If we compute a negative solution, we'll export the actual negativ solutions and exit the computations
             if ( checkneg .eq. 1) then
             checkneg_loop :  do i=1,rtriangulation%NVT
-                if( p_vectordata(i) < negthres .AND. .NOT.quit) then
+                if( p_vectordata(i) < negthres .and. .not.quit) then
                         select case (gmvfolder)
 
                         case (0)
@@ -958,7 +957,7 @@ module chemotaxis_blowup
             ! We approximate our time-derivative with the first order accurate difference quotient.
             ! d sol/ dt ~ (sol_n - sol_{n-1})/dtstep
             if(steps == 0) then
-                if(tol >= uerror .AND. tol >=cerror)  then
+                if(tol >= uerror .and. tol >=cerror)  then
                     print *, "tolerance threshold reached-----simulation ends up in 'nearly' steady state."
                     print *,"############ differnece to steady state in c ################"
                     print *,cerror
@@ -971,7 +970,7 @@ module chemotaxis_blowup
             end if
 
             if( quit ) then
-                EXIT
+                exit
             end if
 
         end do timeloop
@@ -982,13 +981,15 @@ module chemotaxis_blowup
 !
 ! ----------------------------
 !
-       if(steps .NE. 0 .OR. (.NOT.(quit))) then
+       if(steps .ne. 0 .or. (.not.(quit))) then
             itimestep = itimestep -1
         end if
  ! write the steady_state_array in a file
     call io_openFileForWriting(stat_output, iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "steady_state_array"
             write (iunit, '(A, ES8.1, A, ES8.1)') "CHI= ", CHI, "     ALPHA= ", ALPHA
@@ -1017,7 +1018,9 @@ module chemotaxis_blowup
 
     call io_openFileForWriting(stat_output//"_abs_error", iunit, SYS_REPLACE)
         if (iunit .eq. -1) then
-            call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
+            call output_line('File input/output error.', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForWriting')
+            call sys_halt()
         else
             write (iunit, '(A)' ) "absolute_error"
             write (iunit, '(A, ES8.1, A, ES8.1)') "CHI= ", CHI, "     ALPHA= ", ALPHA
@@ -1026,7 +1029,7 @@ module chemotaxis_blowup
             write (iunit,'(A, I, A, I)' ) "gmvoutput = ", gmvfolder, "ISTEP_GMV = ", ISTEP_GMV
             write (iunit, '(A, I, A, I)' ) "iResume = ", iresume,"     istartIteration = ",istartIteration
             write (iunit, '(A, ES8.1, A, ES8.1, A, ES8.1)') "RADIUS= ", dradius, "     TOTAL MASS= ", dmass, "   NODAL MASS = ", dm_0
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
                 write (iunit, '(A,ES8.1, A,ES8.1)') "NAGAI RELATION = ", Derr_total,' INITIAL MOMENTUM INTEGRAL (DIAZ ASSUMPTION)=', Derr_momentum
             end if
             write (iunit, '(A)') "|| u_n - u^* || : "
@@ -1081,7 +1084,7 @@ module chemotaxis_blowup
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!   Printing some statistical information   !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if(INFO_LEVEL .GT. 0) then
+        if(INFO_LEVEL .gt. 0) then
             print *," patternformation_FCT:"
             print *,"----------------------------"
             print *,"Simulation parameters:"
@@ -1122,7 +1125,7 @@ module chemotaxis_blowup
 !             print *, "stopped @  timestep = ", itimestep-1," out of ",ntimesteps
 !         end if
 
-        if(INFO_LEVEL .GT. 0) then
+        if(INFO_LEVEL .gt. 0) then
             print*, "----------------------------"
             print*, "--------TIMESTATS-----------"
             print*, "max time per iteration : ",time_max
@@ -1263,7 +1266,7 @@ module chemotaxis_blowup
         ! local bilinearform to construct the matrices
         type(t_bilinearForm) :: rform
         
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_initmat ... "
         end if
 
@@ -1330,7 +1333,7 @@ module chemotaxis_blowup
         rform%Dcoefficients(1)  = 1.0
         call bilf_buildMatrixScalar (rform,.true.,rmatrGradZ)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_initmat ... "
         end if
 
@@ -1366,7 +1369,7 @@ module chemotaxis_blowup
         ! The underlying discretisation
         type(t_blockDiscretisation) , intent (IN) :: rdiscretisation
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_creatematvec ... "
         end if
 
@@ -1400,7 +1403,7 @@ module chemotaxis_blowup
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytCell,.true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rtempAnalyt,.true.)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_creatematvec ... "
         end if
 
@@ -1438,7 +1441,7 @@ module chemotaxis_blowup
         ! Local variables
         type(t_collection) :: rcollection
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_initIC ... "
         end if
 
@@ -1462,7 +1465,7 @@ module chemotaxis_blowup
 
         call anprj_discrDirect ( rvector_momentum, analyt_momentum )
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_initIC ... "
         end if
 
@@ -1511,7 +1514,7 @@ module chemotaxis_blowup
 !         integer, dimension(:) :: iarray
 !         integer :: inat
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_initBC ... "
         end if
 
@@ -1539,7 +1542,7 @@ module chemotaxis_blowup
         call mshreg_done(rmeshRegion)
 
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_initBC ... "
         end if
 
@@ -1579,7 +1582,7 @@ module chemotaxis_blowup
         ! for test
         real(DP), dimension(:), pointer :: p_vector
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_initrhsC ... "
         end if
 
@@ -1615,7 +1618,7 @@ module chemotaxis_blowup
         ! Now we should have the correct RHS = rhs like its mentioned above.
         call lsyssc_releaseMatrix (rlumpedmass)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_initrhsC ... "
         end if
 
@@ -1699,7 +1702,7 @@ module chemotaxis_blowup
         integer :: i
 
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_defcorr ... "
         end if
 
@@ -1894,10 +1897,10 @@ module chemotaxis_blowup
             ! call linsol_solveAdaptively (p_rsolverNode_cells,rcellBlock,rrhsBlock,rtempBlock)
 
             ! Set the output level of the solver to 2 for some output
-            if (INFO_LEVEL .GT. 2) then
+            if (INFO_LEVEL .gt. 2) then
                 p_rsolverNode_cells%ioutputLevel = 2
             else
-                if(INFO_LEVEL .GT. 1) then
+                if(INFO_LEVEL .gt. 1) then
                     p_rsolverNode_cells%ioutputLevel = 1
                 else
                     p_rsolverNode_cells%ioutputLevel = 0
@@ -1908,7 +1911,7 @@ module chemotaxis_blowup
             p_rsolverNode_cells%nmaxIterations=1000
             call linsol_precondDefect( p_rsolverNode_cells , rdefBlock )
 
-            if (INFO_LEVEL .GT. 1) then
+            if (INFO_LEVEL .gt. 1) then
                 ! Store the iterationstats
                 if ( p_rsolverNode_cells%iiterations >=  iteration_u_max ) then
                     iteration_u_max = p_rsolverNode_cells%iiterations
@@ -1946,17 +1949,17 @@ module chemotaxis_blowup
         !!!!!   end nonlinear loop   !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print*,"-------------------"
             print*, k-1," iterations needed "
             print *, " residuum : " , defect
         end if
-        if (INFO_LEVEL .GT. 1) then
+        if (INFO_LEVEL .gt. 1) then
             ! Calculate the global iteration_u_average
             iteration_u_average = iteration_u_average + ( u_average_local / ( k-1 ) )
         end if
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             ! Store the iterationstats
             if ( k-1 >=  iteration_defcorr_max ) then
             iteration_defcorr_max = k-1
@@ -1982,7 +1985,7 @@ module chemotaxis_blowup
         call lsyssc_releaseVector (rtempVecY)
         call lsyssc_releaseVector (rtempVecZ)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_defcorr ... "
         end if
 
@@ -2019,7 +2022,7 @@ module chemotaxis_blowup
         real(DP), dimension(:), pointer :: p_Da_mass, p_Da
         integer , dimension(:) , allocatable :: iaux
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_artdiff ... "
         end if
 
@@ -2037,13 +2040,13 @@ module chemotaxis_blowup
         ! Correction of the discrete convection operator
         iedge = 0
         iaux ( : ) = p_Kld( : )
-        DO i = 1,nvt
+        do i = 1,nvt
             ii_loc = p_Kdiagonal ( i )
 
             ! p_Kdiagonal instead of iaux(.)
             ! Cf. /home/user/rstrehl/nobackup/Featflow2/kernel/PDEOperators
             ! afcstab_genEdgeList
-            DO ij_loc = p_Kdiagonal ( i )+1 ,p_Kld( i+1 ) - 1
+            do ij_loc = p_Kdiagonal ( i )+1 ,p_Kld( i+1 ) - 1
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )
             ji_loc = iaux ( j )
@@ -2053,7 +2056,7 @@ module chemotaxis_blowup
             ! Diffusionterm modified (Marcel) DIFF2
 !             d_ij = MAX( abs(p_Da ( ij_loc )), abs(p_Da ( ji_loc )) )
             ! Standard DIFF1
-            d_ij = MAX( -p_Da ( ij_loc ), 0.0_DP, -p_Da ( ji_loc ) )
+            d_ij = max( -p_Da ( ij_loc ), 0.0_DP, -p_Da ( ji_loc ) )
 
             ! Elimination of negative entries
             p_Da ( ij_loc ) = p_Da ( ij_loc ) + d_ij
@@ -2067,14 +2070,14 @@ module chemotaxis_blowup
             kedge ( 2, iedge ) = j
             aedge_mass( iedge ) =  p_Da_mass( ij_loc )
 
-            END DO
-        END DO
+            end do
+        end do
 
         nedge = iedge
 
         deallocate ( iaux )
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_artdiff ... "
         end if
 
@@ -2114,7 +2117,7 @@ module chemotaxis_blowup
         neq = rK%NEQ
         eps = 1e-16
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_fct_lim ... "
         end if
 
@@ -2149,18 +2152,18 @@ module chemotaxis_blowup
         call lsyssc_getbase_double( ru_dot, p_udot )
 
         !Constructing fluxes
-        DO iedge = 1,nedge
+        do iedge = 1,nedge
             flux ( iedge ) = aedge_mass (iedge) * ( p_udot ( kedge (1,iedge) ) - &
                                         p_udot ( kedge (2,iedge) ) ) + &
                                 dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
                                         p_vectorentries ( kedge (2,iedge) ) )
 !             flux ( iedge ) = dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
 !                                     p_vectorentries ( kedge (2,iedge) ) )
-        END DO
+        end do
 
 
         ! Now the actual implementation of the FCT stabilization for the Keller-Segel model starts
-        DO iedge = 1 , nedge
+        do iedge = 1 , nedge
             i = kedge ( 1, iedge )
             j = kedge ( 2, iedge )
 
@@ -2174,24 +2177,24 @@ module chemotaxis_blowup
             end if
 
             ! Positive/negative edge contributions
-            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij )
-            pp ( j ) = pp ( j ) + MAX ( 0.0_DP , -f_ij )
-            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij )
-            pm ( j ) = pm ( j ) + MIN ( 0.0_DP , -f_ij )
+            pp ( i ) = pp ( i ) + max ( 0.0_DP , f_ij )
+            pp ( j ) = pp ( j ) + max ( 0.0_DP , -f_ij )
+            pm ( i ) = pm ( i ) + min ( 0.0_DP , f_ij )
+            pm ( j ) = pm ( j ) + min ( 0.0_DP , -f_ij )
 
             ! Maximum / minimum solution increments
-            qp ( i ) = MAX ( qp ( i ) , du )
-            qp ( j ) = MAX ( qp ( j ) , -du )
-            qm ( i ) = MIN ( qm ( i ) , du )
-            qm ( j ) = MIN ( qm ( j ) , -du )
-        END DO
+            qp ( i ) = max ( qp ( i ) , du )
+            qp ( j ) = max ( qp ( j ) , -du )
+            qm ( i ) = min ( qm ( i ) , du )
+            qm ( j ) = min ( qm ( j ) , -du )
+        end do
 
         ! Computation of nodal correction factors
-        WHERE ( pp > eps )  rp = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
-        WHERE ( pm < -eps ) rm = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
+        where ( pp > eps )  rp = min ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
+        where ( pm < -eps ) rm = min ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
 
         ! Correction of the right-hand side
-        DO iedge = 1 , nedge
+        do iedge = 1 , nedge
             ! Node numbers for the current edge
             i = kedge ( 1 , iedge )
             j = kedge ( 2 , iedge )
@@ -2201,22 +2204,22 @@ module chemotaxis_blowup
 
             ! Multiplication by alpha_ij
             ! f_ij = alpha_ij * f_ij
-            IF ( f_ij  > 0 ) THEN
-                f_ij = MIN ( rp ( i ) , rm ( j ) ) * f_ij
-            ELSE
-                f_ij = MIN ( rm ( i ) , rp ( j ) ) * f_ij
-            END IF
+            if ( f_ij  > 0 ) then
+                f_ij = min ( rp ( i ) , rm ( j ) ) * f_ij
+            else
+                f_ij = min ( rm ( i ) , rp ( j ) ) * f_ij
+            end if
 
             ! Insertion into the global vector
             f ( i ) = f ( i ) + f_ij
             f ( j ) = f ( j ) - f_ij
-        END DO
+        end do
 
-        DO i = 1, neq
+        do i = 1, neq
             ! The actual reconstruction to the "mid-order" solution
             ! u_i ^{n+1} = u_i ^L + \Delta t * f_i (u^L , u^n) / m_i
             p_vectorentries ( i ) = p_vectorentries ( i ) + dtstep * ( f ( i ) / p_Da ( p_Kdiagonal ( i ) ) )
-        END DO
+        end do
 
         ! Cleaning up the memory
         deallocate ( pp )
@@ -2231,7 +2234,7 @@ module chemotaxis_blowup
         call lsyssc_releaseVector (ru_dot)
         call lsyssc_releaseVector (rvector_temp)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_fct_lim ... "
         end if
 
@@ -2256,13 +2259,13 @@ module chemotaxis_blowup
         ! locla variables
         integer :: i, na
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_initAuxArrays ... "
         end if
 
         na = size ( pp )
 
-        DO i = 1, na
+        do i = 1, na
             pp ( i ) = 0.0_DP
             pm ( i ) = 0.0_DP
             qp ( i ) = 0.0_DP
@@ -2270,9 +2273,9 @@ module chemotaxis_blowup
             rp ( i ) = 1.0_DP
             rm ( i ) = 1.0_DP
             f ( i ) = 0.0_DP
-        END DO
+        end do
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_initAuxArrays ... "
         end if
 
@@ -2306,7 +2309,7 @@ module chemotaxis_blowup
         character(LEN=PARLST_LENLINEBUF) :: sbuf
         real(DP) :: dvalue
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>start of the subroutine chemo_readGMV ... "
         end if
 
@@ -2344,7 +2347,7 @@ module chemotaxis_blowup
     
                 sbuf = adjustl(sdata)
     
-                if ( len(sbuf) >= 5 .AND. sbuf(1:5) .eq. "nodes" ) then
+                if ( len(sbuf) >= 5 .and. sbuf(1:5) .eq. "nodes" ) then
                     sbuf = adjustl(sbuf(6:len(sbuf)))
                     read(sbuf,*) iNODES
                     if (iNODES /= iNEQ) then
@@ -2357,7 +2360,7 @@ module chemotaxis_blowup
                     end if
                 else
                     ! read till we got the right lines
-                    if (len(sbuf) >= 8 .AND.sbuf(1:8) .eq. "variable") then
+                    if (len(sbuf) >= 8 .and.sbuf(1:8) .eq. "variable") then
                         ! the following lines determine the datas (e.g. the values at the nodes)
                         found = 1
                         exit
@@ -2389,7 +2392,7 @@ module chemotaxis_blowup
                     end if
     
                     sbuf = adjustl(sdata)
-                    if (.NOT. (len(sbuf) >= 7 .AND. sbuf(1:7).eq."endvars")) then
+                    if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                         ! convert the string to the double precision vector entry
     !                     dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
                         dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")
@@ -2429,7 +2432,7 @@ module chemotaxis_blowup
                                 end if
                 
                                 sbuf = adjustl(sdata)
-                                if (.NOT. (len(sbuf) >= 7 .AND. sbuf(1:7).eq."endvars")) then
+                                if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                                     ! convert the string to the double precision vector entry
     !                                 dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
                                     dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")
@@ -2454,7 +2457,7 @@ module chemotaxis_blowup
             ! Close the file.
             close (iunit)
 
-        if (INFO_LEVEL .GT. 0) then
+        if (INFO_LEVEL .gt. 0) then
             print *,">>end of the subroutine chemo_readGMV ... "
         end if
 
@@ -2546,7 +2549,7 @@ module chemotaxis_blowup
 	call lsyssc_getbase_double (rvector,p_vector)
 	nvt = rvector%NEQ
 	
-	DO i = 1,nvt
+	do i = 1,nvt
 		p_vector( i ) = (1.0_DP/p_Da(p_Kdiagonal(i)))*p_vector( i )
 	end do
 	
