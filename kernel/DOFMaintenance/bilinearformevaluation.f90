@@ -1953,8 +1953,8 @@ contains
   call spdiscr_getElemGroupInfo (rmatrix%p_rspatialDiscrTrial,1,celemTrial)
   
   ! Get the number of local DOF`s for trial and test functions
-  indofTrial = elem_igetNDofLoc(celemTest)
-  indofTest = elem_igetNDofLoc(celemTrial)
+  indofTrial = elem_igetNDofLoc(celemTrial)
+  indofTest = elem_igetNDofLoc(celemTest)
 
   ! Get the number of corner vertices of the element
   if (elem_igetShape(celemTest) .ne. elem_igetShape(celemTrial)) then
