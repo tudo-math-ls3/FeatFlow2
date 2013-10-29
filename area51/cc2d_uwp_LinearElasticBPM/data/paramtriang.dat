@@ -1,0 +1,22 @@
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+[PARAMTRIANG]
+
+# Filename of the parametrisation of the domain
+sParametrisation = '%{spredirectory}/QUAD.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/QUAD.tri'
+
+# Whether to convert the mesh into a pure triangular mesh or not
+iconvertToTriangleMesh = 0
+
+# This defines a percentage factor (0..1) how far the fine mesh
+# is disturbed. Should usually be set to 0.0 except for debug
+# purposes.
+ddisturbMeshFactor = 0.0

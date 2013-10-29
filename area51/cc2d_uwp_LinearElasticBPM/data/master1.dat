@@ -1,0 +1,213 @@
+# -------------------------------------------------------------------
+# This optional master file is the entry point for all data
+# which is processed by the software. The simportdatafiles(.) parameter
+# below defines a list of 'child' data files which are read during
+# the initialisation. All parameters and sections following
+# this parameter overwrite data from the DAT files; this allows
+# to centrally define crucial parameters in numeric tests while
+# the data files specify the general setting.
+#
+# If simportdatafiles(.) is not present as first parameter in this
+# file, all parameters of the software must be defined here. This
+# allows to collect all parameters in one file.
+#
+# If this file is missing, the software will search for parameters in
+# a standard set of data files.
+# -------------------------------------------------------------------
+
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Directory for visualisation files
+spostdirectory = %{sappdirectory}/gmv
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = %{sappdirectory}/ns
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/pre
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(8) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/nonlinsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+  "%{sdatadirectory}/postprocessing.dat"
+  
+# From this point on, it's possible to additionally define 'alternative'
+# parameter settings that overwrite settings in the DAT files. The
+# parameters here must be introduced by the corresponding section
+# to be overwritten. You can for example define:
+###############
+[GENERALOUTPUT]
+###############
+smsgLog = '%{slogdirectory}/quad.log'
+#####################
+ [CC-DISCRETISATION]
+#####################
+iequation    = 1
+IncShear = 1
+iMass= 1
+iMassLumpType= 0 
+ielementType = 4
+ NLMIN = 1
+ NLMAX = 4
+ RE = 1E3
+ mu = 5.583E6
+ lambda = 8.375E6
+ rhoSR = 2E3
+ rhoFR = 1E3
+ nSo = 0.67
+ nFo = 0.33
+kFo = 1E-5
+ctypeInitialSolution = 0
+#################
+[CC-LINEARSOLVER]
+#################
+isolverType = 0
+ismootherType = 1
+icoarseGridSolverType = 0
+####################
+[CC-MULTIGRIDSOLVER]
+####################
+nmaxIterations     = 30
+depsRel            = 1E-10
+#####################
+[TIME-DISCRETISATION]
+#####################
+itimedependence = 1                     # ISTAT
+dtimeInit = 0.0 
+dtimeMax  = 0.01
+dtimeStep = 1E-4
+dtimeStepTheta = 1
+dminTimeDerivative = 1.0E-13
+ipressureFullyImplicit = 1
+################
+[CC2D-NONLINEAR]
+################
+nmaxIterations     = 5
+depsD_u     = 1.0E-5
+depsD_vS    = 1.0E-5
+depsD_vF    = 1.0E-5
+depsDiv     = 1.0E-5
+depsUR      = 1.0E-5
+depsVSR     = 1.0E-5
+depsVFR     = 1.0E-5
+depsPR      = 1.0E-5
+###################
+[CC-POSTPROCESSING]
+###################
+ioutputUCD = 1
+ierrorAnalysisL2 = 0
+ierrorAnalysisH1 = 0
+cevaluatePointValues(72) =
+   1.0  9.500000  2  0
+   1.0  9.600000  2  0
+   1.0  9.700000  2  0
+   1.0  9.800000  2  0
+   1.0  9.806250  2  0
+   1.0  9.812500  2  0
+   1.0  9.818750  2  0
+   1.0  9.825000  2  0
+   1.0  9.831250  2  0
+   1.0  9.837500  2  0
+   1.0  9.843750  2  0
+   1.0  9.850000  2  0
+   1.0  9.856250  2  0
+   1.0  9.862500  2  0
+   1.0  9.868750  2  0
+   1.0  9.875000  2  0
+   1.0  9.881250  2  0
+   1.0  9.887500  2  0
+   1.0  9.893750  2  0
+   1.0  9.900000  2  0
+   1.0  9.906250  2  0
+   1.0  9.912500  2  0
+   1.0  9.918750  2  0
+   1.0  9.925000  2  0
+   1.0  9.931250  2  0
+   1.0  9.937500  2  0
+   1.0  9.943750  2  0
+   1.0  9.950000  2  0
+   1.0  9.956250  2  0
+   1.0  9.962500  2  0
+   1.0  9.968750  2  0
+   1.0  9.975000  2  0
+   1.0  9.981250  2  0
+   1.0  9.987500  2  0
+   1.0  9.993750  2  0
+   1.0 10.000000  2  0
+# pressures
+   1.0  9.500000  7  0
+   1.0  9.600000  7  0
+   1.0  9.700000  7  0
+   1.0  9.800000  7  0
+   1.0  9.806250  7  0
+   1.0  9.812500  7  0
+   1.0  9.818750  7  0
+   1.0  9.825000  7  0
+   1.0  9.831250  7  0
+   1.0  9.837500  7  0
+   1.0  9.843750  7  0
+   1.0  9.850000  7  0
+   1.0  9.856250  7  0
+   1.0  9.862500  7  0
+   1.0  9.868750  7  0
+   1.0  9.875000  7  0
+   1.0  9.881250  7  0
+   1.0  9.887500  7  0
+   1.0  9.893750  7  0
+   1.0  9.900000  7  0
+   1.0  9.906250  7  0
+   1.0  9.912500  7  0
+   1.0  9.918750  7  0
+   1.0  9.925000  7  0
+   1.0  9.931250  7  0
+   1.0  9.937500  7  0
+   1.0  9.943750  7  0
+   1.0  9.950000  7  0
+   1.0  9.956250  7  0
+   1.0  9.962500  7  0
+   1.0  9.968750  7  0
+   1.0  9.975000  7  0
+   1.0  9.981250  7  0
+   1.0  9.987500  7  0
+   1.0  9.993750  7  0
+   1.0 10.000000  7  0
+iwritePointValues = 0
+#############
+[PARAMTRIANG]
+#############
+#sParametrisation = '%{spredirectory}/quadhighdegree.prm'
+#sMesh = '%{spredirectory}/quadhighdegree.tri'
+sParametrisation = '%{spredirectory}/markert1.prm'
+sMesh = '%{spredirectory}/markert1.tri'
+##############
+[BDCONDITIONS]
+##############
+ineumannBoundary = 1  # for fluid only
+bdComponent1(4)=
+   1.0  3  0 1 0 1 0 1  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   2.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   3.0  3  0 0 0 0 0 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   4.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+
