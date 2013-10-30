@@ -147,7 +147,7 @@ mu = 1
 # ......................................................
 # ......................................................
 # Is the convective term in fluid momentum balance to be ignored: 1:YES, 0:NO
-iequation    = 0
+iequation    = 1
 
 # The isubEquation defines the shape of the tensor (see see ffunctionViscoModel in ccmatvecassembly.f90)
 # A value > 0 requires to set iupwind >= 4 to activate the extended assembly!

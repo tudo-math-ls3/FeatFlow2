@@ -1,0 +1,159 @@
+# ------------------------------------------------------------------------
+# Stationary nonlinear solver
+#
+# This file contains parameters configuring the (stationary)
+# nonlinear solver of CCxD type solver.
+# ------------------------------------------------------------------------
+
+################
+[CC2D-NONLINEAR]
+################
+
+# minimum number of nonlinear iterations; 
+# in nonstationary simulations: per time step; 
+# 1=standard
+# Former NLMIN.
+
+nminIterations     = 1
+
+# max number of nonlinear iterations; 
+# in nonstationary simulations: per time step.
+# Former NLMAX
+
+nmaxIterations     = 10
+
+# (absolute) limit for U-defects, standard = 1.0E-5
+
+depsD              = 1.0E-5
+
+# (absolute) limit for DIV-defects, standard = 1.0E-5
+
+depsDiv            = 1.0E-5
+
+# limit for U-changes, standard = 1.0E-5
+
+depsUR             = 1.0E-5
+
+# limit for P-changes, standard = 1.0E-5
+
+depsPR             = 1.0E-5
+
+# (relative) limit for defect improvement
+
+dDampingD          = 1.0E-1
+
+# Output level of the nonlinear solver
+
+ioutputLevel       = 2
+
+# ------------------------------------------------------------------------
+# Preconditioner in nonlinear defect correction
+
+# Type of preconditioner to use in nonlinear defect correction.
+# =0: Preconditioning with inverse mass matrix (not yet implemented).
+# =1: Preconditioning by defect correction loop, using a linear solver
+#     to solve the linearised system.
+# =2: Preconditioning by Newton-Iteration.
+#     This is a combination of a linear solver (itypePreconditioning=1)
+#     in conjunction with an extended matrix to improve convergence speed
+#     (at the cost of assembly time).
+# =3: Preconditioning by adaptive Newton-Iteration.
+#     This is a defect correction iteration that switches automatically
+#     to the Newton iteration if an error criterion is fulfilled for the
+#     residual. The parameter spreconditionerAdaptiveNewton below defines
+#     the name of a section that specifies the parameters for the dynamic
+#     switching. Forthermore, the adaptive Newton can be executed
+#     as inexact Newton iteration with automatic accuracy setting
+#     for the linear solver.
+# Note: Currently, Newton only works with quadratic convergence if 
+# the stabilisation is deactivated (iUpwind=0, dUpsam=0.0)!!!
+
+itypePreconditioning = 1
+
+# If itypePreconditioning = 1 or = 2: Name of the section in the file 
+# "linsol_cc2d.ini" that configures the linear solver to use for
+# preconditioning.
+
+slinearSolver        = 'CC-LINEARSOLVER'
+
+# If itypePreconditioning = 3: Name of the section that controls the
+# switching between the defect correction and the Newton iteration.
+
+spreconditionerAdaptiveNewton = 'CC-ADAPTIVENEWTONITERATION'
+
+# ------------------------------------------------------------------------
+# Upper and lower bound for optimal damping parameter in nonlinear
+# defect correction. Set domegaMin=domegaMax=1.0 for no damping.
+
+# lower limit for opt. OMEGA in nonlinear defect correction, 
+# <0: no rel. changes
+
+domegaMin          = 1.0
+
+# upper limit for opt. OMEGA in nonlinear defect correction,
+# <0: no rel. changes
+
+domegaMax          = 1.0
+
+# initial value limit for opt. OMEGA in nonlinear defect correction
+
+domegaIni          = 1.0
+
+
+# ========================================================================
+# The following section describes the parameters of the Newton iteration.
+# For the use of Newton, an extended matrix must be generated.
+# Furthermore, a combination of Newton and the usual defect correction
+# approach can be configured here, as Newton may fail if the current
+# iterate of the nonlinear solver is 'too far away' from the solution-
+
+############################
+[CC-ADAPTIVENEWTONITERATION]
+############################
+
+# Minimum number of fix point iterations before switching to
+# preconditioning with the Newton matrix. (IFIXMIN)
+
+nminFixPointIterations = 0
+
+# Maximum number of fix point iterations before switching to
+# preconditioning with the Newton matrix. (IFIXMAX)
+
+nmaxFixPointIterations = 5
+
+# Norm of absolute residuum before applying Newton. 
+# Newton is only applied
+# if   ||absolute residuum|| < depsAbsNewton
+# and  ||relative residuum|| < depsRelNewton.
+# Otherwise, the usual fix point iteration is used.
+# Stamndard value = 1E-5.
+
+depsAbsNewton = 1.0E99
+
+# Norm of relative residuum before applying Newton. 
+# Newton is only applied
+# if   ||absolute residuum|| < depsAbsNewton
+# and  ||relative residuum|| < depsRelNewton.
+# Otherwise, the usual fix point iteration is used.
+# Standard value = 1E99 -> The absolute residuum counts.
+
+depsRelNewton = 1.0E-2
+
+# Whether to use the inexact Newton iteration or not.
+# The inexact Newton controls the stopping criterion of the linear
+# solver according to the nonlinear residual.
+
+cinexactNewton = 1
+
+# Stopping criterion for the linear solver in the inexact Newton iteration.
+# Controls the minimum number of digits to gain in the linear solver
+# per Newton iteration. Only used if cinexactNewton = 1.
+
+dinexactNewtonEpsRel = 1.0E-2
+
+# Exponent to control the stopping criterion for the linear solver in
+# an inexact Newton iteration. =2 result in quadratic convergence,
+# =1.5 in superlinear convergence. Only used if cinexactNewton = 1.
+
+dinexactNewtonExponent = 2.0
+

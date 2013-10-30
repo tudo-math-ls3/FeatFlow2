@@ -1578,8 +1578,8 @@ contains
     select case (ioutputUCD)
     case (1)
 ! ############### added to allow for plotting of the deformation ################
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rmyNewTriangulation,sfile)
-!       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rmyNewTriangulation,sfile)
+!      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rmyNewTriangulation,sfile)
+       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
 
     case (2)
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
@@ -1620,8 +1620,8 @@ contains
     call storage_getbase_double2D(rmyNewTriangulation%h_DvertexCoords, p_DvertexCoords) 
     ! add displacements
    do i = 1,p_rtriangulation%NVT
-     p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + 1.0_DP*p_Ddata(i)
-     p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + 1.0_DP*p_Ddata2(i)
+     p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + 500.0_DP*p_Ddata(i)
+     p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + 500.0_DP*p_Ddata2(i)
    end do 
 ! #########################################################################################
     

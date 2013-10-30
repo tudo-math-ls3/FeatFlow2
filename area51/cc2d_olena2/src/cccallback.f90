@@ -940,7 +940,7 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
 !    end do
 
     Dcoefficients(1,:,:)= (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
-     dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+     dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) ! - dmuWeight  ! added by obaid
     !Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
@@ -2261,7 +2261,7 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
   ! in case of a nonconstant viscosity.
   !
   ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
+  ! elements (cubature points) in real coordinates.
   ! According to the terms in the linear form, the routine has to compute
   ! simultaneously for all these points.
 !</description>

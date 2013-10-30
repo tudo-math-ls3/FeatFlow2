@@ -44,6 +44,7 @@ module ccboundaryconditionparser
   use fparser
   use paramlist
   use bcassembly
+  use bcassemblybase 
   
   use collection
   use convection

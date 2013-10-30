@@ -707,8 +707,8 @@ contains
           ! --- SP-SOR ---
           case (201)
             call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
-          case (202)
-            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
+!           case (202)
+!             call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)  % No longer used
 
           case default
           

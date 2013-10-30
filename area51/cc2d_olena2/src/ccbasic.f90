@@ -216,7 +216,7 @@ module ccbasic
 
   type t_dynamicLevelInfo
   
-    ! A variable describing the discrete boundary conditions fo the velocity.
+    ! A variable describing the discrete boundary conditions for the velocity.
     type(t_discreteBC) :: rdiscreteBC
   
     ! A structure for discrete fictitious boundary conditions

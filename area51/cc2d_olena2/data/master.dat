@@ -60,7 +60,7 @@ simportdatafiles(8) =
 #
 # [CC-DISCRETISATION]
 # NLMIN = 1
-# NLMAX = 3
+# NLMAX = 6
 # RE = 1000
 #
 # which will overwrite the three parameters NLMIN, NLMAX and RE

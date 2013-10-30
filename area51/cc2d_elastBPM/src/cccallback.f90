@@ -206,6 +206,7 @@ module cccallback
   use bcassembly
   use mprimitives
   use derivatives
+  use feevaluation
   
   use ccbasic
   
@@ -890,10 +891,10 @@ contains
     else
       dtime = 0.0_DP
     end if
-       Dcoefficients(:,:,:) = 0.0_DP
+!        Dcoefficients(:,:,:) = 0.0_DP
 
 
-!        Dcoefficients(1,:,:) = 21.0_DP/4.0_DP - 9.81_DP*Dpoints(1,:,:)
+        Dcoefficients(1,:,:) = 21.0_DP/4.0_DP - 10.0_DP*Dpoints(1,:,:)
     
 
   end subroutine
@@ -982,9 +983,9 @@ contains
       dtime = 0.0_DP
     end if
 
-         Dcoefficients(:,:,:) = 0.0_DP
+!          Dcoefficients(:,:,:) = 0.0_DP
 
-!        Dcoefficients(1,:,:) = 9.81_DP*Dpoints(2,:,:) - 6.0_DP
+        Dcoefficients(1,:,:) = 10.0_DP*Dpoints(2,:,:) - 6.0_DP
 
   end subroutine
 
@@ -1251,10 +1252,21 @@ contains
       dtime = 0.0_DP
     end if
 
-      Dcoefficients(:,:,:) = 0.0_DP
+!       Dcoefficients(:,:,:) = 0.0_DP
 
-!          Dcoefficients(1,:,:) = 9.81_DP*Dpoints(1,:,:) - 0.25_DP
+!          Dcoefficients(1,:,:) = 10.0_DP*Dpoints(1,:,:) - 0.25_DP  ! linear
+!	   Dcoefficients(1,:,:) = (41.0_DP/4.0_DP)*Dpoints(1,:,:) - 0.25_DP
+!
+!          Dcoefficients(1,:,:) = 11.0_DP*Dpoints(1,:,:) + 3.0_DP*Dpoints(1,:,:)**2* & 
+!          Dpoints(2,:,:) - 1.5_DP*Dpoints(1,:,:)**2 - 0.25_DP
 
+
+! 20*x + 30*x^2*y - 15*x^2 - 1/4   /// for 10 * \rho * (grad vF) (vF - vS)
+!          Dcoefficients(1,:,:) = 20.0_DP*Dpoints(1,:,:) + 30.0_DP*Dpoints(1,:,:)**2* & 
+!          Dpoints(2,:,:) - 15.0_DP*Dpoints(1,:,:)**2 - 0.25_DP
+
+! 15*x + 15*x^2*y - (15*x^2)/2 - 1/4 /// for 5 * \rho * (grad vF) (vF - vS)
+Dcoefficients(1,:,:) = 15.0_DP*Dpoints(1,:,:) + 15.0_DP*Dpoints(1,:,:)**2*Dpoints(2,:,:) - 7.5_DP*Dpoints(1,:,:)**2 - 0.25_DP
   end subroutine
 
 
@@ -1342,10 +1354,21 @@ contains
       dtime = 0.0_DP
     end if
 
-       Dcoefficients(:,:,:) =0.0_DP
-    
-!       Dcoefficients(1,:,:) = -9.81_DP*Dpoints(2,:,:)
+!        Dcoefficients(:,:,:) =0.0_DP
 
+!       Dcoefficients(1,:,:) = -10.0_DP*Dpoints(2,:,:)      ! linear
+!	Dcoefficients(1,:,:) = (-39.0_DP/4.0_DP)*Dpoints(2,:,:)
+
+!  	Dcoefficients(1,:,:) = 3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)**2- &
+!         1.5_DP*Dpoints(1,:,:)*Dpoints(2,:,:)-9.0_DP*Dpoints(2,:,:)
+
+! 30*x*y^2 - 15*x*y ///// for 10 * \rho * (grad vF) (vF - vS)
+!  	Dcoefficients(1,:,:) = 30.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)**2 - &
+!        15.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)
+!
+! 15*x*y^2 - (15*x*y)/2 - 5*y  //// for 5 * \rho * (grad vF) (vF - vS)
+Dcoefficients(1,:,:) = 15.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)**2 - &
+7.5_DP*Dpoints(1,:,:)*Dpoints(2,:,:)-5.0_DP*Dpoints(2,:,:)
   end subroutine
 
   ! ***************************************************************************
@@ -1532,16 +1555,22 @@ contains
 !     iseg = rcollection%IquickAccess(2)
 
 
-! taken from Marker paper: comparison of monolithic and splitting solution schemes ....
+! ! taken from Marker paper: comparison of monolithic and splitting solution schemes ....
 ! ! Markert figure: 8
-!     if (dtime .ge. 0.0_DP .and. dtime .le. 0.04_DP) then
-!       Dcoefficients(1,:,:) = -1.0E5_DP*sin(25.0_DP*sys_pi*dtime)
+! ! you must go to ccgeneraldiscretisation.f90: line 1856 to specify the segment
+! ! and line 2095-2097  to specify the corner parameter values of that segment
+! ! you may need also to specify the magnification factors to scal the deformation
+! ! in line 1623 & 1624 in ccpostprocessing.f90
+!     if (dtime .ge. 0.0_DP .and. dtime .le. 0.1_DP) then
+!       Dcoefficients(1,:,:) = -1.0E4_DP*(1.0_DP-cos(20.0_DP*sys_pi*dtime))
 !     else
 !       Dcoefficients(1,:,:) = 0.0_DP
 !     end if
 
 ! Markert figure 3
-     Dcoefficients(1,:,:) = -1.0E3_DP*( 1.0_DP - cos(20.0_DP*sys_pi*dtime) )
+! 6*y - (5*x)/4 + 5/8     6.0_DP*Dpoints(2,:,:)-5.0_DP*Dpoints(1,:,:)/4.0_DP+5.0_DP/8.0_DP
+! x/4 - 9/8
+      Dcoefficients(1,:,:) = Dpoints(1,:,:)/4.0_DP-9.0_DP/8.0_DP
 
   end subroutine RHS_2D_surf
 
@@ -3518,4 +3547,287 @@ contains
     
   end subroutine
 
+
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine fcoeff_convection (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dconvectionWeight
+    real(DP) :: drhoFR
+    real(DP) :: dnSo
+    real(DP), dimension(:,:,:), allocatable :: p_Dvalues
+    integer :: i,j
+  
+    dconvectionWeight = rcollection%DquickAccess(1)
+    drhoFR            = rcollection%DquickAccess(2)
+    dnSo              = rcollection%DquickAccess(3)
+
+    allocate (p_Dvalues(ubound(Dcoefficients,2),ubound(Dcoefficients,3),9))
+
+    p_rvector => rcollection%p_RvectorQuickAccess1
+
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,1), &
+        p_rvector%Rvectorblock(5), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,2), &
+        p_rvector%Rvectorblock(3), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,3), &
+        p_rvector%Rvectorblock(6), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,4), &
+        p_rvector%Rvectorblock(4), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_DERIV_X, p_Dvalues(:,:,5), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_DERIV_Y, p_Dvalues(:,:,6), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+    call fevl_evaluate_sim (DER_DERIV_X, p_Dvalues(:,:,7), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+    call fevl_evaluate_sim (DER_DERIV_Y, p_Dvalues(:,:,8), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!+
+!----------------------------------------------------------------------------
+   do i=1,ubound(Dcoefficients,3)
+     do j=1,ubound(Dcoefficients,2)
+       p_Dvalues(j,i,9) = dconvectionWeight*(1.0_DP-dnSo* &
+      (1.0_DP-p_Dvalues(j,i,5)-p_Dvalues(j,i,8)+ &
+      p_Dvalues(j,i,5)*p_Dvalues(j,i,8)-p_Dvalues(j,i,6)*p_Dvalues(j,i,7)))*drhoFR*5.0_DP
+     end do
+   end do
+!----------------------------------------------------------------------------
+    do j=1,ubound(Dcoefficients,3)
+      do i=1,ubound(Dcoefficients,2)
+        Dcoefficients(1,i,j) =  p_Dvalues(i,j,9)*(p_Dvalues(i,j,1)-p_Dvalues(i,j,2))
+        Dcoefficients(2,i,j) =  p_Dvalues(i,j,9)*(p_Dvalues(i,j,3)-p_Dvalues(i,j,4))
+      end do
+    end do
+!     end if
+    deallocate (p_Dvalues)
+
+  end subroutine
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine get_Mass (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dWeight
+    real(DP) :: drhoFR
+    real(DP) :: dnSo
+    real(DP), dimension(:,:,:), allocatable :: p_Dvalues
+    integer :: i,j
+  
+    dWeight = rcollection%DquickAccess(1)
+    drhoFR  = rcollection%DquickAccess(2)
+    dnSo    = rcollection%DquickAccess(3)
+    p_rvector => rcollection%p_RvectorQuickAccess1
+
+    allocate (p_Dvalues(ubound(Dcoefficients,2),ubound(Dcoefficients,3),4))
+
+
+    call fevl_evaluate_sim (DER_DERIV_X, p_Dvalues(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_DERIV_Y, p_Dvalues(:,:,2), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+    call fevl_evaluate_sim (DER_DERIV_X, p_Dvalues(:,:,3), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+    call fevl_evaluate_sim (DER_DERIV_Y, p_Dvalues(:,:,4), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!+
+!----------------------------------------------------------------------------
+   do i=1,ubound(Dcoefficients,3)
+     do j=1,ubound(Dcoefficients,2)
+       Dcoefficients(1,j,i) = dWeight*(1.0_DP-dnSo* &
+      (1.0_DP-p_Dvalues(j,i,1)-p_Dvalues(j,i,4)+ &
+      p_Dvalues(j,i,1)*p_Dvalues(j,i,4)-p_Dvalues(j,i,2)*p_Dvalues(j,i,3)))*drhoFR
+     end do
+   end do
+!----------------------------------------------------------------------------
+!     do j=1,ubound(Dcoefficients,3)
+!       do i=1,ubound(Dcoefficients,2)
+!         Dcoefficients(1,i,j) =  p_Dvalues(i,j,9)
+!       end do
+!     end do
+!     end if
+    deallocate (p_Dvalues)
+
+  end subroutine
 end module

@@ -60,51 +60,62 @@ simportdatafiles(8) =
 ###############
 [GENERALOUTPUT]
 ###############
-smsgLog = '%{slogdirectory}/quad.log'
+smsgLog = '%{slogdirectory}/rect_unst_level_6_time_2000.log'
 #####################
  [CC-DISCRETISATION]
 #####################
-iequation    = 1
+iequation    = 1  # 1: linear   0: non-linear
 IncShear = 1
 iMass= 1
 iMassLumpType= 0 
 ielementType = 4
  NLMIN = 1
- NLMAX = 6
- RE = 1E3
- mu = 5.583E6
- lambda = 8.375E6
- rhoSR = 2E3
- rhoFR = 1E3
- nSo = 0.67
- nFo = 0.33
-kFo = 1E-5
+ NLMAX = 1
+ RE = 1
+ mu = 1
+ lambda = 1
+ rhoSR = 1
+ rhoFR = 1
+ nSo = 0.75
+ nFo = 0.25
+kFo = 0.0625
+b=9.81
 ctypeInitialSolution = 0
 #################
 [CC-LINEARSOLVER]
 #################
-isolverType = 1
+isolverType = 0  # 0: Gauss elimination, 1: multigrid
 ismootherType = 1
 icoarseGridSolverType = 0
 ####################
 [CC-MULTIGRIDSOLVER]
 ####################
+nminIterations     = 1
 nmaxIterations     = 30
-depsRel            = 1E-10
+depsRel            = 1E-5 # reduction of the residual by 2 digits. 
+depsAbs            = 1E-5  # Residual  must be < 1E-3 when stopping.
+istoppingCriterion = 0 # 0: Stop if both, depsAbs and depsRel are fulfilled,
+#                        1: Stop if one of them is fulfilled. 
+ioutputLevel       = 2
+#############
+[CC-SMOOTHER]
+#############
+# Number of pre- and postsmoothing steps
+nsmoothingSteps    = 4
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 1                     # ISTAT
-dtimeInit = 0.0 
-dtimeMax  = 0.15
-dtimeStep = 5.0E-4
-dtimeStepTheta = 1
-dminTimeDerivative = 1.0E-13
+itimedependence = 0                     # ISTAT
+dtimeInit = 0.0 #/***/ required for restart
+dtimeMax  = 100.0
+dtimeStep = 1.0E-1
+dtimeStepTheta = 0.5
+dminTimeDerivative = 1.0E-14
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 5
+nmaxIterations     = 15
 depsD_u     = 1.0E-5
 depsD_vS    = 1.0E-5
 depsD_vF    = 1.0E-5
@@ -117,97 +128,20 @@ depsPR      = 1.0E-5
 [CC-POSTPROCESSING]
 ###################
 ioutputUCD = 0
-ierrorAnalysisL2 = 0
-ierrorAnalysisH1 = 0
-cevaluatePointValues(72) =
-   1.0  9.500000  2  0
-   1.0  9.600000  2  0
-   1.0  9.700000  2  0
-   1.0  9.800000  2  0
-   1.0  9.806250  2  0
-   1.0  9.812500  2  0
-   1.0  9.818750  2  0
-   1.0  9.825000  2  0
-   1.0  9.831250  2  0
-   1.0  9.837500  2  0
-   1.0  9.843750  2  0
-   1.0  9.850000  2  0
-   1.0  9.856250  2  0
-   1.0  9.862500  2  0
-   1.0  9.868750  2  0
-   1.0  9.875000  2  0
-   1.0  9.881250  2  0
-   1.0  9.887500  2  0
-   1.0  9.893750  2  0
-   1.0  9.900000  2  0
-   1.0  9.906250  2  0
-   1.0  9.912500  2  0
-   1.0  9.918750  2  0
-   1.0  9.925000  2  0
-   1.0  9.931250  2  0
-   1.0  9.937500  2  0
-   1.0  9.943750  2  0
-   1.0  9.950000  2  0
-   1.0  9.956250  2  0
-   1.0  9.962500  2  0
-   1.0  9.968750  2  0
-   1.0  9.975000  2  0
-   1.0  9.981250  2  0
-   1.0  9.987500  2  0
-   1.0  9.993750  2  0
-   1.0 10.000000  2  0
-# pressures
-   1.0  9.500000  7  0
-   1.0  9.600000  7  0
-   1.0  9.700000  7  0
-   1.0  9.800000  7  0
-   1.0  9.806250  7  0
-   1.0  9.812500  7  0
-   1.0  9.818750  7  0
-   1.0  9.825000  7  0
-   1.0  9.831250  7  0
-   1.0  9.837500  7  0
-   1.0  9.843750  7  0
-   1.0  9.850000  7  0
-   1.0  9.856250  7  0
-   1.0  9.862500  7  0
-   1.0  9.868750  7  0
-   1.0  9.875000  7  0
-   1.0  9.881250  7  0
-   1.0  9.887500  7  0
-   1.0  9.893750  7  0
-   1.0  9.900000  7  0
-   1.0  9.906250  7  0
-   1.0  9.912500  7  0
-   1.0  9.918750  7  0
-   1.0  9.925000  7  0
-   1.0  9.931250  7  0
-   1.0  9.937500  7  0
-   1.0  9.943750  7  0
-   1.0  9.950000  7  0
-   1.0  9.956250  7  0
-   1.0  9.962500  7  0
-   1.0  9.968750  7  0
-   1.0  9.975000  7  0
-   1.0  9.981250  7  0
-   1.0  9.987500  7  0
-   1.0  9.993750  7  0
-   1.0 10.000000  7  0
-iwritePointValues = 0
+ierrorAnalysisL2 = 1
+ierrorAnalysisH1 = 1
 #############
 [PARAMTRIANG]
 #############
-#sParametrisation = '%{spredirectory}/quadhighdegree.prm'
-#sMesh = '%{spredirectory}/quadhighdegree.tri'
-sParametrisation = '%{spredirectory}/markert1.prm'
-sMesh = '%{spredirectory}/markert1.tri'
+sParametrisation = '%{spredirectory}/QUAD.prm'
+sMesh = '%{spredirectory}/QUAD.tri'
 ##############
 [BDCONDITIONS]
 ##############
-ineumannBoundary = 1  # for fluid only
+ineumannBoundary = 0  # for fluid only
+# for markert2
 bdComponent1(4)=
-   1.0  3  0 1 0 1 0 1  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
-   2.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
-   3.0  3  0 0 0 0 0 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
-   4.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
-
+   1.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   2.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   3.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   4.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'

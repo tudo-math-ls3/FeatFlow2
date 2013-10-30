@@ -92,6 +92,9 @@ module ccmatvecassembly
   use convection
   use matrixio !/***/ new
   
+  use stdoperators
+  use scalarpde  ! new
+
   use ccbasic
   use cccallback
   
@@ -781,7 +784,7 @@ contains
         call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(3,3), &
             rmatrix%RmatrixBlock(3,3), &
             rnonlinearCCMatrix%iadaptiveMatrices, rnonlinearCCMatrix%dadmatthreshold) 
-
+!/***/ where is (5,6) and (6,5) ? !!!!!
         call mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
             rmatrix%RmatrixBlock(5,5), &
             rnonlinearCCMatrix%iadaptiveMatrices, rnonlinearCCMatrix%dadmatthreshold) 
@@ -1213,32 +1216,14 @@ contains
     
     ! local variables
     logical :: bshared
-    integer :: iupwind
-    type(t_convUpwind) :: rupwind
-    type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    type(t_convStreamDiff2) :: rstreamlineDiffusion2
-    type(t_jumpStabilisation) :: rjumpStabil
     real(DP) :: dvecWeight
     type(t_collection) :: rcollection
-    integer, dimension(:), pointer :: p_IedgesDirichletBC
-    type(t_vectorBlock) :: temp_velocityvector
-    type(t_vectorBlock) :: temp_velocityvectorVF
-    type(t_vectorBlock) :: temp_velocityvectorVS
-! We need the follwing because the convective non-linear terms
-! are not located at (1,2), instead at (5,6)
-!   Temporary velocity block  to take Block(5:6)
-    type(t_vectorBlock) :: temp_rvector
-    type(t_vectorBlock) :: temp_rdefect
-    type(t_blockDiscretisation) :: rtempDiscr
-    type(t_matrixBlock) :: rmatrixTemp
-    
-      ! Standard value for dvectorWeight is = -1.
-      dvecWeight = -1.0_DP
-      if (present(dvectorWeight)) dvecWeight = dvectorWeight
+    type(t_bilinearForm) :: rform
 
+    
 
     dnF2kF   = (rnonlinearCCMatrix%p_rphysics%dnFo)**2* &
-               (rnonlinearCCMatrix%p_rphysics%drhoFR*9.81_DP)/ & 
+               (rnonlinearCCMatrix%p_rphysics%drhoFR*10.0_DP)/ & 
                (rnonlinearCCMatrix%p_rphysics%dkFo)
 
     dnSrhoSR = (rnonlinearCCMatrix%p_rphysics%dnSo)* &
@@ -1247,7 +1232,9 @@ contains
     dnFrhoFR = (rnonlinearCCMatrix%p_rphysics%dnFo)* &
 	       (rnonlinearCCMatrix%p_rphysics%drhoFR)
 
-
+      ! Standard value for dvectorWeight is = -1.
+      dvecWeight = -1.0_DP*dnFrhoFR 
+      if (present(dvectorWeight)) dvecWeight = dvectorWeight
 
       ! Is A55 = A66 physically?
 
@@ -1445,10 +1432,32 @@ contains
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,3),&
             rnonlinearCCMatrix%dalpha*dnSrhoSR,0.0_DP,.false.,.false.,.true.,.true.)
 !   
-        call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,5),&
-            rnonlinearCCMatrix%dalpha*dnFrhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+!         call lsyssc_matrixLinearComb (&
+!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,5),&
+!             rnonlinearCCMatrix%dalpha*dnFrhoFR,0.0_DP,.false.,.false.,.true.,.true.)
 !   
+! *************************************************************************************
+
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+
+
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff = .false.
+          rform%Dcoefficients(1)  = 1.0
+
+        
+          rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
+          rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
+          rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnSo
+!M55
+          call bilf_buildmatrixscalar (rform, .false., rmatrix%RmatrixBlock(5,5),&
+              get_Mass,rcollection)
+
+
+
+! *************************************************************************************
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(3,1),&
             rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
@@ -1481,9 +1490,9 @@ contains
               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,4),&
               rnonlinearCCMatrix%dalpha*dnSrhoSR,0.0_DP,.false.,.false.,.true.,.true.)
 
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,6),&
-              rnonlinearCCMatrix%dalpha*dnFrhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+!M66
+          call bilf_buildmatrixscalar (rform, .false., rmatrix%RmatrixBlock(6,6),&
+              get_Mass,rcollection)
 !
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
@@ -1603,693 +1612,40 @@ contains
       if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
-      
+
+
+        rform%itermCount = 2
+        rform%Idescriptors(1,1) = DER_DERIV_X
+        rform%Idescriptors(2,1) = DER_FUNC
+        rform%Idescriptors(1,2) = DER_DERIV_Y
+        rform%Idescriptors(2,2) = DER_FUNC
+
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0
+        rform%Dcoefficients(2)  = 1.0
+        
+        rcollection%DquickAccess(1) = rnonlinearCCMatrix%dgamma
+        rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
+        rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnSo
+        rcollection%p_rvectorQuickAccess1 => rvelocityVector
+!  Block(5,5)
+        call bilf_buildMatrixScalar (rform, .false., rmatrix%RmatrixBlock(5,5),&
+            fcoeff_convection,rcollection)
+
+        if (.not. bshared) then
+          call bilf_buildMatrixScalar (rform, .false., rmatrix%RmatrixBlock(6,6),&
+              fcoeff_convection,rcollection)
+        end if
+
         if (.not. present(rvelocityvector)) then
           call output_line ('Velocity vector not present!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
           stop
         end if
-      
-        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
-        case (CCMASM_STAB_STREAMLINEDIFF)
-          ! Streamline diffusion.
-
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Call the SD method to calculate the nonlinearity.
-! 	#####################################################
-!		SD method to calculate the nonlinearity
-! 	#####################################################
-
-        ! Derive a discretisation structure for block 5/6 of the original
-        ! matrix. That tells the code the type of the finite
-        ! element belonging to that matrix. It can be taken from the original
-        ! matrix.
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Create a temporary matrix with that structure
-        call lsysbl_createMatBlockByDiscr (rtempDiscr,rmatrixTemp)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_extractSubmatrix (rmatrix,rmatrixTemp,5,6)
-
-
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-
-
-        ! Call the SD method to calculate the nonlinearity. 
-	! see kernel/PDEoperators/convection.f90
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvecWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrixTemp)
-        
-        ! Reintegrate the computed matrix to position 5/5.
-        call lsysbl_moveToSubmatrix (rmatrixTemp,rmatrix,5,5)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-
- ! #############################################################################
-                              
-        case (CCMASM_STAB_STREAMLINEDIFF2)
-
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-
-          ! Probably, we have nonconstant viscosity.
-          ! In that case, init a collection structure for a callback
-          ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
-            rstreamlineDiffusion2%bconstnu = .false.
-            
-            ! Assemble at least the Stokes matrix.
-            ! For a more complicated formulation, dbeta/dbetaT
-            ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-            
-            ! Prepare the collection. The "next" collection points to the user defined
-            ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
-            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
-            
-          end if
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-          end if
-          
-          ! Initialise the user defined collection for the assembly.
-          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-          ! Call the SD method to calculate the nonlinearity.
-! ###################################################################
-	! but before doing so , we must do the following
-        ! Derive a discretisation structure for block 5/6 of the original
-        ! matrix. That tells the code the type of the finite
-        ! element belonging to that matrix. It can be taken from the original
-        ! matrix.
-          call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-          ! Create a temporary matrix with that structure
-          call lsysbl_createMatBlockByDiscr (rtempDiscr,rmatrixTemp)
-
-          ! Get the submatrix (5:6,5:6)
-          call lsysbl_extractSubmatrix (rmatrix,rmatrixTemp,5,6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-         ! Now we can Call the SD method to calculate the nonlinearity.
-
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrixTemp,temp_velocityvector,&
-               ffunctionViscoModel,rcollection)
-
-	  ! Reintegrate the computed matrix to position 5/5.
-	  call lsysbl_moveToSubmatrix (rmatrixTemp,rmatrix,5,5)
-
-	  ! Release the matrix and the discretisation structure.
-	  call lsysbl_releaseMatrix (rmatrixTemp)
-	  call spdiscr_releaseBlockDiscr (rtempDiscr)
-	  call lsysbl_releaseVector (temp_velocityvector)
-	  call lsysbl_releaseVector (temp_velocityvectorVS)
-	  call lsysbl_releaseVector (temp_velocityvectorVF)
-! ###################################################################  
-              
-          ! That is it.
-          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-
-        case (CCMASM_STAB_UPWIND)
-          ! Set up the upwind structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rupwind%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-
-          ! Matrix weight
-          rupwind%dtheta = rnonlinearCCMatrix%dgamma
-          
-          if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
-            call output_line ('Warning: Upwind does not support assembly '&
-                //'of the Newton matrix!',OU_CLASS_TRACE1)
-          end if
-          
-          ! Call the upwind method to calculate the nonlinear matrix.
-          call conv_upwind2d (rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
-                              rupwind, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(5,5),IvelocityComp=(/5,6/))
-                              
-          if (.not. bshared) then
-            ! Modify also the matrix block (2,2)
-            call conv_upwind2d (rvelocityvector, rvelocityvector, &
-                                dvecWeight, 0.0_DP,&
-                                rupwind, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(6,6),IvelocityComp=(/5,6/))
-          end if
-
-        case (CCMASM_STAB_EDGEORIENTED)
-          ! Jump stabilisation.
-
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter to zero for central difference
-          rstreamlineDiffusion%dupsam = 0.0_DP
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Call the SD method to calculate the nonlinearity.
-! ####################################################################
-        ! Derive a discretisation structure for block 3/4 of the original
-        ! matrix. That tells the code the type of the finite
-        ! element belonging to that matrix. It can be taken from the original
-        ! matrix.
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Create a temporary matrix with that structure
-        call lsysbl_createMatBlockByDiscr (rtempDiscr,rmatrixTemp)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_extractSubmatrix (rmatrix,rmatrixTemp,5,6)
-
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-
-        ! Work with the matrix:
-
-        ! Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvecWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrixTemp)
-        
-        ! Reintegrate the computed matrix to position 5/5.
-        call lsysbl_moveToSubmatrix (rmatrixTemp,rmatrix,5,5)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-! ####################################################################
-                              
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-          end if
-          
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-
-            if (.not. bshared) then
-              call conv_jumpStabilisation2d (&
-                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-            end if
-          end if
-
-        case (CCMASM_STAB_FASTEDGEORIENTED)
-          ! Jump stabilisation with precomputed matrix.
-
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter to zero for central difference
-          rstreamlineDiffusion%dupsam = 0.0_DP
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Call the SD method to calculate the nonlinearity.
-! ###################################################################################
-	!  but before doing so, one must do the following
-        ! Derive a discretisation structure for block 3/4 of the original
-        ! matrix. That tells the code the type of the finite
-        ! element belonging to that matrix. It can be taken from the original
-        ! matrix.
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Create a temporary matrix with that structure
-        call lsysbl_createMatBlockByDiscr (rtempDiscr,rmatrixTemp)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_extractSubmatrix (rmatrix,rmatrixTemp,5,6)
-
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvecWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrixTemp)
-        
-        ! Reintegrate the computed matrix to position 5/5.
-        call lsysbl_moveToSubmatrix (rmatrixTemp,rmatrix,5,5)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-! ###################################################################################
-        
-          ! Sum up the precomputed edge stabilisation matrix.
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(5,5),&
-              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-          
-          if (.not. bshared) then
-            call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(6,6),&
-                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-          end if
-          
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-
-            if (.not. bshared) then
-              call conv_jumpStabilisation2d (&
-                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-            end if
-          end if
-
-        case (CCMASM_STAB_EDGEORIENTED2)
-          ! Jump stabilisation.
-
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-
-          ! Probably, we have nonconstant viscosity.
-          ! In that case, init a collection structure for a callback
-          ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
-            rstreamlineDiffusion2%bconstnu = .false.
-            
-            ! Assemble at least the Stokes matrix.
-            ! For a more complicated formulation, dbeta/dbetaT
-            ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-
-            ! Prepare the collection. The "next" collection points to the user defined
-            ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
-            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
-
-          end if
-          
-          ! Set UPSAM=0 to deactivate the stabilisation
-          rstreamlineDiffusion2%dupsam = 0.0_DP
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-          end if
-
-          ! Initialise the user defined collection for the assembly.
-          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-          ! Call the SD method to calculate the nonlinearity.
-! #######################################################################
-	! but before doing so , we must do the following
-        ! Derive a discretisation structure for block 5/6 of the original
-        ! matrix. That tells the code the type of the finite
-        ! element belonging to that matrix. It can be taken from the original
-        ! matrix.
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Create a temporary matrix with that structure
-        call lsysbl_createMatBlockByDiscr (rtempDiscr,rmatrixTemp)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_extractSubmatrix (rmatrix,rmatrixTemp,5,6)
-
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- 
-
-        ! Now we Call the SD method to calculate the nonlinearity.
-
-         call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrixTemp,temp_velocityvector,&
-              ffunctionViscoModel,rcollection)
-
-        ! Reintegrate the computed matrix to position 5/5.
-        call lsysbl_moveToSubmatrix (rmatrixTemp,rmatrix,5,5)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-! #######################################################################
-
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-          end if
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-
-            if (.not. bshared) then
-              call conv_jumpStabilisation2d (&
-                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-            end if
-          end if
-
-          ! That is it.
-          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-
-        case default
-          call output_line ('Don''t know how to set up nonlinearity!?!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
-          call sys_halt()
-        
-        end select
-
+!
       else
-    
-
-        ! That is the Stokes-case. Jump stabilisation is possible...
-      
-        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
-          ! Jump stabilisation.
-        
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(5,5),&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                rjumpStabil,CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-          end if
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-
-            if (.not. bshared) then
-              call conv_jumpStabilisation2d (&
-                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-            end if
-          end if
-
-        case (CCMASM_STAB_FASTEDGEORIENTED)
-          ! Fast Jump stabilisation. Precomputed matrix.
-        
-          ! Sum up the precomputed edge stabilisation matrix.
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(5,5),&
-              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-          
-          if (.not. bshared) then
-            call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(6,6),&
-                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-          end if
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-            call conv_jumpStabilisation2d (&
-                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(5,5),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-
-            if (.not. bshared) then
-              call conv_jumpStabilisation2d (&
-                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(6,6),&
-                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-                InodeList=p_IedgesDirichletBC)
-            end if
-          end if
-
-        case default
-          ! No stabilisation
-        
-        end select
-      
+!   That is the Stokes-case. Jump stabilisation is possible... 
       end if ! gamma <> 0
       
     end subroutine
@@ -2752,31 +2108,23 @@ contains
 
     ! local variables
     logical :: bshared
-    type(t_convUpwind) :: rupwind
-    type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    type(t_convStreamDiff2) :: rstreamlineDiffusion2
-    type(T_jumpStabilisation) :: rjumpStabil
-    type(t_collection) :: rcollection
-    integer, dimension(:), pointer :: p_IedgesDirichletBC
 
-!   Temporary velocity block  to take Block(5:6) / Obaid
-    type(t_vectorBlock) :: temp_velocityvector
-    type(t_vectorBlock) :: temp_velocityvectorVF
-    type(t_vectorBlock) :: temp_velocityvectorVS
-    type(t_vectorBlock) :: temp_rvector
-    type(t_vectorBlock) :: temp_rdefect
-    type(t_blockDiscretisation) :: rtempDiscr
-    type(t_matrixBlock) :: rmatrixTemp
+
+      ! local variables
+      type(t_matrixScalar) :: rmatrixTemp
+      type(t_matrixScalar) :: rmatrixMassTemp
+      type(t_collection) :: rcollection
+      type(t_bilinearForm) :: rform
+      real(DP), dimension(:), pointer :: p_Ddata
     
-    ! DEBUG!!!
-    real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
+
     ! Local variables
     real(DP) :: dnF2kF
     real(DP) :: dnSrhoSR
     real(DP) :: dnFrhoFR    
 
     dnF2kF   = (rnonlinearCCMatrix%p_rphysics%dnFo)**2* &
-               (rnonlinearCCMatrix%p_rphysics%drhoFR*9.81_DP)/ & 
+               (rnonlinearCCMatrix%p_rphysics%drhoFR*10.0_DP)/ & 
                (rnonlinearCCMatrix%p_rphysics%dkFo)
 
     dnSrhoSR = (rnonlinearCCMatrix%p_rphysics%dnSo)* &
@@ -2807,14 +2155,14 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha*dnSrhoSR, 1.0_DP)
-! M55
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-            rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-            -rnonlinearCCMatrix%dalpha*dnFrhoFR, 1.0_DP)
-! M66
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-            rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-            -rnonlinearCCMatrix%dalpha*dnFrhoFR, 1.0_DP)
+! ! M55
+!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+!             rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
+!             -rnonlinearCCMatrix%dalpha*dnFrhoFR, 1.0_DP)
+! ! M66
+!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+!             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
+!             -rnonlinearCCMatrix%dalpha*dnFrhoFR, 1.0_DP)
 
 ! M31
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
@@ -2908,1044 +2256,89 @@ contains
             rvector%RvectorBlock(4), rdefect%RvectorBlock(6), &
             -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)        
       end if
-      ! below will be uncommented latter on
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity! --
       if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
-      
-        ! Type of stablilisation?
-        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
-        case (CCMASM_STAB_STREAMLINEDIFF)
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Call the SD method to calculate the defect of the nonlinearity.
-          ! As rrhsTemp shares its entries with rdefect, the result is
-          ! directly written to rdefect!
-          ! As velocity field, we specify rvelocityVector here. The first two
-          ! subvectors are used as velocity field.
-          
-! #############################################################################
-!  but before one must do the following
 
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
+        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
+           rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY) 
 
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,3,4)
+       call lsyssc_clearMatrix (rmatrixTemp)
 
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr) 
+        rform%itermCount = 2
+        rform%Idescriptors(1,1) = DER_DERIV_X
+        rform%Idescriptors(2,1) = DER_FUNC
+        rform%Idescriptors(1,2) = DER_DERIV_Y
+        rform%Idescriptors(2,2) = DER_FUNC
 
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrixTemp,rsolution=temp_rvector,rdefect=temp_rdefect)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #############################################################################
-                              
-        case (CCMASM_STAB_STREAMLINEDIFF2)
-                  
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Probably, we have nonconstant viscosity.
-          ! In that case, init a collection structure for a callback
-          ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
-            rstreamlineDiffusion2%bconstnu = .false.
-            
-            ! Assemble at least the Stokes matrix.
-            ! For a more complicated formulation, dbeta/dbetaT
-            ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-
-            ! Prepare the collection. The "next" collection points to the user defined
-            ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
-            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
-
-            ! The "next" collection points to the user defined collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
-
-          end if
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-          end if
-
-          ! Initialise the user defined collection for the assembly.
-          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-! ##########################################################################
-       call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr) 
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrixTemp,&
-              temp_rvector,temp_rdefect,temp_velocityVector,ffunctionViscoModel,rcollection)
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0
+        rform%Dcoefficients(2)  = 1.0
         
+        rcollection%DquickAccess(1) = rnonlinearCCMatrix%dgamma
+        rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
+        rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnSo
+        rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! ##########################################################################
-                              
-          ! That is it.
-          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+        call bilf_buildmatrixscalar (rform, .false., rmatrixTemp,&
+            fcoeff_convection,rcollection)
 
-        case (CCMASM_STAB_UPWIND)
-          ! Set up the upwind structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rupwind%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
-
-          ! Matrix weight
-          rupwind%dtheta = rnonlinearCCMatrix%dgamma
-          
-          ! Call the upwind method to calculate the nonlinear defect.
-          call conv_upwind2d (rvelocityvector, rvelocityvector, &
-                              dvectorWeight, 0.0_DP,&
-                              rupwind, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(5,5),rvector,rdefect,IvelocityComp=(/5,6/))
-                              
-          if (.not. bshared) then
-            call output_line ('Upwind does not support independent A11/A22!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-            call sys_halt()
-          end if
-
-        case (CCMASM_STAB_EDGEORIENTED)
-          ! Jump stabilisation.
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter to zero for central difference
-          rstreamlineDiffusion%dupsam = 0.0_DP
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
-
-            ! Deactivate the matrices A56 and A65 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there is content at all),
-            ! these matrices are ignored then by the kernel.
-            
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 0.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 0.0_DP
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A56 and A65 if they are not.
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 1.0_DP
-           
-          end if
-         
-          ! Call the SD method to calculate the nonlinearity.
-! #####################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
+      call lsyssc_scalarMatVec (rmatrixTemp, &
+          rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
+          -1.0_DP, 1.0_DP)
 
 
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
+      call lsyssc_scalarMatVec (rmatrixTemp, &
+          rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
+          -1.0_DP, 1.0_DP)
 
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr) 
 
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
+! ---------------------------------------------------
+      ! Subtract the mass matrix stuff? -
+        if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
 
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
 
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
+          call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
+             rmatrixMassTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY) 
 
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
+          call lsyssc_clearMatrix (rmatrixMassTemp)
 
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrixTemp,rsolution=temp_rvector,rdefect=temp_rdefect)
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
 
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #####################################################################
+
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff = .false.
+          rform%Dcoefficients(1)  = 1.0
+
         
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-! #############################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      ! this is not needed for conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now we can Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #############################################################################
-
-          if (.not. bshared) then
-            call output_line (&
-                'Edge oriented stabilisation does not support independent A55/A66!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-            call sys_halt()
-          end if
-          
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-! #######################################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      !/***/ this statement is not needed (for our conv_jumpStabilisation2d) and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-	      InodeList=p_IedgesDirichletBC)
-        
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #######################################################################################
-          end if
-
-        case (CCMASM_STAB_EDGEORIENTED2)
-          ! Jump stabilisation.
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-          ! Set up the SD structure for the creation of the defect.
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Probably, we have nonconstant viscosity.
-          ! In that case, init a collection structure for a callback
-          ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
-            rstreamlineDiffusion2%bconstnu = .false.
-            
-            ! Assemble at least the Stokes matrix.
-            ! For a more complicated formulation, dbeta/dbetaT
-            ! may be changed later.
-            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-
-            ! Prepare the collection. The "next" collection points to the user defined
-            ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
-            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityvector)
-
-          end if
-          
-          ! Set stabilisation parameter to zero for central difference
-          rstreamlineDiffusion2%dupsam = 0.0_DP
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta*rproblem%rphysics%IncShear
-          end if
-
-          if ((rnonlinearCCMatrix%dnewton .eq. 0.0_DP) .and. &
-              (rstreamlineDiffusion2%dbetaT .eq. 0.0_DP)) then
-
-            ! Deactivate the matrices A56 and A65 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there is content at all),
-            ! these matrices are ignored then by the kernel.
-            
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 0.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 0.0_DP
-            
-          else
-
-            ! Clear A56/A65 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,6))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,5))
-          
-            ! Activate the submatrices A56 and A65 if they are not.
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 1.0_DP
-           
-          end if
-         
-          ! Initialise the user defined collection for the assembly.
-          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-          ! Call the SD method to assemble.
-! ######################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr) 
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrixTemp,&
-              temp_rvector,temp_rdefect,temp_velocityVector,ffunctionViscoModel,rcollection)
-        
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! ######################################################################
-                              
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-! ############################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      ! This statement not needed for our conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)       
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! ############################################################################
-
-          if (.not. bshared) then
-            call output_line (&
-                'Edge oriented stabilisation does not support independent A55/A66!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-            call sys_halt()
-          end if
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-! #######################################################################################
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-!\***\ This statement not needed for our conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-	      InodeList=p_IedgesDirichletBC)
-        
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #######################################################################################
-          end if
-
-          ! That is it.
-          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-          
-        case (CCMASM_STAB_FASTEDGEORIENTED)
-          ! Fast Jump stabilisation. Precomputed matrix.
-          
-          ! In the first step, set up the matrix as above with central discretisation,
-          ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-
-          ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter to zero for central difference
-          rstreamlineDiffusion%dupsam = 0.0_DP
-          
-          ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
-          
-          ! Matrix weight for the nonlinearity
-          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma*dnFrhoFR
-          
-          ! Weight for the Newton part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
-
-            ! Deactivate the matrices A56 and A65 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there is content at all),
-            ! these matrices are ignored then by the kernel.
-            
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 0.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 0.0_DP
-            
-          else
-
-            ! Clear A56/A65 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,6))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,5))
-          
-            ! Activate the submatrices A56 and A65 if they are not.
-            rmatrix%RmatrixBlock(5,6)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(6,5)%dscaleFactor = 1.0_DP
-           
-          end if
-         
-          ! Call the SD method to calculate the nonlinearity.
-! #############################################################
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              temp_velocityvector, temp_velocityvector, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrixTemp,rsolution=temp_rvector,rdefect=temp_rdefect)
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #############################################################
-        
-          ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+          rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
+          rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
+          rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnSo
+
+          call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+              get_Mass,rcollection)
+!M55
+          call lsyssc_scalarMatVec (rmatrixMassTemp, &
               rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
-
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+              -1.0_DP, 1.0_DP)
+!M66
+          call lsyssc_scalarMatVec (rmatrixMassTemp, &
               rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
+              -1.0_DP, 1.0_DP)
 
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-! #######################################################################################
-        call spdiscr_deriveBlockDiscr (rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-!/***/ This statement not needed for our conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-	      InodeList=p_IedgesDirichletBC)
-        
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-! #######################################################################################
-          end if
-
-        case default
-          call output_line ('Don''t know how to set up nonlinearity!?!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
-          call sys_halt()
-        
-        end select
-      
-      else
-!/***/      
-        ! That is the Stokes-case. Jump stabilisation is possible...
-        !
-        ! Type of stablilisation?
-        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED)
-          ! Jump stabilisation.
-        
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
+          call lsyssc_releaseMatrix (rmatrixMassTemp)
+        end if
           
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+      call lsyssc_releaseMatrix (rmatrixTemp)
 
-          ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-
-          ! Call the jump stabilisation technique to stabilise that stuff.
-          ! We can assemble the jump part any time as it is independent of any
-          ! convective parts...
-
-
-! ........................................................ start:
-!  but before one must do the following
-
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      ! This statement not needed for our conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
-        
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-!
-! -------------------------------------------------------------- end
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-! ........................................................ start: new16
-!  but before one must do the following
-
-	    call spdiscr_deriveBlockDiscr (&
-		rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-	    call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      ! This statement not needed for our conv_jumpStabilisation2d and may be commented
-	    call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	    call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	    call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.     
-
-	    call conv_jumpStabilisation2d (&
-		rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-		rsolution=temp_rvector,rdefect=temp_rdefect,&
-		rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-		InodeList=p_IedgesDirichletBC)
-
-
-
-        ! Release the matrix and the discretisation structure.
-	    call lsysbl_releaseMatrix (rmatrixTemp)
-	    call spdiscr_releaseBlockDiscr (rtempDiscr)
-	    call lsysbl_releaseVector (temp_velocityvectorVS)
-	    call lsysbl_releaseVector (temp_velocityvectorVF)
-	    call lsysbl_releaseVector (temp_velocityvector)
-	    call lsysbl_releaseVector (temp_rvector)
-!
-! -------------------------------------------------------------- end
-          end if
-
-        case (CCMASM_STAB_FASTEDGEORIENTED)
-          ! Fast Jump stabilisation. Precomputed matrix.
-          
-          ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
-              rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
-
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
-              rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-              -rnonlinearCCMatrix%dtheta, 1.0_DP)
-
-          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
-          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
-            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
-                p_IedgesDirichletBC)
-
-! ........................................................ start:
-!  but before one must do the following
-
-        call spdiscr_deriveBlockDiscr (&
-            rmatrix%p_rblockDiscrTest, rtempDiscr, 5, 6)
-
-        ! Get the submatrix (5:6,5:6)
-        call lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,5,6)
-
-      ! Assign rtempDiscr, so the matrix gets 'fully valid'
-      ! This statement not needed for our conv_jumpStabilisation2d and may be commented
-	call lsysbl_assignDiscrDirectMat (rmatrixTemp,rtempDiscr)
-
-	! Get the subvector(5:6)
-	! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	! Get the subvector(5:6)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVF, 5,6,.true.)
-
-	! Get the subvector(3:4)
-	call lsysbl_deriveSubvector(rvelocityvector,temp_velocityvectorVS, 3,4,.true.)
-
-	! create the structure of v
-	call lsysbl_createVecBlockIndirect (temp_velocityvectorVS,temp_velocityvector)
-
-	! preform  v = vF - vS
-	call lsysbl_vectorLinearComb (temp_velocityvectorVF,temp_velocityvectorVS, & 
-				      1.0_DP,-1.0_DP,temp_velocityvector)
-! *** --- **** ---- **** ---- *** --- *** --- **** ---- **** ---- *** --- *** --- **** ----
-	call lsysbl_deriveSubvector(rvector,temp_rvector, 5,6,.true.)
-	call lsysbl_deriveSubvector(rdefect,temp_rdefect, 5,6,.true.)
-        ! Work with the matrix:
-
-        ! now Call the SD method to calculate the nonlinearity.     
-
-          call conv_jumpStabilisation2d (&
-              rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(5,5),&
-              rsolution=temp_rvector,rdefect=temp_rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
-              InodeList=p_IedgesDirichletBC)
-
-
-        ! Release the matrix and the discretisation structure.
-        call lsysbl_releaseMatrix (rmatrixTemp)
-        call spdiscr_releaseBlockDiscr (rtempDiscr)
-	call lsysbl_releaseVector (temp_velocityvectorVS)
-	call lsysbl_releaseVector (temp_velocityvectorVF)
-	call lsysbl_releaseVector (temp_velocityvector)
-	call lsysbl_releaseVector (temp_rvector)
-!     
-! -------------------------------------------------------------- end: 
-          end if
-
-        case default
-          ! No stabilisation
-        
-        end select
-      
       end if ! gamma <> 0
 !     
     end subroutine
 
   end subroutine
-
 end module

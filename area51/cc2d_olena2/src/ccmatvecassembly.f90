@@ -23,7 +23,7 @@
 !#
 !#   $M$     = mass matrix,
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
-!#   $N(y)$  = Nonlinearity $y\delta(\cdot)$ includung stabilisation,
+!#   $N(y)$  = Nonlinearity $y\delta(\cdot)$ including stabilisation,
 !#   $N*(y)$ = Adjoint term $\cdot\delta(y)$ of the nonlinearity,
 !#             used for the Newton matrix
 !#
@@ -95,6 +95,7 @@ module ccmatvecassembly
   use feevaluation
   use convection
   use stdoperators
+  use scalarpde
   
   use ccbasic
   use cccallback
@@ -1965,7 +1966,7 @@ contains
         
           ! ---------------------------------------------------
           ! That was easy -- the adventure begins now... The nonlinearity!
-          if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
+          !if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
           
             rform%itermCount = 2
             rform%Idescriptors(1,1) = DER_DERIV_X
@@ -1982,10 +1983,10 @@ contains
                 rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
             rcollection%p_rvectorQuickAccess1 => rvector
             
-            call bilf_buildMatrixScalar2 (rform, .false., rmatrix%RmatrixBlock(4,4),&
+            call bilf_buildMatrixScalar (rform, .false., rmatrix%RmatrixBlock(4,4),&
                 fcoeff_convection,rcollection)
 
-          end if
+          !end if
           
         end if
         
@@ -3017,7 +3018,7 @@ contains
             rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
         
-        call bilf_buildMatrixScalar2 (rform, .false., rmatrixTemp,&
+        call bilf_buildmatrixscalar (rform, .false., rmatrixTemp,&
             fcoeff_convection,rcollection)
 
       end if

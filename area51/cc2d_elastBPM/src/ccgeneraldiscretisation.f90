@@ -1847,7 +1847,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
     ! Parameters used for the moving frame formulation
-    integer :: imovingFrame
+    integer :: imovingFrame, iblock
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     type(t_collection) :: rlocalcoll
 ! ################## added by obaid #########################
@@ -1856,7 +1856,7 @@ contains
     call boundary_createRegion(rproblem%rboundary, 1, 3, rboundaryRegion)
 ! 1: boundary componet (for holed cylinder, we have 2 components)
 ! 3: boundary segment
-
+!  now go to line (2095 - 2101)
 ! ###########################################################
 
     dnSrhoSR = rproblem%rphysics%dnSo*rproblem%rphysics%drhoSR
@@ -2094,9 +2094,11 @@ contains
 ! #####################   added by Obaid   ##############################
       rboundaryRegion%dminParam = 2.0_DP
       rboundaryRegion%dmaxParam = 3.0_DP
+      iblock = 6  ! f_vf2,       iblock2 for f_us2
       call linf_buildVectorScalarBdr2d(rlinform, CUB_G2_1D, .false., &
-          rrhs%RvectorBlock(2), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
-
+          rrhs%RvectorBlock(iblock), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
+! you may need also to specify the magnification factors to scale the deformation
+! in line 1623 & 1624 in ccpostprocessing.f90
 ! #######################################################################
                              
 !       ! Is the moving-frame formulatino active?

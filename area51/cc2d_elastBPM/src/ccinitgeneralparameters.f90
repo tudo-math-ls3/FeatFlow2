@@ -242,6 +242,10 @@ contains
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                               'mu',rproblem%rphysics%dmu,1000.0_DP)
 
+    ! Body load
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'b',rproblem%rphysics%b,9.81_DP)
+
     ! Shall we include the pore fluid shear stress effect
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                               'IncShear',rproblem%rphysics%IncShear,1.0_DP)

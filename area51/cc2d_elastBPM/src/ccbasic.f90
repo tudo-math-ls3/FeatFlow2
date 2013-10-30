@@ -355,6 +355,9 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
+    ! body load
+    real(DP) :: b
+
     ! Is the convective term to be included ?.
     ! =0: NO
     ! =1: YES
