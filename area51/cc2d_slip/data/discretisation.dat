@@ -195,7 +195,7 @@ imovingFrame = 0
 #   define the file sequence.
 # 5=Nonstationary RHS prescribed by the expressions below.
 
-iRHS = 6
+iRHS = 2
 
 # For iRHS=5: Expressions that define the RHS.
 # The following variables are valid in the expression:
