@@ -802,14 +802,19 @@ contains
       ! the entries.
       call lsysbl_duplicateMatrix (p_rmatrixTemplateFEM,&
           rmatrix,1,1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!/***/ something must be done here          
+! added by obaid
+!/this is added to allow for the boundary edge to recieve bc's in x-components (say direchlet)
+! that is different than the bc's in y-component (say Neumann)
+        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
+                    rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+         
       if (.not. bdecoupled .and. .not. bfulltensor) then
            
-        ! If X- and Y-velocity is to be treated in a "coupled" way, the matrix
-        ! A22 is identical to A11! So mirror A11 to A22 sharing the
-        ! structure and the content.
-        call lsysbl_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
-            rmatrix,2,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!         ! If X- and Y-velocity is to be treated in a "coupled" way, the matrix
+!         ! A22 is identical to A11! So mirror A11 to A22 sharing the
+!         ! structure and the content.
+!         call lsysbl_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
+!             rmatrix,2,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                     
       else
       
