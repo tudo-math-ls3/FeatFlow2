@@ -12107,8 +12107,6 @@ contains
         ! Should we assemble the 'transposed Stokes' operator
         if (rconfig%dbetaT .ne. 0.0_DP) then
 
-          ! Build only A11, there is A11=A22.
-
           ! Loop over the elements in the current set.
           do IEL=1,IELmax-IELset+1
 
@@ -12155,16 +12153,12 @@ contains
                   HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                   ! Finally calculate the contribution to the system
-                  ! matrix. Depending on the configuration of DNU,
-                  ! dalpha,... this decomposes into:
-                  !
-                  ! AH = dny*(grad(phi_j,grad(phi_i)) | -dny*Laplace(u) = -dbeta*Stokes
-                  !    + dalpha*(phi_j*phi_i)         | Mass matrix
+                  ! matrix.
 
                   AH11 = dnuloc*(HBASI2*HBASJ2)
                   AH12 = dnuloc*(HBASI3*HBASJ2)
                   AH21 = dnuloc*(HBASI2*HBASJ3)
-                  ! AH22 = AH11, so do not compute.
+                  AH22 = dnuloc*(HBASI3*HBASJ3)
 
                   ! Weighten the calculated value AH by the cubature
                   ! weight OM and add it to the local matrix. After the
@@ -12174,7 +12168,7 @@ contains
                   DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
                   DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
                   DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
-                  DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH11
+                  DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
 
                 end do ! IDOFE
 
