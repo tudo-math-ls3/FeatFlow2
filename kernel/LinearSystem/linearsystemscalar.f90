@@ -6782,11 +6782,6 @@ contains
   integer :: i,j,nrows,ncols,ivar,jvar
   integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
-#ifdef USE_INTEL_MKL
-  integer, dimension(6) :: Ijob
-  integer :: info
-#endif
-
   ! Matrix is already in that format.
   if (rmatrix%cmatrixFormat .eq. cmatrixFormat) return
 
@@ -7053,33 +7048,21 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Ddata)
           call storage_getbase_double(ihandle, p_Ddata2)
 
-#ifdef USE_INTEL_MKL
-          Ijob = (/1,1,1,2,rmatrix%NA,1/)
-          call mkl_ddnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
-              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
-#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)-1
               p_Ddata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Ddata(iA)
             end do
           end do
-#endif
 
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
 
-#ifdef USE_INTEL_MKL
-          Ijob = (/1,1,1,2,rmatrix%NA,1/)
-          call mkl_sdnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
-              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
-#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)
               p_Fdata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Fdata(iA)
             end do
           end do
-#endif
 
         case default
           call output_line('Unsupported data type!',&
