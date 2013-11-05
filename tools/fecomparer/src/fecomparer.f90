@@ -5,6 +5,7 @@
 program fecomparer
 
   ! Include basic Feat-2 modules
+  use fparser
   use fsystem
   use genoutput
   use storage
@@ -27,6 +28,7 @@ program fecomparer
   call system_init()
   call output_init ("")
   call storage_init(999, 100)
+  call fparser_init()
   
   ! -----------------------------------------------------------------
   ! Basic initialisations

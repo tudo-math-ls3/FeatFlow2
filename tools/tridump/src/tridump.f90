@@ -1,5 +1,6 @@
 program tridump
 
+  use fparser
   use fsystem
   use genoutput
   use storage
@@ -31,6 +32,9 @@ program tridump
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
   
+  ! Initialise function parser
+  call fparser_init()
+
   if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./mesh"
 
   ! print help

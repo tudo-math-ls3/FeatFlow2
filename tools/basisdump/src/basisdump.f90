@@ -10,33 +10,34 @@
 
 program basisdump
 
-use fsystem
-use genoutput
-use storage
-use paramlist
-use basicgeometry
-use triangulation
-use transformation
-use derivatives
-use element
-use elementpreprocessing
-use spdiscprojection
-use ucd
-
-implicit none
+  use fparser
+  use fsystem
+  use genoutput
+  use storage
+  use paramlist
+  use basicgeometry
+  use triangulation
+  use transformation
+  use derivatives
+  use element
+  use elementpreprocessing
+  use spdiscprojection
+  use ucd
   
-type(t_parlist) :: rparam
-type(t_triangulation) :: rtria, rtriaDump
-type(t_evalElementSet) :: reval
-integer :: nref, nbasis, nverts, ibas, ivt, ndone, ntodo, nmaxDer, ider
-integer(I32) :: celement, cshape, cevalTag, ctrafoType
-real(DP), dimension(:,:), pointer :: p_Dvtx
-real(DP), dimension(:,:,:), pointer :: p_Dphi
-integer, dimension(1), parameter :: IelList = (/1/)
-real(DP), dimension(:,:,:,:), pointer :: p_Dbas
-logical, dimension(EL_MAXNDER) :: Bder
-character(len=SYS_STRLEN) :: selement, spredir, sucddir
-type(t_ucdExport) :: rexport
+  implicit none
+  
+  type(t_parlist) :: rparam
+  type(t_triangulation) :: rtria, rtriaDump
+  type(t_evalElementSet) :: reval
+  integer :: nref, nbasis, nverts, ibas, ivt, ndone, ntodo, nmaxDer, ider
+  integer(I32) :: celement, cshape, cevalTag, ctrafoType
+  real(DP), dimension(:,:), pointer :: p_Dvtx
+  real(DP), dimension(:,:,:), pointer :: p_Dphi
+  integer, dimension(1), parameter :: IelList = (/1/)
+  real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+  logical, dimension(EL_MAXNDER) :: Bder
+  character(len=SYS_STRLEN) :: selement, spredir, sucddir
+  type(t_ucdExport) :: rexport
 
   ! The very first thing in every application:
   ! Initialise system-wide settings:
@@ -46,6 +47,9 @@ type(t_ucdExport) :: rexport
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
   
+  ! Initialise function parser
+  call fparser_init()
+
   if (sys_ncommandLineArgs() .lt. 2) then
     call output_line('USAGE: basisdump <element>')
     call exit
