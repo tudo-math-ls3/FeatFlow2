@@ -147,10 +147,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = %{sgriddirectory}/2d/convdiffnozzle.prm
+prmfile = %{sgriddirectory}/2d/convdiffnozzle_rz.prm
 
 # file which contains the triangulation
-trifile = %{sgriddirectory}/2d/convdiffnozzle.tri
+trifile = %{sgriddirectory}/2d/convdiffnozzle_rz.tri
 
 # type of finite element space(s)
 #
@@ -208,6 +208,21 @@ adaptivity = Adaptivity
 
 # section name of the error estimation configuration
 errorestimator = ErrorEstimator
+
+#-------------------------------------------------------------------------------
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = 1
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 1
 
 
 ################################################################################
@@ -299,7 +314,7 @@ dinitialStep = 1e-3
 ################################################################################
 
 # multigrid level number
-nlev = 6
+nlev = 5
 
 
 ################################################################################
