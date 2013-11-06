@@ -1,0 +1,50 @@
+# -*- mode: any-ini; -*-
+#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+################################################################################
+
+# reference constants
+#defconst: rho_ref = 4.874685276645642
+#defconst: vel_ref = 290.0137824311113
+
+# free stream constants
+defconst: rho_inf = 1.0
+defconst: u_inf   = 0.3
+defconst: v_inf   = 0.0
+defconst: p_inf   = 1.0
+
+# initial stream constants
+defconst: rho_0   = 1.0
+defconst: u_0     = 0.0
+defconst: v_0     = 0.0
+defconst: p_0     = 0.66666666666666666666
+
+# outlet pressure
+defconst: p_out   = 0.66666666666666666666
+
+# adiabatic exponen
+defconst: gamma   = 1.4
+
+# Specify the initial solution
+deffunc: @initsol_rho   = _rho_0      ; x,y,t
+deffunc: @initsol_vel_x = _rho_0*_u_0 ; x,y,t
+deffunc: @initsol_vel_y = _rho_0*_v_0 ; x,y,t
+deffunc: @initsol_Etot  = _p_0/(_gamma-1.0)+_rho_0*(_u_0^2+_v_0^2)/2.0 ; x,y,t
+
+# Specify the boundary conditions
+[bdrcond_primal]
+NBCT
+1
+NEXPR
+3
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+3.0 T  'FREESLIP_WEAK'
+4.0 F  'SUBOUTLET_WEAK' '_p_out'
+7.0 T  'FREESLIP_WEAK'
+8.0 F  'SUBINLET_WEAK'  '_rho_inf' '_p_inf' '_v_inf'

@@ -1,0 +1,391 @@
+# -*- mode: any-ini; -*-
+
+version = 120829
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+################################################################################
+
+simportdatafiles(5) =
+  '../../hydro/2d/default.dat'
+  '../../solverdefault.dat'
+  '../../adaptivitydefault.dat'
+  '../../errorestdefault.dat'
+  '../../solver_singlegrid_defcor.dat'
+
+################################################################################
+
+application = hydro
+
+################################################################################
+[Hydro]
+################################################################################
+
+# file which contains the application specific data
+indatfile = %{sdatadirectory}/hydro/2d/sfb708_nozzle_cubic.indat
+
+# section name of boundary condition for primal problem
+sprimalbdrcondname = bdrcond_primal
+
+# section name of boundary condition for dual problem
+sdualbdrcondname = 
+
+# number of spatial dimensions
+ndimension = 2
+
+# solution algorithm
+algorithm = transient_primal
+
+#-------------------------------------------------------------------------------
+
+# type of mass matrix
+# 0 = no mass matrix
+# 1 = consistent mass matrix
+# 2 = lumped mass matrix
+imasstype = 2
+
+# type of mass antidiffusion
+# 0 = no mass antidiffusion
+# 1 = consistent mass antidiffusion
+imassantidiffusiontype = 1
+
+# type of approximate time derivative
+# 0 = Galerkin method
+# 1 = low-order method
+iapproxtimederivativetype = 1
+
+# type of dissipation
+# 0 = no dissipation
+# 1 = scalar dissipation (-1 = dimensional splitting)
+# 2 = tensorial dissipation (-2 = dimensional splitting)
+# 3 = Rusanov type (-3 = dimensional splitting)
+idissipationtype = 3
+
+# type of system coupling
+# 0 = segregated approach
+# 1 = fully-coupled approach
+isystemcoupling = 1
+
+# type of preconditioner
+# 0 = Galerkin scheme
+# 1 = low-order scheme with scalar dissipation
+# 2 = low-order scheme with tensorial dissipation
+# 3 = low-order schemes of Rusanov type
+isystemPrecond = 3
+
+#-------------------------------------------------------------------------------
+
+# variables for flux correction
+# (i)  for synchronised flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+slimitingvariable(2) = 
+  density
+  pressure
+  
+# number of failsafe steps
+nfailsafe = 0
+
+# variables for failsafe flux correction
+sfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
+
+# type of initial solution profile
+# 0 = zero initial solution
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 1
+
+# section name of initial solution
+ssolutionname(4) = 
+  @initsol_rho
+  @initsol_vel_x
+  @initsol_vel_y
+  @initsol_Etot
+
+# type of exact solution profile
+# 0 = no exact solution available
+# 1 = analytical exact solution
+# 2 = PGM image
+# 3 = GMV reference solution
+iexactsolutiontype = 0
+
+# section name of exact solution
+sexactsolutionname =
+
+# variables for constrained initialisation
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialisation
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialisation
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
+
+#-------------------------------------------------------------------------------
+
+# file which contains the boundary parametrisation
+prmfile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_cubic.prm
+
+# file which contains the triangulation
+trifile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_cubic.tri
+
+# type of finite element space(s)
+#
+# EL_E001_2D   linear H1-conforming triangular FE, P1
+#
+# EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
+#
+# EL_E020_2D   rotated linear nonconforming triangular FE,
+#              P1~, edge-midpoint based
+#
+# EL_E030_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, integral mean value based
+# EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based
+# EL_EN30_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based, new implementation
+#
+# EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, edge-midpoint based
+# EL_EM31_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based
+# EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based, new interface implementations
+celement = EL_Q1_2D
+
+# convert mesh to triangular mesh?
+iconvToTria = 0
+
+# type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
+imatrixformat = 9
+
+# type of system format
+# 0 = interleave scalar format
+# 1 = block system
+isystemformat = 0
+
+#-------------------------------------------------------------------------------
+
+# section name of the inviscid stabilisation
+inviscid = Inviscid
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = FullMultigridSolver
+
+# section name of the output configuration
+output = Output
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
+
+#-------------------------------------------------------------------------------
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = 1
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 1
+
+
+################################################################################
+[Inviscid]
+################################################################################
+
+# type of spatial stabilisation:
+#  0 = no stabilisation (Galerkin)
+#  1 = discrete upwinding
+# 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 12 = iterative FEM-FCT (iprelimiting =0, =1, =2)
+# 20 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 30 = FEM-TVD
+# 31 = FEM-GP
+# 41 = nonlinear upwind-biased FEM-LPT
+# 51 = linearised upwind-biased FEM-LPT
+istabilisation = 20
+
+# perform prelimiting
+#  0 = no prelimiting
+#  1 = standard prelimiting
+#  2 = minmod prelimiting
+iprelimiting = 0
+
+
+################################################################################
+[Output]
+################################################################################
+
+# type of UCD output format
+# 0 = no output
+# 1 = GMV
+# 2 = AVS
+# 3 = Paraview (VTK)
+iformatUCD = 1
+
+# type of UCD output
+# 0 = standard
+# 1 = linearisation with discontinuous P1 finite elements
+# 2 = linearisation with continuous P1 finite elements
+ilineariseucd = 0
+
+# number of refinement steps
+nrefineucd = 0
+
+# time interval for UCD output
+dstepUCD = 1e-3
+
+# file for UCD output of solution
+sucdsolution = out/localdir/sfb708_nozzle_cubic_lev6
+
+# file for UCD output of error
+sucderror = out/localdir/sfb708_nozzle_cubic_lev6_error
+
+# variables for ucd output
+sucdvariable(5) =
+ density
+ velocity
+ energy
+ pressure
+ machnumber
+
+################################################################################
+[Timestepping]
+################################################################################
+
+# type of time-stepping algorithm
+# 1 = two-level theta-scheme
+# 2 = explicit Runge-Kutta scheme
+# 5 = full MG
+ctimestepType = 1
+
+# implicitness parameter: Valid values of THETA are in the range [0,1]
+theta = 1.0
+
+# number of steps for multisteps scheme
+multisteps = 0
+
+# final time for the simulation.
+dfinalTime = 10.0
+
+# initial time step size
+dinitialStep = 1e-3
+
+
+################################################################################
+[FullMultigridSolver]
+################################################################################
+
+# multigrid level number
+nlev = 4
+
+
+################################################################################
+[NonlinearSolver]
+################################################################################
+
+# minimum number of nonlinear steps
+nminIterations = 1
+
+# maximum number of nonlinear steps
+nmaxIterations = 100
+
+# nonlinear relaxation parameter
+domega = 1.0
+
+# absolute tolerance for residual
+depsAbs = 1e-12
+
+# relative tolerance for residual
+depsRel = 0.0
+
+# relative tolerance for stagnation
+depsStag = 0.0
+
+
+################################################################################
+[LinearSolver]
+################################################################################
+
+# minimum number of linear steps
+nminIterations = 1
+
+# maximum number of linear steps
+nmaxIterations = 100
+
+# type of linear solver
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 11 = UMFPACK4
+# 13 = AGMG
+isolver = 5
+
+# absolute tolerance for residual
+depsAbs = 1e-12
+
+# relative tolerance for residual
+depsRel = 1e-8
+
+# relative tolerance for stagnation
+depsStag = 0.0
+
+
+################################################################################
+[LinearPrecond]
+################################################################################
+
+# preconditioner for the linear single-grid solver
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+# 50 = ILU
+isolver = 50
+
+
+################################################################################
+[Adaptivity]
+################################################################################
+
+
+################################################################################
+[ErrorEstimator]
+################################################################################
