@@ -35,7 +35,7 @@ deffunc: @initsol_Etot  = _p_0/(_gamma-1.0)+_rho_0*(_u_0^2+_v_0^2)/2.0 ; x,y,t
 NBCT
 1
 NEXPR
-4
+3
 IBCT
 1
 NCOMP
