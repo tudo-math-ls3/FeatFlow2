@@ -2230,11 +2230,11 @@ contains
         call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
             coeff_K55, rcollection)
 
-! - \theta * K_15 * u5
+! - \theta * K_55 * u5
         call lsyssc_scalarMatVec (rmatrixMassTemp, &
             rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
             -1.0_DP, 1.0_DP)
-! - \theta * K_26 * u6
+! - \theta * K_66 * u6
         call lsyssc_scalarMatVec (rmatrixMassTemp, &
             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
             -1.0_DP, 1.0_DP)    

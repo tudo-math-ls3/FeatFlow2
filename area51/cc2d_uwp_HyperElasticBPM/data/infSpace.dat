@@ -78,7 +78,7 @@ ielementType = 4
  rhoFR = 1E3
  nSo = 0.67
  nFo = 0.33
-kFo = 1E-10
+kFo = 1E-2
 b=10.0
 ctypeInitialSolution = 0  #/***/ required for the restart
 sinitialSolutionFilename = '' #/***/ required for the restart
@@ -108,8 +108,8 @@ nsmoothingSteps    = 4
 #####################
 itimedependence = 1                     # ISTAT
 dtimeInit = 0.0 #/***/ required for restart
-dtimeMax  = 1.0E-3
-dtimeStep = 1.0E-3
+dtimeStep = 2.0E-3
+dtimeMax  = 1.0
 dtimeStepTheta = 0.5
 dminTimeDerivative = 1.0E-16
 ipressureFullyImplicit = 1
@@ -134,23 +134,23 @@ ioutputUCD = 0
 #dmaxTimeFilm = 1.0 #/***/ required for the restart
 #dtimeDifferenceFilm = 0.01 #/***/ required for the restart
 #istartSuffixFilm = 1 #/***/ required for the restart
-#sfilenamePointValues = '%{ssolutiondirectory}/uwp_unst_level4_time_2000' /***/ required for the restart
+sfilenamePointValues = '%{ssolutiondirectory}/uwp' /***/ required for the restart
 ierrorAnalysisL2 = 0
 ierrorAnalysisH1 = 0
-#cevaluatePointValues(1) =
+cevaluatePointValues(1) =
 #       20.0  25.0 1 0  # Point A
 #       15.0  30.0 1 0  # Point B
-#       22.0  42.0 1 0  # point C
-#iwritePointValues = 1
+       22.0  42.0 1 0  # point C
+iwritePointValues = 1
 #############
 [PARAMTRIANG]
 #############
 
-#sParametrisation = '%{spredirectory}/infSpace_rect_unst.prm'
-#sMesh = '%{spredirectory}/infSpace_rect_unst.tri'
+sParametrisation = '%{spredirectory}/infSpace_rect_unst.prm'
+sMesh = '%{spredirectory}/infSpace_rect_unst.tri'
 
-sParametrisation = '%{spredirectory}/infSpace_cartesian.prm'
-sMesh = '%{spredirectory}/infSpace_cartesian.tri'
+#sParametrisation = '%{spredirectory}/infSpace_cartesian.prm'
+#sMesh = '%{spredirectory}/infSpace_cartesian.tri'
 
 ##############
 [BDCONDITIONS]

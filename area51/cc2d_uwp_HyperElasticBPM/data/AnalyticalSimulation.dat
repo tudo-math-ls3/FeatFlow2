@@ -64,7 +64,7 @@ smsgLog = '%{slogdirectory}/rect_unst_level_6_time_2000.log'
 #####################
  [CC-DISCRETISATION]
 #####################
-iequation    = 1  # 1: linear   0: non-linear
+iequation    = 1  # 1: convectionless   0: convective term is included
 IncShear = 1
 iMass= 1
 iMassLumpType= 0 
@@ -72,8 +72,8 @@ ielementType = 4
  NLMIN = 1
  NLMAX = 1
  RE = 1E99
- mu = 1
- lambda = 1
+ mu = 1000
+ lambda = 1000
  rhoSR = 1
  rhoFR = 1
  nSo = 0.75
@@ -91,7 +91,7 @@ icoarseGridSolverType = 0
 [CC-MULTIGRIDSOLVER]
 ####################
 nminIterations     = 1
-nmaxIterations     = 30
+nmaxIterations     = 300
 depsRel            = 1E-5 # reduction of the residual by 2 digits. 
 depsAbs            = 1E-5  # Residual  must be < 1E-3 when stopping.
 istoppingCriterion = 0 # 0: Stop if both, depsAbs and depsRel are fulfilled,
@@ -115,14 +115,14 @@ ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 15
+nmaxIterations     = 30
 depsD_u     = 1.0E-5
 depsD_vS    = 1.0E-5
 depsD_vF    = 1.0E-5
 depsDiv     = 1.0E-5
 depsUR      = 1.0E-9
 depsVSR     = 1.0E-9
-depsVFR     = 1.0E-9
+depsVFR     = 1.0E-11
 depsPR      = 1.0E-9
 ###################
 [CC-POSTPROCESSING]

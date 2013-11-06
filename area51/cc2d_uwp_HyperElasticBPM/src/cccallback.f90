@@ -807,7 +807,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dWeight
     real(DP) :: drhoFR
-!     real(DP) :: dnF0
+
 
     real(DP), dimension(:,:,:), allocatable :: div_vS
     real(DP), dimension(:,:,:), allocatable :: vS1_x
@@ -832,8 +832,17 @@ contains
         p_rvector%Rvectorblock(4), Dpoints, &
         rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-    div_vS = vS1_x + vS2_y
+!    div_vS = vS1_x + vS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_vS(j,i,1) = vS1_x(j,i,1) + vS2_y(j,i,1)
+      end do
+    end do
 
+    deallocate (vS1_x)
+    deallocate (vS2_y)
+
+! Bilinear coefficients
     do i=1,ubound(Dcoefficients,3)
       do j=1,ubound(Dcoefficients,2)
         Dcoefficients(1,j,i) = dWeight*drhoFR*div_vS(j,i,1)
@@ -841,9 +850,6 @@ contains
     end do
 
     deallocate (div_vS)
-    deallocate (vS1_x)
-    deallocate (vS2_y)
-
 
   end subroutine
 ! ***************************************************************************
@@ -933,8 +939,9 @@ contains
     real(DP) :: dnF0
     real(DP) :: dnS0
     real(DP) :: dkF0
-
     real(DP) :: dgammaFR
+
+    integer :: i, j, kappa
 
     real(DP), dimension(:,:,:), allocatable :: div_vS
     real(DP), dimension(:,:,:), allocatable :: uS1_x
@@ -946,8 +953,8 @@ contains
     real(DP), dimension(:,:,:), allocatable :: dnF
     real(DP), dimension(:,:,:), allocatable :: dkF
     real(DP), dimension(:,:,:), allocatable :: div_uS
-   real(DP), dimension(:,:,:), allocatable :: det_grad_uS
-    integer :: i, j, kappa
+    real(DP), dimension(:,:,:), allocatable :: det_grad_uS
+
 
     kappa    = rcollection%IquickAccess(1)
 
@@ -999,15 +1006,35 @@ contains
         p_rvector%Rvectorblock(4), Dpoints, &
         rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-    div_uS = uS1_x + uS2_y
-    div_vS = vS1_x + vS2_y
+!     div_vS = vS1_x + vS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_vS(j,i,1) = vS1_x(j,i,1) + vS2_y(j,i,1)
+      end do
+    end do
+
+    deallocate (vS1_x)
+    deallocate (vS2_y)
+
+!     div_uS = uS1_x + uS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+      end do
+    end do
 
 !  |grad uS | :  is the determinant value of grad uS
     do i=1,ubound(Dcoefficients,3)
       do j=1,ubound(Dcoefficients,2)
-        det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) + uS2_x(j,i,1)*uS1_y(j,i,1)
+        det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
       end do
     end do
+
+    deallocate (uS1_x)
+    deallocate (uS1_y)
+    deallocate (uS2_x)
+    deallocate (uS2_y)
+
 
 ! nF = 1 - nS0 (1-div uS + |grad uS | )
     do i=1,ubound(Dcoefficients,3)
@@ -1015,7 +1042,10 @@ contains
         dnF(j,i,1) = 1.0_DP - dnS0*(1.0_DP - div_uS(j,i,1) + det_grad_uS(j,i,1))
       end do
     end do
- 
+
+    deallocate (det_grad_uS)
+    deallocate (div_uS)
+
 
 !  kF
     do i=1,ubound(Dcoefficients,3)
@@ -1023,7 +1053,7 @@ contains
         dkF(j,i,1) = dkF0*(dnF(j,i,1)/dnF0)**kappa
       end do
     end do
-
+!  print*,dkF0
 
     do i=1,ubound(Dcoefficients,3)
       do j=1,ubound(Dcoefficients,2)
@@ -1031,17 +1061,11 @@ contains
       end do
     end do
 
-    deallocate (div_vS)
-    deallocate (div_uS)
-    deallocate (uS1_x)
-    deallocate (uS1_y)
-    deallocate (uS2_x)
-    deallocate (uS2_y)
-    deallocate (vS1_x)
-    deallocate (vS2_y)
+! print*,dkF
+
     deallocate (dnF)
     deallocate (dkF)
-    deallocate (det_grad_uS)
+    deallocate (div_vS)
 
   end subroutine
 
@@ -1216,8 +1240,8 @@ contains
 !        Dcoefficients(:,:,:) = 0.0_DP
 
 
-!         Dcoefficients(1,:,:) = 5.0_DP
-        Dcoefficients(:,:,:) = 0.0_DP    
+         Dcoefficients(1,:,:) = -301.0_DP
+!        Dcoefficients(:,:,:) = 0.0_DP    
 
   end subroutine
 
@@ -1307,15 +1331,15 @@ contains
 
 !          Dcoefficients(:,:,:) = 0.0_DP
 
-!         Dcoefficients(1,:,:) = -6.0_DP
-        Dcoefficients(:,:,:) = 0.0_DP
+         Dcoefficients(1,:,:) = -300.0_DP
+!        Dcoefficients(:,:,:) = 0.0_DP
 
   end subroutine
 
 
   ! ***************************************************************************
 
-!<subroutine>
+!<subroutine> 
 
   subroutine coeff_RHS_vSx (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
@@ -1404,7 +1428,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<subroutine> 
 
   subroutine coeff_RHS_vSy (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
@@ -1493,7 +1517,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<subroutine> better to be renamed to  RHS_wSx (but not necessary)
 
   subroutine coeff_RHS_vFx (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
@@ -1567,23 +1591,25 @@ contains
     ! local variables
     real(DP) :: dtime
     
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
-    else
-      dtime = 0.0_DP
-    end if
+!     ! In a nonstationary simulation, one can get the simulation time
+!     ! with the quick-access array of the collection.
+!     if (present(rcollection)) then
+!       dtime = rcollection%Dquickaccess(1)
+!     else
+!       dtime = 0.0_DP
+!     end if
 
-!     Dcoefficients(1,:,:) = 160.0_DP*Dpoints(1,:,:)-1.0_DP
-    Dcoefficients(:,:,:) = 0.0_DP
+     Dcoefficients(1,:,:) = -1.0_DP + 16000.0_DP*Dpoints(1,:,:)/ &
+     (33.0_DP*Dpoints(1,:,:)-3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)+ &
+     30.0_DP*Dpoints(2,:,:)+70.0_DP)
+!    Dcoefficients(:,:,:) = 0.0_DP
 
   end subroutine
 
 
   ! ***************************************************************************
 
-!<subroutine>
+!<subroutine>   better to be renamed to  RHS_wSy (not necessary)
 
   subroutine coeff_RHS_vFy (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
@@ -1665,8 +1691,10 @@ contains
       dtime = 0.0_DP
     end if
 
-!     Dcoefficients(1,:,:) = -160.0_DP*Dpoints(2,:,:)
-    Dcoefficients(:,:,:) = 0.0_DP
+     Dcoefficients(1,:,:) = -16000.0_DP*Dpoints(2,:,:)/ &
+     (33.0_DP*Dpoints(1,:,:)-3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)+ &
+     30.0_DP*Dpoints(2,:,:)+70.0_DP)
+!    Dcoefficients(:,:,:) = 0.0_DP
 
   end subroutine
 
@@ -2696,10 +2724,10 @@ contains
 !      Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  1.0_DP - 2.0_DP*Dpoints(1,:,:)
+      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(1,:,:)**2
+      case (DER_DERIV_X);  Dvalues(:,:) =  0.1_DP*Dpoints(1,:,:)
       case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = -2.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.1_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
       end select
@@ -2811,7 +2839,7 @@ contains
 
   ! ***************************************************************************
   
-!<subroutine>
+!<subroutine>  better to be replaced with ffunction_Targetwx (but not necessary)
 
   subroutine ffunction_TargetvFx (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
@@ -3004,10 +3032,10 @@ contains
 !      Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2
-      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)
+      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(2,:,:)**2 - 0.1_DP*Dpoints(2,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.1_DP*Dpoints(2,:,:)-0.1_DP
       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.1_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
       end select
@@ -3120,7 +3148,7 @@ contains
 
   ! ***************************************************************************
   
-!<subroutine>
+!<subroutine>  better to be replaced with ffunction_Targetwy (but not necessary)
 
   subroutine ffunction_TargetvFy (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
@@ -3398,9 +3426,9 @@ contains
      IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
 
      if (icomponent .EQ. 1) then
-       dvalue =  dx*(1.0_DP-dx)
+       dvalue =  0.05_DP*dx**2
      elseif (icomponent .EQ. 2) then
-       dvalue  =  dy**2
+       dvalue  =  0.05_DP*dy**2-0.1_DP*dy
      elseif (icomponent .EQ. 3) then
       dvalue = 0.0_DP
      elseif (icomponent .EQ. 4) then
