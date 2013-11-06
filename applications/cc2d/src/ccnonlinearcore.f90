@@ -1191,11 +1191,26 @@ contains
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
         call linsol_initData (p_rsolverNode, ierror)
-        if (ierror .ne. LINSOL_ERR_NOERROR) then
-          call output_line ("linsol_initData failed! Matrix singular!", &
+        select case(ierror)
+        case (LINSOL_ERR_NOERROR)
+          ! okay
+
+        case (LINSOL_ERR_SINGULAR)
+          call output_line ("linsol_initData failed: matrix singular!", &
                             OU_CLASS_ERROR,OU_MODE_STD,"cc_precondDefect")
           call sys_halt()
-        end if
+
+        case (LINSOL_ERR_NOMEMORY)
+          call output_line ("linsol_initData failed: out of memory!", &
+                            OU_CLASS_ERROR,OU_MODE_STD,"cc_precondDefect")
+          call sys_halt()
+          
+        case default
+          call output_line ("linsol_initData failed: internal error!", &
+                            OU_CLASS_ERROR,OU_MODE_STD,"cc_precondDefect")
+          call sys_halt()
+          
+        end select
         
         ! Gather statistics
         call stat_stopTimer(rtimer)
