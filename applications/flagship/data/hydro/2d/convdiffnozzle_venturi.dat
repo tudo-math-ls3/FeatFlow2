@@ -24,7 +24,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = %{sdatadirectory}/hydro/2d/convdiffnozzle.indat
+indatfile = %{sdatadirectory}/hydro/2d/convdiffnozzle_venturi.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -147,10 +147,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = %{sgriddirectory}/2d/convdiff_nozzle_rz.prm
+prmfile = %{sgriddirectory}/2d/convdiff_nozzle_venturi.prm
 
 # file which contains the triangulation
-trifile = %{sgriddirectory}/2d/convdiff_nozzle_rz.tri
+trifile = %{sgriddirectory}/2d/convdiff_nozzle_venturi.tri
 
 # type of finite element space(s)
 #
@@ -216,13 +216,13 @@ errorestimator = ErrorEstimator
 #  1 = axi-symmetric coordinate system (r,z) 2D
 #  2 = cylindrically symmetric coordinate system (r) 1D
 #  3 = spherically symmetric coordinate system (r) 1D
-icoordsystem = 1
+icoordsystem = 0
 
 # type of geometric source term
 # 0 = evaluate linear form by numerical integration
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
-igeometricsourcetype = 1
+igeometricsourcetype = 0
 
 
 ################################################################################
@@ -273,10 +273,10 @@ nrefineucd = 0
 dstepUCD = 0.1
 
 # file for UCD output of solution
-sucdsolution = out/localdir/convdiffnozzle_lev6
+sucdsolution = out/localdir/convdiff_nozzle_venturi_xy_lev6
 
 # file for UCD output of error
-sucderror = out/localdir/convdiffnozzle_lev6_error
+sucderror = out/localdir/convdiff_nozzle_venturi_xy_lev6_error
 
 # variables for ucd output
 sucdvariable(5) =
@@ -314,7 +314,7 @@ dinitialStep = 1e-3
 ################################################################################
 
 # multigrid level number
-nlev = 5
+nlev = 6
 
 
 ################################################################################
