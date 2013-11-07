@@ -219,6 +219,9 @@ contains
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                               'nSo',rproblem%rphysics%dnSo,0.9_DP)
 
+    ! A  parameter that determines the strength of the deformation dependency
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'kappa',rproblem%rphysics%kappa,0)
     ! Initial Porosity
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                               'nFo',rproblem%rphysics%dnFo,0.1_DP)

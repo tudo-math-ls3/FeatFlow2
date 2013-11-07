@@ -328,7 +328,10 @@ module ccbasic
   ! parameters for the primal equation. This includes e.g. the type of the equation,
   ! viscosity parameter etc.
   type t_problem_physics
-  
+
+    ! A  parameter that determines the strength of the deformation dependency
+    integer :: kappa
+
     ! Initial Solidity
     real(DP) :: dnSo
 

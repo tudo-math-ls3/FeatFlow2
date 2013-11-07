@@ -1508,7 +1508,7 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
-        rcollection%IquickAccess(1) = 1
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%kappa
 
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
@@ -2219,7 +2219,7 @@ contains
         rform%Dcoefficients(1)  = 1.0
 
 
-        rcollection%IquickAccess(1) = 1
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%kappa
 
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
