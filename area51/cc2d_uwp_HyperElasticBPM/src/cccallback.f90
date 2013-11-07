@@ -852,6 +852,373 @@ contains
     deallocate (div_vS)
 
   end subroutine
+
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine coeff_M13 (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dWeight
+    real(DP) :: drhoFR
+    real(DP) :: drhoSR
+    real(DP) :: dnF0
+    real(DP) :: dnS0
+
+    integer :: i, j
+
+    real(DP), dimension(:,:,:), allocatable :: uS1_x
+    real(DP), dimension(:,:,:), allocatable :: uS1_y
+    real(DP), dimension(:,:,:), allocatable :: uS2_x
+    real(DP), dimension(:,:,:), allocatable :: uS2_y
+    real(DP), dimension(:,:,:), allocatable :: dnF
+    real(DP), dimension(:,:,:), allocatable :: div_uS
+    real(DP), dimension(:,:,:), allocatable :: det_grad_uS
+
+
+    dWeight  = rcollection%DquickAccess(1)
+    drhoFR   = rcollection%DquickAccess(2)
+    drhoSR   = rcollection%DquickAccess(3)
+    dnF0     = rcollection%DquickAccess(4)
+
+
+
+    dnS0     = 1.0_DP-dnF0
+
+    p_rvector => rcollection%p_RvectorQuickAccess1
+
+    allocate (uS1_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS1_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS2_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS2_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (div_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (dnF(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (det_grad_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+
+! uS1_x
+    call fevl_evaluate_sim (DER_DERIV_X, uS1_x(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+! uS1_y
+    call fevl_evaluate_sim (DER_DERIV_Y, uS1_y(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+! uS2_x
+    call fevl_evaluate_sim (DER_DERIV_X, uS2_x(:,:,1), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+! uS2_y
+    call fevl_evaluate_sim (DER_DERIV_Y, uS2_y(:,:,1), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+
+!  |grad uS | :  is the determinant value of grad uS
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
+      end do
+    end do
+
+    deallocate (uS1_y)
+    deallocate (uS2_x)
+
+!     div_uS = uS1_x + uS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+      end do
+    end do
+
+    deallocate (uS1_x)
+    deallocate (uS2_y)
+
+
+! nF = 1 - nS0 (1-div uS + |grad uS | )
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        dnF(j,i,1) = 1.0_DP - dnS0*(1.0_DP - div_uS(j,i,1) + det_grad_uS(j,i,1))
+      end do
+    end do
+
+    deallocate (det_grad_uS)
+    deallocate (div_uS)
+
+
+
+
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        Dcoefficients(1,j,i) = dWeight*(dnF(j,i,1)*drhoFR + (1.0_DP-dnF(j,i,1))*drhoSR)
+      end do
+    end do
+
+! print*,dkF
+
+    deallocate (dnF)
+
+  end subroutine
+
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine coeff_M55 (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dWeight
+    real(DP) :: drhoFR
+    real(DP) :: dnF0
+    real(DP) :: dnS0
+
+    integer :: i, j
+
+    real(DP), dimension(:,:,:), allocatable :: uS1_x
+    real(DP), dimension(:,:,:), allocatable :: uS1_y
+    real(DP), dimension(:,:,:), allocatable :: uS2_x
+    real(DP), dimension(:,:,:), allocatable :: uS2_y
+    real(DP), dimension(:,:,:), allocatable :: dnF
+    real(DP), dimension(:,:,:), allocatable :: div_uS
+    real(DP), dimension(:,:,:), allocatable :: det_grad_uS
+
+
+    dWeight  = rcollection%DquickAccess(1)
+    drhoFR   = rcollection%DquickAccess(2)
+    dnF0     = rcollection%DquickAccess(4)
+
+
+
+    dnS0     = 1.0_DP-dnF0
+
+    p_rvector => rcollection%p_RvectorQuickAccess1
+
+    allocate (uS1_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS1_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS2_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (uS2_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (div_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (dnF(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+    allocate (det_grad_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+
+! uS1_x
+    call fevl_evaluate_sim (DER_DERIV_X, uS1_x(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+! uS1_y
+    call fevl_evaluate_sim (DER_DERIV_Y, uS1_y(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+! uS2_x
+    call fevl_evaluate_sim (DER_DERIV_X, uS2_x(:,:,1), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+! uS2_y
+    call fevl_evaluate_sim (DER_DERIV_Y, uS2_y(:,:,1), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+
+
+!  |grad uS | :  is the determinant value of grad uS
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
+      end do
+    end do
+
+    deallocate (uS1_y)
+    deallocate (uS2_x)
+
+!     div_uS = uS1_x + uS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+      end do
+    end do
+
+    deallocate (uS1_x)
+    deallocate (uS2_y)
+
+
+! nF = 1 - nS0 (1-div uS + |grad uS | )
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        dnF(j,i,1) = 1.0_DP - dnS0*(1.0_DP - div_uS(j,i,1) + det_grad_uS(j,i,1))
+      end do
+    end do
+
+    deallocate (det_grad_uS)
+    deallocate (div_uS)
+
+
+
+
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        Dcoefficients(1,j,i) = dWeight*drhoFR/dnF(j,i,1)
+      end do
+    end do
+
+! print*,dkF
+
+    deallocate (dnF)
+
+  end subroutine
+
 ! ***************************************************************************
   !<subroutine>
 

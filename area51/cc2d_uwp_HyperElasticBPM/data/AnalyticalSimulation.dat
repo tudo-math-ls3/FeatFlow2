@@ -70,7 +70,7 @@ iMass= 1
 iMassLumpType= 0 
 ielementType = 4
  NLMIN = 1
- NLMAX = 1
+ NLMAX = 2
  RE = 1E99
  mu = 1000
  lambda = 1000
@@ -106,12 +106,12 @@ nsmoothingSteps    = 4
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 0                     # ISTAT
+itimedependence = 1                     # ISTAT
 dtimeInit = 0.0 #/***/ required for restart
 dtimeMax  = 100.0
 dtimeStep = 1.0E-1
 dtimeStepTheta = 1
-dminTimeDerivative = 1.0E-14
+dminTimeDerivative = 1.0E-10
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
