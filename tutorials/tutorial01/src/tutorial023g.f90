@@ -111,7 +111,7 @@ contains
     ! have to be searched for!
     do iel = 1,nelements
       call fevl_evaluate (DER_FUNC, p_Dfunc2(:,iel), &
-          p_rx%RvectorBlock(1), p_Dpoints(:,:,p_Ielements(iel)))      
+          p_rx%RvectorBlock(1), p_Dpoints(:,:,iel))
     end do
 
     ! Loop over the elements in the current set.
