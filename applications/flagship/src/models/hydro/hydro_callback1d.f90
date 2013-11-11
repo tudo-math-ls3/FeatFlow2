@@ -5195,7 +5195,7 @@ contains
             
             ! Compute free stream values from function parser given in
             ! term of the primitive variables [rho,v1,p]
-            do iexpr = 1, 3
+            do iexpr = 1, NVAR1D
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
@@ -5334,7 +5334,7 @@ contains
 
             ! Compute boundary values from function parser given in
             ! term of the primitive variables [rho,v,p]
-            do iexpr = 1, 3
+            do iexpr = 1, NVAR1D
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
@@ -5415,7 +5415,7 @@ contains
 
             ! Compute boundary values from function parser given in
             ! terms of the density and pressure
-            do iexpr = 1, 2
+            do iexpr = 1, NVAR1D-1
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
@@ -5636,7 +5636,7 @@ contains
             
             ! Compute free stream values from function parser given in
             ! term of the primitive variables [rho,v1,p]
-            do iexpr = 1, 3
+            do iexpr = 1, NVAR1D
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
@@ -5775,7 +5775,7 @@ contains
 
             ! Compute boundary values from function parser given in
             ! term of the primitive variables [rho,v,p]
-            do iexpr = 1, 3
+            do iexpr = 1, NVAR1D
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
@@ -5856,7 +5856,7 @@ contains
 
             ! Compute boundary values from function parser given in
             ! terms of the density and pressure
-            do iexpr = 1, 2
+            do iexpr = 1, NVAR1D-1
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do

@@ -3624,7 +3624,7 @@ contains
 
   end subroutine hydro_calcMatScDissMatD2d_sim
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -6112,7 +6112,7 @@ contains
     
   end subroutine hydro_calcDivMatRusDissMatD2d_cuda
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -8855,6 +8855,14 @@ contains
 !<description>
     ! This subroutine computes the linear form arising from the weak
     ! imposition of boundary conditions in 2D.
+    !
+    ! Riemann invariants and corresponding wave speeds used in this
+    ! subroutine are as follows:
+    !
+    ! w1 = v_n-2c/(gamma-1)   v_n-c
+    ! w2 = p/rho^gamma        v_n
+    ! w3 = v_t                v_n
+    ! w4 = v_n+2c/(gamma-1)   v_n+c
 !</description>
 
 !<input>
@@ -9394,7 +9402,7 @@ contains
           
           ! Compute free stream values from function parser given in
           ! term of the primitive variables [rho,v1,v2,p]
-          do iexpr = 1, 4
+          do iexpr = 1, NVAR2D
             call fparser_evalFunction(p_rfparser,&
                 nmaxExpr*(isegment-1)+iexpr,&
                 Dvalue, IDX3(DstateM,iexpr,ipoint,iel,_,_,_))
@@ -9436,7 +9444,7 @@ contains
           end if
           
           if (dvnI .lt. DCONST(0.0)) then
-            w2 = pM/(rM**(HYDRO_GAMMA))
+            w2 = pM/POW(rM,HYDRO_GAMMA)
             w3 = dvtM
           else
             w2 = pI/DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)**(HYDRO_GAMMA)
@@ -9519,7 +9527,7 @@ contains
           
           ! Compute boundary values from function parser given in
           ! term of the primitive variables [rho,v1,v2,p]
-          do iexpr = 1, 4
+          do iexpr = 1, NVAR2D
             call fparser_evalFunction(p_rfparser,&
                 nmaxExpr*(isegment-1)+iexpr,&
                 Dvalue, IDX3(DstateM,iexpr,ipoint,iel,_,_,_))
@@ -9628,7 +9636,7 @@ contains
           
           ! Compute boundary values from function parser given in
           ! terms of the density, pressure and tangential velocity
-          do iexpr = 1, 3
+          do iexpr = 1, NVAR2D-1
             call fparser_evalFunction(p_rfparser,&
                 nmaxExpr*(isegment-1)+iexpr,&
                 Dvalue, IDX3(DstateM,iexpr,ipoint,iel,_,_,_))
@@ -9721,7 +9729,7 @@ contains
           ! Compute first Riemann invariant based on fourth Riemann invariant,
           ! the computed density and pressure and the prescribed exit pressure
           w1 = w4-DCONST(4.0)/((HYDRO_GAMMA)-DCONST(1.0))*sqrt((HYDRO_GAMMA)*pM/&
-               DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*(pI/pM)**(DCONST(1.0)/(HYDRO_GAMMA)))
+               DENSITY3_2D(DstateI,IDX3,ipoint,iel,_,_,_)*POW((pI/pM),(DCONST(1.0)/(HYDRO_GAMMA))))
           
           ! Convert Riemann invariants into conservative state variables
           cM = DCONST(0.25)*((HYDRO_GAMMA)-DCONST(1.0))*(w4-w1)
