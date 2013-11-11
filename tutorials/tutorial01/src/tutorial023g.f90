@@ -219,7 +219,7 @@ contains
     Cderiv = (/DER_DERIV2D_X,DER_DERIV2D_Y/)
     do iel = 1,nelements
       call fevl_evaluate (Cderiv, p_Dderiv2(:,:,iel), &
-          p_rx%RvectorBlock(1), p_Dpoints(:,:,p_Ielements(iel)))      
+          p_rx%RvectorBlock(1), p_Dpoints(:,:,iel))
     end do
 
     ! Loop over the elements in the current set.
