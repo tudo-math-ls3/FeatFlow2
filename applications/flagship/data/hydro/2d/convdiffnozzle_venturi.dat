@@ -147,10 +147,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = %{sgriddirectory}/2d/convdiff_nozzle_venturi.prm
+prmfile = %{sgriddirectory}/2d/convdiff_nozzle_venturi1.prm
 
 # file which contains the triangulation
-trifile = %{sgriddirectory}/2d/convdiff_nozzle_venturi.tri
+trifile = %{sgriddirectory}/2d/convdiff_nozzle_venturi1.tri
 
 # type of finite element space(s)
 #
@@ -273,10 +273,10 @@ nrefineucd = 0
 dstepUCD = 0.1
 
 # file for UCD output of solution
-sucdsolution = out/localdir/convdiff_nozzle_venturi_xy_lev6
+sucdsolution = out/localdir/convdiff_nozzle_venturi1_xy_lev6
 
 # file for UCD output of error
-sucderror = out/localdir/convdiff_nozzle_venturi_xy_lev6_error
+sucderror = out/localdir/convdiff_nozzle_venturi1_xy_lev6_error
 
 # variables for ucd output
 sucdvariable(5) =

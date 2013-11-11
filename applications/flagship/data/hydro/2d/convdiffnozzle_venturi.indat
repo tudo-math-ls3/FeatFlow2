@@ -42,10 +42,10 @@ NCOMP
 8
 PARAMETERS
 3.0 T  'FREESLIP_WEAK'
-4.0 F  'OPEN_WEAK'
+4.0 F  'SUBINLET_WEAK'  '_rho_inf' '_p_inf' '_v_inf'
 7.0 T  'FREESLIP_WEAK'
 8.0 F  'SUBOUTLET_WEAK' '_p_out'
 11.0 T  'FREESLIP_WEAK'
-12.0 F  'OPEN_WEAK'
+12.0 F  'SUBINLET_WEAK'  '_rho_inf' '_p_inf' '_v_inf'
 15.0 T  'FREESLIP_WEAK'
 16.0 F  'SUBINLET_WEAK'  '_rho_inf' '_p_inf' '_v_inf'
