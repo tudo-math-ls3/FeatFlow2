@@ -1423,8 +1423,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = rnonlinearCCMatrix%dstokes
           end if
 
           ! Weight of the operator
@@ -2293,8 +2293,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dstokes
-            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dstokes
+            rstreamlineDiffusion2%dbetaT = rnonlinearCCMatrix%dstokes
           end if
 
           if ((rnonlinearCCMatrix%dnewton .eq. 0.0_DP) .and. &
