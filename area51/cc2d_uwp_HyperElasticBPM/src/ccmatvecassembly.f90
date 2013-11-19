@@ -1382,10 +1382,10 @@ contains
           call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(1,3),&
               1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
 ! M24
-          if (.not. bshared) then
+!           if (.not. bshared) then
             call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(2,4),&
               1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
-          end if
+!           end if
 ! ///////////////////////////////////////////////////////////////////////////////////
 ! M15
         call lsyssc_matrixLinearComb (&

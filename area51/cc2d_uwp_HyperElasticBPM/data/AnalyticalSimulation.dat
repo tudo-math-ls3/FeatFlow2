@@ -60,7 +60,7 @@ simportdatafiles(8) =
 ###############
 [GENERALOUTPUT]
 ###############
-smsgLog = '%{slogdirectory}/rect_unst_level_6_time_2000.log'
+smsgLog = '%{slogdirectory}/uwpt.log'
 #####################
  [CC-DISCRETISATION]
 #####################
@@ -68,9 +68,9 @@ iequation    = 1  # 1: convectionless   0: convective term is included
 IncShear = 1
 iMass= 1
 iMassLumpType= 0 
-ielementType = 4
+ielementType =4
  NLMIN = 1
- NLMAX = 2
+ NLMAX = 1
  RE = 1E99
  mu = 1000
  lambda = 1000
@@ -82,12 +82,18 @@ ielementType = 4
 kFo = 0.0625
 b=10.0
 ctypeInitialSolution = 0
+
+cwriteFinalSolution = 0
+iwriteSolutionLevel = 0
+swriteSolutionFilename = 'u'
+sinitialSolutionFilename = 'u'
+iinitialSolutionlevel = 1
 #################
 [CC-LINEARSOLVER]
 #################
 isolverType = 0  # 0: Gauss elimination, 1: multigrid
 ismootherType = 1
-icoarseGridSolverType = 0
+icoarseGridSolverType = 4
 ####################
 [CC-MULTIGRIDSOLVER]
 ####################
@@ -97,7 +103,7 @@ depsRel            = 1E-5 # reduction of the residual by 2 digits.
 depsAbs            = 1E-5  # Residual  must be < 1E-3 when stopping.
 istoppingCriterion = 0 # 0: Stop if both, depsAbs and depsRel are fulfilled,
 #                        1: Stop if one of them is fulfilled. 
-ioutputLevel       = 2
+ioutputLevel       = -1
 #############
 [CC-SMOOTHER]
 #############
@@ -106,25 +112,25 @@ nsmoothingSteps    = 4
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 1                     # ISTAT
+itimedependence = 0                     # ISTAT
 dtimeInit = 0.0 #/***/ required for restart
-dtimeMax  = 100.0
-dtimeStep = 1.0E-1
+dtimeStep = 1
+dtimeMax  = 1
 dtimeStepTheta = 1
-dminTimeDerivative = 1.0E-10
+dminTimeDerivative = 1.0E-14
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 30
+nmaxIterations     = 150
 depsD_u     = 1.0E-5
 depsD_vS    = 1.0E-5
-depsD_vF    = 1.0E-5
+depsD_vF    = 1.0E-11
 depsDiv     = 1.0E-5
-depsUR      = 1.0E-9
-depsVSR     = 1.0E-9
-depsVFR     = 1.0E-11
-depsPR      = 1.0E-9
+depsUR      = 1.0E-5
+depsVSR     = 1.0E-5
+depsVFR     = 1.0E-5
+depsPR      = 1.0E-5
 ###################
 [CC-POSTPROCESSING]
 ###################
@@ -140,5 +146,8 @@ sMesh = '%{spredirectory}/QUAD.tri'
 [BDCONDITIONS]
 ##############
 ineumannBoundary = -1  # for fluid only
-bdComponent1(1)=
+bdComponent1(4)=
+   1.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   2.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   3.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
    4.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'

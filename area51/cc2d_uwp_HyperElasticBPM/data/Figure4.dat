@@ -78,7 +78,7 @@ iMass= 1
 iMassLumpType= 0 
 ielementType = 4
  NLMIN = 1
- NLMAX = 4
+ NLMAX = 2
  RE = 1E99
  mu = 5.583E6
  lambda = 8.375E6
@@ -123,7 +123,7 @@ nsmoothingSteps    = 4
 [TIME-DISCRETISATION]
 #####################
 
-itimedependence = 1                     # ISTAT
+itimedependence = 0                     # ISTAT
 
 dtimeInit = 0.0 
 dtimeStep = 2.5E-3
@@ -136,10 +136,10 @@ ipressureFullyImplicit = 1
 [CC2D-NONLINEAR]
 ################
 
-nmaxIterations     = 1
+nmaxIterations     = 15
 depsD_u    = 1.0E-5
 depsD_vS   = 1.0E-5
-depsD_vF   = 1.0E-5
+depsD_vF   = 1.0E-13
 depsDiv    = 1.0E-5
 depsUR     = 1.0E-5
 depsVSR    = 1.0E-5
@@ -152,44 +152,8 @@ depsPR     = 1.0E-5
 
 ioutputUCD = 0
 ierrorAnalysisL2 = 0
-ierrorAnalysisH1 = 0
-cevaluatePointValues(36) =
-   1.0  9.500000  7  0
-   1.0  9.600000  7  0
-   1.0  9.700000  7  0
-   1.0  9.800000  7  0
-   1.0  9.806250  7  0
-   1.0  9.812500  7  0
-   1.0  9.818750  7  0
-   1.0  9.825000  7  0
-   1.0  9.831250  7  0
-   1.0  9.837500  7  0
-   1.0  9.843750  7  0
-   1.0  9.850000  7  0
-   1.0  9.856250  7  0
-   1.0  9.862500  7  0
-   1.0  9.868750  7  0
-   1.0  9.875000  7  0
-   1.0  9.881250  7  0
-   1.0  9.887500  7  0
-   1.0  9.893750  7  0
-   1.0  9.900000  7  0
-   1.0  9.906250  7  0
-   1.0  9.912500  7  0
-   1.0  9.918750  7  0
-   1.0  9.925000  7  0
-   1.0  9.931250  7  0
-   1.0  9.937500  7  0
-   1.0  9.943750  7  0
-   1.0  9.950000  7  0
-   1.0  9.956250  7  0
-   1.0  9.962500  7  0
-   1.0  9.968750  7  0
-   1.0  9.975000  7  0
-   1.0  9.981250  7  0
-   1.0  9.987500  7  0
-   1.0  9.993750  7  0
-   1.0 10.000000  7  0
+
+ 
 
 sfilenamePointValues = '%{ssolutiondirectory}/p_level4_dt2500' /***/ required for the restart
 iwritePointValues = 1

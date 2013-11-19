@@ -1853,9 +1853,9 @@ contains
 ! ! ################## added by obaid #########################
 !     ! variable for selecting a specifig boundary region
 !     type(t_boundaryRegion) :: rboundaryRegion
-!     call boundary_createRegion(rproblem%rboundary, 1, 5, rboundaryRegion)
+!     call boundary_createRegion(rproblem%rboundary, 1, 4, rboundaryRegion)
 ! ! 1: boundary componet (for holed cylinder, we have 2 components: the outer circle and the inner circle (hole)
-! ! 5: boundary segment
+! ! 4: boundary segment
 ! 
 ! ! ###########################################################
 
@@ -2092,9 +2092,9 @@ contains
                 rproblem%rcollection)
 
 ! ! #####################   added by Obaid   ##############################
-!       rboundaryRegion%dminParam = 4.0_DP
-!       rboundaryRegion%dmaxParam = 5.0_DP
-!       iblock = 1
+!       rboundaryRegion%dminParam = 3.0_DP
+!       rboundaryRegion%dmaxParam = 4.0_DP
+!       iblock = 5
 !       call linf_buildVectorScalarBdr2d(rlinform, CUB_G2_1D, .false., &
 !           rrhs%RvectorBlock(iblock), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
 ! ! you may need also to specify the magnification factors to scal the deformation
@@ -2301,6 +2301,7 @@ contains
     case (0)
       ! Init with zero
       call lsysbl_clearVector (rvector)
+!         call lsysbl_clearVector(rvector, 0.0000001_DP)
       
     case (1,2) !/***/ in our case we do not consider this case
       ! We have to read a file -- formatted or unformatted.
