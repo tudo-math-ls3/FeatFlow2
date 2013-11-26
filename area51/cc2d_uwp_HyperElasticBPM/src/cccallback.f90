@@ -812,11 +812,15 @@ contains
     real(DP), dimension(:,:,:), allocatable :: div_vS
     real(DP), dimension(:,:,:), allocatable :: vS1_x
     real(DP), dimension(:,:,:), allocatable :: vS2_y
-    integer :: i, j
+    integer :: i, j, isNonlinear
 
 
-    dWeight  = rcollection%DquickAccess(1)
-    drhoFR   = rcollection%DquickAccess(2)
+  isNonlinear  = rcollection%IquickAccess(1)
+
+  dWeight  = rcollection%DquickAccess(1)
+  drhoFR   = rcollection%DquickAccess(2)
+
+  if (isNonlinear.eq.1) then
 
     p_rvector => rcollection%p_RvectorQuickAccess1
 
@@ -850,6 +854,10 @@ contains
     end do
 
     deallocate (div_vS)
+
+  else
+    Dcoefficients(:,:,:) = 0.0_DP
+  end if
 
   end subroutine
 
@@ -941,7 +949,7 @@ contains
     real(DP) :: dnF0
     real(DP) :: dnS0
 
-    integer :: i, j
+    integer :: i, j, isNonlinear
 
     real(DP), dimension(:,:,:), allocatable :: uS1_x
     real(DP), dimension(:,:,:), allocatable :: uS1_y
@@ -952,88 +960,93 @@ contains
     real(DP), dimension(:,:,:), allocatable :: det_grad_uS
 
 
+    isNonlinear  = rcollection%IquickAccess(1)
+
     dWeight  = rcollection%DquickAccess(1)
     drhoFR   = rcollection%DquickAccess(2)
     drhoSR   = rcollection%DquickAccess(3)
     dnF0     = rcollection%DquickAccess(4)
 
+    if (isNonlinear.eq.1) then
+
+      dnS0     = 1.0_DP-dnF0
+
+      p_rvector => rcollection%p_RvectorQuickAccess1
+
+      allocate (uS1_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (uS1_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (uS2_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (uS2_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (div_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (dnF(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+      allocate (det_grad_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
+
+    ! uS1_x
+      call fevl_evaluate_sim (DER_DERIV_X, uS1_x(:,:,1), &
+          p_rvector%Rvectorblock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    ! uS1_y
+      call fevl_evaluate_sim (DER_DERIV_Y, uS1_y(:,:,1), &
+          p_rvector%Rvectorblock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    ! uS2_x
+      call fevl_evaluate_sim (DER_DERIV_X, uS2_x(:,:,1), &
+          p_rvector%Rvectorblock(2), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    ! uS2_y
+      call fevl_evaluate_sim (DER_DERIV_Y, uS2_y(:,:,1), &
+          p_rvector%Rvectorblock(2), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
 
-    dnS0     = 1.0_DP-dnF0
 
-    p_rvector => rcollection%p_RvectorQuickAccess1
-
-    allocate (uS1_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (uS1_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (uS2_x(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (uS2_y(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (div_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (dnF(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-    allocate (det_grad_uS(ubound(Dcoefficients,2),ubound(Dcoefficients,3),1))
-
-! uS1_x
-    call fevl_evaluate_sim (DER_DERIV_X, uS1_x(:,:,1), &
-        p_rvector%Rvectorblock(1), Dpoints, &
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-! uS1_y
-    call fevl_evaluate_sim (DER_DERIV_Y, uS1_y(:,:,1), &
-        p_rvector%Rvectorblock(1), Dpoints, &
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-! uS2_x
-    call fevl_evaluate_sim (DER_DERIV_X, uS2_x(:,:,1), &
-        p_rvector%Rvectorblock(2), Dpoints, &
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-! uS2_y
-    call fevl_evaluate_sim (DER_DERIV_Y, uS2_y(:,:,1), &
-        p_rvector%Rvectorblock(2), Dpoints, &
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-
-
-!  |grad uS | :  is the determinant value of grad uS
-    do i=1,ubound(Dcoefficients,3)
-      do j=1,ubound(Dcoefficients,2)
-        det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
+    !  |grad uS | :  is the determinant value of grad uS
+      do i=1,ubound(Dcoefficients,3)
+        do j=1,ubound(Dcoefficients,2)
+          det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
+        end do
       end do
-    end do
 
-    deallocate (uS1_y)
-    deallocate (uS2_x)
+      deallocate (uS1_y)
+      deallocate (uS2_x)
 
 !     div_uS = uS1_x + uS2_y
-    do i=1,ubound(Dcoefficients,3)
-      do j=1,ubound(Dcoefficients,2)
-        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+      do i=1,ubound(Dcoefficients,3)
+        do j=1,ubound(Dcoefficients,2)
+          div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+        end do
       end do
-    end do
 
-    deallocate (uS1_x)
-    deallocate (uS2_y)
+      deallocate (uS1_x)
+      deallocate (uS2_y)
 
 
-! nF = 1 - nS0 (1-div uS + |grad uS | )
-    do i=1,ubound(Dcoefficients,3)
-      do j=1,ubound(Dcoefficients,2)
-        dnF(j,i,1) = 1.0_DP - dnS0*(1.0_DP - div_uS(j,i,1) + det_grad_uS(j,i,1))
+    ! nF = 1 - nS0 (1-div uS + |grad uS | )
+      do i=1,ubound(Dcoefficients,3)
+        do j=1,ubound(Dcoefficients,2)
+          dnF(j,i,1) = 1.0_DP - dnS0*(1.0_DP - div_uS(j,i,1) + det_grad_uS(j,i,1))
+        end do
       end do
-    end do
 
-    deallocate (det_grad_uS)
-    deallocate (div_uS)
-
+      deallocate (det_grad_uS)
+      deallocate (div_uS)
 
 
 
-    do i=1,ubound(Dcoefficients,3)
-      do j=1,ubound(Dcoefficients,2)
-        Dcoefficients(1,j,i) = dWeight*(dnF(j,i,1)*drhoFR + (1.0_DP-dnF(j,i,1))*drhoSR)
+
+      do i=1,ubound(Dcoefficients,3)
+        do j=1,ubound(Dcoefficients,2)
+          Dcoefficients(1,j,i) = dWeight*(dnF(j,i,1)*drhoFR + (1.0_DP-dnF(j,i,1))*drhoSR)
+        end do
       end do
-    end do
 
-! print*,dkF
+      deallocate (dnF)
 
-    deallocate (dnF)
+    else 
+     Dcoefficients(:,:,:) = dWeight*(dnF0*drhoFR + (1.0_DP-dnF0)*drhoSR)
+    end if
+
 
   end subroutine
 
@@ -1124,7 +1137,7 @@ contains
     real(DP) :: dnF0
     real(DP) :: dnS0
 
-    integer :: i, j
+    integer :: i, j, isNonlinear
 
     real(DP), dimension(:,:,:), allocatable :: uS1_x
     real(DP), dimension(:,:,:), allocatable :: uS1_y
@@ -1135,11 +1148,13 @@ contains
     real(DP), dimension(:,:,:), allocatable :: det_grad_uS
 
 
-    dWeight  = rcollection%DquickAccess(1)
-    drhoFR   = rcollection%DquickAccess(2)
-    dnF0     = rcollection%DquickAccess(4)
+  isNonlinear  = rcollection%IquickAccess(1)
 
+  dWeight  = rcollection%DquickAccess(1)
+  drhoFR   = rcollection%DquickAccess(2)
+  dnF0     = rcollection%DquickAccess(3)
 
+  if (isNonlinear.eq.1) then
 
     dnS0     = 1.0_DP-dnF0
 
@@ -1213,9 +1228,11 @@ contains
       end do
     end do
 
-! print*,dkF
-
     deallocate (dnF)
+
+  else
+    Dcoefficients(:,:,:) = dWeight*drhoFR/dnF0
+  end if
 
   end subroutine
 
@@ -1308,7 +1325,7 @@ contains
     real(DP) :: dkF0
     real(DP) :: dgammaFR
 
-    integer :: i, j, kappa
+    integer :: i, j, kappa, isNonlinear
 
     real(DP), dimension(:,:,:), allocatable :: div_vS
     real(DP), dimension(:,:,:), allocatable :: uS1_x
@@ -1323,14 +1340,19 @@ contains
     real(DP), dimension(:,:,:), allocatable :: det_grad_uS
 
 
-    kappa    = rcollection%IquickAccess(1)
+  isNonlinear    = rcollection%IquickAccess(1)
 
-    dWeight  = rcollection%DquickAccess(1)
-    drhoFR   = rcollection%DquickAccess(2)
-    dnF0     = rcollection%DquickAccess(3)
-    dkF0     = rcollection%DquickAccess(4)
+  dWeight  = rcollection%DquickAccess(1)
+  drhoFR   = rcollection%DquickAccess(2)
+  dnF0     = rcollection%DquickAccess(3)
+  dkF0     = rcollection%DquickAccess(4)
 
-    dgammaFR = 10.0_DP*drhoFR
+
+  dgammaFR = 10.0_DP*drhoFR
+
+  if (isNonlinear.eq.1) then
+
+    kappa    = rcollection%IquickAccess(2)
     dnS0     = 1.0_DP-dnF0
 
     p_rvector => rcollection%p_RvectorQuickAccess1
@@ -1383,12 +1405,6 @@ contains
     deallocate (vS1_x)
     deallocate (vS2_y)
 
-!     div_uS = uS1_x + uS2_y
-    do i=1,ubound(Dcoefficients,3)
-      do j=1,ubound(Dcoefficients,2)
-        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
-      end do
-    end do
 
 !  |grad uS | :  is the determinant value of grad uS
     do i=1,ubound(Dcoefficients,3)
@@ -1396,10 +1412,18 @@ contains
         det_grad_uS(j,i,1) = uS1_x(j,i,1)*uS2_y(j,i,1) - uS2_x(j,i,1)*uS1_y(j,i,1)
       end do
     end do
-! print*,det_grad_uS
-    deallocate (uS1_x)
+
     deallocate (uS1_y)
     deallocate (uS2_x)
+
+!     div_uS = uS1_x + uS2_y
+    do i=1,ubound(Dcoefficients,3)
+      do j=1,ubound(Dcoefficients,2)
+        div_uS(j,i,1) = uS1_x(j,i,1) + uS2_y(j,i,1)
+      end do
+    end do
+
+    deallocate (uS1_x)
     deallocate (uS2_y)
 
 
@@ -1420,8 +1444,7 @@ contains
         dkF(j,i,1) = dkF0*(dnF(j,i,1)/dnF0)**kappa
       end do
     end do
-!  print*,dkF0
-
+! the coefficient
     do i=1,ubound(Dcoefficients,3)
       do j=1,ubound(Dcoefficients,2)
         Dcoefficients(1,j,i) = dWeight*(dgammaFR/dkF(j,i,1) + drhoFR/dnF(j,i,1)*div_vS(j,i,1))
@@ -1429,10 +1452,14 @@ contains
     end do
 
 
-
     deallocate (dnF)
     deallocate (dkF)
     deallocate (div_vS)
+
+  else
+    Dcoefficients(:,:,:) = dWeight*dgammaFR/dkF0
+  end if
+
 
   end subroutine
 
@@ -1607,7 +1634,7 @@ contains
 !        Dcoefficients(:,:,:) = 0.0_DP
 
 ! For Analytical Non-stationay simulation, turn on this:
- Dcoefficients(1,:,:)= -1998.0_DP
+ Dcoefficients(1,:,:)= -301.0_DP
 
   end subroutine
 
@@ -1701,7 +1728,7 @@ contains
 !          Dcoefficients(1,:,:) = -300.0_DP
 
 !  For Analytical non-stationay simulation, turn on this:
-Dcoefficients(1,:,:)= 0.0_DP
+Dcoefficients(:,:,:)= -300.0_DP
 
   end subroutine
 
@@ -1970,11 +1997,15 @@ Dcoefficients(1,:,:)= 0.0_DP
 
 !    Dcoefficients(:,:,:) = 0.0_DP
 
-! ! For Analytical stationay simulation, turn on this:
-!      Dcoefficients(1,:,:) = 160.0_DP*Dpoints(1,:,:)-1.0_DP
 
-! For Analytical non-stationay simulation, turn on this:
-Dcoefficients(1,:,:)=2.0_DP-Dpoints(1,:,:)
+
+! ! For Analytical stationay simulation (nF=constant), turn on this:
+! Dcoefficients(1,:,:)=2.0_DP-Dpoints(1,:,:)
+
+! ! For Analytical stationay simulation (nF is not constant), turn on this:
+Dcoefficients(1,:,:)= (15967.0_DP*Dpoints(1,:,:) - 30.0_DP*Dpoints(2,:,:) +&
+3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:) - 70.0_DP)/(33.0_DP*Dpoints(1,:,:) + &
+30.0_DP*Dpoints(2,:,:) - 3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:) + 70.0_DP)
 
   end subroutine
 
@@ -2069,9 +2100,12 @@ Dcoefficients(1,:,:)=2.0_DP-Dpoints(1,:,:)
 !      Dcoefficients(1,:,:) = -160.0_DP*Dpoints(2,:,:)
 
 
-! For Analytical non-stationay simulation, turn on this:
-Dcoefficients(1,:,:) = Dpoints(2,:,:)
+! ! For Analytical stationay simulation (nF  constant), turn on this:
+! Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
+! For Analytical stationay simulation (nF not constant), turn on this:
+Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)-&
+30.0_DP*Dpoints(2,:,:)-33.0_DP*Dpoints(1,:,:)-70.0_DP)
 
   end subroutine
 
@@ -2276,7 +2310,7 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 ! Markert figure 3
 ! 6*y - (5*x)/4 + 5/8     6.0_DP*Dpoints(2,:,:)-5.0_DP*Dpoints(1,:,:)/4.0_DP+5.0_DP/8.0_DP
 ! x/4 - 9/8
-     Dcoefficients(1,:,:) = -1.0E3_DP*(1.0_DP-cos(20.0_DP*sys_pi*dtime))  ! Rectangle 2x10
+!      Dcoefficients(1,:,:) = -1.0E3_DP*(1.0_DP-cos(20.0_DP*sys_pi*dtime))  ! Rectangle 2x10
 
 !     if (dtime .ge. 0.0_DP .and. dtime .le. 0.04_DP) then                 ! Rectangle 21x10
 !       Dcoefficients(1,:,:) = -1.0E5_DP*sin(25.0_DP*sys_pi*dtime)
@@ -2285,7 +2319,7 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 !     end if
 
 
-!       Dcoefficients(:,:,:) = 0.5_DP
+      Dcoefficients(:,:,:) = 0.5_DP
   end subroutine RHS_2D_surf
 
 
@@ -3104,15 +3138,26 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 !      Dvalues(:,:) = 0.0_DP
 
 
+! 
+! ! stationary analytical simulation    
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2
+!       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)
+!       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP
+!       end select
 
-! Non-stationary analytical simulation    
+
+! stationary analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2
-      case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(1,:,:)**2
+      case (DER_DERIV_X);  Dvalues(:,:) =  0.1_DP*Dpoints(1,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.1_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
       end select
 
   end subroutine
@@ -3308,25 +3353,25 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
 !     Dvalues(:,:) = 0.0_DP
 
-! Stationary analytical simulation
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:)/160.0_DP
-      case (DER_DERIV_X);  Dvalues(:,:) =  -1.0_DP/160.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-! ! ! Non-stationary analytical simulation
+! ! Stationary analytical simulation
 !       select case (cderivative)
-!       case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:)
-!       case (DER_DERIV_X);  Dvalues(:,:) =  1.0_DP
+!       case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:)/160.0_DP
+!       case (DER_DERIV_X);  Dvalues(:,:) =  -1.0_DP/160.0_DP
 !       case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
 !       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
 !       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
 !       case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
 !       end select
+
+! ! stationary analytical simulation
+      select case (cderivative)
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  1.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      end select
     
   end subroutine
 
@@ -3420,15 +3465,15 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
       dtimeMax = 0.0_DP
     end if
 
-!      Dvalues(:,:) = 0.0_DP
+!       Dvalues(:,:) = 0.0_DP
     
 
 ! Non-stationary analytical simulation
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(2,:,:)**2-0.1*Dpoints(2,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.1_DP*Dpoints(2,:,:)-0.1_DP
       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.1_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
       end select
@@ -3624,17 +3669,25 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
     !Dvalues(:,:) = 0.0_DP
 
+! ! Stationary analytical simulation    
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)/160.0_DP
+!       case (DER_DERIV_Y);  Dvalues(:,:) =  1.0_DP/160.0_DP
+!       case (DER_DERIV_X);  Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
+!       end select
+
 ! nonStationary analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)/160.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  1.0_DP/160.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =   -Dpoints(2,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =   -1.0_DP
       case (DER_DERIV_X);  Dvalues(:,:) =   0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) =   0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) =   0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
       end select
-
-
 
   end subroutine
 
@@ -3734,8 +3787,8 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
 ! stationary Analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = 2.0_DP*Dpoints(1,:,:)-1.0_DP
-      case (DER_DERIV_X);  Dvalues(:,:) = 2.0_DP
+      case (DER_FUNC);     Dvalues(:,:) = 0.5-Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) = -1.0_DP
       case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
@@ -3823,17 +3876,17 @@ Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
 ! For Non-stationary simulation, use this:
      if (icomponent .EQ. 1) then
-       dvalue =  dy**2
+       dvalue =  0.05_DP*dx**2
      elseif (icomponent .EQ. 2) then
-       dvalue  =  0.0_DP
+       dvalue  =  0.05_DP*dy**2-0.1_DP*dy
      elseif (icomponent .EQ. 3) then
       dvalue = 0.0_DP
      elseif (icomponent .EQ. 4) then
        dvalue = 0.0_DP
      elseif (icomponent .EQ. 5) then
-       dvalue = -dx/160.0_DP
+       dvalue = dx
      elseif (icomponent .EQ. 6) then
-        dvalue = dy/160.0_DP
+        dvalue = -dy
      else
     end if
   end subroutine

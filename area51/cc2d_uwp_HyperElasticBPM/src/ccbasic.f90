@@ -361,6 +361,11 @@ module ccbasic
     ! body load
     real(DP) :: b
 
+    ! Teated as non-linear ?.
+    ! =0: NO   ---  fullly linear problem
+    ! =1: YES  ---  fully non-linear problem
+    integer :: isNonlinear
+
     ! Is the convective term to be included ?.
     ! =0: NO
     ! =1: YES

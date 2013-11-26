@@ -65,12 +65,14 @@ smsgLog = '%{slogdirectory}/uwpt.log'
  [CC-DISCRETISATION]
 #####################
 iequation    = 1  # 1: convectionless   0: convective term is included
+# treated as fully non-linear problem ? 1: yes, 0: No
+isNonlinear = 1
 IncShear = 1
 iMass= 1
 iMassLumpType= 0 
 ielementType =4
  NLMIN = 1
- NLMAX = 1
+ NLMAX =6
  RE = 1E99
  mu = 1000
  lambda = 1000
@@ -81,19 +83,19 @@ ielementType =4
  kappa = 1
 kFo = 0.0625
 b=10.0
-ctypeInitialSolution = 0
+ctypeInitialSolution = 3
 
 cwriteFinalSolution = 0
 iwriteSolutionLevel = 0
 swriteSolutionFilename = 'u'
 sinitialSolutionFilename = 'u'
-iinitialSolutionlevel = 1
+iinitialSolutionlevel = 5
 #################
 [CC-LINEARSOLVER]
 #################
 isolverType = 0  # 0: Gauss elimination, 1: multigrid
 ismootherType = 1
-icoarseGridSolverType = 4
+icoarseGridSolverType = 0
 ####################
 [CC-MULTIGRIDSOLVER]
 ####################
@@ -114,18 +116,18 @@ nsmoothingSteps    = 4
 #####################
 itimedependence = 0                     # ISTAT
 dtimeInit = 0.0 #/***/ required for restart
-dtimeStep = 1
-dtimeMax  = 1
-dtimeStepTheta = 1
+dtimeStep = 1.0E-2
+dtimeMax  = 1.0E-1
+dtimeStepTheta = 0.5
 dminTimeDerivative = 1.0E-14
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 150
+nmaxIterations     = 30
 depsD_u     = 1.0E-5
 depsD_vS    = 1.0E-5
-depsD_vF    = 1.0E-11
+depsD_vF    = 1.0E-13
 depsDiv     = 1.0E-5
 depsUR      = 1.0E-5
 depsVSR     = 1.0E-5
@@ -150,4 +152,4 @@ bdComponent1(4)=
    1.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
    2.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
    3.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
-   4.0  3  1 1 1 1 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   4.0  3  1 1 1 1 0 0  'A' 'A' 'A' 'A' 'A' 'A'

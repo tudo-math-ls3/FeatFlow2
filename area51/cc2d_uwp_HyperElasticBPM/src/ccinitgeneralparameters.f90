@@ -215,6 +215,10 @@ contains
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',rproblem%rphysics%iequation,0)
 
+    ! is the problem treaded as full non-linear problem ? 1: yes, 0: No
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isNonlinear',rproblem%rphysics%isNonlinear,0)
+
     ! Initial Solidity
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                               'nSo',rproblem%rphysics%dnSo,0.9_DP)

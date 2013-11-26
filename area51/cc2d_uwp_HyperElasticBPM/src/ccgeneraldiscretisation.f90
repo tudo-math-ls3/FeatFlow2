@@ -1850,14 +1850,14 @@ contains
     integer :: imovingFrame, iblock
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     type(t_collection) :: rlocalcoll
-! ! ################## added by obaid #########################
-!     ! variable for selecting a specifig boundary region
-!     type(t_boundaryRegion) :: rboundaryRegion
-!     call boundary_createRegion(rproblem%rboundary, 1, 4, rboundaryRegion)
-! ! 1: boundary componet (for holed cylinder, we have 2 components: the outer circle and the inner circle (hole)
-! ! 4: boundary segment
-! 
-! ! ###########################################################
+! ################## added by obaid #########################
+    ! variable for selecting a specifig boundary region
+    type(t_boundaryRegion) :: rboundaryRegion
+    call boundary_createRegion(rproblem%rboundary, 1, 4, rboundaryRegion)
+! 1: boundary componet (for holed cylinder, we have 2 components: the outer circle and the inner circle (hole)
+! 4: boundary segment
+
+! ###########################################################
 
     dnSrhoSR = rproblem%rphysics%dnSo*rproblem%rphysics%drhoSR
     dnFrhoFR = rproblem%rphysics%dnFo*rproblem%rphysics%drhoFR
@@ -2091,15 +2091,15 @@ contains
                 rrhs%RvectorBlock(7),coeff_RHS_p,&
                 rproblem%rcollection)
 
-! ! #####################   added by Obaid   ##############################
-!       rboundaryRegion%dminParam = 3.0_DP
-!       rboundaryRegion%dmaxParam = 4.0_DP
-!       iblock = 5
-!       call linf_buildVectorScalarBdr2d(rlinform, CUB_G2_1D, .false., &
-!           rrhs%RvectorBlock(iblock), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
-! ! you may need also to specify the magnification factors to scal the deformation
-! ! in line 1623 & 1624 in ccpostprocessing.f90
-! ! #######################################################################
+! #####################   added by Obaid   ##############################
+      rboundaryRegion%dminParam = 3.0_DP
+      rboundaryRegion%dmaxParam = 4.0_DP
+      iblock = 5
+      call linf_buildVectorScalarBdr2d(rlinform, CUB_G2_1D, .false., &
+          rrhs%RvectorBlock(iblock), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
+! you may need also to specify the magnification factors to scal the deformation
+! in line 1623 & 1624 in ccpostprocessing.f90
+! #######################################################################
                              
 !       ! Is the moving-frame formulatino active?
 !       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -2301,7 +2301,8 @@ contains
     case (0)
       ! Init with zero
       call lsysbl_clearVector (rvector)
-!         call lsysbl_clearVector(rvector, 0.0000001_DP)
+      ! Init with one
+!       call lsysbl_clearVector(rvector, 1.0_DP)
       
     case (1,2) !/***/ in our case we do not consider this case
       ! We have to read a file -- formatted or unformatted.

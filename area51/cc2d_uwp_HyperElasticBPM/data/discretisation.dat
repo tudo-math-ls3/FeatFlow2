@@ -146,7 +146,8 @@ IncShear = 1
 # Lame constants for solid skeleton
 lambda = 1
 mu = 1
-# ......................................................
+# treated as fully non-linear problem ? 1: yes, 0: No
+isNonlinear = 1
 # ......................................................
 # Is the convective term in fluid momentum balance to be ignored: 1:YES, 0:NO
 iequation    = 0
