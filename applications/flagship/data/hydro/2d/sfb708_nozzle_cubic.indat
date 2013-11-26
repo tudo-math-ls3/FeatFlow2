@@ -5,10 +5,6 @@
 #                                                                              #
 ################################################################################
 
-# reference constants
-#defconst: rho_ref = 4.874685276645642
-#defconst: vel_ref = 290.0137824311113
-
 # free stream constants
 defconst: rho_inf = 1.0
 defconst: u_inf   = 0.3
@@ -38,7 +34,7 @@ deffunc: @initsol_Etot  = _p_0/(_gamma-1.0)+_rho_0*(_u_0^2+_v_0^2)/2.0 ; x,y,t
 NBCT
 1
 NEXPR
-3
+4
 IBCT
 1
 NCOMP
