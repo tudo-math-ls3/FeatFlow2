@@ -8904,7 +8904,7 @@ contains
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx,p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic,p_IbdrCondPeriodic
-    integer :: ibct,isegment,idissipationtype
+    integer :: ibct,isegment,idissipationType,idissipationTypeBdr
     integer(I32) :: ccubTypeBdr
 
     ! Evaluate linear form for boundary integral and return if
@@ -8927,6 +8927,8 @@ contains
         'ccubTypeBdr', ccubTypeBdr)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'idissipationtype', idissipationtype)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'idissipationTypeBdr', idissipationTypeBdr, idissipationType)
 
     ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
@@ -8936,7 +8938,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(1) = idissipationtype
+    rcollectionTmp%IquickAccess(1) = idissipationTypeBdr
     rcollectionTmp%IquickAccess(2) = int(ccubTypeBdr)
 
     ! Attach user-defined collection structure to temporal collection
