@@ -358,8 +358,8 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
-    ! body load
-    real(DP) :: b
+    ! gravitational acceleration
+    real(DP) :: dg
 
     ! Teated as non-linear ?.
     ! =0: NO   ---  fullly linear problem

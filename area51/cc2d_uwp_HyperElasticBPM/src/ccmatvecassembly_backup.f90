@@ -1367,6 +1367,7 @@ contains
           rform%BconstantCoeff = .false.
           rform%Dcoefficients(1)  = 1.0
 
+          rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
 
           rcollection%DquickAccess(1) = rnonlinearCCMatrix%dalpha
           rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
@@ -1374,7 +1375,7 @@ contains
           rcollection%DquickAccess(4) = rnonlinearCCMatrix%p_rphysics%dnFo
           rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-          call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+          call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
               coeff_M13,rcollection)
 
 
@@ -1383,22 +1384,42 @@ contains
               1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
 ! M24
 !           if (.not. bshared) then
-            call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(2,4),&
-              1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
+          call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(2,4),&
+            1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
 !           end if
+
+          call lsyssc_clearMatrix (rmatrixMassTemp)
 ! ///////////////////////////////////////////////////////////////////////////////////
 ! M15
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,5),&
             rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)   
+
+! M26
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,6),&
+              rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+
 ! M31
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(3,1),&
             rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
+
+! M42
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
+              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
+
 ! M53
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,3),&
             rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+
+! M64
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,4),&
+              rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+
 ! /////////////////////////////////////////////////////////////////////////////////
 ! M55 and M66
 ! this duplication is not necessary
@@ -1416,40 +1437,28 @@ contains
           rform%BconstantCoeff = .false.
           rform%Dcoefficients(1)  = 1.0
 
+          rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
 
           rcollection%DquickAccess(1) = rnonlinearCCMatrix%dalpha
           rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
           rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnFo
           rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-          call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+          call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
               coeff_M55, rcollection)
 
 
 ! M55
           call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(5,5),&
-              1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
+              1.0_DP, 0.0_DP,.false.,.false.,.true.,.true.)
 ! M66
-          if (.not. bshared) then
+!           if (.not. bshared) then
             call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(6,6),&
-              1.0_DP,0.0_DP,.false.,.false.,.true.,.true.)
-          end if
+              1.0_DP, 0.0_DP,.false.,.false.,.true.,.true.)
+!           end if
 
-            
-
-
-! M26
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,6),&
-              rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)
-! M42
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
-              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
-! M64
-          call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,4),&
-              rnonlinearCCMatrix%dalpha*drhoFR,0.0_DP,.false.,.false.,.true.,.true.)
+          call lsyssc_clearMatrix (rmatrixMassTemp)  
+! ////////////////////////////////////////////////////////////////////////////////////////
         
       end if
       
@@ -1473,23 +1482,7 @@ contains
       ! Plug in the Stokes matrix ?
     ! ##########################################################################
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
-        ! Plug in the Stokes matrix in case of the gradient tensor.
-        ! In case of the deformation tensor or nonconstant viscosity,
-        ! that is done during the assembly of the nonlinearity.
-!         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
-!             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
-!     ! K_55^\tilde = L
-!           call lsyssc_matrixLinearComb (&
-!               rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(5,5),&
-!               rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-!               
-!           if (.not. bshared) then
-!     ! K_66^\tilde = l
-!             call lsyssc_matrixLinearComb (&
-!                 rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(6,6),&
-!                 rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
-!           end if
-!         end if
+
     ! ##########################################################################
     ! Plug in the linear elastic stiffneses: K11, K12, K21 & K22
     ! ##########################################################################
@@ -1529,22 +1522,26 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
+
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_K15, rcollection)
 
     ! K_15
         call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(1,5),&
             1.0_DP, 1.0_DP,.false.,.false.,.true.,.true.)
 
-        if (.not. bshared) then
+!         if (.not. bshared) then
      ! K_26
           call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(2,6),&
               1.0_DP, 1.0_DP,.false.,.false.,.true.,.true.)
-        end if
+!         end if
+
+       call lsyssc_clearMatrix (rmatrixMassTemp)
 ! ////////////////////////////////////////////////////////////////////////////////
     ! 		k_55 		and 		k_66
 ! ////////////////////////////////////////////////////////////////////////////////
@@ -1563,7 +1560,8 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
-        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%kappa
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
+        rcollection%IquickAccess(2) = rnonlinearCCMatrix%p_rphysics%kappa
 
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
@@ -1571,31 +1569,32 @@ contains
         rcollection%DquickAccess(4) = rnonlinearCCMatrix%p_rphysics%dkFo
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_K55, rcollection)
 
     ! K_55
         call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(5,5),&
             1.0_DP, 1.0_DP,.false.,.false.,.true.,.true.)
 
-        if (.not. bshared) then
+!         if (.not. bshared) then
      ! K_66
           call lsyssc_matrixLinearComb (rmatrixMassTemp,rmatrix%RmatrixBlock(6,6),&
               1.0_DP, 1.0_DP,.false.,.false.,.true.,.true.)
-        end if
+!         end if
+        call lsyssc_clearMatrix (rmatrixMassTemp)
 ! ///////////////////////////////////////////////////////////////////////////////
     ! K_33
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(3,3),&
             rnonlinearCCMatrix%dtheta*(-1.0_DP),1.0_DP,.false.,.false.,.true.,.true.)
+! ! !       .......................
+! 	if (.not. bshared) then
 ! !       .......................
-	if (.not. bshared) then
-!       .......................
     ! K_44
 	  call lsyssc_matrixLinearComb (&
 	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,4),&
 	      rnonlinearCCMatrix%dtheta*(-1.0_DP),1.0_DP,.false.,.false.,.true.,.true.)
-	end if
+! 	end if
 ! 00000000000000000000000000000000000000000000000000
         call lsyssc_releaseMatrix (rmatrixMassTemp)
 ! 00000000000000000000000000000000000000000000000000
@@ -2138,6 +2137,8 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
+
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dalpha
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%drhoSR
@@ -2198,12 +2199,14 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
+	rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
+
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dalpha
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnFo
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_M55, rcollection)
 
 
@@ -2215,33 +2218,15 @@ contains
         call lsyssc_scalarMatVec (rmatrixMassTemp, &
             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
             -1.0_DP, 1.0_DP)
+
+        call lsyssc_clearMatrix (rmatrixMassTemp)
 ! ///////////////////////////////////////////////////////////////////////
       end if
       
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
-      
-!         ! In case of the gradient tensor, we can directly substract
-!         ! the Stokes matrix.
-!         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
-!             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
-! ! - \theta * \tilde{K_{55}} * u5      
-!           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
-!               rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-!               -rnonlinearCCMatrix%dtheta, 1.0_DP)
-! ! - \theta * \tilde{K_{66}} * u_6 
-!           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
-!               rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-!               -rnonlinearCCMatrix%dtheta, 1.0_DP)
-!               
-!         end if
-        
-        ! Otherwise, the operator is substracted during the assembly branch
-        ! of the nonlinearity.
 
-	! Now we subtract the remaining stuffs
-! - \theta * K_11 * u1
 ! - \theta * K_11 * u1
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixK11, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
@@ -2266,14 +2251,7 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(4), rdefect%RvectorBlock(4), &
             -rnonlinearCCMatrix%dtheta*(-1.0_DP), 1.0_DP)
-! ! - \theta * K_55^hat * u5
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-!             -rnonlinearCCMatrix%dtheta*dgammaFR_kF, 1.0_DP)
-! ! - \theta * k_66^hat* u6
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-!             -rnonlinearCCMatrix%dtheta*dgammaFR_kF, 1.0_DP)
+
 ! //////////////////////////////////////////////////////////////////////
 !     - \theta * K_15 * u5      and    - \theta * K_26 * u6
 ! /////////////////////////////////////////////////////////////////////
@@ -2292,12 +2270,12 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
-
+	rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_K15, rcollection)
 
 ! - \theta * K_15 * u5
@@ -2327,8 +2305,8 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = 1.0
 
-
-        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%kappa
+        rcollection%IquickAccess(1) = rnonlinearCCMatrix%p_rphysics%isNonlinear
+        rcollection%IquickAccess(2) = rnonlinearCCMatrix%p_rphysics%kappa
 
         rcollection%DquickAccess(1) = rnonlinearCCMatrix%dtheta
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR

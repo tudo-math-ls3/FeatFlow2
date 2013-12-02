@@ -72,24 +72,24 @@ iMass= 1
 iMassLumpType= 0 
 ielementType =4
  NLMIN = 1
- NLMAX =6
+ NLMAX = 2
  RE = 1E99
- mu = 1000
- lambda = 1000
+ mu = 1
+ lambda = 1
  rhoSR = 2
  rhoFR = 1
  nSo = 0.75
  nFo = 0.25
- kappa = 1
+ kappa = 5
 kFo = 0.0625
-b=10.0
-ctypeInitialSolution = 3
+g=10
+ctypeInitialSolution = 0
 
 cwriteFinalSolution = 0
-iwriteSolutionLevel = 0
+iwriteSolutionLevel = 1
 swriteSolutionFilename = 'u'
 sinitialSolutionFilename = 'u'
-iinitialSolutionlevel = 5
+iinitialSolutionlevel = 1
 #################
 [CC-LINEARSOLVER]
 #################
@@ -101,8 +101,8 @@ icoarseGridSolverType = 0
 ####################
 nminIterations     = 1
 nmaxIterations     = 300
-depsRel            = 1E-5 # reduction of the residual by 2 digits. 
-depsAbs            = 1E-5  # Residual  must be < 1E-3 when stopping.
+depsRel            = 1E-8 # reduction of the residual by 2 digits. 
+depsAbs            = 1E-14  # Residual  must be < 1E-3 when stopping.
 istoppingCriterion = 0 # 0: Stop if both, depsAbs and depsRel are fulfilled,
 #                        1: Stop if one of them is fulfilled. 
 ioutputLevel       = -1
@@ -114,17 +114,17 @@ nsmoothingSteps    = 4
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 0                     # ISTAT
+itimedependence = 1                     # ISTAT
 dtimeInit = 0.0 #/***/ required for restart
-dtimeStep = 1.0E-2
-dtimeMax  = 1.0E-1
+dtimeStep = 0.001
+dtimeMax  = 1
 dtimeStepTheta = 0.5
 dminTimeDerivative = 1.0E-14
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 30
+nmaxIterations     = 60
 depsD_u     = 1.0E-5
 depsD_vS    = 1.0E-5
 depsD_vF    = 1.0E-13
@@ -132,7 +132,7 @@ depsDiv     = 1.0E-5
 depsUR      = 1.0E-5
 depsVSR     = 1.0E-5
 depsVFR     = 1.0E-5
-depsPR      = 1.0E-5
+depsPR      = 1.0E-13
 ###################
 [CC-POSTPROCESSING]
 ###################

@@ -352,6 +352,11 @@ iMassLumpType      = 0
 
 istrongDerivativeBmatrix = 0
 
+
+# please in the kernel: look for
+#  integer(I32) function cub_igetID(scubName, bcheck)
+# to know cubature formula
+
 # cubature formula for Mass matrix. 
 # ="": use default cubature formula.
 

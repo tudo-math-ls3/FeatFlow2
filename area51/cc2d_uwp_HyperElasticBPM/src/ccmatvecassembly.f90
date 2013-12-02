@@ -1116,9 +1116,9 @@ contains
     real(DP) :: drhoS
     real(DP) :: drhoF
     real(DP) :: drhoFR
-    real(DP) :: drho
-    real(DP) :: dgammaFR_kF
-    real(DP) :: drhoFR_nF
+!     real(DP) :: drho
+!     real(DP) :: dgammaFR_kF
+!     real(DP) :: drhoFR_nF
     
     ! local variables
     logical :: bshared
@@ -1149,9 +1149,9 @@ contains
     drhoS        = (rnonlinearCCMatrix%p_rphysics%dnSo)*(rnonlinearCCMatrix%p_rphysics%drhoSR)
     drhoF        = (rnonlinearCCMatrix%p_rphysics%dnFo)*(rnonlinearCCMatrix%p_rphysics%drhoFR)
     drhoFR       =  rnonlinearCCMatrix%p_rphysics%drhoFR
-    drho         =  drhoF+drhoS
-    dgammaFR_kF  = (drhoFR*10.0_DP)/(rnonlinearCCMatrix%p_rphysics%dkFo)
-    drhoFR_nF    =  drhoFR/(rnonlinearCCMatrix%p_rphysics%dnFo)
+!     drho         =  drhoF+drhoS
+!     dgammaFR_kF  = (drhoFR*10.0_DP)/(rnonlinearCCMatrix%p_rphysics%dkFo)
+!     drhoFR_nF    =  drhoFR/(rnonlinearCCMatrix%p_rphysics%dnFo)
 
 
       ! Standard value for dvectorWeight is = -1.
@@ -1163,10 +1163,10 @@ contains
       ! Is A55 = A66 physically?
 
 
-!******************************************************
-      bshared = (lsyssc_isMatrixContentShared(&
-                    rmatrix%RmatrixBlock(5,5),&
-                    rmatrix%RmatrixBlock(6,6)))
+!****************************************************** ! #
+!       bshared = (lsyssc_isMatrixContentShared(&
+!                     rmatrix%RmatrixBlock(5,5),&
+!                     rmatrix%RmatrixBlock(6,6)))
 ! print*, bshared
 ! *****************************************************           
       ! Allocate memory if necessary. Normally this should not be necessary...
@@ -1213,7 +1213,7 @@ contains
       end if
 !
 
-      if (.not. bshared) then
+!       if (.not. bshared) then ! #
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
         end if
@@ -1238,7 +1238,7 @@ contains
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
         end if
 !
-      end if
+!       end if
 
 ! !       ! A56/ A65:
 !       if (lsysbl_isSubmatrixPresent (rmatrix,5,6)) then
@@ -1479,13 +1479,10 @@ contains
 !       end if
 
     ! ##########################################################################
-      ! Plug in the Stokes matrix ?
+    ! Plug in the linear elastic stiffneses: K11, K12, K21 & K22
     ! ##########################################################################
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
 
-    ! ##########################################################################
-    ! Plug in the linear elastic stiffneses: K11, K12, K21 & K22
-    ! ##########################################################################
     ! K_11
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixK11,rmatrix%RmatrixBlock(1,1),&
@@ -1546,10 +1543,10 @@ contains
     ! 		k_55 		and 		k_66
 ! ////////////////////////////////////////////////////////////////////////////////
 
-        call lsyssc_clearMatrix (rmatrixMassTemp)
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
            rmatrixMassTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY) 
 
+        call lsyssc_clearMatrix (rmatrixMassTemp) ! #
 
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
@@ -1567,6 +1564,7 @@ contains
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnFo
         rcollection%DquickAccess(4) = rnonlinearCCMatrix%p_rphysics%dkFo
+        rcollection%DquickAccess(5) = rnonlinearCCMatrix%p_rphysics%dg
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
         call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
@@ -2096,26 +2094,26 @@ contains
     real(DP) :: drhoF
     real(DP) :: drhoFR
     real(DP) :: drho
-    real(DP) :: dgammaFR_kF
-    real(DP) :: drhoFR_nF 
+!     real(DP) :: dgammaFR_kF
+!     real(DP) :: drhoFR_nF 
 
 ! ............................................................................................
     drhoS        = (rnonlinearCCMatrix%p_rphysics%dnSo)*(rnonlinearCCMatrix%p_rphysics%drhoSR)
     drhoF        = (rnonlinearCCMatrix%p_rphysics%dnFo)*(rnonlinearCCMatrix%p_rphysics%drhoFR)
     drhoFR       =  rnonlinearCCMatrix%p_rphysics%drhoFR
-    drho         =  drhoF+drhoS
-    dgammaFR_kF  = (drhoFR*10.0_DP)/(rnonlinearCCMatrix%p_rphysics%dkFo)
-    drhoFR_nF    =  drhoFR/(rnonlinearCCMatrix%p_rphysics%dnFo)
+!     drho         =  drhoF+drhoS
+!     dgammaFR_kF  = (drhoFR*10.0_DP)/(rnonlinearCCMatrix%p_rphysics%dkFo)
+!     drhoFR_nF    =  drhoFR/(rnonlinearCCMatrix%p_rphysics%dnFo)
 
     call lsysbl_getbase_double (rvector,p_DdataX)
     call lsysbl_getbase_double (rdefect,p_DdataD)
 
-      ! Is A55=A66 physically?
-      bshared = lsyssc_isMatrixContentShared(&
-                    rmatrix%RmatrixBlock(5,5),&
-                    rmatrix%RmatrixBlock(6,6)) .or.&
-                (.not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(5,5)) .and.&
-                 .not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(6,6)))
+!       ! Is A55=A66 physically? ! #
+!       bshared = lsyssc_isMatrixContentShared(&
+!                     rmatrix%RmatrixBlock(5,5),&
+!                     rmatrix%RmatrixBlock(6,6)) .or.&
+!                 (.not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(5,5)) .and.&
+!                  .not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(6,6)))
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff? -
@@ -2145,7 +2143,7 @@ contains
         rcollection%DquickAccess(4) = rnonlinearCCMatrix%p_rphysics%dnFo
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_M13, rcollection)
 
 
@@ -2157,6 +2155,8 @@ contains
         call lsyssc_scalarMatVec (rmatrixMassTemp, &
             rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
             -1.0_DP, 1.0_DP)
+
+        call lsyssc_clearMatrix (rmatrixMassTemp)
 ! ///////////////////////////////////////////////////////////////////////
 ! M15
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
@@ -2295,6 +2295,8 @@ contains
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
            rmatrixMassTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY) 
 
+        call lsyssc_clearMatrix (rmatrixMassTemp)
+
 
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
@@ -2312,9 +2314,10 @@ contains
         rcollection%DquickAccess(2) = rnonlinearCCMatrix%p_rphysics%drhoFR
         rcollection%DquickAccess(3) = rnonlinearCCMatrix%p_rphysics%dnFo
         rcollection%DquickAccess(4) = rnonlinearCCMatrix%p_rphysics%dkFo
+        rcollection%DquickAccess(5) = rnonlinearCCMatrix%p_rphysics%dg
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
-        call bilf_buildmatrixscalar (rform, .false., rmatrixMassTemp,&
+        call bilf_buildmatrixscalar (rform, .true., rmatrixMassTemp,&
             coeff_K55, rcollection)
 
 ! - \theta * K_55 * u5

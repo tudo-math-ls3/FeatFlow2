@@ -1044,7 +1044,7 @@ contains
       deallocate (dnF)
 
     else 
-     Dcoefficients(:,:,:) = dWeight*(dnF0*drhoFR + (1.0_DP-dnF0)*drhoSR)
+     Dcoefficients(1,:,:) = dWeight*(dnF0*drhoFR + (1.0_DP-dnF0)*drhoSR)
     end if
 
 
@@ -1341,6 +1341,7 @@ contains
 
 
   isNonlinear    = rcollection%IquickAccess(1)
+  kappa          = rcollection%IquickAccess(2)
 
   dWeight  = rcollection%DquickAccess(1)
   drhoFR   = rcollection%DquickAccess(2)
@@ -1352,7 +1353,7 @@ contains
 
   if (isNonlinear.eq.1) then
 
-    kappa    = rcollection%IquickAccess(2)
+!     kappa    = rcollection%IquickAccess(2)
     dnS0     = 1.0_DP-dnF0
 
     p_rvector => rcollection%p_RvectorQuickAccess1
@@ -1633,8 +1634,11 @@ contains
     end if
 !        Dcoefficients(:,:,:) = 0.0_DP
 
-! For Analytical Non-stationay simulation, turn on this:
- Dcoefficients(1,:,:)= -301.0_DP
+! ! For Analytical stationay simulation, turn on this:
+!  Dcoefficients(1,:,:)= -301.0_DP
+
+! For Analytical non-stationay simulation, turn on this:
+ Dcoefficients(1,:,:) = -2.0_DP*dt**2+(9.0_DP*Dpoints(2,:,:)**2)/2.0_DP-1.0_DP
 
   end subroutine
 
@@ -1728,7 +1732,7 @@ contains
 !          Dcoefficients(1,:,:) = -300.0_DP
 
 !  For Analytical non-stationay simulation, turn on this:
-Dcoefficients(:,:,:)= -300.0_DP
+Dcoefficients(:,:,:)= 0.0_DP
 
   end subroutine
 
@@ -2002,10 +2006,8 @@ Dcoefficients(:,:,:)= -300.0_DP
 ! ! For Analytical stationay simulation (nF=constant), turn on this:
 ! Dcoefficients(1,:,:)=2.0_DP-Dpoints(1,:,:)
 
-! ! For Analytical stationay simulation (nF is not constant), turn on this:
-Dcoefficients(1,:,:)= (15967.0_DP*Dpoints(1,:,:) - 30.0_DP*Dpoints(2,:,:) +&
-3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:) - 70.0_DP)/(33.0_DP*Dpoints(1,:,:) + &
-30.0_DP*Dpoints(2,:,:) - 3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:) + 70.0_DP)
+! ! For Analytical non-stationay simulation (nF is not constant), turn on this:
+Dcoefficients(1,:,:)=160.0_DP*dt*Dpoints(2,:,:)**2+6.0_DP*Dpoints(2,:,:)**2-1.0_DP
 
   end subroutine
 
@@ -2103,9 +2105,8 @@ Dcoefficients(1,:,:)= (15967.0_DP*Dpoints(1,:,:) - 30.0_DP*Dpoints(2,:,:) +&
 ! ! For Analytical stationay simulation (nF  constant), turn on this:
 ! Dcoefficients(1,:,:) = Dpoints(2,:,:)
 
-! For Analytical stationay simulation (nF not constant), turn on this:
-Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(2,:,:)-&
-30.0_DP*Dpoints(2,:,:)-33.0_DP*Dpoints(1,:,:)-70.0_DP)
+! For Analytical nonstationay simulation (nF not constant), turn on this:
+Dcoefficients(:,:,:) = 0.0_DP
 
   end subroutine
 
@@ -2194,7 +2195,7 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
     end if
     
 
-    Dcoefficients(:,:,:)= 0.0_DP
+Dcoefficients(:,:,:)= 0.0_DP
 
   end subroutine
 
@@ -3120,45 +3121,37 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
+    real(DP) :: dt,dtimeMax
     integer :: itimedependence
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
+      dt = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dt = 0.0_DP
       dtimeMax = 0.0_DP
     end if
 
 !      Dvalues(:,:) = 0.0_DP
 
 
-! 
-! ! stationary analytical simulation    
-!       select case (cderivative)
-!       case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2
-!       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-!       case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)
-!       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-!       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-!       case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP
-!       end select
 
-
-! stationary analytical simulation    
+! nonstationary analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(1,:,:)**2
-      case (DER_DERIV_X);  Dvalues(:,:) =  0.1_DP*Dpoints(1,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.1_DP
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2*dt*dt
+      case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)*dt*dt
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP*dt*dt
       end select
+
+
+
 
   end subroutine
 
@@ -3236,26 +3229,34 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
+    real(DP) :: dt,dtimeMax
     integer :: itimedependence
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
+      dt = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dt = 0.0_DP
       dtimeMax = 0.0_DP
     end if
 
-! Stationary analytical simulation
-     Dvalues(:,:) = 0.0_DP
+! ! Stationary analytical simulation
+!      Dvalues(:,:) = 0.0_DP
 
 
- 
+! stationary analytical simulation    
+      select case (cderivative)
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2*2.0_DP*dt
+      case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) =  4.0_DP*Dpoints(2,:,:)*dt
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  4.0_DP*dt
+      end select
 
 
   end subroutine
@@ -3335,18 +3336,18 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
+    real(DP) :: dt,dtimeMax
     integer :: itimedependence
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
+      dt = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dt = 0.0_DP
       dtimeMax = 0.0_DP
     end if
 
@@ -3363,14 +3364,16 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !       case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
 !       end select
 
-! ! stationary analytical simulation
+
+
+! stationary analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  1.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2*dt
+      case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)*dt
       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP*dt
       end select
     
   end subroutine
@@ -3465,18 +3468,18 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
       dtimeMax = 0.0_DP
     end if
 
-!       Dvalues(:,:) = 0.0_DP
+      Dvalues(:,:) = 0.0_DP
     
 
-! Non-stationary analytical simulation
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(2,:,:)**2-0.1*Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.1_DP*Dpoints(2,:,:)-0.1_DP
-      case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.1_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-      end select
+! ! Non-stationary analytical simulation
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(2,:,:)**2-0.1_DP*Dpoints(2,:,:)
+!       case (DER_DERIV_Y);  Dvalues(:,:) =  0.1_DP*Dpoints(2,:,:)-0.1_DP
+!       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) =  0.1_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+!       end select
 
   end subroutine
 
@@ -3573,7 +3576,16 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 ! Analytical stationary simulation
     Dvalues(:,:) = 0.0_DP
 
-
+! 
+! ! Non-stationary analytical simulation
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*Dpoints(2,:,:)**2-0.1_DP*Dpoints(2,:,:)
+!       case (DER_DERIV_Y);  Dvalues(:,:) =  0.1_DP*Dpoints(2,:,:)-0.1_DP
+!       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) =  0.1_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+!       end select
 
   end subroutine
 
@@ -3667,7 +3679,7 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
       dtimeMax = 0.0_DP
     end if
 
-    !Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 0.0_DP
 
 ! ! Stationary analytical simulation    
 !       select case (cderivative)
@@ -3679,15 +3691,15 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !       case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
 !       end select
 
-! nonStationary analytical simulation    
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =   -Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =   -1.0_DP
-      case (DER_DERIV_X);  Dvalues(:,:) =   0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =   0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =   0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
-      end select
+! ! nonStationary analytical simulation    
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) =   -Dpoints(2,:,:)*dtime
+!       case (DER_DERIV_Y);  Dvalues(:,:) =   -dtime
+!       case (DER_DERIV_X);  Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) =   0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
+!       end select
 
   end subroutine
 
@@ -3781,13 +3793,13 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
       dtimeMax = 0.0_DP
     end if
 
-    !Dvalues(:,:) = 0.0_DP
+!     Dvalues(:,:) = 0.0_DP
 
 
 
 ! stationary Analytical simulation    
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = 0.5-Dpoints(1,:,:)
+      case (DER_FUNC);     Dvalues(:,:) = 0.5_DP-Dpoints(1,:,:)
       case (DER_DERIV_X);  Dvalues(:,:) = -1.0_DP
       case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
@@ -3858,7 +3870,7 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
 !</subroutine>
 
     ! local variables
-     REAL(DP) :: dtime
+     REAL(DP) :: dt
      REAL(DP) :: dx,dy
     !
     ! To get the X/Y-coordinates of the boundary point, use:
@@ -3869,24 +3881,24 @@ Dcoefficients(1,:,:) = 16000.0_DP*Dpoints(2,:,:)/(3.0_DP*Dpoints(1,:,:)*Dpoints(
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     !
-     dtime = 0.0_DP
-     IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
+     dt = 0.0_DP
+     IF (PRESENT(rcollection)) dt = rcollection%Dquickaccess(1)
 
 
 
 ! For Non-stationary simulation, use this:
      if (icomponent .EQ. 1) then
-       dvalue =  0.05_DP*dx**2
+       dvalue =  dt**2*dy*dy
      elseif (icomponent .EQ. 2) then
-       dvalue  =  0.05_DP*dy**2-0.1_DP*dy
+       dvalue  =  0.0_DP
      elseif (icomponent .EQ. 3) then
-      dvalue = 0.0_DP
+      dvalue = 2.0_DP*dt*dy*dy
      elseif (icomponent .EQ. 4) then
        dvalue = 0.0_DP
      elseif (icomponent .EQ. 5) then
-       dvalue = dx
+       dvalue = dy*dy*dt
      elseif (icomponent .EQ. 6) then
-        dvalue = -dy
+        dvalue = 0.0_DP
      else
     end if
   end subroutine

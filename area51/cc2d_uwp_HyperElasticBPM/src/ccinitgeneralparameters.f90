@@ -251,7 +251,7 @@ contains
 
     ! Body load
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'b',rproblem%rphysics%b,9.81_DP)
+                              'g',rproblem%rphysics%dg,9.81_DP)
 
     ! Shall we include the pore fluid shear stress effect
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
