@@ -130,6 +130,7 @@ module feevaluation
   ! There are multiple functions fevl_evaluate_sim which do the same --
   ! with different calling conventions and different complexities.
   interface fevl_evaluate_sim
+    module procedure fevl_evaluate_sim0
     module procedure fevl_evaluate_sim1
     module procedure fevl_evaluate_sim2 ! DEPRECATED
     module procedure fevl_evaluate_sim3
@@ -143,6 +144,7 @@ module feevaluation
 
   public :: fevl_evaluate
   public :: fevl_evaluate_sim
+  public :: fevl_evaluate_sim0
   public :: fevl_evaluate_sim1
   public :: fevl_evaluate_sim2 ! DEPRECATED
   public :: fevl_evaluate_sim3
@@ -1814,6 +1816,301 @@ contains
 !
 !  END SUBROUTINE
 ! // unhide from automatic documentation parser -->
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_sim0 (iderType, Dvalues, rvectorScalar, Ielements, &
+      DpointsRef, rperfconfig)
+
+!<description>
+  ! This is a rather general finite element evaluation
+  ! routine. It allows to evaluate a general (scalar) FE function specified
+  ! by rvectorScalar in a set of reference points DpointsRef on a set of elements Ielements.
+  ! The values of the FE function are written into Dvalues.
+  ! This function is virtually identical to fevl_evaluate_sim1, with the exception that
+  ! reference coordinates are mandatory and real coordinates are not required.
+!</description>
+
+!<input>
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+
+  ! The scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(in) :: rvectorScalar
+
+  ! A list of elements containing the points in Dpoints.
+  ! All elements in this list must be of the same type!!!
+  integer, dimension(:), intent(in) :: Ielements
+
+  ! A list of points where to evaluate. All points must be inside
+  ! of element ielement.
+  ! DIMENSION(1..ndim,1..npoints,1..nelements)
+  real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(1..npoints,1..nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    logical :: bnonpar
+    integer :: ipoint,indof,nve,ibas,iel,ivar
+    integer(I32) :: celement
+    integer, dimension(:), pointer :: p_IelemGroupIDs
+    logical, dimension(EL_MAXNDER) :: Bder
+    real(DP) :: dval
+
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! Transformation
+    integer(I32) :: ctrafoType
+
+    ! Values of basis functions and DOF`s
+    real(DP), dimension(:,:,:,:), allocatable :: Dbas
+    integer, dimension(:,:), allocatable :: Idofs
+
+    ! Element evaluation set that collects element specific information
+    ! during the evaluation
+    type(t_evalElementSet)  :: revalElementSet
+    integer(I32) :: cevaluationTag
+
+    ! Ok, slow but general.
+
+    ! Get triangulation information
+    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+
+    ! For uniform discretisations, we get the element type in advance...
+    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+
+      ! Element type
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,1,celement)
+
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+
+      ! Element nonparametric?
+      bnonpar = elem_isNonparametric(celement)
+
+      nullify(p_IelemGroupIDs)
+    else
+      call spdiscr_getElemGroupIDs (rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs)
+    end if
+
+    ! Get the data vector
+    select case (rvectorScalar%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(rvectorScalar,p_Ddata)
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar,p_Fdata)
+    case default
+      call output_line ("Unsupported vector precision!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"fevl_evaluate_sim1")
+      call sys_halt()
+    end select
+
+    ! What to evaluate?
+    Bder = .false.
+    Bder(iderType) = .true.
+
+    ! Get the type of the element ielement
+    if (associated(p_IelemGroupIDs)) then
+      ! As all elements have the same type, we get the element
+      ! characteristics by checking the first element.
+      call spdiscr_getElemGroupInfo (&
+          rvectorScalar%p_rspatialDiscr,p_IelemGroupIDs(Ielements(1)),celement)
+
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+
+      ! Element nonparametric?
+      bnonpar = elem_isNonparametric(celement)
+
+    end if
+
+    ! Calculate the global DOF`s on that element into IdofsTest.
+    allocate(Idofs(indof,size(Ielements)))
+    call dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
+        Ielements, Idofs)
+
+    ! Initialisation of the element set.
+    call elprep_init(revalElementSet)
+
+    ! Get the coordinates of the corners of the elements
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        EL_EVLTAG_COORDS, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=DpointsRef,rperfconfig=rperfconfig)
+
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag.
+    cevaluationTag = elem_getEvaluationTag(celement)
+
+    ! Do not create coordinates on the reference/real element; we do this manually!
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+    ! Do not calculate element shape information, we have that already.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_COORDS))
+
+    ! Calculate all information that is necessary to evaluate the finite element
+    ! on all cells of our subset. This includes the coordinates of the points
+    ! on the cells.
+
+    ! Prepare the element set for the evaluation
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        cevaluationTag, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=DpointsRef,rperfconfig=rperfconfig)
+
+    ! Calculate the values of the basis functions in the given points.
+    allocate(Dbas(indof,&
+             elem_getMaxDerivative(celement),&
+             ubound(DpointsRef,2), size(Ielements)))
+    call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
+
+    ! Calculate the desired values. We loop over all points and all elements
+    if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
+
+      ! Check if vector is stored in interleaved format
+      if (rvectorScalar%NVAR .eq. 1) then
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+
+        do iel = 1, size(Ielements)
+          do ipoint = 1,ubound(DpointsRef,2)
+
+            dval = 0.0_DP
+
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Ddata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+            end do
+
+            ! Save the value in the point
+            Dvalues(ipoint,iel) = dval
+
+          end do ! ipoint
+        end do ! iel
+
+      else
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+
+        do iel = 1,size(Ielements)
+          do ipoint = 1,ubound(DpointsRef,2)
+            do ivar = 1,rvectorScalar%NVAR
+
+              dval = 0.0_DP
+
+              ! Calculate the value in the point
+              do ibas = 1,indof
+                dval = dval + p_Ddata((Idofs(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                              Dbas(ibas,iderType,ipoint,iel)
+              end do
+
+              ! Save the value in the point
+              Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+            end do ! ivar
+          end do ! ipoint
+        end do ! iel
+      end if
+
+    else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
+
+      ! Check if vector is stored in interleaved format
+      if (rvectorScalar%NVAR .eq. 1) then
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+
+        do iel = 1, size(Ielements)
+          do ipoint = 1,ubound(DpointsRef,2)
+
+            dval = 0.0_DP
+
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Fdata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+            end do
+
+            ! Save the value in the point
+            Dvalues(ipoint,iel) = dval
+
+          end do ! ipoint
+        end do ! iel
+
+      else
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+
+        do iel = 1,size(Ielements)
+          do ipoint = 1,ubound(DpointsRef,2)
+            do ivar = 1,rvectorScalar%NVAR
+
+              dval = 0.0_DP
+
+              ! Calculate the value in the point
+              do ibas = 1,indof
+                dval = dval + p_Fdata((Idofs(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                              Dbas(ibas,iderType,ipoint,iel)
+              end do
+
+              ! Save the value in the point
+              Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+            end do ! ivar
+          end do ! ipoint
+        end do ! iel
+      end if
+
+    end if
+
+    ! Release allocated memory
+    ! Remove the reference to DpointsRef again
+    deallocate(Dbas)
+
+    call elprep_releaseElementSet(revalElementSet)
+    deallocate(Idofs)
+
+  end subroutine
 
   ! ***************************************************************************
 
