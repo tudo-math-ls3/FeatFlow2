@@ -1,0 +1,99 @@
+# This applies to section "FIRST" and "SECOND"
+
+# Type of element pair that was used for the discretisation
+#  0 = Q1~(E031) / Q1~(E031) / Q0
+#  1 = Q1~(E030) / Q1~(E030) / Q0
+#  2 = Q1~(EM31) / Q1~(EM31) / Q0
+#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+#  4 = Q2 (E013) / Q2 (E013) / QP1
+#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+#  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+#  7 = Q1~(EN30) / Q1~(EN30) / Q0 (nonparametric, new interface implementation of 3)
+#  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
+# 10 = Q2~(EB50) / Q2~(EB50) / QP1
+# 11 = Q2~(EM50) / Q2~(EM50) / QP1
+# 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
+# 13 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric, solves local system; slower than 12 but more stable)
+# 14 = Q1~(EB30) / Q1~(EB30) / QP1 (parametric, experimental)
+# 15 = Q1~(EB30) / Q1~(EB30) / QP1 (nonparametric, experimental)
+# 20 = Q1        / Q1        / Q1 (unstabilised!)
+# 30 = P1~(E020) / P1~(E020) / P0
+# 50 = Q2~(EN50) / Q2~(EN50) / QP1 (nonparametric velocity + pressure)
+# 51 = Q3~(EN51) / Q3~(EN51) / QP2 (nonparametric velocity + pressure)
+
+# (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
+# (QP1  = Quadrilateral discontinuous P1 element)
+# (E020 = non-conforming Crouzeix-Raviart element)
+#
+#
+# NLMIN: Level where the mesh was generated
+# NLMAX: Level where the solution was calculated
+#
+# sParametrisation: The prm-file for the mesh
+# sMesh: The tri-file for the mesh
+# sVector: The solution-vector of the system you solved!
+#          Important: It has to be formatted! (not-formatted will come at some time)
+#          Important: We assume that the first onknowns are the velocity and the last one
+#                     is the pressure.
+# isFormatted: 1 if the vector is formatted, 0 if it was from unformatted output
+#
+#####################
+[FIRST]
+#####################
+NLMIN=1
+NLMAX=4
+ielementType=3
+
+sParametrisation = '%{spredirectory}/bench1.prm'
+sMesh = '%{spredirectory}/bench1.tri'
+sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
+# At the moment only formatted files are supported, so leave this to 1.
+# The variable is for future purpose
+isFormatted=1
+
+####################
+[SECOND]
+####################
+
+NLMIN=1
+NLMAX=3
+ielementType=3
+
+sParametrisation = '%{spredirectory}/bench1.prm'
+sMesh = '%{spredirectory}/bench1.tri'
+sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX3.dat'
+# At the moment only formatted files are supported, so leave this to 1.
+# The variable is for future purpose
+isFormatted=1
+
+####################
+[DOMAININFO]
+####################
+# These expressions need to be 1 where the error/norm shall be calculated
+# on the part "common" we calculate ||u1 - u2||
+# on the part "onlyFirst" we calculate ||u1||
+# on the part "onlySecond" we calculate ||u2||
+# To specify this, you can use the if-statement, ie
+# if(x >= 1 & x<= 1.2 & y>=0.4 & y<=0.6,0,1) 
+#	This returns 0 if 1 <=x <= 1.2 and 0.4<=y<=0.6, else it returns 1
+# There are also other possibilities, you need to check what the 
+# Featflow-Function-parser is currently supporting
+common = 1
+onlyFirst = 1
+onlySecond = 1
+
+# Is it a 1D, 2D or 3D-Problem
+# (Reagarding the mesh, not the number of unknowns!)
+# at the moment only 2D is supported, so this is here for
+# future purpose!
+dim=2
+
+#################
+[POSTPROCESSING]
+#################
+# Write out the results? 1=yes, 0=no
+writeOut = 1
+#Path of the file where to write it out
+#Format: First line: common integral, second line: only first function, third line: only second function
+filename = '%{soutputdir}/differences.txt'
