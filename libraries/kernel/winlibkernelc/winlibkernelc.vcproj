@@ -300,9 +300,11 @@
 			<File
 				RelativePath="..\..\..\kernel\System\high_res_clock.c"
 				>
+			</File>
 			<File
 				RelativePath="..\..\..\kernel\System\isdirectory.c"
 				>
+			</File>
 			<File
 				RelativePath="..\..\..\kernel\System\mkdir_recursive.c"
 				>
