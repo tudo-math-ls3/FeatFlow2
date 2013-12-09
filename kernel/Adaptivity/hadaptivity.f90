@@ -142,7 +142,7 @@ contains
                                 rhadapt%dcoarseningTolerance)
 
     ! Initialise data
-    rhadapt%iSpec = HADAPT_HAS_PARAMETERS
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_PARAMETERS)
 
   end subroutine hadapt_initFromParameterlist
 
