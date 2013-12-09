@@ -400,7 +400,11 @@ module fsystem
 
   ! Halt mode. This variable defines the way, sys_halt halts the program.
   ! One of the SYS_HALT_xxxx constants.
+#if defined(DEBUG) || defined(_DEBUG)
+  integer, public, save :: sys_haltmode = SYS_HALT_THROWFPE
+#else
   integer, public, save :: sys_haltmode = SYS_HALT_STOP
+#endif
 
   ! The Fortran system_clock timer, like all integer timers, has a cycle
   ! time of real(max)/real(rate) seconds. After max clock cycles the
