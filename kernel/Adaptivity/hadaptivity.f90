@@ -1080,10 +1080,6 @@ contains
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
         rcollection%IquickAccess(1) = nvt
         call fcb_hadaptCallback(HADAPT_OPR_ADJUSTVERTEXDIM, rcollection)
-!!$        Ivertices = (/nvt/)
-!!$        Ielements = (/0/)
-!!$        call fcb_hadaptCallback(HADAPT_OPR_ADJUSTVERTEXDIM,&
-!!$                                rcollection, Ivertices, Ielements)
       end if
 
 
