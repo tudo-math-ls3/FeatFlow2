@@ -1111,7 +1111,7 @@ contains
 
 !<subroutine>
 
-#if (DEBUG || _DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
   subroutine tsrch_getElem_midpoint2D_dir(&
       Dpoint,DvertexCoords,DmidpointCoords,IverticesAtElement,&
       IneighboursAtElement,iel,iresult,ilastElement,imaxIterations)

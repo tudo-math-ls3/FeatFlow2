@@ -579,7 +579,7 @@ contains
 
 !************************************************************************
 
-#if (DEBUG || _DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
   subroutine gaux_isInElement_quad2D(dx,dy,DcornerCoords,binside)
 #else
 
@@ -603,12 +603,12 @@ contains
   !   explicit array of dimension (2,4). As this deactivates array
   !   checking in Fortran, the caller must take care to specify exactly
   !   this type of array here!
-#if (DEBUG || _DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
   real(DP), dimension(2,4), intent(in) :: DcornerCoords
 #endif
 !</input>
 
-#if (!DEBUG && !_DEBUG)
+#if !defined(DEBUG) && !defined(_DEBUG)
   real(DP), dimension(:,:), intent(in) :: DcornerCoords
 #endif
 
@@ -627,7 +627,7 @@ contains
     integer :: ive,ive2
     real(DP) :: dsproduct
 
-#if (DEBUG || _DEBUG)
+#if defined(DEBUG) || defined(_DEBUG)
     if (ubound(DcornerCoords,1) .ne. NDIM2D) then
       call output_line ('Dimension 1 is not =2!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gaux_isInElement_quad2D')
