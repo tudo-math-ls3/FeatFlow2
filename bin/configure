@@ -2827,7 +2827,7 @@ sub create_feastAppMakefile {
     # lapack path settings
         "# lapack library path settings\n" .
         "\$(OBJDIR_LIB)/liblapack.a clean-lapack get-lapack purge-lapack: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/lapack-3.4.2\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/lapack-3.5.0\n\n" .
 
     # lapack library
         "# Create lapack library\n" .
