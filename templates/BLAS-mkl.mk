@@ -111,6 +111,18 @@ endif
 
 
 
+# Workarounds for known problems:
+
+# Workaround 1:
+# * Intel MKL 10.3.0 (and below) lacks single precision versions of
+#   some subroutines which are used in the Featflow2 kernel
+ifneq ($(strip $(foreach lib, $(foreach dir, $(subst :, ,$(INTEL_MKL_LIB)),$(dir)/libmkl_core.a), \
+	$(shell test -s $(lib) && nm $(lib) | grep 'mkl_scsrbsr'))),)
+CFLAGSF90     := -DHAS_INTEL_MKL_100301 $(CFLAGSF90)
+endif
+
+
+
 # The settings needed to compile a FEAT2 application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches
 # (in an attempt to reduce duplicate code and inconsistencies among all build
