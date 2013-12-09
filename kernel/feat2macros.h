@@ -24,7 +24,7 @@
 #endif
 
 #define FEAT2_PP_EXTERNAL_USE(module) use module
-
+#define FEAT2_PP_EXTERNAL_INCLUDE(inc) include FEAT2_PP_STRING(inc)
 
 #if 0
 !###############################################################################
@@ -161,7 +161,7 @@
 
 #if 0
 !###############################################################################
-! The following macro concatenates two tokens
+! The following macro generates a string
 !
 ! Example: FEAT2_PP_STRING(string)
 !          expands to "string"
