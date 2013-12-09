@@ -4252,7 +4252,8 @@ contains
 
         ! If I2 is last(=first) node on boundary component IBCT round
         ! DVBDP2 to next integer
-        if (dvbdp2 .le. dvbdp1) dvbdp2 = ceiling(dvbdp1)
+        if (dvbdp2 .le. dvbdp1) &
+            dvbdp2 = floor(dvbdp1+1.0_DP)+dvbdp2
 
         ! Add new entry to boundary structure
         Ddata = (/0.5_DP*(dvbdp1+dvbdp2), real(i1,DP), real(i2,DP)/)
