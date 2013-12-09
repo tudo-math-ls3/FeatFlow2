@@ -25,7 +25,7 @@ program fecomparer
   ! Initialisation of the feat library, output system and 
   ! memory management
   ! -----------------------------------------------------------------
-  call system_init()
+  call sys_init()
   call output_init ("")
   call storage_init(999, 100)
   call fparser_init()

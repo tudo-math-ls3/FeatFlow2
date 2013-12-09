@@ -8,7 +8,7 @@ program HelloFeat
   use genoutput
 
   ! Initialisation
-  call system_init()
+  call sys_init()
   call output_init("")
 
   ! Print a message

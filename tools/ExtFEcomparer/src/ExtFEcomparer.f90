@@ -36,7 +36,7 @@ program ExtFEcomparer
 
   ! The very first thing in every application:
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
 
   ! General output init - output to the terminal
   call output_init ()

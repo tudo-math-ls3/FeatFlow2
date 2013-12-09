@@ -24,7 +24,7 @@ program tridump
   logical :: bgen, bvtk, bgmv, beps, bbnd
 
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
 
   ! Initialise the output system.
   call output_init()
