@@ -163,7 +163,7 @@ CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -O3 \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O0 -g -fno-second-underscore \
+CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -DDEBUG -O0 -g -fno-second-underscore \
 		 -fbacktrace -fexternal-blas #-pg
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
@@ -181,7 +181,7 @@ endif
 #   as it gives conflicts with LAM/MPI's mpif.h
 # * -Wimplicit-interface
 #   as it gives warnings for every MPI call, BLAS call etc.
-CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -g -fbounds-check #-pg
+CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -DDEBUG -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
 endif

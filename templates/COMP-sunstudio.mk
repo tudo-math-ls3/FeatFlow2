@@ -129,10 +129,10 @@ CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) $(FAST)
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) $(FAST)
 else
-CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) -xtypemap=integer:32 -g -nolibmil
+CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) -DDEBUG -xtypemap=integer:32 -g -nolibmil
 CFLAGSF90     :=  $(CFLAGSF90) $(CFLAGSF77)
 		 #-C -xdebugformat=stabs
-CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) -g #-xdebugformat=stabs
+CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) -DDEBUG -g #-xdebugformat=stabs
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif

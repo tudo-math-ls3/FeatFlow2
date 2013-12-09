@@ -132,12 +132,12 @@ CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -g -fno-second-underscore #-pg
+CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -DDEBUG -g -fno-second-underscore #-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
 # are peppered with out-of-bounds accesses (i[0] and i[n]). That's
 # Turek-style code and nobody volunteered so far to fix it.
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check -ftrace=full
-CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -g -fbounds-check #-pg
+CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -DDEBUG -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
 endif

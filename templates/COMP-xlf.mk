@@ -73,13 +73,15 @@ CFLAGSF90     := -DUSE_COMPILER_XLF $(CFLAGSF90) $(CFLAGSF77) -O5 -qfree=f90 \
 		 -qsuffix=f=f90 -qmaxmem=-1
 CFLAGSC       := $(CFLAGSC) -qcache=auto -qtune=auto -O3 -qstrict \
 		 -qunroll=auto -q64
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) -q64 -qmaxmem=-1 -qsclk=micro
 else
-CFLAGSF77     := $(CFLAGSF77) \
+CFLAGSF77     := $(CFLAGSF77) -DDEBUG \
 		 -g -qfullpath -q64 -O0
 CFLAGSF90     := -DUSE_COMPILER_XLF $(CFLAGSF90) $(CFLAGSF77) -qfree=f90 \
                  -qsuffix=f=f90
 CFLAGSC       := $(CFLAGSF77) $(CFLAGSC)
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) -g -qfullpath -q64
 # !!! WARNING WARNING WARNING !!!
 # You must not pass any -D option to xlf compilers, because it is *not*

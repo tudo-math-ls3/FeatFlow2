@@ -111,12 +111,14 @@ CFLAGSF77     := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77) -O3 -OPT:Ofast \
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -O3 -OPT:Ofast \
 		 -fno-math-errno
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77) -g \
+CFLAGSF77     := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77) -DDEBUG -g \
 	         -Wuninitialized -ffortran-bounds-check
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
-CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -g
+CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -DDEBUG -g
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 # The option -Wuninitialized is highly recommended to let the compiler

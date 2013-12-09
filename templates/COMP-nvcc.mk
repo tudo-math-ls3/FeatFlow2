@@ -45,7 +45,8 @@ endif
 ifeq ($(call optimise), YES)
 CFLAGSCUDA := $(CFLAGSCUDA) -O3 --ptxas-options=-v
 else
-CFLAGSCUDA := $(CFLAGSCUDA) -g -G -DENABLE_PARAMETER_CHECK --ptxas-options=-v
+CFLAGSCUDA := $(CFLAGSCUDA) -DDEBUG -g -G -DENABLE_PARAMETER_CHECK \
+	                    --ptxas-options=-v
 endif
 
 

@@ -117,14 +117,16 @@ CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
 		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
 		 -Mvect=assoc,prefetch,sse
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O0 -g -Mbounds
+CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -DDEBUG -O0 -g -Mbounds
 # PGI F90 Compiler (at least 6.1.x) needs
 # * -g flag (even for -O0 optimisation level)
 # otherwise FEAT2 crashes as soon as it tries to start solving something!
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
-CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O0 -g -B -Mbounds
+CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -DDEBUG -O0 -g -B -Mbounds
+CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 

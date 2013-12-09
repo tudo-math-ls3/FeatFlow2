@@ -127,11 +127,11 @@ CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model preci
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := $(CFLAGSF77) -DUSE_COMPILER_INTEL -O0 \
+CFLAGSF77     := $(CFLAGSF77) -DUSE_COMPILER_INTEL -DDEBUG -O0 \
 		 -g -fpe0 -assume underscore
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -C -check bounds -traceback
-CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
+CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -DDEBUG -O0 -g
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif

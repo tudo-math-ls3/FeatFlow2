@@ -483,7 +483,7 @@ contains
     ! use wrapper for C system call stat() in kernel/System/isdirectory.c
     external isdirectory
     ierr = 0
-    bisDir = .FALSE.
+    bisDir = .false.
     call isdirectory(trim(spath) // achar(0), iisdir, ierr)
     if (ierr .ge. 0) then
       bisDir = (iisdir .gt. 0)

@@ -116,10 +116,10 @@ CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O0 -g3 \
+CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -DDEBUG -O0 -g3 \
 	         -fno-second-underscore
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -ffortran-bounds-check -fullwarn
-CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O0 -g3 -trapuv
+CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -DDEBUG -O0 -g3 -trapuv
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif

@@ -135,7 +135,7 @@ LDFLAGS       := $(LDFLAGS)
 #
 else
 #
-CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O0 -g -fpe0 -assume underscore
+CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -DDEBUG -O0 -g -fpe0 -assume underscore
 # the following (additional) flags make ifort super-strict and allow e.g.
 # the detection of out-of-bounds accesses. Unfortunately, they already complain
 # about such errors deep inside the numerical factorisation in UMFPACK (at
@@ -144,7 +144,7 @@ CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O0 -g -fpe0 -assume undersco
 #CFLAGSF77     := $(CFLAGSF77) -check all -debug -fp-stack-check -traceback -ftrapuv
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -C -check bounds -traceback -warn all -assume buffered_io
-CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
+CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -DDEBUG -O0 -g
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
