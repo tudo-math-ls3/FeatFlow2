@@ -7,7 +7,7 @@ program mmdump
   type(t_parlist) :: rparam
 
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
 
   ! Initialise the output system.
   call output_init ('./out/output.log')

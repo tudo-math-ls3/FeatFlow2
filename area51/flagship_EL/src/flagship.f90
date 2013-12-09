@@ -47,7 +47,7 @@ program flagship
 
 
   ! Initialize Feat2 subsystem
-  call system_init()
+  call sys_init()
 
   ! Set system halt mode
   sys_haltmode = SYS_HALT_THROWFPE

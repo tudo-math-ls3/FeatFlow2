@@ -6,7 +6,7 @@ use gpusd_test1
 implicit none
 
   ! initialise FEAT2 system
-  call system_init()
+  call sys_init()
   
   ! initialise FEAT2 output
   call output_init('./log/output.txt')

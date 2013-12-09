@@ -13,7 +13,7 @@ type(t_parlist) :: rparam
 character(LEN=256) :: slogfile
 
   ! init FEAT2
-  call system_init()
+  call sys_init()
   call storage_init(999, 100)
   
   ! read in parameters

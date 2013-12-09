@@ -12,7 +12,7 @@ program fme
   integer :: nDim
 
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
 
   ! Initialise the output system.
   call output_init()

@@ -28,7 +28,7 @@ program CHNS2d
   
   ! The very first thing in every application:
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
   
   ! General output init - temporary until we read in the output settings
   call output_init ()

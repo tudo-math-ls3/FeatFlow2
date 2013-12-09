@@ -60,7 +60,7 @@ program interpdbg
   sys_haltmode = SYS_HALT_THROWFPE
 
   ! Initialise Featflow and storage subsystems
-  call system_init()
+  call sys_init()
   call storage_init(100, 100)
 
   ! Read boundary parametrisation

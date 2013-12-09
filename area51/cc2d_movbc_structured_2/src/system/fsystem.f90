@@ -640,7 +640,7 @@ module fsystem
 
 
 !<subroutine>
-  subroutine system_init()
+  subroutine sys_init()
 
     !<description>
     !This subroutine initialises some internal data structures.
@@ -654,8 +654,8 @@ module fsystem
     integer :: irate  ! approx. number of system clock ticks per second
     integer :: icmax  ! largest possible value of icount
 
-    !system_clock is not a FEAST, but a basic FORTRAN 90 routine
-    call system_clock(icount,irate,icmax)
+    !sys_clock is not a FEAST, but a basic FORTRAN 90 routine
+    call sys_clock(icount,irate,icmax)
 
     !maximal measurable time span in seconds (system-dependend)
     sys_dtimeMax = real(icmax,DP)/real(irate,DP)
@@ -681,7 +681,7 @@ module fsystem
 
     sys_sysconfig%cuseExtraStorageMatrixEdges=NO
 
-  end subroutine system_init
+  end subroutine sys_init
 
 
 !************************************************************************

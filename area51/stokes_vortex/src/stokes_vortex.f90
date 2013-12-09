@@ -24,7 +24,7 @@ implicit none
 character(len=SYS_STRLEN) :: slogdir,slogfile
 
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
 
   ! Initialise the output system.
   if (sys_getenv_string('LOGDIR',slogdir) .and. &

@@ -133,7 +133,7 @@ contains
     integer, dimension(:), allocatable :: Iseed
 
     ! Initialise pseudo-random generator
-    call system_clock(isystemClock)
+    call sys_clock(isystemClock)
     call random_seed(size=isize)
     allocate(Iseed(isize))
     Iseed = isystemClock + 37 * (/ (i - 1, i = 1, isize) /)

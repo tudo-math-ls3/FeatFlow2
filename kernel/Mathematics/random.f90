@@ -146,7 +146,7 @@ contains
   integer(I32) :: t
 
     ! get current processor clock
-    call system_clock(t)
+    call sys_clock(t)
 
     ! return seed if desired
     if(present(iseed)) &

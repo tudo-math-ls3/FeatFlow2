@@ -19,7 +19,7 @@ program shallowwater
   ! The very first thing in every application:
   ! Initialise system-wide settings:
   
-  call system_init()
+  call sys_init()
   sys_haltmode = SYS_HALT_THROWFPE
   
   ! Initialise the output system. Write the program output to screen as

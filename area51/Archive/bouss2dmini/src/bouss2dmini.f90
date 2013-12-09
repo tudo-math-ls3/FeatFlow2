@@ -18,7 +18,7 @@ program bouss2dmini
   ! The very first thing in every application:
   ! Initialise system-wide settings:
   
-  call system_init()
+  call sys_init()
   call output_init()
 
   ! The very second thing in every program:

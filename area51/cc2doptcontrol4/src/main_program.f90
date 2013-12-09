@@ -556,7 +556,7 @@ contains
     
     ! The very first thing in every application:
     ! Initialise system-wide settings:
-    call system_init()
+    call sys_init()
     
     ! Read the program parameters.
     call parlst_init (rparlist)

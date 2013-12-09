@@ -211,7 +211,7 @@ contains
     integer :: iglobRefLevel
 
     ! Initialize Feat2 subsystem
-    call system_init()
+    call sys_init()
   
     ! System will stop if critical error occurs
     sys_haltmode = SYS_HALT_THROWFPE

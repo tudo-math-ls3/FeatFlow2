@@ -28,7 +28,7 @@ program cc2dmini
   ! The very first thing in every application:
   ! Initialise system-wide settings:
   
-  call system_init()
+  call sys_init()
 
   ! The very second thing in every program:
   ! Initialise the storage management:

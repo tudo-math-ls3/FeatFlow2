@@ -7,13 +7,13 @@
 !# This module contains system routines like time measurement,
 !# string/value conversions and auxiliary routines.
 !#
-!# On start of the main program, the routine system_init() must be called
+!# On start of the main program, the routine sys_init() must be called
 !# once to initialise internal values!
 !#
 !# The following routines can be found here
 !#
-!#  1.) system_init = system_init_simple /
-!#                    system_init_ext
+!#  1.) sys_init = sys_init_simple /
+!#                 sys_init_ext
 !#      -> Initialise system-wide settings
 !#
 !#  2.) sys_halt
@@ -136,7 +136,7 @@ module fsystem
   public :: sys_permute
   public :: sys_halt
   public :: sys_throwFPE
-  public :: system_init
+  public :: sys_init
   public :: sys_version
   public :: sys_toupper
   public :: sys_tolower
@@ -406,10 +406,10 @@ module fsystem
   integer, public, save :: sys_haltmode = SYS_HALT_STOP
 #endif
 
-  ! The Fortran system_clock timer, like all integer timers, has a cycle
+  ! The Fortran sys_clock timer, like all integer timers, has a cycle
   ! time of real(max)/real(rate) seconds. After max clock cycles the
   ! clock will start counting again from zero. This is the maximum time
-  ! span that can be measured when using system_clock manually.
+  ! span that can be measured when using sys_clock manually.
   !
   ! Note: Timing routines in the statistics module automatically
   ! respect this setting but do not explicitely use this variable.
@@ -424,9 +424,9 @@ module fsystem
 
 !************************************************************************
 
-  interface system_init
-    module procedure system_init_simple
-    module procedure system_init_ext
+  interface sys_init
+    module procedure sys_init_simple
+    module procedure sys_init_ext
   end interface
 
   interface sys_toupper
@@ -544,7 +544,7 @@ contains
 
 !<subroutine>
 
-  subroutine system_init_simple()
+  subroutine sys_init_simple()
 
 !<description>
     ! This subroutine initialises internal data structures
@@ -553,15 +553,15 @@ contains
 
 !</subroutine>
 
-    call system_init_ext("","")
+    call sys_init_ext("","")
 
-  end subroutine system_init_simple
+  end subroutine sys_init_simple
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine system_init_ext(sprojectID,sprojectDir)
+  subroutine sys_init_ext(sprojectID,sprojectDir)
 
 !<description>
     ! Extended initialisation.
@@ -604,7 +604,7 @@ contains
     ! Set value of Pi = 3.14..
     SYS_PI=asin(1.0_DP)*2.0_DP
 
-  end subroutine system_init_ext
+  end subroutine sys_init_ext
 
 !************************************************************************************
 

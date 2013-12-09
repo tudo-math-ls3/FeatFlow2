@@ -66,7 +66,7 @@ program convstudy
   !*****************************************************************************
 
   ! Initialize Feat2 subsystem
-  call system_init()
+  call sys_init()
 
   ! Initialize storage subsystem
   call storage_init(500, 100)

@@ -62,7 +62,7 @@ program flagship
 #endif
 
   ! Initialise Feat2 subsystem
-  call system_init()
+  call sys_init()
 
   ! Set system halt mode
 #ifdef ENABLE_ERROR_TRACEBACK

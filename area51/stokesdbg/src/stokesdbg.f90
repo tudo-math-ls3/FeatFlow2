@@ -25,7 +25,7 @@ integer :: idriver
   
   ! The very first thing in every application:
   ! Initialise system-wide settings:
-  call system_init()
+  call sys_init()
   
   ! The very second thing in every program:
   ! Initialise the FEAT 2.0 storage management:
