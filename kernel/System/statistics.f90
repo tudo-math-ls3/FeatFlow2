@@ -382,7 +382,7 @@ contains
 #ifdef HAS_HIGH_RES_CLOCK
       call hrc_stamp(rtimer%istartHRC)
 #else
-      call sys_clock(icount, irate, icmax)
+      call system_clock(icount, irate, icmax)
       rtimer%dstartReal  = real(icount, DP) / real(irate, DP)
       rtimer%istartCount = icount
 #endif
@@ -457,7 +457,7 @@ contains
       call hrc_diff(delapsed, rtimer%istartHRC , itimeHRC)
 #else
       ! Ask the system clock
-      call sys_clock(icount, irate, icmax)
+      call system_clock(icount, irate, icmax)
       dCurrentReal = real(icount, DP) / real(irate, DP)
       dtmp = dcurrentReal - rtimer%dstartReal
 
@@ -502,7 +502,7 @@ contains
 
         ! If the difference is more that let us say 100 sec, take
         ! the approximated time. This should also be the case if the
-        ! timer from sys_clock gets more than one overflow...
+        ! timer from system_clock gets more than one overflow...
         ! If the difference is less, take the exact time.
         if (abs(dtmp-delapsed) .gt. 100.0_DP) then
           delapsed = max(dtmp, 0.0_DP)
@@ -582,7 +582,7 @@ contains
 #else
 
       ! Ask the system clock
-      call sys_clock(icount, irate, icmax)
+      call system_clock(icount, irate, icmax)
       dCurrentReal = real(icount, DP) / real(irate, DP)
       dtmp = dcurrentReal - rtimer%dstartReal
 
@@ -623,7 +623,7 @@ contains
 
         ! If the difference is more that let us say 100 sec, take
         ! the approximated time. This should also be the case if the
-        ! timer from sys_clock gets more than one overflow...
+        ! timer from system_clock gets more than one overflow...
         ! If the difference is less, take the exact time.
         if (abs(dtmp-delapsedTime) .gt. 100.0_DP) then
           delapsedTime = max(dtmp, 0.0_DP)

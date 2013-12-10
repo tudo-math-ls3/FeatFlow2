@@ -406,10 +406,10 @@ module fsystem
   integer, public, save :: sys_haltmode = SYS_HALT_STOP
 #endif
 
-  ! The Fortran sys_clock timer, like all integer timers, has a cycle
+  ! The Fortran system_clock timer, like all integer timers, has a cycle
   ! time of real(max)/real(rate) seconds. After max clock cycles the
   ! clock will start counting again from zero. This is the maximum time
-  ! span that can be measured when using sys_clock manually.
+  ! span that can be measured when using system_clock manually.
   !
   ! Note: Timing routines in the statistics module automatically
   ! respect this setting but do not explicitely use this variable.

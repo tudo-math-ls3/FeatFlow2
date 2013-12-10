@@ -654,8 +654,8 @@ module fsystem
     integer :: irate  ! approx. number of system clock ticks per second
     integer :: icmax  ! largest possible value of icount
 
-    !sys_clock is not a FEAST, but a basic FORTRAN 90 routine
-    call sys_clock(icount,irate,icmax)
+    !system_clock is not a FEAST, but a basic FORTRAN 90 routine
+    call system_clock(icount,irate,icmax)
 
     !maximal measurable time span in seconds (system-dependend)
     sys_dtimeMax = real(icmax,DP)/real(irate,DP)

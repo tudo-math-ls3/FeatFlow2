@@ -594,7 +594,7 @@ contains
           GFSYS_NEDGESIM       = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(69:76)))
           FPAR_NITEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(77:84)))
 
-          call sys_clock(clock,clockrate); dtimeStart = real(clock,DP)/clockrate
+          call system_clock(clock,clockrate); dtimeStart = real(clock,DP)/clockrate
           
           call hydro_solveTransientPrimal(rparlist, ssectionName,&
               rbdrCondPrimal, rproblem, rtimestep, rsolver,&
@@ -602,7 +602,7 @@ contains
           call tstep_resetTimestep(rtimestep, .true.)
           call lsysbl_releaseVector(rsolutionPrimal)
 
-          call sys_clock(clock,clockrate); dtimeStop = real(clock,DP)/clockrate
+          call system_clock(clock,clockrate); dtimeStop = real(clock,DP)/clockrate
           rpopulation%p_Rchromosomes(ichromosome)%dfitness = 1.0/(dtimeStop-dtimeStart)
         end do
         
