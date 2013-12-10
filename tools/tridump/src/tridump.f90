@@ -66,7 +66,7 @@ program tridump
     call output_line("-> Reads in the 'bench1' mesh, refines it 4 times, disturbs")
     call output_line("   it by a factor of 0.05 and exports it in VTK format.")
     call output_lbrk()
-    stop
+    call sys_halt()
   end if
   
   ! initialise standard parameters
@@ -148,24 +148,29 @@ program tridump
     else
       ! unknown parameter
       call output_line("ERROR: unknown parameter '" // trim(sarg) // "'")
-      stop
+      call sys_halt()
     end if
   end do
 
   if(.not. bgen) then
     ! read boundary and mesh
     if(ndim .eq. 2) then
-      call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
-      call boundary_read_prm(rbnd, trim(spredir)//"/"// trim(smesh) // '.prm')
-      call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri', rbnd)
-      bbnd = .true.
+      inquire(file=trim(spredir)//"/"// trim(smesh) // '.prm', exist=bbnd)
+      if (bbnd) then
+        call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri/prm'...")
+        call boundary_read_prm(rbnd, trim(spredir)//"/"// trim(smesh) // '.prm')
+        call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri', rbnd)
+      else
+        call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
+        call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri')
+      end if
     else if(ndim .eq. 3) then
       call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
       call tria_readTriFile3D (rtria, trim(spredir)//"/"// trim(smesh) // '.tri')
       bbnd = .false.
     else
       call output_line("ERROR: no input mesh specified")
-      stop
+      call sys_halt()
     end if
   else
     !if(dalpha .ne. 0.0_DP) then
