@@ -7069,7 +7069,7 @@ contains
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
 
-#ifdef USE_INTEL_MKL && HAS_INTEL_MKL_100301
+#if defined(USE_INTEL_MKL) && defined(HAS_INTEL_MKL_100301)
           Ijob = (/1,1,1,2,rmatrix%NA,1/)
           call mkl_sdnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Fdata,&
               rmatrix%NEQ,p_Fdata2,p_Kcol,p_Kld,info)
@@ -7363,7 +7363,7 @@ contains
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
 
-#ifdef USE_INTEL_MKL && HAS_INTEL_MKL_100301
+#if defined(USE_INTEL_MKL) && defined(HAS_INTEL_MKL_100301)
           Ijob = (/1,1,1,2,rmatrix%NA,1/)
           call mkl_sdnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Fdata,&
               rmatrix%NEQ,p_Fdata2,p_Kcol,p_Kld,info)
@@ -8726,7 +8726,7 @@ contains
             p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
             
           case (LSYSSC_MATRIX1)
-#ifdef USE_INTEL_MKL && HAS_INTEL_MKL_100301
+#if defined(USE_INTEL_MKL) && defined(HAS_INTEL_MKL_100301)
             Ijob = (/1,1,1,0,0,1/)
             call mkl_scsrbsr(Ijob,nrows,rmatrix%NVAR,rmatrix%NVAR*rmatrix%NVAR,&
                 p_Fdata,p_Kcol,p_Kld,p_Fdata2,p_Kcol2,p_Kld2,info)
