@@ -5783,20 +5783,27 @@ contains
       call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
 
       ! Comment: Header
-      write (iunit,*) "Coarse mesh exported by FeatFlow2 exporter"
+      write (iunit,fmt='(A)') "Coarse mesh exported by FeatFlow2 exporter"
       if (.not. bnoParameters) then
-        write (iunit,*) "Parametrisation PARXC, PARYC, TMAXC"
-        !WRITE (iunit,*) "Parametrisierung PARXC, PARYC, TMAXC"
+        write (iunit,fmt='(A)') "Parametrisation PARXC, PARYC, TMAXC"
+        !WRITE (iunit,fmt='(A)') "Parametrisierung PARXC, PARYC, TMAXC"
       else
-        write (iunit,*) "No parametrisation"
+        write (iunit,fmt='(A)') "No parametrisation"
       end if
 
       ! Write NEL,NVT,NMT,NVE,NBCT to the file
-      write (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
+#ifdef USE_LARGEINT
+      write (iunit,fmt='(5I21,2X,A)')&
+          rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
           rtriangulation%NNVE,rtriangulation%NBCT,"NEL NVT NMT NVE NBCT"
+#else
+      write (iunit,fmt='(5I12,2X,A)')&
+          rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
+          rtriangulation%NNVE,rtriangulation%NBCT,"NEL NVT NMT NVE NBCT"
+#endif
 
       ! Write: "DCORVG"
-      write (iunit,*) "DCORVG"
+      write (iunit,fmt='(A)') "DCORVG"
 
       ! Get the pointers to the coordinate array
       call storage_getbase_double2D(&
@@ -5833,7 +5840,7 @@ contains
       end if
 
       ! Write: "KVERT"
-      write (iunit,*) "KVERT"
+      write (iunit,fmt='(A)') "KVERT"
 
       ! Get the pointer to the IverticesAtElement array and read the array
       call storage_getbase_int2D(&
@@ -5841,11 +5848,15 @@ contains
 
       ! Write the data to the file
       do iel = 1, rtriangulation%NEL
-        write (iunit,*) (p_Idata2D(ive,iel),ive=1,size(p_Idata2D,1))
+#ifdef USE_LARGEINT
+        write (iunit,fmt='(8I21)') (p_Idata2D(ive,iel),ive=1,size(p_Idata2D,1))
+#else
+        write (iunit,fmt='(8I12)') (p_Idata2D(ive,iel),ive=1,size(p_Idata2D,1))
+#endif
       end do
 
       ! Write: "KNPR"
-      write (iunit,*) "KNPR"
+      write (iunit,fmt='(A)') "KNPR"
 
       ! Get the pointer to the InodalProperty array
       call storage_getbase_int(&
@@ -5853,11 +5864,15 @@ contains
 
       ! Write the data
       do ivt = 1, rtriangulation%NVT
-        write (iunit,*) p_Idata(ivt)
+#ifdef USE_LARGEINT
+        write (iunit,fmt='(I21)') p_Idata(ivt)
+#else
+        write (iunit,fmt='(I12)') p_Idata(ivt)
+#endif
       end do
 
       ! Write: "KMM"
-      write (iunit,*) "KMM"
+      write (iunit,fmt='(A)') "KMM"
 
       ! Get the pointer to the IboundaryCpIdx and IverticesAtBoundary arrays
       call storage_getbase_int(&
@@ -5872,7 +5887,7 @@ contains
             trim(sys_siL(p_IverticesAtBoundary(p_IboundaryCpIdx(ibct)),10))//" "//&
             trim(sys_siL(p_IverticesAtBoundary(p_IboundaryCpIdx(ibct+1)-1),10))
       end do
-      write (iunit,*) trim(ckmmstr)
+      write (iunit,fmt='(A)') trim(ckmmstr)
 
       ! Close the file, finish
       close(iunit)
