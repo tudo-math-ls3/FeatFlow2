@@ -109,22 +109,22 @@ program meshadapt
 
   ! Read boundary and mesh
   if(ndim .eq. 1) then
-    call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
-    call tria_readTriFile1D (rtria, trim(smesh)//'.tri')
+    call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+    call tria_readTriFile1D (rtria, './'//trim(smesh)//'.tri')
     bbnd = .false.
   else if(ndim .eq. 2) then
-    inquire(file=trim(smesh)//'.prm', exist=bbnd)
+    inquire(file='./'//trim(smesh)//'.prm', exist=bbnd)
     if (bbnd) then
-      call output_line("Reading mesh from '"//trim(smesh)//".tri/prm'...")
-      call boundary_read_prm(rbnd, trim(smesh)//'.prm')
-      call tria_readTriFile2D (rtria, trim(smesh)//'.tri', rbnd)
+      call output_line("Reading mesh from './"//trim(smesh)//".tri/prm'...")
+      call boundary_read_prm(rbnd, './'//trim(smesh)//'.prm')
+      call tria_readTriFile2D (rtria, './'//trim(smesh)//'.tri', rbnd)
     else
-      call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
-      call tria_readTriFile2D (rtria, trim(smesh)//'.tri')
+      call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+      call tria_readTriFile2D (rtria, './'//trim(smesh)//'.tri')
     end if
   else if(ndim .eq. 3) then
-    call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
-    call tria_readTriFile3D (rtria, trim(smesh)//'.tri')
+    call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+    call tria_readTriFile3D (rtria, './'//trim(smesh)//'.tri')
     bbnd = .false.
   else
     call output_line("ERROR: no input mesh specified")
@@ -133,6 +133,7 @@ program meshadapt
   
   ! Initialise adaptation structure from triangulation
   call hadapt_initFromTriangulation(rhadapt, rtria)
+  call hadapt_checkConsistency(rhadapt)
 
   ! Set some parameters manually
   rhadapt%nsubdividemax        = nrefmax
@@ -144,15 +145,15 @@ program meshadapt
   ! Are we in daemon mode?
   if (bdaemon) then
     ! Get status of indicator field file
-    call stat(trim(serror), Istat1)
+    call stat('./'//trim(serror), Istat1)
   end if
 
   ! Infinite loop for potential daemon mode
   daemon: do
 
     ! Read indicator vector
-    call output_line("Reading indicator field from '"//trim(serror)//"'...")
-    call io_openFileForReading(trim(serror), iunit, .true.)
+    call output_line("Reading indicator field from './"//trim(serror)//"'...")
+    call io_openFileForReading('./'//trim(serror), iunit, .true.)
     
     ! Read first line from file
     read(iunit, fmt=*) iel
@@ -190,11 +191,11 @@ program meshadapt
     end if
     
     ! Export triangulation structure
-    call output_line("Exporting triangulation to '"//trim(smesh)//"_ref.tri'...")
+    call output_line("Exporting triangulation to './"//trim(smesh)//"_ref.tri'...")
     if (bbnd) then
-      call tria_exportTriFile(rtria, trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
+      call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
     else
-      call tria_exportTriFile(rtria, trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
+      call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
     end if
     
     ! Are we in daemon mode?
@@ -202,7 +203,7 @@ program meshadapt
     
     delay: do
       ! Get status of indicator field file
-      call stat(trim(serror), Istat2)
+      call stat('./'//trim(serror), Istat2)
       if (Istat1(10) .ne. Istat2(10)) then
         Istat1 = Istat2
         exit delay
