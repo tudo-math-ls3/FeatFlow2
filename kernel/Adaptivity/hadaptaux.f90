@@ -171,7 +171,6 @@ module hadaptaux
                                                                  HADAPT_HAS_VERTATELEM+&
                                                                  HADAPT_HAS_NEIGHATELEM+&
                                                                  HADAPT_HAS_MIDNEIGH+&
-                                                                 HADAPT_HAS_BOUNDARY+&
                                                                  HADAPT_HAS_NODALPROP+&
                                                                  HADAPT_HAS_NELOFTYPE+&
                                                                  HADAPT_HAS_ELEMATVERTEX

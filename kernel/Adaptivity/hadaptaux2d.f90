@@ -4229,35 +4229,40 @@ contains
         ! Get number of boundary component
         ibct = rhadapt%p_InodalProperty(i1)
 
-        ! Get parameter values of the boundary nodes
-        rmapIter = map_find(rhadapt%rBoundary(ibct), i1)
-        if (map_isNull(rmapIter)) then
-          call output_line('Unable to find first vertex in boundary data structure!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
-          call sys_halt()
-        else
-          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
-          dvbdp1 = p_Ddata(1)
+        ! Check if structure contains dynamic boundary structure
+        if (iand(rhadapt%iSpec, HADAPT_HAS_BOUNDARY) .eq.&
+                                HADAPT_HAS_BOUNDARY) then
+
+          ! Get parameter values of the boundary nodes
+          rmapIter = map_find(rhadapt%rBoundary(ibct), i1)
+          if (map_isNull(rmapIter)) then
+            call output_line('Unable to find first vertex in boundary data structure!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
+            call sys_halt()
+          else
+            call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+            dvbdp1 = p_Ddata(1)
+          end if
+          
+          rmapIter = map_find(rhadapt%rBoundary(ibct), i2)
+          if (map_isNull(rmapIter)) then
+            call output_line('Unable to find second vertex in boundary data structure!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
+            call sys_halt()
+          else
+            call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+            dvbdp2 = p_Ddata(1)
+          end if
+          
+          ! If I2 is last(=first) node on boundary component IBCT round
+          ! DVBDP2 to next integer
+          if (dvbdp2 .le. dvbdp1) &
+              dvbdp2 = floor(dvbdp1+1.0_DP)+dvbdp2
+          
+          ! Add new entry to boundary structure
+          Ddata = (/0.5_DP*(dvbdp1+dvbdp2), real(i1,DP), real(i2,DP)/)
+          rmapIter = map_insert(rhadapt%rBoundary(ibct), i12, Ddata)
         end if
-
-        rmapIter = map_find(rhadapt%rBoundary(ibct), i2)
-        if (map_isNull(rmapIter)) then
-          call output_line('Unable to find second vertex in boundary data structure!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
-          call sys_halt()
-        else
-          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
-          dvbdp2 = p_Ddata(1)
-        end if
-
-        ! If I2 is last(=first) node on boundary component IBCT round
-        ! DVBDP2 to next integer
-        if (dvbdp2 .le. dvbdp1) &
-            dvbdp2 = floor(dvbdp1+1.0_DP)+dvbdp2
-
-        ! Add new entry to boundary structure
-        Ddata = (/0.5_DP*(dvbdp1+dvbdp2), real(i1,DP), real(i2,DP)/)
-        rmapIter = map_insert(rhadapt%rBoundary(ibct), i12, Ddata)
       else
         ! Set nodal property
         rhadapt%p_InodalProperty(i12) = 0

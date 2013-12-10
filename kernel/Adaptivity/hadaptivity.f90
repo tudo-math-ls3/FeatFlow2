@@ -208,8 +208,9 @@ contains
     call hadapt_setNeighboursAtElement(rhadapt,&
                                        rtriangulation%h_IneighboursAtElement)
 
-    ! Set boundary for 2D
-    if (rtriangulation%ndim .eq. NDIM2D) then
+    ! Set boundary parametrisation for 2D
+    if ((rtriangulation%ndim .eq. NDIM2D) .and.&
+        (rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE)) then
       call hadapt_setBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
                               rtriangulation%h_IverticesAtBoundary,&
                               rtriangulation%h_DvertexParameterValue,&
@@ -287,7 +288,8 @@ contains
                                  rtriangulation%h_InodalProperty)
 
     ! Get boundary for 2D
-    if (rtriangulation%ndim .eq. NDIM2D) then
+    if ((rtriangulation%ndim .eq. NDIM2D) .and. &
+        (rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE)) then
       call hadapt_getBoundary(rhadapt, rtriangulation%h_IboundaryCpIdx,&
                               rtriangulation%h_IverticesAtBoundary,&
                               rtriangulation%h_DvertexParameterValue,&
