@@ -18,7 +18,7 @@ program meshadapt
   type(t_triangulation) :: rtria
   real(DP), dimension(:), pointer :: p_Dindicator
   integer, dimension(13) :: Istat1, Istat2
-  character(len=256) :: sarg, smesh, serror, sname, spredir, sdata
+  character(len=256) :: sarg, smesh, serror, sname, sdata
   integer :: i, iarg, idelay, iel, ilinelen, ios, iunit, nrefmax, ndim
   real(DP) :: dreftol, dcrstol
   logical :: bbnd, bdaemon
@@ -32,8 +32,6 @@ program meshadapt
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
   
-  if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./mesh"
-
   ! Print help
   if(sys_ncommandLineArgs() .lt. 1) then
     call output_lbrk()
@@ -43,7 +41,7 @@ program meshadapt
     call output_line("-read1d <mesh>              Read 1D mesh from <mesh>.tri")
     call output_line("-read2d <mesh>              Read 2D mesh from <mesh>.tri/prm")
     call output_line("-read3d <mesh>              Read 3D mesh from <mesh>.tri")
-    call output_line("-error <file>               Read elementwise error distribution from <file>.error")
+    call output_line("-error <file>               Read elementwise error distribution from <file>")
     call output_line("-refmax <n>                 Maximum number of refinement levels")
     call output_line("-reftol <d>                 Tolerance for refinement")
     call output_line("-crstol <d>                 Tolerance for recoarsening")
@@ -104,29 +102,29 @@ program meshadapt
       bdaemon = .true.
     else
       ! unknown parameter
-      call output_line("ERROR: unknown parameter '" // trim(sarg) // "'")
+      call output_line("ERROR: unknown parameter '"//trim(sarg)//"'")
       call sys_halt()
     end if
   end do
 
   ! Read boundary and mesh
   if(ndim .eq. 1) then
-    call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
-    call tria_readTriFile1D (rtria, trim(spredir)//"/"// trim(smesh) // '.tri')
+    call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
+    call tria_readTriFile1D (rtria, trim(smesh)//'.tri')
     bbnd = .false.
   else if(ndim .eq. 2) then
-    inquire(file=trim(spredir)//"/"// trim(smesh) // '.prm', exist=bbnd)
+    inquire(file=trim(smesh)//'.prm', exist=bbnd)
     if (bbnd) then
-      call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri/prm'...")
-      call boundary_read_prm(rbnd, trim(spredir)//"/"// trim(smesh) // '.prm')
-      call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri', rbnd)
+      call output_line("Reading mesh from '"//trim(smesh)//".tri/prm'...")
+      call boundary_read_prm(rbnd, trim(smesh)//'.prm')
+      call tria_readTriFile2D (rtria, trim(smesh)//'.tri', rbnd)
     else
-      call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
-      call tria_readTriFile2D (rtria, trim(spredir)//"/" // trim(smesh) // '.tri')
+      call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
+      call tria_readTriFile2D (rtria, trim(smesh)//'.tri')
     end if
   else if(ndim .eq. 3) then
-    call output_line("Reading mesh from '"//trim(spredir)//"/"//trim(smesh)//".tri'...")
-    call tria_readTriFile3D (rtria, trim(spredir)//"/"// trim(smesh) // '.tri')
+    call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
+    call tria_readTriFile3D (rtria, trim(smesh)//'.tri')
     bbnd = .false.
   else
     call output_line("ERROR: no input mesh specified")
@@ -146,16 +144,15 @@ program meshadapt
   ! Are we in daemon mode?
   if (bdaemon) then
     ! Get status of indicator field file
-    call stat(trim(spredir)//"/"// trim(serror), Istat1)
+    call stat(trim(serror), Istat1)
   end if
 
   ! Infinite loop for potential daemon mode
   daemon: do
 
     ! Read indicator vector
-    call output_line("Reading indicator field from '"//&
-        trim(spredir)//"/"//trim(serror)//"'...")
-    call io_openFileForReading(trim(spredir)//"/"// trim(serror), iunit, .true.)
+    call output_line("Reading indicator field from '"//trim(serror)//"'...")
+    call io_openFileForReading(trim(serror), iunit, .true.)
     
     ! Read first line from file
     read(iunit, fmt=*) iel
@@ -193,14 +190,11 @@ program meshadapt
     end if
     
     ! Export triangulation structure
-    call output_line("Exporting triangulation to '"//&
-        trim(spredir)//"/"//trim(smesh)//"_ref.tri'...")
+    call output_line("Exporting triangulation to '"//trim(smesh)//"_ref.tri'...")
     if (bbnd) then
-      call tria_exportTriFile(rtria, trim(spredir)//"/"//&
-          trim(smesh) // '_ref.tri', TRI_FMT_STANDARD)
+      call tria_exportTriFile(rtria, trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
     else
-      call tria_exportTriFile(rtria, trim(spredir)//"/"//&
-          trim(smesh) // '_ref.tri', TRI_FMT_NOPARAMETRISATION)
+      call tria_exportTriFile(rtria, trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
     end if
     
     ! Are we in daemon mode?
@@ -208,7 +202,7 @@ program meshadapt
     
     delay: do
       ! Get status of indicator field file
-      call stat(trim(spredir)//"/"// trim(serror), Istat2)
+      call stat(trim(serror), Istat2)
       if (Istat1(10) .ne. Istat2(10)) then
         Istat1 = Istat2
         exit delay
