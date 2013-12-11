@@ -4588,10 +4588,19 @@ contains
 !</subroutine>
 
     ! Replace triangular element
-    rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,0/)
-    rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,0/)
-    rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e4,e5,e6,0/)
 
+    ! We need to consider the special case that the mesh consists of
+    ! triangles only so that a trailing zero must not be set
+    if (rhadapt%InelOfType(TRIA_NVEQUAD2D) .eq. 0) then
+      rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,ipos)      = (/i1,i2,i3/)
+      rhadapt%p_IneighboursAtElement(1:TRIA_NVETRI2D,ipos)    = (/e1,e2,e3/)
+      rhadapt%p_ImidneighboursAtElement(1:TRIA_NVETRI2D,ipos) = (/e4,e5,e6/)
+    else
+      rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,ipos)      = (/i1,i2,i3,0/)
+      rhadapt%p_IneighboursAtElement(1:TRIA_NVEQUAD2D,ipos)    = (/e1,e2,e3,0/)
+      rhadapt%p_ImidneighboursAtElement(1:TRIA_NVEQUAD2D,ipos) = (/e4,e5,e6,0/)
+    end if
+    
   end subroutine replace_elementTria
 
   ! ***************************************************************************
