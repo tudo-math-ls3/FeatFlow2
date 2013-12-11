@@ -379,7 +379,7 @@ contains
     rhadapt%dcoarseningTolerance = 0._DP
 
     ! Clear data
-    rhadapt%iSpec            = HADAPT_UNDEFINED
+    rhadapt%iSpec            = HADAPT_NONE
     rhadapt%nRefinementSteps = 0
     rhadapt%nCoarseningSteps = 0
     rhadapt%nSmoothingSteps  = 0

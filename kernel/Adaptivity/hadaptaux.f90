@@ -127,34 +127,34 @@ module hadaptaux
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
   ! Adaptation is undefined
-  integer(I32), parameter, public :: HADAPT_UNDEFINED        = 2**0
+  integer(I32), parameter, public :: HADAPT_NONE             = 0_I32
 
   ! Parameters of adaptivity structure are initialised
-  integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
+  integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2_I32**0
 
   ! Map/quadtree/octree for vertex coordinates is generated
-  integer(I32), parameter, public :: HADAPT_HAS_COORDS       = 2**2
+  integer(I32), parameter, public :: HADAPT_HAS_COORDS       = 2_I32**1
 
   ! Array for IverticesAtElement is generated
-  integer(I32), parameter, public :: HADAPT_HAS_VERTATELEM   = 2**3
+  integer(I32), parameter, public :: HADAPT_HAS_VERTATELEM   = 2_I32**2
 
   ! Array for IneighboursAtElement is generated
-  integer(I32), parameter, public :: HADAPT_HAS_NEIGHATELEM  = 2**4
+  integer(I32), parameter, public :: HADAPT_HAS_NEIGHATELEM  = 2_I32**3
 
   ! Array for ImidneighboursAtElement is generated
-  integer(I32), parameter, public :: HADAPT_HAS_MIDNEIGH     = 2**5
+  integer(I32), parameter, public :: HADAPT_HAS_MIDNEIGH     = 2_I32**4
 
   ! Boundary data is generated
-  integer(I32), parameter, public :: HADAPT_HAS_BOUNDARY     = 2**6
+  integer(I32), parameter, public :: HADAPT_HAS_BOUNDARY     = 2_I32**5
 
   ! Nodal property is generated
-  integer(I32), parameter, public :: HADAPT_HAS_NODALPROP    = 2**7
+  integer(I32), parameter, public :: HADAPT_HAS_NODALPROP    = 2_I32**6
 
   ! Number of elements for predefined type
-  integer(I32), parameter, public :: HADAPT_HAS_NELOFTYPE    = 2**8
+  integer(I32), parameter, public :: HADAPT_HAS_NELOFTYPE    = 2_I32**7
 
   ! Array for IelementsAtVertex is generated
-  integer(I32), parameter, public :: HADAPT_HAS_ELEMATVERTEX = 2**9
+  integer(I32), parameter, public :: HADAPT_HAS_ELEMATVERTEX = 2_I32**8
 
   ! Dynamic data structures in 1D are all generated
   integer(I32), parameter, public :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
@@ -185,10 +185,10 @@ module hadaptaux
                                                                  HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
-  integer(I32), parameter, public :: HADAPT_MARKEDREFINE     = 2**10
+  integer(I32), parameter, public :: HADAPT_MARKEDREFINE     = 2_I32**9
 
   ! Cells are marked for coarsening
-  integer(I32), parameter, public :: HADAPT_MARKEDCOARSEN    = 2**11
+  integer(I32), parameter, public :: HADAPT_MARKEDCOARSEN    = 2_I32**10
 
   ! Cells are marked
   integer(I32), parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
@@ -309,15 +309,15 @@ module hadaptaux
 !<constantblock
 ! description="Duplication flags. Specifies which information is shared between adaptivity structures">
 
-  integer(I32), parameter, public :: HADAPT_SHARE_IMARKER            = 2** 0
-  integer(I32), parameter, public :: HADAPT_SHARE_IVERTEXAGE         = 2** 1
-  integer(I32), parameter, public :: HADAPT_SHARE_INODALPROPERTY     = 2** 2
-  integer(I32), parameter, public :: HADAPT_SHARE_IVERTICESATELEMENT = 2** 3
-  integer(I32), parameter, public :: HADAPT_SHARE_INEIGHATELEMENT    = 2** 4
-  integer(I32), parameter, public :: HADAPT_SHARE_IMIDNEIGHATELEMENT = 2** 5
-  integer(I32), parameter, public :: HADAPT_SHARE_RVERTEXCOORDINATES = 2** 6
-  integer(I32), parameter, public :: HADAPT_SHARE_RBOUNDARY          = 2** 7
-  integer(I32), parameter, public :: HADAPT_SHARE_RELEMENTSATVERTEX  = 2** 8
+  integer(I32), parameter, public :: HADAPT_SHARE_IMARKER            = 2_I32**0
+  integer(I32), parameter, public :: HADAPT_SHARE_IVERTEXAGE         = 2_I32**1
+  integer(I32), parameter, public :: HADAPT_SHARE_INODALPROPERTY     = 2_I32**2
+  integer(I32), parameter, public :: HADAPT_SHARE_IVERTICESATELEMENT = 2_I32**3
+  integer(I32), parameter, public :: HADAPT_SHARE_INEIGHATELEMENT    = 2_I32**4
+  integer(I32), parameter, public :: HADAPT_SHARE_IMIDNEIGHATELEMENT = 2_I32**5
+  integer(I32), parameter, public :: HADAPT_SHARE_RVERTEXCOORDINATES = 2_I32**6
+  integer(I32), parameter, public :: HADAPT_SHARE_RBOUNDARY          = 2_I32**7
+  integer(I32), parameter, public :: HADAPT_SHARE_RELEMENTSATVERTEX  = 2_I32**8
 
 !</constantblock>
 
@@ -335,7 +335,7 @@ module hadaptaux
   ! adaptive grid refinement and grid coarsening.
   type :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
-    integer(I32) :: iSpec = HADAPT_UNDEFINED
+    integer(I32) :: iSpec = HADAPT_NONE
 
     ! Duplication flag. Bitfield that indicates which information is
     ! shared with another adaptivity structure.
@@ -344,7 +344,7 @@ module hadaptaux
     ! not be deleted by hadapt_releaseAdaptation.
     ! When the bit is 0, the array is a real copy of another array
     ! and must be deleted in hadapt_releaseAdaptation.
-    integer(I32) :: iduplicationFlag = 0
+    integer(I32) :: iduplicationFlag = 0_I32
 
     ! Tag: Specifies the strategy for grid refinement and coarsening
     integer :: iadaptationStrategy = HADAPT_NOADAPTATION
