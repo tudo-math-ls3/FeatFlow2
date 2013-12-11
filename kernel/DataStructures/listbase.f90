@@ -21,13 +21,13 @@ module listbase
 !<constantblock description="Flags for the iterator specification bitfield">
 
   ! Reverse iterator
-  integer(I32), parameter, public :: LIST_LSPEC_REVERSE = 2**0
+  integer(I32), parameter, public :: LIST_LSPEC_REVERSE = 2_I32**0
 
   ! Iterator refers to virtual position. This flag is set if the key
   ! value is not found in an ordered list and the returned iterator
   ! refers to the element which follows the desired element in
   ! lexicographical order
-  integer(I32), parameter, public :: LIST_LSPEC_VIRTUAL = 2**1
+  integer(I32), parameter, public :: LIST_LSPEC_VIRTUAL = 2_I32**1
 
 !</constantblock>
 

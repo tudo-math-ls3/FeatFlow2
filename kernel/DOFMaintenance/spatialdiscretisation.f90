@@ -282,36 +282,36 @@ module spatialdiscretisation
   integer(I32), parameter, public :: SPDISC_CUB_AUTOMATIC = CUB_GEN_AUTO
 
   ! Cubature formula stays unchanged.
-  integer(I32), parameter, public :: SPDISC_CUB_NOCHANGE  = -20
+  integer(I32), parameter, public :: SPDISC_CUB_NOCHANGE  = -20_I32
 
 !</constantblock>
 
 !<constantblock description="Operator types">
 
   ! Mass matrix
-  integer(I32), parameter, public :: SPDISC_OPTP_MASS = 0
+  integer(I32), parameter, public :: SPDISC_OPTP_MASS = 0_I32
 
   ! Laplace matrix
-  integer(I32), parameter, public :: SPDISC_OPTP_LAPLACE = 1
+  integer(I32), parameter, public :: SPDISC_OPTP_LAPLACE = 1_I32
 
   ! RHS
-  integer(I32), parameter, public :: SPDISC_OPTP_RHS = 2
+  integer(I32), parameter, public :: SPDISC_OPTP_RHS = 2_I32
 
   ! Convection matrix
-  integer(I32), parameter, public :: SPDISC_OPTP_CONVEC = 3
+  integer(I32), parameter, public :: SPDISC_OPTP_CONVEC = 3_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="Additional generic cubature formulas">
 
   ! DEPRECATED: Use ccubTypeBilForm from the discretisation structure.
-  integer(I32), parameter, public :: CUB_GEN_DEPR_BILFORM = CUB_TP_DEPR + 10
+  integer(I32), parameter, public :: CUB_GEN_DEPR_BILFORM = CUB_TP_DEPR + 10_I32
 
   ! DEPRECATED: Use ccubTypeLinForm from the discretisation structure.
-  integer(I32), parameter, public :: CUB_GEN_DEPR_LINFORM = CUB_TP_DEPR + 11
+  integer(I32), parameter, public :: CUB_GEN_DEPR_LINFORM = CUB_TP_DEPR + 11_I32
 
   ! DEPRECATED: Use ccubTypeEval from the discretisation structure.
-  integer(I32), parameter, public :: CUB_GEN_DEPR_EVAL = CUB_TP_DEPR + 12
+  integer(I32), parameter, public :: CUB_GEN_DEPR_EVAL = CUB_TP_DEPR + 12_I32
 
 !</constantblock>
 

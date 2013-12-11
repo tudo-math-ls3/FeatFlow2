@@ -32,28 +32,28 @@ module elementbase
 
   ! Calculate the coordinates of teh points that form the element.
   ! (Usually the corners of the element.)
-  integer(I32), parameter, public :: EL_EVLTAG_COORDS       = 2**0
+  integer(I32), parameter, public :: EL_EVLTAG_COORDS       = 2_I32**0
 
   ! Prepare the coordinates on the reference element of the points where to evaluate.
   ! A set of coordinates on one element must be specified in the preparation routine.
   ! These coordinates are transferred to all elements where to evaluate.
   ! For the preparation routine on one element: Transfer the source coordinates
   ! on the reference element to the evaluation structure.
-  integer(I32), parameter, public :: EL_EVLTAG_REFPOINTS    = 2**1
+  integer(I32), parameter, public :: EL_EVLTAG_REFPOINTS    = 2_I32**1
 
   ! Calculate the real coordinates of the points where to evaluate.
   ! The real coordinates are calculated based on the corresponding mapping from the
   ! reference to the real element.
-  integer(I32), parameter, public :: EL_EVLTAG_REALPOINTS   = 2**2
+  integer(I32), parameter, public :: EL_EVLTAG_REALPOINTS   = 2_I32**2
 
   ! Calculate the Jacobian matrix of the points where to evaluate
-  integer(I32), parameter, public :: EL_EVLTAG_JAC          = 2**3
+  integer(I32), parameter, public :: EL_EVLTAG_JAC          = 2_I32**3
 
   ! Calculate the Jacobian determinant in the points where to evaluate
-  integer(I32), parameter, public :: EL_EVLTAG_DETJ         = 2**4
+  integer(I32), parameter, public :: EL_EVLTAG_DETJ         = 2_I32**4
 
   ! Calculate the twist indices
-  integer(I32), parameter, public :: EL_EVLTAG_TWISTIDX     = 2**5
+  integer(I32), parameter, public :: EL_EVLTAG_TWISTIDX     = 2_I32**5
 
 !</constantblock>
 

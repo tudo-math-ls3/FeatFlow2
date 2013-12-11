@@ -160,12 +160,12 @@ module boundary
   ! The startpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! min. parameter value does not belong to the boundary segment.
-  integer, parameter, public :: BDR_PROP_WITHSTART = 2**0
+  integer, parameter, public :: BDR_PROP_WITHSTART = 2_I32**0
 
   ! The endpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! max. parameter value does not belong to the boundary segment.
-  integer, parameter, public :: BDR_PROP_WITHEND = 2**1
+  integer, parameter, public :: BDR_PROP_WITHEND = 2_I32**1
 
 !</constantblock>
 

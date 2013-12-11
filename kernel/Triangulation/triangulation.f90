@@ -651,15 +651,15 @@ module triangulation
   ! were formally element midpoints on the coarse mesh were recalculated
   ! by taking the mean of the corners.
   ! This helps avoiding tangled elements when there is a "hole" in the domain.
-  integer(I32), parameter, public :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2**0
+  integer(I32), parameter, public :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2_I32**0
 
   ! After refinement, the coordinates of points on the boundary are
   ! recalculated using their parameter values (only 2D)
-  integer(I32), parameter, public :: TRIA_R2LV_RECALCCOORDSONBD  = 2**1
+  integer(I32), parameter, public :: TRIA_R2LV_RECALCCOORDSONBD  = 2_I32**1
 
   ! After refinement, do not produce an extended raw mesh, just produce
   ! a simple raw mesh.
-  integer(I32), parameter, public :: TRIA_R2LV_NOEXTENDEDRAW     = 2**2
+  integer(I32), parameter, public :: TRIA_R2LV_NOEXTENDEDRAW     = 2_I32**2
 
   ! Standard parameter settings for 2-level refinement
   integer(I32), parameter, public :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS + &
@@ -670,39 +670,39 @@ module triangulation
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between triangulation structures">
 
-  integer(I32), parameter, public :: TR_SHARE_DVERTEXCOORDS          = 2** 0  ! DCORVG
-  integer(I32), parameter, public :: TR_SHARE_DFREEVERTEXCOORDINATES = 2** 1  ! DCORMG
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID
-  integer(I32), parameter, public :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL
-  integer(I32), parameter, public :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 8  ! KVBD
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATBOUNDARY    = 2** 9  ! KEBD
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYCPIDX         = 2**10  ! KBCT
-  integer(I32), parameter, public :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**11  ! DVBDP
-  integer(I32), parameter, public :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**12  ! DMBDP
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATBOUNDARY       = 2**13  ! KMBD
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATEDGE        = 2**14  ! KEAN
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**15  ! KVBDI
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**16  ! KMBDI
-  integer(I32), parameter, public :: TR_SHARE_DELEMENTAREA           = 2**17  ! DAREA
-  integer(I32), parameter, public :: TR_SHARE_IREFINEMENTPATCH       = 2**18
-  integer(I32), parameter, public :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**19
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXCOORDS          = 2_I32** 0  ! DCORVG
+  integer(I32), parameter, public :: TR_SHARE_DFREEVERTEXCOORDINATES = 2_I32** 1  ! DCORMG
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATELEMENT     = 2_I32** 2  ! KVERT
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATELEMENT        = 2_I32** 3  ! KMID
+  integer(I32), parameter, public :: TR_SHARE_INEIGHBOURSATELEMENT   = 2_I32** 4  ! KADJ
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATVERTEX      = 2_I32** 5  ! KVEL
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATEDGE        = 2_I32** 6  ! KMEL
+  integer(I32), parameter, public :: TR_SHARE_INODALPROPERTY         = 2_I32** 7  ! KNPR
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATBOUNDARY    = 2_I32** 8  ! KVBD
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATBOUNDARY    = 2_I32** 9  ! KEBD
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYCPIDX         = 2_I32**10  ! KBCT
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2_I32**11  ! DVBDP
+  integer(I32), parameter, public :: TR_SHARE_DEDGEPARAMETERVALUE    = 2_I32**12  ! DMBDP
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATBOUNDARY       = 2_I32**13  ! KMBD
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATEDGE        = 2_I32**14  ! KEAN
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2_I32**15  ! KVBDI
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYEDGEPOS       = 2_I32**16  ! KMBDI
+  integer(I32), parameter, public :: TR_SHARE_DELEMENTAREA           = 2_I32**17  ! DAREA
+  integer(I32), parameter, public :: TR_SHARE_IREFINEMENTPATCH       = 2_I32**18
+  integer(I32), parameter, public :: TR_SHARE_ICOARSEGRIDELEMENT     = 2_I32**19
 
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR
-  integer(I32), parameter, public :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATFACE        = 2**22
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATFACE           = 2**23
-  integer(I32), parameter, public :: TR_SHARE_IFACESATEDGE           = 2**24
-  integer(I32), parameter, public :: TR_SHARE_IFACESATVERTEX         = 2**25
-  integer(I32), parameter, public :: TR_SHARE_IFACESATBOUNDARY       = 2**26
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATFACE        = 2_I32**20  ! KVAR
+  integer(I32), parameter, public :: TR_SHARE_IFACESATELEMENT        = 2_I32**21  ! KAREA
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATFACE        = 2_I32**22
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATFACE           = 2_I32**23
+  integer(I32), parameter, public :: TR_SHARE_IFACESATEDGE           = 2_I32**24
+  integer(I32), parameter, public :: TR_SHARE_IFACESATVERTEX         = 2_I32**25
+  integer(I32), parameter, public :: TR_SHARE_IFACESATBOUNDARY       = 2_I32**26
 
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATVERTEX         = 2**27
-  integer(I32), parameter, public :: TR_SHARE_ITWISTINDEX            = 2**28
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATVERTEX         = 2_I32**27
+  integer(I32), parameter, public :: TR_SHARE_ITWISTINDEX            = 2_I32**28
 
-  integer(I32), parameter, public :: TR_SHARE_IMACRONODALPROPERTY    = 2**29
+  integer(I32), parameter, public :: TR_SHARE_IMACRONODALPROPERTY    = 2_I32**29
 
   ! Share information for an extended raw mesh.
   integer(I32), parameter, public :: TR_SHARE_EXTENDEDRAW            = &
@@ -765,24 +765,24 @@ module triangulation
   ! Standard TRI file format, compatible to FEAT1.
   ! For 2D triangulations, Vertex coordinates of boundary vertices are
   ! replaced by parameter values.
-  integer(I32), parameter, public :: TRI_FMT_STANDARD          = 0
+  integer(I32), parameter, public :: TRI_FMT_STANDARD          = 0_I32
 
   ! Standard TRI file format, but the vertex coordinates are
   ! exported "as they are", not as parameter values.
-  integer(I32), parameter, public :: TRI_FMT_NOPARAMETRISATION = 2**0
+  integer(I32), parameter, public :: TRI_FMT_NOPARAMETRISATION = 2_I32**0
 
 !</constantblock>
 
 !<constantblock description="Neighbourhood specifiers for tria_getSubmeshNeighbourhood.">
 
   ! All elements adjacent by vertices.
-  integer(i32), parameter, public :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2**0
+  integer(i32), parameter, public :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2_I32**0
 
   ! All elements adjacent by edges (only 2D and 3D).
-  integer(i32), parameter, public :: TRI_NEIGH_EDGENEIGHBOURS           = 2**1
+  integer(i32), parameter, public :: TRI_NEIGH_EDGENEIGHBOURS           = 2_I32**1
 
   ! All elements adjacent by faces (only 3D).
-  integer(i32), parameter, public :: TRI_NEIGH_FACENEIGHBOURS           = 2**2
+  integer(i32), parameter, public :: TRI_NEIGH_FACENEIGHBOURS           = 2_I32**2
 
   ! All adjacent elements
   integer(i32), parameter, public :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &

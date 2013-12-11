@@ -258,7 +258,7 @@ module transformation
 
 !<constantblock description="Dimension constants for bit 8+9 of the transformation ID.">
   ! Bitmasks for dimension
-  integer(I32), parameter, public :: TRAFO_DIM_DIMENSION = 2**8 + 2**9
+  integer(I32), parameter, public :: TRAFO_DIM_DIMENSION = 2_I32**8 + 2_I32**9
 
   ! 1D element
   integer(I32), parameter, public :: TRAFO_DIM_1D = ishft(NDIM1D,8)
@@ -270,7 +270,7 @@ module transformation
   integer(I32), parameter, public :: TRAFO_DIM_3D = ishft(NDIM3D,8)
 
   ! Bitmask for transformation ID, without additional information
-  integer(I32), parameter, public :: TRAFO_DIM_IDMASK = 255
+  integer(I32), parameter, public :: TRAFO_DIM_IDMASK = 255_I32
 
   ! Bitmask for transformation ID including dimension, without additional information
   integer(I32), parameter, public :: TRAFO_DIM_IDDIMMASK = TRAFO_DIM_IDMASK + TRAFO_DIM_DIMENSION
@@ -279,7 +279,7 @@ module transformation
 
 !<constantblock description="id values for coordinate systems">
   ! Undefined coordinate system or no coordinate system
-  integer(I32), parameter, public :: TRAFO_CS_UNDEFINED   = 0
+  integer(I32), parameter, public :: TRAFO_CS_UNDEFINED   = 0_I32
 
   ! General 1D coordinate system
   integer(I32), parameter, public :: TRAFO_CS_GENERAL_1D  = TRAFO_DIM_1D
@@ -291,49 +291,49 @@ module transformation
   integer(I32), parameter, public :: TRAFO_CS_GENERAL_3D  = TRAFO_DIM_3D
 
   ! Parameter value [-1..1] on reference interval in 1D
-  integer(I32), parameter, public :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
+  integer(I32), parameter, public :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1_I32
 
   ! Barycentric coordinates on triangle
-  integer(I32), parameter, public :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 1
+  integer(I32), parameter, public :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 1_I32
 
   ! 2D coordinates on reference triangle
-  integer(I32), parameter, public :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 2
+  integer(I32), parameter, public :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 2_I32
 
   ! 2D coordinates on real triangle
-  integer(I32), parameter, public :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 3
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 3_I32
 
   ! 2D coordinates on reference quadrilateral
-  integer(I32), parameter, public :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 4
+  integer(I32), parameter, public :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 4_I32
 
   ! 2D coordinates on real quadrilateral
-  integer(I32), parameter, public :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 5
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 5_I32
 
   ! Barycentric coordinates on tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 1
+  integer(I32), parameter, public :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 1_I32
 
   ! 3D coordinates on reference tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 2
+  integer(I32), parameter, public :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 2_I32
 
   ! 3D coodinates on real tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 3
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 3_I32
 
   ! 3D coordinates on reference hexahedron
-  integer(I32), parameter, public :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 4
+  integer(I32), parameter, public :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 4_I32
 
   ! 3D coordinates on real hexahedron
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 5
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 5_I32
 
   ! 3D coordinates on reference pyramid
-  integer(I32), parameter, public :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 6
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 6_I32
 
   ! 3D coordinates on real pyramid
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 7
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 7_I32
 
   ! 3D coordinates on reference prism
-  integer(I32), parameter, public :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 8
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 8_I32
 
   ! 3D coordinates on real prism
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 9
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 9_I32
 !</constantblock>
 
 !</constants>

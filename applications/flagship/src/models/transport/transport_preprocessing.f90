@@ -855,7 +855,7 @@ contains
         p_rgroupFEMSet =>&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
         
-        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        if (p_rgroupFEMSet%isetSpec .eq. 0_I32) then
           ! Initialise first group finite element set for edge-based assembly
           call gfem_initGroupFEMSet(p_rgroupFEMSet,&
               rproblemLevel%RmatrixScalar(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
@@ -890,7 +890,7 @@ contains
         p_rgroupFEMSet =>&
             rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
         
-        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        if (p_rgroupFEMSet%isetSpec .eq. 0_I32) then
           ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
@@ -940,7 +940,7 @@ contains
       ! term by duplicating parts of the template group finite element set
       if (convectionAFC > 0) then
         if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
-            .eq. AFCSTAB_UNDEFINED) then
+            .eq. AFCSTAB_NONE) then
           call afcstab_initFromParameterlist(rparlist, sconvection,&
               rproblemLevel%Rafcstab(convectionAFC))
           call afcsc_initStabilisation(&
@@ -965,7 +965,7 @@ contains
         p_rgroupFEMSet =>&
             rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
         
-        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        if (p_rgroupFEMSet%isetSpec .eq. 0_I32) then
           ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
@@ -1003,7 +1003,7 @@ contains
       ! term by duplicating parts of the template group finite element set
       if (diffusionAFC > 0) then
         if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
-            .eq. AFCSTAB_UNDEFINED) then
+            .eq. AFCSTAB_NONE) then
           call afcstab_initFromParameterlist(rparlist, sdiffusion,&
               rproblemLevel%Rafcstab(diffusionAFC))
           rproblemLevel%Rafcstab(diffusionAFC)%bisSymmetricOperator = .true.
@@ -1021,7 +1021,7 @@ contains
       ! duplicating parts of the template group finite element set
       if (massAFC > 0) then
         if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
-            .eq. AFCSTAB_UNDEFINED) then
+            .eq. AFCSTAB_NONE) then
           call afcstab_initFromParameterlist(rparlist, smass,&
               rproblemLevel%Rafcstab(massAFC))
           call afcsc_initStabilisation(&
@@ -1418,7 +1418,7 @@ contains
       ! input/output parameters
       type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
       
-      if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+      if (rgroupFEMSet%isetSpec .eq. 0_I32) then
         ! Initialise finite element set for node-based assembly
         call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
             0, 0, 0, GFEM_NODEBASED, rregionTrial=rregion)
@@ -1753,7 +1753,7 @@ contains
         end do richardson
         
         ! Initialise stabilisation structure by hand
-        rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
+        rafcstab%istabilisationSpec = AFCSTAB_NONE
         rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
         rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
         call afcsc_initStabilisation(rproblemLevel%RmatrixScalar(systemMatrix), rafcstab)

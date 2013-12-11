@@ -30,10 +30,10 @@ module blockmatassemblybase
 !<constantblock description="Constants for the initialisation">
 
   ! Do not compute extra information
-  integer(I32), parameter, public :: BMA_CALC_NONE = 0
+  integer(I32), parameter, public :: BMA_CALC_NONE = 0_I32
 
   ! Compute real world coordinates. Usually needed in callback routines
-  integer(I32), parameter, public :: BMA_CALC_REALCOORDS = 2**0
+  integer(I32), parameter, public :: BMA_CALC_REALCOORDS = 2_I32**0
 
   ! Default flags
   integer(I32), parameter, public :: BMA_CALC_STANDARD = BMA_CALC_REALCOORDS
@@ -43,10 +43,10 @@ module blockmatassemblybase
 !<constantblock description="Constants for integral calculation routines">
 
   ! Standard operation: Sum up subdomain integrals
-  integer(I32), parameter, public :: BMA_INT_SUM = 0
+  integer(I32), parameter, public :: BMA_INT_SUM = 0_I32
 
   ! MAX operation: Return value is the maximum of the values calculated on the subdomains
-  integer(I32), parameter, public :: BMA_INT_MAX = 1
+  integer(I32), parameter, public :: BMA_INT_MAX = 1_I32
 
 !</constantblock>
 
@@ -156,8 +156,8 @@ module blockmatassemblybase
     logical :: bsharedMatrixStructure = .false.
 
     ! Type of element to evaluate in the trial and test space.
-    integer(I32) :: celementTrial = 0
-    integer(I32) :: celementTest = 0
+    integer(I32) :: celementTrial = 0_I32
+    integer(I32) :: celementTest = 0_I32
 
     ! Whether trial and test space is identical
     logical :: bIdenticalTrialAndTest = .false.
@@ -257,7 +257,7 @@ module blockmatassemblybase
     integer :: ncubp = 0
 
     ! Basic evaluation tag; use the same for all the element spaces
-    integer(I32) :: cevaluationTag = 0
+    integer(I32) :: cevaluationTag = 0_I32
 
     ! Underlying triangulation
     type(t_triangulation), pointer :: p_rtriangulation => null()
@@ -352,7 +352,7 @@ module blockmatassemblybase
     !-->
 
     ! Type of element to evaluate in the trial and test space.
-    integer(I32) :: celementTest = 0
+    integer(I32) :: celementTest = 0_I32
 
     ! Reference to the vector to be computed.
     type(t_vectorScalar), pointer :: p_rvector => null()
@@ -444,7 +444,7 @@ module blockmatassemblybase
     integer :: ncubp = 0
 
     ! Basic evaluation tag; use the same for all the element spaces
-    integer(I32) :: cevaluationTag = 0
+    integer(I32) :: cevaluationTag = 0_I32
 
     ! Underlying triangulation
     type(t_triangulation), pointer :: p_rtriangulation => null()
@@ -542,7 +542,7 @@ module blockmatassemblybase
     integer :: ncubp = 0
 
     ! Basic evaluation tag; use the same for all the element spaces
-    integer(I32) :: cevaluationTag = 0
+    integer(I32) :: cevaluationTag = 0_I32
 
     ! Underlying triangulation
     type(t_triangulation), pointer :: p_rtriangulation => null()

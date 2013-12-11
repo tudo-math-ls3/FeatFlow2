@@ -158,10 +158,10 @@ module statistics
   integer, parameter, public :: STAT_TIMERNOTRUNNING = 0
 
   ! Short-term timer
-  integer, parameter, public :: STAT_TIMERSHORT = 2**0
+  integer, parameter, public :: STAT_TIMERSHORT = 2_I32**0
 
   ! Long-term timer
-  integer, parameter, public :: STAT_TIMERLONG = 2**1
+  integer, parameter, public :: STAT_TIMERLONG = 2_I32**1
 
   ! Standard timer for both, short and long time time measurement
   integer, parameter, public :: STAT_TIMERSTANDARD = STAT_TIMERSHORT + STAT_TIMERLONG

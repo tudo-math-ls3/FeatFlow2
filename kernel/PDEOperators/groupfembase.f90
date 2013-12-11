@@ -427,13 +427,13 @@ module groupfembase
     ! combination of different GFEM_SHARE_xxxx constants and
     ! specifies which parts of the structure are shared with
     ! another structure.
-    integer(I32) :: iduplicationFlag = GFEM_UNDEFINED
+    integer(I32) :: iduplicationFlag = 0_I32
 
     ! Specification Flag: Specifies the group finite element set. This
     ! is a bitfield coming from an OR combination of different
     ! GFEM_HAS_xxxx constants and specifies various properties of the
     ! structure.
-    integer(I32) :: isetSpec = GFEM_UNDEFINED
+    integer(I32) :: isetSpec = 0_I32
 
     ! Number of non-zero entries of the sparsity pattern
     integer :: NA = 0
@@ -1164,8 +1164,8 @@ contains
     rgroupFEMSet%h_CoeffsAtEdge = ST_NOHANDLE
 
     ! Unset ownerships and specification
-    rgroupFEMSet%iduplicationFlag = GFEM_UNDEFINED
-    rgroupFEMSet%isetSpec         = GFEM_UNDEFINED
+    rgroupFEMSet%iduplicationFlag = 0_I32
+    rgroupFEMSet%isetSpec         = 0_I32
 
     ! Reset data
     rgroupFEMSet%cassemblyType = GFEM_UNDEFINED

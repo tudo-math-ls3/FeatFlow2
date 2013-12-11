@@ -1518,7 +1518,7 @@ contains
         p_rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
 
     ! Initialise the stabilisation structure
-    rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
+    rafcstab%istabilisationSpec= AFCSTAB_NONE
     rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
     rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
     call afcsc_initStabilisation(rmatrixMass, rafcstab)

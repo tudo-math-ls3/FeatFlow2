@@ -79,19 +79,19 @@ module meshregion
 !<constantblock description="Cell type identificator flags">
 
   ! Identification flag for the vertice index array
-  integer(I32), parameter, public :: MSHREG_IDX_VERTEX  = 2**0
+  integer(I32), parameter, public :: MSHREG_IDX_VERTEX  = 2_I32**0
 
   ! Identification flag for the edge index array
-  integer(I32), parameter, public :: MSHREG_IDX_EDGE    = 2**1
+  integer(I32), parameter, public :: MSHREG_IDX_EDGE    = 2_I32**1
 
   ! Identification flag for the face index array
-  integer(I32), parameter, public :: MSHREG_IDX_FACE    = 2**2
+  integer(I32), parameter, public :: MSHREG_IDX_FACE    = 2_I32**2
 
   ! Identification flag for the element index array
-  integer(I32), parameter, public :: MSHREG_IDX_ELEMENT = 2**3
+  integer(I32), parameter, public :: MSHREG_IDX_ELEMENT = 2_I32**3
 
   ! Identification flag for no index arrays
-  integer(I32), parameter, public :: MSHREG_IDX_NONE    = 0
+  integer(I32), parameter, public :: MSHREG_IDX_NONE    = 0_I32
 
   ! Identification flag for all index arrays
   integer(I32), parameter, public :: MSHREG_IDX_ALL     = MSHREG_IDX_VERTEX +&
@@ -102,13 +102,13 @@ module meshregion
 !<constantblock description="Mask operator types">
 
   ! Kick the old index array
-  integer(I32), parameter, public :: MSHREG_MASK_KICK = 0
+  integer(I32), parameter, public :: MSHREG_MASK_KICK = 0_I32
 
   ! Apply the OR-operator
-  integer(I32), parameter, public :: MSHREG_MASK_OR   = 1
+  integer(I32), parameter, public :: MSHREG_MASK_OR   = 1_I32
 
   ! Apply the AND-operator
-  integer(I32), parameter, public :: MSHREG_MASK_AND  = 2
+  integer(I32), parameter, public :: MSHREG_MASK_AND  = 2_I32
 
 !</constantblock>
 
@@ -128,7 +128,7 @@ module meshregion
     ! constants defined above. If a MSHREG_IDX_XXXX flag is defined,
     ! then the mesh region shares the corresponding index array with
     ! another structure.
-    integer(I32) :: cshareFlags = 0
+    integer(I32) :: cshareFlags = 0_I32
 
     ! Number of vertices in the mesh region.
     integer :: NVT = 0

@@ -1210,7 +1210,7 @@ module eulerlagrange_application
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
-      if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_NONE) then
 
         ! Get number of expressions for limiting variables
         nvariable = max(1,&
@@ -1640,7 +1640,7 @@ module eulerlagrange_application
         end do
         
         ! Initialise stabilisation structure by hand
-        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%iSpec= AFCSTAB_NONE
         rafcstab%bprelimiting = .false.
         rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
         call afcsys_initStabilisation(&

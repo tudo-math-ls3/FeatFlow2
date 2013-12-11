@@ -895,29 +895,29 @@ module linearsolver
 !<constantblock description="Bitfield identifiers for the ability of a linear solver">
 
   ! Solver can handle scalar systems
-  integer(I32), parameter, public :: LINSOL_ABIL_SCALAR       = 2**0
+  integer(I32), parameter, public :: LINSOL_ABIL_SCALAR       = 2_I32**0
 
   ! Solver can handle block systems
-  integer(I32), parameter, public :: LINSOL_ABIL_BLOCK        = 2**1
+  integer(I32), parameter, public :: LINSOL_ABIL_BLOCK        = 2_I32**1
 
   ! Solver can handle multiple levels
-  integer(I32), parameter, public :: LINSOL_ABIL_MULTILEVEL   = 2**2
+  integer(I32), parameter, public :: LINSOL_ABIL_MULTILEVEL   = 2_I32**2
   
   ! Solver allows checking the defect during the iteration.
   ! Solvers not capable of this perform only a fixed number of solution
   ! steps (e.g. UMFPACK performs always one step).
-  integer(I32), parameter, public :: LINSOL_ABIL_CHECKDEF     = 2**3
+  integer(I32), parameter, public :: LINSOL_ABIL_CHECKDEF     = 2_I32**3
   
   ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
-  integer(I32), parameter, public :: LINSOL_ABIL_DIRECT       = 2**4
+  integer(I32), parameter, public :: LINSOL_ABIL_DIRECT       = 2_I32**4
   
   ! Solver might use subsolvers (preconditioners, smoothers,...)
-  integer(I32), parameter, public :: LINSOL_ABIL_USESUBSOLVER = 2**5
+  integer(I32), parameter, public :: LINSOL_ABIL_USESUBSOLVER = 2_I32**5
   
   ! Solver supports filtering
-  integer(I32), parameter, public :: LINSOL_ABIL_USEFILTER    = 2**6
+  integer(I32), parameter, public :: LINSOL_ABIL_USEFILTER    = 2_I32**6
   
 !</constantblock>
 
@@ -1366,7 +1366,7 @@ module linearsolver
     ! whether it can handle block-matrices or only scalar matrices,...).
     ! Calling a solver that is not able to handle a specific problem
     ! will cause an error by the framework.
-    integer(I32)                    :: ccapability = 0
+    integer(I32)                    :: ccapability = 0_I32
     
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     integer                    :: icurrentIteration

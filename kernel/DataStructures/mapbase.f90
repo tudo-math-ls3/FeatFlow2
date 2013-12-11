@@ -22,10 +22,10 @@ module mapbase
 !<constantblock description="Flags for the iterator specification bitfield">
 
   ! Reverse iterator
-  integer(I32), parameter, public :: MAP_MSPEC_REVERSE = 2**0
+  integer(I32), parameter, public :: MAP_MSPEC_REVERSE = 2_I32**0
 
   ! Iterator refers to element which already exists
-  integer(I32), parameter, public :: MAP_MSPEC_EXISTS  = 2**1
+  integer(I32), parameter, public :: MAP_MSPEC_EXISTS  = 2_I32**1
 
 !</constantblock>
 

@@ -451,15 +451,15 @@ module linearsystemscalar
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  integer(I32), parameter, public :: LSYSSC_MSPEC_STANDARD =        0
+  integer(I32), parameter, public :: LSYSSC_MSPEC_STANDARD =        0_I32
 
   ! Matrix structure is a copy of another matrix, shared via the same
   ! handles.
-  integer(I32), parameter, public :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
+  integer(I32), parameter, public :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2_I32**0
 
   ! Matrix content is a copy of another matrix, shared via the same
   ! handles.
-  integer(I32), parameter, public :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
+  integer(I32), parameter, public :: LSYSSC_MSPEC_CONTENTISCOPY   = 2_I32**1
 
   ! Complete matrix is duplicate of another matrix and shares structure
   ! and entries via the same pointers
@@ -471,10 +471,10 @@ module linearsystemscalar
   ! 1.) set this flag in the imatrixSpec bitfield
   ! 2.) exchange the values in t_matrixScalar\%NEQ and t_matrixScalar\%NCOLS
   !     of the matrix structure.
-  integer(I32), parameter, public :: LSYSSC_MSPEC_TRANSPOSED =      2**2
+  integer(I32), parameter, public :: LSYSSC_MSPEC_TRANSPOSED =      2_I32**2
 
   ! Matrix not present in memory
-  integer(I32), parameter, public :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
+  integer(I32), parameter, public :: LSYSSC_MSPEC_NOTINMEMORY =     2_I32**3
 
 !</constantblock>
 

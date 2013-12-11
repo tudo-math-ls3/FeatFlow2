@@ -1514,7 +1514,7 @@ contains
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
+          .eq. AFCSTAB_NONE) then
 
         ! Get number of expressions for limiting variables
         nvariable = max(1,&
@@ -2031,7 +2031,7 @@ contains
         end do
         
         ! Initialise stabilisation structure by hand
-        rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
+        rafcstab%istabilisationSpec= AFCSTAB_NONE
         rafcstab%bprelimiting = .false.
         rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
         call afcsys_initStabilisation(&

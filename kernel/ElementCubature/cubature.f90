@@ -205,7 +205,7 @@ module cubature
 !<constantblock variable="ccubType" description="General values">
 
   ! Undefined cubature formula
-  integer(I32), parameter, public :: CUB_UNDEFINED = 0
+  integer(I32), parameter, public :: CUB_UNDEFINED = 0_I32
 
 !</constantblock>
 
@@ -215,7 +215,7 @@ module cubature
   integer(I32), parameter         :: CUB_TP_MASK = ishft(7_I32,28)
 
   ! Standard or summed cubature formula.
-  integer(I32), parameter, public :: CUB_TP_STD = 0
+  integer(I32), parameter, public :: CUB_TP_STD = 0_I32
 
   ! Automatic cubature formula.
   integer(I32), parameter, public :: CUB_TP_AUTO = ishft(1_I32,28)
@@ -228,272 +228,272 @@ module cubature
 !<constantblock variable="ccubType" description="Generic cubature formulas">
 
   ! Automatic cubature formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO = CUB_TP_AUTO + 1
+  integer(I32), parameter, public :: CUB_GEN_AUTO = CUB_TP_AUTO + 1_I32
 
   ! Automatic cubature formula, lumping the mass matrix (if possible)
-  integer(I32), parameter, public :: CUB_GEN_AUTO_LUMPMASS = CUB_TP_AUTO + 2
+  integer(I32), parameter, public :: CUB_GEN_AUTO_LUMPMASS = CUB_TP_AUTO + 2_I32
 
   ! Automatic cubature formula, 1-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G1 = CUB_TP_AUTO + 101
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G1 = CUB_TP_AUTO + 101_I32
 
   ! Automatic cubature formula, 2-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G2 = CUB_TP_AUTO + 102
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G2 = CUB_TP_AUTO + 102_I32
 
   ! Automatic cubature formula, 3-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G3 = CUB_TP_AUTO + 103
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G3 = CUB_TP_AUTO + 103_I32
 
   ! Automatic cubature formula, 4-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G4 = CUB_TP_AUTO + 104
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G4 = CUB_TP_AUTO + 104_I32
 
   ! Automatic cubature formula, 5-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G5 = CUB_TP_AUTO + 105
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G5 = CUB_TP_AUTO + 105_I32
 
   ! Automatic cubature formula, 6-point Gauss formula
-  integer(I32), parameter, public :: CUB_GEN_AUTO_G6 = CUB_TP_AUTO + 106
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G6 = CUB_TP_AUTO + 106_I32
 
   ! Automatic cubature formula, Trapezoidal rule
-  integer(I32), parameter, public :: CUB_GEN_AUTO_TRZ = CUB_TP_AUTO + 107
+  integer(I32), parameter, public :: CUB_GEN_AUTO_TRZ = CUB_TP_AUTO + 107_I32
 
   ! Automatic cubature formula, Midpoint rule
-  integer(I32), parameter, public :: CUB_GEN_AUTO_MID = CUB_TP_AUTO + 108
+  integer(I32), parameter, public :: CUB_GEN_AUTO_MID = CUB_TP_AUTO + 108_I32
 
   ! Automatic cubature formula, Simpson rule
-  integer(I32), parameter, public :: CUB_GEN_AUTO_SIMPSON = CUB_TP_AUTO + 109
+  integer(I32), parameter, public :: CUB_GEN_AUTO_SIMPSON = CUB_TP_AUTO + 109_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="1D formulas">
 
   ! 1-point Gauss formula, 1D, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_1D = 101
+  integer(I32), parameter, public :: CUB_G1_1D = 101_I32
 
   ! trapezoidal rule, 1D, degree = 2, ncubp = 2
-  integer(I32), parameter, public :: CUB_TRZ_1D = 102
+  integer(I32), parameter, public :: CUB_TRZ_1D = 102_I32
 
   ! 2-point Gauss formula, 1D, degree = 4, ncubp = 2
-  integer(I32), parameter, public :: CUB_G2_1D = 103
+  integer(I32), parameter, public :: CUB_G2_1D = 103_I32
 
   ! 3-point Gauss formula, 1D, degree = 6, ncubp = 3
-  integer(I32), parameter, public :: CUB_G3_1D = 104
+  integer(I32), parameter, public :: CUB_G3_1D = 104_I32
 
   ! 4-point Gauss formula, 1D, degree = 8, ncubp = 4
-  integer(I32), parameter, public :: CUB_G4_1D = 105
+  integer(I32), parameter, public :: CUB_G4_1D = 105_I32
 
   ! 5-point Gauss formula, 1D, degree = 10, ncubp = 5
-  integer(I32), parameter, public :: CUB_G5_1D = 106
+  integer(I32), parameter, public :: CUB_G5_1D = 106_I32
 
   ! Simpson-rule, 1D, degree = 4, ncubp = 3
-  integer(I32), parameter, public :: CUB_SIMPSON_1D = 107
+  integer(I32), parameter, public :: CUB_SIMPSON_1D = 107_I32
 
   ! 6-point Gauss formula, 1D, degree = 12, ncubp = 6
-  integer(I32), parameter, public :: CUB_G6_1D = 108
+  integer(I32), parameter, public :: CUB_G6_1D = 108_I32
 
   ! Pulcherima, 1D, degree = 4, ncubp = 4
-  integer(I32), parameter, public :: CUB_PULCHERIMA_1D = 109
+  integer(I32), parameter, public :: CUB_PULCHERIMA_1D = 109_I32
 
   ! Milne rule, 1D, degree = 5, ncubp = 5
-  integer(I32), parameter, public :: CUB_MILNE_1D = 110
+  integer(I32), parameter, public :: CUB_MILNE_1D = 110_I32
 
   ! 6-point rule, 1D, degree = 6, ncubp = 6
-  integer(I32), parameter, public :: CUB_6POINT_1D = 111
+  integer(I32), parameter, public :: CUB_6POINT_1D = 111_I32
 
   ! Weddle rule, 1D, degree = 7, ncubp = 7
-  integer(I32), parameter, public :: CUB_WEDDLE_1D = 112
+  integer(I32), parameter, public :: CUB_WEDDLE_1D = 112_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, quad">
 
   ! 1x1 Gauss formula, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1X1 = 201
+  integer(I32), parameter, public :: CUB_G1X1 = 201_I32
   integer(I32), parameter, public :: CUB_G1_2D = CUB_G1X1
 
   ! trapezoidal rule, degree = 2, ncubp = 4
-  integer(I32), parameter, public :: CUB_TRZ = 202
+  integer(I32), parameter, public :: CUB_TRZ = 202_I32
   integer(I32), parameter, public :: CUB_TRZ_2D = 202
 
   ! midpoint rule, degree = 2, ncubp = 4
-  integer(I32), parameter, public :: CUB_MID = 203
+  integer(I32), parameter, public :: CUB_MID = 203_I32
   integer(I32), parameter, public :: CUB_MID_2D = 203
 
   ! 2x2 Gauss formula, degree = 4, ncubp = 4
-  integer(I32), parameter, public :: CUB_G2X2 = 204
+  integer(I32), parameter, public :: CUB_G2X2 = 204_I32
   integer(I32), parameter, public :: CUB_G2_2D = CUB_G2X2
 
   ! Newton formula 1, degree = 4, ncubp = 4
-  integer(I32), parameter, public :: CUB_NS1 = 205
+  integer(I32), parameter, public :: CUB_NS1 = 205_I32
 
   ! Newton formula 2, degree = 5, ncubp = 6
-  integer(I32), parameter, public :: CUB_NS2 = 206
+  integer(I32), parameter, public :: CUB_NS2 = 206_I32
 
   ! Newton formula 3, degree = 6, ncubp = 7
-  integer(I32), parameter, public :: CUB_NS3 = 207
+  integer(I32), parameter, public :: CUB_NS3 = 207_I32
 
   ! 3x3 Gauss formula, degree = 6, ncubp = 9
-  integer(I32), parameter, public :: CUB_G3X3 = 208
+  integer(I32), parameter, public :: CUB_G3X3 = 208_I32
   integer(I32), parameter, public :: CUB_G3_2D = CUB_G3X3
 
   ! Gauss formula, degree = 7, ncubp = 12
-  integer(I32), parameter, public :: CUB_G = 209
+  integer(I32), parameter, public :: CUB_G = 209_I32
 
   ! 4x4 Gauss formula, degree = 8, ncubp = 16
-  integer(I32), parameter, public :: CUB_G4X4 = 210
+  integer(I32), parameter, public :: CUB_G4X4 = 210_I32
   integer(I32), parameter, public :: CUB_G4_2D = CUB_G4X4
 
   ! 5x5 Gauss formula, degree = 10, ncubp = 25
-  integer(I32), parameter, public :: CUB_G5X5 = 211
+  integer(I32), parameter, public :: CUB_G5X5 = 211_I32
   integer(I32), parameter, public :: CUB_G5_2D = CUB_G5X5
 
   ! piecewise 1x1 Gauss formula, degree = 2, ncubp = 4
-  integer(I32), parameter, public :: CUB_PG1X1 = 212
+  integer(I32), parameter, public :: CUB_PG1X1 = 212_I32
 
   ! piecewise trapezoidal rule, degree = 2, ncubp = 9
-  integer(I32), parameter, public :: CUB_PTRZ = 213
+  integer(I32), parameter, public :: CUB_PTRZ = 213_I32
 
   ! piecewise 2x2 Gauss formula, degree = 4, ncubp = 16
-  integer(I32), parameter, public :: CUB_PG2X2 = 214
+  integer(I32), parameter, public :: CUB_PG2X2 = 214_I32
 
   ! piecewise 3x3 Gauss formula, degree = 6, ncubp = 36
-  integer(I32), parameter, public :: CUB_PG3X3 = 215
+  integer(I32), parameter, public :: CUB_PG3X3 = 215_I32
 
   ! Simpson rule (corners and element midpoint), degree = 3, ncubp = 9
-  integer(I32), parameter, public :: CUB_SIMPSON = 216
-  integer(I32), parameter, public :: CUB_SIMPSON_2D = 216
+  integer(I32), parameter, public :: CUB_SIMPSON = 216_I32
+  integer(I32), parameter, public :: CUB_SIMPSON_2D = 216_I32
 
   ! Simpson 3/8 rule (corners and 1/3 + 2/3), degree = 3, ncubp = 16
-  integer(I32), parameter, public :: CUB_3_8 = 217
+  integer(I32), parameter, public :: CUB_3_8 = 217_I32
 
   ! 6x6 Gauss formula, degree = 12, ncubp = 36
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
-  integer(I32), parameter, public :: CUB_G6_2D = 218
+  integer(I32), parameter, public :: CUB_G6_2D = 218_I32
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, degree = 3, ncubp = 12
-  integer(I32), parameter, public :: CUB_QPW4G3T_2D = 220
+  integer(I32), parameter, public :: CUB_QPW4G3T_2D = 220_I32
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, originating from a quad cubature formula;
   ! degree = 2, ncubp = 16
-  integer(I32), parameter, public :: CUB_QPW4QG2T_2D = 222
+  integer(I32), parameter, public :: CUB_QPW4QG2T_2D = 222_I32
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, originating from a quad cubature formula;
   ! degree = 3, ncubp = 36
-  integer(I32), parameter, public :: CUB_QPW4QG3T_2D = 223
+  integer(I32), parameter, public :: CUB_QPW4QG3T_2D = 223_I32
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, originating from a quad cubature formula;
   ! degree = 4, ncubp = 64
-  integer(I32), parameter, public :: CUB_QPW4QG4T_2D = 224
+  integer(I32), parameter, public :: CUB_QPW4QG4T_2D = 224_I32
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, originating from a quad cubature formula;
   ! degree = 5, ncubp = 100
-  integer(I32), parameter, public :: CUB_QPW4QG5T_2D = 225
+  integer(I32), parameter, public :: CUB_QPW4QG5T_2D = 225_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, tri">
 
   ! 1-point Gauss formula, triangle, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_T = 250
+  integer(I32), parameter, public :: CUB_G1_T = 250_I32
 
   ! trapezoidal rule, triangle, degree = 2, ncubp = 3
-  integer(I32), parameter, public :: CUB_TRZ_T = 251
+  integer(I32), parameter, public :: CUB_TRZ_T = 251_I32
 
   ! 3-point Gauss formula, triangle, degree = 3, ncubp = 3
-  integer(I32), parameter, public :: CUB_G3_T = 252
+  integer(I32), parameter, public :: CUB_G3_T = 252_I32
 
   ! Collatz formula (Gauss formula, edge midpoints), degree = 3, ncubp = 3
-  integer(I32), parameter, public :: CUB_Collatz = 253
-  integer(I32), parameter, public :: CUB_Collatz_T = 253
-  integer(I32), parameter, public :: CUB_G3MP_T = 253
+  integer(I32), parameter, public :: CUB_Collatz = 253_I32
+  integer(I32), parameter, public :: CUB_Collatz_T = 253_I32
+  integer(I32), parameter, public :: CUB_G3MP_T = 253_I32
 
   ! Vertices, midpoints, center, degree = 4, ncubp = 7
-  integer(I32), parameter, public :: CUB_VMC = 254
+  integer(I32), parameter, public :: CUB_VMC = 254_I32
 
   ! Quadrilateral 2-point Gauss formula mapped to a triangle
-  integer(I32), parameter, public :: CUB_QG2_T = 262
+  integer(I32), parameter, public :: CUB_QG2_T = 262_I32
 
   ! Quadrilateral 3-point Gauss formula mapped to a triangle
-  integer(I32), parameter, public :: CUB_QG3_T = 263
+  integer(I32), parameter, public :: CUB_QG3_T = 263_I32
 
   ! Quadrilateral 4-point Gauss formula mapped to a triangle
-  integer(I32), parameter, public :: CUB_QG4_T = 264
+  integer(I32), parameter, public :: CUB_QG4_T = 264_I32
 
   ! Quadrilateral 5-point Gauss formula mapped to a triangle
-  integer(I32), parameter, public :: CUB_QG5_T = 265
+  integer(I32), parameter, public :: CUB_QG5_T = 265_I32
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, hexa">
 
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_3D = 301
+  integer(I32), parameter, public :: CUB_G1_3D = 301_I32
 
   ! midpoints of areas, 3D, degree = 2, ncubp = 6
-  integer(I32), parameter, public :: CUB_MIDAREA_3D = 302
+  integer(I32), parameter, public :: CUB_MIDAREA_3D = 302_I32
 
   ! trapezoidal rule, 3D, degree = 2, ncubp = 8
-  integer(I32), parameter, public :: CUB_TRZ_3D = 303
+  integer(I32), parameter, public :: CUB_TRZ_3D = 303_I32
 
   ! 2-point Gauss formula, 3D, degree = 4, ncubp = 8
-  integer(I32), parameter, public :: CUB_G2_3D = 304
+  integer(I32), parameter, public :: CUB_G2_3D = 304_I32
 
   ! 3-point Gauss formula, 3D, degree = 6, ncubp = 27
-  integer(I32), parameter, public :: CUB_G3_3D = 305
+  integer(I32), parameter, public :: CUB_G3_3D = 305_I32
 
   ! 4-point Gauss formula, 3D, degree = 8, ncubp = 64
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
-  integer(I32), parameter, public :: CUB_G4_3D = 306
+  integer(I32), parameter, public :: CUB_G4_3D = 306_I32
 
   ! 5-point Gauss formula, 3D, degree = 10, ncubp = 125
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
-  integer(I32), parameter, public :: CUB_G5_3D = 307
+  integer(I32), parameter, public :: CUB_G5_3D = 307_I32
 
   ! 6-point Gauss formula, degree = 12, ncubp = 216
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
-  integer(I32), parameter, public :: CUB_G6_3D = 308
+  integer(I32), parameter, public :: CUB_G6_3D = 308_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, tetra">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_3D_T = 351
+  integer(I32), parameter, public :: CUB_G1_3D_T = 351_I32
 
   ! trapezoidal rule, 3D, degree = 2, ncubp = 4
-  integer(I32), parameter, public :: CUB_TRZ_3D_T = 352
+  integer(I32), parameter, public :: CUB_TRZ_3D_T = 352_I32
 
   ! 4-point Stroud rule, 3D, degree = 2, ncubp = 4
-  integer(I32), parameter, public :: CUB_S2_3D_T = 353
+  integer(I32), parameter, public :: CUB_S2_3D_T = 353_I32
 
   ! 10-point Stroud rule, 3D, degree = 3, ncubp = 10
-  integer(I32), parameter, public :: CUB_S3_3D_T = 354
+  integer(I32), parameter, public :: CUB_S3_3D_T = 354_I32
 
   ! 15-point Stroud rule, 3D, degree = 5, ncubp = 15
-  integer(I32), parameter, public :: CUB_S5_3D_T = 355
+  integer(I32), parameter, public :: CUB_S5_3D_T = 355_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, pyramid">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_3D_Y = 401
+  integer(I32), parameter, public :: CUB_G1_3D_Y = 401_I32
 
   ! trapezoidal rule, 3D, degree = 2, ncubp = 5
-  integer(I32), parameter, public :: CUB_TRZ_3D_Y = 402
+  integer(I32), parameter, public :: CUB_TRZ_3D_Y = 402_I32
 
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, prism">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
-  integer(I32), parameter, public :: CUB_G1_3D_R = 451
+  integer(I32), parameter, public :: CUB_G1_3D_R = 451_I32
 
   ! trapezoidal rule, 3D, degree = 2, ncubp = 6
-  integer(I32), parameter, public :: CUB_TRZ_3D_R = 452
+  integer(I32), parameter, public :: CUB_TRZ_3D_R = 452_I32
 
   ! 3x2-point Gauss formula, 3D, degree = 3 (maybe even 4?), ncubp = 6
   ! This formula is the 'cross-product' of the 2D CUB_G3_T formula
   ! for triangles and the 1D CUB_G2_1D formula.
-  integer(I32), parameter, public :: CUB_G2_3D_R = 453
+  integer(I32), parameter, public :: CUB_G2_3D_R = 453_I32
 
 !</constantblock>
 

@@ -343,46 +343,46 @@ module afcstabbase
 !<constantblock description="Bitfield identifiers for properties of stabilisation">
 
   ! Stabilisation is undefined
-  integer(I32), parameter, public :: AFCSTAB_UNDEFINED            = 2_I32**0
+  integer(I32), parameter, public :: AFCSTAB_NONE                 = 0_I32
 
   ! Stabilisation has been initialised
-  integer(I32), parameter, public :: AFCSTAB_INITIALISED          = 2_I32**1
+  integer(I32), parameter, public :: AFCSTAB_INITIALISED          = 2_I32**0
 
   ! Edge-based structure has been generated: IedgeList
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIST         = 2_I32**2
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIST         = 2_I32**1
 
   ! Edge-based structure has been oriented: IedgeList
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEORIENTATION  = 2_I32**3
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEORIENTATION  = 2_I32**2
 
   ! Edge-based values have been computed from matrix: DcoefficientsAtEdge
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEVALUES       = 2_I32**4
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEVALUES       = 2_I32**3
 
   ! Subdiagonal edge-based structure has been generated
-  integer(I32), parameter, public :: AFCSTAB_HAS_OFFDIAGONALEDGES = 2_I32**5
+  integer(I32), parameter, public :: AFCSTAB_HAS_OFFDIAGONALEDGES = 2_I32**4
 
   ! Antidiffusive fluxes have been precomputed
-  integer(I32), parameter, public :: AFCSTAB_HAS_ADFLUXES         = 2_I32**6
+  integer(I32), parameter, public :: AFCSTAB_HAS_ADFLUXES         = 2_I32**5
 
   ! Nodal sums of antidiffusive increments have been computed: PP, PM
-  integer(I32), parameter, public :: AFCSTAB_HAS_ADINCREMENTS     = 2_I32**7
+  integer(I32), parameter, public :: AFCSTAB_HAS_ADINCREMENTS     = 2_I32**6
 
   ! Nodal upper/lower bounds have been computed: QP, QM
-  integer(I32), parameter, public :: AFCSTAB_HAS_NODEBOUNDS       = 2_I32**8
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODEBOUNDS       = 2_I32**7
 
   ! Nodal correction factors have been computed: RP, RM
-  integer(I32), parameter, public :: AFCSTAB_HAS_NODELIMITER      = 2_I32**9
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODELIMITER      = 2_I32**8
 
   ! Edge-wise correction factors have been computed: ALPHA
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**9
 
   ! Low-order predictor has been computed
-  integer(I32), parameter, public :: AFCSTAB_HAS_PREDICTOR        = 2_I32**11
+  integer(I32), parameter, public :: AFCSTAB_HAS_PREDICTOR        = 2_I32**10
 
   ! Transformed nodal solution values have been computed
-  integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**12
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**11
 
   ! Slope-based bounds have been computed
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEBOUNDS       = 2_I32**13
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEBOUNDS       = 2_I32**12
 
 !</constantblock>
 
@@ -699,13 +699,13 @@ module afcstabbase
     ! combination of different AFCSTAB_SHARE_xxxx constants and
     ! specifies which parts of the stabilisation are shared with
     ! another stabilisation structure.
-    integer(I32) :: iduplicationFlag = AFCSTAB_UNDEFINED
+    integer(I32) :: iduplicationFlag = AFCSTAB_NONE
 
     ! Specification Flag: Specifies the stabilisation. This is a bitfield
     ! coming from an OR combination of different AFCSTAB_HAS_xxxx
     ! constants and specifies various properties of the stabilisation
     ! structure.
-    integer(I32) :: istabilisationSpec = AFCSTAB_UNDEFINED
+    integer(I32) :: istabilisationSpec = AFCSTAB_NONE
 
     ! Number of equations of the sparsity pattern
     integer :: NEQ = 0
@@ -1132,7 +1132,7 @@ contains
     rafcstab%cprelimitingType     = AFCSTAB_PRELIMITING_NONE
     rafcstab%climitingType        = AFCSTAB_LIMITING_NONE
     rafcstab%cdataType            = ST_DOUBLE
-    rafcstab%istabilisationSpec   = AFCSTAB_UNDEFINED
+    rafcstab%istabilisationSpec   = AFCSTAB_NONE
     rafcstab%iduplicationFlag     = 0
     rafcstab%NEQ                  = 0
     rafcstab%NVAR                 = 1

@@ -146,17 +146,17 @@ module fpersistence
 !<constantblock description="Flags for the persistence database specification bitfield">
 
   ! Database is readable
-  integer, parameter, public :: FPDB_MSPEC_ISREADABLE  = 0
+  integer(I32), parameter, public :: FPDB_MSPEC_ISREADABLE  = 0_I32
 
   ! Database is writeable
-  integer, parameter, public :: FPDB_MSPEC_ISWRITABLE  = 2**1
+  integer(I32), parameter, public :: FPDB_MSPEC_ISWRITABLE  = 2_I32**1
 
   ! Database is imported from disk
-  integer, parameter, public :: FPDB_MSPEC_IMPORTFIRST = 2**2
+  integer(I32), parameter, public :: FPDB_MSPEC_IMPORTFIRST = 2_I32**2
 
   ! Standard specifier for persistence database
-  integer, parameter, public :: FPDB_MSPEC_STANDARD    = FPDB_MSPEC_ISREADABLE+&
-                                                 FPDB_MSPEC_ISWRITABLE
+  integer(I32), parameter, public :: FPDB_MSPEC_STANDARD    = FPDB_MSPEC_ISREADABLE+&
+                                                              FPDB_MSPEC_ISWRITABLE
 !</constantblock>
 
 
@@ -327,7 +327,7 @@ module fpersistence
     ! Database specification flag. This is a bitfield coming from an OR
     ! combination of different FPDB_MSPEC_xxxx constants and specifies
     ! various details of the database.
-    integer :: idatabaseSpec = FPDB_MSPEC_STANDARD
+    integer(I32) :: idatabaseSpec = FPDB_MSPEC_STANDARD
 
     ! Unit number of object table
     integer :: iunitObjectTable = 0
@@ -555,7 +555,7 @@ contains
     character(LEN=*), intent(in) :: sfilename
 
     ! OPTIONAL: database specification bitfield
-    integer, intent(in), optional :: idatabaseSpec
+    integer(I32), intent(in), optional :: idatabaseSpec
 !</input>
 
 !<output>

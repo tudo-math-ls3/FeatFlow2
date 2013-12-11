@@ -310,32 +310,32 @@ module linearsystemblock
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  integer(I32), parameter, public :: LSYSBS_MSPEC_GENERAL           =        0
+  integer(I32), parameter, public :: LSYSBS_MSPEC_GENERAL           =        0_I32
 
   ! Block matrix is a scalar (i.e. 1x1) matrix.
-  integer(I32), parameter, public :: LSYSBS_MSPEC_SCALAR            =        1
+  integer(I32), parameter, public :: LSYSBS_MSPEC_SCALAR            =        1_I32
 
   ! Block matrix is of saddle-point type:
   !  (A  B1)
   !  (B2 0 )
-  integer(I32), parameter, public :: LSYSBS_MSPEC_SADDLEPOINT       =        2
+  integer(I32), parameter, public :: LSYSBS_MSPEC_SADDLEPOINT       =        2_I32
 
   ! Block matrix is nearly of saddle-point type
   !  (A  B1)
   !  (B2 C )
   ! with C~0 being a stabilisation matrix
-  integer(I32), parameter, public :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
+  integer(I32), parameter, public :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3_I32
 
   ! The block matrix is a submatrix of another block matrix and not
   ! located at the diagonal of its parent.
   ! This e.g. modifies the way, boundary conditions are implemented
   ! into a matrix; see in the boundary condition implementation
   ! routines for details.
-  integer(I32), parameter, public :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
+  integer(I32), parameter, public :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4_I32
 
   ! The submatrices in the block matrix all share the same structure.
   ! Submatrices are allowed to be empty.
-  integer(I32), parameter, public :: LSYSBS_MSPEC_GROUPMATRIX       =        5
+  integer(I32), parameter, public :: LSYSBS_MSPEC_GROUPMATRIX       =        5_I32
 
 !</constantblock>
 

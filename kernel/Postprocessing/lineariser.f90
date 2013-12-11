@@ -93,10 +93,10 @@ module lineariser
 !<constants>
 !<constantblock description="Linearisation Types">
 ! Simple evaluation of DOF`s
-  integer(I32), parameter, public :: LIN_TYPE_DOFEVAL = 0
+  integer, parameter, public :: LIN_TYPE_DOFEVAL = 0
 
   ! L2-projection
-  integer(I32), parameter, public :: LIN_TYPE_L2_PROJ = 1
+  integer, parameter, public :: LIN_TYPE_L2_PROJ = 1
 !</constantblock>
 !</constants>
 

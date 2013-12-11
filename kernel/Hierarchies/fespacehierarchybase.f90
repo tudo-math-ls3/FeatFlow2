@@ -73,7 +73,7 @@ module fespacehierarchybase
     ! A shared flag that specifies which information in this structure
     ! is shared with information from outside and which information
     ! belongs to this structure.
-    integer(I32) :: cflags = 0
+    integer(I32) :: cflags = 0_I32
 
     ! Reference to the underlying domain or NULL() if no domain is attached.
     type(t_boundary), pointer :: p_rboundary => null()
@@ -102,7 +102,7 @@ module fespacehierarchybase
     ! A shared flag that specifies which information in this structure
     ! is shared with information from outside and which information
     ! belongs to this structure.
-    integer(I32) :: cflags = 0
+    integer(I32) :: cflags = 0_I32
 
     ! Reference to the underlying domain or NULL() if no domain is attached.
     type(t_boundary), pointer :: p_rboundary => null()

@@ -244,13 +244,13 @@ module genoutput
 
   ! Output mode: Write to main log file / error log file (depending on whether
   ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
-  integer(I32), parameter, public :: OU_MODE_LOG      = 2**0
+  integer(I32), parameter, public :: OU_MODE_LOG      = 2_I32**0
 
   ! Output mode: Write to terminal
-  integer(I32), parameter, public :: OU_MODE_TERM     = 2**1
+  integer(I32), parameter, public :: OU_MODE_TERM     = 2_I32**1
 
   ! Output mode: Write to benchmark log file
-  integer(I32), parameter, public :: OU_MODE_BENCHLOG = 2**2
+  integer(I32), parameter, public :: OU_MODE_BENCHLOG = 2_I32**2
 
   ! Output mode: Write to both, log file and terminal
   integer(I32), parameter, public :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM

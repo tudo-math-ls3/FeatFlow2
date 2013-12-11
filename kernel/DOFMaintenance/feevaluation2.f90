@@ -131,7 +131,7 @@ module feevaluation2
   type t_fev2FemData
   
     ! Type of element.
-    integer(I32) :: celement = 0
+    integer(I32) :: celement = 0_I32
     
     ! Number of local DOF`s in the trial/test space
     integer :: ndof = 0

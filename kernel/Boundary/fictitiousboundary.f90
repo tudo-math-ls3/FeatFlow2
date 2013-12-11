@@ -43,7 +43,7 @@ module fictitiousboundary
 
     ! Integer value containing some flags that specify additional
     ! properties of the region. Application specific.
-    integer(I32) :: iflags = 0
+    integer(I32) :: iflags = 0_I32
 
     ! Integer tag. Application specific
     integer :: itag = 0

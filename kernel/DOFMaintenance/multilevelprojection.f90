@@ -225,13 +225,13 @@ module multilevelprojection
 
 !<constantblock description="Projection Types">
   ! Hard-coded projection operators
-  integer(I32), parameter, public :: MLP_PROJ_TYPE_HARDCODED = 0
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_HARDCODED = 0_I32
 
   ! L2-projection operators
-  integer(I32), parameter, public :: MLP_PROJ_TYPE_L2_PROJ   = 1
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_L2_PROJ   = 1_I32
 
   ! Matrix-based projection operators
-  integer(I32), parameter, public :: MLP_PROJ_TYPE_MATRIX    = 2
+  integer(I32), parameter, public :: MLP_PROJ_TYPE_MATRIX    = 2_I32
 
 !</constantblock>
 

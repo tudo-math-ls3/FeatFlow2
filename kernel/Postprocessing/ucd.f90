@@ -188,49 +188,49 @@ module ucd
 !<constantblock description="Parameter constants for the GMV exporter">
 
   ! Export vector components as scalars
-  integer, parameter, public :: UCD_PARAM_GMV_VECTOR_TO_SCALAR = 2**0
+  integer, parameter, public :: UCD_PARAM_GMV_VECTOR_TO_SCALAR = 2_I32**0
 
 !</constantblock>
 
 !<constantblock description="Parameter constants for the VTK exporter">
 
   ! Export vector components as scalars
-  integer, parameter, public :: UCD_PARAM_VTK_VECTOR_TO_SCALAR = 2**0
+  integer, parameter, public :: UCD_PARAM_VTK_VECTOR_TO_SCALAR = 2_I32**0
 
   ! Use quadratic cell elements when possible
-  integer, parameter, public :: UCD_PARAM_VTK_USE_QUADRATIC    = 2**1
+  integer, parameter, public :: UCD_PARAM_VTK_USE_QUADRATIC    = 2_I32**1
 
 !</constantblock>
 
 !<constantblock description="Constants for the cflags variable in ucd_startXXXX. Bitfield.">
 
   ! Standard flags. Write information in corner vertices only, linear interpolation.
-  integer(I32), parameter, public :: UCD_FLAG_STANDARD            = 0
+  integer(I32), parameter, public :: UCD_FLAG_STANDARD            = 0_I32
 
   ! Construct edge midpoints and write them as vertices to the output file.
-  integer(I32), parameter, public :: UCD_FLAG_USEEDGEMIDPOINTS    = 2**0
+  integer(I32), parameter, public :: UCD_FLAG_USEEDGEMIDPOINTS    = 2_I32**0
 
   ! Construct element midpoints and write them as vertices to the output file.
-  integer(I32), parameter, public :: UCD_FLAG_USEELEMENTMIDPOINTS = 2**1
+  integer(I32), parameter, public :: UCD_FLAG_USEELEMENTMIDPOINTS = 2_I32**1
 
   ! Quadratic buld interpolation. Information is given in corner vertices and
   ! edge midpoints. Implies UCD_FLAG_USEEDGEMIDPOINTS.
-  integer(I32), parameter, public :: UCD_FLAG_BULBQUADRATIC       = 2**2
+  integer(I32), parameter, public :: UCD_FLAG_BULBQUADRATIC       = 2_I32**2
 
   ! Output of a linear interpolated solution on a once refined mesh.
   ! Implies UCD_FLAG_USEEDGEMIDPOINTS and UCD_FLAG_USEELEMENTMIDPOINTS.
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC.
-  integer(I32), parameter, public :: UCD_FLAG_ONCEREFINED         = 2**3
+  integer(I32), parameter, public :: UCD_FLAG_ONCEREFINED         = 2_I32**3
 
   ! Can be specified additionally to UCD_FLAG_USEEDGEMIDPOINTS and/or
   ! UCD_FLAG_USEELEMENTMIDPOINTS. Prevents a warning if missing nodes are
   ! not specified.
-  integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES     = 2**4
+  integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES     = 2_I32**4
 
   ! Can be specified additionally to UCD_FLAG_USEEDGEMIDPOINTS and/or
   ! UCD_FLAG_USEELEMENTMIDPOINTS. Automatically interpolates missing
   ! nodes.
-  integer(I32), parameter, public :: UCD_FLAG_AUTOINTERPOLATE     = 2**5
+  integer(I32), parameter, public :: UCD_FLAG_AUTOINTERPOLATE     = 2_I32**5
 
   ! If specified, solution vectors are assumed to be discontinuous.
   ! For every element, the values in the corners are independent
@@ -240,29 +240,29 @@ module ucd
   ! Note that this flag does not apply to all output file formats.
   ! Currently supporting file formats: VTK.
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC,UCD_FLAG_ONCEREFINED,...
-  integer(I32), parameter, public :: UCD_FLAG_DISCONTINUOUS       = 2**6
+  integer(I32), parameter, public :: UCD_FLAG_DISCONTINUOUS       = 2_I32**6
 
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
   ! Standard 'scalar' variable.
-  integer(I32), parameter, public :: UCD_VAR_STANDARD             = 0
+  integer(I32), parameter, public :: UCD_VAR_STANDARD             = 0_I32
 
   ! The variable specifies a velocity component. For some output formats
   ! the velocity field may require some special treatment.
-  integer(I32), parameter, public :: UCD_VAR_VELOCITY             = 2**0
+  integer(I32), parameter, public :: UCD_VAR_VELOCITY             = 2_I32**0
 
   ! The variable specifies the X-component of a vector field.
   ! Cannot be used together with UCD_VAR_YVECTORCOMP or UCD_VAR_ZVECTORCOMP
-  integer(I32), parameter, public :: UCD_VAR_XVECTORCOMP          = 2**1
+  integer(I32), parameter, public :: UCD_VAR_XVECTORCOMP          = 2_I32**1
 
   ! The variable specifies the Y-component of a vector field.
   ! Cannot be used together with UCD_VAR_XVECTORCOMP or UCD_VAR_ZVECTORCOMP
-  integer(I32), parameter, public :: UCD_VAR_YVECTORCOMP          = 2**2
+  integer(I32), parameter, public :: UCD_VAR_YVECTORCOMP          = 2_I32**2
 
   ! The variable specifies the Z-component of a vector field.
   ! Cannot be used together with UCD_VAR_XVECTORCOMP or UCD_VAR_YVECTORCOMP
-  integer(I32), parameter, public :: UCD_VAR_ZVECTORCOMP          = 2**3
+  integer(I32), parameter, public :: UCD_VAR_ZVECTORCOMP          = 2_I32**3
 
   ! The variable specifies the X velocity of a velocity field.
   ! Cannot be used together with UCD_VAR_YVELOCITY or UCD_VAR_ZVELOCITY.
@@ -287,16 +287,16 @@ module ucd
   integer(I32), parameter, public :: UCD_ASRC_ALL                 = not(0)
 
   ! Coordinates of mesh points are specified in a different source file.
-  integer(I32), parameter, public :: UCD_ASRC_POINTS              = 2**0
+  integer(I32), parameter, public :: UCD_ASRC_POINTS              = 2_I32**0
 
   ! Cell information is specified in a different source file.
-  integer(I32), parameter, public :: UCD_ASRC_CELLS               = 2**1
+  integer(I32), parameter, public :: UCD_ASRC_CELLS               = 2_I32**1
 
   ! Material information is specified in a different source file.
-  integer(I32), parameter, public :: UCD_ASRC_MATERIALS           = 2**2
+  integer(I32), parameter, public :: UCD_ASRC_MATERIALS           = 2_I32**2
 
   ! Polygons are specified in a difference source file.
-  integer(I32), parameter, public :: UCD_ASRC_POLYGONS            = 2**3
+  integer(I32), parameter, public :: UCD_ASRC_POLYGONS            = 2_I32**3
 
 !</constantblock>
 

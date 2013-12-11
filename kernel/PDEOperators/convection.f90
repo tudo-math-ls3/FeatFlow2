@@ -83,10 +83,10 @@ module convection
 !<constantblock description="Constants for cdef parameter of convection routine">
 
   ! Modify the matrix
-  integer, parameter, public :: CONV_MODMATRIX = 2**0
+  integer, parameter, public :: CONV_MODMATRIX = 2_I32**0
 
   ! Set up defect vector
-  integer, parameter, public :: CONV_MODDEFECT = 2**1
+  integer, parameter, public :: CONV_MODDEFECT = 2_I32**1
 
   ! Set up both, matrix and defect vector
   integer, parameter, public :: CONV_MODBOTH   = CONV_MODMATRIX+CONV_MODDEFECT

@@ -110,16 +110,16 @@ module bcassembly
 !<constantblock description="Complexity of the discretised BC`s">
 
   ! Discretise BC`s for implementing them into a defect vector
-  integer(I32), parameter, public :: BCASM_DISCFORDEF = 2**0
+  integer(I32), parameter, public :: BCASM_DISCFORDEF = 2_I32**0
 
   ! Discretise BC`s for implementing them into a solution vector
-  integer(I32), parameter, public :: BCASM_DISCFORSOL = 2**1
+  integer(I32), parameter, public :: BCASM_DISCFORSOL = 2_I32**1
 
   ! Discretise BC`s for implementing them into a RHS vector
-  integer(I32), parameter, public :: BCASM_DISCFORRHS = 2**2
+  integer(I32), parameter, public :: BCASM_DISCFORRHS = 2_I32**2
 
   ! Discretise BC`s for implementing them into a matrix
-  integer(I32), parameter, public :: BCASM_DISCFORMAT = 2**3
+  integer(I32), parameter, public :: BCASM_DISCFORMAT = 2_I32**3
 
   ! Discretise BC`s for implementing them into matrix and defect vector
   integer(I32), parameter, public :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
@@ -134,7 +134,7 @@ module bcassembly
 
   ! Integral mean values (e.g. for Q1) are computed exactly by the callback routine.
   ! Without this option, integral mean values are computed by a proper cubature formula.
-  integer(I32), parameter, public :: BCASM_DISCOPT_INTBYCB = 2**0
+  integer(I32), parameter, public :: BCASM_DISCOPT_INTBYCB = 2_I32**0
 
   ! Standard setting of the options during the assembly.
   integer(I32), parameter, public :: BCASM_DISCOPT_STD = 0_I32
