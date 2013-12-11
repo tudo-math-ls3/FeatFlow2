@@ -131,16 +131,22 @@ program meshadapt
     call sys_halt()
   end if
   
-  ! Initialise adaptation structure from triangulation
-  call hadapt_initFromTriangulation(rhadapt, rtria)
-  call hadapt_checkConsistency(rhadapt)
+  ! Initialise standard mesh
+  if(bbnd) then
+    call tria_initStandardMeshFromRaw (rtria, rbnd)
+  else
+    call tria_initStandardMeshFromRaw (rtria)
+  end if
 
   ! Set some parameters manually
   rhadapt%nsubdividemax        = nrefmax
   rhadapt%iadaptationStrategy  = HADAPT_REDGREEN
   rhadapt%drefinementTolerance = dreftol
   rhadapt%dcoarseningTolerance = dcrstol
-  rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_PARAMETERS)
+  rhadapt%iSpec                = ior(rhadapt%iSpec, HADAPT_HAS_PARAMETERS)
+
+  ! Initialise adaptation structure from triangulation
+  call hadapt_initFromTriangulation(rhadapt, rtria)
 
   ! Are we in daemon mode?
   if (bdaemon) then
@@ -175,6 +181,7 @@ program meshadapt
     close(iunit)
     
     ! Perform mesh adaptation
+    call hadapt_refreshAdaptation(rhadapt, rtria)
     call hadapt_performAdaptation(rhadapt, rindicator)
     
     ! Release indicator
