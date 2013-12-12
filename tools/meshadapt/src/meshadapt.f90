@@ -7,6 +7,7 @@ program meshadapt
   use hadaptivity
   use io
   use linearsystemscalar
+  use signals
   use storage
   use triangulation
 
@@ -17,9 +18,8 @@ program meshadapt
   type(t_hadapt) :: rhadapt
   type(t_triangulation) :: rtria
   real(DP), dimension(:), pointer :: p_Dindicator
-  integer, dimension(13) :: Istat1, Istat2
   character(len=256) :: sarg, smesh, serror, sname, sdata
-  integer :: i, iarg, idelay, iel, ilinelen, ios, iunit, nrefmax, ndim
+  integer :: i, iarg, ilinelen, ios, nrefmax, ndim
   real(DP) :: dreftol, dcrstol
   logical :: bbnd, bdaemon
 
@@ -35,7 +35,7 @@ program meshadapt
   ! Print help
   if(sys_ncommandLineArgs() .lt. 1) then
     call output_lbrk()
-    call output_line("USAGE: tridump <options>")
+    call output_line("USAGE: meshadapt <options>")
     call output_lbrk()
     call output_line("Valid options:")
     call output_line("-read1d <mesh>              Read 1D mesh from <mesh>.tri")
@@ -45,7 +45,6 @@ program meshadapt
     call output_line("-refmax <n>                 Maximum number of refinement levels")
     call output_line("-reftol <d>                 Tolerance for refinement")
     call output_line("-crstol <d>                 Tolerance for recoarsening")
-    call output_line("-daemon <i>                 Run as daemon with <i> seconds delay (stop by Ctrl-D)")
     call output_lbrk()
     call sys_halt()
   end if
@@ -62,7 +61,7 @@ program meshadapt
 
   ! Loop over all arguments
   iarg = 1
-  do while(iarg .lt. sys_ncommandLineArgs())
+  do while(iarg .le. sys_ncommandLineArgs())
     ! fetch argument string
     call sys_getcommandLineArg(iarg, sarg)
     iarg = iarg + 1
@@ -96,9 +95,6 @@ program meshadapt
       iarg = iarg + 1
       read (sarg, *) dcrstol
     else if(sarg .eq. '-daemon') then
-      call sys_getcommandLineArg(iarg, sarg)
-      iarg = iarg + 1
-      read (sarg, *) idelay
       bdaemon = .true.
     else
       ! unknown parameter
@@ -150,83 +146,92 @@ program meshadapt
 
   ! Are we in daemon mode?
   if (bdaemon) then
-    ! Get status of indicator field file
-    call stat('./'//trim(serror), Istat1)
+    call fsignal(SIGINT, perform_adaptation)
+    call fsignal(SIGQUIT, perform_adaptation)
+    
+    daemon: do
+      call sleep(10)
+    end do daemon
+  else
+    i = perform_adaptation(SIGINT)
+    i = perform_adaptation(SIGQUIT)
   end if
-
-  ! Infinite loop for potential daemon mode
-  daemon: do
-
-    ! Read indicator vector
-    call output_line("Reading indicator field from './"//trim(serror)//"'...")
-    call io_openFileForReading('./'//trim(serror), iunit, .true.)
-    
-    ! Read first line from file
-    read(iunit, fmt=*) iel
-    if (iel .eq. 0) exit daemon
-    if (iel .ne. rtria%NEL) then
-      call output_line ("Mismatch in number of elements!", &
-                        OU_CLASS_ERROR,OU_MODE_STD,"meshadapt")
-      call sys_halt()
-    end if
-    
-    ! Create indicator
-    call lsyssc_createVector(rindicator, rtria%NEL, .true., ST_DOUBLE)
-    call lsyssc_getbase_double(rindicator, p_Dindicator)
-    
-    do iel=1,rtria%NEL
-      call io_readlinefromfile(iunit, sdata, ilinelen, ios)
-      p_Dindicator(iel) = sys_str2Double(sdata, "(F20.10)")
-    end do
-    close(iunit)
-    
-    ! Perform mesh adaptation
-    call hadapt_refreshAdaptation(rhadapt, rtria)
-    call hadapt_performAdaptation(rhadapt, rindicator)
-    
-    ! Release indicator
-    call lsyssc_releaseVector(rindicator)
-    
-    ! Update triangulation structure
-    call hadapt_generateRawMesh(rhadapt, rtria)
   
-    ! Initialise standard mesh
-    if(bbnd) then
-      call tria_initStandardMeshFromRaw (rtria, rbnd)
-    else
-      call tria_initStandardMeshFromRaw (rtria)
-    end if
+contains
+  
+  function perform_adaptation(isignum) result(iresult)
     
-    ! Export triangulation structure
-    call output_line("Exporting triangulation to './"//trim(smesh)//"_ref.tri'...")
-    if (bbnd) then
-      call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
-    else
-      call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
-    end if
-    
-    ! Are we in daemon mode?
-    if (.not.bdaemon) exit daemon
-    
-    delay: do
-      ! Get status of indicator field file
-      call stat('./'//trim(serror), Istat2)
-      if (Istat1(10) .ne. Istat2(10)) then
-        Istat1 = Istat2
-        exit delay
-      else
-        call sleep(idelay)
+    integer, intent(in) :: isignum
+    integer :: iel,iresult,iunit
+       
+    select case(isignum)
+    case (SIGINT)
+      ! Read indicator vector
+      call output_line("Reading indicator field from './"//trim(serror)//"'...")
+      call io_openFileForReading('./'//trim(serror), iunit, .true.)
+      
+      ! Read first line from file
+      read(iunit, fmt=*) iel
+      if (iel .ne. rtria%NEL) then
+        call output_line ("Mismatch in number of elements!", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"meshadapt")
+        call sys_halt()
       end if
-    end do delay
-    
-  end do daemon
-  
-  ! Clean up
-  call hadapt_releaseAdaptation(rhadapt)
-  call tria_done(rtria)
-  if(bbnd) call boundary_release(rbnd)
-  
-  ! Clean up the storage management, finish
-  call storage_done()
-  
+      
+      ! Create indicator
+      call lsyssc_createVector(rindicator, rtria%NEL, .true., ST_DOUBLE)
+      call lsyssc_getbase_double(rindicator, p_Dindicator)
+      
+      do iel=1,rtria%NEL
+        call io_readlinefromfile(iunit, sdata, ilinelen, ios)
+        p_Dindicator(iel) = sys_str2Double(sdata, "(F20.10)")
+      end do
+      close(iunit)
+      
+      ! Perform mesh adaptation
+      call hadapt_refreshAdaptation(rhadapt, rtria)
+      call hadapt_performAdaptation(rhadapt, rindicator)
+      
+      ! Release indicator
+      call lsyssc_releaseVector(rindicator)
+      
+      ! Update triangulation structure
+      call hadapt_generateRawMesh(rhadapt, rtria)
+      
+      ! Initialise standard mesh
+      if(bbnd) then
+        call tria_initStandardMeshFromRaw (rtria, rbnd)
+      else
+        call tria_initStandardMeshFromRaw (rtria)
+      end if
+      
+      ! Export triangulation structure
+      call output_line("Exporting triangulation to './"//trim(smesh)//"_ref.tri'...")
+      if (bbnd) then
+        call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
+      else
+        call tria_exportTriFile(rtria, './'//trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
+      end if
+      iresult = 0
+
+    case (SIGQUIT)
+
+      ! Clean up
+      call hadapt_releaseAdaptation(rhadapt)
+      call tria_done(rtria)
+      if(bbnd) call boundary_release(rbnd)
+      
+      ! Clean up the storage management, finish
+      call storage_done()
+      iresult = 0
+
+      stop
+      
+    case default
+       iresult = 0
+
+    end select
+
+  end function perform_adaptation
+
 end program meshadapt
