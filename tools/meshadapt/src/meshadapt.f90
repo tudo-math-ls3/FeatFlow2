@@ -104,11 +104,12 @@ program meshadapt
   end do
 
   ! Read boundary and mesh
-  if(ndim .eq. 1) then
+  select case(ndim)
+  case (1)
     call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
     call tria_readTriFile1D (rtria, './'//trim(smesh)//'.tri')
     bbnd = .false.
-  else if(ndim .eq. 2) then
+  case (2)
     inquire(file='./'//trim(smesh)//'.prm', exist=bbnd)
     if (bbnd) then
       call output_line("Reading mesh from './"//trim(smesh)//".tri/prm'...")
@@ -118,14 +119,14 @@ program meshadapt
       call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
       call tria_readTriFile2D (rtria, './'//trim(smesh)//'.tri')
     end if
-  else if(ndim .eq. 3) then
+  case (3)
     call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
     call tria_readTriFile3D (rtria, './'//trim(smesh)//'.tri')
     bbnd = .false.
-  else
+  case default
     call output_line("ERROR: no input mesh specified")
     call sys_halt()
-  end if
+  end select
   
   ! Initialise standard mesh
   if(bbnd) then
