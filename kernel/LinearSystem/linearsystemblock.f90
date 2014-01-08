@@ -5935,10 +5935,8 @@ contains
     ! and the content of the specified subvectors will be copied to that.
     !
     ! The newly created block vector will not have any block discretisation
-    ! structure attached!
-    ! The caller may therefore want to use lsysbl_assignDiscrDirectVec
-    ! to specify the correct discretisation structure after
-    ! creating the vector.
+    ! structure attached, except for it is specified by rblockDiscr!
+    ! or manually assigned by the caller by lsysbl_assignDiscrDirectVec afterwards.
 !</description>
 
 !<input>
@@ -6126,10 +6124,9 @@ contains
   ! which should be put to rdestMatrix.
   !
   ! The newly created block matrix will not have any block discretisation
-  ! structure attached!
-  ! The caller may therefore want to use lsysbl_assignDiscrDirectMat
-  ! to specify the correct discretisation structure after
-  ! creating the matrix.
+  ! structure attached except for it is specified in rdiscrTrial/rdiscrTest
+  ! or manually assigned by the caller using lsysbl_assignDiscrDirectMat
+  ! afterwards.
   !
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
