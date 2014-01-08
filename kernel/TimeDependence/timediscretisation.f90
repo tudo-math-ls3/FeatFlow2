@@ -412,7 +412,7 @@ contains
 
     integer :: isubstep
     real(DP) :: dtheta1,dthetp1
-    real(DP) :: dlocalstart,dlocalend,dlocalstep
+    real(DP) :: dlocalstart,dlocalend,dlocalstep,dlocalstepprev
 
     if (iinterval .lt. 1) then
       dlocalstart = rtimediscr%dtimeinit
@@ -441,17 +441,25 @@ contains
 
         select case (isubstep)
         case (0)
+          ! Beginning of the time large interval
           dlocalstep = 3.0_DP * rtimediscr%dtstep * dtheta1
           dlocalstart = rtimediscr%dtimeinit + &
               real(iinterval/3,dp) * 3.0_DP * rtimediscr%dtstep
         case (1)
+          ! 2nd small time interval starts at the beginning of the
+          ! large time interval plus the length of the 1st small time interval
+          dlocalstepprev = 3.0_DP * rtimediscr%dtstep * dtheta1
           dlocalstep = 3.0_DP * rtimediscr%dtstep * dthetp1
           dlocalstart = rtimediscr%dtimeinit + &
-              real(iinterval/3,dp) * 3.0_DP * rtimediscr%dtstep + dlocalstep
+              real(iinterval/3,dp) * 3.0_DP * rtimediscr%dtstep + dlocalstepprev
         case (2)
           dlocalstep = 3.0_DP * rtimediscr%dtstep * dtheta1
           dlocalstart = rtimediscr%dtimeinit + &
-              real(1+(iinterval/3),dp) * 3.0_DP * rtimediscr%dtstep - dlocalstep
+              iinterval * rtimediscr%dtstep - dlocalstep
+          ! Note that iinterval is a multiple of 3 in this case.
+          ! iinteval*tstep gives the end of the large time interval,
+          ! which is reduced by dlocalstep to get the beginning of the
+          ! 3rd subinterval.
         end select
 
         dlocalend = dlocalstart + dlocalstep
