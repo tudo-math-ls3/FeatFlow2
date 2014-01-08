@@ -5914,7 +5914,7 @@ contains
 !<subroutine>
 
   subroutine lsysbl_deriveSubvector(rvectorSrc,rvectorDest, &
-      ifirstSubvector,ilastSubvector,bshare)
+      ifirstSubvector,ilastSubvector,bshare,rblockDiscr)
 
 !<description>
     ! This routine derives a block vector as a subset of another block vector.
@@ -5959,6 +5959,10 @@ contains
   !         the same memory.
   ! =FALSE: Copy the sub-content of rvectorSrc to rvectorDest.
   logical, intent(in), optional :: bshare
+  
+  ! OPTIONAL: Block discretisation structure which should be assigned
+  ! to the new block vector.
+  type(t_blockDiscretisation), intent(in), target, optional :: rblockDiscr
 !</input>
 
 !<inputoutput>
@@ -6096,6 +6100,11 @@ contains
           rvectorDest%RvectorBlock(i),&
           LSYSSC_DUP_COPY,idupflag)
     end do
+    
+    ! If specified, assign a discretisation structure.
+    if (present(rblockDiscr)) then
+      call lsysbl_assignDiscretisation (rvectorDest,rblockdiscr)
+    end if
 
   end subroutine
 
@@ -6104,10 +6113,9 @@ contains
 !<subroutine>
 
   subroutine lsysbl_deriveSubmatrix (rsourceMatrix,rdestMatrix,&
-                                     cdupStructure, cdupContent,&
-                                     ifirstBlock,ilastBlock,&
-                                     ifirstBlockCol,ilastBlockCol,&
-                                     bignoreScaleFactors)
+      cdupStructure, cdupContent,ifirstBlock,ilastBlock,&
+      ifirstBlockCol,ilastBlockCol,bignoreScaleFactors,&
+      rdiscrTrial, rdiscrTest)
 
 !<description>
   ! This routine derives a block matrix as a subset of another block matrix.
@@ -6252,6 +6260,11 @@ contains
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
   integer, intent(in) :: cdupContent
+  
+  ! OPTIONAL: Discretisation structures to assign to the matrix,
+  ! for the test and trial space. If only the structure for the trial
+  ! space is specified, it is assumed that test and trial space match.
+  type(t_blockDiscretisation), intent(in), optional :: rdiscrTrial, rdiscrTest
 !</input>
 
 !<inputoutput>
@@ -6343,6 +6356,11 @@ contains
     nullify(rdestMatrix%p_rblockDiscrTrial)
     nullify(rdestMatrix%p_rblockDiscrTest)
     call lsysbl_updateMatStrucInfo(rdestMatrix)
+    
+    ! Probably assign discretisation structures.
+    if (present(rdiscrTrial)) then
+      call lsysbl_assignDiscretisation (rdestMatrix,rdiscrTrial,rdiscrTest)
+    end if
 
   end subroutine
 
