@@ -44,20 +44,12 @@ contains
 
   subroutine start_ExtFEcomparer_main()
 
-    call ExtFEcomparer_2D()
-
-  end subroutine
-
-
-!<description>
-! This routine calls the according routines
-! for a 2d-problem
-!</description>
-
-  subroutine ExtFEcomparer_2D()
 
     ! We need our problem structures
     type (t_problem) ,pointer :: p_rproblem1, p_rproblem2
+
+    ! and a variable for the dimension
+    integer :: iDimension
 
     allocate(p_rproblem1)
     allocate(p_rproblem2)
@@ -86,24 +78,22 @@ contains
     call ExtFEcomparer_init_parameters(p_rproblem1,"FIRST")
     call ExtFEcomparer_init_parameters(p_rproblem2,"SECOND")
 
-    ! Recreate everything
-    call output_line("Start to recreacte the parametrisations")
-    call recreate_parametrisation_2D(p_rproblem1)
-    call recreate_parametrisation_2D(p_rproblem2)
-    call output_line("Start to recreate the discretisations")
-    call reinitDiscretisation(p_rproblem1)
-    call reinitDiscretisation(p_rproblem2)
+    ! Now find out the dimension of the problem
+    call parlst_getvalue_int (p_rproblem1%rparamlist,"DOMAININFO",&
+                              "dim",iDimension,2)
 
-    ! Do the actual computation
-    call output_line("We have everything, so we do the actual computation now")
-    call output_lbrk()
-    call calculate_difference_2D(p_rproblem1,p_rproblem2)
+    ! Call the routines according to the dimension
+    select case(iDimension)
+    case(2)
+        call ExtFEcomparer_2D(p_rproblem1,p_rproblem2)
+    case default
+        call output_line("At the moment the dimension of your problem is not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_main: dimension")
+        call sys_halt()
+    end select
 
-    ! Clean up
-    call ExtFEcomparer_doneDiscretisation(p_rproblem1)
-    call ExtFEcomparer_doneParamTriang(p_rproblem1)
-    call ExtFEcomparer_doneDiscretisation(p_rproblem2)
-    call ExtFEcomparer_doneParamTriang(p_rproblem2)
+    ! General Clean-Up
+
     call parlst_done(p_rproblem1%rparamlist)
     call parlst_done(p_rproblem2%rparamlist)
     call ExtFEcomparer_doneParameters(p_rproblem1)
@@ -115,6 +105,40 @@ contains
     call collct_done(p_rproblem2%rcollection)
     deallocate(p_rproblem1)
     deallocate(p_rproblem2)
+
+  end subroutine
+
+
+!<description>
+! This routine calls the according routines
+! for a 2d-problem
+!</description>
+
+  subroutine ExtFEcomparer_2D(rproblem_1,rproblem_2)
+
+    type(t_problem), intent(inout) :: rproblem_1, rproblem_2
+
+    call output_line("Start the 2D-specific part")
+
+    ! Recreate everything
+    call output_line("Start to recreacte the parametrisations")
+    call recreate_parametrisation_2D(rproblem_1)
+    call recreate_parametrisation_2D(rproblem_2)
+    call output_line("Start to recreate the discretisations")
+    call reinitDiscretisation_2D(rproblem_1)
+    call reinitDiscretisation_2D(rproblem_2)
+
+    ! Do the actual computation
+    call output_line("We have everything, so we do the actual computation now")
+    call output_lbrk()
+    call calculate_difference_2D(rproblem_1,rproblem_2)
+
+    ! Clean up
+    call ExtFEcomparer_doneDiscretisation(rproblem_1)
+    call ExtFEcomparer_doneParamTriang(rproblem_1)
+    call ExtFEcomparer_doneDiscretisation(rproblem_2)
+    call ExtFEcomparer_doneParamTriang(rproblem_2)
+
 
   end subroutine
 

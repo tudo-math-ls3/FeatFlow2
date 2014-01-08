@@ -58,7 +58,7 @@ contains
   ! ***************************************************************************
 
 
- subroutine reinitDiscretisation(rproblem)
+ subroutine reinitDiscretisation_2D(rproblem)
 
 !<description>
   ! This routine initialises the discretisation structure of the underlying
