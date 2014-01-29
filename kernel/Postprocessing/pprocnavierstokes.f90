@@ -1862,6 +1862,9 @@ contains
 
         do icubp = 1,ncubp
 
+          ! Get dpf1 in the cubature point. It is an additional weight.
+          dpf1 = Dvalues(icubp,iel,6)
+
           ! Calculate the OMEGA for the integration by multiplication
           ! of the integration coefficient by the Jacobian of the
           ! mapping.
@@ -1920,6 +1923,9 @@ contains
         dnormal(2) = Dtangential(1)
 
         do icubp = 1,ncubp
+
+          ! Get dpf1 in the cubature point. It is an additional weight.
+          dpf1 = Dvalues(icubp,iel,6)
 
           ! Calculate the OMEGA for the integration by multiplication
           ! of the integration coefficient by the Jacobian of the
