@@ -182,6 +182,9 @@ contains
     ! A value < dcoarseningTolerance on the other hand results in coarsening.
     rhadapt%drefinementTolerance = 0.2
     rhadapt%dcoarseningTolerance = 0.1
+
+    ! Specify that parameters have been set correctly and perform initialisation
+    rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_PARAMETERS)
     call hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
     ! +------------------------------------------------------------------------
