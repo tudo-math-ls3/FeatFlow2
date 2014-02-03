@@ -89,7 +89,7 @@
 !#      -> Retrieves an environment variable from the system
 !#
 !# 22.) sys_silsb, sys_simsb
-!#      -> String routine to convert integer numbers to string in bis
+!#      -> String routine to convert integer numbers to string in bit
 !#         representation (LSB/MSB)
 !#
 !# 23.) sys_adjustl, sys_adjustr
