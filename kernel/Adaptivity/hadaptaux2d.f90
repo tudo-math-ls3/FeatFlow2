@@ -4674,9 +4674,17 @@ contains
     rhadapt%NEL = rhadapt%NEL+1
     rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+1
 
-    rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,0/)
-    rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,0/)
-    rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e4,e5,e6,0/)
+    ! We need to consider the special case that the mesh consists of
+    ! triangles only so that a trailing zero must not be set
+    if (rhadapt%InelOfType(TRIA_NVEQUAD2D) .eq. 0) then
+      rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3/)
+      rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3/)
+      rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e4,e5,e6/)
+    else
+      rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,0/)
+      rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,0/)
+      rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e4,e5,e6,0/)
+    end if
 
   end subroutine add_elementTria
 
