@@ -725,7 +725,7 @@ fb_runAndEvalBenchmarkTest() {
     # add some class-specific information, add whatever you want to see for your applications
     case "${CLASS}" in
     
-    # Standard applications. They have a DAT file and some MG-Levels.
+	# Standard applications. They have a DAT file and some MG-Levels.
     
 	DEFAULT)
 	    echo "DATFILE   = "${DATFILE}
@@ -1182,6 +1182,7 @@ fb_runAndEvalBenchmarkTest() {
 			;;
 
 		    FLAGSHIP)
+			egrep "^\* (Warning|Error)" ${LOGDIR}/output.log
 			TABLE_HEADER=''
 			;;
 
