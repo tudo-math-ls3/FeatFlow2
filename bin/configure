@@ -1792,15 +1792,6 @@ sub create_feastAppMakefile {
 	my %coprocs = ();
 	map { $coprocs{$_} = $_; } @{ $entry };
 
-	# write out general coproc-specific variable additions
-        print MAKEFILE_HDL
-            "# Coprocessor-specific special options\n" .
-	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
-	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
-        "INC          := -I\$(FEAT2BASEDIR)/librariesNEW/coproc \$(INC)\n" .
-	    "LIBS         := -lcoproc \$(LIBS)\n" .
-	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
-
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
 			'cuda20', 'cuda21', 'cuda30', 'cuda35') {
@@ -1818,8 +1809,10 @@ sub create_feastAppMakefile {
 		    "MESSAGE  := \$(MESSAGE) \\\n" .
 		    "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
 		    "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
 		    "else\n" .
-		    "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		    "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH)\n" .
+		    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
 		    "endif\n";
 	    }
 	}
@@ -1840,11 +1833,21 @@ sub create_feastAppMakefile {
 		"MESSAGE  := \$(MESSAGE) \\\n" .
 		"\t    echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
 		"\t    echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
-		"LDFLAGS      := \$(LDFLAGS) -lGLEW -lGL -lGLU -lX11\n" .
+		"LIBS         := -lGLEW -lGL -lGLU -lX11\n" .
 		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n" .
+		"LDFLAGS      := \$(LDFLAGS)\n" .
+		"LIBS         := -lGLEW -lGL -lGLU -lX11\n" .
 		"endif\n";
 	}
+
+	# write out general coproc-specific variable additions
+        print MAKEFILE_HDL
+            "# Coprocessor-specific special options\n" .
+	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
+	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
+        "INC          := -I\$(FEAT2BASEDIR)/librariesNEW/coproc \$(INC)\n" .
+	    "LIBS         := -lcoproc \$(LIBS)\n" .
+	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
 	print MAKEFILE_HDL "\n";
     }
