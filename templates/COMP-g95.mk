@@ -42,7 +42,7 @@ CXXVERSION := $(CXX) -v 2>&1 | cat
 
 # Detect C/C++ compiler version
 GCCVERSION := $(shell eval $(CCVERSION) | \
-		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
 ifneq ($(GCCVERSION),)
 GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
 GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
