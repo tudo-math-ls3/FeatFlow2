@@ -65,7 +65,7 @@ gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
 
 # Detect Fortran compiler version
 GFORTRANVERSION := $(shell eval $(F90VERSION) | \
-		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
 
 ifneq ($(GFORTRANVERSION),)
 GFORTRANVERSION_MAJOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f1)
