@@ -319,6 +319,7 @@
 		<File RelativePath=".\Postprocessing\intf_refFunctionScBdr2D.inc"/>
 		<File RelativePath=".\Postprocessing\intf_refFunctionScVec.inc"/></Filter>
 		<File RelativePath=".\Postprocessing\boundaryintegral.f90"/>
+		<File RelativePath=".\Postprocessing\convergencetable.f90"/>
 		<File RelativePath=".\Postprocessing\geometryoutput.f90"/>
 		<File RelativePath=".\Postprocessing\lineariser.f90"/>
 		<File RelativePath=".\Postprocessing\mapleio.f90"/>
