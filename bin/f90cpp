@@ -31,7 +31,7 @@ option=""
 if test -n "${CPP}"; then
     cppcmd="${CPP}"
 else
-    cppcmd="cpp -CC" # previously: "cpp -CC "
+    cppcmd="cpp -CC -ffreestanding" # previously: "cpp -CC "
 fi
 
 if test -n "${CPPFLAGS}"; then
