@@ -29504,8 +29504,8 @@ contains
 
     !**************************************************************
     ! Generate index for edge data structure based on first-fit greedy
-    ! edge-coloring algorithm which may require 2*ncolor colors Note
-    ! that this implementation works for 64 colors at most
+    ! edge-coloring algorithm which may require 2*out-degree_max colors.
+    ! Note that this implementation works for 64 colors at most
 
     subroutine genEdgeListIdx_firstfit64(neq, nmaxColor, IedgeListIdx, IedgeList)
 
@@ -29627,7 +29627,7 @@ contains
     ! Generate index for edge data structure based on recoloring
     ! algorithm due to Nishizeki, Leven and Terada which makes use
     ! of the constructive proof by Vizing to edge-color any graph
-    ! with ncolor or ncolor+1 different colours
+    ! with out-degree_max or out-degree_max+1 different colours.
     ! Note that this implementation works for 64 colors at most
     !
     ! Implementation details: T. Nishizeki, N. Chiba, Planar
