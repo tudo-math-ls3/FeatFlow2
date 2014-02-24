@@ -1669,9 +1669,9 @@ contains
     ! variable, i.e.
     !   sys_sli0(foo, 1)
     ! would result in a crash
-    if (idigits .gt. 16) then
+    if (idigits .gt. 32) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sli! ***"
-      write(saux, "(i2)") 16
+      write(saux, "(i2)") 32
     else
       write(saux, "(i2)") idigits
     endif
