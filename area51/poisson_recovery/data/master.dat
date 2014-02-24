@@ -1,0 +1,22 @@
+# This is the main configuration file for the Poisson application
+
+# Minimum multigrid level
+NLMIN = 1
+
+# Maximum multigrid level
+NLMAX = 11
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P1
+
+# Cubature type
+CUBATURETYPE = AUTO_G3
+
+# Sort strategy
+SORTSTRATEGY = CM
