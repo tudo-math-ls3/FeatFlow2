@@ -33,25 +33,28 @@
 !# 8.) ctab_setTexFormat
 !#     -> Sets the tex format of a single column for tex output
 !#
-!# 9.) ctab_getColumn
-!#     -> Get pointer to column
+!# 9.) ctab_setHidden
+!#     -> Sets hidden flag for a column for tex output
 !#
-!# 10.) ctab_getCell
+!# 10.) ctab_getColumn
+!#      -> Get pointer to column
+!#
+!# 11.) ctab_getCell
 !#      -> Get pointer to cell
 !#
-!# 11.) ctab_swapColumns
+!# 12.) ctab_swapColumns
 !#      -> Swaps two columns
 !#
-!# 12.) ctab_outputText
+!# 13.) ctab_outputText
 !#      -> Writes table to screen in human-readable format
 !#
-!# 13.) ctab_outputTex
+!# 14.) ctab_outputTex
 !#      -> Writes table to screen in tex format
 !#
-!# 14.) ctab_evalConvergenceRate
+!# 15.) ctab_evalConvergenceRate
 !#      -> Evalualtes the convergence rates for a data column
 !#
-!# 15.) ctab_done
+!# 16.) ctab_done
 !#      -> Releases the convergence table
 !# </purpose>
 !##############################################################################
@@ -77,6 +80,7 @@ module convergencetable
   public :: ctab_setTexTableCaption
   public :: ctab_setTexTableLabel
   public :: ctab_setTexFormat
+  public :: ctab_setHidden
   public :: ctab_getColumn
   public :: ctab_getCell
   public :: ctab_swapColumns
@@ -134,6 +138,9 @@ module convergencetable
 
     ! Scientific flag
     logical :: bscientific = .false.
+
+    ! Hidden flag
+    logical :: bhidden = .false.
 
     ! Tex caption string
     character(LEN=SYS_STRLEN) :: stexCaption = ''
@@ -788,6 +795,48 @@ contains
 
   !************************************************************************
 
+!<subroutine>
+
+  subroutine ctab_setHidden(rtable,skey,bhidden)
+
+!<description>
+    ! This subroutine sets the hidden flag of the column with key SKEY
+!</description>
+
+!<input>
+    ! Key of the column
+    character(len=*), intent(in) :: skey
+
+    ! Hidden flag
+    logical, intent(in) :: bhidden
+!</input>
+
+!<inputoutput>
+    ! A convergence table
+    type(t_convergenceTable), intent(inout) :: rtable
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    type(t_column), pointer :: p_rcolumn
+    
+    ! Get column
+    p_rcolumn => ctab_getColumn(rtable,skey)
+    
+    if (associated(p_rcolumn)) then
+      p_rcolumn%bhidden = bhidden
+    else
+      ! Throw error if column does not exist
+      call output_line("Column does not exist!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"ctab_setHidden")
+      call sys_halt()
+    end if
+
+  end subroutine
+
+  !************************************************************************
+
 !<function>
 
   function ctab_getColumnByKey(rtable,skey) result(p_rcolumn)
@@ -1122,7 +1171,11 @@ contains
     
     icolumn = 1
     p_rcolumn => rtable%p_rfirstColumn
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
+      if (p_rcolumn%bhidden) then
+        p_rcolumn => p_rcolumn%p_rnextColumn
+        cycle
+      end if
       IcolumnWidth(icolumn) = ctab_getColumnWidth(p_rcolumn)
       icolumn = icolumn+1
       p_rcolumn => p_rcolumn%p_rnextColumn
@@ -1138,7 +1191,11 @@ contains
     sstring = ''
     icolumn = 1
     p_rcolumn => rtable%p_rfirstColumn
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
+      if (p_rcolumn%bhidden) then
+        p_rcolumn => p_rcolumn%p_rnextColumn
+        cycle
+      end if
       sstring(IcolumnTab(icolumn):) = trim(adjustl(p_rcolumn%skey))
       icolumn = icolumn+1
       p_rcolumn => p_rcolumn%p_rnextColumn
@@ -1150,7 +1207,11 @@ contains
       sstring = ''
       icolumn = 1
       p_rcolumn => rtable%p_rfirstColumn
-      do while(associated(p_rcolumn))
+      do while (associated(p_rcolumn))
+        if (p_rcolumn%bhidden) then
+          p_rcolumn => p_rcolumn%p_rnextColumn
+          cycle
+        end if
 
         p_rcell => ctab_getCell(p_rcolumn,irow)
         if (associated(p_rcell)) then
@@ -1265,7 +1326,11 @@ contains
     write(iunit,fmt='(A)') '\begin{table}'
     sstring = '\begin{tabular}[c]{|'
     p_rcolumn => rtable%p_rfirstColumn
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
+      if (p_rcolumn%bhidden) then
+        p_rcolumn => p_rcolumn%p_rnextColumn
+        cycle
+      end if
       sstring = trim(sstring)//trim(p_rcolumn%stexFormat)//'|'
       p_rcolumn => p_rcolumn%p_rnextColumn
     end do
@@ -1277,7 +1342,11 @@ contains
     sstring = ''
     icolumn = 1
     p_rcolumn => rtable%p_rfirstColumn
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
+      if (p_rcolumn%bhidden) then
+        p_rcolumn => p_rcolumn%p_rnextColumn
+        cycle
+      end if
       if (icolumn .lt. ncolumns) then
         sstring = trim(sstring)//trim(adjustl(p_rcolumn%sTexCaption))//'&'
       else
@@ -1294,7 +1363,11 @@ contains
       sstring = ''
       icolumn = 1
       p_rcolumn => rtable%p_rfirstColumn
-      do while(associated(p_rcolumn))
+      do while (associated(p_rcolumn))
+        if (p_rcolumn%bhidden) then
+          p_rcolumn => p_rcolumn%p_rnextColumn
+          cycle
+        end if
 
         p_rcell => ctab_getCell(p_rcolumn,irow)
         if (associated(p_rcell)) then
@@ -1526,7 +1599,7 @@ contains
       if (associated(p_rcellData1)) p_rcellData1 => p_rcellData1%p_rnextCell
 
       ! Iterate over all cells
-      do while(associated(p_rcellData1))
+      do while (associated(p_rcellData1))
         
         ! Get content from first cell
         select case(p_rcellData1%ctype)
@@ -1587,7 +1660,7 @@ contains
       p_rcellData2 => p_rcellData1
       if (associated(p_rcellData1)) p_rcellData1 => p_rcellData1%p_rnextCell
 
-      do while(associated(p_rcellData1))
+      do while (associated(p_rcellData1))
 
         ! Get content from first cell
         select case(p_rcellData1%ctype)
@@ -1798,7 +1871,11 @@ contains
     iresult = 0
     p_rcolumn => rtable%p_rfirstColumn
 
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
+      if (p_rcolumn%bhidden) then
+        p_rcolumn => p_rcolumn%p_rnextColumn
+        cycle
+      end if
       iresult = iresult+1
       p_rcolumn => p_rcolumn%p_rnextColumn
     end do
@@ -1833,7 +1910,7 @@ contains
     iresult = 0
     p_rcolumn => rtable%p_rfirstColumn
 
-    do while(associated(p_rcolumn))
+    do while (associated(p_rcolumn))
       iresult = max(iresult,ctab_getNCellsOfColumn(p_rcolumn))
       p_rcolumn => p_rcolumn%p_rnextColumn
     end do
@@ -1868,7 +1945,7 @@ contains
     iresult = 0
     p_rcell => rcolumn%p_rfirstCell
 
-    do while(associated(p_rcell))
+    do while (associated(p_rcell))
       iresult = iresult+1
       p_rcell => p_rcell%p_rnextCell
     end do
@@ -1909,7 +1986,7 @@ contains
     iresult = len(trim(adjustl(rcolumn%skey)))
     p_rcell => rcolumn%p_rfirstCell
 
-    do while(associated(p_rcell))
+    do while (associated(p_rcell))
 
       ! What type of data are we?
       select case(p_rcell%ctype)
