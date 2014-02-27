@@ -4,7 +4,7 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 11
+NLMAX = 8
 
 # Boundary parametrisation
 PRMFILE = TRIA.prm
@@ -19,4 +19,4 @@ ELEMENTTYPE = EL_P1
 CUBATURETYPE = AUTO_G3
 
 # Sort strategy
-SORTSTRATEGY = CM
+SORTSTRATEGY = 
