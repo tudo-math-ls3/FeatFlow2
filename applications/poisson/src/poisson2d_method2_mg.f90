@@ -649,7 +649,7 @@ contains
       nullify(p_rcoarseGridSolver)
       
       ! Get the level
-      call linsol_getMultigrid2Level (p_rsolverNode,i-lvlmin+1,p_rlevelInfo)
+      call linsol_getMultigrid2Level (p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
       
       if (i .eq. ilvmin) then
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
