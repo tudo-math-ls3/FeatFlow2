@@ -164,6 +164,12 @@ contains
     case (EL_P2_2D)
       IdofsLoc = (/1,4,2,5,3,6/)
 
+    case (EL_P2E_2D)
+      IdofsLoc = (/1,4,2,5,3,6,7/)
+
+    case (EL_P3_2D)
+      IdofsLoc = (/1,4,7,2,5,8,3,6,9,10/)
+
     case (EL_Q2_2D)
       IdofsLoc = (/1,5,2,6,3,7,4,8,9/)
 
@@ -443,6 +449,81 @@ contains
                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
         end do
 
+      case (EL_P2E_2D)
+        ! For extended P2+ finite elements in 2D three degrees of
+        ! freedom coincide with the vertices of the elements, three
+        ! degrees of freedom coincide with the edge midpoints and one
+        ! degree of freedom coincides with the center of the element.
+        do iel = 1, rdofSubset%nelements
+          ! Copy the vertex coordinates
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
+          rdofSubset%p_DdofCoords(:,5,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
+
+          ! Compute the coordinates of the edge midpoints
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+          rdofSubset%p_DdofCoords(:,6,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
+          
+          ! Compute the coordinate of the element center
+          rdofSubset%p_DdofCoords(:,7,iel) =&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))/3.0_DP
+        end do
+
+      case (EL_P3_2D)
+        ! For P3 finite elements in 2D three degrees of freedom
+        ! coincide with the vertices of the elements, six degrees of
+        ! freedom coincide with 1/3- and 2/3-points along the edges and
+        ! one degree of freedom coincides with the center of the element.
+        do iel = 1, rdofSubset%nelements
+          ! Copy the vertex coordinates
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
+          rdofSubset%p_DdofCoords(:,7,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
+
+          ! Compute the coordinates of the 1/3-points along the edge
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              (2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))/3.0_DP
+          rdofSubset%p_DdofCoords(:,5,iel) =&
+              (2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))/3.0_DP
+          rdofSubset%p_DdofCoords(:,8,iel) =&
+              (2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))/3.0_DP
+
+          ! Compute the coordinates of the 2/3-points along the edge
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              (         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))/3.0_DP
+          rdofSubset%p_DdofCoords(:,6,iel) =&
+              (         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+               2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))/3.0_DP
+          rdofSubset%p_DdofCoords(:,9,iel) =&
+              (         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+               2.0_DP * rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))/3.0_DP
+
+	  ! Compute the coordinate of the element center
+          rdofSubset%p_DdofCoords(:,10,iel) =&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))/3.0_DP
+        end do
+
       case (EL_Q2_2D)
         ! For Q2 finite elements in 2D four degrees of freedom
         ! coincide with the vertices of the elements and four degrees
@@ -581,10 +662,15 @@ contains
       allocate(IdofsLoc(2,4))
       IdofsLoc = reshape((/1,2, 2,3, 3,4, 4,1/),shape(IdofsLoc))
 
-    case (EL_P2_2D)
+    case (EL_P2_2D,EL_P2E_2D)
       rdofSubset%ndofsPerElement = 3
       allocate(IdofsLoc(3,3))
       IdofsLoc = reshape((/1,4,2, 2,5,3, 3,6,1/),shape(IdofsLoc))
+
+    case (EL_P3_2D)
+      rdofSubset%ndofsPerElement = 4
+      allocate(IdofsLoc(4,3))
+      IdofsLoc = reshape((/1,4,7,2, 2,5,8,3, 3,6,9,1/),shape(IdofsLoc))
 
     case (EL_Q2_2D)
       rdofSubset%ndofsPerElement = 3
@@ -672,11 +758,11 @@ contains
                         rdomainIntSubset%p_Dcoords(:,mod(rdofSubset%p_IdofsLoc(1,iel)+1,3)+1,iel))
         end do
 
-      case (EL_P2_2D,EL_Q2_2D)
-        ! For P2 and Q2 finite elements in 2D some degrees of freedom
-        ! coincide with the vertices of the element which can be
-        ! copied and others coincide with the edge midpoints which
-        ! must be computed.
+      case (EL_P2_2D,EL_P2E_2D,EL_Q2_2D)
+        ! For (extended) P2(+) and Q2 finite elements in 2D some
+        ! degrees of freedom coincide with the vertices of the element
+        ! which can be copied and others coincide with the edge
+        ! midpoints which must be computed.
         do iel = 1, rdofSubset%nelements
           do idofe = 1, rdofSubset%ndofsPerElement, 2
             rdofSubset%p_DdofCoords(:,idofe,iel) =&
@@ -687,6 +773,28 @@ contains
           rdofSubset%p_DdofCoords(:,2,iel) =&
               0.5_DP * (rdofSubset%p_DdofCoords(:,1,iel)+&
                         rdofSubset%p_DdofCoords(:,3,iel))
+        end do
+
+      case (EL_P3_2D)
+        ! For P3 finite elements in 2D some degrees of freedom
+        ! coincide with the vertices of the element which can be
+        ! copied and others coincide with the 1/3- and 2/3-points
+        ! along the edge which must be computed.
+        do iel = 1, rdofSubset%nelements
+          do idofe = 1, rdofSubset%ndofsPerElement, 3
+            rdofSubset%p_DdofCoords(:,idofe,iel) =&
+                rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(idofe,iel),iel)
+          end do
+
+          ! Compute the coordinate of the 1/3-point along the edge
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              (2.0_DP * rdofSubset%p_DdofCoords(:,1,iel)+&
+                        rdofSubset%p_DdofCoords(:,3,iel))/3.0_DP
+
+          ! Compute the coordinate of the 2/3-point along the edge
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              (         rdofSubset%p_DdofCoords(:,1,iel)+&
+               2.0_DP * rdofSubset%p_DdofCoords(:,3,iel))/3.0_DP
         end do
 
       case (EL_Q1T_3D)
@@ -744,18 +852,35 @@ contains
                         rdomainIntSubset%p_DedgePosition(2,iel))
         end do
 
-      case (EL_P2_2D,EL_Q2_2D)
-        ! For P2 and Q2 finite elements in 2D two degrees of freedom
-        ! coincide with the vertices of the element and one degree of
-        ! freedom coincides with the edge midpoints. Thus, they are
-        ! located at the two endpoints and the midpoint of the
-        ! reference interval [-1,1].
+      case (EL_P2_2D,EL_P2E_2D,EL_Q2_2D)
+        ! For (extended) P2(+) and Q2 finite elements in 2D two
+        ! degrees of freedom coincide with the vertices of the element
+        ! and one degree of freedom coincides with the edge
+        ! midpoints. Thus, they are located at the two endpoints and
+        ! the midpoint of the reference interval [-1,1].
         do iel = 1, rdofSubset%nelements
           rdofSubset%p_DdofPosition(1,iel) = rdomainIntSubset%p_DedgePosition(1,iel)
           rdofSubset%p_DdofPosition(2,iel) =&
               0.5_DP * (rdomainIntSubset%p_DedgePosition(1,iel)+&
                         rdomainIntSubset%p_DedgePosition(2,iel))
           rdofSubset%p_DdofPosition(3,iel) = rdomainIntSubset%p_DedgePosition(2,iel)
+        end do
+
+      case (EL_P3_2D)
+        ! For P3 finite elements in 2D two degrees of freedom coincide
+        ! with the vertices of the element and two degree of freedom
+        ! coincides with the 1/3- and 2/3-point along the edge. Thus,
+        ! they are located at the two endpoints and corresponding 1/3-
+        ! and 2/3-points of the reference interval [-1,1].
+        do iel = 1, rdofSubset%nelements
+          rdofSubset%p_DdofPosition(1,iel) = rdomainIntSubset%p_DedgePosition(1,iel)
+          rdofSubset%p_DdofPosition(2,iel) =&
+              (2.0_DP * rdomainIntSubset%p_DedgePosition(1,iel)+&
+                        rdomainIntSubset%p_DedgePosition(2,iel))/3.0_DP
+          rdofSubset%p_DdofPosition(3,iel) =&
+              (         rdomainIntSubset%p_DedgePosition(1,iel)+&
+               2.0_DP * rdomainIntSubset%p_DedgePosition(2,iel))/3.0_DP
+          rdofSubset%p_DdofPosition(4,iel) = rdomainIntSubset%p_DedgePosition(2,iel)
         end do
 
       case default

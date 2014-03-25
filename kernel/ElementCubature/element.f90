@@ -409,6 +409,10 @@ module element
   integer(I32), parameter, public :: EL_P1T     = EL_2D + 6_I32
   integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
   
+  ! ID of extended quadratic H1-conforming triangular FE, P2+
+  integer(I32), parameter, public :: EL_P2E     = EL_2D + 7_I32
+  integer(I32), parameter, public :: EL_P2E_2D  = EL_P2E
+
   ! ID of constant discontinous quadrilateral FE, Q0
   integer(I32), parameter, public :: EL_Q0      = EL_2D + 10_I32
   integer(I32), parameter, public :: EL_E010    = EL_Q0
@@ -847,6 +851,8 @@ contains
     else if (selem .eq. "EL_P2" .or. selem .eq. "EL_P2_2D" .or. &
              selem .eq. "EL_E002" .or. selem .eq. "EL_E002_2D") then
       elem_igetID = EL_P2_2D
+    else if (selem .eq. "EL_P2E" .or. selem .eq. "EL_P2E_2D") then
+      elem_igetID = EL_P2E_2D
     else if (selem .eq. "EL_P3" .or. selem .eq. "EL_P3_2D" .or. &
              selem .eq. "EL_E003" .or. selem .eq. "EL_E003_2D") then
       elem_igetID = EL_P3_2D
@@ -1072,7 +1078,9 @@ contains
       sname = 'EL_P1_2D'
     case (EL_P2_2D)
       sname = 'EL_P2_2D'
-    case (EL_P3_2D)   ! not implemented
+    case (EL_P2E_2D)
+      sname = 'EL_P2E_2D'
+    case (EL_P3_2D)
       sname = 'EL_P3_2D'
     case (EL_P1T_2D)
       sname = 'EL_P1T_2D'
@@ -1339,10 +1347,16 @@ contains
       ! local DOFs for P2
       ndofAtVertices = 3
       ndofAtEdges    = 3
+    case (EL_P2E)
+      ! local DOFs for extended P2+
+      ndofAtVertices = 3
+      ndofAtEdges    = 3
+      ndofAtElement  = 1
     case (EL_P3)
       ! local DOFs for P3
       ndofAtVertices = 3
       ndofAtEdges    = 6
+      ndofAtElement  = 1
     case (EL_P1T)
       ! local DOFs for P1~
       ndofAtEdges    = 3
@@ -1837,6 +1851,9 @@ contains
     case (EL_P2)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
+    case (EL_P2E)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
     case (EL_P3)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
@@ -2107,7 +2124,8 @@ contains
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
 
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D,&
+    case (EL_P0, EL_P1, EL_P2, EL_P2E, EL_P3, EL_P1T,&
+          EL_DG_P1_2D,&
           EL_DCP1_2D, EL_DCP2_2D,&
           EL_RT0_2D)
       ! 2D Triangle
@@ -2276,13 +2294,17 @@ contains
 
       ! 2D elements
       case (EL_P0)
-        call elem_P0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_P1,EL_DG_P1_2D)
-        call elem_P1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_P2)
-        call elem_P2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
+      case (EL_P2E)
+        bwrapSim2 = .true.
+      case (EL_P3)
+        bwrapSim2 = .true.
       case (EL_P1T)
-        call elem_P1T (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_Q0)
         call elem_Q0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q1,EL_DG_Q1_2D)
@@ -2591,14 +2613,6 @@ contains
       call elem_DG_T2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
 
     ! 2D elements
-    case (EL_P0)
-      call elem_P0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P1,EL_DG_P1_2D)
-      call elem_P1_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P2)
-      call elem_P2_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P1T)
-      call elem_P1T_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q0)
       call elem_Q0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q1,EL_DG_Q1_2D)
@@ -2798,18 +2812,6 @@ contains
                               Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     ! 2D elements
-    case (EL_P0)
-      call elem_P0_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_P1,EL_DG_P1_2D)
-      call elem_P1_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_P2)
-      call elem_P2_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_P1T)
-      call elem_P1T_sim (celement, Dcoords, Djac, Ddetj, &
-                         Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_Q0)
       call elem_Q0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
@@ -3008,29 +3010,29 @@ contains
 
     ! *****************************************************
     ! 2D triangle elements
-    case (EL_P0)
-      call elem_P0_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+    case (EL_P0_2D)
+      call elem_eval_P0_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
-    case (EL_P1)
-      call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+    case (EL_P1_2D,EL_DG_P1_2D)
+      call elem_eval_P1_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
-    case (EL_P2)
-      call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+    case (EL_P2_2D)
+      call elem_eval_P2_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
-    case (EL_P1T)
-      call elem_P1T_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+    case (EL_P2E_2D)
+      call elem_eval_P2E_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
+
+    case (EL_P3_2D)
+      call elem_eval_P3_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
+
+    case (EL_P1T_2D)
+      call elem_eval_P1T_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
     case (EL_RT0_2D)
       call elem_eval_RT1_2D(celement, revalElementSet, Bder, Dbas,&
@@ -3468,7 +3470,7 @@ contains
       Dpoints(2,6) = 0.0_DP
       Dpoints(3,6) = 0.5_DP
 
-    case (EL_P3)
+    case (EL_P2E)
       Dpoints(1,1) = 1.0_DP
       Dpoints(2,1) = 0.0_DP
       Dpoints(3,1) = 0.0_DP
@@ -3493,17 +3495,50 @@ contains
       Dpoints(2,6) = 0.0_DP
       Dpoints(3,6) = 0.5_DP
 
-      Dpoints(1,7) = 0.5_DP
-      Dpoints(2,7) = 0.5_DP
+      Dpoints(1,7) = 1.0_DP/3.0_DP
+      Dpoints(2,7) = 1.0_DP/3.0_DP
+      Dpoints(3,7) = 1.0_DP/3.0_DP
+
+    case (EL_P3)
+      Dpoints(1,1) = 1.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 1.0_DP
+      Dpoints(3,2) = 0.0_DP
+
+      Dpoints(1,3) = 0.0_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 1.0_DP
+
+      Dpoints(1,4) = 2.0_DP / 3.0_DP
+      Dpoints(2,4) = 1.0_DP / 3.0_DP
+      Dpoints(3,4) = 0.0_DP
+
+      Dpoints(1,5) = 0.0_DP
+      Dpoints(2,5) = 2.0_DP / 3.0_DP
+      Dpoints(3,5) = 1.0_DP / 3.0_DP
+
+      Dpoints(1,6) = 1.0_DP / 3.0_DP
+      Dpoints(2,6) = 0.0_DP
+      Dpoints(3,6) = 2.0_DP / 3.0_DP
+
+      Dpoints(1,7) = 1.0_DP / 3.0_DP
+      Dpoints(2,7) = 2.0_DP / 3.0_DP
       Dpoints(3,7) = 0.0_DP
 
       Dpoints(1,8) = 0.0_DP
-      Dpoints(2,8) = 0.5_DP
-      Dpoints(3,8) = 0.5_DP
+      Dpoints(2,8) = 1.0_DP / 3.0_DP
+      Dpoints(3,8) = 2.0_DP / 3.0_DP
 
-      Dpoints(1,9) = 0.5_DP
+      Dpoints(1,9) = 2.0_DP / 3.0_DP
       Dpoints(2,9) = 0.0_DP
-      Dpoints(3,9) = 0.5_DP
+      Dpoints(3,9) = 1.0_DP / 3.0_DP
+
+      Dpoints(1,10) = 1.0_DP / 3.0_DP
+      Dpoints(2,10) = 1.0_DP / 3.0_DP
+      Dpoints(3,10) = 1.0_DP / 3.0_DP
 
     case (EL_P1T)
       Dpoints(1,1) = 0.5_DP

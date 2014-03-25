@@ -1087,7 +1087,7 @@ contains
           ccubType = CUB_G3_T
         end select
 
-      case (EL_P2)
+      case (EL_P2,EL_P2E)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -1096,6 +1096,17 @@ contains
         case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
           ! Use Gauss-3pt
           ccubType = CUB_G3_T
+        end select
+
+      case (EL_P3)
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! Use Gauss-4pt
+          ccubType = CUB_VMC
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! Use Gauss-4pt
+          ccubType = CUB_VMC
         end select
 
       case (EL_P1T)

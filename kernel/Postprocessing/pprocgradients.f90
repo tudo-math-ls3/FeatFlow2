@@ -730,11 +730,14 @@ contains
               EL_Q1_2D, EL_Q1_3D,&
               EL_P1_1D, EL_P1_2D, EL_P1_3D,&
               EL_Q2_2D, EL_Q2_3D,&
-              EL_P2_1D, EL_P2_2D, EL_P2_3D)
+              EL_P2_1D, EL_P2_2D, EL_P2_3D,&
+              EL_P2E,&
+              EL_Q3_2D,&
+              EL_P3_2D)
 
         case default
-          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
-              ' discretisation for the destination vector!',&
+          call output_line ('Only Q0, Q1, Q2, Q3, P0, P1, P2, P3, and extended P2+' // &
+              ' are supported as discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP12Q12cnf')
           call sys_halt()
         end select
@@ -1499,11 +1502,14 @@ contains
               EL_Q1_2D, EL_Q1_3D,&
               EL_P1_1D, EL_P1_2D, EL_P1_3D,&
               EL_Q2_2D, EL_Q2_3D,&
-              EL_P2_1D, EL_P2_2D, EL_P2_3D)
+              EL_P2_1D, EL_P2_2D, EL_P2_3D,&
+              EL_P2E_2D,&
+              EL_Q3_2D,&
+              EL_P3_2D)
 
         case default
-          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
-              ' discretisation for the destination vector!',&
+          call output_line ('Only Q0, Q1, Q2, Q3, P0, P1, P2, P3, and extended P2+' // &
+              ' are supported as discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
           call sys_halt()
         end select
@@ -4174,6 +4180,39 @@ contains
 
         ncubp = 6
 
+      case (EL_P2E)
+        ! Manually calculate the coordinates of the corners/midpoints
+        ! and the center on the reference element.
+        Dxi(1,1)  =  1.0_DP
+        Dxi(1,2)  =  0.0_DP
+        Dxi(1,3)  =  0.0_DP
+
+        Dxi(2,1)  =  0.0_DP
+        Dxi(2,2)  =  1.0_DP
+        Dxi(2,3)  =  0.0_DP
+
+        Dxi(3,1)  =  0.0_DP
+        Dxi(3,2)  =  0.0_DP
+        Dxi(3,3)  =  1.0_DP
+
+        Dxi(4,1)  =  0.5_DP
+        Dxi(4,2)  =  0.5_DP
+        Dxi(4,3)  =  0.0_DP
+
+        Dxi(5,1)  =  0.0_DP
+        Dxi(5,2)  =  0.5_DP
+        Dxi(5,3)  =  0.5_DP
+
+        Dxi(6,1)  =  0.5_DP
+        Dxi(6,2)  =  0.0_DP
+        Dxi(6,3)  =  0.5_DP
+
+        Dxi(7,1)  =  1.0_DP / 3.0_DP
+        Dxi(7,2)  =  1.0_DP / 3.0_DP
+        Dxi(7,3)  =  1.0_DP / 3.0_DP
+
+        ncubp = 7
+
       case (EL_Q2)
 
         ! Manually calculate the coordinates of the corners/midpoints on
@@ -4206,6 +4245,106 @@ contains
         Dxi(9,2)  =  0.0_DP
 
         ncubp = 9
+
+      case (EL_P3)
+        ! Manually calculate the coordinates of the corners and the
+        ! 1/3- and 2/3-points along the edges of the reference element.
+        Dxi(1,1)  =  1.0_DP
+        Dxi(1,2)  =  0.0_DP
+        Dxi(1,3)  =  0.0_DP
+
+        Dxi(2,1)  =  0.0_DP
+        Dxi(2,2)  =  1.0_DP
+        Dxi(2,3)  =  0.0_DP
+
+        Dxi(3,1)  =  0.0_DP
+        Dxi(3,2)  =  0.0_DP
+        Dxi(3,3)  =  1.0_DP
+
+        Dxi(4,1)  =  2.0_DP / 3.0_DP
+        Dxi(4,2)  =  1.0_DP / 3.0_DP
+        Dxi(4,3)  =  0.0_DP
+
+        Dxi(5,1)  =  0.0_DP
+        Dxi(5,2)  =  2.0_DP / 3.0_DP
+        Dxi(5,3)  =  1.0_DP / 3.0_DP
+
+        Dxi(6,1)  =  1.0_DP / 3.0_DP
+        Dxi(6,2)  =  0.0_DP
+        Dxi(6,3)  =  2.0_DP / 3.0_DP
+
+        Dxi(7,1)  =  1.0_DP / 3.0_DP
+        Dxi(7,2)  =  2.0_DP / 3.0_DP
+        Dxi(7,3)  =  0.0_DP
+
+        Dxi(8,1)  =  0.0_DP
+        Dxi(8,2)  =  1.0_DP / 3.0_DP
+        Dxi(8,3)  =  2.0_DP / 3.0_DP
+
+        Dxi(9,1)  =  2.0_DP / 3.0_DP
+        Dxi(9,2)  =  0.0_DP
+        Dxi(9,3)  =  1.0_DP / 3.0_DP
+
+        Dxi(10,1)  =  1.0_DP / 3.0_DP
+        Dxi(10,2)  =  1.0_DP / 3.0_DP
+        Dxi(10,3)  =  1.0_DP / 3.0_DP
+
+        ncubp = 10
+
+      case (EL_Q3)
+
+        ! Manually calculate the coordinates of the corners and the
+        ! internal Gauss-Lobatto points (+/-SQRT(1/5),+/-SQRT(1/5))
+        ! on the reference element an
+        Dxi(1,1)  =  -1.0_DP
+        Dxi(1,2)  =  -1.0_DP
+
+        Dxi(2,1)  =  1.0_DP
+        Dxi(2,2)  =  -1.0_DP
+
+        Dxi(3,1)  =  1.0_DP
+        Dxi(3,2)  =  1.0_DP
+
+        Dxi(4,1)  =  -1.0_DP
+        Dxi(4,2)  =  1.0_DP
+
+        Dxi(5,1)  =  -sqrt(1.0_DP / 5.0_DP)
+        Dxi(5,2)  =  -1.0_DP
+
+        Dxi(6,1)  =  sqrt(1.0_DP / 5.0_DP)
+        Dxi(6,2)  =  -1.0_DP
+
+        Dxi(7,1)  =  1.0_DP
+        Dxi(7,2)  =  -sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(8,1)  =  1.0_DP
+        Dxi(8,2)  =  sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(9,1)  =  sqrt(1.0_DP / 5.0_DP)
+        Dxi(9,2)  =  1.0_DP
+
+        Dxi(10,1) =  -sqrt(1.0_DP / 5.0_DP)
+        Dxi(10,2) =  1.0_DP
+
+        Dxi(11,1) =  -1.0_DP
+        Dxi(11,2) =  sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(12,1) =  -1.0_DP
+        Dxi(12,2) =  -sqrt(1.0_DP / 5.0_DP)
+        
+        Dxi(13,1) =  -sqrt(1.0_DP / 5.0_DP)
+        Dxi(13,2) =  -sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(14,1) =  sqrt(1.0_DP / 5.0_DP)
+        Dxi(14,2) =  -sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(15,1) =  sqrt(1.0_DP / 5.0_DP)
+        Dxi(15,2) =  sqrt(1.0_DP / 5.0_DP)
+
+        Dxi(16,1) =  -sqrt(1.0_DP / 5.0_DP)
+        Dxi(16,2) =  sqrt(1.0_DP / 5.0_DP)
+
+        ncubp = 16
 
       case default
         call output_line ('Unsupported FE space in destination vector!',&

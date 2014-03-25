@@ -1453,7 +1453,7 @@ contains
         end if
 
 
-      case (EL_P2,EL_Q2,EL_QPW4P2_2D)
+      case (EL_P2,EL_P2E,EL_Q2,EL_QPW4P2_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
@@ -1524,7 +1524,7 @@ contains
           ! be on the boundary.
         end if
         
-      case (EL_Q3_2D)
+      case (EL_P3_2D,EL_Q3_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
@@ -3295,6 +3295,7 @@ contains
           if ((celement .eq. EL_P1) .or. &
               (celement .eq. EL_Q1) .or. &
               (celement .eq. EL_P2) .or. &
+              (celement .eq. EL_P2E) .or. &
               (celement .eq. EL_Q2)) then
 
             bok = .true.
@@ -3342,6 +3343,7 @@ contains
           end if
 
           if ((celement .eq. EL_P2) .or. &
+              (celement .eq. EL_P2E) .or. &
               (celement .eq. EL_Q2)) then
 
             ! Loop through the edges of the elements and collect them.
@@ -3710,6 +3712,7 @@ contains
 !      if ((celement .eq. EL_P1) .or. &
 !          (celement .eq. EL_Q1) .or. &
 !          (celement .eq. EL_P2) .or. &
+!          (celement .eq. EL_P2E) .or. &
 !          (celement .eq. EL_Q2)) then
 !
 !        ! Let us start to collect values. This is a rather element-dependent
@@ -3770,6 +3773,7 @@ contains
 !
 !        ! In case of a P2/Q2 discretisation, also loop about the edges.
 !        if ((celement .eq. EL_P2) .or. &
+!            (celement .eq. EL_P2E) .or. &
 !            (celement .eq. EL_Q2)) then
 !
 !          ! Let us start to collect values. This is a rather element-dependent
@@ -4432,6 +4436,14 @@ contains
       case (EL_P2)
         ndofs = iregionNVT + iregionNMT
 
+      ! 2D extended P2+ element
+      case (EL_P2E)
+        ndofs = iregionNVT + iregionNMT + iregionNEL
+	
+      ! 2D P3 element
+      case (EL_P3)
+        ndofs = iregionNVT + 2*iregionNMT + iregionNEL
+
       ! 2D Q2 element
       case (EL_Q2)
         ndofs = iregionNVT + iregionNMT + iregionNEL
@@ -4524,7 +4536,7 @@ contains
           end do
 
         ! 2D P1/P2/P3 element
-        case (EL_P1,EL_P2,EL_P3)
+        case (EL_P1,EL_P2,EL_P2E,EL_P3)
           do j = 1, 3
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
@@ -4656,7 +4668,7 @@ contains
             end do
 
           ! 2D P2 element
-          case (EL_P2)
+          case (EL_P2,EL_P2E)
             do j=1,3
               if ((p_IedgesAtElem(j,iel)) .eq. imt) then
                 ! The first 3 DOFs belong to the vertices
@@ -5144,7 +5156,7 @@ contains
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
       ! 2D P2 element
-      case (EL_P2)
+      case (EL_P2,EL_P2E)
         ! The triangle-midpoint DOF has number 7
         idof = IdofGlob(7)
 
