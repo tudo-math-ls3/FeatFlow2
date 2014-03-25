@@ -1507,7 +1507,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    ! File name of the MATLAB file with fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the vector in MATLAB file. This will be the name of the
@@ -1564,7 +1564,7 @@ contains
 
     ! Open output file
     iunit=sys_getFreeUnit()
-    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
+    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename)))
 
     ! Which vector type are we?
     select case(rvector%cdataType)
@@ -1651,14 +1651,19 @@ contains
     end select
 
     ! Close file
-    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ*rvector%NVAR
+    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ*rvector%NVAR,&
+                             svectorName, rvector%NEQ*rvector%NVAR, 1
     close(UNIT=iunit)
 
 10  format("data=[...")
 20  format(I10,1X,I10,1X,E15.8,";...")
 30  format("];")
-40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
-
+40  format("if ~isempty(data), ",&
+        A,"=transpose(sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"));",&
+        "else ",&
+        A,"=sparse(",I10,",",I10,");",&
+        "end; clear data;")
+    
   end subroutine vecio_spyVector
 
   ! ***************************************************************************
@@ -1680,7 +1685,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    ! File name of the MATLAB file with fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the vector in MATLAB file. This will be the name of the
@@ -1723,7 +1728,7 @@ contains
 
     ! Open output file
     iunit=sys_getFreeUnit()
-    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename))//'.m')
+    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename)))
 
     write(UNIT=iunit,FMT=10) svectorName
     do i = 1,rvector%nblocks

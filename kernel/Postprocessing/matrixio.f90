@@ -956,7 +956,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension.
+    ! File name of the MATLAB file with fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the matrix in MATLAB file. This will be the name of the
@@ -1049,7 +1049,7 @@ contains
 44  format("for i=1:size(C,1),for j=1:size(C,2),")
 45  format("if isempty(C{i,j}), C{i,j}=sparse(nr(i,j),nc(i,j)); end;")
 46  format("end, end;")
-50  format(A,"=cell2mat(C); clear C;")
+50  format(A,"=cell2mat(C); clear C nr nc i j idx;")
 
   end subroutine
 
@@ -1072,7 +1072,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension.
+    ! File name of the MATLAB file with fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the matrix in MATLAB file. This will be the name of the
@@ -1354,7 +1354,9 @@ contains
     ! Close file
     if (nnz .gt. 0) then
       write(UNIT=iunit,FMT=30) smatrixName,&
-          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR,&
+          smatrixName, rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+          
     else
       write(UNIT=iunit,FMT=50)
       write(UNIT=iunit,FMT=40) smatrixName,&
@@ -1364,7 +1366,11 @@ contains
       
 10  format("data=[...")
 20  format("];")
-30  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
+30  format("if ~isempty(data), ",&
+        A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,");",&
+        "else ",&
+        A,"=sparse(",I10,",",I10,");",&
+        "end; clear data;")
 40  format(A,"=sparse(",I10,",",I10,");")
 50  format("clear data;")
 
