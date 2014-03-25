@@ -1,0 +1,35 @@
+# This is the main configuration file for the sea surface elevation application
+
+# Minimum multigrid level
+NLMIN = 1
+
+# Maximum multigrid level
+NLMAX = 7
+
+# Boundary parametrisation
+PRMFILE = SSE.prm
+
+# Domain triangulation
+TRIFILE = SSE.tri
+
+# Element type
+ELEMENTTYPE(3) = EL_P1
+                 EL_P1
+                 EL_P2
+                 EL_P2
+
+# Cubature type
+CUBATURETYPE(3) = QG5_T
+                  QG5_T
+                  QG5_T
+                  QG5_T
+
+# Sort strategy
+SORTSTRATEGY = 
+
+# Problem type
+# =0: Standard Poisson problem
+# =1: Standard Poisson problem as first-order system
+# =2: SSE as scalar anisotropic diffusion problem
+# =3: SSE as first-order system
+PROBLEMTYPE = 2

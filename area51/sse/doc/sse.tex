@@ -1,0 +1,139 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\title{Elliptic equation of sea surface elevation}
+\author{Matthias M\"oller}
+\begin{document}
+\maketitle
+
+\section*{Model problem}
+The elliptic equation for sea surface elevation is given by
+\begin{alignat}{2}
+-\nabla\cdot(A\nabla N)-i\omega N&=0  \quad && \text{in } \Omega,
+\label{eq:sse_scalar1}\\
+N&=A_{M_2} \quad && \text{on } \Gamma_D,
+\label{eq:sse_scalar2}\\
+-(A\nabla N)\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N,
+\label{eq:sse_scatar3}
+\end{alignat}
+where $\Gamma_D$ and $\Gamma_N$ denote the Dirichlet and Neumann boundary part and $A_{M_2}$ is the amplitude of sea surface elevation at the Dirichlet boundary. Both the solution $N\in\mathbb{C}$ and the matrix
+$$
+A=-
+\begin{pmatrix}
+C_1 & C_2\\
+C_3 & C_4
+\end{pmatrix},\quad\text{where}\quad C_k\in\mathbb{C}, k=1,\dots,4
+$$
+consist of complex valued data. Here, the coefficients $C_1,\dots,C_4$ are complex valued functions of horizontal coordinates. Let us define
+\begin{align*}
+c_{11}&=\frac{g}{r_1^3A_\nu}\left[\frac{s \sinh r_1 h}{r_1 A_\nu \sinh r_1 h + s \cosh r_1 h}-r_1 h\right],\\
+c_{12}&=ic_{11},\\
+c_{13}&=\frac{g}{r_2^3A_\nu}\left[\frac{s \sinh r_2 h}{r_1 A_\nu \sinh r_2 h + s \cosh r_2 h}-r_2 h\right],\\
+c_{14}&=-ic_{13},
+\end{align*}
+where $i$ denotes the imaginary number, i.e. $i^2=-1$. Then, the auxiliary coefficients $C_1,\dots,C_4$ are defined as follows:
+\begin{align}
+C_1&=\frac{c_{11}+c_{13}}{2},\\
+C_2&=\frac{c_{12}+c_{14}}{2},\\
+C_3&=\frac{c_{11}-c_{13}}{2},\\
+C_4&=\frac{c_{12}-c_{14}}{2}.
+\end{align}
+The other parameters are given in the following table
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+notation & value & description\\
+\hline
+$\omega$ & $1.4\times 10^{-4}$ &tidal frequency\\
+$g$ & 10 & gravitational acceleration\\
+$s$ & 0.049 & bottom stress\\
+$h$ & 10 & bottom profile\\
+$A_\nu$ & 0.012 & eddy viscosity\\
+$f$ & 0 & Coriolis acceleration (Earth rotation)\\
+\hline
+\end{tabular}
+\end{center}
+Moreover, the auxiliary parameters $r_1=\sqrt{i\frac{f-\omega}{A_\nu}}$ and $r_2=\sqrt{-i\frac{f+\omega}{A_\nu}}$ are adopted.
+
+The variational formulation reads: find $N\in V_{A_{M_2}}$ such that
+\begin{equation}
+\int_\Omega(A\nabla N)\cdot\nabla \varphi- i\omega N \varphi\,\mathrm{d}\mathbf{x}=0\quad \forall \varphi\in V_0,
+\end{equation}
+The essential boundary conditions have been built into the trial and test spaces
+\begin{align}
+V_{A_{M_2}}&=\{v\in H_1(\Omega)\,:\, v=A_{M_2}\text{ on }\Gamma_D\},\\
+V_0&=\{\varphi\in H_1(\Omega)\,:\, \varphi=0\text{ on }\Gamma_D\}.
+\end{align}
+Let the solution be approximated by finite elements as follows
+\begin{equation}
+N(\mathbf{x})=\sum_{j}\varphi_j(\mathbf{x})N_j 
+\end{equation}
+where $\{\varphi_j(\mathbf{x})\}_j$ denotes a basis of \emph{real} valued functions and complex valued coefficients $N_j\in\mathbb{C}$.
+
+Instead of working with complex values directly we split them into their real and imaginary parts, e.g., $N_j=N_j^\textrm{Re}+iN_j^\textrm{Im}$ and use separate scalar finite element fields $N^\textrm{Re}$ and $N^\textrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im})\in V_{A_{M_2}}^\textrm{Re}\times V_{A_{M_2}}^\textrm{Im}$ such that
+\begin{equation}
+\sum_j\int_\Omega \nabla\varphi_i\cdot\left(A^\textrm{Re}\nabla N_j^\textrm{Re}-A^\textrm{Im}\nabla N_j^\textrm{Im}\right)+\omega \varphi_i N_j^\textrm{Im}\,\mathrm{d}\mathbf{x}=0
+\end{equation}
+and
+\begin{equation}
+\sum_ji\int_\Omega \nabla\varphi_i\cdot\left(A^\textrm{Im}\nabla N_j^\textrm{Re}+A^\textrm{Re}\nabla N_j^\textrm{Im}\right)-\omega \varphi_i N_j^\textrm{Re}\,\mathrm{d}\mathbf{x}=0
+\end{equation}
+for all admissible real valued test functions $\varphi_i\in V_{0}$.
+To simplify the notation let us define the following auxiliary stiffness and mass matrices
+\begin{alignat}{2}
+S^\textrm{Re}&=\{s_{ij}^\textrm{Re}\} \qquad s_{ij}^\textrm{Re}&=&\int_\Omega \nabla\varphi_i\cdot(A^\textrm{Re}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
+S^\textrm{Im}&=\{s_{ij}^\textrm{Im}\} \qquad s_{ij}^\textrm{Im}&=&\int_\Omega \nabla\varphi_i\cdot(A^\textrm{Im}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
+M&=\{m_{ij}\} \qquad m_{ij}&=&\int_\Omega \varphi^\text{trial}\varphi^\text{test}\,\mathrm{d}\mathbf{x}
+\end{alignat}
+Then the problem at hand reads
+\begin{equation}
+\begin{pmatrix}
+S^\textrm{Re} & -S^\textrm{Im}+\omega M\\
+S^\textrm{Im}-\omega M &  S^\textrm{Re}
+\end{pmatrix}
+\begin{pmatrix}
+N^\textrm{Re}\\
+N^\textrm{Im}
+\end{pmatrix}
+=
+\begin{pmatrix}
+0\\
+0
+\end{pmatrix}
+\end{equation}
+
+\section*{First-order system}
+Let $\boldsymbol{\sigma}=A\nabla N$ in order to convert the scalar problem equation\eqref{eq:sse_scalar1}--\eqref{eq:sse_scatar3} into the first-order system
+\begin{alignat}{2}
+\nabla\cdot\boldsymbol{\sigma}+i\omega N&=0  \quad && \text{in } \Omega,
+\label{eq:sse_system1}\\
+\boldsymbol{\sigma}-\nabla N&=0 \quad && \text{in } \Omega,\\
+N&=A_{M_2} \quad && \text{on } \Gamma_D,
+\label{eq:sse_system3}\\
+-\boldsymbol{\sigma}\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N.
+\label{eq:sse_system4}
+\end{alignat}
+The associated variational formulation reads: find $N\in V$ and $\boldsymbol{\sigma}\in\mathbf{W}_0$ such that 
+\begin{alignat}{2}
+\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)v\,\mathrm{d}\mathbf{x}&=0 \quad && \forall v\in V,
+\label{eq:weak1}\\
+\int_\Omega\left(\boldsymbol{\sigma}-\nabla N\right)\cdot\mathbf{w}\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \mathbf{w}\in \mathbf{W}_0,
+\label{eq:weak2}
+\end{alignat}
+where $v=L^2(\Omega)$ and $\mathbf{W}_0=\{\mathbf{w}\in H(\text{div})\,:\,\mathbf{w}\cdot\mathbf{n}=0 \text{ on }\Gamma_N\}$.
+Integration by parts is applied to \eqref{eq:weak2} to include the Dirichlet boundary condition \eqref{eq:sse_system3} as a natural one
+\begin{equation}
+\int_\Omega\boldsymbol{\sigma}\cdot\mathbf{w}+N\nabla\cdot\boldsymbol{\sigma}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\mathbf{w}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall \mathbf{w}\in \mathbf{W}
+\end{equation}
+Thus, the variational formulation for the problem at hand reads: find $(N,\boldsymbol{\sigma})\in V\times\mathbf{W}_0$ such that
+\begin{equation}
+\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)v+\boldsymbol{\sigma}\cdot\mathbf{w}+N\nabla\cdot\boldsymbol{\sigma}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\mathbf{w}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall (v,\mathbf{w})\in V\times\mathbf{W}
+\end{equation}
+
+
+\end{document}
