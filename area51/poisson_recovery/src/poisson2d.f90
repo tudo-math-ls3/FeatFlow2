@@ -676,18 +676,6 @@ contains
   ! Create a temporary vector we need that for some preparation.
   call lsysbl_createVector(p_rrhs, rvecTmp, .false.)
 
-!!$  ! Resort the RHS and solution vector according to the resorting
-!!$  ! strategy given in the matrix.
-!!$  !
-!!$  ! Use the temporary vector from above to store intermediate data.
-!!$  ! The vectors are assumed to know how they are resorted (the strategy
-!!$  ! is already attached to them). So call the resorting routines
-!!$  ! to resort them as necessary!
-!!$  ! We use the first subvector of rvecTmp as temporary data; it is
-!!$  ! large enough, as we only have one block.
-!!$  call lsysbl_synchroniseSort(p_rmatrix,p_rrhs,rvecTmp%RvectorBlock(1))
-!!$  call lsysbl_synchroniseSort(p_rmatrix,p_rvector,rvecTmp%RvectorBlock(1))
-
   ! Now we have to build up the level information for multigrid.
   !
   ! Create a Multigrid-solver. Attach the above filter chain
@@ -827,13 +815,6 @@ contains
     call filter_doneFilterChain(rproblem%RlevelInfo(i)%RfilterChain,&
         rproblem%RlevelInfo(i)%nfilters)
   end do
-
-!!$  ! Unsort the vectors again in case they were resorted before calling
-!!$  ! the solver.
-!!$  ! We use the first subvector of rvecTmp as temporary data; it is
-!!$  ! large enough, as we only have one block.
-!!$  call lsysbl_sortVector(p_rrhs,.false.,rvecTmp%RvectorBlock(1))
-!!$  call lsysbl_sortVector(p_rvector,.false.,rvecTmp%RvectorBlock(1))
 
   ! Release the temporary vector
   call lsysbl_releaseVector(rvecTmp) 

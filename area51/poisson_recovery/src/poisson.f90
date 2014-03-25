@@ -118,14 +118,10 @@ program poisson
   call ctab_setScientific(rtable,"L2-error",.true.)
   call ctab_setScientific(rtable,"L2-error DerivX",.true.)
   call ctab_setScientific(rtable,"L2-error DerivY",.true.)
-  call ctab_setScientific(rtable,"L2-error DerivX-convrate",.true.)
-  call ctab_setScientific(rtable,"L2-error DerivY-convrate",.true.)
 
   call ctab_setScientific(rtable,"H1-error",.true.)
   call ctab_setScientific(rtable,"H1-error DerivX",.true.)
   call ctab_setScientific(rtable,"H1-error DerivY",.true.)
-  call ctab_setScientific(rtable,"H1-error DerivX-convrate",.true.)
-  call ctab_setScientific(rtable,"H1-error DerivY-convrate",.true.)
 
   call ctab_setTexCaption(rtable,"cells","\# cells")
   call ctab_setTexCaption(rtable,"dofs","\# dofs")
