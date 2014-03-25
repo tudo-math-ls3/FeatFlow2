@@ -75,7 +75,7 @@ N(\mathbf{x})=\sum_{j}\varphi_j(\mathbf{x})N_j
 \end{equation}
 where $\{\varphi_j(\mathbf{x})\}_j$ denotes a basis of \emph{real} valued functions and complex valued coefficients $N_j\in\mathbb{C}$.
 
-Instead of working with complex values directly we split them into their real and imaginary parts, e.g., $N_j=N_j^\textrm{Re}+iN_j^\textrm{Im}$ and use separate scalar finite element fields $N^\textrm{Re}$ and $N^\textrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im})\in V_{A_{M_2}}^\textrm{Re}\times V_{A_{M_2}}^\textrm{Im}$ such that
+Instead of working with complex values directly we split them into their real and imaginary parts, e.g., $N_j=N_j^\textrm{Re}+iN_j^\textrm{Im}$ and use separate scalar finite element fields $N^\textrm{Re}$ and $N^\textrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im})\in V_{A_{M_2}^\textrm{Re}}\times V_{A_{M_2}^\textrm{Im}}$ such that
 \begin{equation}
 \sum_j\int_\Omega \nabla\varphi_i\cdot\left(A^\textrm{Re}\nabla N_j^\textrm{Re}-A^\textrm{Im}\nabla N_j^\textrm{Im}\right)+\omega \varphi_i N_j^\textrm{Im}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
@@ -115,25 +115,76 @@ Let $\boldsymbol{\sigma}=A\nabla N$ in order to convert the scalar problem equat
 \boldsymbol{\sigma}-\nabla N&=0 \quad && \text{in } \Omega,\\
 N&=A_{M_2} \quad && \text{on } \Gamma_D,
 \label{eq:sse_system3}\\
--\boldsymbol{\sigma}\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N.
+\boldsymbol{\sigma}\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N.
 \label{eq:sse_system4}
 \end{alignat}
 The associated variational formulation reads: find $N\in V$ and $\boldsymbol{\sigma}\in\mathbf{W}_0$ such that 
 \begin{alignat}{2}
-\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)v\,\mathrm{d}\mathbf{x}&=0 \quad && \forall v\in V,
+\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \varphi\in V,
 \label{eq:weak1}\\
-\int_\Omega\left(\boldsymbol{\sigma}-\nabla N\right)\cdot\mathbf{w}\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \mathbf{w}\in \mathbf{W}_0,
+\int_\Omega\left(\boldsymbol{\sigma}-\nabla N\right)\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \boldsymbol{\psi}\in \mathbf{W}_0,
 \label{eq:weak2}
 \end{alignat}
-where $v=L^2(\Omega)$ and $\mathbf{W}_0=\{\mathbf{w}\in H(\text{div})\,:\,\mathbf{w}\cdot\mathbf{n}=0 \text{ on }\Gamma_N\}$.
+where $V=L^2(\Omega)$ and $\mathbf{W}_0=\{\boldsymbol{\psi}\in H(\text{div})\,:\,\boldsymbol{\psi}\cdot\mathbf{n}=0 \text{ on }\Gamma_N\}$.
 Integration by parts is applied to \eqref{eq:weak2} to include the Dirichlet boundary condition \eqref{eq:sse_system3} as a natural one
 \begin{equation}
-\int_\Omega\boldsymbol{\sigma}\cdot\mathbf{w}+N\nabla\cdot\boldsymbol{\sigma}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\mathbf{w}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall \mathbf{w}\in \mathbf{W}
+\int_\Omega\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall \boldsymbol{\psi}\in \mathbf{W}
 \end{equation}
 Thus, the variational formulation for the problem at hand reads: find $(N,\boldsymbol{\sigma})\in V\times\mathbf{W}_0$ such that
 \begin{equation}
-\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)v+\boldsymbol{\sigma}\cdot\mathbf{w}+N\nabla\cdot\boldsymbol{\sigma}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\mathbf{w}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall (v,\mathbf{w})\in V\times\mathbf{W}
+\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi+\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall (\varphi,\boldsymbol{\psi})\in V\times\mathbf{W}
 \end{equation}
+Separating the real and imaginary parts as in the scalar case the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im},\boldsymbol{\sigma}^\textrm{Re},\boldsymbol{\sigma}^\textrm{Im})\in [V]^2\times [\mathbf{W}_0]^2$ such that
+\begin{equation}
+\sum_j\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\textrm{Re}-\omega N^\textrm{Im}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\textrm{Re}_j+
+\nabla\cdot\boldsymbol{\psi_i}N_j^\textrm{Re}\,\mathrm{d}\mathbf{x}=
+\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\textrm{Re}_{M_2}\,\mathrm{d}s
+\end{equation}
+and
+\begin{equation}
+\sum_ji\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\textrm{Im}+\omega N^\textrm{Re}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\textrm{Im}_j+
+\nabla\cdot\boldsymbol{\psi_i}N_j^\textrm{Im}\,\mathrm{d}\mathbf{x}=
+i\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\textrm{Im}_{M_2}\,\mathrm{d}s
+\end{equation}
+for all admissible pairs of real valued test functions $(\varphi_i,\boldsymbol{\psi}_i)\in V_{0}\times\mathbf{W}_0$.
+Let us define the following auxiliary matrices
+\begin{alignat}{2}
+A^x&=\{a^x_{ij}\} \qquad a^x_{ij}&=&\int_\Omega \psi^x_i\psi^x_j\,\mathrm{d}\mathbf{x}\\
+A^y&=\{a^y_{ij}\} \qquad a^y_{ij}&=&\int_\Omega \psi^y_i\psi^y_j\,\mathrm{d}\mathbf{x}\\
+B^x&=\{b^x_{ij}\} \qquad b^x_{ij}&=&\int_\Omega \partial_x\psi^x_i\varphi_j\,\mathrm{d}\mathbf{x}\\
+B^y&=\{b^y_{ij}\} \qquad b^y_{ij}&=&\int_\Omega \partial_y\psi^y_i\varphi_j\,\mathrm{d}\mathbf{x}\\
+C^x&=\{c^x_{ij}\} \qquad c^x_{ij}&=&\int_\Omega \varphi_i\partial_x\psi^x_j\,\mathrm{d}\mathbf{x}\\
+C^y&=\{c^y_{ij}\} \qquad c^y_{ij}&=&\int_\Omega \varphi_i\partial_y\psi^y_j\,\mathrm{d}\mathbf{x}
+\end{alignat}
 
+\begin{equation}
+\begin{pmatrix}
+0 & -\omega M & C^x & 0 & C^y & 0\\
+\omega M & 0 & 0 & C^x & 0 & C^y\\
+B^x & 0 & A^x & 0 & 0 & 0\\
+0 & B^x & 0 & A^x & 0 & 0\\
+B^y & 0 & 0 & 0 & A^y & 0\\
+0 & B^y & 0 & 0 & 0 & A^y
+\end{pmatrix}
+\begin{pmatrix}
+N^\textrm{Re}\\
+N^\textrm{Im}\\
+\sigma_x^\textrm{Re}\\
+\sigma_x^\textrm{Im}\\
+\sigma_y^\textrm{Re}\\
+\sigma_y^\textrm{Im}
+\end{pmatrix}
+=
+\begin{pmatrix}
+0\\
+0\\
+\phantom{i}\int_{\Gamma_D}A^\textrm{Re}\partial_x\psi^x_i\,\mathrm{d}s\\
+i\int_{\Gamma_D}A^\textrm{Im}\partial_x\psi^x_i\,\mathrm{d}s\\
+\phantom{i}\int_{\Gamma_D}A^\textrm{Re}\partial_y\psi^y_i\,\mathrm{d}s\\
+i\int_{\Gamma_D}A^\textrm{Im}\partial_y\psi^y_i\,\mathrm{d}s
+\end{pmatrix}
+\end{equation}
 
 \end{document}

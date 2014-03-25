@@ -525,8 +525,7 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
         rproblem%rvector,.true.)
     
-    ! Save the solution/RHS vector to the collection. Might be used
-    ! later (e.g. in nonlinear problems)
+    ! Save the solution/RHS vector to the collection.
     call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
 
@@ -660,8 +659,7 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
         rproblem%rvector,.true.)
 
-    ! Save the solution/RHS vector to the collection. Might be used
-    ! later (e.g. in nonlinear problems)
+    ! Save the solution/RHS vector to the collection.
     call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
 
@@ -708,13 +706,9 @@ contains
       
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
-      do j=1,2
-        do k=1,2
-          call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,&
-              j, k, LSYSSC_MATRIX9)
-        end do
-      end do
-
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,&
+          1, 1, LSYSSC_MATRIX9)    
+      
       ! Anisotropic diffusion matrix (real part)
       rform%itermCount = 4
       rform%ballCoeffConstant = .false.
@@ -735,10 +729,10 @@ contains
           coeff_Matrix_Real,rproblem%rcollection)
 
       ! Assemble matrix block(2,2)
-      call bilf_buildMatrixScalar(rform,.true.,&
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,2),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_Matrix_Real,rproblem%rcollection)
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
       ! Anisotropic diffusion matrix (imaginary part)
       ! plus consistent mass matrix
@@ -755,6 +749,16 @@ contains
       rform%Idescriptors(2,4) = DER_DERIV_Y
       rform%Idescriptors(1,5) = DER_FUNC
       rform%Idescriptors(2,5) = DER_FUNC
+      
+      ! Duplicate matrix structure
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
       ! Assemble matrix block(1,2)
       call bilf_buildMatrixScalar(rform,.true.,&
@@ -780,8 +784,7 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
         rproblem%rvector,.true.)
     
-    ! Save the solution/RHS vector to the collection. Might be used
-    ! later (e.g. in nonlinear problems)
+    ! Save the solution/RHS vector to the collection.
     call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
     
@@ -793,8 +796,41 @@ contains
 
   case (SSE_SYSTEM)
     !---------------------------------------------------------------------------
-    print *, "Not implemented"
-    stop
+    do i=rproblem%ilvmin,rproblem%ilvmax
+
+      ! Initialise the block matrix with default values based on
+      ! the discretisation.
+      call lsysbl_createMatrix(rproblem%RlevelInfo(i)%rdiscretisation,&
+          rproblem%RlevelInfo(i)%rmatrix)
+
+      ! Save matrix to the collection.
+      ! They maybe used later, expecially in nonlinear problems.
+      call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
+          rproblem%RlevelInfo(i)%rmatrix,.true.,i)
+
+      call lsysbl_infoMatrix(rproblem%RlevelInfo(i)%rmatrix)
+      stop
+
+    end do
+
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rrhs,.true.)
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rvector,.true.)
+
+    ! Save the solution/RHS vector to the collection.
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
+
+    ! Clear the RHS vector on the finest level.
+    call lsysbl_clearVector(rproblem%rrhs)
+
+    ! Clear the solution vector on the finest level.
+    call lsysbl_clearVector(rproblem%rvector)
 
   case default
     call output_line("Invalid type of problem.", &
