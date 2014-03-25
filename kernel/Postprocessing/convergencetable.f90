@@ -1287,7 +1287,7 @@ contains
 
 !<subroutine>
 
-  subroutine ctab_outputTex(rtable,soutputFile)
+  subroutine ctab_outputTex(rtable,soutputFile,cflag)
 
 !<description>
     ! This subroutine writes a convergence table in Tex format.
@@ -1299,6 +1299,9 @@ contains
 
     ! Name of the Tex file
     character(len=*), intent(in) :: soutputFile
+
+    ! OPTIONAL: mode: SYS_APPEND or SYS_REPLACE
+    integer, intent(in), optional :: cflag
 !</input>
 
 !</subroutine>
@@ -1316,7 +1319,11 @@ contains
     integer(I64) :: i64value
 
     ! Open file for writing
-    call io_openFileForWriting(soutputFile,iunit,SYS_REPLACE)
+    if (present(cflag)) then
+      call io_openFileForWriting(soutputFile,iunit,cflag)
+    else
+      call io_openFileForWriting(soutputFile,iunit,SYS_REPLACE)
+    end if
 
     ! Compute the number of columns/rows
     ncolumns = ctab_getNColumns(rtable)
