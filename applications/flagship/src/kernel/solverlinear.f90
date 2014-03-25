@@ -1502,7 +1502,7 @@ contains
         ! Set p:=r
         call lsysbl_copyVector(p_rr, p_rp)
       else
-        beta = (rho1/rho0)*(alpha/omega)
+        beta = (rho1*alpha)/(rho0*omega)
         rho0 = rho1
 
         ! Compute p:=r+beta*p-beta*omega*pa
