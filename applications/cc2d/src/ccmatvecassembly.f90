@@ -889,7 +889,7 @@ contains
             rmatrix,3,2,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
 
-      ! Include a matrx for the pressure
+      ! Include a matrix for the pressure
       !
       !    ( .    .    .   )
       !    ( .    .    .   )
