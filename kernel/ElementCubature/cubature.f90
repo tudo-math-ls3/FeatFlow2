@@ -423,6 +423,10 @@ module cubature
 
   ! Quadrilateral 5-point Gauss formula mapped to a triangle
   integer(I32), parameter, public :: CUB_QG5_T = 265_I32
+  
+  ! Dunavant-10 rule, degree = 10, ncubp = 25
+  integer(I32), parameter, public :: CUB_DUNAVANT_10 = 266_I32
+  integer(I32), parameter, public :: CUB_DUNAVANT_10_2D = CUB_DUNAVANT_10
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, hexa">
@@ -695,7 +699,9 @@ contains
     cub_igetID=CUB_QG4_T
   else if (scub .eq. "QG5_T") then
     cub_igetID=CUB_QG5_T
-
+  else if ((scub .eq. "DUNAVANT_10") .or. (scub .eq. "DUNAVANT_10_2D")) then
+    cub_igetID=CUB_DUNAVANT_10_2D
+    
   ! 3D-formulas, hexahedron
   else if (scub .eq. "G1_3D") then
     cub_igetID=CUB_G1_3D
@@ -927,17 +933,19 @@ contains
     case (CUB_TRZ_T)
       sname = 'TRZ_T'
     case (CUB_G3MP_T)
-      sname = 'CUB_G3MP_T'
+      sname = 'G3MP_T'
     case (CUB_VMC)
       sname = 'VMC'
     case (CUB_QG2_T)
-      sname = 'CUB_QG2_T'
+      sname = 'QG2_T'
     case (CUB_QG3_T)
-      sname = 'CUB_QG3_T'
+      sname = 'QG3_T'
     case (CUB_QG4_T)
-      sname = 'CUB_QG4_T'
+      sname = 'QG4_T'
     case (CUB_QG5_T)
-      sname = 'CUB_QG5_T'
+      sname = 'QG5_T'
+    case (CUB_DUNAVANT_10_2D)
+      sname = 'DUNAVANT_10_2D'
 
     ! 3D formulas, hexahedron
     case (CUB_G1_3D)
@@ -1218,6 +1226,8 @@ contains
     case (CUB_QG4_T)
       n = 16
     case (CUB_QG5_T)
+      n = 25
+    case (CUB_DUNAVANT_10_2D)
       n = 25
 
     ! -= 2D Quadrilateral Formulas =-
@@ -1903,6 +1913,108 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 2D TRIANGLE CUBATURE RULES
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      case (CUB_DUNAVANT_10_2D)
+        Dpoints(1, 1) = 0.333333333333333_DP
+        Dpoints(2, 1) = 0.333333333333333_DP
+        Dpoints(3, 1) = 0.333333333333333_DP
+        Dpoints(1, 2) = 0.028844733232685_DP
+        Dpoints(2, 2) = 0.485577633383657_DP
+        Dpoints(3, 2) = 0.485577633383657_DP
+        Dpoints(1, 3) = 0.485577633383657_DP
+        Dpoints(2, 3) = 0.028844733232685_DP
+        Dpoints(3, 3) = 0.485577633383657_DP
+        Dpoints(1, 4) = 0.485577633383657_DP
+        Dpoints(2, 4) = 0.485577633383657_DP
+        Dpoints(3, 4) = 0.028844733232685_DP
+        Dpoints(1, 5) = 0.781036849029926_DP
+        Dpoints(2, 5) = 0.109481575485037_DP
+        Dpoints(3, 5) = 0.109481575485037_DP
+        Dpoints(1, 6) = 0.109481575485037_DP
+        Dpoints(2, 6) = 0.781036849029926_DP
+        Dpoints(3, 6) = 0.109481575485037_DP
+        Dpoints(1, 7) = 0.109481575485037_DP
+        Dpoints(2, 7) = 0.109481575485037_DP
+        Dpoints(3, 7) = 0.781036849029926_DP
+        Dpoints(1, 8) = 0.141707219414880_DP
+        Dpoints(2, 8) = 0.307939838764121_DP
+        Dpoints(3, 8) = 0.550352941820999_DP
+        Dpoints(1, 9) = 0.141707219414880_DP
+        Dpoints(2, 9) = 0.550352941820999_DP
+        Dpoints(3, 9) = 0.307939838764121_DP
+        Dpoints(1,10) = 0.307939838764121_DP
+        Dpoints(2,10) = 0.141707219414880_DP
+        Dpoints(3,10) = 0.550352941820999_DP
+        Dpoints(1,11) = 0.307939838764121_DP
+        Dpoints(2,11) = 0.550352941820999_DP
+        Dpoints(3,11) = 0.141707219414880_DP
+        Dpoints(1,12) = 0.550352941820999_DP
+        Dpoints(2,12) = 0.141707219414880_DP
+        Dpoints(3,12) = 0.307939838764121_DP
+        Dpoints(1,13) = 0.550352941820999_DP
+        Dpoints(2,13) = 0.307939838764121_DP
+        Dpoints(3,13) = 0.141707219414880_DP
+        Dpoints(1,14) = 0.025003534762686_DP
+        Dpoints(2,14) = 0.246672560639903_DP
+        Dpoints(3,14) = 0.728323904597411_DP
+        Dpoints(1,15) = 0.025003534762686_DP
+        Dpoints(2,15) = 0.728323904597411_DP
+        Dpoints(3,15) = 0.246672560639903_DP
+        Dpoints(1,16) = 0.246672560639903_DP
+        Dpoints(2,16) = 0.025003534762686_DP
+        Dpoints(3,16) = 0.728323904597411_DP
+        Dpoints(1,17) = 0.246672560639903_DP
+        Dpoints(2,17) = 0.728323904597411_DP
+        Dpoints(3,17) = 0.025003534762686_DP
+        Dpoints(1,18) = 0.728323904597411_DP
+        Dpoints(2,18) = 0.025003534762686_DP
+        Dpoints(3,18) = 0.246672560639903_DP
+        Dpoints(1,19) = 0.728323904597411_DP
+        Dpoints(2,19) = 0.246672560639903_DP
+        Dpoints(3,19) = 0.025003534762686_DP
+        Dpoints(1,20) = 0.009540815400299_DP
+        Dpoints(2,20) = 0.066803251012200_DP
+        Dpoints(3,20) = 0.923655933587500_DP
+        Dpoints(1,21) = 0.009540815400299_DP
+        Dpoints(2,21) = 0.923655933587500_DP
+        Dpoints(3,21) = 0.066803251012200_DP
+        Dpoints(1,22) = 0.066803251012200_DP
+        Dpoints(2,22) = 0.009540815400299_DP
+        Dpoints(3,22) = 0.923655933587500_DP
+        Dpoints(1,23) = 0.066803251012200_DP
+        Dpoints(2,23) = 0.923655933587500_DP
+        Dpoints(3,23) = 0.009540815400299_DP
+        Dpoints(1,24) = 0.923655933587500_DP
+        Dpoints(2,24) = 0.009540815400299_DP
+        Dpoints(3,24) = 0.066803251012200_DP
+        Dpoints(1,25) = 0.923655933587500_DP
+        Dpoints(2,25) = 0.066803251012200_DP
+        Dpoints(3,25) = 0.009540815400299_DP
+
+        Domega( 1) = 0.0454089951913770_DP
+        Domega( 2) = 0.0183629788782335_DP
+        Domega( 3) = 0.0183629788782335_DP
+        Domega( 4) = 0.0183629788782335_DP
+        Domega( 5) = 0.0226605297177640_DP
+        Domega( 6) = 0.0226605297177640_DP
+        Domega( 7) = 0.0226605297177640_DP
+        Domega( 8) = 0.0363789584227100_DP
+        Domega( 9) = 0.0363789584227100_DP
+        Domega(10) = 0.0363789584227100_DP
+        Domega(11) = 0.0363789584227100_DP
+        Domega(12) = 0.0363789584227100_DP
+        Domega(13) = 0.0363789584227100_DP
+        Domega(14) = 0.0141636212655285_DP
+        Domega(15) = 0.0141636212655285_DP
+        Domega(16) = 0.0141636212655285_DP
+        Domega(17) = 0.0141636212655285_DP
+        Domega(18) = 0.0141636212655285_DP
+        Domega(19) = 0.0141636212655285_DP
+        Domega(20) = 0.0047108334818665_DP
+        Domega(21) = 0.0047108334818665_DP
+        Domega(22) = 0.0047108334818665_DP
+        Domega(23) = 0.0047108334818665_DP
+        Domega(24) = 0.0047108334818665_DP
+        Domega(25) = 0.0047108334818665_DP
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 2D QUADRILATERAL CUBATURE RULES
