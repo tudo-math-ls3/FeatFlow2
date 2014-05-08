@@ -19,16 +19,19 @@
 !# 2.) coeff_RHS_Poisson /
 !#     coeff_RHS_Real /
 !#     coeff_RHS_Aimag /
-!#     -> Returns analytical values for the right hand side of the Laplace
-!#        equation.
+!#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 3.) getBoundaryValues_Poisson /
+!# 3.) coeff_RHSBdr_Real /
+!#     coeff_RHSBdr_Aimag
+!#     -> Returns analytical values for the right hand side of the equation.
+!#
+!# 4.) getBoundaryValues_Poisson /
 !#     getBoundaryValues_Real /
 !#     getBoundaryValues_Aimag
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#
-!# 4.) getReferenceFunction_Poisson /
+!# 5.) getReferenceFunction_Poisson /
 !#     getReferenceFunction_Real /
 !#     getReferenceFunction_Aimag
 !#     -> Returns the values of the analytic function and its derivatives.
@@ -36,7 +39,7 @@
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 5.) getReferenceDerivX_Poisson /
+!# 6.) getReferenceDerivX_Poisson /
 !#     getReferenceDerivX_Real /
 !#     getReferenceDerivX_Aimag
 !#     -> Returns the values of the analytic derivatives in x-direction.
@@ -44,13 +47,37 @@
 !#        $H_1$-error of the recovered FE gradient in comparison to the
 !#        analytic derivative
 !#
-!# 6.) getReferenceDerivY_Poisson /
+!# 7.) getReferenceDerivY_Poisson /
 !#     getReferenceDerivY_Real /
 !#     getReferenceDerivY_Aimag
 !#     -> Returns the values of the analytic derivatives in x-direction.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the recovered FE gradient in comparison to the
 !#        analytic derivative
+!#
+!# 8.) getReferenceDerivXX_Poisson
+!#     -> Returns the values of the analytic function and its derivatives.
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 9.) getReferenceDerivXY_Poisson
+!#     -> Returns the values of the analytic function and its derivatives.
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 9.) getReferenceDerivYX_Poisson
+!#     -> Returns the values of the analytic function and its derivatives.
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 11.) getReferenceDerivYY_Poisson
+!#     -> Returns the values of the analytic function and its derivatives.
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
 !#
 !# </purpose>
 !##############################################################################
@@ -88,6 +115,8 @@ module sse_callback
   public :: coeff_RHS_Poisson
   public :: coeff_RHS_Real
   public :: coeff_RHS_Aimag
+  public :: coeff_RHSBdr_Real
+  public :: coeff_RHSBdr_Aimag
   public :: getBoundaryValues_Poisson
   public :: getBoundaryValues_Real
   public :: getBoundaryValues_Aimag
@@ -100,6 +129,10 @@ module sse_callback
   public :: getReferenceDerivY_Poisson
   public :: getReferenceDerivY_Real
   public :: getReferenceDerivY_Aimag
+  public :: getReferenceDerivXX_Poisson
+  public :: getReferenceDerivXY_Poisson
+  public :: getReferenceDerivYX_Poisson
+  public :: getReferenceDerivYY_Poisson
 
 contains
   
@@ -646,6 +679,188 @@ contains
 
 !<subroutine>
 
+  subroutine coeff_RHSBdr_Real(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates. According
+    ! to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! linear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
+    !
+    ! This routine handles the primal problem for the
+    ! convection-diffusion equation.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+    Dcoefficients (1,:,:) = 1.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_RHSBdr_Aimag(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates. According
+    ! to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! linear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
+    !
+    ! This routine handles the primal problem for the
+    ! convection-diffusion equation.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+    Dcoefficients (1,:,:) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine getBoundaryValues_Poisson(Icomponents,rdiscretisation,rboundaryRegion,&
       ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
@@ -979,16 +1194,19 @@ contains
   case (DER_FUNC)
     ! u(x,y) = SIN(PI * x) * SIN(PI * y)
     Dvalues (:,:) = sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_X)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
     ! => u_x(x,y) = PI * COS(PI * x) * SIN(PI * y)
     Dvalues (:,:) = SYS_PI * &
         cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_Y)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
     ! => u_y(x,y) = PI * SIN(PI * x) * COS(PI * y)
     Dvalues (:,:) = SYS_PI * &
         sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
@@ -1380,16 +1598,19 @@ contains
     ! => u_x(x,y) = PI * COS(PI * x) * SIN(PI * y)
     Dvalues (:,:) = SYS_PI * &
         cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_X)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
     ! => u_xx(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
     Dvalues (:,:) = -SYS_PI*SYS_PI * &
         sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_Y)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
-    ! => u_xx(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
+    ! => u_xy(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
     Dvalues (:,:) = SYS_PI*SYS_PI * &
         cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
@@ -1781,16 +2002,19 @@ contains
     ! => u_y(x,y) = PI * SIN(PI * x) * COS(PI * y)
     Dvalues (:,:) = SYS_PI * &
         sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_Y)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
     ! => u_yy(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
     Dvalues (:,:) = -SYS_PI*SYS_PI * &
         sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
   case (DER_DERIV_X)
     !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
     ! => u_yx(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
     Dvalues (:,:) = SYS_PI*SYS_PI * &
         cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
@@ -1953,6 +2177,402 @@ contains
 !</subroutine>
 
   select case (cderivative)
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getReferenceDerivXX_Poisson(cderivative,rdiscretisation, &
+      nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+      Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in) :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+  select case (cderivative)
+  case (DER_FUNC)
+    !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+    ! => u_xx(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_X)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_xxx(x,y)= -PI * PI * PI * COS(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_Y)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_xxy(x,y)= -PI * PI * PI * SIN(PI * x) * COS(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getReferenceDerivXY_Poisson(cderivative,rdiscretisation, &
+      nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+      Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in) :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+  select case (cderivative)
+  case (DER_FUNC)
+    !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+    ! => u_xy(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
+    Dvalues (:,:) = SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_X)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_xyx(x,y)= -PI * PI * PI * SIN(PI * x) * COS(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_Y)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_xyy(x,y)= -PI * PI * PI * COS(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getReferenceDerivYX_Poisson(cderivative,rdiscretisation, &
+      nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+      Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in) :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+  select case (cderivative)
+  case (DER_FUNC)
+    !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+    ! => u_yx(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
+    Dvalues (:,:) = SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_X)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_yxx(x,y)= -PI * PI * PI * SIN(PI * x) * COS(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_Y)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_yxy(x,y)= -PI * PI * PI * COS(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getReferenceDerivYY_Poisson(cderivative,rdiscretisation, &
+      nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+      Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in) :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+  select case (cderivative)
+  case (DER_FUNC)
+    !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+    ! => u_yy(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_X)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_yyx(x,y)= -PI * PI * PI * COS(PI * x) * SIN(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+
+  case (DER_DERIV_Y)
+    !    u(x,y)    = SIN(PI * x) * SIN(PI * y)
+    ! => u_yyy(x,y)= -PI * PI * PI * SIN(PI * x) * COS(PI * y)
+    Dvalues (:,:) = -SYS_PI*SYS_PI*SYS_PI * &
+        sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP

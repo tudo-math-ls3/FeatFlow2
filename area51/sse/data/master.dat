@@ -4,25 +4,7 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 7
-
-# Boundary parametrisation
-PRMFILE = SSE.prm
-
-# Domain triangulation
-TRIFILE = SSE.tri
-
-# Element type
-ELEMENTTYPE(3) = EL_P1
-                 EL_P1
-                 EL_P2
-                 EL_P2
-
-# Cubature type
-CUBATURETYPE(3) = QG5_T
-                  QG5_T
-                  QG5_T
-                  QG5_T
+NLMAX = 8
 
 # Sort strategy
 SORTSTRATEGY = 
@@ -32,4 +14,153 @@ SORTSTRATEGY =
 # =1: Standard Poisson problem as first-order system
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system
-PROBLEMTYPE = 2
+PROBLEMTYPE = 0
+
+# Name of configuration
+CONFIG = TRIA_P2E_SCALAR
+
+################################################################################
+[TRIA_P1_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P1
+
+# Cubature type
+CUBATURETYPE = QG3_T
+
+################################################################################
+[TRIA_P2_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2
+
+# Cubature type
+CUBATURETYPE = QG4_T
+
+################################################################################
+[TRIA_P2E_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2E
+
+# Cubature type
+CUBATURETYPE = QG5_T
+
+################################################################################
+[TRIA_P2P1_SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_P1
+                 EL_P2
+                 EL_P2
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
+[TRIA_P2EP1_SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_P1
+                 EL_P2E
+                 EL_P2E
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
+[QUAD_Q1_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q1
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q2_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q2
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q2Q1_SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_Q1
+                 EL_Q2
+                 EL_Q2
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  AUTO_G6
+                  AUTO_G6
+                  AUTO_G6

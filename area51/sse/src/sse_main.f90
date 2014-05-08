@@ -24,6 +24,8 @@ module sse_main
   use filtersupport
   use fsystem
   use genoutput
+  use globalsystem
+  use linearalgebra
   use linearformevaluation
   use linearsolver
   use linearsystemblock
@@ -81,7 +83,7 @@ module sse_main
     type(t_scalarCubatureInfo), dimension(3) :: RcubatureInfo
     
     ! A system matrix for that specific level. The matrix will receive the
-    ! discrete Laplace operator.
+    ! discrete system operator.
     type(t_matrixBlock) :: rmatrix
 
     ! A scalar matrix that will recieve the prolongation matrix for this level.
@@ -180,7 +182,7 @@ contains
   integer :: i
 
   ! Path to the mesh
-  character(len=SYS_STRLEN) :: spredir,strifile,sprmfile
+  character(len=SYS_STRLEN) :: spredir,sconfig,strifile,sprmfile
 
   ! Initialise the level in the problem structure
   rproblem%ilvmin = ilvmin
@@ -191,15 +193,18 @@ contains
   ! from. If that does not exist, write to the directory "./pre".
   if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
+  ! Get the section for the configuration
+  call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
+
   ! At first, read in the parametrisation of the boundary and save
   ! it to rboundary.
-  call parlst_getvalue_string(rparlist, '', 'prmfile', sprmfile, '')
+  call parlst_getvalue_string(rparlist, trim(sconfig), 'prmfile', sprmfile, '')
   if (trim(sprmfile) .ne. '') then
     call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/'//trim(sprmfile))
   end if
 
   ! Now read in the basic triangulation.
-  call parlst_getvalue_string(rparlist, '', 'trifile', strifile)
+  call parlst_getvalue_string(rparlist, trim(sconfig), 'trifile', strifile)
   if (trim(sprmfile) .ne. '') then
     call tria_readTriFile2D(rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
         trim(spredir)//'/'//trim(strifile), rproblem%rboundary)
@@ -269,19 +274,22 @@ contains
 !</subroutine>
 
   ! local variables
-  character(len=SYS_STRLEN) :: sparameter
+  character(len=SYS_STRLEN) :: sconfig,sparameter
   integer, dimension(3) :: Ccubaturetypes,Celementtypes
   integer :: i,j,ccubaturetype,celementtype
   
+  ! Get the section for the configuration
+  call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
+
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR,SSE_SCALAR)
 
     ! Get type of element
-    call parlst_getvalue_string(rparlist, '', 'ELEMENTTYPE', sparameter)
+    call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter)
     celementtype = elem_igetID(sparameter)
 
     ! Get type of cubature formula
-    call parlst_getvalue_string(rparlist, '', 'CUBATURETYPE', sparameter)
+    call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter)
     ccubaturetype = cub_igetID(sparameter)
 
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -319,14 +327,14 @@ contains
     
     ! Get types of element for each variable
     do j=1,3
-      call parlst_getvalue_string(rparlist, '', 'ELEMENTTYPE', sparameter,&
+      call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
           isubstring=j)
       Celementtypes(j) = elem_igetID(sparameter)
     end do
     
     ! Get types of cubature formula
     do j=1,3
-      call parlst_getvalue_string(rparlist, '', 'CUBATURETYPE', sparameter,&
+      call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
           isubstring=j)
       Ccubaturetypes(j) = cub_igetID(sparameter)
     end do
@@ -454,7 +462,10 @@ contains
 
   ! local variables
   character(len=SYS_STRLEN) :: ssortstrategy
-  integer :: i,j,k
+  integer :: i
+
+  ! A boundary segment
+  type(t_boundaryRegion) :: rboundaryRegion
 
   ! A bilinear and linear form describing the analytic problem to solve
   type(t_bilinearForm) :: rform
@@ -556,13 +567,13 @@ contains
     !
     ! Problem formulation in (test,trial)-notation
     !
-    !  /                                         \   /       \   /        \
-    ! |      0        (func,grad_x) (func,grad_y) | |    u    | | (func,f) |
-    ! |                                           | |         | |          |
-    ! | (grad_x,func)  (func,func)       0        |*| sigma_x |=|     0    |
-    ! |                                           | |         | |          |
-    ! | (grad_y,func)       0        (func,func)  | | sigma_y | |     0    |
-    !  \                                         /   \       /   \        /
+    !  /                                         \   /       \   /         \
+    ! |      0        (func,grad_x) (func,grad_y) | |    u    | | (func,-f) |
+    ! |                                           | |         | |           |
+    ! | (grad_x,func)  (func,func)       0        |*| sigma_x |=|     0     |
+    ! |                                           | |         | |           |
+    ! | (grad_y,func)       0        (func,func)  | | sigma_y | |     0     |
+    !  \                                         /   \       /   \         /
     !
     do i=rproblem%ilvmin,rproblem%ilvmax
 
@@ -594,7 +605,7 @@ contains
       
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
       
       ! (1,3)-block (w,grad_y sigma_y)
@@ -606,7 +617,7 @@ contains
       
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(3),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
       
       ! (2,1)-block (grad_x v_x,u)
@@ -618,7 +629,7 @@ contains
       
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(2),&
           rcollection=rproblem%rcollection)
       
       ! (3,1)-block (grad_y v_y,u)
@@ -630,10 +641,10 @@ contains
       
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(3),&
           rcollection=rproblem%rcollection)
       
-      ! (2,2)- and (3,3)-blocks (func,func)
+      ! (2,2)- and (3,3)-blocks (v_x,sigma_x) and (v_y,sigma_y)
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
@@ -692,6 +703,21 @@ contains
 
   case (SSE_SCALAR)
     !---------------------------------------------------------------------------
+    !
+    ! Problem formulation in (test,trial)-notation
+    !
+    !  /                                                                         \
+    ! | (grad,Re(A)*grad)                   (grad,-Im(A)*grad)+\omega*(func,func) |
+    ! |                                                                           |
+    ! | (grad,Im(A)*grad)-\omega(func,func) (grad,Re(A)*grad)                     |
+    !  \                                                                         /
+    !
+    !   /     \   / \
+    !  | Re(N) | | 0 |
+    ! *|       |=|   |
+    !  | Im(N) | | 0 |
+    !   \     /   \ /
+
     do i=rproblem%ilvmin,rproblem%ilvmax
       
       ! Initialise the block matrix with default values based on
@@ -808,9 +834,144 @@ contains
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
 
-      call lsysbl_infoMatrix(rproblem%RlevelInfo(i)%rmatrix)
-      stop
+      ! Now as the discretisation is set up, we can start to generate
+      ! the structure of the system matrix which is to solve.
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,2,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,3,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,5,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,2,1,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,2,4,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,2,6,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,3,1,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,3,3,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,4,2,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,4,4,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,5,1,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,5,5,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,6,2,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,6,6,LSYSSC_MATRIX9)
 
+      ! (1,2)- and (2,1)-block -\omega*(w,Re(N))
+      !                    and  \omega*(w,Im(N))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = -dtidalfreq
+      
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      rform%Dcoefficients(1)  = dtidalfreq
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (1,3)- and (2,4)-bklock (w,grad_x Re(sigma_x))
+      !                     and (w,grad_x Im(sigma_x))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,4),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (1,5)- and (2,6)-bklock (w,grad_x Re(sigma_x))
+      !                     and (w,grad_x Im(sigma_x))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_Y
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,5),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,6),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (3,1)- and (4,2)-bklock (grad_x v_x,Re(N))
+      !                     and (grad_x v_x,Im(N))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(4,2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (5,1)- and (6,2)-bklock (grad_y v_y,Re(N))
+      !                     and (grad_y v_y,Im(N))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_DERIV_Y
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(6,2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (3,3)- and (4,4)-bklock (v_x,Re(sigma_x))
+      !                     and (v_x,Im(sigma_x))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,3),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(4,4),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (5,5)- and (6,6)-bklock (v_y,Re(sigma_y))
+      !                     and (v_y,Im(sigma_y))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0_DP
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,5),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(6,6),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
     end do
 
     ! Next step: Create a RHS vector and a solution vector and a temporary
@@ -828,6 +989,30 @@ contains
 
     ! Clear the RHS vector on the finest level.
     call lsysbl_clearVector(rproblem%rrhs)
+
+    ! Create boundary region
+    call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+    
+    ! Initialise the linear form along the boundary
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_DERIV_X
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
+        rproblem%rrhs%RvectorBlock(3), coeff_RHSBdr_Real, rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
+        rproblem%rrhs%RvectorBlock(4), coeff_RHSBdr_Aimag, rboundaryRegion)
+
+    ! Initialise the linear form along the boundary
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_DERIV_Y
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
+        rproblem%rrhs%RvectorBlock(5), coeff_RHSBdr_Real, rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
+        rproblem%rrhs%RvectorBlock(6), coeff_RHSBdr_Aimag, rboundaryRegion)
 
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
@@ -1072,18 +1257,31 @@ contains
   ! the discretisation
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rrhs,p_rvector
-  type(t_vectorBlock), target :: rvecTmp
+  type(t_vectorBlock), target :: rvecTmp,rvecTmp1,rvecTmp2,rvecTmp3,rrhsTmp2
 
   ! A solver node that accepts parameters for the linear solver
   type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
   type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
-
+  
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
 
   ! One level of multigrid
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+
+  ! Relaxation parameter
+  real(DP), parameter :: domega = 0.1_DP
+
+  ! Iteration counter
+  integer :: ite
+
+  ! Norm of residuals
+  real(DP) :: dresNorm0,dresNorm
+ 
+
+  type(t_vectorScalar) :: rvectorSc,rvecTmpSc,rrhsSc
+  type(t_vectorBlock) :: rvectorBl,rvecTmpBl,rrhsBl
 
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR,SSE_SCALAR)
@@ -1122,7 +1320,7 @@ contains
       end do
 
       ! Now set up an interlevel projecton structure for this level
-      ! based on the Laplace matrix on this level.
+      ! based on the system matrix on this level.
       call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojection,&
           rproblem%RlevelInfo(i)%rmatrix)
 
@@ -1165,27 +1363,27 @@ contains
       nullify(p_rcoarseGridSolver)
       
       if (i .eq. ilvmin) then
-        ! Setting up a BiCGStab solver (with ILU preconditioning) as
-        ! coarse grid solver would be:
         if ((rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerRow .eq. 1) .and.&
             (rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerCol .eq. 1)) then
+          ! Set up a BiCGStab coarse grid solver (with ILU preconditioning)
           call linsol_initMILUs1x1(p_rpreconditioner,0,0.0_DP)
           call linsol_initBiCGStab(p_rcoarseGridSolver,p_rpreconditioner,&
               rproblem%RlevelInfo(i)%RfilterChain)
         else
+          ! Set up a GMRES coarse grid solver
           call linsol_initGMRES(p_rcoarseGridSolver,20,&
               Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
         end if
-        
       else
         if ((rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerRow .eq. 1) .and.&
             (rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerCol .eq. 1)) then
-          ! Set up an ILU smoother for multigrid with damping parameter 0.7,
-          ! 4 smoothing steps:
+          ! Set up an ILU smoother for multigrid with damping
+          ! parameter 0.7, 4 smoothing steps:
           call linsol_initMILUs1x1(p_rsmoother,0,0.0_DP)
           call linsol_convertToSmoother(p_rsmoother,4,0.7_DP)
         else
-          ! Setting up BiCGStab smoother for multigrid would be:
+          ! Set up GMRES smoother for multigrid with damping parameter
+          ! 0.7, 4 smoothing steps:
           call linsol_initGMRES(p_rsmoother,20,&
               Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
           call linsol_convertToSmoother(p_rsmoother,4,0.7_DP)
@@ -1291,17 +1489,338 @@ contains
     ! Release the temporary vector
     call lsysbl_releaseVector(rvecTmp) 
 
-  case (POISSON_SYSTEM,SSE_SYSTEM)
+  case (POISSON_SYSTEM+4711)
     !---------------------------------------------------------------------------
-    print *, "Not implemented"
-    stop
+
+    ilvmin = rproblem%ilvmin
+    ilvmax = rproblem%ilvmax
+
+    ! Get our right hand side / solution / matrix on the finest
+    ! level from the problem structure.
+    p_rrhs    => rproblem%rrhs
+    p_rvector => rproblem%rvector
+    p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
+  
+!!$    ! Set up prolongation matrices
+!!$    do i=ilvmin+1,ilvmax
+!!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
+!!$        
+!!$        ! Create the matrix structure of the prolongation matrix.
+!!$        call mlop_create2LvlMatrixStruct(&
+!!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
+!!$            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+!!$            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl(j))
+!!$        
+!!$        ! Assemble the entries of the prolongation matrix.
+!!$        call mlop_build2LvlProlMatrix(&
+!!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
+!!$            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+!!$            .true., rproblem%RlevelInfo(i)%rmatProl(j),&
+!!$            rcubatureInfoCoarse=rproblem%RlevelInfo(i-1)%RcubatureInfo(j),&
+!!$            rcubatureInfoFine=rproblem%RlevelInfo(i)%RcubatureInfo(j))
+!!$
+!!$        ! Assemble the entries of the restriction matrix.
+!!$        call lsyssc_transposeMatrix(rproblem%RlevelInfo(i)%rmatProl(j),&
+!!$            rproblem%RlevelInfo(i)%rmatRest(j),LSYSSC_TR_ALL)
+!!$      end do
+!!$      
+!!$      ! Now set up an interlevel projecton structure for this level
+!!$      ! based on the system matrix on this level.
+!!$      call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojection,&
+!!$          rproblem%RlevelInfo(i)%rmatrix)
+!!$      
+!!$      ! Initialise the matrix-based projection
+!!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
+!!$        call mlprj_initMatrixProjection(&
+!!$            rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,j),&
+!!$            rproblem%RlevelInfo(i)%rmatProl(j),&
+!!$            rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(j))
+!!$      end do
+!!$    end do
+
+!!$    ! Set up an interlevel projecton structure for the coarse-most level.
+!!$    call mlprj_initProjectionMat(rproblem%RlevelInfo(ilvmin)%rprojection,&
+!!$        rproblem%RlevelInfo(ilvmin)%rmatrix)
+!!$
+!!$    ! Create temporary vectors we need that for some preparation.
+!!$    call lsysbl_deriveSubvector(p_rrhs, rrhsTmp2, 2, 3, .false.)
+!!$    call lsysbl_deriveSubvector(p_rrhs, rvecTmp3, 2, 3, .false.)
+!!$    call lsysbl_deriveSubvector(p_rvector, rvecTmp1, 1, 1, .true.)
+!!$    call lsysbl_deriveSubvector(p_rvector, rvecTmp2, 2, 3, .true.)
+!!$
+!!$    call lsysbl_createVector(p_rrhs, rvecTmp, .false.)
+
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! Create a Multigrid-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    call linsol_initMultigrid2(p_rsolverNode,ilvmax-ilvmin+1)
+    
+    ! Then set up smoothers / coarse grid solver:
+    do i=ilvmin,ilvmax
+
+      ! Set up a filter chain for implementing boundary conditions on that level
+      call filter_initFilterChain(rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+      call filter_newFilterDiscBCDef(rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
+      
+      ! On the coarsest grid, set up a coarse grid solver and no smoother
+      ! On finer grids, set up a smoother but no coarse grid solver.
+      nullify(p_rpreconditioner)
+      nullify(p_rsmoother)
+      nullify(p_rcoarseGridSolver)
+
+      if (i .eq. ilvmin) then
+        call linsol_initUMFPACK4(p_rcoarseGridSolver)
+!!$        ! Setting up a GMRES coarse grid solver
+!!$        call linsol_initGMRES(p_rcoarseGridSolver,20,&
+!!$              Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
+      else
+        ! Set up GMRES smoother for multigrid with damping parameter
+        ! 0.7, 4 smoothing steps:
+        call linsol_initGMRES(p_rsmoother,20,&
+            Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
+        call linsol_convertToSmoother(p_rsmoother,4,0.7_DP)
+      end if
+
+      ! And add this multi-grid level. We will use the same smoother
+      ! for pre- and post-smoothing.
+      call linsol_getMultigrid2Level(p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
+      p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+      p_rlevelInfo%p_rpresmoother      => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother     => p_rsmoother
+
+      ! Attach the filter chain which imposes boundary conditions on that level.
+      p_rlevelInfo%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
+      
+!!$      ! Attach our user-defined projection to the level.
+!!$      call linsol_initProjMultigrid2Level(p_rlevelInfo,&
+!!$          rproblem%RlevelInfo(i)%rprojection)
+    end do
+
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2
+
+    ! Attach the system matrices to the solver.
+    !
+    ! We copy our matrices to a big matrix array and transfer that
+    ! to the setMatrices routines. This intitialises then the matrices
+    ! on all levels according to that array. Note that this does not
+    ! allocate new memory, we create only "links" to existing matrices
+    ! into Rmatrices(:)!
+    allocate(Rmatrices(ilvmin:ilvmax))
+    do i=ilvmin,ilvmax
+!!$      call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(i)%rmatrix,&
+!!$          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,2,3,2,3)
+      call glsys_assembleGlobal(rproblem%RlevelInfo(i)%rmatrix,&
+          Rmatrices(i), .true., .true.)
+    end do
+
+    call linsol_setMatrices(p_rsolverNode,Rmatrices(ilvmin:ilvmax))
+    
+    ! We can release Rmatrices immediately -- as long as we do not
+    ! release rproblem%RlevelInfo(i)%rmatrix!
+!!$    do i=ilvmin,ilvmax
+!!$      call lsysbl_releaseMatrix(Rmatrices(i))
+!!$    end do
+!!$    deallocate(Rmatrices)
+
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure(p_rsolverNode, ierror)
+
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData(p_rsolverNode, ierror)
+
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+    
+    call lsysbl_createScalarFromVec(p_rvector,rvectorSc,.true.)
+    call lsysbl_createScalarFromVec(p_rrhs,rrhsSc,.true.)
+    call lsysbl_createScalarFromVec(rvecTmp,rvecTmpSc,.true.)
+
+    call lsysbl_createVecFromScalar(rvectorSc, rvectorBl)
+    call lsysbl_createVecFromScalar(rrhsSc, rrhsBl)
+    call lsysbl_createVecFromScalar(rvecTmpSc, rvecTmpBl)
+
+    ! Finally solve the system. As we want to solve Ax=b with
+    ! b being the real RHS and x being the real solution vector,
+    ! we use linsol_solveAdaptively. If b is a defect
+    ! RHS and x a defect update to be added to a solution vector,
+    ! we would have to use linsol_precondDefect instead.
+!!$    call linsol_solveAdaptively(p_rsolverNode,p_rvector,p_rrhs,rvecTmp)
+
+    call linsol_solveAdaptively(p_rsolverNode,rvectorBl,rrhsBl,rvecTmpBl)
+
+!!$    ! Clear solution vector
+!!$    call lsysbl_clearVector(p_rvector)
+!!$
+!!$    ! Compute norm of initial residual
+!!$    dresNorm0 = lsysbl_vectorNorm(p_rrhs, LINALG_NORML2)
+!!$
+!!$    do ite = 1,5     
+!!$      ! Compute right-hand side -B[k]*N, k=1,2
+!!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(2,1),&
+!!$          rvecTmp1%RvectorBlock(1), rrhsTmp2%RvectorBlock(1), -1.0_DP, 0.0_DP)
+!!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(3,1),&
+!!$          rvecTmp1%RvectorBlock(1), rrhsTmp2%RvectorBlock(2), -1.0_DP, 0.0_DP)
+!!$      
+!!$      print *, lsysbl_vectorNorm(rrhsTmp2, LINALG_NORML2)
+!!$      pause 
+!!$
+!!$      ! Solve the system A[k]*sigma[k]=rhs[k], k=1,2
+!!$      call linsol_solveAdaptively(p_rsolverNode,rvecTmp2,rrhsTmp2,rvecTmp3)
+!!$
+!!$      print *, lsysbl_vectorNorm(rvecTmp2, LINALG_NORML2)
+!!$      pause 
+!!$
+!!$      
+!!$      ! Update solution
+!!$      call lsyssc_vectorLinearComb(p_rrhs%RvectorBlock(1),&
+!!$          rvecTmp1%RvectorBlock(1), -domega, 1.0_DP)
+!!$
+!!$      print *, lsysbl_vectorNorm(p_rrhs, LINALG_NORMMAX)
+!!$      stop
+!!$
+!!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(1,2),&
+!!$          rvecTmp2%RvectorBlock(1), rvecTmp1%RvectorBlock(1), domega, 1.0_DP)
+!!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(1,3),&
+!!$          rvecTmp2%RvectorBlock(2), rvecTmp1%RvectorBlock(1), domega, 1.0_DP)
+!!$
+!!$      ! Compute norm of residual
+!!$      call lsysbl_copyVector(p_rrhs, rvecTmp)
+!!$      call lsysbl_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix, p_rvector,&
+!!$          rvecTmp, -1.0_DP, 1.0_DP)
+!!$      dresNorm = lsysbl_vectorNorm(rvecTmp, LINALG_NORML2)
+!!$
+!!$      print *, "NORM", dresNorm,dresNorm0
+!!$      pause
+!!$    end do
+
+    ! Release solver data and structure
+    call linsol_doneData(p_rsolverNode)
+    call linsol_doneStructure(p_rsolverNode)
+
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver(p_rsolverNode)
+
+    ! Release the prolongation matrices
+    do i=ilvmax,ilvmin+1,-1
+      ! Release the projection structure itself
+      call mlprj_doneProjection(rproblem%RlevelInfo(i)%rprojection)
+
+      ! Release the prolongation matrix
+      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
+        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatProl(j))
+      end  do
+
+      ! Release the restriction matrix
+      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
+        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatRest(j))
+      end do
+    end do
+
+    ! Release the projection structure on the coarse mesh
+    call mlprj_doneProjection(rproblem%RlevelInfo(ilvmin)%rprojection)
+
+    ! Release the filter chain
+    do i=ilvmin,ilvmax
+      call filter_doneFilterChain(rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+    end do
+
+    ! Release the temporary vector
+    call lsysbl_releaseVector(rvecTmp)
+!!$    call lsysbl_releaseVector(rvecTmp1)
+!!$    call lsysbl_releaseVector(rvecTmp2)
+!!$    call lsysbl_releaseVector(rrhsTmp2)
+    
+  case(POISSON_SYSTEM,SSE_SYSTEM)
+    !---------------------------------------------------------------------------
+
+    ilvmin = rproblem%ilvmin
+    ilvmax = rproblem%ilvmax
+
+    ! Get our right hand side / solution / matrix on the finest
+    ! level from the problem structure.
+    p_rrhs    => rproblem%rrhs
+    p_rvector => rproblem%rvector
+    p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
+
+    call linsol_initUMFPACK4(p_rsolverNode)
+
+    ! Set up a filter chain for implementing boundary conditions on that level
+    call filter_initFilterChain(rproblem%RlevelInfo(ilvmax)%RfilterChain,&
+        rproblem%RlevelInfo(ilvmax)%nfilters)
+    call filter_newFilterDiscBCDef(rproblem%RlevelInfo(ilvmax)%RfilterChain,&
+        rproblem%RlevelInfo(ilvmax)%nfilters,rproblem%RlevelInfo(ilvmax)%rdiscreteBC)
+    
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2
+
+    allocate(Rmatrices(1))
+    call glsys_assembleGlobal(rproblem%RlevelInfo(ilvmax)%rmatrix,&
+        Rmatrices(1), .true., .true.)
+    call linsol_setMatrices(p_rsolverNode,Rmatrices(1:1))
+
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure(p_rsolverNode, ierror)
+
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData(p_rsolverNode, ierror)
+
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+    
+    call lsysbl_createScalarFromVec(p_rvector,rvectorSc,.true.)
+    call lsysbl_createScalarFromVec(p_rrhs,rrhsSc,.true.)
+    call lsysbl_createScalarFromVec(rvecTmp,rvecTmpSc,.true.)
+
+    call lsysbl_createVecFromScalar(rvectorSc, rvectorBl)
+    call lsysbl_createVecFromScalar(rrhsSc, rrhsBl)
+    call lsysbl_createVecFromScalar(rvecTmpSc, rvecTmpBl)
+
+    ! Finally solve the system. As we want to solve Ax=b with
+    ! b being the real RHS and x being the real solution vector,
+    ! we use linsol_solveAdaptively. If b is a defect
+    ! RHS and x a defect update to be added to a solution vector,
+    ! we would have to use linsol_precondDefect instead.
+    call linsol_solveAdaptively(p_rsolverNode,rvectorBl,rrhsBl,rvecTmpBl)
+
+    ! Release solver data and structure
+    call linsol_doneData(p_rsolverNode)
+    call linsol_doneStructure(p_rsolverNode)
+
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver(p_rsolverNode)
+
+    call lsysbl_releaseMatrix(Rmatrices(1))
+    deallocate(Rmatrices)
 
   case default
     call output_line("Invalid type of problem.", &
         OU_CLASS_ERROR,OU_MODE_STD,"sse_solve")
     call sys_halt()
   end select
-end subroutine
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1329,7 +1848,7 @@ end subroutine
   type(t_blockDiscretisation) :: rblockDiscr
 
   ! A temporal vector to store the recovered gradient
-  type(t_vectorBlock), target :: rvectorBlock
+  type(t_vectorBlock), target :: rvectorBlock,rvectorBlockX,rvectorBlockY
   type(t_vectorBlock), target :: rvectorBlock_Real,rvectorBlock_Aimag
 
   ! Pointer to gradient components
@@ -1344,15 +1863,24 @@ end subroutine
   ! Error of FE function to reference function
   real(DP) :: derror
 
+  ! Number of DOFs
+  integer :: i,ndof
+
+  ndof = 0
+  do i=1,rproblem%rvector%nblocks
+    ndof = ndof + dof_igetNDofGlob(rproblem%rvector%RvectorBlock(i)%p_rspatialDiscr)
+  end do
+
   ! Add number of cells and vertices
   call ctab_addValue(rtable, "cells",&
       rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL)
-  call ctab_addValue(rtable, "dofs",&
-      dof_igetNDofGlob(rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr))
+  call ctab_addValue(rtable, "dofs", ndof)
   
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR,POISSON_SYSTEM)
     
+    ! --- solution -------------------------------------------------------------
+
     ! Calculate the error to the reference function.
     call pperr_scalar(PPERR_L2ERROR,derror,rproblem%rvector%RvectorBlock(1),&
         getReferenceFunction_Poisson, rcubatureInfo=&
@@ -1364,6 +1892,8 @@ end subroutine
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u", derror)
   
+    ! --- first derivative -----------------------------------------------------
+
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
       ! Recover gradient by superconvergent patch recovery
@@ -1386,7 +1916,7 @@ end subroutine
       p_rvectorDerivX => rproblem%rvector%RvectorBlock(2)
       p_rvectorDerivY => rproblem%rvector%RvectorBlock(3)
     end select
-    
+      
     ! Calculate the error to the reference DerivX.
     call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX,&
         getReferenceDerivX_Poisson, rcubatureInfo=&
@@ -1409,17 +1939,90 @@ end subroutine
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u_y", derror)
     
+    ! --- second derivative ----------------------------------------------------
+
+    select case(rproblem%cproblemtype)
+    case (POISSON_SYSTEM)
+      ! Recover gradient by superconvergent patch recovery
+      call spdiscr_initBlockDiscr(rblockDiscr,2,&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
+          rproblem%rvector%p_rblockDiscr%p_rboundary)
+      call spdiscr_duplicateDiscrSc(&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(1), .true.)
+      call spdiscr_duplicateDiscrSc(&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(2), .true.)
+    end select
+
+    ! Recover second derivative by superconvergent patch recovery
+    call lsysbl_createVector(rblockDiscr, rvectorBlockX, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockY, .false.)
+    call ppgrd_calcGradient(p_rvectorDerivX, rvectorBlockX,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+    call ppgrd_calcGradient(p_rvectorDerivY, rvectorBlockY,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+
+    ! Calculate the error to the reference DerivXX.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX%RvectorBlock(1),&
+        getReferenceDerivXX_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error u_xx", derror)
+    
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX%RvectorBlock(1),&
+        getReferenceDerivXX_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error u_xx", derror)
+
+    ! Calculate the error to the reference DerivXY.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX%RvectorBlock(2),&
+        getReferenceDerivXY_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error u_xy", derror)
+    
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX%RvectorBlock(2),&
+        getReferenceDerivXY_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error u_xy", derror)
+
+    ! Calculate the error to the reference DerivYX.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY%RvectorBlock(1),&
+        getReferenceDerivYX_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error u_yx", derror)
+    
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY%RvectorBlock(1),&
+        getReferenceDerivXY_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error u_yx", derror)
+
+    ! Calculate the error to the reference DerivYY.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY%RvectorBlock(2),&
+        getReferenceDerivYY_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error u_yy", derror)
+    
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY%RvectorBlock(2),&
+        getReferenceDerivYY_Poisson, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error u_yy", derror)
+
+    
     ! Start UCD export to VTK file:
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./ucd"
     call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
         rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
         trim(sucddir)//"/sol_"//trim(sys_siL(rproblem%ilvmax,2))//".vtk")
-
+    
     ! Add the solution and its (recovered) gradient to the UCD exporter
     call ucd_addVectorByVertex(rexport, "u", UCD_VAR_STANDARD, &
         rproblem%rvector%RvectorBlock(1))
     call ucd_addVectorFieldByVertex(rexport, "grad u", UCD_VAR_STANDARD, &
         (/p_rvectorDerivX,p_rvectorDerivY/))
+    call ucd_addVectorFieldByVertex(rexport, "grad u_x", UCD_VAR_STANDARD, &
+        (/rvectorBlockX%RvectorBlock(1),rvectorBlockX%RvectorBlock(2)/))
+    call ucd_addVectorFieldByVertex(rexport, "grad u_y", UCD_VAR_STANDARD, &
+        (/rvectorBlockY%RvectorBlock(1),rvectorBlockY%RvectorBlock(2)/))
 
     ! Write the file to disc, that is it.
     call ucd_write(rexport)
@@ -1427,6 +2030,8 @@ end subroutine
 
     ! Clean temporal structures
     call lsysbl_releaseVector(rvectorBlock)
+    call lsysbl_releaseVector(rvectorBlockX)
+    call lsysbl_releaseVector(rvectorBlockY)
     call spdiscr_releaseBlockDiscr(rblockDiscr)
 
   case (SSE_SCALAR,SSE_SYSTEM)
@@ -1725,6 +2330,14 @@ end subroutine
     call ctab_evalConvergenceRate(rtable,"L2-error u_y",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error u_x",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error u_y",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error u_xx",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error u_xy",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error u_yx",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error u_yy",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_xx",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_xy",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_yx",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_yy",CTAB_REDUCTION_RATE)
 
     ! Adjust format of convergence table
     call ctab_setPrecision(rtable,"L2-error u",3)
@@ -1733,6 +2346,14 @@ end subroutine
     call ctab_setPrecision(rtable,"L2-error u_y",3)
     call ctab_setPrecision(rtable,"L2-error u_x-convrate",3)
     call ctab_setPrecision(rtable,"L2-error u_y-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error u_xx",3)
+    call ctab_setPrecision(rtable,"L2-error u_xy",3)
+    call ctab_setPrecision(rtable,"L2-error u_yx",3)
+    call ctab_setPrecision(rtable,"L2-error u_yy",3)
+    call ctab_setPrecision(rtable,"L2-error u_xx-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error u_xy-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error u_yx-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error u_yy-convrate",3)
 
     call ctab_setPrecision(rtable,"H1-error u",3)
     call ctab_setPrecision(rtable,"H1-error u-convrate",3)
@@ -1740,33 +2361,87 @@ end subroutine
     call ctab_setPrecision(rtable,"H1-error u_y",3)
     call ctab_setPrecision(rtable,"H1-error u_x-convrate",3)
     call ctab_setPrecision(rtable,"H1-error u_y-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error u_xx",3)
+    call ctab_setPrecision(rtable,"H1-error u_xy",3)
+    call ctab_setPrecision(rtable,"H1-error u_yx",3)
+    call ctab_setPrecision(rtable,"H1-error u_yy",3)
+    call ctab_setPrecision(rtable,"H1-error u_xx-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error u_xy-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error u_yx-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error u_yy-convrate",3)
 
     ! Set scientific flag
     call ctab_setScientific(rtable,"L2-error u",.true.)
     call ctab_setScientific(rtable,"L2-error u_x",.true.)
     call ctab_setScientific(rtable,"L2-error u_y",.true.)
+    call ctab_setScientific(rtable,"L2-error u_xx",.true.)
+    call ctab_setScientific(rtable,"L2-error u_xy",.true.)
+    call ctab_setScientific(rtable,"L2-error u_yx",.true.)
+    call ctab_setScientific(rtable,"L2-error u_yy",.true.)
 
     call ctab_setScientific(rtable,"H1-error u",.true.)
     call ctab_setScientific(rtable,"H1-error u_x",.true.)
     call ctab_setScientific(rtable,"H1-error u_y",.true.)
+    call ctab_setScientific(rtable,"H1-error u_xx",.true.)
+    call ctab_setScientific(rtable,"H1-error u_xy",.true.)
+    call ctab_setScientific(rtable,"H1-error u_yx",.true.)
+    call ctab_setScientific(rtable,"H1-error u_yy",.true.)
 
     ! Set Tex captions
     call ctab_setTexCaption(rtable,"cells","\# cells")
     call ctab_setTexCaption(rtable,"dofs","\# dofs")
 
-    call ctab_setTexCaption(rtable,"L2-error u","$L^2$")
+    call ctab_setTexCaption(rtable,"L2-error u","$L^2(u)$")
+    select case(rproblem%cproblemtype)
+    case (POISSON_SCALAR)
+      call ctab_setTexCaption(rtable,"L2-error u_x","$L^2(\partial_{x}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"L2-error u_y","$L^2(\partial_{y}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"L2-error u_xx","$L^2(\partial_{xx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"L2-error u_xy","$L^2(\partial_{xy}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"L2-error u_yx","$L^2(\partial_{yx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"L2-error u_yy","$L^2(\partial_{yy}^{\rm ZZ}u)$")
+    case (POISSON_SYSTEM)
+      call ctab_setTexCaption(rtable,"L2-error u_x","$L^2(\sigma_x)$")
+      call ctab_setTexCaption(rtable,"L2-error u_y","$L^2(\sigma_y)$")
+      call ctab_setTexCaption(rtable,"L2-error u_xx","$L^2(\partial_{x}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"L2-error u_xy","$L^2(\partial_{y}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"L2-error u_yx","$L^2(\partial_{x}^{\rm ZZ}\sigma_y)$")
+      call ctab_setTexCaption(rtable,"L2-error u_yy","$L^2(\partial_{y}^{\rm ZZ}\sigma_y)$")
+    end select
+    
     call ctab_setTexCaption(rtable,"L2-error u-convrate","")
-    call ctab_setTexCaption(rtable,"L2-error u_x","$L^2\partial_x$")
-    call ctab_setTexCaption(rtable,"L2-error u_y","$L^2\partial_y$")
     call ctab_setTexCaption(rtable,"L2-error u_x-convrate","")
     call ctab_setTexCaption(rtable,"L2-error u_y-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error u_xx-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error u_xy-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error u_yx-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error u_yy-convrate","")
 
-    call ctab_setTexCaption(rtable,"H1-error u","$H^1$")
+    call ctab_setTexCaption(rtable,"H1-error u","$H^1(u)$")
+    select case(rproblem%cproblemtype)
+    case (POISSON_SCALAR)
+      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\partial_{x}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\partial_{y}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{xx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{xy}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{yx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{yy}^{\rm ZZ}u)$")
+    case (POISSON_SYSTEM)
+      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\sigma_y)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{x}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{y}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{x}^{\rm ZZ}\sigma_y)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{y}^{\rm ZZ}\sigma_y)$")
+    end select
+    
     call ctab_setTexCaption(rtable,"H1-error u-convrate","")
-    call ctab_setTexCaption(rtable,"H1-error u_x","$H^1\partial_xu$")
-    call ctab_setTexCaption(rtable,"H1-error u_y","$H^1\partial_yu$")
     call ctab_setTexCaption(rtable,"H1-error u_x-convrate","")
     call ctab_setTexCaption(rtable,"H1-error u_y-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error u_xx-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error u_xy-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error u_yx-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error u_yy-convrate","")   
 
     ! Set Tex format
     call ctab_setTexFormat(rtable,"cells","r")
@@ -1779,14 +2454,35 @@ end subroutine
     call ctab_setHidden(rtable,"H1-error u_y",.true.)
     call ctab_setHidden(rtable,"H1-error u_x-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error u_y-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error u_xx",.true.)
+    call ctab_setHidden(rtable,"H1-error u_xy",.true.)
+    call ctab_setHidden(rtable,"H1-error u_yx",.true.)
+    call ctab_setHidden(rtable,"H1-error u_yy",.true.)
+    call ctab_setHidden(rtable,"H1-error u_xx-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error u_xy-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error u_yx-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error u_yy-convrate",.true.)
 
-    call ctab_setTexTableCaption(rtable,"$L^2$-Convergence table")
+    select case(rproblem%cproblemtype)
+    case (POISSON_SCALAR)
+      call ctab_setTexTableCaption(rtable,&
+          "$L^2$-Convergence table: Poisson problem solved as scalar equation.")
+      
+    case (POISSON_SYSTEM)
+      call ctab_setTexTableCaption(rtable,&
+          "$L^2$-Convergence table: Poisson problem solved in mixed formulation.")
+    end select
     call ctab_setTexTableLabel(rtable,"tab:l2_convergence_rate")
 
     ! Write convergence table to Tex file
     call ctab_outputTex(rtable,'./table_l2.tex')
 
-    call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table")
+    select case(rproblem%cproblemtype)
+    case (POISSON_SCALAR)
+      call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table: Poisson problem solved as scalar equation.")
+    case (POISSON_SYSTEM)
+      call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table: Poisson problem solved in mixed formulation.")
+    end select
     call ctab_setTexTableLabel(rtable,"tab:h1_convergence_rate")
 
     ! Unhide all H1-columns
@@ -1796,6 +2492,14 @@ end subroutine
     call ctab_setHidden(rtable,"H1-error u_y",.false.)
     call ctab_setHidden(rtable,"H1-error u_x-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error u_y-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error u_xx",.false.)
+    call ctab_setHidden(rtable,"H1-error u_xy",.false.)
+    call ctab_setHidden(rtable,"H1-error u_yx",.false.)
+    call ctab_setHidden(rtable,"H1-error u_yy",.false.)
+    call ctab_setHidden(rtable,"H1-error u_xx-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error u_xy-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error u_yx-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error u_yy-convrate",.false.)
 
     ! Hide all L2-columns
     call ctab_setHidden(rtable,"L2-error u",.true.)
@@ -1804,6 +2508,14 @@ end subroutine
     call ctab_setHidden(rtable,"L2-error u_y",.true.)
     call ctab_setHidden(rtable,"L2-error u_x-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error u_y-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error u_xx",.true.)
+    call ctab_setHidden(rtable,"L2-error u_xy",.true.)
+    call ctab_setHidden(rtable,"L2-error u_yx",.true.)
+    call ctab_setHidden(rtable,"L2-error u_yy",.true.)
+    call ctab_setHidden(rtable,"L2-error u_xx-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error u_xy-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error u_yx-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error u_yy-convrate",.true.)
 
     ! Write convergence table to Tex file
     call ctab_outputTex(rtable,'./table_h1.tex')
@@ -2015,6 +2727,6 @@ end subroutine
     call sys_halt()
   end select
 
-end subroutine
+  end subroutine
 
 end module sse_main
