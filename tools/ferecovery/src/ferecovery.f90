@@ -1,6 +1,7 @@
 program ferecovery
 
   use boundary
+  use cubature
   use element
   use fsystem
   use genoutput
@@ -22,8 +23,9 @@ program ferecovery
   type(t_triangulation) :: rtria
   type(t_vectorBlock) :: rsolution, rgradient
   real(DP), dimension(:), pointer :: p_Ddata
-  character(len=256) :: sarg, smesh, sname, ssol, sgrad
-  integer :: i, iarg, iel, ilinelen, ios, iunit, ndim
+  character(len=256) :: sarg,scubature,selement,sgrad,smesh,sname,ssol,stoken
+  integer ::  i,iarg,iel,ilinelen,ios,itoken,iunit,ntoken,ndim
+  integer, dimension(:), allocatable :: Celement
   logical :: bbnd
 
   ! Initialise system-wide settings:
@@ -46,6 +48,7 @@ program ferecovery
     call output_line("-read3d <mesh>              Read 3D mesh from <mesh>.tri")
     call output_line("-sol <file>                 Read nodal solution values from <file>")
     call output_line("-grad <file>                Write nodal gradient values to <file>")
+    call output_line("-elem <elementID>           Specify type(s) of element by <elementID>")
     call output_lbrk()
     call sys_halt()
   end if
@@ -83,6 +86,16 @@ program ferecovery
     else if(sarg .eq. '-grad') then
       call sys_getcommandLineArg(iarg, sgrad)
       iarg = iarg + 1
+    else if(sarg .eq. '-elem') then
+      call sys_getcommandLineArg(iarg, selement)
+      call sys_countTokens(selement, ntoken, ',')
+      allocate(Celement(ntoken))
+      i = 1
+      do itoken = 1,ntoken
+        call sys_getNextToken(selement, stoken, i, ',')
+        Celement(itoken) = elem_igetID(trim(stoken))
+      end do
+      iarg = iarg + 1
     else
       ! unknown parameter
       call output_line("ERROR: unknown parameter '" //trim(sarg)//"'")
@@ -118,35 +131,73 @@ program ferecovery
   ! Initialise block and spatial discretisations
   if (bbnd) then
     call spdiscr_initBlockDiscr(rblockDiscrSolution, 1, rtria, rbnd)
-    call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1), EL_P1_2D, rtria, rbnd)
-    
     call spdiscr_initBlockDiscr(rblockDiscrGradient, ndim, rtria, rbnd)
     select case(ndim)
     case (1)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+          Celement(1), rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+          Celement(1), rtria, rbnd)
     case (2)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria, rbnd)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2), EL_P1_2D, rtria, rbnd)
+      if (size(Celement,1) .eq. 1) then
+        call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+            Celement(1), rtria, rbnd)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+            Celement(1), rtria, rbnd)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+            Celement(1), rtria, rbnd)
+      else
+        call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+            Celement(1), Celement(2), rtria, rbnd)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+            Celement(1), Celement(2), rtria, rbnd)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+            Celement(1), Celement(2), rtria, rbnd)
+      end if
     case (3)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria, rbnd)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2), EL_P1_2D, rtria, rbnd)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(3), EL_P1_2D, rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+          Celement(1), rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+          Celement(1), rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+          Celement(1), rtria, rbnd)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(3),&
+          Celement(1), rtria, rbnd)
     end select
   else
     call spdiscr_initBlockDiscr(rblockDiscrSolution, 1, rtria)
-    call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1), EL_P1_2D, rtria)
-
-    call spdiscr_initBlockDiscr(rblockDiscrGradient, 2, rtria)
+    call spdiscr_initBlockDiscr(rblockDiscrGradient, ndim, rtria)
     select case(ndim)
     case (1)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+          Celement(1), rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+          Celement(1), rtria)
     case (2)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2), EL_P1_2D, rtria)
+      if (size(Celement,1) .eq. 1) then
+        call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+            Celement(1), rtria)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+            Celement(1), rtria)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+            Celement(1), rtria)
+      else
+        call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+            Celement(1), Celement(2), rtria)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+            Celement(1), Celement(2), rtria)
+        call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+            Celement(1), Celement(2), rtria)
+      end if
     case (3)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1), EL_P1_2D, rtria)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2), EL_P1_2D, rtria)
-      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(3), EL_P1_2D, rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrSolution%RspatialDiscr(1),&
+          Celement(1), rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(1),&
+          Celement(1), rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(2),&
+          Celement(1), rtria)
+      call spdiscr_initDiscr_simple(rblockDiscrGradient%RspatialDiscr(3),&
+          Celement(1), rtria)
     end select
   end if
 
@@ -165,6 +216,7 @@ program ferecovery
   call vecio_writeBlockVectorHR(rgradient, 'grad', .true., 0, "./"//trim(sgrad), '(E20.10)')
 
   ! Clean up
+  deallocate(Celement)
   call lsysbl_releaseVector(rsolution)
   call lsysbl_releaseVector(rgradient)
   call spdiscr_releaseBlockDiscr(rblockDiscrSolution)
