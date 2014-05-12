@@ -299,7 +299,7 @@ TOKEN6 := 0
 #    size of integer variables to 32|64 bit
 #
 #    BINARY = [32|64] : forces the compiler to build 32|64 bit binary
-#    
+#
 # 3) some compilers do not provide an automised optimisation feature
 #    (e.g., GCC 4.1.x and below, G95) so that you have to provide the
 #    optimisation flags by hand
@@ -345,7 +345,7 @@ ifeq ($(call match,$(ID),.*-.*-aix-.*-.*),yes)
 include $(TEMPLATESDIR)/OS-aix.mk
 endif
 
-# Cygwin OS, 32 Bit and 64 bit (with 64 bit using the extended 
+# Cygwin OS, 32 Bit and 64 bit (with 64 bit using the extended
 # "cygwin_ntN.Nwow64" id!)
 ifeq ($(call match,$(ID),.*-.*-cygwin_nt.*-.*-.*),yes)
 include $(TEMPLATESDIR)/OS-cygwin_nt.mk
@@ -786,37 +786,43 @@ endif
         # compiler definition has been intentionally overwritten
         # to point the user to a problem.
 	@if test -z "$(findstring exit 1, $(CPP))"; then \
-	    echo '  C preprocessor     :' $(shell (which 2>/dev/null $(CPP) || \
+	    echo '  C preprocessor     :' \
+		$(shell (which 2>/dev/null $(CPP) || \
 		echo "\*\*\* $(CPP) not found ! \*\*\*")); \
 	else \
 	    echo '  C preprocessor     : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F90CPP))"; then \
-	    echo '  FEAT2 preprocessor :' $(shell (which 2>/dev/null $(F90CPP) || \
+	    echo '  FEAT2 preprocessor :' \
+		$(shell (which 2>/dev/null $(F90CPP) || \
 		echo "\*\*\* $(F90CPP) not found ! \*\*\*")); \
 	else \
 	    echo '  FEAT2 preprocessor : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F77))"; then \
-	    echo '  Fortran 77 compiler:' $(PREF77) $(shell (which 2>/dev/null $(F77) || \
+	    echo '  Fortran 77 compiler:' $(PREF77) \
+		$(shell (which 2>/dev/null $(F77) || \
 		echo "\*\*\* $(F77) not found ! \*\*\*")); \
 	else \
 	    echo '  Fortran 77 compiler: *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F90))"; then \
-	    echo '  Fortran 90 compiler:' $(PREF90) $(shell (which 2>/dev/null $(F90) || \
+	    echo '  Fortran 90 compiler:' $(PREF90) \
+		$(shell (which 2>/dev/null $(F90) || \
 		echo "\*\*\* $(F90) not found ! \*\*\*")); \
 	else \
 	    echo '  Fortran 90 compiler: *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(CC))"; then \
-	    echo '  C compiler         :' $(PRECC) $(shell (which 2>/dev/null $(CC)  || \
+	    echo '  C compiler         :' $(PRECC) \
+		$(shell (which 2>/dev/null $(CC)  || \
 		echo "\*\*\* $(CC) not found ! \*\*\*")); \
 	else \
 	    echo '  C compiler         : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(CXX))"; then \
-	    echo '  C++ compiler       :' $(PRECXX) $(shell (which 2>/dev/null $(CXX) || \
+	    echo '  C++ compiler       :' $(PRECXX) \
+		$(shell (which 2>/dev/null $(CXX) || \
 		echo "\*\*\* $(CXX) not found ! \*\*\*")); \
 	else \
 	    echo '  C++ compiler       : *** not set ! ***'; \
@@ -825,7 +831,8 @@ endif
         # show CUDA compiler
 ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
 	@if test -z "$(findstring exit 1, $(CUDA))"; then \
-	    echo '  CUDA compiler      :' $(PRECUDA) $(shell (which 2>/dev/null $(CUDA) || \
+	    echo '  CUDA compiler      :' $(PRECUDA) \
+		$(shell (which 2>/dev/null $(CUDA) || \
 		echo "\*\*\* $(CUDA) not found ! \*\*\*")); \
 	else \
 	    echo '  CUDA compiler      : *** not set ! ***'; \
@@ -834,7 +841,8 @@ endif
 	@echo
 	@echo 'Linker to be used:'
 	@if test -z "$(findstring exit 1, $(LD))"; then \
-	    echo '  Linker             :' $(PRELD) $(shell (which 2>/dev/null $(LD)  || \
+	    echo '  Linker             :' $(PRELD) \
+		$(shell (which 2>/dev/null $(LD)  || \
 		echo "\*\*\* $(LD) not found ! \*\*\*")); \
 	else \
 	    echo '  Linker             : *** not set ! ***'; \
