@@ -224,7 +224,7 @@ contains
       rafcstab%iduplicationFlag   = ior(rafcstab%iduplicationFlag,&
                                         AFCSTAB_SHARE_EDGELIST)
       rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
-          iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+                                        AFCSTAB_HAS_EDGELIST)
     else
       call output_line('Group finite element set does not provide edge structure',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_initStabByGroupFEMSet')
