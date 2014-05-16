@@ -798,7 +798,7 @@ fb_runAndEvalBenchmarkTest() {
 		;;
 
 	    x86_64)
-		string="ELF 64-bit LSB executable"
+		string="ELF 64-bit LSB *executable"
 		;;
 
 	    00223C3B4C00) # IBM p690
