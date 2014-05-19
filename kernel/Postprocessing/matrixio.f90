@@ -1150,6 +1150,11 @@ contains
     ! Which matrix format are we?
     select case(rmatrix%cmatrixFormat)
 
+    case (LSYSSC_MATRIXUNDEFINED)
+      write(UNIT=iunit,FMT='(A)') smatrixName//'=sparse(0,0)'
+      close(UNIT=iunit)
+      return
+
     case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
 
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
