@@ -14,10 +14,10 @@ SORTSTRATEGY =
 # =1: Standard Poisson problem as first-order system
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system
-PROBLEMTYPE = 2
+PROBLEMTYPE = 3
 
 # Name of configuration
-CONFIG = QUAD_Q1_SSE_SCALAR
+CONFIG = QUAD_Q2Q1_SSE_SYSTEM
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug
@@ -170,8 +170,6 @@ CUBATURETYPE(3) =
                   AUTO_G6
                   AUTO_G6
 
-
-
 ################################################################################
 [TRIA_P1_SSE_SCALAR]
 ################################################################################
@@ -221,6 +219,50 @@ ELEMENTTYPE = EL_P2E
 CUBATURETYPE = QG5_T
 
 ################################################################################
+[TRIA_P2P1_SSE_SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_TRIA.prm
+
+# Domain triangulation
+TRIFILE = SSE_TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_P1
+                 EL_P2
+                 EL_P2
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
+[TRIA_P2EP1_SSE__SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_TRIA.prm
+
+# Domain triangulation
+TRIFILE = SSE_TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_P1
+                 EL_P2E
+                 EL_P2E
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
 [QUAD_Q1_SSE_SCALAR]
 ################################################################################
 
@@ -251,3 +293,25 @@ ELEMENTTYPE = EL_Q2
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q2Q1_SSE_SYSTEM]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_QUAD.prm
+
+# Domain triangulation
+TRIFILE = SSE_QUAD.tri
+
+# Element type
+ELEMENTTYPE(3) = 
+                 EL_Q1
+                 EL_Q2
+                 EL_Q2
+
+# Cubature type
+CUBATURETYPE(3) = 
+                  AUTO_G6
+                  AUTO_G6
+                  AUTO_G6

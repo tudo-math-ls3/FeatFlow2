@@ -31,6 +31,7 @@ module sse_main
   use linearsystemblock
   use linearsystemscalar
   use matrixfilters
+  use matrixio
   use meshmodification
   use multileveloperators
   use multilevelprojection
@@ -45,6 +46,7 @@ module sse_main
   use triangulation
   use ucd
   use vectorfilters
+  use vectorio
 
   use sse_base
   use sse_callback
@@ -396,14 +398,14 @@ contains
     
     ! Get types of element for each variable
     do j=1,3
-      call parlst_getvalue_string(rparlist, '', 'ELEMENTTYPE', sparameter,&
+      call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
           isubstring=j)
       Celementtypes(j) = elem_igetID(sparameter)
     end do
     
     ! Get types of cubature formula
     do j=1,3
-      call parlst_getvalue_string(rparlist, '', 'CUBATURETYPE', sparameter,&
+      call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
           isubstring=j)
       Ccubaturetypes(j) = cub_igetID(sparameter)
     end do
@@ -892,8 +894,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (1,3)- and (2,4)-bklock (w,grad_x Re(sigma_x))
-      !                     and (w,grad_x Im(sigma_x))
+      ! (1,3)- and (2,4)-block (w,grad_x Re(sigma_x))
+      !                    and (w,grad_x Im(sigma_x))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_DERIV_X
@@ -909,8 +911,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (1,5)- and (2,6)-bklock (w,grad_x Re(sigma_x))
-      !                     and (w,grad_x Im(sigma_x))
+      ! (1,5)- and (2,6)-block (w,grad_x Re(sigma_x))
+      !                    and (w,grad_x Im(sigma_x))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_DERIV_Y
@@ -926,8 +928,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (3,1)- and (4,2)-bklock (grad_x v_x,Re(N))
-      !                     and (grad_x v_x,Im(N))
+      ! (3,1)- and (4,2)-block (grad_x v_x,Re(N))
+      !                    and (grad_x v_x,Im(N))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
@@ -943,8 +945,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (5,1)- and (6,2)-bklock (grad_y v_y,Re(N))
-      !                     and (grad_y v_y,Im(N))
+      ! (5,1)- and (6,2)-block (grad_y v_y,Re(N))
+      !                    and (grad_y v_y,Im(N))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
@@ -960,8 +962,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (3,3)- and (4,4)-bklock (v_x,Re(sigma_x))
-      !                     and (v_x,Im(sigma_x))
+      ! (3,3)- and (4,4)-block (v_x,Re(sigma_x))
+      !                    and (v_x,Im(sigma_x))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
@@ -977,8 +979,8 @@ contains
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
 
-      ! (5,5)- and (6,6)-bklock (v_y,Re(sigma_y))
-      !                     and (v_y,Im(sigma_y))
+      ! (5,5)- and (6,6)-block (v_y,Re(sigma_y))
+      !                    and (v_y,Im(sigma_y))
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
