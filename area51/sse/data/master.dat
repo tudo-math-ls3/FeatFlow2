@@ -4,7 +4,7 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 8
+NLMAX = 4
 
 # Sort strategy
 SORTSTRATEGY = 
@@ -14,13 +14,18 @@ SORTSTRATEGY =
 # =1: Standard Poisson problem as first-order system
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system
-PROBLEMTYPE = 0
+PROBLEMTYPE = 2
 
 # Name of configuration
-CONFIG = TRIA_P2E_SCALAR
+CONFIG = QUAD_Q1_SSE_SCALAR
+
+# This defines a percentage factor (0..1) how far the fine mesh
+# is disturbed. Should usually be set to 0.0 except for debug
+# purposes.
+disturbMeshFactor = 0.0
 
 ################################################################################
-[TRIA_P1_SCALAR]
+[TRIA_P1_POISSON_SCALAR]
 ################################################################################
 
 # Boundary parametrisation
@@ -36,7 +41,7 @@ ELEMENTTYPE = EL_P1
 CUBATURETYPE = QG3_T
 
 ################################################################################
-[TRIA_P2_SCALAR]
+[TRIA_P2_POISSON_SCALAR]
 ################################################################################
 
 # Boundary parametrisation
@@ -52,7 +57,7 @@ ELEMENTTYPE = EL_P2
 CUBATURETYPE = QG4_T
 
 ################################################################################
-[TRIA_P2E_SCALAR]
+[TRIA_P2E_POISSON_SCALAR]
 ################################################################################
 
 # Boundary parametrisation
@@ -68,7 +73,7 @@ ELEMENTTYPE = EL_P2E
 CUBATURETYPE = QG5_T
 
 ################################################################################
-[TRIA_P2P1_SYSTEM]
+[TRIA_P2P1_POISSON_SYSTEM]
 ################################################################################
 
 # Boundary parametrisation
@@ -90,7 +95,7 @@ CUBATURETYPE(3) =
                   QG5_T
 
 ################################################################################
-[TRIA_P2EP1_SYSTEM]
+[TRIA_P2EP1_POISSON_SYSTEM]
 ################################################################################
 
 # Boundary parametrisation
@@ -112,7 +117,7 @@ CUBATURETYPE(3) =
                   QG5_T
 
 ################################################################################
-[QUAD_Q1_SCALAR]
+[QUAD_Q1_POISSON_SCALAR]
 ################################################################################
 
 # Boundary parametrisation
@@ -128,7 +133,7 @@ ELEMENTTYPE = EL_Q1
 CUBATURETYPE = AUTO_G6
 
 ################################################################################
-[QUAD_Q2_SCALAR]
+[QUAD_Q2_POISSON_SCALAR]
 ################################################################################
 
 # Boundary parametrisation
@@ -144,7 +149,7 @@ ELEMENTTYPE = EL_Q2
 CUBATURETYPE = AUTO_G6
 
 ################################################################################
-[QUAD_Q2Q1_SYSTEM]
+[QUAD_Q2Q1_POISSON_SYSTEM]
 ################################################################################
 
 # Boundary parametrisation
@@ -164,3 +169,85 @@ CUBATURETYPE(3) =
                   AUTO_G6
                   AUTO_G6
                   AUTO_G6
+
+
+
+################################################################################
+[TRIA_P1_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_TRIA.prm
+
+# Domain triangulation
+TRIFILE = SSE_TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P1
+
+# Cubature type
+CUBATURETYPE = QG3_T
+
+################################################################################
+[TRIA_P2_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_TRIA.prm
+
+# Domain triangulation
+TRIFILE = SSE_TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2
+
+# Cubature type
+CUBATURETYPE = QG4_T
+
+################################################################################
+[TRIA_P2E_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_TRIA.prm
+
+# Domain triangulation
+TRIFILE = SSE_TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2E
+
+# Cubature type
+CUBATURETYPE = QG5_T
+
+################################################################################
+[QUAD_Q1_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_QUAD.prm
+
+# Domain triangulation
+TRIFILE = SSE_QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q1
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q2_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_QUAD.prm
+
+# Domain triangulation
+TRIFILE = SSE_QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q2
+
+# Cubature type
+CUBATURETYPE = AUTO_G6

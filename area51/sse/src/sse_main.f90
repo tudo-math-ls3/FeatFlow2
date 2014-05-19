@@ -31,6 +31,7 @@ module sse_main
   use linearsystemblock
   use linearsystemscalar
   use matrixfilters
+  use meshmodification
   use multileveloperators
   use multilevelprojection
   use paramlist
@@ -179,6 +180,7 @@ contains
 !</subroutine>
 
   ! local variables
+  real(DP) :: ddisturbMeshFactor
   integer :: i
 
   ! Path to the mesh
@@ -246,6 +248,25 @@ contains
           rproblem%RlevelInfo(i)%rtriangulation)
       call tria_initStandardMeshFromRaw(rproblem%RlevelInfo(i)%rtriangulation)
     end do
+  end if
+
+  ! Compress the level hierarchy.
+  ! Share the vertex coordinates of all levels, so the coarse grid coordinates
+  ! are "contained" in the fine grid coordinates. The effect is:
+  ! 1.) Save some memory
+  ! 2.) Every change in the fine grid coordinates also affects the coarse
+  !     grid coordinates and vice versa.
+  do i=rproblem%ilvmax-1,rproblem%ilvmin,-1
+    call tria_compress2LevelOrdHierarchy(rproblem%RlevelInfo(i+1)%rtriangulation,&
+        rproblem%RlevelInfo(i)%rtriangulation)
+  end do
+
+  ! Disturb the mesh if required
+  call parlst_getvalue_double(rparlist, '',&
+      'disturbmeshfactor', ddisturbMeshFactor, 0.0_DP)
+  if (ddisturbMeshFactor .gt. 0.0_DP) then
+    call meshmod_disturbMesh(rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+        ddisturbMeshFactor)
   end if
     
   end subroutine
@@ -1789,6 +1810,7 @@ contains
       call sys_halt()
     end if
     
+    ! Create temporal vectors
     call lsysbl_createScalarFromVec(p_rvector,rvectorSc,.true.)
     call lsysbl_createScalarFromVec(p_rrhs,rrhsSc,.true.)
     call lsysbl_createScalarFromVec(rvecTmp,rvecTmpSc,.true.)
@@ -1813,6 +1835,15 @@ contains
 
     call lsysbl_releaseMatrix(Rmatrices(1))
     deallocate(Rmatrices)
+
+    ! Release temporal vectors
+    call lsysbl_releaseVector(rvectorBl)
+    call lsysbl_releaseVector(rrhsBl)
+    call lsysbl_releaseVector(rvecTmpBl)
+
+    call lsyssc_releaseVector(rvectorSc)
+    call lsyssc_releaseVector(rrhsSc)
+    call lsyssc_releaseVector(rvecTmpSc)
 
   case default
     call output_line("Invalid type of problem.", &
@@ -1850,6 +1881,8 @@ contains
   ! A temporal vector to store the recovered gradient
   type(t_vectorBlock), target :: rvectorBlock,rvectorBlockX,rvectorBlockY
   type(t_vectorBlock), target :: rvectorBlock_Real,rvectorBlock_Aimag
+  type(t_vectorBlock), target :: rvectorBlockX_Real,rvectorBlockX_Aimag
+  type(t_vectorBlock), target :: rvectorBlockY_Real,rvectorBlockY_Aimag
 
   ! Pointer to gradient components
   type(t_vectorScalar), pointer :: p_rvectorDerivX,p_rvectorDerivY
@@ -1906,11 +1939,13 @@ contains
       call spdiscr_duplicateDiscrSc(&
           rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
           rblockDiscr%RspatialDiscr(2), .true.)
+
       call lsysbl_createVector(rblockDiscr, rvectorBlock, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(1), rvectorBlock,&
           PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
       p_rvectorDerivX => rvectorBlock%RvectorBlock(1)
       p_rvectorDerivY => rvectorBlock%RvectorBlock(2)
+
     case (POISSON_SYSTEM)
       ! Set pointer to scalar solution components
       p_rvectorDerivX => rproblem%rvector%RvectorBlock(2)
@@ -2035,7 +2070,9 @@ contains
     call spdiscr_releaseBlockDiscr(rblockDiscr)
 
   case (SSE_SCALAR,SSE_SYSTEM)
-    
+
+    ! --- solution -------------------------------------------------------------
+
     ! Calculate the error to the reference function.
     call pperr_scalar(PPERR_L2ERROR,derror,rproblem%rvector%RvectorBlock(1),&
         getReferenceFunction_Real, rcubatureInfo=&
@@ -2055,6 +2092,8 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE)", derror)
     
+    ! --- first derivative -----------------------------------------------------
+
     select case(rproblem%cproblemtype)
     case (SSE_SCALAR)
       ! Recover gradient by superconvergent patch recovery
@@ -2079,6 +2118,7 @@ contains
           rvectorBlock_Aimag,PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
       p_rvectorDerivX_Aimag => rvectorBlock_Aimag%RvectorBlock(1)
       p_rvectorDerivY_Aimag => rvectorBlock_Aimag%RvectorBlock(2)
+
     case (SSE_SYSTEM)
       ! Set pointer to scalar solution components
       p_rvectorDerivX_Real  => rproblem%rvector%RvectorBlock(3)
@@ -2129,6 +2169,120 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_y)", derror)
 
+    ! --- second derivative ----------------------------------------------------
+
+    select case(rproblem%cproblemtype)
+    case (SSE_SYSTEM)
+      ! Recover gradient by superconvergent patch recovery
+      call spdiscr_initBlockDiscr(rblockDiscr,2,&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
+          rproblem%rvector%p_rblockDiscr%p_rboundary)
+      call spdiscr_duplicateDiscrSc(&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(1), .true.)
+      call spdiscr_duplicateDiscrSc(&
+          rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(2), .true.)
+    end select
+
+    ! Recover second derivative by superconvergent patch recovery
+    call lsysbl_createVector(rblockDiscr, rvectorBlockX_Real, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockX_Aimag, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockY_Real, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockY_Aimag, .false.)
+    call ppgrd_calcGradient(p_rvectorDerivX_Real, rvectorBlockX_Real,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+    call ppgrd_calcGradient(p_rvectorDerivX_Aimag, rvectorBlockX_Aimag,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+    call ppgrd_calcGradient(p_rvectorDerivY_Real, rvectorBlockY_Real,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+    call ppgrd_calcGradient(p_rvectorDerivY_Aimag, rvectorBlockY_Aimag,&
+        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+    
+    ! Calculate the error to the reference DerivXX.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
+        getReferenceDerivXX_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Re(SSE_xx)", derror)
+
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(1),&
+        getReferenceDerivXX_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Im(SSE_xx)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
+        getReferenceDerivXX_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Re(SSE_xx)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(1),&
+        getReferenceDerivXX_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Im(SSE_xx)", derror)
+
+    ! Calculate the error to the reference DerivXY.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(2),&
+        getReferenceDerivXY_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Re(SSE_xy)", derror)
+
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(2),&
+        getReferenceDerivXY_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Im(SSE_xy)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Real%RvectorBlock(2),&
+        getReferenceDerivXY_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Re(SSE_xy)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(2),&
+        getReferenceDerivXY_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Im(SSE_xy)", derror)
+
+    ! Calculate the error to the reference DerivYX.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Real%RvectorBlock(1),&
+        getReferenceDerivYX_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Re(SSE_yx)", derror)
+
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(1),&
+        getReferenceDerivYX_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Im(SSE_yx)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Real%RvectorBlock(1),&
+        getReferenceDerivXY_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Re(SSE_yx)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(1),&
+        getReferenceDerivXY_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Im(SSE_yx)", derror)
+
+    ! Calculate the error to the reference DerivYY.
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Real%RvectorBlock(2),&
+        getReferenceDerivYY_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Re(SSE_yy)", derror)
+
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(2),&
+        getReferenceDerivYY_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "L2-error Im(SSE_yy)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Real%RvectorBlock(2),&
+        getReferenceDerivYY_Real, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Re(SSE_yy)", derror)
+
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(2),&
+        getReferenceDerivYY_Aimag, rcubatureInfo=&
+        rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
+    call ctab_addValue(rtable, "H1-error Im(SSE_yy)", derror)
+
     ! Start UCD export to VTK file:
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./ucd"
     call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
@@ -2144,6 +2298,14 @@ contains
         (/p_rvectorDerivX_Real,p_rvectorDerivY_Real/))
     call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE)", UCD_VAR_STANDARD, &
         (/p_rvectorDerivX_Aimag,p_rvectorDerivY_Aimag/))
+    call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_x)", UCD_VAR_STANDARD, &
+        (/rvectorBlockX_Real%RvectorBlock(1),rvectorBlockX_Real%RvectorBlock(2)/))
+    call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_x)", UCD_VAR_STANDARD, &
+        (/rvectorBlockX_Aimag%RvectorBlock(1),rvectorBlockX_Aimag%RvectorBlock(2)/))
+    call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_y)", UCD_VAR_STANDARD, &
+        (/rvectorBlockY_Real%RvectorBlock(1),rvectorBlockY_Real%RvectorBlock(2)/))
+    call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_y)", UCD_VAR_STANDARD, &
+        (/rvectorBlockY_Aimag%RvectorBlock(1),rvectorBlockY_Aimag%RvectorBlock(2)/))
 
     ! Write the file to disc, that is it.
     call ucd_write(rexport)
@@ -2152,6 +2314,10 @@ contains
     ! Clean temporal structures
     call lsysbl_releaseVector(rvectorBlock_Real)
     call lsysbl_releaseVector(rvectorBlock_Aimag)
+    call lsysbl_releaseVector(rvectorBlockX_Real)
+    call lsysbl_releaseVector(rvectorBlockX_Aimag)
+    call lsysbl_releaseVector(rvectorBlockY_Real)
+    call lsysbl_releaseVector(rvectorBlockY_Aimag)
     call spdiscr_releaseBlockDiscr(rblockDiscr)
 
   case default
@@ -2325,15 +2491,16 @@ contains
 
     ! Compute reduction rates
     call ctab_evalConvergenceRate(rtable,"L2-error u",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error u",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_x",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_y",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error u_x",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error u_y",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_xx",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_xy",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_yx",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error u_yy",CTAB_REDUCTION_RATE)
+
+    call ctab_evalConvergenceRate(rtable,"H1-error u",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_x",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error u_y",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error u_xx",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error u_xy",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error u_yx",CTAB_REDUCTION_RATE)
@@ -2392,6 +2559,7 @@ contains
     call ctab_setTexCaption(rtable,"dofs","\# dofs")
 
     call ctab_setTexCaption(rtable,"L2-error u","$L^2(u)$")
+    call ctab_setTexCaption(rtable,"H1-error u","$H^1(u)$")
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
       call ctab_setTexCaption(rtable,"L2-error u_x","$L^2(\partial_{x}^{\rm ZZ}u)$")
@@ -2400,6 +2568,14 @@ contains
       call ctab_setTexCaption(rtable,"L2-error u_xy","$L^2(\partial_{xy}^{\rm ZZ}u)$")
       call ctab_setTexCaption(rtable,"L2-error u_yx","$L^2(\partial_{yx}^{\rm ZZ}u)$")
       call ctab_setTexCaption(rtable,"L2-error u_yy","$L^2(\partial_{yy}^{\rm ZZ}u)$")
+
+      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\partial_{x}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\partial_{y}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{xx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{xy}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{yx}^{\rm ZZ}u)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{yy}^{\rm ZZ}u)$")
+
     case (POISSON_SYSTEM)
       call ctab_setTexCaption(rtable,"L2-error u_x","$L^2(\sigma_x)$")
       call ctab_setTexCaption(rtable,"L2-error u_y","$L^2(\sigma_y)$")
@@ -2407,6 +2583,13 @@ contains
       call ctab_setTexCaption(rtable,"L2-error u_xy","$L^2(\partial_{y}^{\rm ZZ}\sigma_x)$")
       call ctab_setTexCaption(rtable,"L2-error u_yx","$L^2(\partial_{x}^{\rm ZZ}\sigma_y)$")
       call ctab_setTexCaption(rtable,"L2-error u_yy","$L^2(\partial_{y}^{\rm ZZ}\sigma_y)$")
+
+      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\sigma_y)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{x}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{y}^{\rm ZZ}\sigma_x)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{x}^{\rm ZZ}\sigma_y)$")
+      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{y}^{\rm ZZ}\sigma_y)$")
     end select
     
     call ctab_setTexCaption(rtable,"L2-error u-convrate","")
@@ -2417,24 +2600,6 @@ contains
     call ctab_setTexCaption(rtable,"L2-error u_yx-convrate","")
     call ctab_setTexCaption(rtable,"L2-error u_yy-convrate","")
 
-    call ctab_setTexCaption(rtable,"H1-error u","$H^1(u)$")
-    select case(rproblem%cproblemtype)
-    case (POISSON_SCALAR)
-      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\partial_{x}^{\rm ZZ}u)$")
-      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\partial_{y}^{\rm ZZ}u)$")
-      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{xx}^{\rm ZZ}u)$")
-      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{xy}^{\rm ZZ}u)$")
-      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{yx}^{\rm ZZ}u)$")
-      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{yy}^{\rm ZZ}u)$")
-    case (POISSON_SYSTEM)
-      call ctab_setTexCaption(rtable,"H1-error u_x","$H^1(\sigma_x)$")
-      call ctab_setTexCaption(rtable,"H1-error u_y","$H^1(\sigma_y)$")
-      call ctab_setTexCaption(rtable,"H1-error u_xx","$H^1(\partial_{x}^{\rm ZZ}\sigma_x)$")
-      call ctab_setTexCaption(rtable,"H1-error u_xy","$H^1(\partial_{y}^{\rm ZZ}\sigma_x)$")
-      call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{x}^{\rm ZZ}\sigma_y)$")
-      call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{y}^{\rm ZZ}\sigma_y)$")
-    end select
-    
     call ctab_setTexCaption(rtable,"H1-error u-convrate","")
     call ctab_setTexCaption(rtable,"H1-error u_x-convrate","")
     call ctab_setTexCaption(rtable,"H1-error u_y-convrate","")
@@ -2524,96 +2689,228 @@ contains
 
     ! Compute reduction rates
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE)",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_x)",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_y)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_xx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_xy)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_yx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_yy)",CTAB_REDUCTION_RATE)
+    
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_y)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_xx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_xy)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_yx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_yy)",CTAB_REDUCTION_RATE)
 
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE)",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_x)",CTAB_REDUCTION_RATE)
-    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_y)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_xx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_xy)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_yx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_yy)",CTAB_REDUCTION_RATE)
+    
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_y)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_xx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_xy)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_yx)",CTAB_REDUCTION_RATE)
+    call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_yy)",CTAB_REDUCTION_RATE)
 
     ! Adjust format of convergence table
     call ctab_setPrecision(rtable,"L2-error Re(SSE)",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE_x)",3)
-    call ctab_setPrecision(rtable,"L2-error Re(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE_y)",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE_y)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_xx)",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_xy)",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_yx)",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_yy)",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_xx)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_xy)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_yx)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Re(SSE_yy)-convrate",3)
     
     call ctab_setPrecision(rtable,"L2-error Im(SSE)",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE_x)",3)
-    call ctab_setPrecision(rtable,"L2-error Im(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE_y)",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE_y)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_xx)",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_xy)",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_yx)",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_yy)",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_xx)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_xy)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_yx)-convrate",3)
+    call ctab_setPrecision(rtable,"L2-error Im(SSE_yy)-convrate",3)
 
     call ctab_setPrecision(rtable,"H1-error Re(SSE)",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE_x)",3)
-    call ctab_setPrecision(rtable,"H1-error Re(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE_y)",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE_y)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_xx)",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_xy)",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_yx)",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_yy)",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_xx)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_xy)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_yx)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Re(SSE_yy)-convrate",3)
     
     call ctab_setPrecision(rtable,"H1-error Im(SSE)",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE_x)",3)
-    call ctab_setPrecision(rtable,"H1-error Im(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE_y)",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_x)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE_y)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_xx)",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_xy)",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_yx)",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_yy)",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_xx)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_xy)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_yx)-convrate",3)
+    call ctab_setPrecision(rtable,"H1-error Im(SSE_yy)-convrate",3)
 
     ! Set scientific flag
     call ctab_setScientific(rtable,"L2-error Re(SSE)",.true.)
     call ctab_setScientific(rtable,"L2-error Re(SSE_x)",.true.)
     call ctab_setScientific(rtable,"L2-error Re(SSE_y)",.true.)
+    call ctab_setScientific(rtable,"L2-error Re(SSE_xx)",.true.)
+    call ctab_setScientific(rtable,"L2-error Re(SSE_xy)",.true.)
+    call ctab_setScientific(rtable,"L2-error Re(SSE_yx)",.true.)
+    call ctab_setScientific(rtable,"L2-error Re(SSE_yy)",.true.)
 
     call ctab_setScientific(rtable,"L2-error Im(SSE)",.true.)
     call ctab_setScientific(rtable,"L2-error Im(SSE_x)",.true.)
     call ctab_setScientific(rtable,"L2-error Im(SSE_y)",.true.)
+    call ctab_setScientific(rtable,"L2-error Im(SSE_xx)",.true.)
+    call ctab_setScientific(rtable,"L2-error Im(SSE_xy)",.true.)
+    call ctab_setScientific(rtable,"L2-error Im(SSE_yx)",.true.)
+    call ctab_setScientific(rtable,"L2-error Im(SSE_yy)",.true.)
 
     call ctab_setScientific(rtable,"H1-error Re(SSE)",.true.)
     call ctab_setScientific(rtable,"H1-error Re(SSE_x)",.true.)
     call ctab_setScientific(rtable,"H1-error Re(SSE_y)",.true.)
+    call ctab_setScientific(rtable,"H1-error Re(SSE_xx)",.true.)
+    call ctab_setScientific(rtable,"H1-error Re(SSE_xy)",.true.)
+    call ctab_setScientific(rtable,"H1-error Re(SSE_yx)",.true.)
+    call ctab_setScientific(rtable,"H1-error Re(SSE_yy)",.true.)
 
     call ctab_setScientific(rtable,"H1-error Im(SSE)",.true.)
-    call ctab_setScientific(rtable,"H1-error Im(SSE_y)",.true.)
     call ctab_setScientific(rtable,"H1-error Im(SSE_x)",.true.)
+    call ctab_setScientific(rtable,"H1-error Im(SSE_y)",.true.)
+    call ctab_setScientific(rtable,"H1-error Im(SSE_xx)",.true.)
+    call ctab_setScientific(rtable,"H1-error Im(SSE_xy)",.true.)
+    call ctab_setScientific(rtable,"H1-error Im(SSE_yx)",.true.)
+    call ctab_setScientific(rtable,"H1-error Im(SSE_yy)",.true.)
 
     ! Set Tex captions
     call ctab_setTexCaption(rtable,"cells","\# cells")
     call ctab_setTexCaption(rtable,"dofs","\# dofs")
 
-    call ctab_setTexCaption(rtable,"L2-error Re(SSE)","$L^2$")
+    call ctab_setTexCaption(rtable,"L2-error Re(SSE)","$L^2(Re(N))$")
+    call ctab_setTexCaption(rtable,"L2-error Im(SSE)","$L^2(Im(N))$")
+    select case(rproblem%cproblemtype)
+    case (SSE_SCALAR)
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)","$L^2(\partial_{x}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_y)","$L^2(\partial_{y}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_xx)","$L^2(\partial_{xx}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_xy)","$L^2(\partial_{xy}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_yx)","$L^2(\partial_{yx}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_yy)","$L^2(\partial_{yy}^{\rm ZZ}Re(N))$")
+
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_x)","$L^2(\partial_{x}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_y)","$L^2(\partial_{y}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_xx)","$L^2(\partial_{xx}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_xy)","$L^2(\partial_{xy}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_yx)","$L^2(\partial_{yx}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_yy)","$L^2(\partial_{yy}^{\rm ZZ}Im(N))$")
+
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_x)","$H^1(\partial_{x}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_y)","$H^1(\partial_{y}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_xx)","$H^1(\partial_{xx}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_xy)","$H^1(\partial_{xy}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_yx)","$H^1(\partial_{yx}^{\rm ZZ}Re(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_yy)","$H^1(\partial_{yy}^{\rm ZZ}Re(N))$")
+
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_x)","$H^1(\partial_{x}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_y)","$H^1(\partial_{y}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_xx)","$H^1(\partial_{xx}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_xy)","$H^1(\partial_{xy}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_yx)","$H^1(\partial_{yx}^{\rm ZZ}Im(N))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_yy)","$H^1(\partial_{yy}^{\rm ZZ}Im(N))$")
+
+    case (SSE_SYSTEM)
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)","$L^2(Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_y)","$L^2(Re(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_xx)","$L^2(\partial_{x}^{\rm ZZ}Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_xy)","$L^2(\partial_{y}^{\rm ZZ}Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_yx)","$L^2(\partial_{x}^{\rm ZZ}Re(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"L2-error Re(SSE_yy)","$L^2(\partial_{y}^{\rm ZZ}Re(\sigma_y))$")
+
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_x)","$L^2(Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_y)","$L^2(Im(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_xx)","$L^2(\partial_{x}^{\rm ZZ}Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_xy)","$L^2(\partial_{y}^{\rm ZZ}Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_yx)","$L^2(\partial_{x}^{\rm ZZ}Im(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"L2-error Im(SSE_yy)","$L^2(\partial_{y}^{\rm ZZ}Im(\sigma_y))$")
+
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_x)","$H^1(Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_y)","$H^1(Re(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_xx)","$H^1(\partial_{x}^{\rm ZZ}Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_xy)","$H^1(\partial_{y}^{\rm ZZ}Re(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_yx)","$H^1(\partial_{x}^{\rm ZZ}Re(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"H1-error Re(SSE_yy)","$H^1(\partial_{y}^{\rm ZZ}Re(\sigma_y))$")
+
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_x)","$H^1(Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_y)","$H^1(Im(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_xx)","$H^1(\partial_{x}^{\rm ZZ}Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_xy)","$H^1(\partial_{y}^{\rm ZZ}Im(\sigma_x))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_yx)","$H^1(\partial_{x}^{\rm ZZ}Im(\sigma_y))$")
+      call ctab_setTexCaption(rtable,"H1-error Im(SSE_yy)","$H^1(\partial_{y}^{\rm ZZ}Im(\sigma_y))$")
+    end select
+
     call ctab_setTexCaption(rtable,"L2-error Re(SSE)-convrate","")
-    call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)","$L^2\partial_x$")
-    call ctab_setTexCaption(rtable,"L2-error Re(SSE_y)","$L^2\partial_y$")
     call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Re(SSE_y)-convrate","")
-
-    call ctab_setTexCaption(rtable,"L2-error Im(SSE)","$L^2$")
+    call ctab_setTexCaption(rtable,"L2-error Re(SSE_xx)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Re(SSE_xy)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Re(SSE_yx)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Re(SSE_yy)-convrate","")
+    
     call ctab_setTexCaption(rtable,"L2-error Im(SSE)-convrate","")
-    call ctab_setTexCaption(rtable,"L2-error Im(SSE_x)","$L^2\partial_x$")
-    call ctab_setTexCaption(rtable,"L2-error Im(SSE_y)","$L^2\partial_y$")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_y)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Im(SSE_xx)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Im(SSE_xy)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Im(SSE_yx)-convrate","")
+    call ctab_setTexCaption(rtable,"L2-error Im(SSE_yy)-convrate","")
     
-    call ctab_setTexCaption(rtable,"H1-error Re(SSE)","$H^1$")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE)-convrate","")
-    call ctab_setTexCaption(rtable,"H1-error Re(SSE_x)","$H^1\partial_x$")
-    call ctab_setTexCaption(rtable,"H1-error Re(SSE_y)","$H^1\partial_y$")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_y)-convrate","")
-
-    call ctab_setTexCaption(rtable,"H1-error Im(SSE)","$H^1$")
+    call ctab_setTexCaption(rtable,"H1-error Re(SSE_xx)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Re(SSE_xy)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Re(SSE_yx)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Re(SSE_yy)-convrate","")
+    
     call ctab_setTexCaption(rtable,"H1-error Im(SSE)-convrate","")
-    call ctab_setTexCaption(rtable,"H1-error Im(SSE_x)","$H^1\partial_x$")
-    call ctab_setTexCaption(rtable,"H1-error Im(SSE_y)","$H^1\partial_y$")
     call ctab_setTexCaption(rtable,"H1-error Im(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Im(SSE_y)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Im(SSE_xx)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Im(SSE_xy)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Im(SSE_yx)-convrate","")
+    call ctab_setTexCaption(rtable,"H1-error Im(SSE_yy)-convrate","")
 
     ! Set Tex format
     call ctab_setTexFormat(rtable,"cells","r")
@@ -2623,24 +2920,48 @@ contains
     call ctab_setHidden(rtable,"H1-error Re(SSE)",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.true.)
     
     call ctab_setHidden(rtable,"H1-error Im(SSE)",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"H1-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yy)-convrate",.true.)
 
     ! Hide imaginary L2-columns
     call ctab_setHidden(rtable,"L2-error Im(SSE)",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)-convrate",.true.)
 
     call ctab_setTexTableCaption(rtable,"$L^2$-Convergence table, real part")
     call ctab_setTexTableLabel(rtable,"tab:l2_convergence_rate_real")
@@ -2652,17 +2973,33 @@ contains
     call ctab_setHidden(rtable,"L2-error Im(SSE)",.false.)
     call ctab_setHidden(rtable,"L2-error Im(SSE)-convrate",.false.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_x)",.false.)
-    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)-convrate",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)-convrate",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)-convrate",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)-convrate",.false.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)-convrate",.false.)
 
     ! Hide real parts of L2-columns
     call ctab_setHidden(rtable,"L2-error Re(SSE)",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"L2-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yy)-convrate",.true.)
 
     call ctab_setTexTableCaption(rtable,"$L^2$-Convergence table, imaginary part")
     call ctab_setTexTableLabel(rtable,"tab:l2_convergence_rate_aimag")
@@ -2674,24 +3011,48 @@ contains
     call ctab_setHidden(rtable,"L2-error Re(SSE)",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"L2-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Re(SSE_yy)-convrate",.true.)
     
     call ctab_setHidden(rtable,"L2-error Im(SSE)",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"L2-error Im(SSE_yy)-convrate",.true.)
     
     ! Unhide real parts of H1-columns
     call ctab_setHidden(rtable,"H1-error Re(SSE)",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_x)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.false.)
 
     call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table, real part")
     call ctab_setTexTableLabel(rtable,"tab:h1_convergence_rate_real")
@@ -2703,17 +3064,33 @@ contains
     call ctab_setHidden(rtable,"H1-error Re(SSE)",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_x)",.true.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.true.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.true.)
 
     ! Unhide imaginary parts of H1-columns
     call ctab_setHidden(rtable,"H1-error Re(SSE)",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_x)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_y)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.false.)
     
     call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table, imaginary part")
     call ctab_setTexTableLabel(rtable,"tab:h1_convergence_rate_aimag")
