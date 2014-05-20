@@ -241,128 +241,128 @@ fb_usage() {
 fb_readargs() {
     while : true
     do
-	case "$1" in
-	    --checkout)
-		CHECKOUT="yes"
-		shift
-		;;
+  case "$1" in
+      --checkout)
+    CHECKOUT="yes"
+    shift
+    ;;
 
-	    --cleanup-feat2-object-files)
-		CLEANUPOBJFILES="yes"
-		shift
-		;;
+      --cleanup-feat2-object-files)
+    CLEANUPOBJFILES="yes"
+    shift
+    ;;
 
-	    --clone-benchmark-directory)
-		CLONEBENCHMARKDIR="yes"
-		shift
-		;;
+      --clone-benchmark-directory)
+    CLONEBENCHMARKDIR="yes"
+    shift
+    ;;
 
-	    --compare-feat2-checkouts)
-		COMPAREFEAT2CHECKOUTS="yes"
-		shift
-		;;
+      --compare-feat2-checkouts)
+    COMPAREFEAT2CHECKOUTS="yes"
+    shift
+    ;;
 
-	    --compile-only)
-		COMPILEONLY="yes"
-		shift
-		;;
+      --compile-only)
+    COMPILEONLY="yes"
+    shift
+    ;;
 
-	    --compiler-version)
-		COMPILERVERSION="$2"
-		shift
-		shift
-		;;
+      --compiler-version)
+    COMPILERVERSION="$2"
+    shift
+    shift
+    ;;
 
-	    --compiler-version=*)
-		COMPILERVERSION="`echo $1 | sed 's/^--compiler-version=//'`"
-		shift
-		;;
+      --compiler-version=*)
+    COMPILERVERSION="`echo $1 | sed 's/^--compiler-version=//'`"
+    shift
+    ;;
 
-	    --force|-f*)
-		FORCEBENCHMARKRUN="yes"
-		shift
-		;;
+      --force|-f*)
+    FORCEBENCHMARKRUN="yes"
+    shift
+    ;;
 
-	    --help|-h*)    # help screen
-		fb_usage
-		exit
-		;;
+      --help|-h*)    # help screen
+    fb_usage
+    exit
+    ;;
 
-	    --id)
-		FORCEBUILDID="$2"
-		CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
-		shift
-		shift
-		;;
+      --id)
+    FORCEBUILDID="$2"
+    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
+    shift
+    shift
+    ;;
 
-	    --id=*)
-		FORCEBUILDID="`echo $1 | sed 's/^--id=//'`"
-		CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
-		shift
-		;;
+      --id=*)
+    FORCEBUILDID="`echo $1 | sed 's/^--id=//'`"
+    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID"
+    shift
+    ;;
 
-	    --master|-m*)
-		CHECKOUT="yes"
-		CLEANUPOBJFILES="yes"
-		CLONEBENCHMARKDIR="yes"
-		COMPAREFEAT2CHECKOUTS="yes"
-		COMPILEONLY="no"
-		shift
-		;;
+      --master|-m*)
+    CHECKOUT="yes"
+    CLEANUPOBJFILES="yes"
+    CLONEBENCHMARKDIR="yes"
+    COMPAREFEAT2CHECKOUTS="yes"
+    COMPILEONLY="no"
+    shift
+    ;;
 
-	    --no-checkout)
-		CHECKOUT="no"
-		shift
-		;;
+      --no-checkout)
+    CHECKOUT="no"
+    shift
+    ;;
 
-	    --no-cleanup-feat2-object-files)
-		CLEANUPOBJFILES="no"
-		shift
-		;;
+      --no-cleanup-feat2-object-files)
+    CLEANUPOBJFILES="no"
+    shift
+    ;;
 
-	    --no-compare-feat2-checkouts)
-		COMPAREFEAT2CHECKOUTS="no"
-		shift
-		;;
+      --no-compare-feat2-checkouts)
+    COMPAREFEAT2CHECKOUTS="no"
+    shift
+    ;;
 
-	    --no-compile-only)
-		COMPILEONLY="no"
-		shift
-		;;
+      --no-compile-only)
+    COMPILEONLY="no"
+    shift
+    ;;
 
-	    --slave|-s*)
-		CHECKOUT="no"
-		CLEANUPOBJFILES="no"
-		CLONEBENCHMARKDIR="yes"
-		COMPAREFEAT2CHECKOUTS="no"
-		COMPILEONLY="no"
-		shift
-		;;
+      --slave|-s*)
+    CHECKOUT="no"
+    CLEANUPOBJFILES="no"
+    CLONEBENCHMARKDIR="yes"
+    COMPAREFEAT2CHECKOUTS="no"
+    COMPILEONLY="no"
+    shift
+    ;;
 
-	    --testsuite|-t*)
-		TESTSUITE="$2"
-		shift
-		shift
-		;;
+      --testsuite|-t*)
+    TESTSUITE="$2"
+    shift
+    shift
+    ;;
 
-	    -*)
-		echo "$0: Invalid flag -- '$1'\n"
-		fb_usage
-		exit
-		;;
+      -*)
+    echo "$0: Invalid flag -- '$1'\n"
+    fb_usage
+    exit
+    ;;
 
-	    *)
-		# When debugging this function re-enable
-		# the following line.
-#		echo "$0: Unknown option -- '$1'\n"
-		break
-		;;
-	esac
+      *)
+    # When debugging this function re-enable
+    # the following line.
+#    echo "$0: Unknown option -- '$1'\n"
+    break
+    ;;
+  esac
     done
 
     if [ -z "$TESTSUITE" ]; then
-	echo "$0: Name of a testsuite must be given!"
-	fb_usage
+  echo "$0: Name of a testsuite must be given!"
+  fb_usage
     fi
 
     # Names of temporary logfile
@@ -373,7 +373,7 @@ fb_readargs() {
         AUXILIARYLOG="$AUXILIARYLOG""_""$FORCEBUILDID"
     fi
     if [ -n "$COMPILERVERSION" ]; then
-	AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+  AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
     fi
 }
 
@@ -385,583 +385,592 @@ fb_readargs() {
 #             all over the script.
 fb_customise() {
     case "$HOSTNAME" in
-	# LiDO-2
-	lidong1|lidong2)
-	    # set various parameters
-	    ARCH=LiDO
-	    COMPILEWITHPROCS=2
-	    CREATEDOCU="no"
-	    # the script requires that an ssh tunnel is always open, bound to port 13690
-	    # (the default SVN port 3690 is not necessarily free and available)
-	    SVNURL=svn://localhost:13690/Featflow2
-	    MAILX="mailx"
-	    FROMADDRESS="LS3 (Turek) Benchmark User <featflow@lido1.hrz.tu-dortmund.de>"
-	    USEMODULES="yes"
-	    EXTRAMODULEFILESDIRECTORY=""
+  # LiDO-2
+  lidong1|lidong2)
+      # set various parameters
+      ARCH=LiDO
+      COMPILEWITHPROCS=2
+      CREATEDOCU="no"
+      # the script requires that an ssh tunnel is always open, bound to port 13690
+      # (the default SVN port 3690 is not necessarily free and available)
+      SVNURL=svn://localhost:13690/Featflow2
+      MAILX="mailx"
+      FROMADDRESS="LS3 (Turek) Benchmark User <featflow@lido1.hrz.tu-dortmund.de>"
+      USEMODULES="yes"
+      EXTRAMODULEFILESDIRECTORY=""
 
-	    # LD_LIBRARY_PATH remains unset for shells started from cronjobs,
-	    # we might need, though, libraries like pthread etc.
-	    LD_LIBRARY_PATH=/usr/lib64
-	    export LD_LIBRARY_PATH
+      # LD_LIBRARY_PATH remains unset for shells started from cronjobs,
+      # we might need, though, libraries like pthread etc.
+      LD_LIBRARY_PATH=/usr/lib64
+      export LD_LIBRARY_PATH
 
-	    # As all benchmark tests are run in parallel on LiDO
-	    # via a queueing system, i.e. independent shells,
-	    # the appropriate modules need to be loaded within the
-	    # jobfile. Exactly those modules loaded here are hardcoded
-	    # into the jobfile by bin/lido_schedule_tests later on.
-	    case "${FORCEBUILDID}_${COMPILERVERSION}" in
-		# G95 compiler suite
-		pc64-penryn-linux-g95-*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-#		    modules="$modules g95/32bit-default-integers/0.93_2010-03-31"
-		    modules="$modules g95/32bit-default-integers/0.93_2010-06-17"
-#		    modules="$modules g95/64bit-default-integers/0.91"
-		    LIDOJOBNAMEPREFIX=ff2-g95
-#		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
-#		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
-		    COMPILERNAME="G95 0.93 (2010-06-17)"
-		    ;;
+      # As all benchmark tests are run in parallel on LiDO
+      # via a queueing system, i.e. independent shells,
+      # the appropriate modules need to be loaded within the
+      # jobfile. Exactly those modules loaded here are hardcoded
+      # into the jobfile by bin/lido_schedule_tests later on.
+      case "${FORCEBUILDID}_${COMPILERVERSION}" in
+    # G95 compiler suite
+    pc64-penryn-linux-g95-*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+#        modules="$modules g95/32bit-default-integers/0.93_2010-03-31"
+        modules="$modules g95/32bit-default-integers/0.93_2010-06-17"
+#        modules="$modules g95/64bit-default-integers/0.91"
+        LIDOJOBNAMEPREFIX=ff2-g95
+#        # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
+#        CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
+        COMPILERNAME="G95 0.93 (2010-06-17)"
+        ;;
 
-		# GNU compiler suite 4.3.5
-		pc64-penryn-linux-gcc-*4.3)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.3.5"
-		    LIDOJOBNAMEPREFIX=ff2-gcc43
-		    COMPILERNAME="GCC 4.3.5"
-		    ;;
+    # GNU compiler suite 4.3.5
+    pc64-penryn-linux-gcc-*4.3)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.3.5"
+        LIDOJOBNAMEPREFIX=ff2-gcc43
+        COMPILERNAME="GCC 4.3.5"
+        ;;
 
-		# GNU compiler suite 4.4.7
-		pc64-penryn-linux-gcc-*4.4)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.4.7"
-		    LIDOJOBNAMEPREFIX=ff2-gcc44
-		    COMPILERNAME="GCC 4.4.7"
-		    ;;
+    # GNU compiler suite 4.4.7
+    pc64-penryn-linux-gcc-*4.4)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.4.7"
+        LIDOJOBNAMEPREFIX=ff2-gcc44
+        COMPILERNAME="GCC 4.4.7"
+        ;;
 
-		# GNU compiler suite 4.5.3
-		pc64-penryn-linux-gcc-*4.5)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.5.3"
-		    LIDOJOBNAMEPREFIX=ff2-gcc45
-		    COMPILERNAME="GCC 4.5.3"
-		    ;;
+    # GNU compiler suite 4.5.3
+    pc64-penryn-linux-gcc-*4.5)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.5.3"
+        LIDOJOBNAMEPREFIX=ff2-gcc45
+        COMPILERNAME="GCC 4.5.3"
+        ;;
 
-		# GNU compiler suite 4.6.3
-		pc64-penryn-linux-gcc-*4.6)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.6.3"
-		    LIDOJOBNAMEPREFIX=ff2-gcc46
-		    COMPILERNAME="GCC 4.6.3"
-		    ;;
+    # GNU compiler suite 4.6.3
+    pc64-penryn-linux-gcc-*4.6)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.6.3"
+        LIDOJOBNAMEPREFIX=ff2-gcc46
+        COMPILERNAME="GCC 4.6.3"
+        ;;
 
-		# GNU compiler suite 4.7.3
-		pc64-penryn-linux-gcc-*4.7)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.7.3"
-		    LIDOJOBNAMEPREFIX=ff2-gcc47
-		    COMPILERNAME="GCC 4.7.3"
-		    ;;
+    # GNU compiler suite 4.7.3
+    pc64-penryn-linux-gcc-*4.7)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.7.3"
+        LIDOJOBNAMEPREFIX=ff2-gcc47
+        COMPILERNAME="GCC 4.7.3"
+        ;;
 
-		# GNU compiler suite 4.8.2
-		pc64-penryn-linux-gcc-*4.8)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.8.2"
-		    LIDOJOBNAMEPREFIX=ff2-gcc48
-		    COMPILERNAME="GCC 4.8.2"
-		    ;;
+    # GNU compiler suite 4.8.2
+    pc64-penryn-linux-gcc-*4.8)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.8.2"
+        LIDOJOBNAMEPREFIX=ff2-gcc48
+        COMPILERNAME="GCC 4.8.2"
+        ;;
 
-		# default GNU compiler suite
-		pc64-penryn-linux-gcc-*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.5.3"
-		    LIDOJOBNAMEPREFIX=ff2-gcc45
-		    COMPILERNAME="GCC 4.5.3"
-		    ;;
+    # GNU compiler suite 4.9.0
+    pc64-penryn-linux-gcc-*4.9)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.9.0"
+        LIDOJOBNAMEPREFIX=ff2-gcc49
+        COMPILERNAME="GCC 4.9.0"
+        ;;
 
-		# default Pathscale compiler suite
-		pc64-penryn-linux-psc-*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules pathscale"
-		    LIDOJOBNAMEPREFIX=ff2-psc
-		    COMPILERNAME="Pathscale 3.2.99"
-		    ;;
+    # default GNU compiler suite
+    pc64-penryn-linux-gcc-*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules gcc/4.5.3"
+        LIDOJOBNAMEPREFIX=ff2-gcc45
+        COMPILERNAME="GCC 4.5.3"
+        ;;
 
-		# PGI compiler suite 10.x
-		pc64-penryn-linux-pgi-*10*)
-		    modules=""
-		    modules="$modules pgi/10.9-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi10
-		    COMPILERNAME="PGI 10.9"
-		    ;;
+    # default Pathscale compiler suite
+    pc64-penryn-linux-psc-*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules pathscale"
+        LIDOJOBNAMEPREFIX=ff2-psc
+        COMPILERNAME="Pathscale 3.2.99"
+        ;;
 
-		# PGI compiler suite 11.x
-		pc64-penryn-linux-pgi-*11*)
-		    modules=""
-		    modules="$modules pgi/11.10-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi11
-		    COMPILERNAME="PGI 11.10"
-		    ;;
+    # PGI compiler suite 10.x
+    pc64-penryn-linux-pgi-*10*)
+        modules=""
+        modules="$modules pgi/10.9-0"
+        LIDOJOBNAMEPREFIX=ff2-pgi10
+        COMPILERNAME="PGI 10.9"
+        ;;
 
-		# PGI compiler suite 12.x
-		pc64-penryn-linux-pgi-*12*)
-		    modules=""
-		    modules="$modules pgi/12.10-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi12
-		    COMPILERNAME="PGI 12.10"
-		    ;;
+    # PGI compiler suite 11.x
+    pc64-penryn-linux-pgi-*11*)
+        modules=""
+        modules="$modules pgi/11.10-0"
+        LIDOJOBNAMEPREFIX=ff2-pgi11
+        COMPILERNAME="PGI 11.10"
+        ;;
 
-		# PGI compiler suite 13.x
-		pc64-penryn-linux-pgi-*13*)
-		    modules=""
-		    modules="$modules pgi/13.5-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi13
-		    COMPILERNAME="PGI 13.5"
-		    ;;
+    # PGI compiler suite 12.x
+    pc64-penryn-linux-pgi-*12*)
+        modules=""
+        modules="$modules pgi/12.10-0"
+        LIDOJOBNAMEPREFIX=ff2-pgi12
+        COMPILERNAME="PGI 12.10"
+        ;;
 
-		# default PGI compiler suite
-		pc64-penryn-linux-pgi-*)
-		    modules=""
-		    modules="$modules pgi/13.5-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi
-		    COMPILERNAME="PGI 13.5"
-		    ;;
+    # PGI compiler suite 13.x
+    pc64-penryn-linux-pgi-*13*)
+        modules=""
+        modules="$modules pgi/13.5-0"
+        LIDOJOBNAMEPREFIX=ff2-pgi13
+        COMPILERNAME="PGI 13.5"
+        ;;
 
-		# Sun Studio compiler suite 12.1
-		pc64-penryn-linux-sunstudio-*12.1)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules sunstudio/12.1_update_1"
-		    LIDOJOBNAMEPREFIX=ff2-sun121
-		    COMPILERNAME="SunStudio 12.1"
-		    ;;
+    # default PGI compiler suite
+    pc64-penryn-linux-pgi-*)
+        modules=""
+        modules="$modules pgi/13.5-0"
+        LIDOJOBNAMEPREFIX=ff2-pgi
+        COMPILERNAME="PGI 13.5"
+        ;;
 
-		# Oracle Studio compiler suite 12.2
-		pc64-penryn-linux-sunstudio-*12.2)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules oraclestudio/12.2"
-		    LIDOJOBNAMEPREFIX=ff2-sun122
-		    COMPILERNAME="OracleStudio 12.2"
-		    ;;
+    # Sun Studio compiler suite 12.1
+    pc64-penryn-linux-sunstudio-*12.1)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules sunstudio/12.1_update_1"
+        LIDOJOBNAMEPREFIX=ff2-sun121
+        COMPILERNAME="SunStudio 12.1"
+        ;;
 
-		# Oracle Studio compiler suite 12.3
-		pc64-penryn-linux-sunstudio-*12.3)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules oraclestudio/12.3"
-		    LIDOJOBNAMEPREFIX=ff2-sun123
-		    COMPILERNAME="OracleStudio 12.3"
-		    ;;
+    # Oracle Studio compiler suite 12.2
+    pc64-penryn-linux-sunstudio-*12.2)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules oraclestudio/12.2"
+        LIDOJOBNAMEPREFIX=ff2-sun122
+        COMPILERNAME="OracleStudio 12.2"
+        ;;
 
-		# default Oracle Studio compiler suite
-		pc64-penryn-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules oraclestudio/12.3"
-		    LIDOJOBNAMEPREFIX=ff2-sun123
-		    COMPILERNAME="OracleStudio 12.3"
-		    ;;
+    # Oracle Studio compiler suite 12.3
+    pc64-penryn-linux-sunstudio-*12.3)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules oraclestudio/12.3"
+        LIDOJOBNAMEPREFIX=ff2-sun123
+        COMPILERNAME="OracleStudio 12.3"
+        ;;
 
-		# Open64 compiler suite 4.5.2
-		pc64-penryn-linux-open64-*4.5)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules open64/4.5.2"
-		    LIDOJOBNAMEPREFIX=ff2-open452
-		    COMPILERNAME="Open64 4.5.2"
-		    ;;
+    # default Oracle Studio compiler suite
+    pc64-penryn-linux-sunstudio-*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules oraclestudio/12.3"
+        LIDOJOBNAMEPREFIX=ff2-sun123
+        COMPILERNAME="OracleStudio 12.3"
+        ;;
 
-		# Open64 compiler suite 5.0
-		pc64-penryn-linux-open64-*5.0)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules open64/5.0"
-		    LIDOJOBNAMEPREFIX=ff2-open50
-		    COMPILERNAME="Open64 5.0"
-		    ;;
+    # Open64 compiler suite 4.5.2
+    pc64-penryn-linux-open64-*4.5)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules open64/4.5.2"
+        LIDOJOBNAMEPREFIX=ff2-open452
+        COMPILERNAME="Open64 4.5.2"
+        ;;
 
-		# default Open64 compiler suite
-		pc64-penryn-linux-open64-*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules open64/5.0"
-		    LIDOJOBNAMEPREFIX=ff2-open50
-		    COMPILERNAME="Open64 5.0"
-		    ;;
+    # Open64 compiler suite 5.0
+    pc64-penryn-linux-open64-*5.0)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules open64/5.0"
+        LIDOJOBNAMEPREFIX=ff2-open50
+        COMPILERNAME="Open64 5.0"
+        ;;
 
-		# Intel compiler suite 10.1.023
-		pc64-penryn-linux-intel-*10.1)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.023 intel/fce/10.1.023"
-		    LIDOJOBNAMEPREFIX=ff2-intel101
-		    COMPILERNAME="Intel 10.1"
-		    ;;
+    # default Open64 compiler suite
+    pc64-penryn-linux-open64-*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules open64/5.0"
+        LIDOJOBNAMEPREFIX=ff2-open50
+        COMPILERNAME="Open64 5.0"
+        ;;
 
-		# Intel compiler suite 11.0.084
-		pc64-penryn-linux-intel-*11.0)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.0.084 intel/fce/11.0.084"
-		    LIDOJOBNAMEPREFIX=ff2-intel110
-		    COMPILERNAME="Intel 11.0"
-		    ;;
+    # Intel compiler suite 10.1.023
+    pc64-penryn-linux-intel-*10.1)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.023 intel/fce/10.1.023"
+        LIDOJOBNAMEPREFIX=ff2-intel101
+        COMPILERNAME="Intel 10.1"
+        ;;
 
-		# Intel compiler suite 11.1.080
-		pc64-penryn-linux-intel-*11.1)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
-		    LIDOJOBNAMEPREFIX=ff2-intel111
-		    COMPILERNAME="Intel 11.1"
-		    ;;
+    # Intel compiler suite 11.0.084
+    pc64-penryn-linux-intel-*11.0)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.2.7.041 intel/cce/11.0.084 intel/fce/11.0.084"
+        LIDOJOBNAMEPREFIX=ff2-intel110
+        COMPILERNAME="Intel 11.0"
+        ;;
 
-		# Intel compiler suite 12.0.5.220
-		pc64-penryn-linux-intel-*12.0)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.3.7 intel/cce/12.0.5.220 intel/fce/12.0.5.220"
-		    LIDOJOBNAMEPREFIX=ff2-intel120
-		    COMPILERNAME="Intel 12.0"
-		    ;;
+    # Intel compiler suite 11.1.080
+    pc64-penryn-linux-intel-*11.1)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
+        LIDOJOBNAMEPREFIX=ff2-intel111
+        COMPILERNAME="Intel 11.1"
+        ;;
 
-		# Intel compiler suite 12.1.7.367
-		pc64-penryn-linux-intel-*12.1)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.3.12.361 intel/cce/12.1.7.367 intel/fce/12.1.7.367"
-		    LIDOJOBNAMEPREFIX=ff2-intel121
-		    COMPILERNAME="Intel 12.1"
-		    ;;
+    # Intel compiler suite 12.0.5.220
+    pc64-penryn-linux-intel-*12.0)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.3.7 intel/cce/12.0.5.220 intel/fce/12.0.5.220"
+        LIDOJOBNAMEPREFIX=ff2-intel120
+        COMPILERNAME="Intel 12.0"
+        ;;
 
-		# Intel compiler suite 13.0.1.117
-		pc64-penryn-linux-intel-*13.0)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/11.0.1.117 intel/cce/13.0.1.117 intel/fce/13.0.1.117"
-		    LIDOJOBNAMEPREFIX=ff2-intel130
-		    COMPILERNAME="Intel 13.0"
-		    ;;
+    # Intel compiler suite 12.1.7.367
+    pc64-penryn-linux-intel-*12.1)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.3.12.361 intel/cce/12.1.7.367 intel/fce/12.1.7.367"
+        LIDOJOBNAMEPREFIX=ff2-intel121
+        COMPILERNAME="Intel 12.1"
+        ;;
 
-		# Intel compiler suite 13.1.3.192
-		pc64-penryn-linux-intel-*13.1)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/11.0.5 intel/cce/13.1.3.192 intel/fce/13.1.3.192"
-		    LIDOJOBNAMEPREFIX=ff2-intel131
-		    COMPILERNAME="Intel 13.1"
-		    ;;
+    # Intel compiler suite 13.0.1.117
+    pc64-penryn-linux-intel-*13.0)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/11.0.1.117 intel/cce/13.0.1.117 intel/fce/13.0.1.117"
+        LIDOJOBNAMEPREFIX=ff2-intel130
+        COMPILERNAME="Intel 13.0"
+        ;;
 
-		# Intel compiler suite 14.0.1.106
-		pc64-penryn-linux-intel-*14.0)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/11.1.1.106 intel/cce/14.0.1.106 intel/fce/14.0.1.106"
-		    LIDOJOBNAMEPREFIX=ff2-intel140
-		    COMPILERNAME="Intel 14.0"
-		    ;;
+    # Intel compiler suite 13.1.3.192
+    pc64-penryn-linux-intel-*13.1)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/11.0.5 intel/cce/13.1.3.192 intel/fce/13.1.3.192"
+        LIDOJOBNAMEPREFIX=ff2-intel131
+        COMPILERNAME="Intel 13.1"
+        ;;
 
-		# default Intel compiler suite and default build ID
-		pc64-penryn-linux-intel-*|*)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
-		    LIDOJOBNAMEPREFIX=ff2-intel111
-		    COMPILERNAME="Intel 11.1"
-		    ;;
-	    esac
+    # Intel compiler suite 14.0.2.144
+    pc64-penryn-linux-intel-*14.0)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/11.1.2.144 intel/cce/14.0.2.144 intel/fce/14.0.2.144"
+        LIDOJOBNAMEPREFIX=ff2-intel140
+        COMPILERNAME="Intel 14.0"
+        ;;
 
-	    # On LIDOng we need to cross-compile as the compute nodes are superior
-	    # to the gateway cpus.
-	    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID --force-id"
+    # default Intel compiler suite and default build ID
+    pc64-penryn-linux-intel-*|*)
+        modules=""
+        modules="$modules gotoblas/shared/64"
+        modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
+        LIDOJOBNAMEPREFIX=ff2-intel111
+        COMPILERNAME="Intel 11.1"
+        ;;
+      esac
 
-	    modules="$modules torque maui binutils/64/2.20.1 subversion"
+      # On LIDOng we need to cross-compile as the compute nodes are superior
+      # to the gateway cpus.
+      CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID --force-id"
 
-    	    # Make 'module' command and modulefiles available
-	    # But Modules Environment is dreadfully implemented, especially
-	    # the versions 3.2.x randomly crash (typically with a
+      modules="$modules torque maui binutils/64/2.20.1 subversion"
+
+      # Make 'module' command and modulefiles available
+      # But Modules Environment is dreadfully implemented, especially
+      # the versions 3.2.x randomly crash (typically with a
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
-	    # when trying to load/unload several modules at once.
-	    # Workaround: Load them one by one.
-	    . /sysdata/shared/sfw/Modules/default/init/sh > $AUXILIARYLOG 2>&1;
-	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
+      # when trying to load/unload several modules at once.
+      # Workaround: Load them one by one.
+      . /sysdata/shared/sfw/Modules/default/init/sh > $AUXILIARYLOG 2>&1;
+      eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
-	    if [ -s $AUXILIARYLOG ]; then
-		test $DEBUG -gt 0 && echo "# Loading of modules failed"
-		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
-		fb_exit 1
-	    fi
-	    ;;
+      if [ -s $AUXILIARYLOG ]; then
+    test $DEBUG -gt 0 && echo "# Loading of modules failed"
+    MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+    echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+    fb_exit 1
+      fi
+      ;;
 
-	# LiDO
-	lido-gw1|lido-gw2)
-	    # set various parameters
-	    ARCH=LiDO
-#	    COMPILEWITHPROCS=4
-	    COMPILEWITHPROCS=1
-	    CREATEDOCU="no"
-	    # the script requires that an ssh tunnel is always open, bound to port 13690
-	    # (the default SVN port 3690 is not necessarily free and available)
-	    SVNURL=svn://localhost:13690/Featflow2
-	    MAILX="mailx"
-	    FROMADDRESS="featflow@lido-gw1"
-	    USEMODULES="yes"
-	    EXTRAMODULEFILESDIRECTORY=""
+  # LiDO
+  lido-gw1|lido-gw2)
+      # set various parameters
+      ARCH=LiDO
+#      COMPILEWITHPROCS=4
+      COMPILEWITHPROCS=1
+      CREATEDOCU="no"
+      # the script requires that an ssh tunnel is always open, bound to port 13690
+      # (the default SVN port 3690 is not necessarily free and available)
+      SVNURL=svn://localhost:13690/Featflow2
+      MAILX="mailx"
+      FROMADDRESS="featflow@lido-gw1"
+      USEMODULES="yes"
+      EXTRAMODULEFILESDIRECTORY=""
 
-	    # As all benchmark tests are run in parallel on LiDO
-	    # via a queueing system, i.e. independent shells,
-	    # the appropriate modules need to be loaded within the
-	    # jobfile. Exactly those modules loaded here are hardcoded
-	    # into the jobfile by bin/lido_schedule_tests later on.
-	    case "$FORCEBUILDID" in
-		# G95 compiler suite
-		pc64-opteron-linux-g95-*)
-		    modules=""
-#		    modules="$modules g95/int32bit/0.9"
-		    modules="$modules g95/int32bit/2010-03-31"
-		    LIDOJOBNAMEPREFIX=fb-g95
-		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
-		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
-		    COMPILERNAME="G95 0.93 (2010-03-31)"
-		    EXTRAMODULEFILESDIRECTORY="/home/buijssen/Cluster-Config/modulefiles"
-		    ;;
+      # As all benchmark tests are run in parallel on LiDO
+      # via a queueing system, i.e. independent shells,
+      # the appropriate modules need to be loaded within the
+      # jobfile. Exactly those modules loaded here are hardcoded
+      # into the jobfile by bin/lido_schedule_tests later on.
+      case "$FORCEBUILDID" in
+    # G95 compiler suite
+    pc64-opteron-linux-g95-*)
+        modules=""
+#        modules="$modules g95/int32bit/0.9"
+        modules="$modules g95/int32bit/2010-03-31"
+        LIDOJOBNAMEPREFIX=fb-g95
+        # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
+        CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
+        COMPILERNAME="G95 0.93 (2010-03-31)"
+        EXTRAMODULEFILESDIRECTORY="/home/buijssen/Cluster-Config/modulefiles"
+        ;;
 
-		# GNU compiler suite
-		pc64-opteron-linux-gcc-*)
-		    modules=""
-		    modules="$modules gcc/4.3.2"
-		    LIDOJOBNAMEPREFIX=fb-gcc
-		    COMPILERNAME="GCC 4.3.2"
-		    ;;
+    # GNU compiler suite
+    pc64-opteron-linux-gcc-*)
+        modules=""
+        modules="$modules gcc/4.3.2"
+        LIDOJOBNAMEPREFIX=fb-gcc
+        COMPILERNAME="GCC 4.3.2"
+        ;;
 
-		# Pathscale compiler suite
-		pc64-opteron-linux-psc-*)
-		    modules=""
-		    modules="$modules pathscale"
-		    LIDOJOBNAMEPREFIX=fb-psc
-		    COMPILERNAME="Pathscale"
-		    ;;
+    # Pathscale compiler suite
+    pc64-opteron-linux-psc-*)
+        modules=""
+        modules="$modules pathscale"
+        LIDOJOBNAMEPREFIX=fb-psc
+        COMPILERNAME="Pathscale"
+        ;;
 
-		# PGI compiler suite
-		pc64-opteron-linux-pgi-*)
-		    modules=""
-		    modules="$modules pgi"
-		    LIDOJOBNAMEPREFIX=fb-pgi
-		    COMPILERNAME="PGI"
-		    ;;
+    # PGI compiler suite
+    pc64-opteron-linux-pgi-*)
+        modules=""
+        modules="$modules pgi"
+        LIDOJOBNAMEPREFIX=fb-pgi
+        COMPILERNAME="PGI"
+        ;;
 
-		# Sun Studio compiler suite
-		pc64-opteron-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules gcc sunstudio"
-		    LIDOJOBNAMEPREFIX=fb-sun
-		    COMPILERNAME="SunStudio"
-		    ;;
+    # Sun Studio compiler suite
+    pc64-opteron-linux-sunstudio-*)
+        modules=""
+        modules="$modules gcc sunstudio"
+        LIDOJOBNAMEPREFIX=fb-sun
+        COMPILERNAME="SunStudio"
+        ;;
 
-		# default build ID (Intel compiler suite)
-		pc64-opteron-linux-intel-*|*)
-		    modules=""
-		    modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
-#		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
-		    LIDOJOBNAMEPREFIX=fb-intel
-		    COMPILERNAME="Intel 10.1"
-		    ;;
-	    esac
+    # default build ID (Intel compiler suite)
+    pc64-opteron-linux-intel-*|*)
+        modules=""
+        modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
+#        modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
+        LIDOJOBNAMEPREFIX=fb-intel
+        COMPILERNAME="Intel 10.1"
+        ;;
+      esac
 
-	    modules="$modules goto-blas torque maui subversion"
+      modules="$modules goto-blas torque maui subversion"
 
-    	    # Make 'module' command and modulefiles available
-	    # and remove any modulefiles directory unavailable on the compute nodes.
-	    . /cvos/local/apps/environment-modules/*/init/sh > $AUXILIARYLOG 2>&1
-	    module use /cvos/shared/modulefiles $EXTRAMODULEFILESDIRECTORY > $AUXILIARYLOG 2>&1
-	    module unuse /cvos/local/modulefiles             > $AUXILIARYLOG 2>&1
-	    module unuse /cvos/local/apps/environment-modules/version/3.2.5 > $AUXILIARYLOG 2>&1
-	    module unload gcc/3.4.6                          > $AUXILIARYLOG 2>&1
-	    # MODULEPATH contains still a reference to
-	    # /cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles
-	    # which - for unknown reasons - can not be removed with help
-	    # of the usual 'module unuse' command. Remove it the hard
-	    # way.
-	    MODULEPATH=`echo $MODULEPATH | sed -e 's^/cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles:^^;'` > $AUXILIARYLOG 2>&1
-	    export MODULEPATH
-	    # Modules Environment is dreadfully implemented, especially
-	    # the versions 3.2.x randomly crash (typically with a
+      # Make 'module' command and modulefiles available
+      # and remove any modulefiles directory unavailable on the compute nodes.
+      . /cvos/local/apps/environment-modules/*/init/sh > $AUXILIARYLOG 2>&1
+      module use /cvos/shared/modulefiles $EXTRAMODULEFILESDIRECTORY > $AUXILIARYLOG 2>&1
+      module unuse /cvos/local/modulefiles             > $AUXILIARYLOG 2>&1
+      module unuse /cvos/local/apps/environment-modules/version/3.2.5 > $AUXILIARYLOG 2>&1
+      module unload gcc/3.4.6                          > $AUXILIARYLOG 2>&1
+      # MODULEPATH contains still a reference to
+      # /cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles
+      # which - for unknown reasons - can not be removed with help
+      # of the usual 'module unuse' command. Remove it the hard
+      # way.
+      MODULEPATH=`echo $MODULEPATH | sed -e 's^/cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles:^^;'` > $AUXILIARYLOG 2>&1
+      export MODULEPATH
+      # Modules Environment is dreadfully implemented, especially
+      # the versions 3.2.x randomly crash (typically with a
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
-	    # when trying to load/unload several modules at once.
+      # when trying to load/unload several modules at once.
             # Possible reason and workaround:
             # see http://sourceforge.net/mailarchive/message.php?msg_id=26674906
             # Another workaround: Load them one by one.
-	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
+      eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
-	    # Different version of Modules Environment do or do not issue
-	    # warnings about duplicate symbols. Get rid of this stuff.
-	    sed -i -e '/Duplicate version symbol .* found/d;' $AUXILIARYLOG
+      # Different version of Modules Environment do or do not issue
+      # warnings about duplicate symbols. Get rid of this stuff.
+      sed -i -e '/Duplicate version symbol .* found/d;' $AUXILIARYLOG
 
-	    if [ -s $AUXILIARYLOG ]; then
-		test $DEBUG -gt 0 && echo "# Loading of modules failed"
-		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
-		fb_exit 1
-	    fi
-	    ;;
+      if [ -s $AUXILIARYLOG ]; then
+    test $DEBUG -gt 0 && echo "# Loading of modules failed"
+    MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+    echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+    fb_exit 1
+      fi
+      ;;
 
-	# NEC
-	a1)
-	    ARCH=NEC
-	    COMPILEWITHPROCS=2
-	    CREATEDOCU="no"
-	    # the script requires that an ssh tunnel is always open, bound to port 13690
-	    # (the default SVN port 3690 is not necessarily free and available)
-	    SVNURL=svn://localhost:13690/Featflow2
-	    MAILX="mailx"
-	    SETFLAGWHENBENCHMARKDONE="no"
-	    COMPILERNAME="NEC"
-	    USEMODULES="no"
-	    FROMADDRESS="buijssen@math.tu-dortmund.de"
-	    # 1) NEC compiler is a cross compiler, enforce using the correct build ID
-	    # 2) Store object files directly in scratch area where FEAT2 working copy
-	    #    resides anyway. Otherwise we get trouble because of the path length
-	    #    checks in benchmark/master.configure. The path in the scratch area
-	    #    has already excessive length.
-	    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=sx8-none-superux-f90-keisan --force-id --objdir-prefix=. --objdir-lib-prefix=../.."
+  # NEC
+  a1)
+      ARCH=NEC
+      COMPILEWITHPROCS=2
+      CREATEDOCU="no"
+      # the script requires that an ssh tunnel is always open, bound to port 13690
+      # (the default SVN port 3690 is not necessarily free and available)
+      SVNURL=svn://localhost:13690/Featflow2
+      MAILX="mailx"
+      SETFLAGWHENBENCHMARKDONE="no"
+      COMPILERNAME="NEC"
+      USEMODULES="no"
+      FROMADDRESS="buijssen@math.tu-dortmund.de"
+      # 1) NEC compiler is a cross compiler, enforce using the correct build ID
+      # 2) Store object files directly in scratch area where FEAT2 working copy
+      #    resides anyway. Otherwise we get trouble because of the path length
+      #    checks in benchmark/master.configure. The path in the scratch area
+      #    has already excessive length.
+      CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=sx8-none-superux-f90-keisan --force-id --objdir-prefix=. --objdir-lib-prefix=../.."
 
-	    PATH=/usr/local/bin:/opt/gfsext/hlrsbin:/SX/usr/bin:/usr/psuite:/opt/NECmpi/bin:/usr/bin:/bin
-	    export PATH
+      PATH=/usr/local/bin:/opt/gfsext/hlrsbin:/SX/usr/bin:/usr/psuite:/opt/NECmpi/bin:/usr/bin:/bin
+      export PATH
 
-	    # Clean up temporary files whose presence might break compilation later
-	    rm -rf /tmp/ccom*.dir 2>/dev/null
+      # Clean up temporary files whose presence might break compilation later
+      rm -rf /tmp/ccom*.dir 2>/dev/null
 
-	    # No modules needed, everything is pre-set up for the users
+      # No modules needed, everything is pre-set up for the users
 
-	    # Allocate disk space that is available on both the login node
-	    # *and* the compute nodes. (Last argument specifies life time in
-	    # days + 23 hours. 0 means 23 hours.)
-	    BASEDIR="`ws_allocate FEAT2_RegrBench-1 0`"
+      # Allocate disk space that is available on both the login node
+      # *and* the compute nodes. (Last argument specifies life time in
+      # days + 23 hours. 0 means 23 hours.)
+      BASEDIR="`ws_allocate FEAT2_RegrBench-1 0`"
 
-	    # Usually, this disk space should be released after usage, but
-	    # it is only persistent for less than one day. It should be okay
-	    # to not issue a 'ws_release'.
-	    ;;
+      # Usually, this disk space should be released after usage, but
+      # it is only persistent for less than one day. It should be okay
+      # to not issue a 'ws_release'.
+      ;;
 
-	# Default is computers at Math department
-	*)
-	    ARCH=GENERIC
-	    # no ssh tunnel necessary at Math department
-	    SVNURL=svn://doncamillo.mathematik.tu-dortmund.de/Featflow2
-	    # Not all Unix systems set $USER by default, Sun Solaris set $LOGNAME,
-	    # so try different variants and use "schorsch" if all else fails,
-	    # for historical reasons.
-	    test -z "$USER" && MYUSER="$USER"
-	    test -z "$MYUSER" && MYUSER="$LOGNAME"
-	    # If all fails then use "featflow"
-	    test -z "$MYUSER" && MYUSER="featflow"
-	    if test -n "`uname -a | grep Ubuntu`"; then
-		# 'mailx -r feat2users@math.tu-dortmund.de' is not portable,
-		# it is available on openSuSE 1x.x, but not on Ubuntu.
-		REPLYTO=feat2users@math.tu-dortmund.de
-		export REPLYTO;
-		MAILX="mailx"
-	    elif test "`hostname`" = "hellboy"; then
-		MAILX="mailx -r feat2users@math.tu-dortmund.de"
-	    else
-		MAILX="mailx"
-	    fi
-	    FROMADDRESS="$MYUSER@math.tu-dortmund.de"
-	    # on these machines, several benchmark instances run in parallel without
-	    # any queuing system, so enable manual synchronisation via filesystem
-	    SETFLAGWHENBENCHMARKDONE="yes"
+  # Default is computers at Math department
+  *)
+      ARCH=GENERIC
+      # no ssh tunnel necessary at Math department
+      SVNURL=svn://doncamillo.mathematik.tu-dortmund.de/Featflow2
+      # Not all Unix systems set $USER by default, Sun Solaris set $LOGNAME,
+      # so try different variants and use "schorsch" if all else fails,
+      # for historical reasons.
+      test -z "$USER" && MYUSER="$USER"
+      test -z "$MYUSER" && MYUSER="$LOGNAME"
+      # If all fails then use "featflow"
+      test -z "$MYUSER" && MYUSER="featflow"
+      if test -n "`uname -a | grep Ubuntu`"; then
+    # 'mailx -r feat2users@math.tu-dortmund.de' is not portable,
+    # it is available on openSuSE 1x.x, but not on Ubuntu.
+    REPLYTO=feat2users@math.tu-dortmund.de
+    export REPLYTO;
+    MAILX="mailx"
+      elif test "`hostname`" = "hellboy"; then
+    MAILX="mailx -r feat2users@math.tu-dortmund.de"
+      else
+    MAILX="mailx"
+      fi
+      FROMADDRESS="$MYUSER@math.tu-dortmund.de"
+      # on these machines, several benchmark instances run in parallel without
+      # any queuing system, so enable manual synchronisation via filesystem
+      SETFLAGWHENBENCHMARKDONE="yes"
 
-	    # Load appropriate modules.
+      # Load appropriate modules.
             # We always load (modulo exceptions hard-coded below) the most recent version as
             # determined by the module system installed on these machines.
-	    case "$FORCEBUILDID" in
-		ia64-itanium2x2-linux-intel-mkl)
-		    modules=""
-		    modules="$modules intel/cc64/10.1.021 intel/fc64/10.1.021 intel/mkl64/10.2_update_3"
-		    COMPILERNAME="Intel 10.1"
-		    COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
-		    CREATEDOCU="no"  # no latex available on our Itanium server
-		    ;;
+      case "$FORCEBUILDID" in
+    ia64-itanium2x2-linux-intel-mkl)
+        modules=""
+        modules="$modules intel/cc64/10.1.021 intel/fc64/10.1.021 intel/mkl64/10.2_update_3"
+        COMPILERNAME="Intel 10.1"
+        COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
+        CREATEDOCU="no"  # no latex available on our Itanium server
+        ;;
 
-		pc64-opteronx2-linux-gcc-goto2)
-		    modules=""
-		    modules="$modules gcc/4.4.3 gotoblas2/gcc/1.13"
-		    COMPILERNAME="GCC 4.4.3"
-		    COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
-		    CREATEDOCU="yes"
-		    ;;
+    pc64-opteronx2-linux-gcc-goto2)
+        modules=""
+        modules="$modules gcc/4.4.3 gotoblas2/gcc/1.13"
+        COMPILERNAME="GCC 4.4.3"
+        COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
+        CREATEDOCU="yes"
+        ;;
 
-		pc64-opteron-linux-gcc-*)
-		    modules=""
-		    modules="$modules gcc/4.3.3"
-		    modules="$modules gotoblas tetex/3.0"
-		    COMPILERNAME="gcc 4.3.3"
-		    COMPILEWITHPROCS=2
-		    CREATEDOCU="yes"
-		    ;;
+    pc64-opteron-linux-gcc-*)
+        modules=""
+        modules="$modules gcc/4.3.3"
+        modules="$modules gotoblas tetex/3.0"
+        COMPILERNAME="gcc 4.3.3"
+        COMPILEWITHPROCS=2
+        CREATEDOCU="yes"
+        ;;
 
-		pc64-opteron-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules sunstudio"
-		    modules="$modules gotoblas tetex/3.0"
-		    COMPILERNAME="SunStudio"
-		    COMPILEWITHPROCS=2
-		    CREATEDOCU="yes"
-		    ;;
+    pc64-opteron-linux-sunstudio-*)
+        modules=""
+        modules="$modules sunstudio"
+        modules="$modules gotoblas tetex/3.0"
+        COMPILERNAME="SunStudio"
+        COMPILEWITHPROCS=2
+        CREATEDOCU="yes"
+        ;;
 
-		pc64-opteron-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules sunstudio"
-		    modules="$modules gotoblas tetex/3.0"
-		    COMPILERNAME="SunStudio"
-		    COMPILEWITHPROCS=2
-		    CREATEDOCU="yes"
-		    ;;
+    pc64-opteron-linux-sunstudio-*)
+        modules=""
+        modules="$modules sunstudio"
+        modules="$modules gotoblas tetex/3.0"
+        COMPILERNAME="SunStudio"
+        COMPILEWITHPROCS=2
+        CREATEDOCU="yes"
+        ;;
 
-		# default build ID
-		pc64-opteron-linux-intel-*|*)
-		    modules=""
-		    modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
-#		    modules="$modules intel/cce/9.1.045 intel/fce/9.1.040"
-		    modules="$modules gotoblas"
-		    COMPILERNAME="Intel 10.1"
-		    COMPILEWITHPROCS=2
-		    CREATEDOCU="yes"
-		    ;;
-	    esac
+    # default build ID
+    pc64-opteron-linux-intel-*|*)
+        modules=""
+        modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
+#        modules="$modules intel/cce/9.1.045 intel/fce/9.1.040"
+        modules="$modules gotoblas"
+        COMPILERNAME="Intel 10.1"
+        COMPILEWITHPROCS=2
+        CREATEDOCU="yes"
+        ;;
+      esac
 
-	    USEMODULES="yes"
-#	    modules="$modules gotoblas tetex/3.0"
+      USEMODULES="yes"
+#      modules="$modules gotoblas tetex/3.0"
 
-	    # Make 'module' command and modulefiles available, grepping necessary due to
-	    # stupid non-default verbosity levels of different module installations
-	    if [ -r /usr/local/Modules ]; then
-		. /usr/local/Modules/default/init/sh && \
-		    module use /usr/local/Modules/modulefiles && \
-		    module add $modules > $AUXILIARYLOG 2>&1
-	    elif [ -r /sfw/Modules ]; then
-		. /sfw/Modules/default/init/sh && \
-		    module use /sfw/Modules/modulefiles && \
-		    module add $modules > $AUXILIARYLOG 2>&1
-	    fi
-	    #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
-	    if [ -s $AUXILIARYLOG ]; then
-		test $DEBUG -gt 0 && echo "# Loading of modules failed"
-		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
-		fb_exit 1
-	    fi
-	    ;;
+      # Make 'module' command and modulefiles available, grepping necessary due to
+      # stupid non-default verbosity levels of different module installations
+      if [ -r /usr/local/Modules ]; then
+    . /usr/local/Modules/default/init/sh && \
+        module use /usr/local/Modules/modulefiles && \
+        module add $modules > $AUXILIARYLOG 2>&1
+      elif [ -r /sfw/Modules ]; then
+    . /sfw/Modules/default/init/sh && \
+        module use /sfw/Modules/modulefiles && \
+        module add $modules > $AUXILIARYLOG 2>&1
+      fi
+      #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
+      if [ -s $AUXILIARYLOG ]; then
+    test $DEBUG -gt 0 && echo "# Loading of modules failed"
+    MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+    echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+    fb_exit 1
+      fi
+      ;;
     esac
 }
 
@@ -970,10 +979,10 @@ fb_customise() {
 fb_cleanUpOldCheckout() {
     cd $BASEDIR
     if [ $? -ne 0 ]; then
-	test $DEBUG -gt 0 && echo "# Cannot enter directory <$BASEDIR>"
-	MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	fb_exit 1
+  test $DEBUG -gt 0 && echo "# Cannot enter directory <$BASEDIR>"
+  MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  fb_exit 1
     fi
 
     # A master process should clean up old FEAT2 working copies
@@ -982,11 +991,11 @@ fb_cleanUpOldCheckout() {
     #  complain about 'binary operator expected' if one side is empty.)
     if [ "$CHECKOUT""x" = "yesx" ]; then
         # Remove backup of a FEAT2 working copy
-	test -r Featflow2.previous && \rm -rf Featflow2.previous
+  test -r Featflow2.previous && \rm -rf Featflow2.previous
     fi
     if [ "$CLEANUPOBJFILES""x" = "yesx" ]; then
         # Remove object files of a previous FEAT2 working copy
-	test -r feat2obj && \rm -rf feat2obj
+  test -r feat2obj && \rm -rf feat2obj
     fi
 
 
@@ -997,20 +1006,20 @@ fb_cleanUpOldCheckout() {
     #  as there should be no running LAM/MPI daemon any more referencing
     #  that working copy.)
     if [ "$MPIENV""x" = "LAMMPIx" ]; then
-	echo "Shutting down any running LAM daemon..." >> $AUXILIARYLOG
-	lamhalt 1>> $AUXILIARYLOG 2>&1
-	sleep 2
-	echo "Done!" >> $AUXILIARYLOG
+  echo "Shutting down any running LAM daemon..." >> $AUXILIARYLOG
+  lamhalt 1>> $AUXILIARYLOG 2>&1
+  sleep 2
+  echo "Done!" >> $AUXILIARYLOG
 
-	echo "Ensuring that there is really no LAM daemon running any more..." >> $AUXILIARYLOG
-	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && (echo "Trying to kill persistent LAM daemon"; kill $pids) >> $AUXILIARYLOG
-	sleep 1
-	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent LAM daemon"; kill -9 $pids) >> $AUXILIARYLOG
-	sleep 1
-	pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && echo "There is still a running LAM daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
+  echo "Ensuring that there is really no LAM daemon running any more..." >> $AUXILIARYLOG
+  pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && (echo "Trying to kill persistent LAM daemon"; kill $pids) >> $AUXILIARYLOG
+  sleep 1
+  pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent LAM daemon"; kill -9 $pids) >> $AUXILIARYLOG
+  sleep 1
+  pids=`ps -aef | egrep "^$USER.*/bin/lamd" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && echo "There is still a running LAM daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
     fi
 
     # Shutdown existing MPICH2 daemon
@@ -1020,20 +1029,20 @@ fb_cleanUpOldCheckout() {
     #  as there should be no running LAM/MPI daemon any more referencing
     #  that working copy.)
     if [ "$MPIENV""x" = "MPICH2x" ]; then
-	echo "Shutting down any running MPICH2 daemon..." >> $AUXILIARYLOG
-	mpdallexit 1>> $AUXILIARYLOG 2>&1
-	sleep 2
-	echo "Done!" >> $AUXILIARYLOG
+  echo "Shutting down any running MPICH2 daemon..." >> $AUXILIARYLOG
+  mpdallexit 1>> $AUXILIARYLOG 2>&1
+  sleep 2
+  echo "Done!" >> $AUXILIARYLOG
 
-	echo "Ensuring that there is really no MPICH2 daemon running any more..." >> $AUXILIARYLOG
-	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && (echo "Trying to kill persistent MPICH2 daemon"; kill $pids) >> $AUXILIARYLOG
-	sleep 1
-	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent MPICH2 daemon"; kill -9 $pids) >> $AUXILIARYLOG
-	sleep 1
-	pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
-	test -n "$pids" && echo "There is still a running MPICH2 daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
+  echo "Ensuring that there is really no MPICH2 daemon running any more..." >> $AUXILIARYLOG
+  pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && (echo "Trying to kill persistent MPICH2 daemon"; kill $pids) >> $AUXILIARYLOG
+  sleep 1
+  pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && (echo "Unsuccesful. Trying to terminate persistent MPICH2 daemon"; kill -9 $pids) >> $AUXILIARYLOG
+  sleep 1
+  pids=`ps -aef | egrep "^$USER.*/bin/mpd.py" | grep -v grep | awk '{print $2}'`
+  test -n "$pids" && echo "There is still a running MPICH2 daemon! Clean up of old FEAT2 installation might fail!" >> $AUXILIARYLOG
     fi
 
 
@@ -1043,18 +1052,18 @@ fb_cleanUpOldCheckout() {
 
         # If there exists already a FEAT2 installation,
         # clean up files in there and backup it.
-	if [ -r Featflow2 ]; then
-	    # rename previous working copy
-	    mv Featflow2 Featflow2.previous >> $AUXILIARYLOG
+  if [ -r Featflow2 ]; then
+      # rename previous working copy
+      mv Featflow2 Featflow2.previous >> $AUXILIARYLOG
 
             # Check (within if block!!) whether an error occured
-	    if [ $? -ne 0 ]; then
-		test $DEBUG -gt 0 && echo "# Clean up of old FEAT2 checkout had errors"
-		MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-		$MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
-		fb_exit 1
-	    fi
-	fi
+      if [ $? -ne 0 ]; then
+    test $DEBUG -gt 0 && echo "# Clean up of old FEAT2 checkout had errors"
+    MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+    fb_exit 1
+      fi
+  fi
     fi
 }
 
@@ -1067,36 +1076,36 @@ fb_initialiseGlobalLogFile() {
     # that otherwise would break the script with unpredictable side effects.
     GLOBALLOG=$HOME"/featflow2benchmark_mainlog_""$HOSTNAME"
     if [ -n "$FORCEBUILDID" ]; then
-	case "$mpi" in
-	    mpi)
-		# Ensure build ID has 6 tokens, then take it.
-		# Otherwise append "_mpi"
-		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
-		GLOBALLOG=$GLOBALLOG"_""$suffix"
-		;;
-	    no-mpi)
-		# Ensure build ID has at most 5 tokens, then take it.
-		# For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
-		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
-		GLOBALLOG=$GLOBALLOG"_""$suffix"
-		;;
-	    *)
-		GLOBALLOG=$GLOBALLOG"_""$mpi"
-		;;
-	esac
-	if [ -n "$COMPILERVERSION" ]; then
-	    GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
-	fi
+  case "$mpi" in
+      mpi)
+    # Ensure build ID has 6 tokens, then take it.
+    # Otherwise append "_mpi"
+    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
+    GLOBALLOG=$GLOBALLOG"_""$suffix"
+    ;;
+      no-mpi)
+    # Ensure build ID has at most 5 tokens, then take it.
+    # For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
+    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
+    GLOBALLOG=$GLOBALLOG"_""$suffix"
+    ;;
+      *)
+    GLOBALLOG=$GLOBALLOG"_""$mpi"
+    ;;
+  esac
+  if [ -n "$COMPILERVERSION" ]; then
+      GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+  fi
     else
-	GLOBALLOG=$GLOBALLOG"_""$mpi"
+  GLOBALLOG=$GLOBALLOG"_""$mpi"
     fi
     test -r $GLOBALLOG && \rm -f $GLOBALLOG
 
     # Test whether logfiles can be written to
     if ! touch $GLOBALLOG; then
-	test $DEBUG -gt 0 && echo "# Cannot create logfile <$GLOBALLOG>"
-	MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  test $DEBUG -gt 0 && echo "# Cannot create logfile <$GLOBALLOG>"
+  MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
 
     # Welcome message
@@ -1112,21 +1121,21 @@ fb_initialiseGlobalLogFile() {
 #   Function: clean up any remains of a previous run of this script
 fb_checkoutFromSVN() {
     if [ "$CHECKOUT""x" = "yesx" ]; then
-	cd $BASEDIR
+  cd $BASEDIR
 
-	test $DEBUG -gt 0 && echo "# Checking out FEAT2 from Subversion"
+  test $DEBUG -gt 0 && echo "# Checking out FEAT2 from Subversion"
 
-	fb_banner "FETCH" >> $GLOBALLOG
-	fb_startTimer
-	export SVNURL
-	if ! svn co $SVNURL 1> $AUXILIARYLOG 2>&1; then
+  fb_banner "FETCH" >> $GLOBALLOG
+  fb_startTimer
+  export SVNURL
+  if ! svn co $SVNURL 1> $AUXILIARYLOG 2>&1; then
             # error occured
-	    test $DEBUG -gt 0 && echo "# SVN checkout failed"
-	    MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	    fb_exit 1
-	fi
-	fb_stopTimer
+      test $DEBUG -gt 0 && echo "# SVN checkout failed"
+      MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+      cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+      fb_exit 1
+  fi
+  fb_stopTimer
     fi
 }
 
@@ -1140,92 +1149,92 @@ fb_checkWhetherToRun() {
     #   => Compare and set file flags for 'slave' runregressiontests
 
     if [ "$COMPAREFEAT2CHECKOUTS""x" = "yesx" ]; then
-	cd $BASEDIR
+  cd $BASEDIR
 
-	# Compare checkout with previous checkout (if any)
+  # Compare checkout with previous checkout (if any)
         # (which was renamed to Featflow2.previous in function cleanUp)
-	if [ -r Featflow2.previous ]; then
+  if [ -r Featflow2.previous ]; then
             # Recursive compare
             # but ignore the following:
-	    # * .svn folder (as the order of files in .svn/entries may differ according to whether
-	    #   a working copy is a clean checkout or an updated working copy.)
-	    #   Reason: One might want to bypass a nightly regression benchmark run (because
-	    #   of some trivial changes) by manually SVN updating the according working copy.
-	    # * copies of benchmark directory
-	    # * unpacked tarballs in libraries directory
+      # * .svn folder (as the order of files in .svn/entries may differ according to whether
+      #   a working copy is a clean checkout or an updated working copy.)
+      #   Reason: One might want to bypass a nightly regression benchmark run (because
+      #   of some trivial changes) by manually SVN updating the according working copy.
+      # * copies of benchmark directory
+      # * unpacked tarballs in libraries directory
             # * applications
 
-	    test $DEBUG -gt 0 && echo "# Check whether regression benchmark needs to be run"
-	    ignore=""
-	    for string in \
-		'benchmark_*' .svn AGMG_3.1.2 AMD BLAS SuiteSparse_config \
-		UMFPACK codefragments docs_* documentation incoming \
-		lapack-3.5.0 splib \
-		AGMG_3.1.2.tar.gz AMD-2.3.1.tar.gz SuiteSparse_config-4.2.1.tar.gz \
-		UMFPACK-5.6.2.tar.gz lapack-3.5.0.tgz splib.tar.gz
-	    do
-		ignore="${ignore} -x ${string}"
-	    done
-	    test $DEBUG -gt 0 && diff -r $ignore Featflow2 Featflow2.previous
-	    diff -r $ignore Featflow2 Featflow2.previous > /dev/null 2>&1
+      test $DEBUG -gt 0 && echo "# Check whether regression benchmark needs to be run"
+      ignore=""
+      for string in \
+    'benchmark_*' .svn AGMG_3.1.2 AMD BLAS SuiteSparse_config \
+    UMFPACK codefragments docs_* documentation incoming \
+    lapack-3.5.0 splib \
+    AGMG_3.1.2.tar.gz AMD-2.3.1.tar.gz SuiteSparse_config-4.2.1.tar.gz \
+    UMFPACK-5.6.2.tar.gz lapack-3.5.0.tgz splib.tar.gz
+      do
+    ignore="${ignore} -x ${string}"
+      done
+      test $DEBUG -gt 0 && diff -r $ignore Featflow2 Featflow2.previous
+      diff -r $ignore Featflow2 Featflow2.previous > /dev/null 2>&1
             # Exit if there were no differences
-	    if [ $? -eq 0 ]; then
-		test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No relevant changes to SVN repository since last check out."
-		touch $FLAGSKIPBENCHMARK
+      if [ $? -eq 0 ]; then
+    test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No relevant changes to SVN repository since last check out."
+    touch $FLAGSKIPBENCHMARK
 
-		if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
-		    test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
-		else
-		    fb_banner "DIFFING" >> $GLOBALLOG
-		    (echo "It seems there have been no substantial commits to the SVN repository";
-		     echo "that would influence the benchmark results since the last time the";
-		     echo "benchmark was run. Benchmark skipped.";
-		     echo) >> $GLOBALLOG
+    if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
+        test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
+    else
+        fb_banner "DIFFING" >> $GLOBALLOG
+        (echo "It seems there have been no substantial commits to the SVN repository";
+         echo "that would influence the benchmark results since the last time the";
+         echo "benchmark was run. Benchmark skipped.";
+         echo) >> $GLOBALLOG
 
-		    test $DEBUG -gt 0 && echo "# Benchmark skipped"
-		    MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-		    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $GLOBALLOG
-		    fb_exit 0
-		fi
-	    else
-		# Run benchmark and tell any slave runregressiontest to run
-		# the benchmark as well.
-		test $DEBUG -gt 0 && echo "# Regression benchmark is started: Changes in SVN repository detected."
-		touch $FLAGRUNBENCHMARK
-	    fi
-	else
-	    test $DEBUG -gt 0 && echo "# Regression benchmark is started: No old FEAT2 working copy found to check for SVN changes."
-	    # Run benchmark and tell any slave runregressiontest to run
-	    # the benchmark as well.
-	    touch $FLAGRUNBENCHMARK
-	fi
+        test $DEBUG -gt 0 && echo "# Benchmark skipped"
+        MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+        $MAILX -s "$MAILSUBJECT" $RECIPIENT < $GLOBALLOG
+        fb_exit 0
+    fi
+      else
+    # Run benchmark and tell any slave runregressiontest to run
+    # the benchmark as well.
+    test $DEBUG -gt 0 && echo "# Regression benchmark is started: Changes in SVN repository detected."
+    touch $FLAGRUNBENCHMARK
+      fi
+  else
+      test $DEBUG -gt 0 && echo "# Regression benchmark is started: No old FEAT2 working copy found to check for SVN changes."
+      # Run benchmark and tell any slave runregressiontest to run
+      # the benchmark as well.
+      touch $FLAGRUNBENCHMARK
+  fi
 
     else
-	# Do not compare two FEAT2 working copies. Rely either on
-	# another process having done this already and set a file flag
-	# or run it unconditionally if --force has been given on command line.
-	if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
-	    test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
-	else
-	    # Check if the go-ahead has been given (i.e. changes in working copies
-	    # detected, i.e. commits must have been made to CVS repository
-	    # since benchmark was performed last time).
-	    # If not, exit.
-	    # If neither file flag exists, wait 30 min. If then still not there, exit.
-	    if [ -r $FLAGSKIPBENCHMARK ]; then
-		test $DEBUG -gt 0 && echo "# Regression benchmark skipped: File flag says 'do not run'."
-		fb_exit 0
-	    fi
-	    if [ ! -r $FLAGSKIPBENCHMARK -a ! -r $FLAGRUNBENCHMARK ]; then
-		sleep 1800
-		if [ -r $FLAGRUNBENCHMARK ]; then
-		    test $DEBUG -gt 0 && echo "# Regression benchmark is started: File flag says 'do run'."
-		else
-		    test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No file flags found."
-		    fb_exit 0
-		fi
-	    fi
-	fi
+  # Do not compare two FEAT2 working copies. Rely either on
+  # another process having done this already and set a file flag
+  # or run it unconditionally if --force has been given on command line.
+  if [ "$FORCEBENCHMARKRUN""x" = "yesx" ]; then
+      test $DEBUG -gt 0 && echo "# Regression benchmark is started: enforced by command line option."
+  else
+      # Check if the go-ahead has been given (i.e. changes in working copies
+      # detected, i.e. commits must have been made to CVS repository
+      # since benchmark was performed last time).
+      # If not, exit.
+      # If neither file flag exists, wait 30 min. If then still not there, exit.
+      if [ -r $FLAGSKIPBENCHMARK ]; then
+    test $DEBUG -gt 0 && echo "# Regression benchmark skipped: File flag says 'do not run'."
+    fb_exit 0
+      fi
+      if [ ! -r $FLAGSKIPBENCHMARK -a ! -r $FLAGRUNBENCHMARK ]; then
+    sleep 1800
+    if [ -r $FLAGRUNBENCHMARK ]; then
+        test $DEBUG -gt 0 && echo "# Regression benchmark is started: File flag says 'do run'."
+    else
+        test $DEBUG -gt 0 && echo "# Regression benchmark skipped: No file flags found."
+        fb_exit 0
+    fi
+      fi
+  fi
     fi
 }
 
@@ -1237,48 +1246,48 @@ fb_prepareForRun() {
 
     # Create copy of benchmark folder
     if [ "$CLONEBENCHMARKDIR""x" = "yesx" ]; then
-	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mpi"
-	if [ -n "$FORCEBUILDID" ]; then
-	    case "$mpi" in
-		mpi)
-		    # Ensure build ID has 6 tokens, then take it.
-		    # Otherwise append "_mpi"
-		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
-		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
-		    ;;
-		no-mpi)
-		    # Ensure build ID has at most 5 tokens, then take it.
-		    # For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
-		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
-		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
-		    ;;
-		*)
-		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mpi"
-		    ;;
-	    esac
-	fi
-	if [ -n "$COMPILERVERSION" ]; then
-	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
-	fi
-	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
-	if [ $? -ne 0 ]; then
-	    test $DEBUG -gt 0 && echo "# Cannot create benchmark folder clone"
-	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	    # Don't exit right now, it may be the directory already existed.
-	fi
-	cd $BASEDIR/Featflow2/benchmark
-	test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
-	tar -cf - . | ( cd $BENCHMARKDIR; tar -xpf - ) > $AUXILIARYLOG 2>&1
-	if [ $? -ne 0 ]; then
-	    test $DEBUG -gt 0 && echo "# Copying benchmark folder failed"
-	    MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	    fb_exit 1
-	fi
+  BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mpi"
+  if [ -n "$FORCEBUILDID" ]; then
+      case "$mpi" in
+    mpi)
+        # Ensure build ID has 6 tokens, then take it.
+        # Otherwise append "_mpi"
+        suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
+        BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
+        ;;
+    no-mpi)
+        # Ensure build ID has at most 5 tokens, then take it.
+        # For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
+        suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
+        BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
+        ;;
+    *)
+        BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mpi"
+        ;;
+      esac
+  fi
+  if [ -n "$COMPILERVERSION" ]; then
+      BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+  fi
+  mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
+  if [ $? -ne 0 ]; then
+      test $DEBUG -gt 0 && echo "# Cannot create benchmark folder clone"
+      MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+      cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+      # Don't exit right now, it may be the directory already existed.
+  fi
+  cd $BASEDIR/Featflow2/benchmark
+  test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
+  tar -cf - . | ( cd $BENCHMARKDIR; tar -xpf - ) > $AUXILIARYLOG 2>&1
+  if [ $? -ne 0 ]; then
+      test $DEBUG -gt 0 && echo "# Copying benchmark folder failed"
+      MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+      cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+      fb_exit 1
+  fi
     else
-	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark"
-	test $DEBUG -gt 0 && echo "# Using benchmark directory <$BENCHMARKDIR> directly for execution"
+  BENCHMARKDIR="$BASEDIR/Featflow2/benchmark"
+  test $DEBUG -gt 0 && echo "# Using benchmark directory <$BENCHMARKDIR> directly for execution"
     fi
 }
 
@@ -1299,31 +1308,31 @@ fb_configureBenchmark() {
      echo "") >> $GLOBALLOG
 
     if [ "$USEMODULES""x" = "yesx" ]; then
-	(module -t list 2>&1 | tr '\n' ' ' | sed 's/Currently Loaded Modulefiles:/Currently Loaded Modulefiles:\n/'; echo) 1>> $GLOBALLOG
+  (module -t list 2>&1 | tr '\n' ' ' | sed 's/Currently Loaded Modulefiles:/Currently Loaded Modulefiles:\n/'; echo) 1>> $GLOBALLOG
     else
-	echo "Environment set up without modules on this machine." >> $GLOBALLOG
+  echo "Environment set up without modules on this machine." >> $GLOBALLOG
     fi
 
     # and do the real configuring
     fb_banner "CONFIGURE" >> $GLOBALLOG
 
     if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Configuring benchmark applications (with MPI)"
+  test $DEBUG -gt 0 && echo "# Configuring benchmark applications (with MPI)"
     else
-	test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
+  test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
     fi
     if [ -z "$BENCHMARKDIR" ]; then
-	test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
-	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	fb_exit 1
+  test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
+  MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  fb_exit 1
     fi
 
     # Prevent that the object directory for third party libraries gets
     # re-used for different compiler versions. Make it unique by
     # infixing the compiler version number (done in master.configure)
     if [ -n "$COMPILERVERSION" ]; then
-	export FEAT2COMPILERVERSION=$COMPILERVERSION
+  export FEAT2COMPILERVERSION=$COMPILERVERSION
     fi
 
     cd $BENCHMARKDIR
@@ -1336,10 +1345,10 @@ fb_configureBenchmark() {
     # or NEC compiler suites. In this case do not generate an e-mail
     # notification (error code 15, randomly chosen in bin/configure).
     if [ $? -ne 0  -a  $? -ne 15 ]; then
-	test $DEBUG -gt 0 && echo "# Configuring benchmark applications failed"
-	MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	fb_exit 1
+  test $DEBUG -gt 0 && echo "# Configuring benchmark applications failed"
+  MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  fb_exit 1
     fi
 
     fb_stopTimer
@@ -1353,42 +1362,42 @@ fb_compileBenchmark() {
     fb_banner "COMPILE" >> $GLOBALLOG
 
     if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Compiling benchmark applications (with MPI)"
+  test $DEBUG -gt 0 && echo "# Compiling benchmark applications (with MPI)"
     else
-	test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
+  test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
     fi
     if [ -z "$BENCHMARKDIR" ]; then
-	test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
-	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
+  MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
     cd $BENCHMARKDIR
     fb_startTimer
     ncpus=$COMPILEWITHPROCS
     if [ "yes" = "$ADAPTCOMPILEPROCSTOLOAD" ]; then
-	case `uname -m` in
-	    "x86_64")
-		totalCPUs=`grep processor /proc/cpuinfo | wc -l`
-		loadNow=`cat /proc/loadavg | cut -d. -f1`
-		freeCPUs=`expr $totalCPUs - $loadNow`
-		if test $freeCPUs -lt 1; then freeCPUs=1; fi
+  case `uname -m` in
+      "x86_64")
+    totalCPUs=`grep processor /proc/cpuinfo | wc -l`
+    loadNow=`cat /proc/loadavg | cut -d. -f1`
+    freeCPUs=`expr $totalCPUs - $loadNow`
+    if test $freeCPUs -lt 1; then freeCPUs=1; fi
 
-		if test $ncpus -gt $freeCPUs; then ncpus=$freeCPUs; fi
-		;;
-	esac
+    if test $ncpus -gt $freeCPUs; then ncpus=$freeCPUs; fi
+    ;;
+  esac
     fi
     make benchmark -k -j $ncpus > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	test $DEBUG -gt 0 && echo "# Compiling benchmark applications failed"
-	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	# The combined log message may be too big to send. Save a
-	# file copy.
-	cat $GLOBALLOG $AUXILIARYLOG > ${GLOBALLOG}.compilation_failure
-	# Do not exit here! Even if one application fails to build,
-	# others might not and can be regression tested.
+  test $DEBUG -gt 0 && echo "# Compiling benchmark applications failed"
+  MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  # The combined log message may be too big to send. Save a
+  # file copy.
+  cat $GLOBALLOG $AUXILIARYLOG > ${GLOBALLOG}.compilation_failure
+  # Do not exit here! Even if one application fails to build,
+  # others might not and can be regression tested.
     fi
 
     fb_stopTimer
@@ -1402,9 +1411,9 @@ fb_createTestSuiteScript() {
     fb_banner "CREATING TEST SUITE SCRIPT" >> $GLOBALLOG
 
     if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Creating test suite script (with MPI)"
+  test $DEBUG -gt 0 && echo "# Creating test suite script (with MPI)"
     else
-	test $DEBUG -gt 0 && echo "# Creating test suite script"
+  test $DEBUG -gt 0 && echo "# Creating test suite script"
     fi
     cd $BENCHMARKDIR
     fb_startTimer
@@ -1417,10 +1426,10 @@ fb_createTestSuiteScript() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	test $DEBUG -gt 0 && echo "# Creation of test suite script failed"
-	MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	fb_exit 1
+  test $DEBUG -gt 0 && echo "# Creation of test suite script failed"
+  MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  fb_exit 1
     fi
 
     fb_stopTimer
@@ -1434,13 +1443,13 @@ fb_runBenchmarkOnLiDO() {
 
     # Only parallel tests of LiDO!
 #    if [ "$mode""x" != "parallelx" ]; then
-#	return
+#  return
 #    fi
 
     if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Submitting MPI benchmark jobs to the queue on LiDO"
+  test $DEBUG -gt 0 && echo "# Submitting MPI benchmark jobs to the queue on LiDO"
     else
-	test $DEBUG -gt 0 && echo "# Submitting serial benchmark jobs to the queue on LiDO"
+  test $DEBUG -gt 0 && echo "# Submitting serial benchmark jobs to the queue on LiDO"
     fi
 
     # LiDO has a queueing system, for every benchmarks test a job file
@@ -1456,16 +1465,16 @@ fb_runBenchmarkOnLiDO() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
-	test $DEBUG -gt 0 && echo "# Job scheduling failed"
-	MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  test $DEBUG -gt 0 && echo "# Job scheduling failed"
+  MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+  cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
 
     # Now wait till all jobs have finished
     if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Waiting for the MPI benchmark jobs on LiDO to finish"
+  test $DEBUG -gt 0 && echo "# Waiting for the MPI benchmark jobs on LiDO to finish"
     else
-	test $DEBUG -gt 0 && echo "# Waiting for the serial benchmark jobs on LiDO to finish"
+  test $DEBUG -gt 0 && echo "# Waiting for the serial benchmark jobs on LiDO to finish"
     fi
     fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
 
@@ -1479,38 +1488,38 @@ fb_runBenchmarkOnLiDO() {
     pbserrors=`mktemp`
     echo "Waiting for running jobs, iteration "$iteration" ..." >> $GLOBALLOG
     while test $iteration -le $maxwaitcycles; do
-	attemptpbsserverquery=`expr $attemptpbsserverquery + 1`;
-	runningsjobs=`qstat -u $USER 2>${pbserrors} | grep $LIDOJOBNAMEPREFIX | wc -l`
-	# PBS reported an error
-	if [ -s "${pbserrors}" ]; then
-	    if [ $attemptpbsserverquery -lt $maxattemptpbsserverquery ]; then
-		(echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
-		 cat ${pbserrors}; \
-		 echo "$0: Error: Trying "`expr $maxattemptpbsserverquery - $attemptpbsserverquery`" more times to connect to PBS server"; \
-	         echo "$0: Error: because the server might simply get restarted currently."; ) > $AUXILIARYLOG
-	    else
-		(echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
-		 cat ${pbserrors}; \
-		 echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
-		 echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
-		MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE${MAILSUBJECT}))"
-		cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-		break
-	    fi
-	fi
-	attemptpbsserverquery=0;
-	test $runningsjobs -eq 0 && break;
-	iteration=`expr $iteration + 1`
-	echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$GLOBALLOG 2>&1
-	sleep $sleeptime
+  attemptpbsserverquery=`expr $attemptpbsserverquery + 1`;
+  runningsjobs=`qstat -u $USER 2>${pbserrors} | grep $LIDOJOBNAMEPREFIX | wc -l`
+  # PBS reported an error
+  if [ -s "${pbserrors}" ]; then
+      if [ $attemptpbsserverquery -lt $maxattemptpbsserverquery ]; then
+    (echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
+     cat ${pbserrors}; \
+     echo "$0: Error: Trying "`expr $maxattemptpbsserverquery - $attemptpbsserverquery`" more times to connect to PBS server"; \
+           echo "$0: Error: because the server might simply get restarted currently."; ) > $AUXILIARYLOG
+      else
+    (echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
+     cat ${pbserrors}; \
+     echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
+     echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
+    MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE${MAILSUBJECT}))"
+    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+    break
+      fi
+  fi
+  attemptpbsserverquery=0;
+  test $runningsjobs -eq 0 && break;
+  iteration=`expr $iteration + 1`
+  echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$GLOBALLOG 2>&1
+  sleep $sleeptime
     done
     rm -f ${pbserrors}
 
     # Add a remark to the logfile when we did not wait till
     # the last job had finished.
     if [ $iteration -gt $maxwaitcycles ]; then
-	(echo "Giving up waiting for scheduled jobs to finish"; \
-	 echo "after "`expr $iteration \* $sleeptime / 60 / 60`" hours.") >> $GLOBALLOG
+  (echo "Giving up waiting for scheduled jobs to finish"; \
+   echo "after "`expr $iteration \* $sleeptime / 60 / 60`" hours.") >> $GLOBALLOG
     fi
 
     # Create statistics at the end of the logfile about number of successful and
@@ -1528,38 +1537,38 @@ fb_runBenchmark() {
 
     if [ "$ARCH""x" != "LiDOx" ]; then
         # Create script that control and actually runs the benchmark tests
-	fb_createTestSuiteScript "$mpi"
+  fb_createTestSuiteScript "$mpi"
 
-    	fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
+  fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
 
-	if [ "$mpi" = "mpi" ]; then
-	    test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
-	else
-	    test $DEBUG -gt 0 && echo "# Running benchmark"
-	fi
+  if [ "$mpi" = "mpi" ]; then
+      test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
+  else
+      test $DEBUG -gt 0 && echo "# Running benchmark"
+  fi
 
-	# 'runtests' is written in POSIX shell syntax as well and can hence be sourced
-	# and the statistics variables defined therein queried here once the script has finished.
-	. ./runtests >> $GLOBALLOG 2>&1
+  # 'runtests' is written in POSIX shell syntax as well and can hence be sourced
+  # and the statistics variables defined therein queried here once the script has finished.
+  . ./runtests >> $GLOBALLOG 2>&1
 
-	test $DEBUG -gt 0 && \
-	    (
-	     echo "# Benchmark summary:";
-	     echo "# tests in total           : "${testall};
-	     echo "# tests successfully passed: "${testpass};
-	     echo "# tests deviant            : "${testdeviant};
-	     echo "# tests unverifiable       : "${testunverified};
-	     echo "# tests failing execution  : "${testexecfailed};
-	     echo)
+  test $DEBUG -gt 0 && \
+      (
+       echo "# Benchmark summary:";
+       echo "# tests in total           : "${testall};
+       echo "# tests successfully passed: "${testpass};
+       echo "# tests deviant            : "${testdeviant};
+       echo "# tests unverifiable       : "${testunverified};
+       echo "# tests failing execution  : "${testexecfailed};
+       echo)
 
-	(echo; echo "Test ended at "`date`) >> $GLOBALLOG
+  (echo; echo "Test ended at "`date`) >> $GLOBALLOG
     else
-	# Ensure that no files that are later on analysed for the statistics mail
-	# remain from a previous run (That earlier run might have used a different
-	# test suite, so we can not sure that all existing files will be overwritten.)
-	log_base_directory=`make --no-print-directory print-base-log-dir`
-	rm -f ${log_base_directory}/error.* ${log_base_directory}/output.* > /dev/null
-	fb_runBenchmarkOnLiDO "$mpi" "${log_base_directory}"
+  # Ensure that no files that are later on analysed for the statistics mail
+  # remain from a previous run (That earlier run might have used a different
+  # test suite, so we can not sure that all existing files will be overwritten.)
+  log_base_directory=`make --no-print-directory print-base-log-dir`
+  rm -f ${log_base_directory}/error.* ${log_base_directory}/output.* > /dev/null
+  fb_runBenchmarkOnLiDO "$mpi" "${log_base_directory}"
     fi
 }
 
@@ -1568,26 +1577,26 @@ fb_runBenchmark() {
 fb_createDocumentation() {
     if [ "$CREATEDOCU""x" = "yesx" ]; then
 
-	# clone docs directory
-	docsdir="$BASEDIR/Featflow2/docs_""$HOSTNAME"
-	mkdir $docsdir
-	cd $BASEDIR/Featflow2/docs
-	tar -cf - . | ( cd $docsdir; tar -xpf - )
-	cd $docsdir
-	# Tell GNU 'make' to keep going (-k') in case of errors.
-	# One documentation may fail, but build as much documentation as possible
-	make -k pdf LATEXFLAGS=-interaction=nonstopmode 1> $AUXILIARYLOG 2>&1
+  # clone docs directory
+  docsdir="$BASEDIR/Featflow2/docs_""$HOSTNAME"
+  mkdir $docsdir
+  cd $BASEDIR/Featflow2/docs
+  tar -cf - . | ( cd $docsdir; tar -xpf - )
+  cd $docsdir
+  # Tell GNU 'make' to keep going (-k') in case of errors.
+  # One documentation may fail, but build as much documentation as possible
+  make -k pdf LATEXFLAGS=-interaction=nonstopmode 1> $AUXILIARYLOG 2>&1
 
         # Check whether an error occured
-	if [ $? -ne 0 ]; then
-	    test $DEBUG -gt 0 && echo "# Documentation could not be created"
-	    MAILSUBJECT="$MAILPREFIX Documentation could not be created ($HOSTNAME)"
-	    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
-	fi
+  if [ $? -ne 0 ]; then
+      test $DEBUG -gt 0 && echo "# Documentation could not be created"
+      MAILSUBJECT="$MAILPREFIX Documentation could not be created ($HOSTNAME)"
+      $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+  fi
 
 #        # Clean-up docu such that no generated document causes the next day's diffing
 #        # of a new checkout of FEAT2 against this FEAT2 checkout to fail.
-#	make purge > $AUXILIARYLOG 2>&1
+#  make purge > $AUXILIARYLOG 2>&1
     fi
 }
 
@@ -1609,33 +1618,33 @@ fb_banner() {
     totalchars=60
     for arg in "$@"
     do
-	numchars=`echo $arg | wc -m`
-	leadingchars=`expr $totalchars - $numchars`
-	# Subtract leading characters and number of whitespaces
-	# surrounding 'title'
-	leadingchars=`expr $leadingchars - 4`
-	leadingchars=`expr $leadingchars / 2 + 1`
+  numchars=`echo $arg | wc -m`
+  leadingchars=`expr $totalchars - $numchars`
+  # Subtract leading characters and number of whitespaces
+  # surrounding 'title'
+  leadingchars=`expr $leadingchars - 4`
+  leadingchars=`expr $leadingchars / 2 + 1`
 
-	# Leading string: "==========" of necessary length
-	string="  "
-	charssofar=2
-	while test $charssofar -lt $leadingchars; do
-	    string="$string""="
-	    charssofar=`expr $charssofar + 1`
-	done
+  # Leading string: "==========" of necessary length
+  string="  "
+  charssofar=2
+  while test $charssofar -lt $leadingchars; do
+      string="$string""="
+      charssofar=`expr $charssofar + 1`
+  done
 
-	# The string to be centred
-	string="$string $arg "
-	charssofar=`expr $charssofar + 4 + $numchars`
+  # The string to be centred
+  string="$string $arg "
+  charssofar=`expr $charssofar + 4 + $numchars`
 
-	# Trailing string: "==========" of necessary length
-	while test $charssofar -lt $totalchars; do
-	    string="$string""="
-	    charssofar=`expr $charssofar + 1`
-	done
+  # Trailing string: "==========" of necessary length
+  while test $charssofar -lt $totalchars; do
+      string="$string""="
+      charssofar=`expr $charssofar + 1`
+  done
 
-	# Finally show the pretty-formatted string
-	echo $string
+  # Finally show the pretty-formatted string
+  echo $string
     done
 
     # One trailing empty line
@@ -1693,14 +1702,14 @@ fb_exit() {
 
     # Clean up a running LAM/MPI daemon process
     if [ "$MPIENV""x" = "LAMMPIx" ]; then
-	wipe 1>> $GLOBALLOG 2>&1
+  wipe 1>> $GLOBALLOG 2>&1
     fi
 
     # Set a (file)flag that benchmark has finished,
     # such that login restrictions to current host can be removed
     # (by another (root) cronjob).
     if [ "$SETFLAGWHENBENCHMARKDONE""x" = "yesx" ]; then
-	touch $FLAGBENCHMARKFINISHED
+  touch $FLAGBENCHMARKFINISHED
     fi
 
     \rm -f $AUXILIARYLOG
@@ -1732,14 +1741,14 @@ touch $AUXILIARYLOG
 if [ $? -ne 0 ]; then
         test $DEBUG -gt 0 && echo "# Cannot create logfile <$AUXILIARYLOG>"
         MAILSUBJECT="$MAILPREFIX Cannot create logfile <$AUXILIARYLOG> ($HOSTNAME)"
-	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+  echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 fi
 
 if [ "$COMPAREFEAT2CHECKOUTS""x" = "yesx" ]; then
-	# Remove flags that indicate to a slave process whether it
-	# should run a benchmark or not.
-	test -r $FLAGRUNBENCHMARK && \rm -f $FLAGRUNBENCHMARK
-	test -r $FLAGSKIPBENCHMARK  && \rm -f $FLAGSKIPBENCHMARK
+  # Remove flags that indicate to a slave process whether it
+  # should run a benchmark or not.
+  test -r $FLAGRUNBENCHMARK && \rm -f $FLAGRUNBENCHMARK
+  test -r $FLAGSKIPBENCHMARK  && \rm -f $FLAGSKIPBENCHMARK
 fi
 
 # Load modules, set variables depending on the host this script is run on and
