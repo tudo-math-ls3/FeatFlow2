@@ -920,7 +920,7 @@ contains
     ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
     !
     ! -----
-    ! In the basic implementation, we just call ffunction_TargetX to get the
+    ! In the basic implementation, we just call ffunction_TargetY to get the
     ! values -- so the target function (which is normally used for
     ! calculating the error to a reference function) is also the definition
     ! for the initial solution.

@@ -146,7 +146,7 @@ istartSuffixFilm = 0
 
 ierrorAnalysisL2 = 0
 
-# Reference functions to use for the computation of the the L2-error
+# Reference functions to use for the computation of the L2-error
 # in case of ierrorAnalysisL2 = 2
 
 srefL2ExpressionU1 = "0"
@@ -160,7 +160,7 @@ srefL2ExpressionP = "0"
 
 ierrorAnalysisH1 = 0
 
-# Reference functions to use for the computation of the the H1-error
+# Reference functions to use for the computation of the H1-error
 # in case of ierrorAnalysisH1 = 2
 
 srefH1ExpressionU1X = "0"

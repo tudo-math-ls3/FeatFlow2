@@ -248,7 +248,7 @@ contains
   use collection
   
 !<description>
-  ! Based on the the input parameters, this routine prepares a collection
+  ! Based on the input parameters, this routine prepares a collection
   ! structure rcollection for being used with ffunctionViscoModel.
   ! The structure realises the following setting:
   !

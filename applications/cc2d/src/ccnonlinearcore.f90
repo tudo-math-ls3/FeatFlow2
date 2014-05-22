@@ -826,7 +826,7 @@ contains
       ! when choosing omegaold=previous omega, which is a good choice
       ! as one can see by linearisation (see p. 170, Turek`s book).
       !
-      ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian
+      ! Here, ||.||_E denotes the Euclidian norm to the Euclidian
       ! scalar product <.,.>.
       
       ! ==================================================================
