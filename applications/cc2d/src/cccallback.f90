@@ -1061,7 +1061,7 @@ contains
 !</description>
   
 !<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! This is a DER_xxxx derivative identifier (from derivatives.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
   integer, intent(in)                                         :: cderivative
@@ -1159,7 +1159,7 @@ contains
 !</description>
   
 !<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! This is a DER_xxxx derivative identifier (from derivatives.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
   integer, intent(in)                                         :: cderivative
@@ -1257,7 +1257,7 @@ contains
 !</description>
   
 !<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! This is a DER_xxxx derivative identifier (from derivatives.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
   integer, intent(in)                                         :: cderivative
