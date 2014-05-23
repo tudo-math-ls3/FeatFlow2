@@ -125,7 +125,7 @@ program sse
     call output_line('Solving problem...')
     call stat_clearTimer(rtimerSolver)
     call stat_startTimer(rtimerSolver,STAT_TIMERSHORT)
-    call sse_solve(rproblem)
+    call sse_solve(rparlist,rproblem)
     call stat_stopTimer(rtimerSolver)
     call output_line(&
         '............................................................'//&

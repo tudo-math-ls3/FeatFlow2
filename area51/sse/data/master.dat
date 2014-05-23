@@ -4,7 +4,7 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 4
+NLMAX = 7
 
 # Sort strategy
 SORTSTRATEGY = 
@@ -13,16 +13,37 @@ SORTSTRATEGY =
 # =0: Standard Poisson problem
 # =1: Standard Poisson problem as first-order system
 # =2: SSE as scalar anisotropic diffusion problem
-# =3: SSE as first-order system
-PROBLEMTYPE = 3
+# =3: SSE as first-order system (\sigma = A\nabla N)
+# =4: SSE as first-order system (\sigma = \nabla N)
+PROBLEMTYPE = 2
 
 # Name of configuration
-CONFIG = QUAD_Q2Q1_SSE_SYSTEM
+CONFIG = QUAD_Q2_SSE_SCALAR
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug
 # purposes.
 disturbMeshFactor = 0.0
+
+################################################################################
+[MG-SOLVER]
+################################################################################
+
+# Relative stopping criterion
+depsRel = 0e+0
+
+# Absolute stopping criterion
+depsAbs = 1e-9
+
+################################################################################
+[COARSE-GRID-SOLVER]
+################################################################################
+
+# Relative stopping criterion
+depsRel = 0e+0
+
+# Absolute stopping criterion
+depsAbs = 1e-12
 
 ################################################################################
 [TRIA_P1_POISSON_SCALAR]
@@ -144,6 +165,22 @@ TRIFILE = QUAD.tri
 
 # Element type
 ELEMENTTYPE = EL_Q2
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q3_POISSON_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q3
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
@@ -293,6 +330,22 @@ ELEMENTTYPE = EL_Q2
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
+
+################################################################################
+[QUAD_Q3_SSE_SCALAR]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = SSE_QUAD.prm
+
+# Domain triangulation
+TRIFILE = SSE_QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q3
+
+# Cubature type
+CUBATURETYPE = AUTO
 
 ################################################################################
 [QUAD_Q2Q1_SSE_SYSTEM]

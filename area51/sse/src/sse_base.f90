@@ -31,8 +31,11 @@ module sse_base
   ! Compute SSE solution from scalar problem
   integer, parameter, public :: SSE_SCALAR     = 2
 
-  ! Compute SSE solution from first-order system
-  integer, parameter, public :: SSE_SYSTEM     = 3
+  ! Compute SSE solution from first-order system ($\sigma=A\nabla N$)
+  integer, parameter, public :: SSE_SYSTEM1    = 3
+
+  ! Compute SSE solution from first-order system ($\sigma=\nabla N$)
+  integer, parameter, public :: SSE_SYSTEM2    = 4
 
 !</constantblock>
 

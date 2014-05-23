@@ -10,7 +10,8 @@
 \begin{document}
 \maketitle
 
-\section*{Model problem}
+\section{Anisotropic diffusion-reaction equation}
+\subsection{Model problem}
 The elliptic equation for sea surface elevation is given by
 \begin{alignat}{2}
 -\nabla\cdot(A\nabla N)-i\omega N&=0  \quad && \text{in } \Omega,
@@ -20,7 +21,7 @@ N&=A_{M_2} \quad && \text{on } \Gamma_D,
 -(A\nabla N)\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N,
 \label{eq:sse_scatar3}
 \end{alignat}
-where $\Gamma_D$ and $\Gamma_N$ denote the Dirichlet and Neumann boundary part and $A_{M_2}$ is the amplitude of sea surface elevation at the Dirichlet boundary. Both the solution $N\in\mathbb{C}$ and the matrix
+where $\Gamma_D$ and $\Gamma_N$ denote the Dirichlet and Neumann boundary part and $A_{M_2}$ is the amplitude of sea surface elevation at the Dirichlet boundary. Both the sea surface elevation $N\in\mathbb{C}$ and the matrix
 $$
 A=-
 \begin{pmatrix}
@@ -60,45 +61,48 @@ $f$ & 0 & Coriolis acceleration (Earth rotation)\\
 \end{center}
 Moreover, the auxiliary parameters $r_1=\sqrt{i\frac{f-\omega}{A_\nu}}$ and $r_2=\sqrt{-i\frac{f+\omega}{A_\nu}}$ are adopted.
 
+\subsection{Variational formulation}
 The variational formulation reads: find $N\in V_{A_{M_2}}$ such that
 \begin{equation}
-\int_\Omega(A\nabla N)\cdot\nabla \varphi- i\omega N \varphi\,\mathrm{d}\mathbf{x}=0\quad \forall \varphi\in V_0,
+\int_\Omega(A\nabla N)\cdot\nabla \varphi- i\omega N \varphi\,\mathrm{d}\mathbf{x}=0\qquad \forall \varphi\in V_0,
 \end{equation}
 The essential boundary conditions have been built into the trial and test spaces
 \begin{align}
-V_{A_{M_2}}&=\{v\in H_1(\Omega)\,:\, v=A_{M_2}\text{ on }\Gamma_D\},\\
-V_0&=\{\varphi\in H_1(\Omega)\,:\, \varphi=0\text{ on }\Gamma_D\}.
+V_{A_{M_2}}&=\{v\in H^1(\Omega)\,:\, v=A_{M_2}\text{ on }\Gamma_D\},\\
+V_0&=\{\varphi\in H^1(\Omega)\,:\, \varphi=0\text{ on }\Gamma_D\}.
 \end{align}
-Let the solution be approximated by finite elements as follows
+
+\subsection{Finite element approximation}
+Let the variable for the sea surface elevation be approximated by finite elements as follows
 \begin{equation}
 N(\mathbf{x})=\sum_{j}\varphi_j(\mathbf{x})N_j 
 \end{equation}
 where $\{\varphi_j(\mathbf{x})\}_j$ denotes a basis of \emph{real} valued functions and complex valued coefficients $N_j\in\mathbb{C}$.
 
-Instead of working with complex values directly we split them into their real and imaginary parts, e.g., $N_j=N_j^\textrm{Re}+iN_j^\textrm{Im}$ and use separate scalar finite element fields $N^\textrm{Re}$ and $N^\textrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im})\in V_{A_{M_2}^\textrm{Re}}\times V_{A_{M_2}^\textrm{Im}}$ such that
+Instead of working with complex values directly we split them into their real and imaginary parts, i.e. $N_j=N_j^\mathrm{Re}+iN_j^\mathrm{Im}$ and use separate scalar finite element fields $N^\mathrm{Re}$ and $N^\mathrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\mathrm{Re},N^\mathrm{Im})\in V_{A_{M_2}^\mathrm{Re}}\times V_{A_{M_2}^\mathrm{Im}}$ such that
 \begin{equation}
-\sum_j\int_\Omega \nabla\varphi_i\cdot\left(A^\textrm{Re}\nabla N_j^\textrm{Re}-A^\textrm{Im}\nabla N_j^\textrm{Im}\right)+\omega \varphi_i N_j^\textrm{Im}\,\mathrm{d}\mathbf{x}=0
+\sum_j\int_\Omega \nabla\varphi_i\cdot\left(A^\mathrm{Re}\nabla N_j^\mathrm{Re}-A^\mathrm{Im}\nabla N_j^\mathrm{Im}\right)+\omega \varphi_i N_j^\mathrm{Im}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
 and
 \begin{equation}
-\sum_ji\int_\Omega \nabla\varphi_i\cdot\left(A^\textrm{Im}\nabla N_j^\textrm{Re}+A^\textrm{Re}\nabla N_j^\textrm{Im}\right)-\omega \varphi_i N_j^\textrm{Re}\,\mathrm{d}\mathbf{x}=0
+\sum_ji\int_\Omega \nabla\varphi_i\cdot\left(A^\mathrm{Im}\nabla N_j^\mathrm{Re}+A^\mathrm{Re}\nabla N_j^\mathrm{Im}\right)-\omega \varphi_i N_j^\mathrm{Re}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
 for all admissible real valued test functions $\varphi_i\in V_{0}$.
 To simplify the notation let us define the following auxiliary stiffness and mass matrices
 \begin{alignat}{2}
-S^\textrm{Re}&=\{s_{ij}^\textrm{Re}\} \qquad s_{ij}^\textrm{Re}&=&\int_\Omega \nabla\varphi_i\cdot(A^\textrm{Re}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
-S^\textrm{Im}&=\{s_{ij}^\textrm{Im}\} \qquad s_{ij}^\textrm{Im}&=&\int_\Omega \nabla\varphi_i\cdot(A^\textrm{Im}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
-M&=\{m_{ij}\} \qquad m_{ij}&=&\int_\Omega \varphi^\text{trial}\varphi^\text{test}\,\mathrm{d}\mathbf{x}
+S^\mathrm{Re}&=\{s_{ij}^\mathrm{Re}\} \qquad s_{ij}^\mathrm{Re}&=&\int_\Omega \nabla\varphi_i\cdot(A^\mathrm{Re}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
+S^\mathrm{Im}&=\{s_{ij}^\mathrm{Im}\} \qquad s_{ij}^\mathrm{Im}&=&\int_\Omega \nabla\varphi_i\cdot(A^\mathrm{Im}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
+M&=\{m_{ij}\} \qquad m_{ij}&=&\int_\Omega \varphi_i\varphi_j\,\mathrm{d}\mathbf{x}
 \end{alignat}
-Then the problem at hand reads
+Then the problem at hand can be written in compact matrix notation as follows:
 \begin{equation}
 \begin{pmatrix}
-S^\textrm{Re} & -S^\textrm{Im}+\omega M\\
-S^\textrm{Im}-\omega M &  S^\textrm{Re}
+S^\mathrm{Re} & -S^\mathrm{Im}+\omega M\\
+S^\mathrm{Im}-\omega M &  S^\mathrm{Re}
 \end{pmatrix}
 \begin{pmatrix}
-N^\textrm{Re}\\
-N^\textrm{Im}
+N^\mathrm{Re}\\
+N^\mathrm{Im}
 \end{pmatrix}
 =
 \begin{pmatrix}
@@ -107,84 +111,233 @@ N^\textrm{Im}
 \end{pmatrix}
 \end{equation}
 
-\section*{First-order system}
+\section{First-order system formulation}
+
+\subsection{Model problems}
 Let $\boldsymbol{\sigma}=A\nabla N$ in order to convert the scalar problem equation\eqref{eq:sse_scalar1}--\eqref{eq:sse_scatar3} into the first-order system
 \begin{alignat}{2}
 \nabla\cdot\boldsymbol{\sigma}+i\omega N&=0  \quad && \text{in } \Omega,
 \label{eq:sse_system1}\\
-\boldsymbol{\sigma}-\nabla N&=0 \quad && \text{in } \Omega,\\
+\boldsymbol{\sigma}-A\nabla N&=0 \quad && \text{in } \Omega,
+\label{eq:sse_system2}\\
 N&=A_{M_2} \quad && \text{on } \Gamma_D,
 \label{eq:sse_system3}\\
 \boldsymbol{\sigma}\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N.
 \label{eq:sse_system4}
 \end{alignat}
-The associated variational formulation reads: find $N\in V$ and $\boldsymbol{\sigma}\in\mathbf{W}_0$ such that 
+
+It is also possible to define $\boldsymbol{\tau}=\nabla N$ as the gradient of the sea surface elevation which yields the alternative first-order system resulting from the scalar problem equation\eqref{eq:sse_scalar1}--\eqref{eq:sse_scatar3}
 \begin{alignat}{2}
-\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \varphi\in V,
+\nabla\cdot(A\boldsymbol{\tau})+i\omega N&=0  \quad && \text{in } \Omega,
+\label{eq:sse_system5}\\
+\boldsymbol{\tau}-\nabla N&=0 \quad && \text{in } \Omega,
+\label{eq:sse_system6}\\
+N&=A_{M_2} \quad && \text{on } \Gamma_D,
+\label{eq:sse_system7}\\
+(A\boldsymbol{\tau})\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N.
+\label{eq:sse_system8}
+\end{alignat}
+Both approaches lead to slightly different variational formulations and, consequently, system matrices.
+
+\subsection{Variational formulation I}
+The variational formulation associated with \eqref{eq:sse_system1}--\eqref{eq:sse_system4} reads: find $N\in W$ and $\boldsymbol{\sigma}\in\mathbf{Q}_0$ such that 
+\begin{alignat}{2}
+\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi\,\mathrm{d}\mathbf{x}&=0 \qquad && \forall \varphi\in W,
 \label{eq:weak1}\\
-\int_\Omega\left(\boldsymbol{\sigma}-\nabla N\right)\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}&=0 \quad && \forall \boldsymbol{\psi}\in \mathbf{W}_0,
+\int_\Omega\left(\boldsymbol{\sigma}-A\nabla N\right)\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}&=0 \qquad && \forall \boldsymbol{\psi}\in \mathbf{Q}_0,
 \label{eq:weak2}
 \end{alignat}
-where $V=L^2(\Omega)$ and $\mathbf{W}_0=\{\boldsymbol{\psi}\in H(\text{div})\,:\,\boldsymbol{\psi}\cdot\mathbf{n}=0 \text{ on }\Gamma_N\}$.
-Integration by parts is applied to \eqref{eq:weak2} to include the Dirichlet boundary condition \eqref{eq:sse_system3} as a natural one
+where $W=L^2(\Omega)$ and $\mathbf{Q}_0=\{\mathbf{q}\in H(\text{div};\Omega)\,:\,\mathbf{q}\cdot\mathbf{n}=0 \text{ on }\Gamma_N\}$. Note that the Neumann boundary condition of the second-order scalar problem \eqref{eq:sse_scalar1}--\eqref{eq:sse_scatar3} becomes a Dirichlet boundary condition in the first-order system formulation and vice versa. It is clear that
+\begin{align}
+(A\nabla N)\cdot\boldsymbol{\psi}
+&=\boldsymbol{\psi}\cdot(A\nabla N)
+=\boldsymbol{\psi}^T(A\nabla N)\\
+&=(\boldsymbol{\psi}^TA)\nabla N
+=(A^T\boldsymbol{\psi})^T\nabla N\\
+&=(A^T\boldsymbol{\psi})\cdot\nabla N
+=\nabla N\cdot(A^T\boldsymbol{\psi})
+\end{align}
+Integration by parts is applied to \eqref{eq:weak2} to include the boundary condition \eqref{eq:sse_system3} as a natural one
+\begin{align*}
+\int_\Omega(\boldsymbol{\sigma}-A\nabla N)\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}
+&=\int_\Omega\boldsymbol{\sigma}\cdot\boldsymbol{\psi}-\nabla N\cdot(A^T\boldsymbol{\psi})\,\mathrm{d}\mathbf{x}\\
+&=\int_\Omega\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot(A^T\boldsymbol{\psi})\,\mathrm{d}\mathbf{x}-\int_\Gamma N(A^T\boldsymbol{\psi})\cdot\mathbf{n}\,\mathrm{d}\mathbf{x}\\
+&=\int_\Omega\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot(A^T\boldsymbol{\psi})\,\mathrm{d}\mathbf{x}-\int_{\Gamma_D} A_{M_2}(A^T\boldsymbol{\psi})\cdot\mathbf{n}\,\mathrm{d}s-\int_{\Gamma_N} N(A^T\boldsymbol{\psi})\cdot\mathbf{n}\,\mathrm{d}s
+\end{align*}
+Thus, the variational formulation for the problem at hand reads: find $(N,\boldsymbol{\sigma})\in W\times\mathbf{Q}_0$ such that
+\begin{align}
+&\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi+\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot(A^T\boldsymbol{\psi})\,\mathrm{d}\mathbf{x}\\
+=&\int_{\Gamma_D} A_{M_2}(A^T\boldsymbol{\psi})\cdot\mathbf{n}\,\mathrm{d}s+\int_{\Gamma_N} N(A^T\boldsymbol{\psi})\cdot\mathbf{n}\,\mathrm{d}s \qquad \forall (\varphi,\boldsymbol{\psi})\in W\times\mathbf{Q}_0
+\end{align}
+
+\subsection{Variational formulation II}
+The variational formulation associated with \eqref{eq:sse_system5}--\eqref{eq:sse_system8} reads: find $N\in W$ and $\boldsymbol{\tau}\in\mathbf{Q}_0$ such that 
+\begin{alignat}{2}
+\int_\Omega\left(\nabla\cdot(A\boldsymbol{\tau})+i\omega N\right)\varphi\,\mathrm{d}\mathbf{x}&=0 \qquad && \forall \varphi\in W,
+\label{eq:weak3}\\
+\int_\Omega\left(\boldsymbol{\tau}-\nabla N\right)\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}&=0 \qquad && \forall \boldsymbol{\psi}\in \mathbf{Q}_0,
+\label{eq:weak4}
+\end{alignat}
+In order to impose the Dirichlet conditions \eqref{eq:sse_scalar2}, we perform integration by parts in \eqref{eq:weak4} 
 \begin{equation}
-\int_\Omega\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall \boldsymbol{\psi}\in \mathbf{W}
+\int_\Omega\boldsymbol{\tau}\cdot\boldsymbol{\psi}+
+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}=
+\int_{\Gamma_D}A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s+
+\int_{\Gamma_N}N\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s
 \end{equation}
-Thus, the variational formulation for the problem at hand reads: find $(N,\boldsymbol{\sigma})\in V\times\mathbf{W}_0$ such that
-\begin{equation}
-\int_\Omega\left(\nabla\cdot\boldsymbol{\sigma}+i\omega N\right)\varphi+\boldsymbol{\sigma}\cdot\boldsymbol{\psi}+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}=\int_{\Gamma_D} A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s \quad \forall (\varphi,\boldsymbol{\psi})\in V\times\mathbf{W}
-\end{equation}
-Separating the real and imaginary parts as in the scalar case the problem at hand reads: find $(N^\textrm{Re},N^\textrm{Im},\boldsymbol{\sigma}^\textrm{Re},\boldsymbol{\sigma}^\textrm{Im})\in [V]^2\times [\mathbf{W}_0]^2$ such that
-\begin{equation}
-\sum_j\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\textrm{Re}-\omega N^\textrm{Im}_j\right)+
-\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\textrm{Re}_j+
-\nabla\cdot\boldsymbol{\psi_i}N_j^\textrm{Re}\,\mathrm{d}\mathbf{x}=
-\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\textrm{Re}_{M_2}\,\mathrm{d}s
-\end{equation}
+Thus, the variational formulation for the problem at hand reads: find $(N,\boldsymbol{\sigma})\in W\times\mathbf{Q}_0$ such that
+\begin{align}
+&\int_\Omega\left(\nabla\cdot(A\boldsymbol{\tau})+i\omega N\right)\varphi+\boldsymbol{\tau}\cdot\boldsymbol{\psi}+N\nabla\cdot\boldsymbol{\psi}\,\mathrm{d}\mathbf{x}\\
+=& \int_{\Gamma_D}A_{M_2}\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s+
+\int_{\Gamma_N}N\boldsymbol{\psi}\cdot\mathbf{n}\,\mathrm{d}s
+\qquad \forall (\varphi,\boldsymbol{\psi})\in W\times\mathbf{Q}_0
+\end{align}
+
+\subsection{Finite element approximation}
+Let us approximate the sea surface elevation and its derivative by finite elements again separating the real and imaginary parts as in the scalar case. That is,
+\begin{alignat}{3}
+N(\mathbf{x})&=\sum_{j}\varphi_j(\mathbf{x})N_j && \qquad N_j&=N_j^\mathrm{Re}+iN_j^\mathrm{Im}\\
+\boldsymbol{\sigma}(\mathbf{x})=(\sigma_1(\mathbf{x}),\sigma_2(\mathbf{x}))^T&=\sum_{j}\psi_j(\mathbf{x})\boldsymbol{\sigma}_j && \qquad \boldsymbol{\sigma}_j&=\boldsymbol{\sigma}_j^\mathrm{Re}+i\boldsymbol{\sigma}_j^\mathrm{Im}\\
+\boldsymbol{\tau}(\mathbf{x})=(\tau_1(\mathbf{•}f{x}),\tau_2(\mathbf{x}))^T&=\sum_{j}\psi_j(\mathbf{x})\boldsymbol{\tau}_j && \qquad \boldsymbol{\tau}_j&=\boldsymbol{\tau}_j^\mathrm{Re}+i\boldsymbol{\tau}_j^\mathrm{Im}
+\end{alignat}
+Note that $\{\psi_j\}$ are scalar basis functions which are multiplied by vector-valued coefficients in order to obtain a vector-valued finite element functions. Here, we do not use vector-valued finite elements such as Raviar-Thomas or Brezzi-Douglas-Marini finite elements.
+
+\paragraph{First formulation.} The problem reads: find $(N^\mathrm{Re},N^\mathrm{Im},\boldsymbol{\sigma}^\mathrm{Re},\boldsymbol{\sigma}^\mathrm{Im})\in [W]^2\times [\mathbf{Q}_0]^2$ such that
+\begin{align}
+&\sum_j\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\mathrm{Re}-\omega N^\mathrm{Im}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\mathrm{Re}_j+
+\nabla\cdot({A^\mathrm{Re}}^T\boldsymbol{\psi})N^\mathrm{Re}-
+\nabla\cdot({A^\mathrm{Im}}^T\boldsymbol{\psi})N^\mathrm{Im}
+\,\mathrm{d}\mathbf{x}\\
+=&
+\int_{\Gamma_D}\left(A^\mathrm{Re}_{M_2}({A^\mathrm{Re}}^T\boldsymbol{\psi}_i)-
+A^\mathrm{Im}_{M_2}({A^\mathrm{Im}}^T\boldsymbol{\psi}_i)
+\right)\cdot\mathbf{n}\,\mathrm{d}s
++
+\int_{\Gamma_N}\left(N^\mathrm{Re}({A^\mathrm{Re}}^T\boldsymbol{\psi}_i)-
+N^\mathrm{Im}({A^\mathrm{Im}}^T\boldsymbol{\psi}_i)
+\right)\cdot\mathbf{n}\,\mathrm{d}s
+\end{align}
 and
-\begin{equation}
-\sum_ji\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\textrm{Im}+\omega N^\textrm{Re}_j\right)+
-\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\textrm{Im}_j+
-\nabla\cdot\boldsymbol{\psi_i}N_j^\textrm{Im}\,\mathrm{d}\mathbf{x}=
-i\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\textrm{Im}_{M_2}\,\mathrm{d}s
-\end{equation}
-for all admissible pairs of real valued test functions $(\varphi_i,\boldsymbol{\psi}_i)\in V_{0}\times\mathbf{W}_0$.
+\begin{align}
+&\sum_ji\int_\Omega \varphi_i\left(\nabla\cdot\boldsymbol{\sigma}_j^\mathrm{Im}+\omega N^\mathrm{Re}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\sigma}^\mathrm{Im}_j+
+\nabla\cdot({A^\mathrm{Re}}^T\boldsymbol{\psi})N^\mathrm{Im}+
+\nabla\cdot({A^\mathrm{Im}}^T\boldsymbol{\psi})N^\mathrm{Re}
+\,\mathrm{d}\mathbf{x}\\
+&=
+i\int_{\Gamma_D}\left(A^\mathrm{Re}_{M_2}({A^\mathrm{Im}}^T\boldsymbol{\psi}_i)+
+A^\mathrm{Im}_{M_2}({A^\mathrm{Re}}^T\boldsymbol{\psi}_i)
+\right)\cdot\mathbf{n}\,\mathrm{d}s
++
+i\int_{\Gamma_N}\left(N^\mathrm{Re}({A^\mathrm{Im}}^T\boldsymbol{\psi}_i)+
+N^\mathrm{Im}({A^\mathrm{Re}}^T\boldsymbol{\psi}_i)
+\right)\cdot\mathbf{n}\,\mathrm{d}s
+\end{align}
+for all admissible pairs of real valued test functions $(\varphi_i,\boldsymbol{\psi}_i)\in W\times\mathbf{Q}_0$.
+
 Let us define the following auxiliary matrices
 \begin{alignat}{2}
-A^x&=\{a^x_{ij}\} \qquad a^x_{ij}&=&\int_\Omega \psi^x_i\psi^x_j\,\mathrm{d}\mathbf{x}\\
-A^y&=\{a^y_{ij}\} \qquad a^y_{ij}&=&\int_\Omega \psi^y_i\psi^y_j\,\mathrm{d}\mathbf{x}\\
-B^x&=\{b^x_{ij}\} \qquad b^x_{ij}&=&\int_\Omega \partial_x\psi^x_i\varphi_j\,\mathrm{d}\mathbf{x}\\
-B^y&=\{b^y_{ij}\} \qquad b^y_{ij}&=&\int_\Omega \partial_y\psi^y_i\varphi_j\,\mathrm{d}\mathbf{x}\\
-C^x&=\{c^x_{ij}\} \qquad c^x_{ij}&=&\int_\Omega \varphi_i\partial_x\psi^x_j\,\mathrm{d}\mathbf{x}\\
-C^y&=\{c^y_{ij}\} \qquad c^y_{ij}&=&\int_\Omega \varphi_i\partial_y\psi^y_j\,\mathrm{d}\mathbf{x}
+A&=\{a_{ij}\} \qquad a_{ij}&=&\int_\Omega \psi_i\psi_j\,\mathrm{d}\mathbf{x}\\
+B_x&=\{b_{ij,x}\} \qquad b_{ij,x}&=&\int_\Omega \partial_x\psi_i\varphi_j\,\mathrm{d}\mathbf{x}\\
+B_y&=\{b_{ij,y}\} \qquad b_{ij,x}&=&\int_\Omega \partial_y\psi_i\varphi_j\,\mathrm{d}\mathbf{x}
 \end{alignat}
 
 \begin{equation}
 \begin{pmatrix}
-0 & -\omega M & C^x & 0 & C^y & 0\\
-\omega M & 0 & 0 & C^x & 0 & C^y\\
-B^x & 0 & A^x & 0 & 0 & 0\\
-0 & B^x & 0 & A^x & 0 & 0\\
-B^y & 0 & 0 & 0 & A^y & 0\\
-0 & B^y & 0 & 0 & 0 & A^y
+0 & -\omega M & B_x^T & 0 & B_y^T & 0\\
+\omega M & 0 & 0 & B_x^T & 0 & B_y^T\\
+B_x & 0 & A & 0 & 0 & 0\\
+0 & B_x & 0 & A & 0 & 0\\
+B_y & 0 & 0 & 0 & A & 0\\
+0 & B_y & 0 & 0 & 0 & A
 \end{pmatrix}
 \begin{pmatrix}
-N^\textrm{Re}\\
-N^\textrm{Im}\\
-\sigma_x^\textrm{Re}\\
-\sigma_x^\textrm{Im}\\
-\sigma_y^\textrm{Re}\\
-\sigma_y^\textrm{Im}
+N^\mathrm{Re}\\
+N^\mathrm{Im}\\
+\sigma_1^\mathrm{Re}\\
+\sigma_1^\mathrm{Im}\\
+\sigma_2^\mathrm{Re}\\
+\sigma_2^\mathrm{Im}
 \end{pmatrix}
 =
 \begin{pmatrix}
 0\\
 0\\
-\phantom{i}\int_{\Gamma_D}A^\textrm{Re}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
-i\int_{\Gamma_D}A^\textrm{Im}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
-\phantom{i}\int_{\Gamma_D}A^\textrm{Re}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s\\
-i\int_{\Gamma_D}A^\textrm{Im}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s
+\phantom{i}\int_{\Gamma_D}A^\mathrm{Re}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
+i\int_{\Gamma_D}A^\mathrm{Im}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
+\phantom{i}\int_{\Gamma_D}A^\mathrm{Re}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s\\
+i\int_{\Gamma_D}A^\mathrm{Im}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s
 \end{pmatrix}
 \end{equation}
 
+\paragraph{Second formulation.} The problem reads: find $(N^\mathrm{Re},N^\mathrm{Im},\boldsymbol{\tau}^\mathrm{Re},\boldsymbol{\tau}^\mathrm{Im})\in [W]^2\times [\mathbf{Q}_0]^2$ such that
+\begin{align}
+&\sum_j\int_\Omega \varphi_i\left(\nabla\cdot(A^\mathrm{Re}\boldsymbol{\tau}_j^\mathrm{Re}-A^\mathrm{Im}\boldsymbol{\tau}_j^\mathrm{Im})-\omega N^\mathrm{Im}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\tau}^\mathrm{Re}_j+
+\nabla\cdot\boldsymbol{\psi}_iN^\mathrm{Re}_j
+\,\mathrm{d}\mathbf{x}\\
+=&
+\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\mathrm{Re}_{M_2}\,\mathrm{d}s
++
+\sum_j\int_{\Gamma_N}(\boldsymbol{\psi}_i\cdot\mathbf{n})N^\mathrm{Re}_j\,\mathrm{d}s
+\end{align}
+and
+\begin{align}
+&\sum_ji\int_\Omega \varphi_i\left(\nabla\cdot(A^\mathrm{Re}\boldsymbol{\tau}_j^\mathrm{Im}+A^\mathrm{Im}\boldsymbol{\tau}_j^\mathrm{Re})+\omega N^\mathrm{Re}_j\right)+
+\boldsymbol{\psi}_i\cdot\boldsymbol{\tau}^\mathrm{Im}_j+
+\nabla\cdot\boldsymbol{\psi}_iN^\mathrm{Im}_j
+\,\mathrm{d}\mathbf{x}\\
+&=
+i\int_{\Gamma_D}(\boldsymbol{\psi}_i\cdot\mathbf{n})A^\mathrm{Im}_{M_2}\,\mathrm{d}s
++
+\sum_ji\int_{\Gamma_N}(\boldsymbol{\psi}_i\cdot\mathbf{n})N^\mathrm{Im}_j\,\mathrm{d}s
+\end{align}
+for all admissible pairs of real valued test functions $(\varphi_i,\boldsymbol{\psi}_i)\in W\times\mathbf{Q}_0$.
+
+In addition to the mass matrices $A$ and $M$ introduced above, let us define the following auxiliary matrices and vectors
+\begin{alignat}{2}
+C^\mathrm{Re}_k&=\{c^\mathrm{Re}_{ij,k}\} \qquad c^\mathrm{Re}_{ij,k}&=&
+\int_\Omega \varphi_i\nabla\cdot(\mathbf{a}^\mathrm{Re}_k\psi_j)\,\mathrm{d}\mathbf{x}
+=
+\int_\Omega \varphi_i\left(\partial_x(a^\mathrm{Re}_{1k}\psi_i)+\partial_y(a^\mathrm{Re}_{2k}\psi_j)\right)\,\mathrm{d}\mathbf{x}\\
+C^\mathrm{Im}_k&=\{c^\mathrm{Im}_{ij,k}\} \qquad c^\mathrm{Im}_{ij,k}&=&
+\int_\Omega \varphi_i\nabla\cdot(\mathbf{a}^\mathrm{Im}_k\psi_j)\,\mathrm{d}\mathbf{x}
+=
+\int_\Omega \varphi_i\left(\partial_x(a^\mathrm{Im}_{1k}\psi_i)+\partial_y(a^\mathrm{Im}_{2k}\psi_j)\right)\,\mathrm{d}\mathbf{x}\\
+D_k&=\{d_{ij,k}\} \qquad d_{ij,k}&=&
+\int_{\Gamma_N}\psi_i\varphi_jn_k\,\mathrm{d}s\\
+b^\mathrm{Re}_k&=\{b^\mathrm{Re}_{i,k}\} \qquad b^\mathrm{Re}_{i,k}&=&
+\int_{\Gamma_D}\psi_in_kA^\mathrm{Re}_{M_2}\,\mathrm{d}s\\
+b^\mathrm{Im}_k&=\{b^\mathrm{Im}_{i,k}\} \qquad b^\mathrm{Im}_{i,k}&=&
+\int_{\Gamma_D}\psi_in_kA^\mathrm{Im}_{M_2}\,\mathrm{d}s
+\end{alignat}
+where $\mathbf{a}^\mathrm{Re}_k$ and $\mathbf{a}^\mathrm{Im}_k$ denotes the real and imaginary parts of the $k$-th column of matrix $A$ and $n_k$ represents the $k$-th component of the outward unit normal vector. Then, the matrix form reads
+\begin{equation}
+\begin{pmatrix}
+0 & -\omega M & C_1^\mathrm{Re} & -C_1^\mathrm{Im} & C_2^\mathrm{Re} & -C_2^\mathrm{Im}\\[1ex]
+\omega M & 0 & C_1^\mathrm{Im} & C_1^\mathrm{Re} & C_2^\mathrm{Im} & C_2^\mathrm{Re}\\[1ex]
+B_x+D_1 & 0 & A & 0 & 0 & 0\\[1ex]
+0 & B_x+D_1 & 0 & A & 0 & 0\\[1ex]
+B_y+D_2 & 0 & 0 & 0 & A & 0\\[1ex]
+0 & B_y+D_2 & 0 & 0 & 0 & A
+\end{pmatrix}
+\begin{pmatrix}
+N^\mathrm{Re}\\[1ex]
+N^\mathrm{Im}\\[1ex]
+\tau_1^\mathrm{Re}\\[1ex]
+\tau_1^\mathrm{Im}\\[1ex]
+\tau_2^\mathrm{Re}\\[1ex]
+\tau_2^\mathrm{Im}
+\end{pmatrix}
+=
+\begin{pmatrix}
+0\\[1ex]
+0\\[1ex]
+b_1^\mathrm{Re}\\[1ex]
+b_1^\mathrm{Im}\\[1ex]
+b_2^\mathrm{Re}\\[1ex]
+b_2^\mathrm{Im}
+\end{pmatrix}
+\end{equation}
 \end{document}

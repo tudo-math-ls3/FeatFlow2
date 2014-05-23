@@ -394,7 +394,7 @@ contains
       end do
     end do
 
-  case (SSE_SYSTEM)
+  case (SSE_SYSTEM1,SSE_SYSTEM2)
     
     ! Get types of element for each variable
     do j=1,3
@@ -843,7 +843,7 @@ contains
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
 
-  case (SSE_SYSTEM)
+  case (SSE_SYSTEM1,SSE_SYSTEM2)
     !---------------------------------------------------------------------------
     do i=rproblem%ilvmin,rproblem%ilvmax
 
@@ -1202,7 +1202,7 @@ contains
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_Aimag,rproblem%rcollection)
       
-    case (POISSON_SYSTEM,SSE_SYSTEM)
+    case (POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
       ! No essential boundary conditions
 
     case default
@@ -1256,11 +1256,16 @@ contains
 
 !<subroutine>
 
-  subroutine sse_solve(rproblem)
+  subroutine sse_solve(rparlist,rproblem)
   
 !<description>
   ! Solves the given problem by applying a linear solver.
 !</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -1370,6 +1375,22 @@ contains
     ! the vector during the solution process.
     call linsol_initMultigrid2(p_rsolverNode,ilvmax-ilvmin+1)
 
+    ! Get parameters of multigrid solver from parameter list
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER', 'nminIterations', &
+        p_rsolverNode%nminIterations, p_rsolverNode%nminIterations)
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER', 'nmaxIterations', &
+        p_rsolverNode%nmaxIterations, p_rsolverNode%nmaxIterations)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'depsRel', &
+        p_rsolverNode%depsRel, p_rsolverNode%depsRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'depsAbs', &
+        p_rsolverNode%depsAbs, p_rsolverNode%depsAbs)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'depsDiff', &
+        p_rsolverNode%depsDiff, p_rsolverNode%depsDiff)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'ddivRel', &
+        p_rsolverNode%ddivRel, p_rsolverNode%ddivRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'ddivAbs', &
+        p_rsolverNode%ddivAbs, p_rsolverNode%ddivAbs)
+    
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
 
@@ -1397,6 +1418,23 @@ contains
           call linsol_initGMRES(p_rcoarseGridSolver,20,&
               Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
         end if
+
+        ! Get parameters of coarse-grid solver from parameter list
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER', 'nminIterations', &
+            p_rcoarseGridSolver%nminIterations, p_rcoarseGridSolver%nminIterations)
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER', 'nmaxIterations', &
+            p_rcoarseGridSolver%nmaxIterations, p_rcoarseGridSolver%nmaxIterations)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER', 'depsRel', &
+            p_rcoarseGridSolver%depsRel, p_rcoarseGridSolver%depsRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER', 'depsAbs', &
+            p_rcoarseGridSolver%depsAbs, p_rcoarseGridSolver%depsAbs)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER', 'depsDiff', &
+            p_rcoarseGridSolver%depsDiff, p_rcoarseGridSolver%depsDiff)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER', 'ddivRel', &
+            p_rcoarseGridSolver%ddivRel, p_rcoarseGridSolver%ddivRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER', 'ddivAbs', &
+            p_rcoarseGridSolver%ddivAbs, p_rcoarseGridSolver%ddivAbs)
+
       else
         if ((rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerRow .eq. 1) .and.&
             (rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerCol .eq. 1)) then
@@ -1767,7 +1805,7 @@ contains
 !!$    call lsysbl_releaseVector(rvecTmp2)
 !!$    call lsysbl_releaseVector(rrhsTmp2)
     
-  case(POISSON_SYSTEM,SSE_SYSTEM)
+  case(POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
     !---------------------------------------------------------------------------
 
     ilvmin = rproblem%ilvmin
@@ -2071,7 +2109,7 @@ contains
     call lsysbl_releaseVector(rvectorBlockY)
     call spdiscr_releaseBlockDiscr(rblockDiscr)
 
-  case (SSE_SCALAR,SSE_SYSTEM)
+  case (SSE_SCALAR,SSE_SYSTEM1,SSE_SYSTEM2)
 
     ! --- solution -------------------------------------------------------------
 
@@ -2121,7 +2159,7 @@ contains
       p_rvectorDerivX_Aimag => rvectorBlock_Aimag%RvectorBlock(1)
       p_rvectorDerivY_Aimag => rvectorBlock_Aimag%RvectorBlock(2)
 
-    case (SSE_SYSTEM)
+    case (SSE_SYSTEM1,SSE_SYSTEM2)
       ! Set pointer to scalar solution components
       p_rvectorDerivX_Real  => rproblem%rvector%RvectorBlock(3)
       p_rvectorDerivX_Aimag => rproblem%rvector%RvectorBlock(4)
@@ -2174,7 +2212,7 @@ contains
     ! --- second derivative ----------------------------------------------------
 
     select case(rproblem%cproblemtype)
-    case (SSE_SYSTEM)
+    case (SSE_SYSTEM1,SSE_SYSTEM2)
       ! Recover gradient by superconvergent patch recovery
       call spdiscr_initBlockDiscr(rblockDiscr,2,&
           rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
@@ -2687,7 +2725,7 @@ contains
     ! Write convergence table to Tex file
     call ctab_outputTex(rtable,'./table_h1.tex')
 
-  case (SSE_SCALAR,SSE_SYSTEM)
+  case (SSE_SCALAR,SSE_SYSTEM1,SSE_SYSTEM2)
 
     ! Compute reduction rates
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE)",CTAB_REDUCTION_RATE)
@@ -2852,7 +2890,7 @@ contains
       call ctab_setTexCaption(rtable,"H1-error Im(SSE_yx)","$H^1(\partial_{yx}^{\rm ZZ}Im(N))$")
       call ctab_setTexCaption(rtable,"H1-error Im(SSE_yy)","$H^1(\partial_{yy}^{\rm ZZ}Im(N))$")
 
-    case (SSE_SYSTEM)
+    case (SSE_SYSTEM1,SSE_SYSTEM2)
       call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)","$L^2(Re(\sigma_x))$")
       call ctab_setTexCaption(rtable,"L2-error Re(SSE_y)","$L^2(Re(\sigma_y))$")
       call ctab_setTexCaption(rtable,"L2-error Re(SSE_xx)","$L^2(\partial_{x}^{\rm ZZ}Re(\sigma_x))$")
