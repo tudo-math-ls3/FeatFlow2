@@ -332,12 +332,14 @@ contains
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (ranalyticBC%rbcCollection, &
             cname, dvalue, .true., 0, SEC_SBDEXPRESSIONS)
+        call fparser_defineConstant(cname, dvalue)
 
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
         call collct_setvalue_int (ranalyticBC%rbcCollection, &
             cname, ivalue, .true., 0, SEC_SBDEXPRESSIONS)
+        call fparser_defineConstant(cname, real(ivalue,DP))
                 
       case (BDC_VALPARPROFILE)
         ! Parabolic profile with specified maximum velocity
