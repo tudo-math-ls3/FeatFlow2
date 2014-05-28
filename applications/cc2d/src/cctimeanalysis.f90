@@ -7,7 +7,7 @@
 !# This module contains routines to calculate the time error and time
 !# derivative of a solution. The time error is the value
 !# of a functional $||u_{n}-u*_{n}||$ in time for a solution
-!# $u_{n} = u(t_{n})$, and the norm of the time derivatice of a solution.
+!# $u_{n} = u(t_{n})$, and the norm of the time derivative of a solution.
 !# The value of this (unknown) error is approximated
 !# by a time error functional $J(.)$ which can be evaluated by different
 !# means, depending on the actual problem to solve.

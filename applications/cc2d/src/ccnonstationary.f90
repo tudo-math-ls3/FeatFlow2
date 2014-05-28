@@ -172,7 +172,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A snapshop structure that receives the snapshot.
+  ! A snapshot structure that receives the snapshot.
   type(t_timestepSnapshot), intent(inout) :: rsnapshot
 
   ! The problem structure with all information about the current problem.
@@ -217,7 +217,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A snapshop structure that receives the snapshot.
+  ! A snapshot structure that receives the snapshot.
   type(t_timestepSnapshot), intent(inout) :: rsnapshot
 
   ! The problem structure with all information about the current problem.
@@ -255,14 +255,14 @@ contains
 
 !<subroutine>
 
-  subroutine cc_releaseSnapshop (rsnapshot)
+  subroutine cc_releaseSnapshot (rsnapshot)
 
 !<description>
   ! Releases the rsnapshot structure. All allocated memory is released.
 !</description>
 
 !<inputoutput>
-  ! A snapshop structure that receives the snapshot.
+  ! A snapshot structure that receives the snapshot.
   type(t_timestepSnapshot), intent(inout) :: rsnapshot
 !</inputoutput>
 
@@ -1465,7 +1465,7 @@ contains
     call lsysbl_releaseVector (rtempBlock1)
 
     ! Release existing snapshots
-    call cc_releaseSnapshop (rsnapshotLastMacrostep)
+    call cc_releaseSnapshot (rsnapshotLastMacrostep)
 
     ! Release the preconditioner
     call cc_releasePreconditioner (rnonlinearIteration)

@@ -1316,7 +1316,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function name
     character(LEN=*), intent(in) :: scompName
@@ -1366,7 +1366,7 @@ contains
     ! blocks whereas the last variables can be scalar. This sound slightly
     ! complicated but here is an example:
     !
-    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
     ! corresponds to the coordinate vector and t denotes the time. Then
     ! you should order your variables according to [x,y,t]. If the function
     ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
@@ -1375,7 +1375,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function name
     character(LEN=*), intent(in) :: scompName
@@ -1439,7 +1439,7 @@ contains
     ! blocks whereas the last variables can be scalar. This sound slightly
     ! complicated but here is an example:
     !
-    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
     ! corresponds to the coordinate vector and t denotes the time. Then
     ! you should order your variables according to [x,y,t]. If the function
     ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
@@ -1448,7 +1448,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function name
     character(LEN=*), intent(in) :: scompName
@@ -1510,7 +1510,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function identifier
     integer, intent(in) :: icomp
@@ -1579,7 +1579,7 @@ contains
     ! blocks whereas the last variables can be scalar. This sound slightly
     ! complicated but here is an example:
     !
-    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
     ! corresponds to the coordinate vector and t denotes the time. Then
     ! you should order your variables according to [x,y,t]. If the function
     ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
@@ -1588,7 +1588,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function identifier
     integer, intent(in) :: icomp
@@ -1803,7 +1803,7 @@ contains
     ! blocks whereas the last variables can be scalar. This sound slightly
     ! complicated but here is an example:
     !
-    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
     ! corresponds to the coordinate vector and t denotes the time. Then
     ! you should order your variables according to [x,y,t]. If the function
     ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
@@ -1812,7 +1812,7 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(in) :: rfparser
+    type (t_fparser), intent(in) :: rfparser
 
     ! Function identifier
     integer, intent(in) :: icomp
@@ -3434,7 +3434,7 @@ contains
 
 !<input>
     ! Function string
-    character (LEN=*),  intent(in) :: sfunctionString
+    character (LEN=*), intent(in) :: sfunctionString
 !</input>
 
 !<result>
@@ -4514,9 +4514,9 @@ contains
       case (cTanh)
         Dstack(istackPtr) = tanh(Dstack(istackPtr))
 
-        !------------------------------------------------------------
-        ! Misc
-        !------------------------------------------------------------
+      !------------------------------------------------------------
+      ! Misc
+      !------------------------------------------------------------
       case (cImmed)
         istackPtr         = istackPtr+1
         Dstack(istackPtr) = rcomp%Dimmed(idataPtr)
@@ -4526,9 +4526,9 @@ contains
         idataPtr = rcomp%IbyteCode(iinstPtr+2)
         iinstPtr = rcomp%IbyteCode(iinstPtr+1)
 
-        !------------------------------------------------------------
-        ! Operators
-        !------------------------------------------------------------
+      !------------------------------------------------------------
+      ! Operators
+      !------------------------------------------------------------
       case (cNeg)
         Dstack(istackPtr) = -Dstack(istackPtr)
 
@@ -4603,9 +4603,9 @@ contains
       case (cNot)
         Dstack(istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(istackPtr)) )
 
-        !------------------------------------------------------------
-        ! Degrees-radians conversion
-        !------------------------------------------------------------
+      !------------------------------------------------------------
+      ! Degrees-radians conversion
+      !------------------------------------------------------------
       case (cDeg)
         Dstack(istackPtr) = RadToDeg(Dstack(istackPtr))
 

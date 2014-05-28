@@ -233,7 +233,7 @@ contains
       dtimePrev,rvector,dtime,rvectorInt,dtimeInt,istep,rpostprocessing)
   
 !<description>
-  ! Postprocessing of solutions of stationary simulations.
+  ! Postprocessing of solutions of transient simulations.
   ! Writes the solution into a GMV file, calculates forces,...
 !</description>
 
@@ -286,7 +286,7 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    ! Whether to apply postprocessing to rvector ot rvectorInt
+    ! Whether to apply postprocessing to rvector or rvectorInt
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "ipostprocTimeInterpSolution", ipostprocTimeInterpSolution, 1)
 
@@ -467,7 +467,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This routine is called during the calculation if L2/H1 errors.
+  ! This routine is called during the calculation of L2/H1 errors.
   ! It evaluates errors being given as expressions.
 !</description>
   

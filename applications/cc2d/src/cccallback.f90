@@ -107,7 +107,7 @@
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls cc_initCollectForAssembly to stores the current point
+!# framework calls cc_initCollectForAssembly to store the current point
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
