@@ -3566,22 +3566,18 @@ sub create_feastAppMakefile {
         "\t    exit 1; \\\n" .
         "\tfi; \\\n" .
         "    fi; \\\n" .
-        "    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
-        "\t   s^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
-        "\t   s^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
-        "     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "    (echo 'CFLAGSF77     =' \$(CFLAGSF77); \\\n" .
+        "     echo 'CFLAGSF90     =' \$(CFLAGSF90); \\\n" .
+        "     echo 'CFLAGSC       =' \$(CFLAGSC); \\\n" .
+        "     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC); \\\n" .
+        "     echo 'CFLAGSCXX     =' \$(CFLAGSCXX); \\\n" .
+        "     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA); \\\n" .
         "     echo \$\${additionalflags}; \\\n" .
-        "     echo 'INC           =' \$(INC); ) > \$(DIR)/\$(COMPILER_SETTINGS); \\\n" .
+        "     echo 'INC           =' \$(INC); ) | \\\n" .
+        "        sed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\" \\\n" .
+        "        > \$(DIR)/\$(COMPILER_SETTINGS); \\\n" .
         "    echo \"# Done.\"\n" .
         "endef\n\n" .
 
