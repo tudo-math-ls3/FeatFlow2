@@ -3162,54 +3162,89 @@ sub create_feastAppMakefile {
         "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
-        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
-        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
-        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
-        "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77); \\\n" .
+        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90); \\\n" .
+        "\t     echo 'CFLAGSC       =' \$(CFLAGSC); \\\n" .
+        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC); \\\n" .
+        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX); \\\n" .
+        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA); \\\n" .
         "\t     echo \$\${additionalflags}; \\\n" .
         "\t     echo 'INC           =' \$(INC); ) | \\\n" .
-        "\t\tdiff -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\" | \\\n" .
+        "\t\tdiff -q -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
         "\t    if test \$\${recompile} = yes; then \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#######################################################################\"; \\\n" .
+        "\t\techo \"# It seems this application's source code has been compiled before -\"; \\\n" .
+        "\t\techo \"# or at least one of the self-compiled libraries the application uses\"; \\\n" .
+        "\t\techo \"# - because object files from a previous compilation still linger.\"; \\\n" .
+        "\t\techo \"# Either you did compile it before or the person from which you\"; \\\n" .
+        "\t\techo \"# copied the source code did. The problem is that this time a\"; \\\n" .
+        "\t\techo \"# different compiler or compiler version (or even an entirely\"; \\\n" .
+        "\t\techo \"# different operating system) than before is being used or that\"; \\\n" .
+        "\t\techo \"# compiler options were passed to the compiler that differ from those\"; \\\n" .
+        "\t\techo \"# used before.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# As a result, you would have mixed potentially incompatible object\"; \\\n" .
+        "\t\techo \"# files in the final build step of linking your application. It could\"; \\\n" .
+        "\t\techo \"# have worked, but just as well even have failed - at compile or,\"; \\\n" .
+        "\t\techo \"# even worse, (sometimes) at run time - in unpredictable, unexpected,\"; \\\n" .
+        "\t\techo \"# very subtle ways.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Which is why the Featflow2 build system intercepted compilation and\"; \\\n" .
+        "\t\techo \"# presents you this error message. To resolve the issue, do a clean\"; \\\n" .
+        "\t\techo \"# build.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\toverwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# ---------------------------------------------------------------------\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Technical details on the conflicts found:\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# The following output is raw 'diff' output of the previous vs. current\"; \\\n" .
+        "\t\techo \"# compiler settings:\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\t(echo 'CFLAGSF77     =' \$(CFLAGSF77); \\\n" .
+        "\t\t echo 'CFLAGSF90     =' \$(CFLAGSF90); \\\n" .
+        "\t\t echo 'CFLAGSC       =' \$(CFLAGSC); \\\n" .
+        "\t\t echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC); \\\n" .
+        "\t\t echo 'CFLAGSCXX     =' \$(CFLAGSCXX); \\\n" .
+        "\t\t echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA); \\\n" .
+        "\t\t echo \$\${additionalflags}; \\\n" .
+        "\t\t echo 'INC           =' \$(INC); ) | \\\n" .
+        "\t\t    sed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\t    s^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\t    s^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\" | \\\n" .
+        "\t\t    diff -w \$(DIR)/\$(COMPILER_SETTINGS) -; \\\n" .
         "\t\tif test -n \"\$\${message}\"; then \\\n" .
-        "\t\t    oldmessage=\"\$\${message}\"; \\\n" .
-        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}#NEWLINE # Additionally holds:NEWLINE \$\${oldmessage}\"`; \\\n" .
-        "\t\telse \\\n" .
-        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\t    echo \"#\"; \\\n" .
+        "\t\t    echo \"#\"; \\\n" .
+        "\t\t    echo \"# Additionally holds:\"; \\\n" .
+        "\t\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t\t    message=\"\"; \\\n" .
         "\t\tfi; \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"# Once again: This FEAT2 application SHOULD BE RECOMPILED.\"; \\\n" .
+        "\t\techo \"# Please issue at least a\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-app; \$(MAKE) \$\${overwrittenmakevars} obj\"; \\\n" .
+        "\t\techo \"# or if you prefer tabula rasa\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"# (Note: If you believe this is a false positive result and know what\"; \\\n" .
+        "\t\techo \"#        you are doing you can deactivate this object files\"; \\\n" .
+        "\t\techo \"#        compatibility check - at your own risk - by compiling with\"; \\\n" .
+        "\t\techo \"#        'MONITOR_COMPILE_ENV=NO'.)\"; \\\n" .
+        "\t\techo \"#######################################################################\"; \\\n" .
+        "\t\trm -f \$(OBJDIR_LOCKFILE); \\\n" .
+        "\t\texit 1; \\\n" .
         "\t    fi; \\\n" .
         "\tfi; \\\n" .
         "\tif test -n \"\$\${message}\"; then \\\n" .
         "\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
-        "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# FEAT2 application should be recompiled.\"; \\\n" .
-        "\t    echo \"# Please issue a\"; \\\n" .
-	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
-        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean-app; \$(MAKE) \$\${overwrittenmakevars} obj\"; \\\n" .
-        "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
-        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
-        "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# You can deactivate this checking by compiling\"; \\\n" .
-        "\t    echo \"# with 'MONITOR_COMPILE_ENV=NO'.\"; \\\n" .
-        "\t    echo \"#######################################################################\"; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE); \\\n" .
         "\t    exit 1; \\\n" .
         "\tfi;\n\n" .
@@ -3243,56 +3278,90 @@ sub create_feastAppMakefile {
         "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
-        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
-        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
-        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
-        "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77); \\\n" .
+        "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90); \\\n" .
+        "\t     echo 'CFLAGSC       =' \$(CFLAGSC); \\\n" .
+        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC); \\\n" .
+        "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX); \\\n" .
+        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA); \\\n" .
         "\t     echo \$\${additionalflags}; \\\n" .
         "\t     echo 'INC           =' \$(INC); ) | \\\n" .
-        "\t\tdiff -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\" | \\\n" .
+        "\t\tdiff -q -w \$(DIR)/\$(COMPILER_SETTINGS) -  || recompile=yes; \\\n" .
         "\t    if test \$\${recompile} = yes; then \\\n" .
+        "\t\techo; \\\n" .
+        "\t\techo \"#######################################################################\"; \\\n" .
+        "\t\techo \"# It seems (at least) one of the libraries this application uses and\"; \\\n" .
+        "\t\techo \"# that are about to be compiled along with the application has been\"; \\\n" .
+        "\t\techo \"# compiled before, because object files from a previous compilation\"; \\\n" .
+        "\t\techo \"# still linger. Either you did compile it before or the person from\"; \\\n" .
+        "\t\techo \"# which you copied the source code did. The problem is that this time\"; \\\n" .
+        "\t\techo \"# a different compiler or compiler version (or even an entirely\"; \\\n" .
+        "\t\techo \"# different operating system) than before is being used or that\"; \\\n" .
+        "\t\techo \"# compiler options were passed to the compiler that differ from those\"; \\\n" .
+        "\t\techo \"# used before.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# As a result, you would have mixed potentially incompatible object\"; \\\n" .
+        "\t\techo \"# files in the final build step of linking your application. It could\"; \\\n" .
+        "\t\techo \"# have worked, but just as well even have failed - at compile or,\"; \\\n" .
+        "\t\techo \"# even worse, (sometimes) at run time - in unpredictable, unexpected,\"; \\\n" .
+        "\t\techo \"# very subtle ways.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Which is why the Featflow2 build system intercepted compilation and\"; \\\n" .
+        "\t\techo \"# presents you this error message. To resolve the issue, do a clean\"; \\\n" .
+        "\t\techo \"# build.\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\toverwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) \$\${overwrittenmakevars} libs\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# ---------------------------------------------------------------------\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# Technical details on the conflicts found:\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\techo \"# The following output is raw 'diff' output of the previous vs. current\"; \\\n" .
+        "\t\techo \"# compiler settings:\"; \\\n" .
+        "\t\techo \"#\"; \\\n" .
+        "\t\t(echo 'CFLAGSF77     =' \$(CFLAGSF77); \\\n" .
+        "\t\t echo 'CFLAGSF90     =' \$(CFLAGSF90); \\\n" .
+        "\t\t echo 'CFLAGSC       =' \$(CFLAGSC); \\\n" .
+        "\t\t echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC); \\\n" .
+        "\t\t echo 'CFLAGSCXX     =' \$(CFLAGSCXX); \\\n" .
+        "\t\t echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA); \\\n" .
+        "\t\t echo \$\${additionalflags}; \\\n" .
+        "\t\t echo 'INC           =' \$(INC); ) | \\\n" .
+        "\t\t    sed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
+        "\t\t\t    s^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
+        "\t\t\t    s^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\" | \\\n" .
+        "\t\t    diff -w \$(DIR)/\$(COMPILER_SETTINGS) -; \\\n" .
         "\t\tif test -n \"\$\${message}\"; then \\\n" .
-        "\t\t    oldmessage=\"\$\${message}\"; \\\n" .
-        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}#NEWLINE # Additionally holds:NEWLINE \$\${oldmessage}\"`; \\\n" .
-        "\t\telse \\\n" .
-        "\t\t    message=`echo \"#NEWLINE # Compiler settings have changed.NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# The above output is 'diff' output. Syntax:NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# < [old settings]NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# ---NEWLINE \"`; \\\n" .
-        "\t\t    message=`echo \"\$\${message}# > [new settings]NEWLINE \"`; \\\n" .
+        "\t\t    echo \"#\"; \\\n" .
+        "\t\t    echo \"#\"; \\\n" .
+        "\t\t    echo \"# Additionally holds:\"; \\\n" .
+        "\t\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t\t    message=\"\"; \\\n" .
         "\t\tfi; \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"# Once again: The libraries this FEAT2 application relies on SHOULD BE\"; \\\n" .
+        "\t\techo \"# RECOMPILED. Please issue at least a\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) \$\${overwrittenmakevars} libs\"; \\\n" .
+        "\t\techo \"# or if you prefer tabula rasa\"; \\\n" .
+        "\t\techo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t\techo \"#\";  \\\n" .
+        "\t\techo \"# (Note: If you believe this is a false positive result and know what\"; \\\n" .
+        "\t\techo \"#        you are doing you can deactivate this object files\"; \\\n" .
+        "\t\techo \"#        compatibility check - at your own risk - by compiling with\"; \\\n" .
+        "\t\techo \"#        'MONITOR_COMPILE_ENV=NO'.)\"; \\\n" .
+        "\t\techo \"#######################################################################\"; \\\n" .
+        "\t\trm -f \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t\texit 1; \\\n" .
         "\t    fi; \\\n" .
         "\tfi; \\\n" .
         "\tif test -n \"\$\${message}\"; then \\\n" .
         "\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
-        "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# Libraries FEAT2 relies on should be recompiled.\"; \\\n" .
-        "\t    echo \"# Please issue at least a\"; \\\n" .
-	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
-#	"\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '{ for ( i = 1; i <= NF; i++ ) if (\$\$i ~ /[A-Z]*=/) printf \\\" \\\"\$\$i }'`\"; \\\n" .
-        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) \$\${overwrittenmakevars} libs\"; \\\n" .
-        "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
-        "\t    echo \"# % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
-        "\t    echo \"#\";  \\\n" .
-        "\t    echo \"# You can deactivate this checking by compiling\"; \\\n" .
-        "\t    echo \"# with 'MONITOR_COMPILE_ENV=NO'.\"; \\\n" .
-        "\t    echo \"#######################################################################\"; \\\n" .
-        "\t    rm -f \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE); \\\n" .
         "\t    exit 1; \\\n" .
         "\tfi;\n" .
         "endif\n\n" .
