@@ -137,7 +137,7 @@ my $progname = &basename($0);
 # (when changing to absolute paths again, be aware that copying of
 # included files to object directory may happen multiple times as
 # the file may get on the list with absolute and relative path)
-#my $FEAT2BASEDIR = &get_feast_basedir(&cwd());
+#my $FEAT2BASEDIR = &get_feat2_basedir(&cwd());
 
 # name of Makefile to create
 my $MAKEFILE     = "GNUmakefile";
@@ -672,7 +672,7 @@ if ( -e $MAKEFILE && -s $MAKEFILE ) {
 # Now, create either the FEAT2 regression directory meta Makefile
 # or a Makefile for a simple FEAT2 application
 if ($cl{'regressionbenchmark'}) {
-    &create_feastBenchmarkMakefile();
+    &create_feat2BenchmarkMakefile();
     # Loop over all subdirectories matching src_* and
     # configure the FEAT2 benchmark applications
     opendir(DIRECTORY, ".") ||
@@ -745,10 +745,10 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --suppressflags=\"" . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
     $options .= " --warn=\""          . join(',', @{$cl{'WARN'}})          . "\"" if ($#{$cl{'WARN'}} >= 0);
 
-    foreach my $feastappdir (sort @srcdirs) {
-        my $dir = &concat_filename($cwd, $feastappdir);
+    foreach my $feat2appdir (sort @srcdirs) {
+        my $dir = &concat_filename($cwd, $feat2appdir);
         print "\n\nEntering directory <$dir>.\n";
-        chdir $feastappdir;
+        chdir $feat2appdir;
 	# Ignore directory if no configure script available
 	if ( -e "configure" ) {
 	    # Call sub-configure with undocumented command line options
@@ -762,7 +762,7 @@ if ($cl{'regressionbenchmark'}) {
 		$warnings .=
 		    "*************************************************************\n" .
 		    $progname.": WARNING:\n".
-		    "Invoking configure in subdirectory <$feastappdir> returned\n" .
+		    "Invoking configure in subdirectory <$feat2appdir> returned\n" .
 		    "error code " . ($? >> 8) . ". You might want to check.\n" .
 		    "*************************************************************\n\n";
 	    }
@@ -770,7 +770,7 @@ if ($cl{'regressionbenchmark'}) {
 	    $warnings .=
 		"*************************************************************\n" .
 		$progname.": WARNING:\n".
-		"Skipping configure in subdirectory <$feastappdir> because\n" .
+		"Skipping configure in subdirectory <$feat2appdir> because\n" .
 		"there is no configure script in that directory. You might\n" .
 		"want to check.\n" .
 		"*************************************************************\n\n";
@@ -790,9 +790,9 @@ if ($cl{'regressionbenchmark'}) {
 } else {
     my @srclist_app = &get_sourcefilelist();
     my @srcextra_app = &get_extrasourcefilelist();
-    &create_feastAppMakefile(\@srclist_app,\@srcextra_app);
+    &create_feat2AppMakefile(\@srclist_app,\@srcextra_app);
     # Some prose at the end
-    &print_statistics_about_feastAppMakefile(\@srclist_app,\@srcextra_app);
+    &print_statistics_about_feat2AppMakefile(\@srclist_app,\@srcextra_app);
 }
 
 if ($warnings ne "") {
@@ -1203,7 +1203,7 @@ sub check_options {
 
 
 # Function: Create Makefile for a FEAT2 application
-sub create_feastAppMakefile {
+sub create_feat2AppMakefile {
     my $srclist_app = $_[0];
     my $srcextra_app = $_[1];
     my $entry;
@@ -2673,10 +2673,8 @@ sub create_feastAppMakefile {
         "\t    \$(remove_file))\n" .
         "\t\@echo \"# Removing object directories\"\n" .
         "\t\$(foreach dir, \$(PURGEDIR)*-*-*-*-*-opt*, \$(remove_directory))\n" .
-        "\t\@echo \"# Removing FEAT2 log and GMV & AVS output files\"\n" .
-        "\t-rm -f feastlog.* *.gmv *.inp\n" .
-        "\t\@echo \"# Removing autopartitioning, profiling and core file\"\n" .
-        "\t-rm -f autopart[0-4].fpart gmon.out core\n\n" .
+        "\t\@echo \"# Removing profiling and core file\"\n" .
+        "\t-rm -f gmon.out core\n\n" .
 
     # purge-libs statement
         "# Clean all object files of all external libraries for all architectures\n" .
@@ -3495,8 +3493,8 @@ sub create_feastAppMakefile {
         "# Otherwise, it would not be possible to share libraries among FEAT2\n" .
         "# applications as the settings above often contain absolute paths to\n" .
         "# object directories which would lead to conflicts, e.g.:\n" .
-        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_disk/object\n" .
-        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feastobj/fb2/src_poisson/object\n" .
+        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feat2obj/fb2/src_disk/object\n" .
+        "# CFLAGSF90    = [...] -moddir=/home/foo/nobackup/feat2obj/fb2/src_poisson/object\n" .
         "define store-settings\n" .
         "    LC_ALL=C; \\\n" .
         "    if test -n \"\$(F77)\"; then \\\n" .
@@ -3807,7 +3805,7 @@ sub create_feastAppMakefile {
 #       is that it needs to *always* return correct values for 'make idonly'.
 #       Previous implementations with a static Makefile only reported correct
 #       build IDs in case default build IDs were used.
-sub create_feastBenchmarkMakefile {
+sub create_feat2BenchmarkMakefile {
     my $entry;
 
     print "creating $MAKEFILE.\n";
@@ -4483,7 +4481,7 @@ sub get_buildID {
 
 	# Use '--no-print-directory' to ensure that when this configure script
 	# is run from a Makefile, make will not print lines like
-	# make[?]: Entering directory `<some dirs>/feast/feast/<some other dirs>'
+	# make[?]: Entering directory `<some dirs>/Featflow2/<some other dirs>'
 	# See section 5.6.4 of GNU Make Manual,
 	# http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
 	my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_BUILDID_INC)) .
@@ -4573,7 +4571,7 @@ sub get_dependency {
 # Function which determines the base directory of the FEAT2 installation
 # from the string given as argument (which is supposed to be the invocation
 # path of this script).
-sub get_feast_basedir() {
+sub get_feat2_basedir() {
     my ($string) = (@_);
 
     my $path = &dirname($string);
@@ -4794,7 +4792,7 @@ sub get_validIDs {
             "Cannot open file <$filename> for reading: $!\n\n" .
             "Make sure the path to Makefile.inc is set correctly in\n" .
             "$progname and that you do not invoke this script from\n" .
-            "the directory feast/bin, but from one of the application\n" .
+            "the directory bin/, but from one of the application\n" .
             "directories.\n";
     while (<FILE>) {
         if (m/^ifeq \(\$\(call match,\$\(ID\),(.*)\),yes\)\s*$/) {
@@ -5151,7 +5149,7 @@ sub max() {
 
 
 # Function: Print statistics about Makefile for a FEAT2 application created just now
-sub print_statistics_about_feastAppMakefile {
+sub print_statistics_about_feat2AppMakefile {
     my $srclist_app = $_[0];
     my $srcextra_app = $_[1];
     my $string = "";
