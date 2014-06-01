@@ -2205,6 +2205,7 @@ contains
       call lsysbl_releaseVector (rsingleRHS)
       call lsysbl_releaseVector (rsingleSol)
       call lsysbl_releaseVector (rvector2)
+      call lsysbl_releaseVector (rvector1)
       call lsysbl_releaseMatrix (rmassBlock)
       
       call linsol_doneData (p_rsolverNode,ierror)
