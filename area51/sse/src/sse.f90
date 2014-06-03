@@ -13,7 +13,14 @@
 !#
 !#                     - (A \Nabla N)\cdot n = 0   on \Gamma_N
 !#
-!# for a scalar complex function N.
+!# for a scalar complex function $N$. This equation can be solved
+!# either as is with high-order finite elements or cast into a
+!# first-order system, whereby an inf-sup stable finite element pair
+!# is used to approximate the sea surface elevation $N$ and its
+!# gradient $\nabla N$. Since Feat2 does not support complex numbers
+!# the unknown solution and the complex-valued system matrices are
+!# split into their real and imaginary parts and solved as a coupled
+!# but real-valued problem.
 !#
 !# </purpose>
 !##############################################################################
@@ -135,7 +142,7 @@ program sse
     call output_line('Postprocessing solution...')
     call stat_clearTimer(rtimerPostproc)
     call stat_startTimer(rtimerPostproc,STAT_TIMERSHORT)
-    call sse_postprocessing(rproblem,rtable)
+    call sse_postprocessing(rparlist,rproblem,rtable)
     call stat_stopTimer(rtimerPostproc)
     call output_line(&
         '............................................................'//&

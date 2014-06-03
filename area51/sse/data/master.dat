@@ -4,7 +4,7 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 7
+NLMAX = 9
 
 # Sort strategy
 SORTSTRATEGY = 
@@ -15,10 +15,22 @@ SORTSTRATEGY =
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system (\sigma = A\nabla N)
 # =4: SSE as first-order system (\sigma = \nabla N)
-PROBLEMTYPE = 2
+PROBLEMTYPE = 0
+
+# Method for calculating the gradient of the solution
+# =0: Standard interpolation
+# =1: super-convergent patch recovery (ZZ-technique)
+GRADTYPE = 0
+
+# Method for calculating the gradient by ZZ-technique
+# =0: node-wise patch-recovery
+# =1: element-wise patch-recovery
+# =2: face-wise patch-recovery
+GRADSUBTYPE = 0
 
 # Name of configuration
-CONFIG = QUAD_Q2_SSE_SCALAR
+#CONFIG = QUAD_Q2_SSE_SCALAR
+CONFIG = QUAD_Q1_POISSON_SCALAR
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug

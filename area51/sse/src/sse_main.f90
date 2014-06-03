@@ -1897,13 +1897,16 @@ contains
 
 !<subroutine>
 
-  subroutine sse_postprocessing(rproblem,rtable)
+  subroutine sse_postprocessing(rparlist,rproblem,rtable)
   
 !<description>
   ! Writes the solution into a VTK file.
 !</description>
 
 !<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 !</input>
@@ -1939,6 +1942,14 @@ contains
   ! Number of DOFs
   integer :: i,ndof
 
+  ! Method for calculating the gradient
+  integer :: cgradType,cgradSubType
+
+  ! Get method for calculating the gradient
+  call parlst_getvalue_int(rparlist, '', 'GRADTYPE', cgradType)
+  call parlst_getvalue_int(rparlist, '', 'GRADSUBTYPE', cgradSubType)
+
+  ! Calculate the total number of DoF's
   ndof = 0
   do i=1,rproblem%rvector%nblocks
     ndof = ndof + dof_igetNDofGlob(rproblem%rvector%RvectorBlock(i)%p_rspatialDiscr)
@@ -1982,7 +1993,7 @@ contains
 
       call lsysbl_createVector(rblockDiscr, rvectorBlock, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(1), rvectorBlock,&
-          PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+          cgradType, cgradSubType)
       p_rvectorDerivX => rvectorBlock%RvectorBlock(1)
       p_rvectorDerivY => rvectorBlock%RvectorBlock(2)
 
@@ -2034,9 +2045,9 @@ contains
     call lsysbl_createVector(rblockDiscr, rvectorBlockX, .false.)
     call lsysbl_createVector(rblockDiscr, rvectorBlockY, .false.)
     call ppgrd_calcGradient(p_rvectorDerivX, rvectorBlockX,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
     call ppgrd_calcGradient(p_rvectorDerivY, rvectorBlockY,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
 
     ! Calculate the error to the reference DerivXX.
     call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX%RvectorBlock(1),&
@@ -2149,13 +2160,13 @@ contains
 
       call lsysbl_createVector(rblockDiscr, rvectorBlock_Real, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(1),&
-          rvectorBlock_Real,PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+          rvectorBlock_Real, cgradType, cgradSubType)
       p_rvectorDerivX_Real => rvectorBlock_Real%RvectorBlock(1)
       p_rvectorDerivY_Real => rvectorBlock_Real%RvectorBlock(2)
       
       call lsysbl_createVector(rblockDiscr, rvectorBlock_Aimag, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(2),&
-          rvectorBlock_Aimag,PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+          rvectorBlock_Aimag, cgradType, cgradSubType)
       p_rvectorDerivX_Aimag => rvectorBlock_Aimag%RvectorBlock(1)
       p_rvectorDerivY_Aimag => rvectorBlock_Aimag%RvectorBlock(2)
 
@@ -2231,13 +2242,13 @@ contains
     call lsysbl_createVector(rblockDiscr, rvectorBlockY_Real, .false.)
     call lsysbl_createVector(rblockDiscr, rvectorBlockY_Aimag, .false.)
     call ppgrd_calcGradient(p_rvectorDerivX_Real, rvectorBlockX_Real,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
     call ppgrd_calcGradient(p_rvectorDerivX_Aimag, rvectorBlockX_Aimag,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
     call ppgrd_calcGradient(p_rvectorDerivY_Real, rvectorBlockY_Real,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
     call ppgrd_calcGradient(p_rvectorDerivY_Aimag, rvectorBlockY_Aimag,&
-        PPGRD_ZZTECHNIQUE, PPGRD_NODEPATCH)
+        cgradType, cgradSubType)
     
     ! Calculate the error to the reference DerivXX.
     call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
