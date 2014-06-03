@@ -24,8 +24,8 @@
 !#
 !# Auxiliary routines, called internally.
 !#
-!# 1.) ppgrd_calcGradInterpP12Q12cnf
-!#     -> Calculate the reconstructed gradient as P1, Q1, P2 or Q2
+!# 1.) ppgrd_calcGradInterpPnQn
+!#     -> Calculate the reconstructed gradient as Pn or Qn
 !#        vector for an arbitrary conformal discretisation.
 !#        Uses 1st order interpolation to reconstruct the gradient.
 !#
@@ -131,7 +131,7 @@ module pprocgradients
   public :: ppgrd_initPerfConfig
   public :: ppgrd_calcGradient
   public :: ppgrd_calcGradientError
-  public :: ppgrd_calcGradInterpP12Q12cnf
+  public :: ppgrd_calcGradInterpPnQn
   public :: ppgrd_calcGradSuperPatchRecov
   public :: ppgrd_calcGradLimAvgP1Q1cnf
 
@@ -169,7 +169,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType,&
+  subroutine ppgrd_calcGradient (rvectorScalar, rvectorGradient, cgradType,&
       cgradSubtype, rcubatureInfo, rperfconfig)
 
 !<description>
@@ -262,7 +262,7 @@ contains
     select case (imethod)
     case (PPGRD_INTERPOL)
       ! 1st order gradient
-      call ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient, rperfconfig)
+      call ppgrd_calcGradInterpPnQn (rvectorScalar,rvectorGradient, rperfconfig)
 
     case (PPGRD_ZZTECHNIQUE)
       ! 2nd order gradient with ZZ.
@@ -432,8 +432,8 @@ contains
           end select
 
           ! Adjust element group
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement   = celement
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType = elem_igetTrafoType(celement)
         end do
       end do
 
@@ -442,11 +442,11 @@ contains
       call lsysbl_createVecBlockByDiscr(rdiscrBlockRef, rgradientRef, .true.)
 
       ! Recover consistent gradient vector
-      call ppgrd_calcGradient (rvectorScalar, rgradient, rperfconfig=rperfconfig)
+      call ppgrd_calcGradient(rvectorScalar, rgradient, rperfconfig=rperfconfig)
 
       ! Recover smoothed gradient vector
       if (imethod .eq. PPGRD_INTERPOL) then
-        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef, rperfconfig)
+        call ppgrd_calcGradInterpPnQn(rvectorScalar, rgradientRef, rperfconfig)
       else
         call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef,&
             isubmethod, rcubatureInfo, rperfconfig)
@@ -532,8 +532,8 @@ contains
           ccub = spdiscr_getStdCubature(celement)
 
           ! Adjust element group
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%celement   = celement
+          rdiscrBlock%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType = elem_igetTrafoType(celement)
         end do
       end do
 
@@ -566,8 +566,8 @@ contains
           ccub = spdiscr_getStdCubature(celement)
 
           ! Adjust element group
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement        = celement
-          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType      = elem_igetTrafoType(celement)
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%celement   = celement
+          rdiscrBlockRef%RspatialDiscr(idim)%RelementDistr(i)%ctrafoType = elem_igetTrafoType(celement)
         end do
       end do
 
@@ -607,13 +607,14 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient,&
+  subroutine ppgrd_calcGradInterpPnQn (rvectorScalar,rvectorGradient,&
       rperfconfig)
 
 !<description>
-  ! Calculates the recovered gradient of a scalar finite element function
-  ! by standard interpolation. Supports conformal discretisations
-  ! with <tex>$P_1$, $Q_1$, $P_2$ and $Q_2$</tex> mixed in the destination vector.
+  ! Calculates the recovered gradient of a scalar finite element
+  ! function by standard interpolation. Supports conformal
+  ! discretisations with <tex>$P_n$ and $Q_n$</tex> finite elements
+  ! mixed in the destination vector.
 !</description>
 
 !<input>
@@ -725,20 +726,20 @@ contains
         call spdiscr_getElemGroupInfo (rvectorGradient%p_rblockDiscr%RspatialDiscr(i),j,celemSource)
         
         select case(elem_getPrimaryElement(celemSource))
-        case (EL_Q0_2D, EL_Q0_3D,&
+        case (          EL_Q0_2D, EL_Q0_3D,&
               EL_P0_1D, EL_P0_2D, EL_P0_3D,&
-              EL_Q1_2D, EL_Q1_3D,&
+                        EL_Q1_2D, EL_Q1_3D,&
               EL_P1_1D, EL_P1_2D, EL_P1_3D,&
-              EL_Q2_2D, EL_Q2_3D,&
+                        EL_Q2_2D, EL_Q2_3D,&
               EL_P2_1D, EL_P2_2D, EL_P2_3D,&
-              EL_P2E,&
-              EL_Q3_2D,&
-              EL_P3_2D)
+                        EL_P2E,&
+                        EL_Q3_2D,&
+                        EL_P3_2D)
 
         case default
           call output_line ('Only Q0, Q1, Q2, Q3, P0, P1, P2, P3, and extended P2+' // &
               ' are supported as discretisation for the destination vector!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP12Q12cnf')
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpPnQn')
           call sys_halt()
         end select
 
@@ -1082,6 +1083,11 @@ contains
         end do
       end do
 
+      !$omp parallel default(shared)&
+      !$omp private(Dderivatives,IELmax,IELset,IdofsDest,IdofsTrial,&
+      !$omp         cevaluationTag,i,j,revalElementSet)&
+      !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
+
       ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsDest(indofDest,nelementsPerBlock))
@@ -1098,6 +1104,7 @@ contains
       cevaluationTag = elem_getEvaluationTag(celemSource)
 
       ! Loop over the elements - blockwise.
+      !$omp do schedule(static,1)
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
 
         ! We always handle NELEMSIM elements simultaneously.
@@ -1144,6 +1151,7 @@ contains
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
 
+          !$omp critical
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
               p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
@@ -1153,6 +1161,7 @@ contains
                   p_IcontributionsAtDOF(IdofsDest(j,i))+1
            end do
          end do
+         !$omp end critical
 
         case (NDIM2D)
           ! Calculate the X-derivative in the corners of the elements
@@ -1171,6 +1180,7 @@ contains
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
 
+          !$omp critical
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
               p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
@@ -1181,6 +1191,7 @@ contains
                   p_IcontributionsAtDOF(IdofsDest(j,i))+1
            end do
          end do
+         !$omp end critical
 
          case (NDIM3D)
            ! Calculate the X-derivative in the corners of the elements
@@ -1204,6 +1215,7 @@ contains
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
 
+          !$omp critical
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
               p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
@@ -1215,18 +1227,22 @@ contains
                   p_IcontributionsAtDOF(IdofsDest(j,i))+1
            end do
          end do
+         !$omp end critical
 
        end select
 
       end do ! IELset
+      !$omp end do
 
       ! Release memory
       call elprep_releaseElementSet(revalElementSet)
 
-      deallocate(p_DcubPtsRef)
       deallocate(Dderivatives)
       deallocate(IdofsDest)
       deallocate(IdofsTrial)
+      !$omp end parallel
+
+      deallocate(p_DcubPtsRef)
 
     end do ! ielemGroup
 
@@ -1235,21 +1251,26 @@ contains
     ! of the 'mean' of the derivatives.
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
+      !$omp parallel do default(shared)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is
         ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
       end do
+      !$omp end parallel do
 
     case (NDIM2D)
+      !$omp parallel do default(shared)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is
         ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
       end do
+      !$omp end parallel do
 
     case (NDIM3D)
+      !$omp parallel do default(shared)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is
         ! crap as there is a point not connected to any element!
@@ -1257,13 +1278,14 @@ contains
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
         p_DzDeriv(i) = p_DzDeriv(i) / p_IcontributionsAtDOF(i)
       end do
+      !$omp end parallel do
 
     end select
 
     ! Release temp data
     call storage_free (h_IcontributionsAtDOF)
 
-  end subroutine ppgrd_calcGradInterpP12Q12cnf
+  end subroutine ppgrd_calcGradInterpPnQn
 
   !****************************************************************************
 

@@ -629,6 +629,8 @@ contains
       call storage_getbase_int (rdiscretisation%h_IelementDofs,p_IelementDofs)
       call storage_getbase_int (rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
 
+      !$omp parallel do default(shared)&
+      !$omp private(ielnr,isize,ipos,i)
       do iel = 1,size(IelIdx)
         ielnr = IelIdx(iel)
         isize = p_IelementDofIdx(ielnr+1) - p_IelementDofIdx(ielnr)
@@ -637,6 +639,7 @@ contains
           IdofGlob(i,iel) = p_IelementDofs(ipos+i-1)
         end do
       end do
+      !$omp end parallel do
 
       ! That is it.
       return
@@ -1009,7 +1012,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P0_1D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P0_1D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1040,10 +1046,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1051,7 +1059,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P1_1D(IverticesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P1_1D(IverticesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1086,11 +1097,13 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1098,8 +1111,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P2_1D(NVT, IverticesAtElement, IelIdx,&
-                                           IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P2_1D(NVT, IverticesAtElement, IelIdx,&
+                                      IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1137,12 +1153,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners and the cell midpoints.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
-      IdofGlob(3,i) = NVT + IelIdx(i)
+      IdofGlob(  3,i) = NVT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1150,8 +1168,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_S31_1D(NVT, IverticesAtElement, IelIdx,&
-                                            IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+   subroutine dof_locGlobUniMult_S31_1D(NVT, IverticesAtElement, IelIdx,&
+                                        IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1189,12 +1210,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       IdofGlob(3:4,i) = NVT + IdofGlob(1:2,i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1202,8 +1225,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_PN_1D(ndegree,NVT,NEL,IverticesAtElement,&
-                                           IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_PN_1D(ndegree,NVT,NEL,IverticesAtElement,&
+                                      IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1247,12 +1273,14 @@ contains
   integer :: i,j
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared) private(j)
     do i = 1, size(IelIdx)
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       do j = 1, ndegree-1
         IdofGlob(2+j,i) = NVT + (j-1)*NEL + IelIdx(i)
       end do
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1260,7 +1288,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1291,10 +1322,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1302,7 +1335,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P1Q1(IverticesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P1Q1(IverticesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1342,11 +1378,13 @@ contains
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1354,7 +1392,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4P0(IverticesAtElement, IelIdx, IdofGlob, NVT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4P0(IverticesAtElement, IelIdx, IdofGlob, NVT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1393,6 +1434,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       IdofGlob(1,i) = 4*(IelIdx(i)-1)+1
@@ -1400,6 +1442,7 @@ contains
       IdofGlob(3,i) = 4*(IelIdx(i)-1)+3
       IdofGlob(4,i) = 4*(IelIdx(i)-1)+4
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1407,7 +1450,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q1B(IverticesAtElement, IelIdx, IdofGlob, NVT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q1B(IverticesAtElement, IelIdx, IdofGlob, NVT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1449,19 +1495,24 @@ contains
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
       IdofGlob(j+1,i) = NVT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4P1(IverticesAtElement, IelIdx, IdofGlob, NVT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4P1(IverticesAtElement, IelIdx, IdofGlob, NVT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1500,12 +1551,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
-      IdofGlob(5,i) = NVT + IelIdx(i)
+      IdofGlob(  5,i) = NVT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1513,8 +1566,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4P2(IverticesAtElement, IedgesAtElement,&
-      IelIdx, IdofGlob, NVT, NMT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4P2(IverticesAtElement, IedgesAtElement,&
+                                       IelIdx, IdofGlob, NVT, NMT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1560,6 +1616,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners...
@@ -1575,6 +1632,7 @@ contains
       IdofGlob(12,i) = NVT + NMT + 5*(IelIdx(i)-1) + 4
       IdofGlob(13,i) = NVT + NMT + 5*(IelIdx(i)-1) + 5
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1582,7 +1640,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4P1T(IedgesAtElement, IelIdx, IdofGlob, NMT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4P1T(IedgesAtElement, IelIdx, IdofGlob, NMT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1621,6 +1682,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the edge numbers.
       IdofGlob(1:4,i) = IedgesAtElement(1:4,IelIdx(i))
@@ -1631,6 +1693,7 @@ contains
       IdofGlob(7,i) = NMT + 4*(IelIdx(i)-1) + 3
       IdofGlob(8,i) = NMT + 4*(IelIdx(i)-1) + 4
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1638,7 +1701,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4P1TVDF(IedgesAtElement, IelIdx, IdofGlob, NMT)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4P1TVDF(IedgesAtElement, IelIdx, IdofGlob, NMT)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1677,6 +1743,7 @@ contains
   integer :: i,j
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared) private(j)
     do i=1,size(IelIdx)
       ! The first 4 DOFs are just the edge numbers.
       ! These DOFs resemble the integral mean value of the flow through
@@ -1702,6 +1769,7 @@ contains
       end do
 
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1709,7 +1777,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1740,6 +1811,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s. Every element gives 3 DOF`s which are
       ! "internally" associated to the vertices but are not coupled.
@@ -1747,6 +1819,7 @@ contains
       IdofGlob(2,i) = 2+3*(IelIdx(i)-1)
       IdofGlob(3,i) = 3+3*(IelIdx(i)-1)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1754,7 +1827,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DGQ12D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DGQ12D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1785,6 +1861,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s. Every element gives 4 DOF`s which are
       ! "internally" associated to the vertices but are not coupled.
@@ -1793,6 +1870,7 @@ contains
       IdofGlob(3,i) = 3+4*(IelIdx(i)-1)
       IdofGlob(4,i) = 4+4*(IelIdx(i)-1)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1800,7 +1878,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DGQ22D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DGQ22D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1831,6 +1912,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s. Every element gives 9 DOF`s which are
       ! not coupled to any other element
@@ -1844,6 +1926,7 @@ contains
       IdofGlob(8,i) = 8+9*(IelIdx(i)-1)
       IdofGlob(9,i) = 9+9*(IelIdx(i)-1)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1851,8 +1934,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P2(NVT, IverticesAtElement, &
-                                        IedgesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P2(NVT, IverticesAtElement, &
+                                   IedgesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1891,6 +1977,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The P2 element has global DOF`s in the corners and edge midpoints
@@ -1902,8 +1989,8 @@ contains
       ! Then append the numbers of the edges as midpoint numbers.
       ! Note that the number in this array is NVT+1..NVT+NMT.
       IdofGlob(4:6,i) = NVT + IedgesAtElement(1:3,IelIdx(i))
-
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1911,8 +1998,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P2E(NVT, NMT, IverticesAtElement, &
-                                        IedgesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P2E(NVT, NMT, IverticesAtElement, &
+                                    IedgesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -1957,6 +2047,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The extended P2+ element has global DOF`s in the corners, the edge
@@ -1972,8 +2063,8 @@ contains
       ! At last append the element number - shifted by NVT+NMT to get
       ! a number behind.
       IdofGlob(7,i) = NVT + NMT + IelIdx(i)
-
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -1981,8 +2072,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P3(NVT, NMT, IverticesAtElement, &
-                                        IedgesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P3(NVT, NMT, IverticesAtElement, &
+                                   IedgesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2027,6 +2121,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The P3 element has global DOF`s in the corners, the 1/3- and
@@ -2047,8 +2142,8 @@ contains
       ! At last append the element number - shifted by NVT+2*NMT to get
       ! a number behind.
       IdofGlob(10,i) = NVT + 2*NMT + IelIdx(i)
-
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2056,8 +2151,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q2(NVT,NMT,IverticesAtElement, &
-                                        IedgesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q2(NVT,NMT,IverticesAtElement, &
+                                   IedgesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2100,6 +2198,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The Q2 element has global DOF`s in the corners, edge midpoints
@@ -2115,8 +2214,8 @@ contains
       ! At last append the element number - shifted by NVT+NMT to get
       ! a number behind.
       IdofGlob(9,i) = NVT + NMT + IelIdx(i)
-
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2124,8 +2223,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P2Q2(NVT,NMT,NVE,IverticesAtElement, &
-     IedgesAtElement,IelementCounter,IelIdx,IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P2Q2(NVT,NMT,NVE,IverticesAtElement, &
+      IedgesAtElement,IelementCounter,IelIdx,IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2181,6 +2283,7 @@ contains
       ! This element set consists of triangular elements.
 
       ! Loop through the elements to handle
+      !$omp parallel do default(shared)
       do i=1,size(IelIdx)
         ! Calculate the global DOF`s.
         ! The P2 element has global DOF`s in the corners and edge midpoints.
@@ -2191,13 +2294,14 @@ contains
         ! Then append the numbers of the edges as midpoint numbers.
         ! Note that the number in this array is NVT+1..NVT+NMT.
         IdofGlob(4:6,i) = NVT+IedgesAtElement(1:3,IelIdx(i))
-
       end do
+      !$omp end parallel do
 
     else
       ! This element set consists of quad elements.
 
       ! Loop through the elements to handle
+      !$omp parallel do default(shared)
       do i=1,size(IelIdx)
         ! Calculate the global DOF`s.
         ! The Q2 element has global DOF`s in the corners, edge midpoints
@@ -2216,8 +2320,8 @@ contains
         ! This is due to the fact that the element midpoints of triangular
         ! elements do not contribute to DOF`s in a mixed P2/Q2 discretisatrion!
         IdofGlob(9,i) = NVT + NMT + IelementCounter(IelIdx(i))
-
       end do
+      !$omp end parallel do
 
     end if
 
@@ -2227,7 +2331,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q3_2D(NVT,NMT,&
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q3_2D(NVT,NMT,&
       IverticesAtElement, IedgesAtElement, ItwistIndex, IelIdx, IdofGlob)
 
 !<description>
@@ -2276,6 +2383,7 @@ contains
   integer, dimension(4) :: Itw
 
     ! Loop through the elements to handle
+  !$omp parallel do default(shared) private(itwist,Itw)
     do i=1,size(IelIdx)
     
       ! decode edge twist
@@ -2303,8 +2411,8 @@ contains
       IdofGlob(14,i) = NVT + 2*NMT + 4*IelIdx(i) - 2
       IdofGlob(15,i) = NVT + 2*NMT + 4*IelIdx(i) - 1
       IdofGlob(16,i) = NVT + 2*NMT + 4*IelIdx(i)
-
     end do
+    !$omp end parallel do
 
   end subroutine
   
@@ -2312,7 +2420,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QP1(NEL, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QP1(NEL, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2346,6 +2457,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! 1st Global DOF = number of the element = function value
       IdofGlob(1,i) = IelIdx(i)
@@ -2354,6 +2466,7 @@ contains
       ! 3rd Global DOF = 2*NEL + number of the element = Y-derivative
       IdofGlob(3,i) = 2*NEL+IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2361,7 +2474,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P1T(IedgesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P1T(IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2396,6 +2512,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
@@ -2404,6 +2521,7 @@ contains
 
       IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2411,7 +2529,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q1T(IedgesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q1T(IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2446,6 +2567,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the edge numbers.
       ! We always copy all elements of IedgesAtElement (:,.).
@@ -2453,6 +2575,7 @@ contains
 
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2460,7 +2583,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q1TB(iNMT, IedgesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q1TB(iNMT, IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2498,6 +2624,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the numbers of the
       ! edges. The DOF in the element gets the element number.
@@ -2507,6 +2634,7 @@ contains
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
       IdofGlob(TRIA_NVEQUAD2D+1,i) = iNMT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2514,7 +2642,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q2T(iNMT, IedgesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q2T(iNMT, IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2552,6 +2683,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The first 4 DOF`s are the number of the edges.
@@ -2565,6 +2697,7 @@ contains
           IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))+iNMT
       IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2572,7 +2705,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q2TB(iNMT, iNEL, &
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q2TB(iNMT, iNEL, &
       IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
@@ -2614,6 +2750,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The first 4 DOF`s are the number of the edges.
@@ -2629,6 +2766,7 @@ contains
       IdofGlob(2*TRIA_NVEQUAD2D+1,i) = 2*iNMT + IelIdx(i)
       IdofGlob(2*TRIA_NVEQUAD2D+2,i) = 2*iNMT + iNEL + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2636,7 +2774,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q3T_2D(iNMT, iNEL, IedgesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q3T_2D(iNMT, iNEL, IedgesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2677,6 +2818,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The first 4 DOF`s are the number of the edges.
@@ -2694,6 +2836,7 @@ contains
       IdofGlob(3*TRIA_NVEQUAD2D+2,i) = 3*iNMT + iNEL + IelIdx(i)
       IdofGlob(3*TRIA_NVEQUAD2D+3,i) = 3*iNMT + 2*iNEL + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2701,7 +2844,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P0Q0_3D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P0Q0_3D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2732,10 +2878,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2743,8 +2891,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_P1Q1_3D(IverticesAtElement, IelIdx,&
-                                             IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_P1Q1_3D(IverticesAtElement, IelIdx,&
+                                        IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2784,11 +2935,13 @@ contains
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2796,8 +2949,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q2_3D(NVT,NMT,NAT,IverticesAtElement, &
-                           IedgesAtElement,IfacesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q2_3D(NVT,NMT,NAT,IverticesAtElement, &
+      IedgesAtElement,IfacesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2847,12 +3003,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
-      IdofGlob(1:8,i) = IverticesAtElement(1:8,IelIdx(i))
-      IdofGlob(9:20,i) = NVT + IedgesAtElement(1:12,IelIdx(i))
+      IdofGlob( 1:8,i)  = IverticesAtElement(1:8,IelIdx(i))
+      IdofGlob(9:20,i)  = NVT + IedgesAtElement(1:12,IelIdx(i))
       IdofGlob(21:26,i) = NVT + NMT + IfacesAtElement(1:6,IelIdx(i))
-      IdofGlob(27,i) = NVT + NMT + IelIdx(i)
+      IdofGlob(   27,i) = NVT + NMT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2860,7 +3018,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QP1_3D(NEL, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QP1_3D(NEL, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2894,6 +3055,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! 1st Global DOF = number of the element = function value
       IdofGlob(1,i) = IelIdx(i)
@@ -2904,6 +3066,7 @@ contains
       ! 4th Global DOF = 3*NEL + number of the element = Z-derivative
       IdofGlob(4,i) = 3*NEL+IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2911,7 +3074,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q1T_3D(IfacesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif 
+  subroutine dof_locGlobUniMult_Q1T_3D(IfacesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2946,10 +3112,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the face numbers.
       IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -2957,7 +3125,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q1TB_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q1TB_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -2995,13 +3166,15 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
-      IdofGlob( 7,i) = iNAT + 4*(IelIdx(i)-1) + 1
-      IdofGlob( 8,i) = iNAT + 4*(IelIdx(i)-1) + 2
-      IdofGlob( 9,i) = iNAT + 4*(IelIdx(i)-1) + 3
-      IdofGlob(10,i) = iNAT + 4*(IelIdx(i)-1) + 4
+      IdofGlob(  7,i) = iNAT + 4*(IelIdx(i)-1) + 1
+      IdofGlob(  8,i) = iNAT + 4*(IelIdx(i)-1) + 2
+      IdofGlob(  9,i) = iNAT + 4*(IelIdx(i)-1) + 3
+      IdofGlob( 10,i) = iNAT + 4*(IelIdx(i)-1) + 4
     end do
+    !$omp end parallel do
 
   end subroutine
   
@@ -3009,7 +3182,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_Q2T_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_Q2T_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3047,6 +3223,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s - which are simply the face numbers.
       IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
@@ -3064,6 +3241,7 @@ contains
       IdofGlob(18,i) = iNAT + 2*(IfacesAtElement(6,IelIdx(i))-1)+2
       IdofGlob(19,i) = 3*iNAT + IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3071,7 +3249,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T0_1D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T0_1D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3102,10 +3283,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3113,7 +3296,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T1_1D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T1_1D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3144,11 +3330,13 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = 2*IelIdx(i)-1
       IdofGlob(2,i) = 2*IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3157,7 +3345,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T2_1D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T2_1D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3188,12 +3379,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = 3*IelIdx(i)-2
       IdofGlob(2,i) = 3*IelIdx(i)-1
       IdofGlob(3,i) = 3*IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3201,7 +3394,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T0_2D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T0_2D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3232,10 +3428,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3243,7 +3441,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T1_2D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T1_2D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3274,12 +3475,14 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = 3*IelIdx(i)-2
       IdofGlob(2,i) = 3*IelIdx(i)-1
       IdofGlob(3,i) = 3*IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3288,7 +3491,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3319,6 +3525,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = 6*IelIdx(i)-5
@@ -3328,6 +3535,7 @@ contains
       IdofGlob(5,i) = 6*IelIdx(i)-1
       IdofGlob(6,i) = 6*IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
   
@@ -3337,7 +3545,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_DG_T3_2D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_DG_T3_2D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3368,6 +3579,7 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
       ! Global DOF = number of the element
       IdofGlob(1,i) = 10*IelIdx(i)-9
@@ -3381,6 +3593,7 @@ contains
       IdofGlob(9,i) = 10*IelIdx(i)-1
       IdofGlob(10,i) = 10*IelIdx(i)
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3388,8 +3601,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_MSL2_3D(NVT,NAT,IverticesAtElement, &
-                           IfacesAtElement,IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_MSL2_3D(NVT,NAT,IverticesAtElement, &
+                                        IfacesAtElement,IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3432,10 +3648,12 @@ contains
   integer :: i
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared)
     do i=1,size(IelIdx)
-      IdofGlob(1:8,i) = IverticesAtElement(1:8,IelIdx(i))
+      IdofGlob( 1:8,i) = IverticesAtElement(1:8,IelIdx(i))
       IdofGlob(9:14,i) = NVT + IfacesAtElement(1:6,IelIdx(i))
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3443,7 +3661,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPW4DCP1_2D(IelIdx, IdofGlob)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine dof_locGlobUniMult_QPW4DCP1_2D(IelIdx, IdofGlob)
 
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
@@ -3474,11 +3695,13 @@ contains
   integer :: i,j
 
     ! Loop through the elements to handle
+    !$omp parallel do default(shared) private(j)
     do i=1,size(IelIdx)
       do j = 1, 11
         IdofGlob(j,i) = 11*(IelIdx(i)-1) + j
       end do
     end do
+    !$omp end parallel do
 
   end subroutine
 
@@ -3682,12 +3905,14 @@ contains
 
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, IelementDofs)
 
+        !$omp parallel do default(shared) private(ipos,j)
         do i = 1,NEL
           ipos = p_IelementDofIdx(p_IelementList(i))
           do j=1,ndoflocal
             p_IelementDofs(ipos+j-1) = IelementDofs(j,i)
           end do
         end do
+        !$omp end parallel do
 
         ! Release temp memory, that is it.
         deallocate (IelementDofs)

@@ -315,7 +315,7 @@ contains
 
     !$omp parallel do default(shared) firstprivate(iel)&
     !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
-    !$omp         dval,ibas,iellast,indof,iresult,nve,revalElement)
+    !$omp         dval,ibas,iellast,indof,iresult,ivar,nve,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! Get the element number that contains the point.
@@ -511,6 +511,7 @@ contains
       end if
 
     end do ! ipoint
+    !$omp end parallel do
 
   end subroutine
 
@@ -593,7 +594,7 @@ contains
     integer :: cnonmesh
     integer :: ipoint, indof, nve, ibas, ider, iblock, iblMin, iblMax
     integer(I32) :: celement
-    integer :: iel,iresult,iellast
+    integer :: iel,iresult,iellast,ivar,nvar
     integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -682,7 +683,10 @@ contains
 
     iel = 1
 
-    ! loop over all points
+    !$omp parallel do default(shared) firstprivate(iel)&
+    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
+    !$omp         dval,ibas,iblock,ider,iellast,indof,iresult,ivar,neqsc,&
+    !$omp         nvar,nve,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! get the element number that contains the point
@@ -790,31 +794,87 @@ contains
       ! calculate function values by multiplying the FE-coefficients with the values of
       ! the basis functions and summing up
       Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
+
       if (rvectorBlock%cdataType .eq. ST_DOUBLE) then
+
         do ider = 1,size(CderType)
           do iblock = iblMin,iblMax
-            dval = 0.0_DP
-            do ibas = 1,indof
-              dval = dval +   p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
+
+            ! number of equations in scalar component
+            neqsc = rvectorBlock%RvectorBlock(iblock)%neq
+
+            ! Check if vector is stored in interleaved format
+            if (rvectorBlock%RvectorBlock(iblock)%NVAR .eq. 1) then
+
+              dval = 0.0_DP
+              do ibas = 1,indof
+                dval = dval + p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
                             * Dbas(ibas,CderType(ider))
-            end do
-            Dvalues(iblock, ider, ipoint) = dval
+              end do
+              Dvalues(iblock, ider, ipoint) = dval
+
+            else
+
+              ! number of variables in scalar component
+              nvar = rvectorBlock%RvectorBlock(iblock)%NVAR
+              do ivar = 1, nvar
+                
+                dval = 0.0_DP
+                do ibas = 1,indof
+                  dval = dval + p_Ddata((iblock-1)*neqsc*nvar + (Idofs(ibas)-1)*nvar + ivar) &
+                              * Dbas(ibas,CderType(ider))
+                end do
+                Dvalues(iblock, ider, (ipoint-1)*nvar+ivar) = dval
+
+              end do
+
+            end if
+
           end do
         end do
+
       else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
+
         do ider = 1,size(CderType)
           do iblock = iblMin,iblMax
-            dval = 0.0_DP
-            do ibas = 1,indof
-              dval = dval +   p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
+
+            ! number of equations in scalar component
+            neqsc = rvectorBlock%RvectorBlock(iblock)%neq
+
+            ! Check if vector is stored in interleaved format
+            if (rvectorBlock%RvectorBlock(iblock)%NVAR .eq. 1) then
+
+              dval = 0.0_DP
+              do ibas = 1,indof
+                dval = dval + p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
                             * Dbas(ibas,CderType(ider))
-            end do
-            Dvalues(iblock, ider, ipoint) = dval
+              end do
+              Dvalues(iblock, ider, ipoint) = dval
+
+            else
+
+              ! number of variables in scalar component
+              nvar = rvectorBlock%RvectorBlock(iblock)%NVAR
+              do ivar = 1, nvar
+                
+                dval = 0.0_DP
+                do ibas = 1,indof
+                  dval = dval + p_Fdata((iblock-1)*neqsc*nvar + (Idofs(ibas)-1)*nvar + ivar) &
+                              * Dbas(ibas,CderType(ider))
+                end do
+                Dvalues(iblock, ider, (ipoint-1)*nvar+ivar) = dval
+
+              end do
+
+            end if
+
           end do
         end do
+
       end if
 
     end do ! ipoint
+    !$omp end parallel do
 
   end subroutine
 
@@ -886,7 +946,7 @@ contains
     integer :: cnonmesh
     integer :: ipoint, indof, nve, ibas, ider
     integer(I32) :: celement
-    integer :: iel,iresult,iellast
+    integer :: iel,iresult,iellast,ivar
     integer, dimension(:), pointer :: p_IelemGroupIDs
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -961,7 +1021,9 @@ contains
 
     iel = 1
 
-    ! loop over all points
+    !$omp parallel do default(shared) firstprivate(iel)&
+    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
+    !$omp         dval,ibas,ider,iellast,indof,iresult,ivar,nve,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! get the element number that contains the point
@@ -1065,25 +1127,67 @@ contains
       ! calculate function values by multiplying the FE-coefficients with the values of
       ! the basis functions and summing up
       Dvalues(:,ipoint) = 0.0_DP
+
       if (rvector%cdataType .eq. ST_DOUBLE) then
-        do ider = 1,size(CderType)
-          dval = 0.0_DP
-          do ibas = 1,indof
-            dval = dval + p_Ddata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+
+        ! Check if vector is stored in interleaved format
+        if (rvector%NVAR .eq. 1) then
+
+          do ider = 1,size(CderType)
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval + p_Ddata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(ider, ipoint) = dval
           end do
-          Dvalues(ider, ipoint) = dval
-        end do
+
+        else
+
+          do ider = 1,size(CderType)
+            do ivar = 1, rvector%NVAR
+              dval = 0.0_DP
+              do ibas = 1,indof
+                dval = dval + p_Ddata((Idofs(ibas)-1)*rvector%NVAR+ivar) *&
+                              Dbas(ibas,CderType(ider))
+              end do
+              Dvalues(ider, (ipoint-1)*rvector%NVAR+ivar) = dval
+            end do
+          end do
+
+        end if
+
       else if (rvector%cdataType .eq. ST_SINGLE) then
-        do ider = 1,size(CderType)
-          dval = 0.0_DP
-          do ibas = 1,indof
-            dval = dval + p_Fdata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+
+        ! Check if vector is stored in interleaved format
+        if (rvector%NVAR .eq. 1) then
+          
+          do ider = 1,size(CderType)
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval + p_Fdata(Idofs(ibas)) * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(ider, ipoint) = dval
           end do
-          Dvalues(ider, ipoint) = dval
-        end do
+
+        else
+
+          do ider = 1,size(CderType)
+            do ivar = 1, rvector%NVAR
+              dval = 0.0_DP
+              do ibas = 1,indof
+                dval = dval + p_Fdata((Idofs(ibas)-1)*rvector%NVAR+ivar) *&
+                              Dbas(ibas,CderType(ider))
+              end do
+              Dvalues(ider, (ipoint-1)*rvector%NVAR+ivar) = dval
+            end do
+          end do
+
+        end if
+
       end if
 
     end do ! ipoint
+    !$omp end parallel do
 
   end subroutine
 
@@ -2005,6 +2109,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint)
         do iel = 1, size(Ielements)
           do ipoint = 1,ubound(DpointsRef,2)
 
@@ -2020,6 +2126,7 @@ contains
 
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
 
       else
 
@@ -2028,6 +2135,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint,ivar)
         do iel = 1,size(Ielements)
           do ipoint = 1,ubound(DpointsRef,2)
             do ivar = 1,rvectorScalar%NVAR
@@ -2046,6 +2155,8 @@ contains
             end do ! ivar
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
+
       end if
 
     else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
@@ -2058,6 +2169,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint)
         do iel = 1, size(Ielements)
           do ipoint = 1,ubound(DpointsRef,2)
 
@@ -2073,6 +2186,7 @@ contains
 
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
 
       else
 
@@ -2081,6 +2195,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint,ivar)
         do iel = 1,size(Ielements)
           do ipoint = 1,ubound(DpointsRef,2)
             do ivar = 1,rvectorScalar%NVAR
@@ -2099,6 +2215,8 @@ contains
             end do ! ivar
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
+        
       end if
 
     end if
@@ -2321,6 +2439,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint)
         do iel = 1, size(Ielements)
           do ipoint = 1,ubound(Dpoints,2)
 
@@ -2336,6 +2456,7 @@ contains
 
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
 
       else
 
@@ -2344,6 +2465,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint,ivar)
         do iel = 1,size(Ielements)
           do ipoint = 1,ubound(Dpoints,2)
             do ivar = 1,rvectorScalar%NVAR
@@ -2362,6 +2485,8 @@ contains
             end do ! ivar
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
+
       end if
 
     else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
@@ -2374,6 +2499,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint)
         do iel = 1, size(Ielements)
           do ipoint = 1,ubound(Dpoints,2)
 
@@ -2389,6 +2516,7 @@ contains
 
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
 
       else
 
@@ -2397,6 +2525,8 @@ contains
         ! FE-coefficients with the values of the basis functions and
         ! summing up.
 
+        !$omp parallel do default(shared)&
+        !$omp private(dval,ibas,ipoint,ivar)
         do iel = 1,size(Ielements)
           do ipoint = 1,ubound(Dpoints,2)
             do ivar = 1,rvectorScalar%NVAR
@@ -2415,6 +2545,8 @@ contains
             end do ! ivar
           end do ! ipoint
         end do ! iel
+        !$omp end parallel do
+
       end if
 
     end if
@@ -2562,6 +2694,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -2578,6 +2712,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -2586,6 +2721,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -2605,6 +2742,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -2620,7 +2758,9 @@ contains
       ! function values.  We get them by multiplying the
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
-
+      
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -2637,6 +2777,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -2645,6 +2786,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -2664,6 +2807,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -2770,6 +2914,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -2785,6 +2931,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -2793,6 +2940,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -2812,6 +2961,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -2828,6 +2978,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -2844,6 +2996,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -2852,6 +3005,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -2871,6 +3026,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -2991,6 +3147,8 @@ contains
       ! function values.  We get them by multiplying the FE-coefficients
       ! with the values of the basis functions and summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -3007,6 +3165,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -3014,6 +3173,8 @@ contains
       ! function values.  We get them by multiplying the FE-coefficients
       ! with the values of the basis functions and summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -3033,6 +3194,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -3048,6 +3210,8 @@ contains
       ! function values.  We get them by multiplying the FE-coefficients
       ! with the values of the basis functions and summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -3064,6 +3228,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -3071,6 +3236,8 @@ contains
       ! function values.  We get them by multiplying the FE-coefficients
       ! with the values of the basis functions and summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -3090,6 +3257,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -3204,6 +3372,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -3220,6 +3390,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -3228,6 +3399,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar = 1,rvectorScalar%NVAR
@@ -3247,6 +3420,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
@@ -3262,7 +3436,9 @@ contains
       ! function values.  We get them by multiplying the
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
-
+      
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint)
       do iel=1,nelements
         do ipoint = 1,npoints
 
@@ -3279,6 +3455,7 @@ contains
 
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     else
 
@@ -3287,6 +3464,8 @@ contains
       ! FE-coefficients with the values of the basis functions and
       ! summing up.
 
+      !$omp parallel do default(shared)&
+      !$omp private(dval,ibas,ipoint,ivar)
       do iel=1,nelements
         do ipoint = 1,npoints
           do ivar =1,rvectorScalar%NVAR
@@ -3306,6 +3485,7 @@ contains
           end do ! ivar
         end do ! ipoint
       end do ! iel
+      !$omp end parallel do
 
     end if
 
