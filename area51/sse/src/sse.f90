@@ -45,7 +45,7 @@ program sse
   type(t_problem) :: rproblem
   type(t_convergenceTable) :: rtable
   character(len=SYS_STRLEN) :: slogdir,slogfile
-  integer :: NLMIN,NLMAX,i
+  integer :: ILMIN,NLMIN,NLMAX,i
 
   ! Initialise system-wide settings
   call sys_init()
@@ -63,7 +63,7 @@ program sse
   else
     call output_init("./log/output.txt")
   end if
-  
+
   ! Initialise the FEAT 2.0 storage management
   call storage_init(999, 100)
 
@@ -74,6 +74,7 @@ program sse
   ! Get levels from parameter list
   call parlst_getvalue_int(rparlist, '', 'NLMIN', NLMIN)
   call parlst_getvalue_int(rparlist, '', 'NLMAX', NLMAX)
+  call parlst_getvalue_int(rparlist, '', 'ILMIN', ILMIN, NLMIN)
   call parlst_getvalue_int(rparlist, '', 'PROBLEMTYPE',&
       rproblem%cproblemtype, rproblem%cproblemtype)
 
@@ -85,8 +86,8 @@ program sse
 
   ! Initialise the convergence table
   call ctab_init(rtable)
-  
-  do i=NLMIN,NLMAX
+
+  do i=ILMIN,NLMAX
 
     ! Initialisation
     call output_line('Initialising triangulation...')
@@ -106,7 +107,7 @@ program sse
     call output_line(&
         '............................................................'//&
         trim(sys_sdEL(rtimerDiscr%delapsedReal,3))//'sec')
-    
+
     call output_line('Initialising matrices/vectors...')
     call stat_clearTimer(rtimerMatVec)
     call stat_startTimer(rtimerMatVec,STAT_TIMERSHORT)
@@ -115,19 +116,19 @@ program sse
     call output_line(&
         '............................................................'//&
         trim(sys_sdEL(rtimerMatVec%delapsedReal,3))//'sec')
-    
+
     call output_line('Initialising/implementing discrete boundary conditions...')
     call stat_clearTimer(rtimerBC)
     call stat_startTimer(rtimerBC,STAT_TIMERSHORT)
     call sse_initDiscreteBC(rproblem)
-    
+
     ! Implementation of boundary conditions
     call sse_implementBC(rproblem)
     call stat_stopTimer(rtimerBC)
     call output_line(&
         '............................................................'//&
         trim(sys_sdEL(rtimerBC%delapsedReal,3))//'sec')
-    
+
     ! Solve the problem
     call output_line('Solving problem...')
     call stat_clearTimer(rtimerSolver)
@@ -147,7 +148,7 @@ program sse
     call output_line(&
         '............................................................'//&
         trim(sys_sdEL(rtimerPostproc%delapsedReal,3))//'sec')
-    
+
     ! Cleanup
     call output_line('Freeing memory...')
     call stat_clearTimer(rtimerFree)
@@ -161,7 +162,7 @@ program sse
         '............................................................'//&
         trim(sys_sdEL(rtimerFree%delapsedReal,3))//'sec')
   end do
-  
+
   ! Export convergence table
   call sse_outputTable(rproblem,rtable)
 
@@ -170,12 +171,12 @@ program sse
 
   ! Clear parameter list
   call parlst_done(rparlist)
-  
+
   ! Print out heap statistics
   call output_lbrk()
   call storage_info(.true.)
-  
+
   ! Clean up the storage management, finish
   call storage_done()
-  
+
 end program sse

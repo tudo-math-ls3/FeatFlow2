@@ -67,14 +67,14 @@ module sse_main
   public :: sse_doneParamTriang
   public :: sse_outputTable
 
-  private 
+  private
 
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
 
   type t_problem_lvl
-  
+
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
@@ -84,23 +84,23 @@ module sse_main
 
     ! Cubature info structure which encapsules the cubature formula
     type(t_scalarCubatureInfo), dimension(3) :: RcubatureInfo
-    
+
     ! A system matrix for that specific level. The matrix will receive the
     ! discrete system operator.
     type(t_matrixBlock) :: rmatrix
 
     ! A scalar matrix that will recieve the prolongation matrix for this level.
     type(t_matrixScalar), dimension(6) :: rmatProl,rmatRest
-    
+
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection
 
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
-  
+
     ! Sorting strategy for resorting vectors/matrices.
     type(t_blockSortStrategy) :: rsortStrategy
-    
+
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1) :: RfilterChain
@@ -109,19 +109,19 @@ module sse_main
     integer :: nfilters
 
   end type
-  
+
 !</typeblock>
 
 !<typeblock description="Application-specific type block for SSE problem">
 
   type t_problem
-  
+
     ! Problem type
     integer :: cproblemtype
 
     ! Minimum refinement level; = Level i in RlevelInfo
     integer :: ilvmin
-    
+
     ! Maximum refinement level
     integer :: ilvmax
 
@@ -137,7 +137,7 @@ module sse_main
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation.
     type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
-    
+
     ! A collection object that saves structural data and some
     ! problem-dependent information which is e.g. passed to
     ! callback routines.
@@ -154,9 +154,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine sse_initParamTriang(rparlist,ilvmin,ilvmax,rproblem)
-  
+
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
@@ -169,7 +169,7 @@ contains
 
   ! Minimum refinement level of the mesh; = coarse grid = level 1
   integer, intent(in) :: ilvmin
-  
+
   ! Maximum refinement level
   integer, intent(in) :: ilvmax
 !</input>
@@ -228,7 +228,7 @@ contains
 
   ! Create information about adjacencies and everything one needs from
   ! a triangulation. Afterwards, we have the coarse mesh.
-  if (trim(sprmfile) .ne. '') then    
+  if (trim(sprmfile) .ne. '') then
     call tria_initStandardMeshFromRaw(&
         rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%rboundary)
   else
@@ -237,7 +237,7 @@ contains
   end if
 
   ! Now, refine to level up to nlmax.
-  if (trim(sprmfile) .ne. '') then  
+  if (trim(sprmfile) .ne. '') then
     do i=rproblem%ilvmin+1,rproblem%ilvmax
       call tria_refine2LevelOrdering(rproblem%RlevelInfo(i-1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
@@ -270,7 +270,7 @@ contains
     call meshmod_disturbMesh(rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
         ddisturbMeshFactor)
   end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -278,7 +278,7 @@ contains
 !<subroutine>
 
   subroutine sse_initDiscretisation(rparlist,rproblem)
-  
+
 !<description>
   ! This routine initialises the discretisation structure of the underlying
   ! problem and saves it to the problem structure.
@@ -300,7 +300,7 @@ contains
   character(len=SYS_STRLEN) :: sconfig,sparameter
   integer, dimension(3) :: Ccubaturetypes,Celementtypes
   integer :: i,j,ccubaturetype,celementtype
-  
+
   ! Get the section for the configuration
   call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
 
@@ -339,7 +339,7 @@ contains
       ! Create an assembly information structure which tells the code
       ! the cubature formula to use. Standard: Gauss 3x3.
       do j=1,merge(1,2,rproblem%cproblemtype .eq. POISSON_SCALAR)
-        call spdiscr_createDefCubStructure(&  
+        call spdiscr_createDefCubStructure(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
             rproblem%RlevelInfo(i)%RcubatureInfo(1),&
             ccubaturetype)
@@ -347,29 +347,29 @@ contains
     end do
 
   case (POISSON_SYSTEM)
-    
+
     ! Get types of element for each variable
     do j=1,3
       call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
           isubstring=j)
       Celementtypes(j) = elem_igetID(sparameter)
     end do
-    
+
     ! Get types of cubature formula
     do j=1,3
       call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
           isubstring=j)
       Ccubaturetypes(j) = cub_igetID(sparameter)
     end do
-    
+
     do i=rproblem%ilvmin,rproblem%ilvmax
-      
+
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this problem, we have three blocks.
       call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
           3,rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-      
+
       ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
       ! list of scalar discretisation structures for every component
       ! of the solution vector.  Initialise the first three elements
@@ -387,7 +387,7 @@ contains
       ! Create an assembly information structure which tells the code
       ! the cubature formula to use. Standard: Gauss 3x3.
       do j=1,3
-        call spdiscr_createDefCubStructure(&  
+        call spdiscr_createDefCubStructure(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
             rproblem%RlevelInfo(i)%RcubatureInfo(j),&
             Ccubaturetypes(j))
@@ -395,29 +395,29 @@ contains
     end do
 
   case (SSE_SYSTEM1,SSE_SYSTEM2)
-    
+
     ! Get types of element for each variable
     do j=1,3
       call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
           isubstring=j)
       Celementtypes(j) = elem_igetID(sparameter)
     end do
-    
+
     ! Get types of cubature formula
     do j=1,3
       call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
           isubstring=j)
       Ccubaturetypes(j) = cub_igetID(sparameter)
     end do
-    
+
     do i=rproblem%ilvmin,rproblem%ilvmax
-      
+
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this problem, we have three blocks.
       call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
           6,rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-      
+
       ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
       ! list of scalar discretisation structures for every component
       ! of the solution vector.  Initialise the first three elements
@@ -439,11 +439,11 @@ contains
       ! Create an assembly information structure which tells the code
       ! the cubature formula to use. Standard: Gauss 3x3.
       do j=1,3
-        call spdiscr_createDefCubStructure(&  
+        call spdiscr_createDefCubStructure(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j-1),&
             rproblem%RlevelInfo(i)%RcubatureInfo(j),&
             Ccubaturetypes(j))
-        call spdiscr_createDefCubStructure(&  
+        call spdiscr_createDefCubStructure(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j),&
             rproblem%RlevelInfo(i)%RcubatureInfo(j),&
             Ccubaturetypes(j))
@@ -463,7 +463,7 @@ contains
 !<subroutine>
 
   subroutine sse_initMatVec(rparlist,rproblem)
-  
+
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
   ! by discretising the problem with the default discretisation structure
@@ -493,7 +493,7 @@ contains
   ! A bilinear and linear form describing the analytic problem to solve
   type(t_bilinearForm) :: rform
   type(t_linearForm) :: rlinform
-  
+
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR)
     !---------------------------------------------------------------------------
@@ -503,12 +503,12 @@ contains
     ! (grad_x,grad_x)*u + (grad_y,grad_y)*u = (func,f)
     !
     do i=rproblem%ilvmin,rproblem%ilvmax
-      
+
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatrix(rproblem%RlevelInfo(i)%rdiscretisation,&
           rproblem%RlevelInfo(i)%rmatrix)
-      
+
       ! Save matrix to the collection.
       ! They maybe used later, expecially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
@@ -530,17 +530,17 @@ contains
       rform%Idescriptors(2,1) = DER_DERIV_X
       rform%Idescriptors(1,2) = DER_DERIV_Y
       rform%Idescriptors(2,2) = DER_DERIV_Y
-      
+
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
       rform%Dcoefficients(1)  = 1.0
       rform%Dcoefficients(2)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
-      
+
       ! For debugging purposes only
       !rform%ballCoeffConstant = .false.
       !
@@ -558,7 +558,7 @@ contains
     call lsysbl_createVector(&
         rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
         rproblem%rvector,.true.)
-    
+
     ! Save the solution/RHS vector to the collection.
     call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
@@ -569,7 +569,7 @@ contains
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    
+
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the
     ! first block.
@@ -581,7 +581,7 @@ contains
         rlinform,.true.,rproblem%rrhs%RvectorBlock(1),&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1),&
         coeff_RHS_Poisson,rproblem%rcollection)
-    
+
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
 
@@ -625,55 +625,55 @@ contains
       rform%Idescriptors(1,1) = DER_DERIV_X
       rform%Idescriptors(2,1) = DER_FUNC
       rform%Dcoefficients(1)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
-      
+
       ! (1,3)-block (w,grad_y sigma_y)
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_DERIV_Y
       rform%Idescriptors(2,1) = DER_FUNC
       rform%Dcoefficients(1)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
-      
+
       ! (2,1)-block (grad_x v_x,u)
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
       rform%Idescriptors(2,1) = DER_DERIV_X
       rform%Dcoefficients(1)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(2),&
           rcollection=rproblem%rcollection)
-      
+
       ! (3,1)-block (grad_y v_y,u)
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
       rform%Idescriptors(2,1) = DER_DERIV_Y
       rform%Dcoefficients(1)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(3),&
           rcollection=rproblem%rcollection)
-      
+
       ! (2,2)- and (3,3)-blocks (v_x,sigma_x) and (v_y,sigma_y)
       rform%itermCount = 1
       rform%ballCoeffConstant = .true.
       rform%Idescriptors(1,1) = DER_FUNC
       rform%Idescriptors(2,1) = DER_FUNC
       rform%Dcoefficients(1)  = 1.0
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(2),&
@@ -703,7 +703,7 @@ contains
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    
+
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the
     ! first block.
@@ -716,11 +716,11 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1),&
         coeff_RHS_Poisson,rproblem%rcollection)
     call lsyssc_scaleVector(rproblem%rrhs%RvectorBlock(1),-1.0_DP)
-    
+
     ! Clear the second and thrid component of the RHS vector
     call lsyssc_clearVector(rproblem%rrhs%RvectorBlock(2))
     call lsyssc_clearVector(rproblem%rrhs%RvectorBlock(3))
-  
+
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
 
@@ -742,26 +742,26 @@ contains
     !   \     /   \ /
 
     do i=rproblem%ilvmin,rproblem%ilvmax
-      
+
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatrix(rproblem%RlevelInfo(i)%rdiscretisation,&
           rproblem%RlevelInfo(i)%rmatrix)
-      
+
       ! Save matrix to the collection.
       ! They maybe used later, expecially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
-      
+
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
       call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,&
-          1, 1, LSYSSC_MATRIX9)    
-      
+          1, 1, LSYSSC_MATRIX9)
+
       ! Anisotropic diffusion matrix (real part)
       rform%itermCount = 4
       rform%ballCoeffConstant = .false.
-      
+
       rform%Idescriptors(1,1) = DER_DERIV_X
       rform%Idescriptors(2,1) = DER_DERIV_X
       rform%Idescriptors(1,2) = DER_DERIV_Y
@@ -770,7 +770,7 @@ contains
       rform%Idescriptors(2,3) = DER_DERIV_Y
       rform%Idescriptors(1,4) = DER_DERIV_Y
       rform%Idescriptors(2,4) = DER_DERIV_Y
-      
+
       ! Assemble matrix block(1,1)
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
@@ -787,7 +787,7 @@ contains
       ! plus consistent mass matrix
       rform%itermCount = 5
       rform%ballCoeffConstant = .false.
-      
+
       rform%Idescriptors(1,1) = DER_DERIV_X
       rform%Idescriptors(2,1) = DER_DERIV_X
       rform%Idescriptors(1,2) = DER_DERIV_Y
@@ -798,7 +798,7 @@ contains
       rform%Idescriptors(2,4) = DER_DERIV_Y
       rform%Idescriptors(1,5) = DER_FUNC
       rform%Idescriptors(2,5) = DER_FUNC
-      
+
       ! Duplicate matrix structure
       call lsyssc_duplicateMatrix(&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
@@ -808,7 +808,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      
+
       ! Assemble matrix block(1,2)
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
@@ -816,7 +816,7 @@ contains
           coeff_Matrix_Aimag,rproblem%rcollection)
       call lsyssc_scaleMatrix(&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),-1.0_DP)
-      
+
       ! Assemble matrix block(2,1)
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
@@ -832,11 +832,11 @@ contains
     call lsysbl_createVector(&
         rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
         rproblem%rvector,.true.)
-    
+
     ! Save the solution/RHS vector to the collection.
     call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
-    
+
     ! Clear the RHS vector on the finest level.
     call lsysbl_clearVector(rproblem%rrhs)
 
@@ -881,7 +881,7 @@ contains
       rform%Idescriptors(1,1) = DER_FUNC
       rform%Idescriptors(2,1) = DER_FUNC
       rform%Dcoefficients(1)  = -dtidalfreq
-      
+
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
@@ -1016,11 +1016,11 @@ contains
     ! Create boundary region
     call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    
+
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_DERIV_X
-    
+
     ! Assemble the linear forms
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
         rproblem%rrhs%RvectorBlock(3), coeff_RHSBdr_Real, rboundaryRegion)
@@ -1030,7 +1030,7 @@ contains
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_DERIV_Y
-    
+
     ! Assemble the linear forms
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
         rproblem%rrhs%RvectorBlock(5), coeff_RHSBdr_Real, rboundaryRegion)
@@ -1051,56 +1051,56 @@ contains
 
   ! Apply sort strategy (if any)
   if (trim(ssortstrategy) .ne. '') then
-    
+
     do i=rproblem%ilvmin,rproblem%ilvmax
-      
+
       ! Create a sort strategy structure for our discretisation
       call sstrat_initBlockSorting(rproblem%RlevelInfo(i)%rsortStrategy,&
           rproblem%RlevelInfo(i)%rdiscretisation)
-      
+
       ! Calculate the resorting strategy.
       if (trim(ssortstrategy) .eq. 'CM') then
         call sstrat_initCuthillMcKee(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
             rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1))
-        
+
       elseif (trim(ssortstrategy) .eq. 'RCM') then
         call sstrat_initRevCuthillMcKee(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
             rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1))
-        
+
       elseif (trim(ssortstrategy) .eq. 'XYZCOORD') then
         call sstrat_initXYZsorting(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(1), 0)
-        
+
       elseif (trim(ssortstrategy) .eq. 'ZYXCOORD') then
         call sstrat_initXYZsorting(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(1), 1)
-        
+
       elseif (trim(ssortstrategy) .eq. 'FEAST') then
         call sstrat_initFEASTsorting(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(1))
-        
+
       elseif (trim(ssortstrategy) .eq. 'RANDOM') then
         call sstrat_initRandom(&
             rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1))
-        
+
       else
-        
+
         call output_line("Invalid sort strategy.", &
             OU_CLASS_ERROR,OU_MODE_STD,"sse_initMatVec")
         call sys_halt()
-        
+
       end if
-      
+
       ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
       call lsysbl_setSortStrategy(rproblem%RlevelInfo(i)%rmatrix,&
           rproblem%RlevelInfo(i)%rsortStrategy,&
           rproblem%RlevelInfo(i)%rsortStrategy)
-      
+
       ! Resort the matrix.
       call lsysbl_sortMatrix(rproblem%RlevelInfo(i)%rmatrix,.true.)
 
@@ -1109,12 +1109,12 @@ contains
     ! Install the resorting strategy in the RHS- and the solution
     ! vector, but do not resort them yet!
     ! We resort the vectors just before solving.
-    
+
     call lsysbl_setSortStrategy(rproblem%rrhs,&
         rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
     call lsysbl_setSortStrategy(rproblem%rvector,&
         rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
-    
+
   end if
 
   end subroutine
@@ -1124,7 +1124,7 @@ contains
 !<subroutine>
 
   subroutine sse_initDiscreteBC(rproblem)
-  
+
 !<description>
   ! This calculates the discrete version of the boundary conditions and
   ! assigns it to the system matrix and RHS vector.
@@ -1146,14 +1146,14 @@ contains
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
     call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
-    
+
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
-      
+
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
-        
+
         do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
-          
+
           ! We ask the boundary routines to create a "boundary region"
           ! - which is simply a part of the boundary corresponding to
           ! a boundary segment.  A boundary region roughly contains
@@ -1161,7 +1161,7 @@ contains
           ! endpoints are inside the region or not.
           call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,&
               rboundaryRegion)
-          
+
           ! We use this boundary region and specify that we want to
           ! have Dirichlet boundary there. The following call does the
           ! following:
@@ -1179,7 +1179,7 @@ contains
               getBoundaryValues_Poisson,rproblem%rcollection)
         end do
       end do
-      
+
     case (SSE_SCALAR)
 
       ! We ask the boundary routines to create a "boundary region"
@@ -1201,7 +1201,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_Aimag,rproblem%rcollection)
-      
+
     case (POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
       ! No essential boundary conditions
 
@@ -1211,7 +1211,7 @@ contains
       call sys_halt()
     end select
   end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1219,7 +1219,7 @@ contains
 !<subroutine>
 
   subroutine sse_implementBC(rproblem)
-  
+
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
 !</description>
@@ -1233,7 +1233,7 @@ contains
 
   ! local variables
   integer :: i
-  
+
   ! Next step is to implement boundary conditions into the RHS,
   ! solution and matrix. This is done using a vector/matrix filter
   ! for discrete boundary conditions.
@@ -1241,7 +1241,7 @@ contains
       rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC)
   call vecfil_discreteBCsol(rproblem%rvector,&
       rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC)
-  
+
   ! Implement discrete boundary conditions into the matrices on all
   ! levels, too. Call the appropriate matrix filter to modify
   ! all matrices according to the attached discrete boundary conditions.
@@ -1257,7 +1257,7 @@ contains
 !<subroutine>
 
   subroutine sse_solve(rparlist,rproblem)
-  
+
 !<description>
   ! Solves the given problem by applying a linear solver.
 !</description>
@@ -1290,7 +1290,7 @@ contains
   ! A solver node that accepts parameters for the linear solver
   type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
   type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
-  
+
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
@@ -1306,7 +1306,7 @@ contains
 
   ! Norm of residuals
   real(DP) :: dresNorm0,dresNorm
- 
+
 
   type(t_vectorScalar) :: rvectorSc,rvecTmpSc,rrhsSc
   type(t_vectorBlock) :: rvectorBl,rvecTmpBl,rrhsBl
@@ -1327,13 +1327,13 @@ contains
     ! Set up prolongation matrices
     do i=ilvmin+1,ilvmax
       do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
-        
+
         ! Create the matrix structure of the prolongation matrix.
         call mlop_create2LvlMatrixStruct(&
             rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
             LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl(j))
-        
+
         ! Assemble the entries of the prolongation matrix.
         call mlop_build2LvlProlMatrix(&
             rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
@@ -1360,7 +1360,7 @@ contains
             rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(j))
       end do
     end do
-    
+
     ! Set up an interlevel projecton structure for the coarse-most level.
     call mlprj_initProjectionMat(rproblem%RlevelInfo(ilvmin)%rprojection,&
         rproblem%RlevelInfo(ilvmin)%rmatrix)
@@ -1390,7 +1390,7 @@ contains
         p_rsolverNode%ddivRel, p_rsolverNode%ddivRel)
     call parlst_getvalue_double(rparlist, 'MG-SOLVER', 'ddivAbs', &
         p_rsolverNode%ddivAbs, p_rsolverNode%ddivAbs)
-    
+
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
 
@@ -1399,13 +1399,13 @@ contains
           rproblem%RlevelInfo(i)%nfilters)
       call filter_newFilterDiscBCDef(rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
-      
+
       ! On the coarsest grid, set up a coarse grid solver and no smoother
       ! On finer grids, set up a smoother but no coarse grid solver.
       nullify(p_rpreconditioner)
       nullify(p_rsmoother)
       nullify(p_rcoarseGridSolver)
-      
+
       if (i .eq. ilvmin) then
         if ((rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerRow .eq. 1) .and.&
             (rproblem%RlevelInfo(ilvmin)%rmatrix%nblocksPerCol .eq. 1)) then
@@ -1548,7 +1548,7 @@ contains
     end do
 
     ! Release the temporary vector
-    call lsysbl_releaseVector(rvecTmp) 
+    call lsysbl_releaseVector(rvecTmp)
 
   case (POISSON_SYSTEM+4711)
     !---------------------------------------------------------------------------
@@ -1561,17 +1561,17 @@ contains
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
-  
+
 !!$    ! Set up prolongation matrices
 !!$    do i=ilvmin+1,ilvmax
 !!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
-!!$        
+!!$
 !!$        ! Create the matrix structure of the prolongation matrix.
 !!$        call mlop_create2LvlMatrixStruct(&
 !!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
 !!$            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
 !!$            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl(j))
-!!$        
+!!$
 !!$        ! Assemble the entries of the prolongation matrix.
 !!$        call mlop_build2LvlProlMatrix(&
 !!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
@@ -1584,12 +1584,12 @@ contains
 !!$        call lsyssc_transposeMatrix(rproblem%RlevelInfo(i)%rmatProl(j),&
 !!$            rproblem%RlevelInfo(i)%rmatRest(j),LSYSSC_TR_ALL)
 !!$      end do
-!!$      
+!!$
 !!$      ! Now set up an interlevel projecton structure for this level
 !!$      ! based on the system matrix on this level.
 !!$      call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojection,&
 !!$          rproblem%RlevelInfo(i)%rmatrix)
-!!$      
+!!$
 !!$      ! Initialise the matrix-based projection
 !!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
 !!$        call mlprj_initMatrixProjection(&
@@ -1617,7 +1617,7 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     call linsol_initMultigrid2(p_rsolverNode,ilvmax-ilvmin+1)
-    
+
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
 
@@ -1626,7 +1626,7 @@ contains
           rproblem%RlevelInfo(i)%nfilters)
       call filter_newFilterDiscBCDef(rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
-      
+
       ! On the coarsest grid, set up a coarse grid solver and no smoother
       ! On finer grids, set up a smoother but no coarse grid solver.
       nullify(p_rpreconditioner)
@@ -1655,7 +1655,7 @@ contains
 
       ! Attach the filter chain which imposes boundary conditions on that level.
       p_rlevelInfo%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
-      
+
 !!$      ! Attach our user-defined projection to the level.
 !!$      call linsol_initProjMultigrid2Level(p_rlevelInfo,&
 !!$          rproblem%RlevelInfo(i)%rprojection)
@@ -1680,7 +1680,7 @@ contains
     end do
 
     call linsol_setMatrices(p_rsolverNode,Rmatrices(ilvmin:ilvmax))
-    
+
     ! We can release Rmatrices immediately -- as long as we do not
     ! release rproblem%RlevelInfo(i)%rmatrix!
 !!$    do i=ilvmin,ilvmax
@@ -1704,7 +1704,7 @@ contains
       call output_line("Matrix singular!",OU_CLASS_ERROR)
       call sys_halt()
     end if
-    
+
     call lsysbl_createScalarFromVec(p_rvector,rvectorSc,.true.)
     call lsysbl_createScalarFromVec(p_rrhs,rrhsSc,.true.)
     call lsysbl_createScalarFromVec(rvecTmp,rvecTmpSc,.true.)
@@ -1728,23 +1728,23 @@ contains
 !!$    ! Compute norm of initial residual
 !!$    dresNorm0 = lsysbl_vectorNorm(p_rrhs, LINALG_NORML2)
 !!$
-!!$    do ite = 1,5     
+!!$    do ite = 1,5
 !!$      ! Compute right-hand side -B[k]*N, k=1,2
 !!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(2,1),&
 !!$          rvecTmp1%RvectorBlock(1), rrhsTmp2%RvectorBlock(1), -1.0_DP, 0.0_DP)
 !!$      call lsyssc_matVec(rproblem%RlevelInfo(ilvmax)%rmatrix%RmatrixBlock(3,1),&
 !!$          rvecTmp1%RvectorBlock(1), rrhsTmp2%RvectorBlock(2), -1.0_DP, 0.0_DP)
-!!$      
+!!$
 !!$      print *, lsysbl_vectorNorm(rrhsTmp2, LINALG_NORML2)
-!!$      pause 
+!!$      pause
 !!$
 !!$      ! Solve the system A[k]*sigma[k]=rhs[k], k=1,2
 !!$      call linsol_solveAdaptively(p_rsolverNode,rvecTmp2,rrhsTmp2,rvecTmp3)
 !!$
 !!$      print *, lsysbl_vectorNorm(rvecTmp2, LINALG_NORML2)
-!!$      pause 
+!!$      pause
 !!$
-!!$      
+!!$
 !!$      ! Update solution
 !!$      call lsyssc_vectorLinearComb(p_rrhs%RvectorBlock(1),&
 !!$          rvecTmp1%RvectorBlock(1), -domega, 1.0_DP)
@@ -1804,7 +1804,7 @@ contains
 !!$    call lsysbl_releaseVector(rvecTmp1)
 !!$    call lsysbl_releaseVector(rvecTmp2)
 !!$    call lsysbl_releaseVector(rrhsTmp2)
-    
+
   case(POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
     !---------------------------------------------------------------------------
 
@@ -1824,7 +1824,7 @@ contains
         rproblem%RlevelInfo(ilvmax)%nfilters)
     call filter_newFilterDiscBCDef(rproblem%RlevelInfo(ilvmax)%RfilterChain,&
         rproblem%RlevelInfo(ilvmax)%nfilters,rproblem%RlevelInfo(ilvmax)%rdiscreteBC)
-    
+
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
@@ -1849,7 +1849,7 @@ contains
       call output_line("Matrix singular!",OU_CLASS_ERROR)
       call sys_halt()
     end if
-    
+
     ! Create temporal vectors
     call lsysbl_createScalarFromVec(p_rvector,rvectorSc,.true.)
     call lsysbl_createScalarFromVec(p_rrhs,rrhsSc,.true.)
@@ -1898,7 +1898,7 @@ contains
 !<subroutine>
 
   subroutine sse_postprocessing(rparlist,rproblem,rtable)
-  
+
 !<description>
   ! Writes the solution into a VTK file.
 !</description>
@@ -1959,10 +1959,10 @@ contains
   call ctab_addValue(rtable, "cells",&
       rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL)
   call ctab_addValue(rtable, "dofs", ndof)
-  
+
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR,POISSON_SYSTEM)
-    
+
     ! --- solution -------------------------------------------------------------
 
     ! Calculate the error to the reference function.
@@ -1970,12 +1970,12 @@ contains
         getReferenceFunction_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rproblem%rvector%RvectorBlock(1),&
         getReferenceFunction_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u", derror)
-  
+
     ! --- first derivative -----------------------------------------------------
 
     select case(rproblem%cproblemtype)
@@ -2002,29 +2002,29 @@ contains
       p_rvectorDerivX => rproblem%rvector%RvectorBlock(2)
       p_rvectorDerivY => rproblem%rvector%RvectorBlock(3)
     end select
-      
+
     ! Calculate the error to the reference DerivX.
     call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX,&
         getReferenceDerivX_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_x", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX,&
         getReferenceDerivX_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u_x", derror)
-    
+
     ! Calculate the error to the reference DerivY.
     call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivY,&
         getReferenceDerivY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_y", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY,&
         getReferenceDerivY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u_y", derror)
-    
+
     ! --- second derivative ----------------------------------------------------
 
     select case(rproblem%cproblemtype)
@@ -2054,7 +2054,7 @@ contains
         getReferenceDerivXX_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_xx", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX%RvectorBlock(1),&
         getReferenceDerivXX_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2065,7 +2065,7 @@ contains
         getReferenceDerivXY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_xy", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX%RvectorBlock(2),&
         getReferenceDerivXY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2076,7 +2076,7 @@ contains
         getReferenceDerivYX_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_yx", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY%RvectorBlock(1),&
         getReferenceDerivXY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2087,19 +2087,19 @@ contains
         getReferenceDerivYY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error u_yy", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY%RvectorBlock(2),&
         getReferenceDerivYY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u_yy", derror)
 
-    
+
     ! Start UCD export to VTK file:
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./ucd"
     call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
         rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
         trim(sucddir)//"/sol_"//trim(sys_siL(rproblem%ilvmax,2))//".vtk")
-    
+
     ! Add the solution and its (recovered) gradient to the UCD exporter
     call ucd_addVectorByVertex(rexport, "u", UCD_VAR_STANDARD, &
         rproblem%rvector%RvectorBlock(1))
@@ -2133,7 +2133,7 @@ contains
         getReferenceFunction_Aimag, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE)", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,rproblem%rvector%RvectorBlock(1),&
         getReferenceFunction_Real, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2142,7 +2142,7 @@ contains
         getReferenceFunction_Aimag, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE)", derror)
-    
+
     ! --- first derivative -----------------------------------------------------
 
     select case(rproblem%cproblemtype)
@@ -2163,7 +2163,7 @@ contains
           rvectorBlock_Real, cgradType, cgradSubType)
       p_rvectorDerivX_Real => rvectorBlock_Real%RvectorBlock(1)
       p_rvectorDerivY_Real => rvectorBlock_Real%RvectorBlock(2)
-      
+
       call lsysbl_createVector(rblockDiscr, rvectorBlock_Aimag, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(2),&
           rvectorBlock_Aimag, cgradType, cgradSubType)
@@ -2193,7 +2193,7 @@ contains
         getReferenceDerivX_Real, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_x)", derror)
-   
+
     call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX_Aimag,&
         getReferenceDerivX_Aimag, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2214,7 +2214,7 @@ contains
         getReferenceDerivY_Real, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_y)", derror)
-    
+
     call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY_Aimag,&
         getReferenceDerivY_Aimag, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
@@ -2249,7 +2249,7 @@ contains
         cgradType, cgradSubType)
     call ppgrd_calcGradient(p_rvectorDerivY_Aimag, rvectorBlockY_Aimag,&
         cgradType, cgradSubType)
-    
+
     ! Calculate the error to the reference DerivXX.
     call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
         getReferenceDerivXX_Real, rcubatureInfo=&
@@ -2339,7 +2339,7 @@ contains
     call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
         rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
         trim(sucddir)//"/sol_"//trim(sys_siL(rproblem%ilvmax,2))//".vtk")
-    
+
     ! Add the solution and its (recovered) gradient to the UCD exporter
     call ucd_addVectorByVertex(rexport, "Re(SSE)", UCD_VAR_STANDARD, &
         rproblem%rvector%RvectorBlock(1))
@@ -2384,7 +2384,7 @@ contains
 !<subroutine>
 
   subroutine sse_doneMatVec(rproblem)
-  
+
 !<description>
   ! Releases system matrix and vectors.
 !</description>
@@ -2427,7 +2427,7 @@ contains
 !<subroutine>
 
   subroutine sse_doneBC(rproblem)
-  
+
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
 !</description>
@@ -2446,7 +2446,7 @@ contains
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
   end do
-    
+
   end subroutine
 
 
@@ -2455,7 +2455,7 @@ contains
 !<subroutine>
 
   subroutine sse_doneDiscretisation(rproblem)
-  
+
 !<description>
   ! Releases the discretisation from the heap.
 !</description>
@@ -2480,15 +2480,15 @@ contains
     ! scalar spatial discretisations
     call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
   end do
-    
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine sse_doneParamTriang(rproblem)
-  
+
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
 !</description>
@@ -2512,7 +2512,7 @@ contains
 
   ! Finally release the domain.
   call boundary_release(rproblem%rboundary)
-    
+
   end subroutine
 
 ! ***************************************************************************
@@ -2520,7 +2520,7 @@ contains
 !<subroutine>
 
   subroutine sse_outputTable(rproblem,rtable)
-  
+
 !<description>
   ! Exports the convergence table to file.
 !</description>
@@ -2536,7 +2536,7 @@ contains
 !</inputoutput>
 
 !</subroutine>
-  
+
   select case(rproblem%cproblemtype)
   case (POISSON_SCALAR,POISSON_SYSTEM)
 
@@ -2642,7 +2642,7 @@ contains
       call ctab_setTexCaption(rtable,"H1-error u_yx","$H^1(\partial_{x}^{\rm ZZ}\sigma_y)$")
       call ctab_setTexCaption(rtable,"H1-error u_yy","$H^1(\partial_{y}^{\rm ZZ}\sigma_y)$")
     end select
-    
+
     call ctab_setTexCaption(rtable,"L2-error u-convrate","")
     call ctab_setTexCaption(rtable,"L2-error u_x-convrate","")
     call ctab_setTexCaption(rtable,"L2-error u_y-convrate","")
@@ -2657,7 +2657,7 @@ contains
     call ctab_setTexCaption(rtable,"H1-error u_xx-convrate","")
     call ctab_setTexCaption(rtable,"H1-error u_xy-convrate","")
     call ctab_setTexCaption(rtable,"H1-error u_yx-convrate","")
-    call ctab_setTexCaption(rtable,"H1-error u_yy-convrate","")   
+    call ctab_setTexCaption(rtable,"H1-error u_yy-convrate","")
 
     ! Set Tex format
     call ctab_setTexFormat(rtable,"cells","r")
@@ -2683,7 +2683,7 @@ contains
     case (POISSON_SCALAR)
       call ctab_setTexTableCaption(rtable,&
           "$L^2$-Convergence table: Poisson problem solved as scalar equation.")
-      
+
     case (POISSON_SYSTEM)
       call ctab_setTexTableCaption(rtable,&
           "$L^2$-Convergence table: Poisson problem solved in mixed formulation.")
@@ -2746,7 +2746,7 @@ contains
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_xy)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_yx)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Re(SSE_yy)",CTAB_REDUCTION_RATE)
-    
+
     call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Re(SSE_y)",CTAB_REDUCTION_RATE)
@@ -2762,7 +2762,7 @@ contains
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_xy)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_yx)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"L2-error Im(SSE_yy)",CTAB_REDUCTION_RATE)
-    
+
     call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_x)",CTAB_REDUCTION_RATE)
     call ctab_evalConvergenceRate(rtable,"H1-error Im(SSE_y)",CTAB_REDUCTION_RATE)
@@ -2786,7 +2786,7 @@ contains
     call ctab_setPrecision(rtable,"L2-error Re(SSE_xy)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE_yx)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Re(SSE_yy)-convrate",3)
-    
+
     call ctab_setPrecision(rtable,"L2-error Im(SSE)",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"L2-error Im(SSE_x)",3)
@@ -2816,7 +2816,7 @@ contains
     call ctab_setPrecision(rtable,"H1-error Re(SSE_xy)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE_yx)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Re(SSE_yy)-convrate",3)
-    
+
     call ctab_setPrecision(rtable,"H1-error Im(SSE)",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE)-convrate",3)
     call ctab_setPrecision(rtable,"H1-error Im(SSE_x)",3)
@@ -2938,7 +2938,7 @@ contains
     call ctab_setTexCaption(rtable,"L2-error Re(SSE_xy)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Re(SSE_yx)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Re(SSE_yy)-convrate","")
-    
+
     call ctab_setTexCaption(rtable,"L2-error Im(SSE)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_y)-convrate","")
@@ -2946,7 +2946,7 @@ contains
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_xy)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_yx)-convrate","")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE_yy)-convrate","")
-    
+
     call ctab_setTexCaption(rtable,"H1-error Re(SSE)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_y)-convrate","")
@@ -2954,7 +2954,7 @@ contains
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_xy)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_yx)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Re(SSE_yy)-convrate","")
-    
+
     call ctab_setTexCaption(rtable,"H1-error Im(SSE)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Im(SSE_x)-convrate","")
     call ctab_setTexCaption(rtable,"H1-error Im(SSE_y)-convrate","")
@@ -2982,7 +2982,7 @@ contains
     call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.true.)
-    
+
     call ctab_setHidden(rtable,"H1-error Im(SSE)",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"H1-error Im(SSE_x)",.true.)
@@ -3073,7 +3073,7 @@ contains
     call ctab_setHidden(rtable,"L2-error Re(SSE_xy)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_yx)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Re(SSE_yy)-convrate",.true.)
-    
+
     call ctab_setHidden(rtable,"L2-error Im(SSE)",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_x)",.true.)
@@ -3088,7 +3088,7 @@ contains
     call ctab_setHidden(rtable,"L2-error Im(SSE_xy)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_yx)-convrate",.true.)
     call ctab_setHidden(rtable,"L2-error Im(SSE_yy)-convrate",.true.)
-    
+
     ! Unhide real parts of H1-columns
     call ctab_setHidden(rtable,"H1-error Re(SSE)",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.false.)
@@ -3142,7 +3142,7 @@ contains
     call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.false.)
     call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.false.)
-    
+
     call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table, imaginary part")
     call ctab_setTexTableLabel(rtable,"tab:h1_convergence_rate_aimag")
 
