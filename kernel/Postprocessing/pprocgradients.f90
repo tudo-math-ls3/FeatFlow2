@@ -377,11 +377,11 @@ contains
       ! Initialise block discretisations for the consistent/reconstructed gradient vectors
       call spdiscr_initBlockDiscr(rdiscrBlock, p_rtriangulation)
       call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rtriangulation)
-      
+
       ! As many components as the underlying dimension of the space
       call spdiscr_appendBlockComponent (rdiscrBlock, p_rspatialDiscr, p_rspatialDiscr%ndimension)
       call spdiscr_appendBlockComponent (rdiscrBlockRef, p_rspatialDiscr, p_rspatialDiscr%ndimension)
-      
+
       ! Finish building discretisations.
       call spdiscr_commitBlockDiscr (rdiscrBlock)
       call spdiscr_commitBlockDiscr (rdiscrBlockRef)
@@ -392,7 +392,7 @@ contains
 
         ! Adjust the FE space for the consistent gradient values
         do i = 1, spdiscr_getNelemGroups(rdiscrBlock%RspatialDiscr(idim))
-        
+
           call spdiscr_getElemGroupInfo (rdiscrBlock%RspatialDiscr(idim),i,celement)
 
           select case(celement)
@@ -695,7 +695,7 @@ contains
 
     ! Number of elements in the current element group
     integer :: NEL
-    
+
     ! Current element
     integer(I32) :: celemSource,celemDest
 
@@ -724,7 +724,7 @@ contains
       do j = 1, spdiscr_getNelemGroups(rvectorGradient%p_rblockDiscr%RspatialDiscr(i))
 
         call spdiscr_getElemGroupInfo (rvectorGradient%p_rblockDiscr%RspatialDiscr(i),j,celemSource)
-        
+
         select case(elem_getPrimaryElement(celemSource))
         case (          EL_Q0_2D, EL_Q0_3D,&
               EL_P0_1D, EL_P0_2D, EL_P0_3D,&
@@ -798,7 +798,7 @@ contains
 
     case default
       call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpPnQn')
       call sys_halt()
     end select
 
@@ -1069,7 +1069,7 @@ contains
 
       case default
         call output_line('Unsupported FE space in destination vector!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP1Q1cnf')
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpPnQn')
         call sys_halt()
       end select
 
@@ -1480,6 +1480,10 @@ contains
     ! Number of elements in a block
     integer :: nelementsPerBlock
 
+    ! Element evaluation set that collects element specific information
+    ! for the evaluation on the cells.
+    type(t_evalElementSet) :: revalElementSet
+
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there is the same information in the triangulation, but that is not
     ! based on DOF`s! Actually, we will calculate how often we touch each DOF
@@ -1501,7 +1505,7 @@ contains
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     integer :: h_IcubPerElement
     integer(I32), dimension(:), pointer :: p_IcubPerElement
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -1772,6 +1776,17 @@ contains
       ! Determine actual number of patches in this block
       npatchesPerBlock = min(p_rperfconfig%NPATCHSIM,NPATCH)
 
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,Dderivatives,Domega,DpatchBound,Dpolynomials,&
+      !$omp         Dval,Dxi,IEL,IPATCH,IVT,IdofsDest,IdofsTrial,IelementsInPatch,&
+      !$omp         IelementsInPatchIdx,Inpoints,JEL,KEL,PATCHmax,bnonparTrial,&
+      !$omp         celemDest,ctrafoTypeDest,i,icoordSystem,idx,indofDest,&
+      !$omp         indofTrial,ipoint,ive,j,k,ncubp,nelementsPerBlock,&
+      !$omp         npatchesInCurrentblock,p_Dcoords,p_DcubPtsReal,p_DcubPtsRef,&
+      !$omp         p_DcubPtsTrial,p_Ddetj,p_Djac,revalElementSet,rintSubset,&
+      !$omp         rintSubsetDest)&
+      !$omp if (NPATCH > p_rperfconfig%NPATCHMIN_OMP .and. bisUniform)
+
       ! Allocate memory for element numbers in patch index array
       allocate(IelementsInPatchIdx(npatchesPerBlock+1))
 
@@ -1781,7 +1796,11 @@ contains
       ! Allocate memory for number of sampling points
       if (.not. bisUniform) allocate(Inpoints(npatchesPerBlock))
 
+      ! Initialisation of the element set.
+      call elprep_init(revalElementSet)
+
       ! Loop over the patches - blockwise.
+      !$omp do schedule(static,1)
       do PATCHset = 1, NPATCH , p_rperfconfig%NPATCHSIM
 
         !-------------------------------------------------------------------------
@@ -2074,29 +2093,29 @@ contains
           ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
           select case(p_rtriangulation%ndim)
           case (NDIM1D)
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV1D_X, Dcoefficients(:,:,1))
 
           case (NDIM2D)
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_X, Dcoefficients(:,:,1))
 
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV2D_Y, Dcoefficients(:,:,2))
 
           case (NDIM3D)
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_X, Dcoefficients(:,:,1))
 
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Y, Dcoefficients(:,:,2))
 
-            call fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
                 celemSource, IdofsTrial, ncubp, &
                 nelementsPerBlock, p_DcubPtsTrial, DER_DERIV3D_Z, Dcoefficients(:,:,3))
 
@@ -2128,7 +2147,7 @@ contains
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
-          call trafo_calctrafo_sim (ctrafoTypeSource, &
+          call trafo_calctrafo_sim(ctrafoTypeSource, &
               nelementsPerBlock, ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
 
           ! Allocate memory for the patch interpolants matrices
@@ -2140,7 +2159,7 @@ contains
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
           ! cubature points of the elements present in the patch and store each polynomial
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
-          call elem_generic_sim(celemSource,&
+          call elem_generic_sim1(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
               nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2154,7 +2173,7 @@ contains
 
           ! Compute the patch averages by solving $(P^T * P) * x = (P^T) * b$ for x
           call calc_patchAverages_sim(IelementsInPatchIdx, npatchesInCurrentBlock, ncubp, &
-              indofTrial,  Dcoefficients, Dpolynomials,Dderivatives)
+              indofTrial,  Dcoefficients, Dpolynomials, Dderivatives)
 
 
           !-----------------------------------------------------------------------
@@ -2254,7 +2273,7 @@ contains
           p_Dcoords => rintSubset%p_Dcoords
 
           ! Calculate the transformation from the reference elements to the real ones
-          call trafo_calctrafo_sim (ctrafoTypeDest, &
+          call trafo_calctrafo_sim(ctrafoTypeDest, &
               nelementsPerBlock, nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, &
               p_Ddetj)
 
@@ -2265,7 +2284,7 @@ contains
           end if
 
           ! Evaluate the basis functions for the cubature points of the destination FE space
-          call elem_generic_sim(celemSource,&
+          call elem_generic_sim1(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
               nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
 
@@ -2277,6 +2296,7 @@ contains
 
           select case (p_rtriangulation%ndim)
           case(NDIM1D)
+            !$omp critical
             ! Loop over the patches in the set
             do ipatch = 1, npatchesInCurrentBlock
 
@@ -2300,8 +2320,10 @@ contains
                 end do
               end do
             end do
+            !$omp end critical
 
           case (NDIM2D)
+            !$omp critical
             ! Loop over the patches in the set
             do ipatch = 1, npatchesInCurrentBlock
 
@@ -2326,8 +2348,10 @@ contains
                 end do
               end do
             end do
+            !$omp end critical
 
           case (NDIM3D)
+            !$omp critical
             ! Loop over the patches in the set
             do ipatch = 1, npatchesInCurrentBlock
 
@@ -2353,6 +2377,7 @@ contains
                 end do
               end do
             end do
+            !$omp end critical
 
           case default
             call output_line('Invalid spatial dimension!',&
@@ -2652,7 +2677,7 @@ contains
               ! points: u_h(x,y,z) and save the result to Dcoefficients(:,:,1..3)
               select case(p_rtriangulation%ndim)
               case (NDIM1D)
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
@@ -2660,14 +2685,14 @@ contains
                     Dcoefficients(:,idxsubgroup:idx2,1))
 
               case (NDIM2D)
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV2D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
 
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
@@ -2675,21 +2700,21 @@ contains
                     Dcoefficients(:,idxsubgroup:idx2,2))
 
               case (NDIM3D)
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,1))
 
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
                     p_DcubPtsTrial(:,:,idxsubgroup:idx2), DER_DERIV3D_X, &
                     Dcoefficients(:,idxsubgroup:idx2,2))
 
-                call fevl_evaluate_sim (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
+                call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords(:,:,idxsubgroup:idx2), &
                     p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2), &
                     celemLocal, IdofsTrial(:,idxsubgroup:idx2), &
                     ncubp, idx2-idxsubgroup+1,&
@@ -2770,7 +2795,7 @@ contains
           ! Note that we evaluate over the maximum number of cubature points present in
           ! the patch. Although some meaningless values may be generated, it is faster to
           ! evaluate all values simultaneously and filter the required data afterwards.
-          call elem_generic_sim(celemSource,&
+          call elem_generic_sim1(celemSource,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubpMax,&
               nelementsPerBlock, p_DcubPtsTrial)
 
@@ -3043,7 +3068,7 @@ contains
                   p_Djac(:,:,idxsubgroup:idx2), p_Ddetj(:,idxsubgroup:idx2))
 
               ! Evaluate the basis functions for the cubature points of the destination FE space
-              call elem_generic_sim(celemSource, &
+              call elem_generic_sim1(celemSource, &
                   p_Dcoords(:,:,idxsubgroup:idx2), p_Djac(:,:,idxsubgroup:idx2), &
                   p_Ddetj(:,idxsubgroup:idx2), &
                   BderDest, Dpolynomials(:,:,:,idxsubgroup:idx2), &
@@ -3245,11 +3270,13 @@ contains
         deallocate(IelementsInPatch)
 
       end do   ! End of PATCHset loop
+      !$omp end do
 
       ! Deallocate temporary memory
       if (.not.bisUniform) deallocate(Inpoints)
       deallocate(DpatchBound)
       deallocate(IelementsInPatchIdx)
+      !$omp end parallel
 
     end do   ! End of ielemGroup loop
 
@@ -4353,7 +4380,7 @@ contains
 
         Dxi(12,1) =  -1.0_DP
         Dxi(12,2) =  -sqrt(1.0_DP / 5.0_DP)
-        
+
         Dxi(13,1) =  -sqrt(1.0_DP / 5.0_DP)
         Dxi(13,2) =  -sqrt(1.0_DP / 5.0_DP)
 
@@ -4548,7 +4575,7 @@ contains
     do j = 1, spdiscr_getNelemGroups(p_rdiscrSource)
 
       call spdiscr_getElemGroupInfo (p_rdiscrSource,j,celemSource)
-    
+
       select case (elem_getPrimaryElement (celemSource))
       case (EL_Q1_2D, EL_Q1_3D, EL_P1_1D, EL_P1_2D, EL_P1_3D)
 
@@ -4566,7 +4593,7 @@ contains
       p_rdiscrDest => rvectorGradient%p_rblockDiscr%RspatialDiscr(i)
       do j = 1, spdiscr_getNelemGroups(p_rdiscrDest)
         call spdiscr_getElemGroupInfo (p_rdiscrDest,j,celemDest)
-      
+
         select case(elem_getPrimaryElement(celemDest))
         case (EL_Q1T_2D, EL_Q1T_3D, EL_P1T_2D)
 
@@ -4807,7 +4834,7 @@ contains
           ! At this point, we calculate the gradient information and
           ! Calculate the X-derivative in the corners of the elements
           ! into Dderivatives(:,:,1).
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV1D_X,&
@@ -4840,13 +4867,13 @@ contains
           ! Calculate the X-derivative in the corners of the elements
           ! into Dderivatives(:,:,1) and the Y-derivatives into
           ! Dderivatives(:,:,2)
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV2D_Y,&
@@ -4885,19 +4912,19 @@ contains
           ! Calculate the X-derivative in the corners of the elements
           ! into Dderivatives(:,:,1), the Y-derivatives into Dderivatives(:,:,2)
           ! and the Z-derivatives into Dderivatives(:,:,3).
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_X,&
               Dderivatives(:,1:IELmax-IELset+1,1))
 
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Y,&
               Dderivatives(:,1:IELmax-IELset+1,2))
 
-          call fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
+          call fevl_evaluate_sim2 (rvectorScalar, p_Dcoords, &
               p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               celemSource, IdofsTrial, &
               nlocalDOFsDest, int(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV3D_Z,&

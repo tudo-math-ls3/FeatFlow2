@@ -504,6 +504,9 @@ contains
 
   contains
 
+#ifndef USE_OPENMP
+    pure&
+#endif
     subroutine calc_refCoords (DpointsRef,Dpoints,npointsPerElement,nelements)
 
     ! Initialises the cubature point array on the reference element(s).
@@ -527,6 +530,7 @@ contains
       integer :: iel,ipt,idim
 
       ! Copy the coordinates. They are the same for all elements.
+      !$omp parallel do default(shared) private(idim,ipt)
       do iel=1,nelements
         do ipt=1,npointsPerElement
           do idim=1,ubound(DpointsRef,1)
@@ -534,6 +538,7 @@ contains
           end do
         end do
       end do
+      !$omp end parallel do
 
     end subroutine
 
