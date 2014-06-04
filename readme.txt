@@ -219,7 +219,7 @@ where:
 --------------------------------------------------------------------------------
 
 If you are using the software to compute results for a publication, we would
-appreciate one the following entry in the list of citations:
+appreciate one of the following entries in the list of citations:
 
 "FEATFLOW - Finite Element Software for the Incompressible
  Navier-Stokes Equations; http://www.featflow.de; featflow@featflow.de"
