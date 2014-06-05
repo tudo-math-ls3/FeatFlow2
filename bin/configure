@@ -2653,6 +2653,8 @@ sub create_feat2AppMakefile {
         "        # * all module information files in those where made from FEAT2\n" .
         "        #   Fortran 90 source files.\n" .
         "\t\@echo\n" .
+        "\t\@echo \"# Removing application binary\"\n" .
+        "\t-rm -f \$(APPNAME) core\n" .
         "\t\@echo \"# Cleaning up in FEAT2 object directory:\"\n" .
         "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
         "\t\@echo \"# module information files.\"\n" .
@@ -2660,8 +2662,8 @@ sub create_feat2AppMakefile {
         "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF77))) \\\n" .
         &format_list("\t    \$(patsubst %,\$(PURGEDIR)*-*-*-*-*-opt*/%, ", 20, 70,
                      "\$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE)) " . SRCLIST_GENERATED .
-		     " \$(filter %.f90, \$(notdir \$(SRCEXTRA)))" .
-		     " \$(notdir \$(INCLUDED_FILES_TO_COPY)) \$(notdir \$(INCLUDED_FILES_TO_EVALUATE_WITH_CPP))", "\\\n", "\\") . ") \\\n" .
+                     " \$(filter %.f90, \$(notdir \$(SRCEXTRA)))" .
+                     " \$(notdir \$(INCLUDED_FILES_TO_COPY)) \$(notdir \$(INCLUDED_FILES_TO_EVALUATE_WITH_CPP))", "\\\n", "\\") . ") \\\n" .
         "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(notdir \$(SRCF90)) \$(notdir \$(PROGRAM_FILE))) \\\n" .
         "\t    \$(patsubst %.f,  \$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
         "\t    \$(patsubst %.f90,\$(PURGEDIR)*-*-*-*-*-opt*/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
