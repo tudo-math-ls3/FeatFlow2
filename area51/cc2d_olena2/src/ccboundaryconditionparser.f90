@@ -33,7 +33,7 @@ module ccboundaryconditionparser
   use vectorfilters
   use discretebc
   use bcassembly
-!  use bcassemblybase
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
@@ -44,7 +44,6 @@ module ccboundaryconditionparser
   use fparser
   use paramlist
   use bcassembly
-  use bcassemblybase 
   
   use collection
   use convection

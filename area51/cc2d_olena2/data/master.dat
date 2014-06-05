@@ -60,7 +60,7 @@ simportdatafiles(8) =
 #
 # [CC-DISCRETISATION]
 # NLMIN = 1
-# NLMAX = 6
+# NLMAX = 3
 # RE = 1000
 #
 # which will overwrite the three parameters NLMIN, NLMAX and RE
@@ -68,12 +68,17 @@ simportdatafiles(8) =
 
 [BDEXPRESSIONS]
 bdExpressions(3) =
-  'SOLU1'     -1    'TIME*X^2'
-  'SOLU2'     -1    'TIME*Y^2'
-  'SOLC'      -1    'TIME*(X^2+Y^2)'
+  'SOLU1'     -1    'X^2'  # 'TIME*X^2'
+  'SOLU2'     -1    'Y^2'  #'TIME*Y^2'
+  'SOLC'      -1    'X^2+Y^2' #'TIME*(X^2+Y^2)'
   
 [BDCONDITIONS]
-ineumannBoundary = 1
+#ineumannBoundary = 1
+#for the mu=0.0
+#ineumannBoundary = 0
+
+#for the problem with domain specif. automaticaly detects the type of BC's
+ineumannBoundary = -1
 
 bdComponent1(1)=
    4.0  3  1  'SOLU1' 'SOLU2' 'SOLC'
@@ -83,10 +88,20 @@ sParametrisation = '%{spredirectory}/QUAD.prm'
 sMesh = '%{spredirectory}/QUAD.tri'
 
 [CC-DISCRETISATION]
-NLMAX = 5
-RE = 1
+#for the mu<>0
+#NLMIN = 2
+#NLMAX = 5
+
+#for the mu=0
+#NLMIN = -1
+#NLMAX = 5
+RE = 100
 ielementType = 4
-iequation    = 1
+iequation    = 0
+
+#for the problem with domain specif.
+NLMIN = -1
+NLMAX = 5
 
 [CC-CONCENTREQUATION]
 ddiffusionWeight = 1.0
@@ -106,10 +121,26 @@ dtimeStep = 1.0
 dtimeStepTheta = 1.0
 
 [CC-POSTPROCESSING]
-ierrorAnalysisL2 = 0
+ierrorAnalysisL2 = 1
 
 [CC2D-NONLINEAR]
 depsD              = 1.0E-13
 depsDiv            = 1.0E-13
 depsC              = 1.0E-13
-nmaxIterations     = 20
+nmaxIterations     = 30
+
+[CC-LINEARSOLVER]
+
+#for mu<>0
+#isolverType = 0
+
+#for the mu=0.0
+#isolverType = 1
+#ismootherType = 0
+#icoarseGridSolverType = 0
+
+
+#for the problem with domain specif.
+isolverType = 1
+ismootherType = 1
+icoarseGridSolverType = 4

@@ -42,6 +42,7 @@ module ccmainproblem
   use paramlist
   use statistics
   use dofmapping
+  use geometry
   
   use collection
   use convection
@@ -106,6 +107,16 @@ contains
     
     integer :: i
     
+    !for the object-polygon
+    
+    ! A t_geometryObject structure to be written.
+    type(t_geometryObject) :: rObj
+    type(t_geometryObject), pointer :: pObj
+    
+    !array of the points coordinates of polygon
+    real(DP), dimension(:,:), allocatable :: p_Dvertices
+    type(t_collection)  :: rcollection
+    !character(LEN=*) :: rObjectPolygon
     ! Ok, let us start.
     
     ! Initialise the timers by zero:
@@ -194,6 +205,20 @@ contains
       end do
     end if
     
+    allocate(p_Dvertices(2,4))
+    p_Dvertices(1,1) = 0.25_DP
+    p_Dvertices(2,1) = 0.25_DP
+    p_Dvertices(1,2) = 0.25_DP
+    p_Dvertices(2,2) = 0.75_DP
+    p_Dvertices(1,3) = 0.75_DP
+    p_Dvertices(2,3) = 0.75_DP
+    p_Dvertices(1,4) = 0.75_DP
+    p_Dvertices(2,4) = 0.25_DP
+    
+    call geom_init_polygon(rObj, p_Dvertices)
+    
+    call collct_setvalue_geom (p_rproblem%rcollection, 'rObjectPolygon', rObj, .TRUE.)
+    pObj => collct_getvalue_geom (p_rproblem%rcollection, 'rObjectPolygon')
     ! And all the other stuff...
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)

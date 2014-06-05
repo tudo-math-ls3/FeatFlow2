@@ -1769,6 +1769,8 @@ contains
       
       real(DP) :: dweight1
       
+      
+      rcollection = rproblem%rcollection
       ! Get the weight of the mass matrix from the physics-structure
       dweight1 = rproblem%rphysics%dmuWeight
       
@@ -1838,6 +1840,7 @@ contains
 
       real(DP) :: dweight2
       
+      rcollection = rproblem%rcollection
       ! Get the weight of the mass matrix from the physics-structure
       dweight2 = rproblem%rphysics%dkappaWeight
 
@@ -1904,7 +1907,10 @@ contains
       type(t_matrixBlock) :: rmatrixTempBlock
       type(t_collection) :: rcollection
       type(t_bilinearForm) :: rform
-
+       
+      
+      rcollection = rproblem%rcollection
+      
       ! For the moment, there cannot be found much in C.
       ! If the matrix exists (scale factor <> 0), we clear the
       ! content, otherwise we ignore it.
@@ -1966,7 +1972,7 @@ contains
         
           ! ---------------------------------------------------
           ! That was easy -- the adventure begins now... The nonlinearity!
-          !if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
+          if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
           
             rform%itermCount = 2
             rform%Idescriptors(1,1) = DER_DERIV_X
@@ -1986,7 +1992,7 @@ contains
             call bilf_buildMatrixScalar (rform, .false., rmatrix%RmatrixBlock(4,4),&
                 fcoeff_convection,rcollection)
 
-          !end if
+          end if
           
         end if
         
@@ -2835,10 +2841,11 @@ contains
 
       type(t_matrixScalar) :: rmatrixTemp
       type(t_bilinearForm) :: rform
-      type(t_collection) :: rcollection
+      type(t_collection), pointer :: rcollection
 
       real(DP) :: dweight1, dweight2
       
+      rcollection => rproblem%rcollection
       dweight1 = rproblem%rphysics%dmuWeight
       dweight2 = rproblem%rphysics%dkappaWeight
 
@@ -2954,7 +2961,7 @@ contains
       real(DP), dimension(:), pointer :: p_Ddata
 
       ! TO BE MODIFIED!
-  
+      rcollection => rproblem%rcollection 
       ! Generate Laplace+convection operator
       call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(4,4),&
           rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
@@ -3018,7 +3025,7 @@ contains
             rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
         
-        call bilf_buildmatrixscalar (rform, .false., rmatrixTemp,&
+        call bilf_buildMatrixScalar (rform, .false., rmatrixTemp,&
             fcoeff_convection,rcollection)
 
       end if

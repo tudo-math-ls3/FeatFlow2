@@ -214,7 +214,7 @@ module cccallback
   use derivatives
   
   use ccbasic
-  
+  use geometry
   implicit none
 
 contains
@@ -409,7 +409,7 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
     use collection
     use scalarpde
     use domainintegration
-    
+    !use geometry
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -475,31 +475,49 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
   !</output>
     
   !</subroutine>
-    integer :: iel,icup,ive,nve,iin
+    type(t_geometryObject), pointer :: p_rObj
+    integer :: iel, icup, ive, nve, iin
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dx, dy, dweight
     !real(dp), dimension(:), allocatable :: DrhoElement
+   
     
     ! get the weight of the operator
     dweight = rcollection%DquickAccess(1)
-
-    Dcoefficients(1,:,:) = dweight
-    return
-    
+!    Dcoefficients(1,:,:) = dweight
+!    return
+    p_rObj => collct_getvalue_geom (rcollection, 'rObjectPolygon')
     ! loop over the elements and cubature points
     ! and assign the coefficients 
     do iel=1,nelements
       do icup=1,npointsPerElement
       
-         dx = Dpoints(1,icup,iel)
-         dy = Dpoints(2,icup,iel)
 
-        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
-          Dcoefficients(1,icup,iel) = 0.0_DP
-        else
-          Dcoefficients(1,icup,iel) = dweight
-        end if
+         call geom_isInGeometry (p_rObj, Dpoints(1:2,icup,iel), iin)
+            if (iin .eq. 1) dweight = 0.0_DP
+            
+         !dx = Dpoints(1,icup,iel)
+         !dy = Dpoints(2,icup,iel)    
+            
+!       This part is for the Square 1*1 with the inner square from [dx,dy]=[0.25, 0.75] 
+  
+!        if ((dx .gt. 0.75_DP) .or. (dx .lt. 0.25_DP)) dweight = 0.0_DP
+!        if ((dy .gt. 0.75_DP) .or. (dy .lt. 0.25_DP)) dweight = 0.0_DP
+
+!       This part is for Square 1*1 with the inner squares [dx,dy]=[0.4, 0.6] and [0.6, 0.8]  
+  
+!        if ((dx .gt. 0.8_DP) .or. (dx .lt. 0.2_DP)) dweight = 0.0_DP
+!        if ((dy .gt. 0.8_DP) .or. (dy .lt. 0.2_DP)) dweight = 0.0_DP
+!        
+!!       if ((dx .gt. 0.6_DP) .or. (dx .lt. 0.4_DP)) dweight = 0.0_DP
+!        if ((dy .gt. 0.6_DP) .or. (dy .lt. 0.6_DP)) dweight = 0.0_DP
+!
+!        if ((dx .gt. 0.4_DP) .or. (dx .lt. 0.6_DP)) dweight = 0.0_DP
+!        if ((dy .gt. 0.4_DP) .or. (dy .lt. 0.6_DP)) dweight = 0.0_DP
+
+
+         Dcoefficients(1,icup,iel) = dweight
       end do
     end do
     
@@ -893,6 +911,8 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     integer :: iel,icup,ive,nve,iin
+    type(t_geometryObject), pointer :: p_rObj
+    
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
     real(dp) :: dx, dy
@@ -922,25 +942,66 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
 !    Dcoefficients(1,:,:)=dtime* ( (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
 !    dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) )
  
+    p_rObj => collct_getvalue_geom (rcollection, 'rObjectPolygon')
     ! loop over the elements and cubature points
     ! and assign the coefficients 
-!    do iel=1,nelements
-!      do icup=1,npointsPerElement
-!      
+    
+    do iel=1,nelements
+      do icup=1,npointsPerElement
+          dx = Dpoints(1,icup,iel)
+          dy = Dpoints(2,icup,iel)
+
+          call geom_isInGeometry (p_rObj, Dpoints(1:2,icup,iel), iin)
+           if (iin .eq. 1) then
+               dmuWeight = 0.0_DP
+               dkappaweight = 0.0_DP
+           end if
+    
+           Dcoefficients(1,icup,iel) = (dx + dy) * (2.0_DP + dmuWeight) + &
+                    dkappaWeight * (dx**2 + dy**2) - dmuWeight
+      end do  
+    end do
 !         dx = Dpoints(1,icup,iel)
 !         dy = Dpoints(2,icup,iel)
-!
-!        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
-!          Dcoefficients(1,icup,iel) = (dx + dy) * 2.0_DP 
-!        else
-!          Dcoefficients(1,icup,iel) = (dx + dy) * (2.0_DP + dmuWeight) + &
-!      dkappaWeight * (dx**2 + dy**2)
-!        end if
-!      end do
-!    end do
 
-    Dcoefficients(1,:,:)= (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
-     dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) ! - dmuWeight  ! added by obaid
+!        if ((dx .gt. 0.75_DP) .or. (dx .lt. 0.25_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaweight = 0.0_DP
+!        end if
+!        if ((dy .gt. 0.75_DP) .or. (dy .lt. 0.25_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaWeight = 0.0_DP
+!        end if
+!        if ((dx .gt. 0.8_DP) .or. (dx .lt. 0.6_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaweight = 0.0_DP
+!        end if
+!        if ((dy .gt. 0.8_DP) .or. (dy .lt. 0.6_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaWeight = 0.0_DP
+!        end if
+!        if ((dx .gt. 0.6_DP) .or. (dx .lt. 0.4_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaweight = 0.0_DP
+!        end if
+!        if ((dy .gt. 0.6_DP) .or. (dy .lt. 0.4_DP)) then
+!          dmuWeight = 0.0_DP
+!          dkappaWeight = 0.0_DP
+!        end if
+!
+!        if ((dx .gt. 0.4_DP) .or. (dx .lt. 0.6_DP)) then
+!          dmuweight = 0.0_DP
+!          dkappaweight = 0.0_DP
+!        end if
+!        if ((dy .gt. 0.4_DP) .or. (dy .lt. 0.6_DP)) then
+!          dmuweight = 0.0_DP
+!          dkappaweight = 0.0_DP
+!        end if
+
+      
+
+    !Dcoefficients(1,:,:)= (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
+    ! dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)- dmuWeight
     !Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
@@ -1022,6 +1083,7 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
     real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
+    type(t_geometryObject), pointer :: p_rObj
     integer :: iel,icup,ive,nve,iin
     ! here we store the values of u and rho
     real(dp), dimension(:,:,:), allocatable :: Dvalues
@@ -1045,7 +1107,9 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
     dmuWeight = rcollection%Dquickaccess(9)
     dkappaWeight = rcollection%Dquickaccess(10)
     dnu = rcollection%Dquickaccess(11)
-
+    
+    
+    p_rObj => collct_getvalue_geom (rcollection, 'rObjectPolygon')
     ! Time-dependent reference:
 !       Dcoefficients(1,:,:)= dconvectionWeight * 2.0_DP * dtime**2 * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
 !      dreactionWeight * dtime * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
@@ -1056,24 +1120,34 @@ subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform,
 
     ! loop over the elements and cubature points
     ! and assign the coefficients 
-!    do iel=1,nelements
-!      do icup=1,npointsPerElement
-!      
-!         dx = Dpoints(1,icup,iel)
-!         dy = Dpoints(2,icup,iel)
-!
-!        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
-!          Dcoefficients(1,icup,iel) = dconvectionWeight * 2.0_DP * (dx**3 + dy**3) + (-4.0_DP) * ddiffusionWeight
-!        else
-!          Dcoefficients(1,icup,iel) = dconvectionWeight * 2.0_DP * (dx**3 + dy**3) + &
-!              dreactionWeight *(dx**2 + dy**2) + (-4.0_DP) * ddiffusionWeight
-!        end if
-!      end do
-!    end do
+        do iel=1,nelements
+         do icup=1,npointsPerElement
+            dx = Dpoints(1,icup,iel)
+            dy = Dpoints(2,icup,iel)
+
+            call geom_isInGeometry (p_rObj, Dpoints(1:2,icup,iel), iin)
+                if (iin .eq. 1) dreactionWeight = 0.0_DP
+!        if ((dx .gt. 0.75_DP) .or. (dx .lt. 0.25_DP)) dreactionWeight = 0.0_DP
+!        if ((dy .gt. 0.75_DP) .or. (dy .lt. 0.25_DP)) dreactionWeight = 0.0_DP
+
+!        if ((dx .gt. 0.8_DP) .or. (dx .lt. 0.6_DP)) dreactionWeight = 0.0_DP
+!        if ((dy .gt. 0.8_DP) .or. (dy .lt. 0.6_DP)) dreactionWeight = 0.0_DP
+!        
+!        if ((dx .gt. 0.6_DP) .or. (dx .lt. 0.4_DP)) dreactionWeight = 0.0_DP
+!        if ((dy .gt. 0.6_DP) .or. (dy .lt. 0.4_DP)) dreactionWeight = 0.0_DP
+        
+!        if ((dx .gt. 0.4_DP) .or. (dx .lt. 0.6_DP)) dreactionWeight = 0.0_DP
+!        if ((dy .gt. 0.4_DP) .or. (dy .lt. 0.6_DP)) dreactionWeight = 0.0_DP
+
+        Dcoefficients(1,icup,iel) = dconvectionWeight * 2.0_DP * (dx**3 + dy**3) + &
+              dreactionWeight *(dx**2 + dy**2) + (-4.0_DP) * ddiffusionWeight
+        
+      end do
+    end do
     
-    Dcoefficients(1,:,:)= dconvectionWeight * 2.0_DP * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
-      dreactionWeight *(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
-       (-4.0_DP) * ddiffusionWeight
+    !Dcoefficients(1,:,:)= dconvectionWeight * 2.0_DP * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
+    ! dreactionWeight *(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
+    !   (-4.0_DP) * ddiffusionWeight
     !Dcoefficients(1,:,:) = 0.0
 
   end subroutine
