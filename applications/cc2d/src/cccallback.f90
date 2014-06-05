@@ -1619,7 +1619,6 @@ contains
     real(DP), intent(out) :: dy
     
       ! local variables
-      real(DP) :: dm1,dm2
       integer :: i,j
       integer :: iv1,iv2
     
