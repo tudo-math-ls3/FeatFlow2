@@ -1,0 +1,25 @@
+# ------------------------------------------------------------------------
+# Output parameters
+# 
+# This file contains parameters configuring the general output
+# of the program.
+# ------------------------------------------------------------------------
+
+[GENERALOUTPUT]
+
+# Level of output when reading parameters from the INI files.
+# =0=1: no output, =2: print parameters of .INI files to terminal
+MSHOW_Initialisation = 2
+
+# level of output to terminal
+# =0: no output, =1: basic output; =2: standard output; 
+# >=3: extended output with more and more details
+MT_OutputLevel = 2
+
+# Log file for messages. ='': No log file output.
+smsgLog = 'log/output.log'
+
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as smsgLog
+serrorLog = ''

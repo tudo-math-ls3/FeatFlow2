@@ -1,0 +1,136 @@
+# ------------------------------------------------------------------------
+# Time discretization
+# 
+# This file contains parameters configuring the time discretization
+# of the problem.
+# ------------------------------------------------------------------------
+
+#####################
+[TIME-DISCRETISATION]
+#####################
+
+# Type of problem (ISTAT): 0=steady,1=nonsteady
+
+itimedependence = 0                       # ISTAT
+
+# ----------------------------------------------------------------------
+
+# Maximum number of macro time steps (TIMEMX).
+# Simulation stops if time > dtimemax or #iterations > niterations
+
+niterations = 10000                       # NITNS
+
+# Absolute start time of the simulation (TIMENS)
+
+dtimeInit = 0.0                           # TIMENS
+
+# Max. absolute time of the simulation (TIMEMX); simulation stops if 
+# time > dtimemax or #iterations > niterations
+
+dtimeMax = 10.0                           # TIMEMX
+
+# Initial time step size
+
+dtimeStep = 1                           # DTSTEP
+
+# Lower limit for the time derivative to be treated as zero. (EPSNS)
+# Simulation stops if time derivative drops below this value.
+
+dminTimeDerivative = 0.00001              # EPSNS
+
+# ----------------------------------------------------------------------
+
+# Time-stepping scheme (IFRSTP);
+# 0=one step scheme, 1=fractional step
+
+itimeStepScheme = 0                       # IFRSTP
+
+# parameter for one step scheme (THETA) if itimeStepScheme=0;
+# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+
+dtimeStepTheta = 1.0                      # THETA
+
+# Timestep-scheme for the pressure.
+# =0: Use the same timestep scheme as for the velocity.
+# =1: Calculate the pressure fully implicitely (standard)
+# No effect if Implicit-Euler is used.
+# Difference can only be seen for higher order time-discretisation.
+
+ipressureFullyImplicit = 1
+
+# ----------------------------------------------------------------------
+
+# Adaptive time stepping (similar to IADTIM)
+# -1=user defined; determined by calling "calcAdaptiveTimestep".
+# 0=fixed time step
+# 1=with prediction no repetition if nonlinear solver fails
+# 2=with prediction, repetition if nonlinear solver fails
+# 3=with prediction, repetition if nonlinear solver fails or
+#   time error too large
+
+cadaptiveTimeStepping = 0                 # IADTIM
+
+# max. number of repetitions for |iadaptiveTimeStepping|=3 (IREPIT)
+
+irepetitions = 3                          # IREPIT
+
+# min. time step (DTMIN)
+
+dtimeStepMin = 0.000001                   # DTMIN
+
+# max. time step (DTMAX)
+
+dtimeStepMax = 1.000000001                # DTMAX
+
+# max. changes for time step (DTFACT) for |iadaptiveTimeStepping|<>0.
+# When decreasing the time step size, the new time step size is 
+# estimated in the range
+#  (old time step)/dtimeStepFactor .. (old time step)/SQRT(dtimeStepFactor).
+# When increasing the time step size, the new time step size is
+# estimated in the range
+#  (old time step size) .. (old time step size) * dtimeStepFactor**(1/#performed repetitions)
+
+dtimeStepFactor = 9.000000001             # DTFACT  
+
+# max. rel. change of time step such that the step is not repeated
+# (EPSADU). Applies only for |iadaptiveTimeStepping|=3.
+# If 
+#  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep, 
+# the time step is repeated.
+
+depsAdaptiveRelTimeStep = 0.5             # EPSADU
+
+# ----------------------------------------------------------------------
+
+# Type of start procedure (IADIN) when starting a nonstationary 
+# simulation if iadaptiveTimeStepping<>0 (to prevent time step
+# to be reduced to 0.0)
+# 0=constant start
+# 1=linear start (linear blending between dadTimeStepEpsDuringInit
+#   and dadTimeStepEpsAfterInit)
+# 2=logarith. start (logarithmic blending between dadTimeStepEpsDuringInit
+#   and dadTimeStepEpsAfterInit)
+
+cadTimeStepInit = 2                       # IADIN
+
+# Time length of start procedure; must be >0 if iadaptiveTimeStepping<>0,
+# otherwise nonsteady simulations will stuck at the initial time
+# reducing the time step size to 0.0
+
+dadTimeStepInitDuration = 0.5             # TIMEIN
+
+# Type of error indicator to measure error in time (IEPSAD) when doing
+# adaptive time stepping;
+# 1=u(L2),2=u(MX),3=p(L2),4=p(MX),5-8=mix
+
+cadTimeStepErrorControl = 1               # IEPSAD 
+
+# low accuracy for acceptance during start procedure (EPSADI);
+# if time error is larger, the step is repeated
+
+dadTimeStepEpsDuringInit = 1.25E-1        # EPSADI
+
+# low accuracy for acceptance after start procedure (EPSADL);
+# if time error is larger, the step is repeated
+
+dadTimeStepEpsAfterInit = 1.25E-3         # EPSADL

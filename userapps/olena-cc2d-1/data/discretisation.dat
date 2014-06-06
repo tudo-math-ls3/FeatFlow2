@@ -1,0 +1,239 @@
+# ------------------------------------------------------------------------
+# Spatial discretization
+#
+# This file contains parameters about the spatial discretization
+# of the problem.
+# ------------------------------------------------------------------------
+
+###################
+[CC-DISCRETISATION]
+###################
+# Type of the initial solution.
+# =0: Use zero solution.
+# =1: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     THe file is expected as formatted text file.
+# =2: Read from file. isolutionStart specifies the level of the initial 
+#     solution, ssolutionStart specifies the filename to be read.
+#     The file is expected as unformatted binary file.
+#     (smaller, but processor dependent and not human readable!)
+# =3: Analytical initial solution. Create the solution by calling
+#     the callback functions coeff_AnalyticSolution_X, 
+#     coeff_AnalyticSolution_Y, coeff_AnalyticSolution_P,coeff_AnalyticSolution_C
+#     in cccallback.f90.
+
+
+ctypeInitialSolution = 3
+
+# If ctypeInitialSolution=1: Level of the initial solution in the file
+# to be read.
+# =1,2,3,...: File ssolutionStart specifies a solution on 
+#             level isolutionStart.
+# =0,-1,-2,...: File ssolutionStart specifies a solution on 
+#               level (NLMAX+isolutionStart).
+
+isolutionStart     = 0
+
+# Name of file with the initial solution
+
+ssolutionStart     = 'ns/DX4'
+
+# Write final solution vector to a file. After a stationary simulation,
+# the stationary solution is written out. After a nonstationary simulation,
+# the solution after the last timestep is written out.
+# 0=don't write
+# |.|=1: write start vector to sSolutionWrite vector on level NLMAX,
+# |.|=2: write start vector to sSolutionWrite on level NLMAX-1.
+# etc... 
+# <0: sSolutionWrite is unformatted file 
+#     (smaller, but processor dependent and not human readable)
+# To write out raw solution data during a nonstationary simulation,
+# use the 'film output' feature in the postprocessing!
+
+iSolutionWrite     = 0
+
+# Name of file for writing the final solution
+
+sSolutionWrite     = 'ns/DX4'
+
+# ------------------------------------------------------------------------
+
+# minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
+
+NLMIN              = 1
+
+# maximum mg-level = level of computation of nonlinear iteration
+
+NLMAX              =2
+
+
+# ------------------------------------------------------------------------
+
+# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
+
+iequation    = 0
+
+# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+
+isubEquation = 0
+
+# Viscosity parmeter 1/NU
+
+RE                 = 500
+
+# Type of right hand side. 
+# 0=zero
+# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   before the simulation
+# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   in every timestep of the simulation
+
+iRHS               = 2
+iRHS               = 0
+
+# Type of bdry. conditions.
+# 0=DIRICHLET stationary, 
+# 1=Pressure drop nonstationary, 
+# 2=NEUMANN part. nonstationary (standard)
+# Must be >= 1 for moving fictitious boundary components and/or 
+# nonstationary boundary conditions.
+
+iBoundary          = 2
+
+# ------------------------------------------------------------------------
+
+# Type of element pair to use for the discretisation.
+# 0 = Q1~(E031) / Q1~(E031) / Q0
+# 1 = Q1~(E030) / Q1~(E030) / Q0
+# 2 = Q1~(EM31) / Q1~(EM31) / Q0
+# 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+# 4 = Q2 (E013) / Q2 (E013) / QP1
+# 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+#  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+# 10 = Q2~(EB50) / Q2~(EB50) / QP1
+# 11 = Q2~(EM50) / Q2~(EM50) / QP1
+# (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (QP1  = Quadrilateral discontinuous P1 element)
+
+iElementType       = 5
+
+# ------------------------------------------------------------------------
+
+# Type of stabilization of the convective term. 
+# 0=Streamline Diffusion
+# 1=upwind
+# 2=unified edge oriented jump stabilisation
+
+iUpwind            = 0
+
+# Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
+# Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
+
+dUpsam             = 0.1
+
+# ------------------------------------------------------------------------
+
+# Generation of mass matrix. 0=lumped mass,1=real mass matrix
+iMass              = 1
+
+# Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
+iMassLumpType      = 0
+
+# cubature formula for Mass matrix
+
+scubMass           = G4X4
+
+# cubature formula for Stokes/Laplacian matrix
+
+scubStokes         = G4X4
+
+# cubature formula for Pressure matrices B
+
+scubB              = G4X4
+
+# cubature formula for RHS F
+
+scubF              = G4X4
+
+# ------------------------------------------------------------------------
+# Parameters to configure matrix generation on multiple levels.
+# This stabilises the preconditioner of the nonlinear iteration
+# in case of high aspect ratios in the cells of the mesh.
+# Works only with Q1~ discretisation.
+
+# Configure adaptive matrix generation.
+# 0=no adaptive matrix gen.=standard; 
+# 1=switch to constant mat. gen., depending on dAdMatThreshold; 
+# 2=switch mat. gen. depenting on size of ncurrent and neighbour element
+
+iAdaptiveMatrix    = 0
+
+# Treshold parameter: 
+# switch construction of coarse grid matrices from standard finite element 
+# approach to locally constant interpolation for all rows belonging to elements 
+# with aspect ratio >= dAdMatThreshold; 
+# 0D0=all elements; 20D0=standard; -1D0=infinity=no matrix modifications
+
+dAdMatThreshold    = 20.0
+
+
+# ========================================================================
+# The following section describes the interlevel projection (prolongation/
+# restriction) that should be used when a solution must be projected
+# to a higher or lower level in the discretisation
+# (e.g. when solving with a multigrid solver).
+
+#############
+[CC-PROLREST]
+#############
+
+# Order of the prolongation/restriction to use for velocity components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderVel   = -1
+
+# Order of the prolongation/restriction to use for pressurte components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderPress = -1
+
+# Prolongation/restriction variant for nonconforming elements 
+# E030/EM30/E031/EM31 for the velocity.
+# = 0: Use default prol/rest,
+# = 1: Use standard prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 2: Use extended prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 3: Use extended prol/rest, weighted by element size (L2 projection),
+# = 4: Use extended prol/rest, weighted by element size of neighbour element
+# To activate extended prol/rest, set this to >= 2 after initialising the
+# interlevel projection structure!
+
+iinterpolationVariantVel = 0
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iinterpolationVariant >= 2.
+# Aspect-ratio indicator; controls switching to constant prolongation.
+# <=1: switch depending on aspect ratio of current element (standard),
+#  =2: switch depending on aspect ratio of current element and
+#      neighbour element
+
+iintARIndicatorEX3YVel   = 1
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iprolEX3Yvariant >= 2.
+# Upper bound aspect ratio; for all elements with higher AR
+# the prolongation is switched to constant prol/rest.
+# standard = 20.0
+
+dintARboundEX3YVel       = 20.0
+
+
+#############
+[CC-CONCENTRATIONPARAM]
+#############
+
+#coefficient in front of martix I(3,3)
+daconcentr = -1.0
+
+#coefficient in front of matrix I(3,4)
+dbconcentr = -1.0
