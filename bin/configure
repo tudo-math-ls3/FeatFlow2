@@ -195,7 +195,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/mapDP_DP.f90 DataStructures/mapDP_SP.f90 ".
     "DataStructures/mapSP.f90 DataStructures/mapSP_Int.f90 " .
     "DataStructures/mapSP_DP.f90 DataStructures/mapSP_SP.f90 " .
-    
+
     "DataStructures/quadtreebase.f90 " .
     "DataStructures/quadtreeDP.f90 DataStructures/quadtreeSP.f90 " .
 
@@ -207,7 +207,7 @@ use constant SRCLIST_KERNEL =>
 
     "DataStructures/graph.f90  " .
     "DataStructures/numbersets.f90 DataStructures/geneticalgorithm.f90  " .
-    
+
     "DataStructures/intgroupset.f90  " .
 
     "DOFMaintenance/bcassembly.f90  DOFMaintenance/bcassemblybase.f90 " .
@@ -969,23 +969,23 @@ sub check_options {
     # lists of values and multiple instances of the option are allowed.
     # Normalise the values by converting strings to real arrays.
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
-    		       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
-    		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
-    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
+		       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
+		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
 		       'SRCLIST_APP', 'WARN') {
-    	# $cl{'...'} has been passed as an array to GetOptions()
-    	# and as such is always defined. But is does not necessarily have
-    	# entries: unset => #entries=-1; set, but empty => #entries=0
-    	# So, don't test with perl function defined(). Test whether set.
-    	if (defined($cl{$entry})) {
+	# $cl{'...'} has been passed as an array to GetOptions()
+	# and as such is always defined. But is does not necessarily have
+	# entries: unset => #entries=-1; set, but empty => #entries=0
+	# So, don't test with perl function defined(). Test whether set.
+	if (defined($cl{$entry})) {
 	    my $numentries = $#{$cl{$entry}};
-    	    if ($numentries > -1) {
-    		@{ $cl{$entry} } = split(/\s+/,
-    					 join(' ',
-    					      split(/,/,
-    						    join(',', @{ $cl{$entry} })
-    					      )));
-    	    }
+	    if ($numentries > -1) {
+		@{ $cl{$entry} } = split(/\s+/,
+					 join(' ',
+					      split(/,/,
+						    join(',', @{ $cl{$entry} })
+					      )));
+	    }
 	    # Converting comma-separated entries into space-separated
 	    # ones may only increase the number of array entries, not
 	    # reduce them. If an array merely contained an empty
@@ -994,7 +994,7 @@ sub check_options {
 	    if ($numentries > $#{$cl{$entry}}) {
 		push @{ $cl{$entry} }, " ";
 	    }
-    	}
+	}
     }
 
     # For this list only commas are allowed to separate things.
@@ -1480,7 +1480,7 @@ sub create_feat2AppMakefile {
     }
     print MAKEFILE_HDL
 	"\n";
-    
+
     $entry = (defined($cl{'WARN'})) ? $cl{'WARN'} : $defaults{'WARN'};
     print MAKEFILE_HDL
         "# Create binary with Warnings enabled?\n";
@@ -1718,10 +1718,10 @@ sub create_feat2AppMakefile {
 	    # (Remember that an empty string is not allowed for
 	    #  command line options that take a string, not an array!)
 	    my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
- 	    if (length($string) > 0) {
- 		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
- 		$overwritten++;
- 	    }
+	    if (length($string) > 0) {
+		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
+		$overwritten++;
+	    }
 
 	} elsif (ref($cl{$entry}) eq "ARRAY") {
 	    # current token is an array, print if at least one entry
@@ -3503,7 +3503,7 @@ sub create_feat2AppMakefile {
         "\t\$(F77VERSION) > \"\$(DIR)/\$(FILE_F77_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(F77)\`; \\\n" .
         "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
-        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_F77_INFO).ls\"; \\\n" .
+        "\t    ls -lLd \"\$\${compilerpath}\" > \"\$(DIR)/\$(FILE_F77_INFO).ls\"; \\\n" .
         "\telse \\\n" .
         "\t    echo; echo \"Error: F77 compiler not found.\"; echo; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
@@ -3518,7 +3518,7 @@ sub create_feat2AppMakefile {
         "\t\$(F90VERSION) > \"\$(DIR)/\$(FILE_F90_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(F90)\`; \\\n" .
         "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
-        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_F90_INFO).ls\"; \\\n" .
+        "\t    ls -lLd \"\$\${compilerpath}\" > \"\$(DIR)/\$(FILE_F90_INFO).ls\"; \\\n" .
         "\telse \\\n" .
         "\t    echo; echo \"Error: F90 compiler not found.\"; echo; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
@@ -3533,7 +3533,7 @@ sub create_feat2AppMakefile {
         "\t\$(CCVERSION) > \"\$(DIR)/\$(FILE_CC_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(CC)\`; \\\n" .
         "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
-        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CC_INFO).ls\"; \\\n" .
+        "\t    ls -lLd \"\$\${compilerpath}\" > \"\$(DIR)/\$(FILE_CC_INFO).ls\"; \\\n" .
         "\telse \\\n" .
         "\t    echo; echo \"Error: C compiler not found.\"; echo; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
@@ -3548,7 +3548,7 @@ sub create_feat2AppMakefile {
         "\t\$(CXXVERSION) > \"\$(DIR)/\$(FILE_CXX_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(CXX)\`; \\\n" .
         "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
-        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CXX_INFO).ls\"; \\\n" .
+        "\t    ls -lLd \"\$\${compilerpath}\" > \"\$(DIR)/\$(FILE_CXX_INFO).ls\"; \\\n" .
         "\telse \\\n" .
         "\t    echo; echo \"Error: C++ compiler not found.\"; echo; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
@@ -3563,7 +3563,7 @@ sub create_feat2AppMakefile {
         "\t\$(CUDAVERSION) > \"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \\\n" .
         "\tcompilerpath=\`which 2>/dev/null \$(CUDA)\`; \\\n" .
         "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
-        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CUDA_INFO).ls\"; \\\n" .
+        "\t    ls -lLd \"\$\${compilerpath}\" > \"\$(DIR)/\$(FILE_CUDA_INFO).ls\"; \\\n" .
         "\telse \\\n" .
         "\t    echo; echo \"Error: CUDA compiler not found.\"; echo; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
