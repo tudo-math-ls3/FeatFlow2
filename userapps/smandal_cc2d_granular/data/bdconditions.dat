@@ -1,0 +1,152 @@
+###############
+[BDEXPRESSIONS]
+###############
+
+# At first we define a list of expressions that can be evaluated
+# on the boundary. The number in braces "(n)" specifies
+# how many expressions are defined here. The following n lines define
+# n constant values in the form
+#   'name' type value
+# with
+#   'name' : an arbitrary name; case insensitive
+#   type   : -2=name of a hardcoded expression realised by callback routines
+#               in the code
+#            -1=general text expression to be evaluated
+#             0=double precision constant, 
+#             1=integer constant
+#             2=parabolic profile with given maximum value
+#   value  : the value associated to the name
+#
+# The following variables are allowed in an expression:
+#    L = local parameter value inside of the boundary region, [0..1].
+#    R = parameter value on the boundary, 0-1 parametrisation,
+#        relative to the segment (i.e. always starts with 0.0 an
+#        ends with 1.0)
+#    S = parameter value on the boundary, length parametrisation,
+#        relative to the segment (i.e. starts with 0.0 and ends
+#        with the segment length)
+#    X = x-coordinate of the point on the boundary
+#    Y = y-coordinate of the point on the boundary
+#    TIME = time in a nonstationary simulation
+#    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
+#    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
+#    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
+#    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
+#    NX     = x-component of the normal vector on the boundary.
+#    NY     = Y-component of the normal vector on the boundary.
+#
+# The following constants are defined:
+#
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+#
+# Moreover, all commands from the fparser.f90 are possible here,
+# e.g. if, min, max, sin, cos, tan, ceil, floor, exp, log, log10, sqrt,...
+#
+# Note: An expression defining Dirichlet boundary conditions may return
+# _INFTY at some points (x,y) on the boundary. This return value will
+# make the corresponding part on the boundary be treated as Neumann
+# boundary! Thus by defining an expression relative to a parameter
+# value and the time, it's possible to create moving boundary conditions.
+
+bdExpressions(8) =
+  'AnalyticBC'      -2    ''
+  'Umax'             0    0.3
+  'Dirichlet0'       0    0.0
+  'Dirichlet1'       0    1.0
+  'ParProfile'       2    0.3 # 'Umax * 4.0*r*(1-r)'
+  'ParProfExpr'     -1    '4.0*0.3*L*(1.0-L)'
+  'NeumannBdValueX'  0    -3.0
+  'NeumannBdValueY'  0    0.0
+
+
+##############
+[BDCONDITIONS]
+##############
+
+# Whether there are Neumann boundary components in the domain.
+# =-1 : automatic detection (standard; does not work for moving boundary conditions!)
+# =0  : The boundary is pure Dirichlet.
+# =1  : There are Neumann or pressure drop boundary segments on the domain.
+
+ineumannBoundary = -1
+
+# For each boundary component, a boundary component specifier
+# 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
+# that follow. A sub-segment either corresponds to an actual boundary
+# segment or is a 'free' boundary segment anywhere on the boundary.
+# To each sub-segment, a boundary condition is associated.
+#
+# Definition of boundary segments always start at parameter value 0.0.
+# Each specified sub-segment allows to specify the end parameter
+# value of the segment:
+# "    4.0  3  [bdcid] ..."
+#   Creates a boundary condition segment starting from the 'current' 
+#   parameter value, ending at parameter value '4.0'. '3' specifies 
+#   that both, starting and ending point should belong to the segment.
+#   '1' is the number X of the boundary condition 'bdExpressionX'
+#   defined above.
+#   Using a parameter value which is larger than the maximum parameter
+#   value will result in a 'wrap around', of the boundary condition
+#   segment, letting it start at the beginning of the boundary component
+#   again.
+# The last values in the list "x a [bdcid] ..." have the following 
+# meaning:
+#  a = 0: Start- and endpoint don't belong to the interval
+#    = 1: Include startpoint of the interval
+#    = 2: Include endpoint of the interval
+#    = 3: Include start- and endpoint
+#  [bdcid] = 0 : Do-nothing boundary condition for all directions
+#          = 1 : Simple Dirichlet boundary condition for all
+#                main solution components (e.g. velocity) component.
+#                For every component, an expression identifier follows
+#                that defines the value on that part of the boundary.
+#                Example:  1.0  3  1  'Dirichlet0'  'Dirichlet0'
+#                          2.0  3  1  'Dirichlet1'  'Dirichlet0'
+#                Dirichlet-0-values between parameter value 0..1 for X- and
+#                Y-velocity. Between parameter value 1..2: Dirichlet-1-value
+#                for X-vel., Dirichlet-0-value for Y-vel.
+#          = 2 : Pressure-drop / Normal-stress boundary condition.
+#                "..." specifies the name of the expression that is
+#                evaluated to give the normal stress.
+#                Example:  1.0  3  2  'PressValue1'
+#          = 3 : Slip boundary conditions. Like Neumann BC's this
+#                does not use an expression.
+#          = 4 : Inhomogeneous Neumann boundary.
+#                Example:  1.0  0  4  'NeumannBdValueX' 'NeumannBdValueY'
+#
+# Note: In the default configuration, the expression name 'AnalyticBC'
+#  (as defined above with expression type -2) serves as a trigger for 
+#  analytic Dirichlet boundary conditions that use the callback routione 
+#  'getBoundaryValues'. Therefore, when the term 'AnalyticBC' is used as 
+#  X- or Y-velocity, the routine 'getBoundaryValues' in cccallback.f90 is 
+#  called for that segment to return the analytic boundary value!
+
+# Benchmark configuration:
+##bdComponent1(1)=
+##     1.0  3  1  'Dirichlet0'  'Dirichlet0'
+bdComponent1(4)=
+   1.0  3  1  'Dirichlet0'      'Dirichlet0'      # [0.0,1.0] : Dirichlet-0 boundary
+   2.0  0  0                                      # ]1.0,2.0[ : Neumann boundary = do-nothing   #'NeumannBdValueX' 'NeumannBdValueY'
+   3.0  3  1  'Dirichlet0'      'Dirichlet0'      # [2.0,3.0] : Dirichlet-0 boundary
+   4.0  3  1  'ParProfile'      'Dirichlet0'      # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+ 
+# Driven cavity would be (for grid cavity.{prm,tri}):
+#bdComponent1(4)=
+#   1.0  1  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  1  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
+#   3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
+#   4.0  0  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
+
+##bdComponent2(1)=
+##   1.0  0  0   # Complete boundary component Dirichlet-0 boundary
+
+
+bdComponent2(1)=
+   4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boundary
+
+
+
+
+

@@ -1,0 +1,87 @@
+#!/bin/sh
+#
+# This small shell script is used to create a default makefile
+# for the application.
+#
+
+##############################################################################
+# Don't let the perl configure script be confused by non-english messages from
+# system information programs.
+# (LC_ALL overrides the value of the LANG environment variable and the values
+# of any other LC_* environment variables.)
+LC_ALL=C
+export LC_ALL
+
+
+##############################################################################
+# Change to the directory where this script resides (you might call this
+# script via <some path>/configure, so change to <some path> first.
+SCRIPTPATH=`dirname $0`
+cd ${SCRIPTPATH}
+
+
+##############################################################################
+# Default behaviour:
+# Do not store object files to home directory, but to some scratch area
+# without quota restrictions. Try to come up with a reasonable name for the
+# object file directories (per application and one for the libraries which are
+# shared among all FEAT2 applications).
+#
+# Note: this default behaviour can always be overridden by explicitly setting
+# --objdir=<some path> on the command line when invoking this script!
+#
+# Specify its directory prefix here.
+BASEDIR_OBJFILES=${HOME}/nobackup/feat2obj
+
+# To support multiple working copies of FEAT2 which all store their object
+# files beneath ${BASEDIR_OBJFILES}, but which should not interfere which each
+# other, duplicate the hierarchy of these FEAT2 installations beneath
+# ${BASEDIR_OBJFILES}. The procedure can be explained most easily with an
+# example:
+# Consider you have two FEAT2 installations, one in $HOME/Featflow2 and
+# another in $HOME/Featflow2-testing, then the object files should go to
+# ${BASEDIR_OBJFILES}/Featflow2 and ${BASEDIR_OBJFILES}/Featflow2-testing,
+# respectively.
+CWD=`/bin/pwd`
+
+# Try to shorten the directory hierarchy below ${BASEDIR_OBJFILES}. Why?
+# Because it is used to create the object directory and some compilers enforce
+# (silently) restrictions on include and module directories (e.g. PGI). Do not
+# let the path to object directory become too long!
+
+# Step 1:
+#   try to cut off the leading part ending in your username.
+FEAT2INSTDIR=${CWD}
+# $USER is used later on, but not all Unix systems define
+# this environment variable, Sun Solaris e.g. does not.
+test -z "$USER" && USER="$LOGNAME"
+# Username contained in path name?
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/^.*\/$USER\//\//;"`;
+
+# Step 2:
+#   remove "Featflow2/" and "Featflow2.gitsvn", case-insensitively
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/\/Featflow2\//\//i; s/\/Featflow2.gitsvn\//\//i; "`;
+
+# Concatenate directory strings to come up with a directory name
+# for FEAT2 application object files
+OBJDIRPREFIX=${BASEDIR_OBJFILES}${FEAT2INSTDIR}
+
+# Create a likewise directory for all libraries which should
+# be shared among all FEAT2 applications as - being a library -
+# they have no dependency on the FEAT2 kernel or a FEAT2y application
+# and are all compiled with identical settings.
+OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
+
+
+##############################################################################
+# Finally, invoke the real work horse, FEAT2's configure, and pass all
+# configuration settings determined above to it. Command-line parameters given
+# when invoking this script are passed to the 'real' configure script as well
+# (via "$@"). They can be used to override settings hard coded here.
+../../bin/configure \
+	--appname=cc2d \
+	--programfile=src/cc2d.f90 \
+        --srclist_app="`ls src/*.f90`" \
+        --objdir-prefix=${OBJDIRPREFIX} \
+        --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
+	"$@"
