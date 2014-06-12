@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectType="typeStaticLibrary" ProjectCreator="Intel Fortran" Keyword="Static Library" Version="11.0" ProjectIdGuid="{2BFF814F-A3F2-42F1-99DC-76AB98B9B81D}">
+	<Platforms>
+		<Platform Name="Win32"/>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="dbg|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-dbg" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-dbg.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="opt|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-opt.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="dbg|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-dbg" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-dbg.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="opt|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-opt.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath="..\BLAS\dasum.f"/>
+		<File RelativePath="..\BLAS\daxpy.f"/>
+		<File RelativePath="..\BLAS\dcabs1.f"/>
+		<File RelativePath="..\BLAS\dcopy.f"/>
+		<File RelativePath="..\BLAS\ddot.f"/>
+		<File RelativePath="..\BLAS\dgbmv.f"/>
+		<File RelativePath="..\BLAS\dgemm.f"/>
+		<File RelativePath="..\BLAS\dgemv.f"/>
+		<File RelativePath="..\BLAS\dger.f"/>
+		<File RelativePath="..\BLAS\dnrm2.f"/>
+		<File RelativePath="..\BLAS\drot.f"/>
+		<File RelativePath="..\BLAS\drotg.f"/>
+		<File RelativePath="..\BLAS\drotm.f"/>
+		<File RelativePath="..\BLAS\drotmg.f"/>
+		<File RelativePath="..\BLAS\dsbmv.f"/>
+		<File RelativePath="..\BLAS\dscal.f"/>
+		<File RelativePath="..\BLAS\dsdot.f"/>
+		<File RelativePath="..\BLAS\dspmv.f"/>
+		<File RelativePath="..\BLAS\dspr.f"/>
+		<File RelativePath="..\BLAS\dspr2.f"/>
+		<File RelativePath="..\BLAS\dswap.f"/>
+		<File RelativePath="..\BLAS\dsymm.f"/>
+		<File RelativePath="..\BLAS\dsymv.f"/>
+		<File RelativePath="..\BLAS\dsyr.f"/>
+		<File RelativePath="..\BLAS\dsyr2.f"/>
+		<File RelativePath="..\BLAS\dsyr2k.f"/>
+		<File RelativePath="..\BLAS\dsyrk.f"/>
+		<File RelativePath="..\BLAS\dtbmv.f"/>
+		<File RelativePath="..\BLAS\dtbsv.f"/>
+		<File RelativePath="..\BLAS\dtpmv.f"/>
+		<File RelativePath="..\BLAS\dtpsv.f"/>
+		<File RelativePath="..\BLAS\dtrmm.f"/>
+		<File RelativePath="..\BLAS\dtrmv.f"/>
+		<File RelativePath="..\BLAS\dtrsm.f"/>
+		<File RelativePath="..\BLAS\dtrsv.f"/>
+		<File RelativePath="..\BLAS\idamax.f"/>
+		<File RelativePath="..\BLAS\isamax.f"/>
+		<File RelativePath="..\BLAS\lsame.f"/>
+		<File RelativePath="..\BLAS\sasum.f"/>
+		<File RelativePath="..\BLAS\saxpy.f"/>
+		<File RelativePath="..\BLAS\scopy.f"/>
+		<File RelativePath="..\BLAS\sdot.f"/>
+		<File RelativePath="..\BLAS\sdsdot.f"/>
+		<File RelativePath="..\BLAS\sgbmv.f"/>
+		<File RelativePath="..\BLAS\sgemm.f"/>
+		<File RelativePath="..\BLAS\sgemv.f"/>
+		<File RelativePath="..\BLAS\sger.f"/>
+		<File RelativePath="..\BLAS\snrm2.f"/>
+		<File RelativePath="..\BLAS\srot.f"/>
+		<File RelativePath="..\BLAS\srotg.f"/>
+		<File RelativePath="..\BLAS\srotm.f"/>
+		<File RelativePath="..\BLAS\srotmg.f"/>
+		<File RelativePath="..\BLAS\ssbmv.f"/>
+		<File RelativePath="..\BLAS\sscal.f"/>
+		<File RelativePath="..\BLAS\sspmv.f"/>
+		<File RelativePath="..\BLAS\sspr.f"/>
+		<File RelativePath="..\BLAS\sspr2.f"/>
+		<File RelativePath="..\BLAS\sswap.f"/>
+		<File RelativePath="..\BLAS\ssymm.f"/>
+		<File RelativePath="..\BLAS\ssymv.f"/>
+		<File RelativePath="..\BLAS\ssyr.f"/>
+		<File RelativePath="..\BLAS\ssyr2.f"/>
+		<File RelativePath="..\BLAS\ssyr2k.f"/>
+		<File RelativePath="..\BLAS\ssyrk.f"/>
+		<File RelativePath="..\BLAS\stbmv.f"/>
+		<File RelativePath="..\BLAS\stbsv.f"/>
+		<File RelativePath="..\BLAS\stpmv.f"/>
+		<File RelativePath="..\BLAS\stpsv.f"/>
+		<File RelativePath="..\BLAS\strmm.f"/>
+		<File RelativePath="..\BLAS\strmv.f"/>
+		<File RelativePath="..\BLAS\strsm.f"/>
+		<File RelativePath="..\BLAS\strsv.f"/>
+		<File RelativePath="..\BLAS\xerbla.f"/></Filter></Files>
+	<Globals/></VisualStudioProject>

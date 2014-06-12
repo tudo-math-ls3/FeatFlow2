@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectType="typeStaticLibrary" ProjectCreator="Intel Fortran" Keyword="Static Library" Version="11.0" ProjectIdGuid="{2BFF814F-A3F2-42F1-99DC-76AB98B9B81D}">
+	<Platforms>
+		<Platform Name="Win32"/>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="dbg|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-dbg" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-dbg.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="opt|Win32" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x86-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x86-opt.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="dbg|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-dbg" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-dbg.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="opt|x64" OutputDirectory="$(ProjectDir)..\..\lib" IntermediateDirectory="$(ProjectDir)obj\$(ProjectName).if12-x64-opt" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" BufferedIO="true" InterproceduralOptimizations="ipoMultiFile" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName).if12-x64-opt.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath="..\lapack-3.5.0\SRC\dgbtf2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgbtrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgbtrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgelq2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgelqf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgels.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgelsd.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgelss.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgelsy.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgeqp3.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgeqr2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgeqrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgesv.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgetf2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgetrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgetrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgttrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dgttrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\disnan.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlabad.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaic1.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaisnan.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlange.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlapy2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaqp2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaqps.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarfb.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarfg.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarft.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarzb.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlarzt.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlascl.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaset.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlassq.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlaswp.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dlatrz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dorm2r.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dorml2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dormlq.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dormqr.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dormr3.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dormrz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dtrtrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\dtzrzf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\ieeeck.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\iladlc.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\iladlr.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\ilaenv.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\ilaslc.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\ilaslr.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\iparmq.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\lsamen.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgbtf2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgbtrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgbtrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgelq2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgelqf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgels.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgelsd.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgelss.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgelsy.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgeqp3.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgeqr2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgeqrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgesv.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgetf2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgetrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgetrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgttrf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sgttrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sisnan.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slabad.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaic1.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaisnan.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slange.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slapy2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaqp2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaqps.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarf.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarfb.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarfg.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarft.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarzb.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slarzt.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slascl.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaset.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slassq.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slaswp.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\slatrz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sorm2r.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sorml2.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sormlq.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sormqr.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sormr3.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\sormrz.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\strtrs.f"/>
+		<File RelativePath="..\lapack-3.5.0\SRC\stzrzf.f"/></Filter>
+		<Filter Name="Source Files (Install)">
+		<File RelativePath="..\lapack-3.5.0\INSTALL\dlamch.f"/>
+		<File RelativePath="..\lapack-3.5.0\INSTALL\slamch.f"/></Filter></Files>
+	<Globals/></VisualStudioProject>
