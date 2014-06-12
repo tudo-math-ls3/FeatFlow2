@@ -87,6 +87,13 @@ contains
                               "NLMIN",ilvmin,2)
     call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
                               "NLMAX",ilvmax,4)
+
+    if (ilvmin .gt. ilvmax) then
+      call output_line('NLMIN > NLMAX in configuration file section ' // &
+                       '[CC-DISCRETISATION] is an infeasible setting!', &
+                       OU_CLASS_ERROR, OU_MODE_STD, 'cc_initParamTriang')
+      call sys_halt()
+    end if
     
     ! Get the .prm and the .tri file from the parameter list.
     call parlst_getvalue_string (rproblem%rparamList,"PARAMTRIANG",&
