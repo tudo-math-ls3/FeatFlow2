@@ -624,7 +624,7 @@ contains
       ffunctionReference, rcollection, iorder, ntempArrays, rperfconfig)
 
 !<description>
-  ! Converts an analytically given function fcoeff_buildVectorSc_sim
+  ! Converts an analytically given function ffunctionReference
   ! to a finite element vector rvector by direct point evaluation.
   !
   ! Note: This function may not work for all finite elements!
