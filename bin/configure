@@ -155,7 +155,7 @@ my $SRCDIR_APP            = ".";
 # Where to look by default for application-specific source files
 use constant SRCDIR_APP    => "src";
 
-# subdirectories to store FEAT2 and third-party libraries
+# subdirectories to store FEAT2 and third party libraries
 #
 # (Third party libraries are independent of FEAT2 sources and, as such, can
 # be shared among all FEAT2 applications.)
@@ -1846,7 +1846,7 @@ sub create_feat2AppMakefile {
             "# Coprocessor-specific special options\n" .
 	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
 	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
-        "INC          := -I\$(FEAT2BASEDIR)/librariesNEW/coproc \$(INC)\n" .
+        "INC          := -I\$(FEAT2BASEDIR)/thirdparty/coproc \$(INC)\n" .
 	    "LIBS         := -lcoproc \$(LIBS)\n" .
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
@@ -2716,10 +2716,10 @@ sub create_feat2AppMakefile {
 
 
     ##############################################################################
-    # Libraries (AGMG, AMD, blas, coproc, inshape2d, lapack, metis, splib, umfpack)
+    # Libraries (AGMG, AMD, blas, coproc, lapack, splib, umfpack)
     print MAKEFILE_HDL
         "##############################################################################\n" .
-        "# Libraries (AGMG, AMD, blas, coproc, inshape2d, lapack, metis, splib, umfpack)\n\n" .
+        "# Libraries (AGMG, AMD, blas, coproc, lapack, splib, umfpack)\n\n" .
 
         "# A prerequisite for all libraries is that the object directory\n" .
         "# to store should exist. The pipe is to determine that we want\n" .
@@ -2737,7 +2737,7 @@ sub create_feat2AppMakefile {
     # coproc library path settings
         "# coproc library path settings\n" .
         "\$(OBJDIR_LIB)/libcoproc.a clean-coproc get-coproc purge-coproc: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/coproc\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/coproc\n\n" .
 
     # coproc library
         "# Create coproc library\n" .
@@ -2764,26 +2764,10 @@ sub create_feat2AppMakefile {
     print MAKEFILE_HDL
 	")\n\n" .
 
-    # metis library path settings
-        "# metis library path settings\n" .
-        "\$(OBJDIR_LIB)/libmetis.a clean-metis get-metis purge-metis: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/metis-5.0\n\n" .
-
-    # metis library
-        "# Create metis library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libmetis.a\n" .
-        "\$(OBJDIR_LIB)/libmetis.a:\n" .
-        "\t\@echo \"# Building metis library\"\n" .
-        "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tCC=\"\$(PRECC) \$(CC)\" CFLAGSC=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
-        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
-
     # umfpack library path settings
         "# umfpack library path settings\n" .
         "\$(OBJDIR_LIB)/libumfpack.a clean-umfpack get-umfpack purge-umfpack: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/UMFPACK\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/UMFPACK\n\n" .
 
     # umfpack library
         "# Create umfpack library\n" .
@@ -2799,7 +2783,7 @@ sub create_feat2AppMakefile {
     # AMD library path settings
         "# AMD library path settings\n" .
         "\$(OBJDIR_LIB)/libamd.a clean-amd get-amd purge-amd: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AMD\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/AMD\n\n" .
 
     # AMD library
         "# Create AMD library\n" .
@@ -2815,7 +2799,7 @@ sub create_feat2AppMakefile {
     # blas path settings
         "# blas library path settings\n" .
         "\$(OBJDIR_LIB)/libblas.a clean-blas get-blas purge-blas: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/BLAS\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/BLAS\n\n" .
 
     # blas library
         "# Create blas library\n" .
@@ -2831,7 +2815,7 @@ sub create_feat2AppMakefile {
     # lapack path settings
         "# lapack library path settings\n" .
         "\$(OBJDIR_LIB)/liblapack.a clean-lapack get-lapack purge-lapack: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/lapack-3.5.0\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/lapack-3.5.0\n\n" .
 
     # lapack library
         "# Create lapack library\n" .
@@ -2850,7 +2834,7 @@ sub create_feat2AppMakefile {
     # splib path settings
         "# splib library path settings\n" .
         "\$(OBJDIR_LIB)/libsplib.a clean-splib get-splib purge-splib: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/splib\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/splib\n\n" .
 
     # splib library
         "# Create splib library\n" .
@@ -2863,25 +2847,10 @@ sub create_feat2AppMakefile {
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
-    # inshape2d path settings
-        "# inshape2d library path settings\n" .
-        "\$(OBJDIR_LIB)/libinshape2d.a clean-inshape2d get-inshape2d purge-inshape2d: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/inshape\n\n" .
-
-    # inshape2d library
-        "# Create inshape2d library\n" .
-        ".PHONY: \$(OBJDIR_LIB)/libinshape2d.a\n" .
-        "\$(OBJDIR_LIB)/libinshape2d.a:\n" .
-        "\t\@echo \"# Building inshape2d library\"\n" .
-        "\t(cd \$(DIR) && \\\n" .
-        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
-        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
-
     # AGMG path settings
         "# AGMG library path settings\n" .
         "\$(OBJDIR_LIB)/libagmg.a clean-agmg get-agmg purge-agmg: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AGMG_3.1.2\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/AGMG_3.1.2\n\n" .
 
     # AGMG library
         "# Create AGMG library\n" .
@@ -2942,8 +2911,8 @@ sub create_feat2AppMakefile {
         "# Shortcuts\n\n" .
 
     # Shortcuts for all libraries:
-    # e.g. invoke 'make metis', 'make libmetis' or 'make libmetis.a' to
-    #      have \$(OBJDIR_LIB)/libmetis.a' built
+    # e.g. invoke 'make lapack', 'make liblapack' or 'make liblapack.a' to
+    #      have \$(OBJDIR_LIB)/liblapack.a' built
         "# Shortcuts for all libraries:\n" .
         "# e.g. invoke 'make umfpack', 'make libumfpack' or 'make libumfpack.a' to\n" .
         "#      have \$(OBJDIR_LIB)/libumfpack.a' built\n" .
@@ -3736,9 +3705,7 @@ sub create_feat2AppMakefile {
         "\t\@echo \"                   'amd' - approximate minimum degree ordering\"\n" .
         "\t\@echo \"                   'blas' - basic linear algebra subprograms\"\n" .
         "\t\@echo \"                   'coproc' - co-processor support\"\n" .
-        "\t\@echo \"                   'inshape2d' - NURBS-curves and surfaces \"\n" .
         "\t\@echo \"                   'lapack' - linear algebra package\"\n" .
-        "\t\@echo \"                   'metis' - graph partitioning and fill-reduction matrix ordering \"\n" .
         "\t\@echo \"                   'splib' iterative methods and preconditioners\"\n" .
         "\t\@echo \"                   'umfpack' - unsymmetric multifrontal sparse LU factorization\"\n" .
         "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAT2's\"\n" .
@@ -3940,7 +3907,7 @@ sub create_feat2BenchmarkMakefile {
         "# Compiling\n" .
         "\n" .
         "# Rules to compile every FEAT2 benchmark application\n" .
-        "# (Ensure that the third-party libraries blas, lapack, metis, umfpack are\n" .
+        "# (Ensure that the third party libraries blas, lapack, umfpack are\n" .
         "#  completely compiled *before* trying to compile any FEAT2 benchmark\n" .
         "#  application. For serial make it does not matter, but parallel make\n" .
         "#  would otherwise cause nothing but trouble as the libraries' object files\n" .
@@ -3960,9 +3927,9 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "# Generic rule to build a specific library only\n" .
         ".PHONY:\tagmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
-        "\tliblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack\n" .
+        "\tliblapack.a libsplib.a libumfpack.a splib umfpack\n" .
         "agmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
-        "liblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack:\n" .
+        "liblapack.a libsplib.a libumfpack.a splib umfpack:\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
         "\n" .
         "compile-apps:\t\$(foreach APP, \$(APPS), \$(APP) )\n" .
@@ -5281,7 +5248,7 @@ sub show_help {
 	"                    --binary=32 : Generate code for 32-bit environment.\n" .
 	"                    --binary=64 : Generate code for 64-bit environment.\n" .
         "--buildlib=<string> Specify libraries to build\n" .
-        "                    (like: agmg amd blas coproc inshape2d lapack metis splib umfpack)\n" .
+        "                    (like: agmg amd blas coproc lapack splib umfpack)\n" .
         "--cc=<file>         C compiler\n" .
         "--cflagsc=<string>  Set C compiler flags to <string>\n" .
         "--cflagscoproc=<string>\n" .

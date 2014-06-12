@@ -1,1 +1,0 @@
-FEAT library for 2D calculation.
