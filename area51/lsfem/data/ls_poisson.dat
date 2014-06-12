@@ -33,7 +33,7 @@ icurl_boundary = 1
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 7
+NLMAX = 6
 
 # Coarse mesh level, used in multigrid:
 NLMIN = 5
@@ -52,11 +52,11 @@ detTri = 0
 #  EL_P1, EL_P2
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of flux variable finite elements:
-Velm = EL_Q1
+Velm = EL_Q2
 Vtild = 0
 
 # Type of primary variable finite element:
-Pelm = EL_Q1
+Pelm = EL_Q2
 Ptild = 0
 
 # Perturbed grid percentage

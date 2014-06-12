@@ -27,7 +27,7 @@
 #   = 7  Static Bubble
 #   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 0
+Problem = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -37,7 +37,7 @@ Problem = 0
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1
+dnu = 1.0e-3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -66,13 +66,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/channelflow_2d_346elem_FerzigerPeric2002'
 
 # Final mesh level to solve the problem:
-NLMAX = 9
+NLMAX = 1
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 9
+NLMIN = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -134,7 +134,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -151,7 +151,7 @@ NLN_MAX = 28
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-6
+dNLEpsi = 1E-4
 
 # The damping parameter in nonlinear
 #  deferred correction loop
@@ -198,7 +198,7 @@ dC = 1
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 0
+detOFlow = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -327,7 +327,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 1
+LINsolverType = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -339,12 +339,12 @@ LINsolver = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver relative error
-depsRelLS = 1e-3
+depsRelLS = 1e-4
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 15
+nmaxItsLS = 35
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -354,7 +354,7 @@ nmaxItsLS = 15
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = 1
+ioutputLevelLS = -1
 
 
 #-----------------------------------------------------
@@ -521,7 +521,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 3
+detZMV = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -569,7 +569,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 0
+LiftDragASO = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy
@@ -578,7 +578,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 1
+KEnergy = 0
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector

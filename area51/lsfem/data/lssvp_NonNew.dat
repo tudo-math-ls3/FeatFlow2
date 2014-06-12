@@ -36,8 +36,8 @@ viscosity_model = 1
 
 # Constants in viscosity models
 # Power Law = PL
-PL_nu0 = 1E-3
-PL_r = 2.5
+PL_nu0 = 1
+PL_r = 2.0
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -70,13 +70,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/channelflow_2d_346elem_FerzigerPeric2002'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 3
+NLMAX = 2
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 3
+NLMIN = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -148,14 +148,14 @@ LinTyp = 2
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 10
+FPIter = 3
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 50
+NLN_MAX = 6
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-7
+dNLEpsi = 1E-8
 
 # The damping parameter in nonlinear
 #  deferred correction loop
@@ -224,7 +224,7 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 2
+iinitialSolutionLevel = 3
 
 
 #-----------------------------------------------------
@@ -240,7 +240,7 @@ detVJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
-dJumpV = 1E4
+dJumpV = 0.01
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
 dJumpStarV = 0.0
@@ -313,7 +313,7 @@ depsRelLS = 1e-3
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 20
+nmaxItsLS = 25
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -490,7 +490,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 3
+detZMV = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -504,7 +504,7 @@ detZMV = 3
 #  Bolton step flow, outflow = 30
 #  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 31
+irow = 6
 
 
 #-----------------------------------------------------
@@ -538,7 +538,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 1
+LiftDragASO = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy

@@ -76,10 +76,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 2
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 2
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -139,7 +139,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 2
 
 # Number of Fixed-point irerations
 #  before Newton's method is active.
@@ -150,11 +150,11 @@ LinTyp = 1
 FPIter = 2
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 35
+NLN_MAX = 4
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-6
+dNLEpsi = 1E-4
 
 # The damping parameter in nonlinear
 #  deferred correction loop
@@ -330,7 +330,7 @@ dJumpP = 0.1
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 1
+LINsolverType = 2
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver?
@@ -340,12 +340,12 @@ LINsolver = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver relative error
-depsRelLS = 1e-3
+depsRelLS = 1e-4
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 10
+nmaxItsLS = 35
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -355,7 +355,7 @@ nmaxItsLS = 10
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = 1
+ioutputLevelLS = -1
 
 
 #-----------------------------------------------------
@@ -543,7 +543,7 @@ irow = 5
 #   =1 GMV  used in GMV
 #   =2 Binary GMV
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ExporType = 1
+ExporType = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Determine to write the final solution on level NLMAX

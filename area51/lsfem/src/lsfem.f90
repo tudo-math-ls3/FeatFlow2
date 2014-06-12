@@ -57,13 +57,13 @@ program lsfem
   call storage_init(999, 100)
 
 
-!  ! Call the problem to solve 2D Poisson equation:
-!  call output_lbrk()
-!  call output_line('Calculating 2D Poisson')
-!  call output_lbrk()
-!  call output_line('Div-Grad-(Curl)-Multigrid')  
-!  call output_line('-------------------------')
-!  call LS_Poisson_mg
+  ! Call the problem to solve 2D Poisson equation:
+  call output_lbrk()
+  call output_line('Calculating 2D Poisson')
+  call output_lbrk()
+  call output_line('Div-Grad-(Curl)-Multigrid')  
+  call output_line('-------------------------')
+  call LS_Poisson_mg
 
   ! Call the problem to solve 2D Navier-stokes:
   call output_lbrk()
@@ -81,13 +81,13 @@ program lsfem
 !  call ls_vvp_time_mg2d
 
 
-!  ! Call the problem to solve 2D Navier-stokes:
-!  call output_lbrk()
-!  call output_line('----------------------------------')  
-!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-!  call output_line('Stress-Velocity-Pressure-Multigrid')  
-!  call output_line('----------------------------------')
-!  call ls_svp_mg2d
+  ! Call the problem to solve 2D Navier-stokes:
+  call output_lbrk()
+  call output_line('----------------------------------')  
+  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+  call output_line('Stress-Velocity-Pressure-Multigrid')  
+  call output_line('----------------------------------')
+   call ls_svp_mg2d
 
 
 !  ! Call the problem to solve 2D Navier-stokes:

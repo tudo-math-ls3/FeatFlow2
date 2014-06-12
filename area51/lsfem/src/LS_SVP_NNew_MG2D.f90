@@ -1434,7 +1434,6 @@ contains
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
-                     
 
     ! Edge 1 of boundary component 1.
     ! Syymetric line, vertical velocity is zero
