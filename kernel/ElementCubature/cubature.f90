@@ -2173,7 +2173,7 @@ contains
 
       select case (cstdCubType)
         case (CUB_G1_1D,CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
-          ! All points are innter points. Total number =
+          ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
           ! This is an element in 1D, so every refinement brings 2 new
           ! elements.

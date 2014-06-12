@@ -63,7 +63,7 @@
 !#
 !# 17.) griddef_performEE
 !#     -> performs Explicit euler to solve the ODE for all
-!#        innter vertices
+!#        inner vertices
 !#
 !# 18.) griddef_perform_boundary2
 !#     -> performs the explicit euler on the boundary
