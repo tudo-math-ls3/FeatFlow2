@@ -420,6 +420,9 @@ module ExtFEcomparer_typedefs
 
    integer:: NLMIN, NLMAX
 
+   ! and we need a cubature formula
+   integer(I32) :: I_Cubature_Formula
+
    ! The Type of elements
    integer:: ielemtype
 

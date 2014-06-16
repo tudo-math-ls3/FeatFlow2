@@ -62,8 +62,12 @@ subroutine ExtFEcomparer_get_parameters(rparamList)
     else
       ! Each "readfromfile" command adds the parameter of the specified file
       ! to the parameter list.
-      call parlst_readfromfile (rparamList, "./data/configurations.dat")
+      call parlst_readfromfile (rparamList, "./data/generalsettings.dat")
+      call parlst_readfromfile (rparamList, "./data/function_specific_settings.dat")
+      call parlst_readfromfile (rparamList, "./data/postprocessing.dat")
+
     end if
+
 
 
 end subroutine
@@ -140,6 +144,11 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
     rproblem%sTRIFile = sTRIFile
     rproblem%sPRMFile = sPRMFile
 
+
+    ! read out which cubature rule to use
+    call parlst_getvalue_string (rproblem%rparamList,section,&
+                                 "sCubFormula",sString,"AUTO_G3")
+    rproblem%I_Cubature_Formula = cub_igetID(sString)
 
      ! Load the vector:
     call vecio_readBlockVectorHR(rproblem%coeffVector,sVectorName,.FALSE.,0,sVectorFile,.TRUE.)
