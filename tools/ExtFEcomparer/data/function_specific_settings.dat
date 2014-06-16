@@ -1,3 +1,7 @@
+# -----------------------------------------------------------#
+# In this file we specify the functions and the
+# quadrature rule that we want to use for it
+
 # This applies to section "FIRST" and "SECOND"
 
 # Type of element pair that was used for the discretisation
@@ -34,66 +38,48 @@
 # sMesh: The tri-file for the mesh
 # sVector: The solution-vector of the system you solved!
 #          Important: It has to be formatted! (not-formatted will come at some time)
-#          Important: We assume that the first onknowns are the velocity and the last one
-#                     is the pressure.
-# isFormatted: 1 if the vector is formatted, 0 if it was from unformatted output
+#          Important: We assume that the first unknowns are the velocity and the last one
+#                     is the pressure (which is standart in Featflow2).
+# sCubFormula: Specifies, which cubature formula is used to calculate the norm.
+#  the one set in the section  "FIRST" is used to calculate ||u1|| and ||u1 - u2||
+#  the one set in the section "SECOND" is used to calculate ||u2||
 #
-#####################
+# 
+# Important: For the calculation of ||u1 - u2||_L2 the program needs to evaluate
+# u2 at the cubature points of the geometry that belongs to u1 since
+# it uses the geometry belonging to u1 to perform the integration
+# Keep in mind that this can take some time because we need to find the points in the
+# mesh first. 
+# You also need to keep in mind that this has an effect on the value of the integral,
+# it will lead to different results if you exchange u1 and u2, so in general
+# we have that ||u1 - u2|| != ||u2 - u1||
+
+#####
 [FIRST]
-#####################
+#####
+
 NLMIN=1
 NLMAX=4
 ielementType=3
 
 sParametrisation = '%{spredirectory}/bench1.prm'
 sMesh = '%{spredirectory}/bench1.tri'
-sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
-# At the moment only formatted files are supported, so leave this to 1.
-# The variable is for future purpose
-isFormatted=1
 
-####################
+sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
+
+sCubFormula = AUTO_G2
+
+#######
 [SECOND]
-####################
+#######
 
 NLMIN=1
-NLMAX=3
+NLMAX=4
 ielementType=3
 
 sParametrisation = '%{spredirectory}/bench1.prm'
 sMesh = '%{spredirectory}/bench1.tri'
-sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX3.dat'
-# At the moment only formatted files are supported, so leave this to 1.
-# The variable is for future purpose
-isFormatted=1
 
-####################
-[DOMAININFO]
-####################
-# These expressions need to be 1 where the error/norm shall be calculated
-# on the part "common" we calculate ||u1 - u2||
-# on the part "onlyFirst" we calculate ||u1||
-# on the part "onlySecond" we calculate ||u2||
-# To specify this, you can use the if-statement, ie
-# if(x >= 1 & x<= 1.2 & y>=0.4 & y<=0.6,0,1) 
-#	This returns 0 if 1 <=x <= 1.2 and 0.4<=y<=0.6, else it returns 1
-# There are also other possibilities, you need to check what the 
-# Featflow-Function-parser is currently supporting
-common = 1
-onlyFirst = 1
-onlySecond = 1
+sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
 
-# Is it a 1D, 2D or 3D-Problem
-# (Reagarding the mesh, not the number of unknowns!)
-# at the moment only 2D is supported, so this is here for
-# future purpose!
-dim=2
-
-#################
-[POSTPROCESSING]
-#################
-# Write out the results? 1=yes, 0=no
-writeOut = 1
-#Path of the file where to write it out
-#Format: First line: common integral, second line: only first function, third line: only second function
-filename = '%{soutputdir}/differences.txt'
+sCubFormula =  AUTO_G2
