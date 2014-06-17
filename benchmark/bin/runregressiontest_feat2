@@ -391,9 +391,7 @@ fb_customise() {
       ARCH=LiDO
       COMPILEWITHPROCS=2
       CREATEDOCU="no"
-      # the script requires that an ssh tunnel is always open, bound to port 13690
-      # (the default SVN port 3690 is not necessarily free and available)
-      SVNURL=svn://localhost:13690/Featflow2
+      SVNURL=https://svn.mathematik.tu-dortmund.de:20443/svn/Featflow2
       MAILX="mailx"
       FROMADDRESS="LS3 (Turek) Benchmark User <featflow@lido1.hrz.tu-dortmund.de>"
       USEMODULES="yes"
@@ -865,8 +863,7 @@ fb_customise() {
   # Default is computers at Math department
   *)
       ARCH=GENERIC
-      # no ssh tunnel necessary at Math department
-      SVNURL=svn://doncamillo.mathematik.tu-dortmund.de/Featflow2
+      SVNURL=https://svn.mathematik.tu-dortmund.de:20443/svn/Featflow2
       # Not all Unix systems set $USER by default, Sun Solaris set $LOGNAME,
       # so try different variants and use "schorsch" if all else fails,
       # for historical reasons.
