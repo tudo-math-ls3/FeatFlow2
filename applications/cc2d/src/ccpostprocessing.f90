@@ -147,12 +147,36 @@ module ccpostprocessing
 
     ! A vector that describes the H1-error of the pressure in the cells
     type(t_vectorScalar) :: rvectorH1errCells
-    
-    ! Whether or not to compute L2 errors.
+
+    ! (Possibly interpolated) solution from time step t^{n-2}, for time-space
+    ! discretisation error analysis
+    type(t_vectorBlock) :: roldestSolution
+
+    ! (Possibly interpolated) solution from time step t^{n-1}, for time-space
+    ! discretisation error analysis
+    type(t_vectorBlock) :: rolderSolution
+
+    ! (Possibly interpolated) solution from time step t^{n}, for time-space
+    ! discretisation error analysis
+    type(t_vectorBlock) :: roldSolution
+
+    ! Time step scheme identifier. One of the TSCHM_xxxx-constants.
+    ! Usually TSCHM_ONESTEP for one step schemes
+    integer :: ctimestepType = -1
+
+    ! Whether or not to compute L2 errors and if yes, which callback to evaluate analytic
+    ! reference solution
     integer :: icalcL2
     
-    ! Whether or not to compute H1 errors.
+    ! Whether or not to compute H1 errors and if yes, which callback to evaluate analytic
+    ! reference solution
     integer :: icalcH1
+
+    ! Whether or not to compute time plus space discretisation errors
+    integer :: icalcTimeSpaceDiscrErrors
+
+    ! How to measure the time plus space discretisation error
+    integer :: itimeSpaceDiscrErrorMethod
 
     ! Parser object that encapsules error definitions for the L2 error.
     type(t_fparser) :: rrefFunctionL2
@@ -213,6 +237,7 @@ contains
     call cc_calculateDivergence (rvector,rproblem)
     
     ! Error analysis, comparison to reference function.
+    rpostprocessing%ctimestepType = -1
     call cc_errorAnalysis (rvector,0.0_DP,rpostprocessing,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
@@ -349,7 +374,8 @@ contains
       call cc_calculateDivergence (rvector,rproblem)
 
       ! Error analysis, comparison to reference function.
-      call cc_errorAnalysis (rvector,dtime,rpostprocessing,rproblem)
+      call cc_errorAnalysis (rvectorInt,dtimeInt,rpostprocessing,rproblem)
+
     end if
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
@@ -620,9 +646,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     ! local variables
-    real(DP),dimension(3) :: Derr
+    real(DP), dimension(3) :: Derr
     real(DP) :: derrorVel, derrorP, denergy
     integer :: icalcEnergy
     integer :: iwriteErrorAnalysisL2,iwriteErrorAnalysisH1,iwriteKineticEnergy
@@ -635,7 +661,35 @@ contains
     real(DP) :: dtimebackup
     type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
     type(t_collection) :: rlocalCollection
-    
+    integer :: iglobaltimestep, ilocaltimestep
+    integer :: ctypeInitialSolution
+
+    ! all subsequent variables for calculation of accumulated time plus space
+    ! discretisation error ...
+
+    ! ... with trapezoidal rule
+    real(DP) :: derrorL2Vel_old = 0.0_DP, derrorL2P_old = 0.0_DP
+    real(DP) :: derrorH1Vel_old = 0.0_DP, derrorH1P_old = 0.0_DP
+
+    ! ... with quadratic/cubic Lagrange time-interpolation and 2- or 3-Point-Gauss
+    ! quadrature integration
+    real(DP), save :: doldestTime = 0.0_DP, dolderTime = 0.0_DP, doldTime = 0.0_DP
+    integer :: ipostprocTimeInterpSolution
+    real(DP) :: dtime_GaussPt1, dtime_GaussPt2, dtime_GaussPt3
+                                             ! Gauss points for 2- or 3-Point-Gauss quadrature
+    real(DP), dimension(3) :: Derr2, Derr3
+    type(t_vectorBlock) :: rvector_sol_GaussPt1, rvector_sol_GaussPt2
+    type(t_vectorBlock) :: rvector_sol_GaussPt3, rvector_auxSum
+
+    !      \int_0^T || u_h(t) - u_ref(t) ||^2_L2 dt
+    ! evaluated with trapezoidal rule or 2- or 3-point Gauss quadrature rule (note that
+    ! trailing square!)
+    real(DP), save :: derrorL2VelTimeSpace = 0.0_DP
+    real(DP), save :: derrorL2PTimeSpace = 0.0_DP     ! analog
+    real(DP), save :: derrorH1VelTimeSpace = 0.0_DP   ! analog
+    real(DP), save :: derrorH1PTimeSpace = 0.0_DP     ! analog
+
+
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "ICALCKINETICENERGY", icalcEnergy, 1)
 
@@ -675,7 +729,48 @@ contains
         rsolution%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfoUV,int(icubError,I32))
     call spdiscr_createDefCubStructure(&
         rsolution%RvectorBlock(3)%p_rspatialDiscr,rcubatureInfoP,int(icubError,I32))
+
+    ! Time plus space discretisation error analysis
+    if (rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
+      if (rpostprocessing%icalcL2 .ne. 0 .or. &
+          rpostprocessing%icalcH1 .ne. 0) then
+        ! Whether to apply postprocessing to rvector or rvectorInt
+        call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+             "IPOSTPROCTIMEINTERPSOLUTION", ipostprocTimeInterpSolution, 1)
+
+        if (ipostprocTimeInterpSolution .ne. 1) then
+          call output_line ("ERROR: Can not gauge time error if " // &
+               "[CC-POSTPROCESSING] ipostprocTimeInterpSolution <> 1")
+          stop
+        end if
+      end if
+
+      ! For one-step schemes holds
+      !     global timestep = timestep.
+      ! For Fractional-Step-Theta holds
+      !     global timestep = timestep/3, local timestep=timestep%3.
+      !
+      ! Note: The intermediate time steps of the Fractional-Step-Theta method *must* be
+      !       taken into account *as well* in order to correctly measure the time plus
+      !       space discretisation error. Merely using the solution at the end of macro
+      !       time steps (i.e. every third time step`s solution) leads not only for
+      !       Fractional-Step-Theta, but also for simpler time stepping schemes like
+      !       Backward Euler and Crank-Nicolson to an overestimation of the error
+      !       reduction rates! That is no theoretical argument yet, it has shown in
+      !       practice for 3 different analytic solution pairs for the transient Stokes
+      !       problem.
+      if (rproblem%itimedependence .ne. 0) then
+!        if (rpostprocessing%ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
+          iglobaltimestep = rproblem%rtimedependence%itimestep
+          ilocaltimestep = 0
+!        else
+!          iglobaltimestep = rproblem%rtimedependence%itimestep / 3
+!          ilocaltimestep = mod(rproblem%rtimedependence%itimestep,3)
+!        end if
+      end if
+    end if
     
+
     ! The error analysis might take place at an arbitrary time.
     ! Therefore, modify the "current" time to the time where we want to
     ! do the analysis. Save the "current" time and restore afterwards.
@@ -710,6 +805,8 @@ contains
       case (1)
         call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
       
+        ! Calculate space discretisation error
+
         ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
         call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
                           ffunction_TargetX,rproblem%rcollection,&
@@ -726,6 +823,22 @@ contains
                           rcubatureInfo=rcubatureInfoP)
 
         derrorP = Derr(3)
+
+
+        ! Calculate accumulated time plus space discretisation error
+        if (rproblem%itimedependence .ne. 0 .and. &
+            rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
+            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          call evalTimeSpaceError(&
+               ! Evaluate analytic reference solution via hardcoded callback functions
+               1, &
+               ! Evaluate L2 error
+               PPERR_L2ERROR, &
+               ! previous L2 errors (used by trapezoidal rule only)
+               derrorL2Vel_old, derrorL2P_old, &
+               rproblem%rcollection, derrorL2VelTimeSpace, derrorL2PTimeSpace)
+        end if
+
       
         call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -739,6 +852,8 @@ contains
         rlocalCollection%DquickAccess(:) = 0.0_DP
         rlocalCollection%DquickAccess(1) = dtime   ! Time
         rlocalCollection%p_rfparserQuickAccess1 => rpostprocessing%rrefFunctionL2
+
+        ! Calculate space discretisation error
 
         ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
         ! Use the callback function "fcalc_error".
@@ -761,11 +876,99 @@ contains
 
         derrorP = Derr(3)
 
+
+        ! Calculate accumulated time plus space discretisation error
+        if (rproblem%itimedependence .ne. 0 .and. &
+            rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
+            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          call evalTimeSpaceError(&
+               ! Evaluate analytic reference solution via expressions
+               2, &
+               ! Evaluate L2 error
+               PPERR_L2ERROR, &
+               ! previous L2 errors (used by trapezoidal rule only)
+               derrorL2Vel_old, derrorL2P_old, &
+               rlocalCollection, derrorL2VelTimeSpace, derrorL2PTimeSpace)
+        end if
+
+
       end select
       
       call output_line ("||u-reference||_L2 = "//trim(sys_sdEP(derrorVel,15,6)) )
-      call output_line ("||p-reference||_L2 = "//trim(sys_sdEP(derrorP,15,6)) )
-      
+      if (ilocaltimestep .eq. 0) then
+        call output_line ("||p-reference||_L2 = "//trim(sys_sdEP(derrorP,15,6)) )
+      else
+        call output_line ("||p-reference||_L2 = infeasible in intermediate time steps")
+      end if
+
+      if (rproblem%itimedependence .ne. 0 .and. &
+          rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
+        if (ilocaltimestep .ne. 0) then
+          call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
+               "not evaluated in intermediate time steps")
+          call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
+               "infeasible in intermediate time steps")
+        else
+          ! At T=T_start there is no time error yet. So skip output in that case.
+          select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
+          case (0) ! l2 error
+            call output_line ("||u-reference||_l2(0,T;L2(Omega)) = " // &
+                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace) / iglobaltimestep, 15, 6)) )
+            call output_line ("||p-reference||_l2(0,T;L2(Omega)) = " // &
+                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace) / iglobaltimestep, 15, 6)) )
+
+          case (1) ! Trapezoidal rule for numeric integration means that only 2 data
+                   ! points are needed. Which are available in time step 1: start solution
+                   ! and the solution in time step 1
+            call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
+                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace), 15, 6)) )
+            call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
+                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace), 15, 6)) )
+
+            ! Save this time step`s space discretisation error for re-use in the next
+            ! time step:
+            derrorL2Vel_old = derrorVel
+            derrorL2P_old = derrorP
+
+          case (2,3) ! Quadratic Lagrange time-interpolation of the solution requires 3
+                     ! data points. Before completion of time step 2 is hence no error
+                     ! calculation available.
+            if (iglobaltimestep .eq. 1) then
+              call output_line ("||u-reference||_{0,T;L2(Omega)} = (postponed)  " // &
+                                "(time plus space discretisation")
+              call output_line ("||p-reference||_{0,T;L2(Omega)} = (postponed)  " // &
+                                " errors are only available from")
+              call output_line ("                                               " // &
+                                " time step 2 onwards.)")
+            else if (iglobaltimestep .ge. 2) then
+              ! iglobaltimestep >= 2, ilocaltimestep = 0
+              call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorL2VelTimeSpace), 15, 6)) )
+              call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorL2PTimeSpace), 15, 6)) )
+            end if
+
+          case (4,5) ! Cubic Lagrange time-interpolation of the solution requires 4
+                     ! data points. Before completion of time step 3 is hence no error
+                     ! calculation available.
+            if (iglobaltimestep .lt. 3) then
+              call output_line ("||u-reference||_{0,T;L2(Omega)} = (postponed)  " // &
+                                "(time plus space discretisation")
+              call output_line ("||p-reference||_{0,T;L2(Omega)} = (postponed)  " // &
+                                " errors are only available from")
+              call output_line ("                                               " // &
+                                " time step 3 onwards.)")
+            else if (iglobaltimestep .ge. 3) then
+              ! iglobaltimestep >= 3, ilocaltimestep = 0
+              call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorL2VelTimeSpace), 15, 6)) )
+              call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorL2PTimeSpace), 15, 6)) )
+            end if
+          end select
+        end if
+      end if
+
       ! -------------------------------
       ! Write to file
       ! -------------------------------
@@ -776,6 +979,7 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
+! SB: Not sure whether we would want to extend this, too
           write (iunit,"(A)") "# timestep time ||u-reference||_L2 ||p-reference||_L2"
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
@@ -802,6 +1006,8 @@ contains
       case (1)
         call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
       
+        ! Calculate space discretisation error
+
         ! Perform error analysis to calculate and add ||u-z||_{H^1}.
         call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
                           ffunction_TargetX,rproblem%rcollection,&
@@ -812,6 +1018,8 @@ contains
                           rcubatureInfo=rcubatureInfoUV)
                       
         derrorVel = -1.0_DP     
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
           derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
         end if
@@ -821,10 +1029,27 @@ contains
                           rcubatureInfo=rcubatureInfoP)
 
         derrorP = -1.0_DP
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         if (Derr(3) .ne. -1.0_DP) then
           derrorP = Derr(3)
         end if
-        
+
+
+        ! Calculate accumulated time plus space discretisation error
+        if (rproblem%itimedependence .ne. 0 .and. &
+            rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
+            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          call evalTimeSpaceError(&
+               ! Evaluate analytic reference solution via hardcoded callback functions
+               1, &
+               ! Evaluate H1 error
+               PPERR_H1ERROR, &
+               ! previous H1 errors (used by trapezoidal rule only)
+               derrorH1Vel_old, derrorH1P_old, &
+               rproblem%rcollection, derrorH1VelTimeSpace, derrorH1PTimeSpace)
+        end if
+
         call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
       ! -------------------------------
@@ -837,6 +1062,8 @@ contains
         rlocalCollection%DquickAccess(:) = 0.0_DP
         rlocalCollection%DquickAccess(1) = dtime   ! Time
         rlocalCollection%p_rfparserQuickAccess1 => rpostprocessing%rrefFunctionH1
+
+        ! Calculate space discretisation error
 
         ! Perform error analysis to calculate and add ||u-z||_{H^1}.
         ! Use the callback function "fcalc_error".
@@ -851,6 +1078,8 @@ contains
                           rcubatureInfo=rcubatureInfoUV)
                       
         derrorVel = -1.0_DP     
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
           derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
         end if
@@ -861,8 +1090,25 @@ contains
                           rcubatureInfo=rcubatureInfoP)
 
         derrorP = -1.0_DP
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         if (Derr(3) .ne. -1.0_DP) then
           derrorP = Derr(3)
+        end if
+
+
+        ! Calculate accumulated time plus space discretisation error
+        if (rproblem%itimedependence .ne. 0 .and. &
+            rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
+            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          call evalTimeSpaceError(&
+               ! Evaluate analytic reference solution via expressions
+               2, &
+               ! Evaluate H1 error
+               PPERR_H1ERROR, &
+               ! previous H1 errors (used by trapezoidal rule only)
+               derrorH1Vel_old, derrorH1P_old, &
+               rlocalCollection, derrorH1VelTimeSpace, derrorH1PTimeSpace)
         end if
 
       end select
@@ -872,6 +1118,8 @@ contains
         call output_line ("||u-reference||_H1 = "//trim(sys_sdEP(derrorVel,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         call output_line ("||u-reference||_H1 = not available",&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
@@ -880,10 +1128,81 @@ contains
         call output_line ("||p-reference||_H1 = "//trim(sys_sdEP(derrorP,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
+!SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
+!          for PPERR_H1ERROR!
         call output_line ("||p-reference||_H1 = not available",&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
-      
+
+
+      if (rproblem%itimedependence .ne. 0 .and. &
+          rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
+        if (ilocaltimestep .ne. 0) then
+          call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
+               "not evaluated in intermediate time steps")
+          call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
+               "infeasible in intermediate time steps")
+        else
+          ! At T=T_start there is no time error yet. So skip output in that case.
+          select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
+          case (0) ! l2 error
+            call output_line ("||u-reference||_l2(0,T;H1(Omega)) = " // &
+                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace) / iglobaltimestep, 15, 6)) )
+            call output_line ("||p-reference||_l2(0,T;H1(Omega)) = " // &
+                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace) / iglobaltimestep, 15, 6)) )
+
+          case (1) ! Trapezoidal rule for numeric integration means that only 2 data
+                   ! points are needed. Which are available in time step 1: start solution
+                   ! and the solution in time step 1
+            call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
+                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace), 15, 6)) )
+            call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
+                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace), 15, 6)) )
+
+            ! Save this time step`s space discretisation error for re-use in the next time
+            ! step:
+            derrorH1Vel_old = derrorVel
+            derrorH1P_old = derrorP
+
+          case (2,3) ! Quadratic Lagrange time-interpolation of the solution requires 3
+                     ! data points. Before completion of time step 2 is hence no error
+                     ! calculation available.
+            if (iglobaltimestep .eq. 1) then
+              call output_line ("||u-reference||_{0,T;H1(Omega)} = (postponed)  " // &
+                                "(time plus space discretisation")
+              call output_line ("||p-reference||_{0,T;H1(Omega)} = (postponed)  " // &
+                                " errors are only available from")
+              call output_line ("                                               " // &
+                                " time step 2 onwards.)")
+            else if (iglobaltimestep .ge. 2) then
+              ! iglobaltimestep >= 2, ilocaltimestep = 0
+              call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorH1VelTimeSpace), 15, 6)) )
+              call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorH1PTimeSpace), 15, 6)) )
+            end if
+
+          case (4,5) ! Cubic Lagrange time-interpolation of the solution requires 4
+                     ! data points. Before completion of time step 3 is hence no error
+                     ! calculation available.
+            if (iglobaltimestep .lt. 3) then
+              call output_line ("||u-reference||_{0,T;H1(Omega)} = (postponed)  " // &
+                                "(time plus space discretisation")
+              call output_line ("||p-reference||_{0,T;H1(Omega)} = (postponed)  " // &
+                                " errors are only available from")
+              call output_line ("                                               " // &
+                                " time step 3 onwards.)")
+            else if (iglobaltimestep .ge. 3) then
+              ! iglobaltimestep >= 3, ilocaltimestep = 0
+              call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorH1VelTimeSpace), 15, 6)) )
+              call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
+                                trim(sys_sdEP(sqrt(derrorH1PTimeSpace), 15, 6)) )
+            end if
+          end select
+        end if
+      end if
+
       ! -------------------------------
       ! Write to file
       ! -------------------------------
@@ -894,8 +1213,10 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
+! SB: Not sure whether we would want to extend this, too
           write (iunit,"(A)") "# timestep time ||u-reference||_H1"
         end if
+! SB: Not sure whether we would want to extend this, too
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
             // trim(sys_sdEL(dtime,10)) // " " &
             // trim(sys_sdEL(derrorVel,10))
@@ -904,7 +1225,118 @@ contains
       end if
       
     end if
-    
+
+
+    if (rproblem%itimedependence .ne. 0 .and. &
+        rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
+        (rpostprocessing%icalcL2 .ne. 0 .or. rpostprocessing%icalcH1 .ne. 0) .and. &
+        ! Depending on the particular time stepping scheme, it may be necessary to skip
+        ! some intermediate steps. Not the case, though, for the Fractional Step Theta
+        ! scheme. Omitting the two intermediate steps leads to overestimation of error
+        ! reduction rates!
+        ilocaltimestep .eq. 0) then
+
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+           "ctypeInitialSolution",ctypeInitialSolution,0)
+      if (rpostprocessing%itimeSpaceDiscrErrorMethod .ge. 2 .and. &
+          ctypeInitialSolution .lt. 3) then
+        call output_line ("Code is configured to assume that the analytic", &
+             OU_CLASS_WARNING, OU_MODE_STD, "cc_errorAnalysis")
+        call output_line (" solution at T=" // &
+             trim(sys_sdEL(rproblem%rtimedependence%dtimeInit,10)) // &
+             " equals the start", &
+             OU_CLASS_WARNING, OU_MODE_STD, "cc_errorAnalysis")
+        call output_line ("solution. A safer choice is", &
+             OU_CLASS_WARNING, OU_MODE_STD, "cc_errorAnalysis")
+        call output_line ("   [CC-DISCRETISATION]", &
+             OU_CLASS_WARNING, OU_MODE_STD, "cc_errorAnalysis")
+        call output_line ("   ctypeInitialSolution = 3", &
+             OU_CLASS_WARNING, OU_MODE_STD, "cc_errorAnalysis")
+      end if
+
+      select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
+      case (0) ! nothing needs to be stored to calculate l2 error
+      case (1) ! Trapezoidal rule for numeric integration means that only
+               !    derrorVel, derrorL2Vel_old, derrorH1Vel_old
+               !    derrorP, derrorL2P_old, derrorH1P_old
+               ! are needed; no explicit storing of older solutions required
+        if (iglobaltimestep .eq. 0) then
+          ! When applying the trapezoidal rule the first time in time step 1, we will need
+          ! this value.
+          doldTime = rproblem%rtimedependence%dtimeInit
+
+        else if (iglobaltimestep .gt. 0) then
+          doldTime = dtime
+        end if
+
+      case (2,3) ! Quadratic Lagrange time-interpolation of the solution requires 3 data
+                 ! points: the solution from the current time step one and the two
+                 ! preceding time steps.
+        if (iglobaltimestep .eq. 0) then
+
+          call lsysbl_createVector (rsolution, rpostprocessing%rolderSolution, .false.)
+          call lsysbl_createVector (rsolution, rpostprocessing%roldSolution, .false.)
+          ! Store current solution which will be used in time step 2 as penultimate time
+          ! step
+          call lsysbl_copyVector (rsolution, rpostprocessing%rolderSolution)
+          dolderTime = dtime
+
+        else if (iglobaltimestep .eq. 1) then
+          ! Store current solution which will be used in time step 2 as the one from the
+          ! previous time step
+          call lsysbl_copyVector (rsolution, rpostprocessing%roldSolution)
+          doldTime = dtime
+
+        ! For (non-intermediate) time steps 1 and 2 we already saved the solution
+        ! snapshots in the right order. For later time steps shift them by one such that
+        ! the oldest solution snapshot, i.e. from t^{n-1}, is evicted.
+        else if (iglobaltimestep .ge. 2) then
+          call lsysbl_copyVector(rpostprocessing%roldSolution,rpostprocessing%rolderSolution)
+          call lsysbl_copyVector(rsolution,                   rpostprocessing%roldSolution)
+          dolderTime = doldTime
+          doldTime = dtime
+        end if
+
+      case (4,5) ! Cubic Lagrange time-interpolation of the solution requires 4 data
+                 ! points: the solution from the current time step one and the three
+                 ! preceding time steps.
+        if (iglobaltimestep .eq. 0) then
+          call lsysbl_createVector (rsolution, rpostprocessing%roldestSolution, .false.)
+          call lsysbl_createVector (rsolution, rpostprocessing%rolderSolution, .false.)
+          call lsysbl_createVector (rsolution, rpostprocessing%roldSolution, .false.)
+          ! Store current solution which will be used in time step 3 as antepenultimate time
+          ! step
+          call lsysbl_copyVector (rsolution, rpostprocessing%roldestSolution)
+          doldestTime = dtime
+
+        else if (iglobaltimestep .eq. 1) then
+          ! Store current solution which will be used in time step 3 as the one from the
+          ! previous time step
+          call lsysbl_copyVector (rsolution, rpostprocessing%rolderSolution)
+          dolderTime = dtime
+
+        else if (iglobaltimestep .eq. 2) then
+          ! Store current solution which will be used in time step 3 as the one from the
+          ! previous time step
+          call lsysbl_copyVector (rsolution, rpostprocessing%roldSolution)
+          doldTime = dtime
+
+        ! For time steps 0, 1 and 2 we already saved the solution snapshots in the right
+        ! order. For later time steps shift them by one such that the oldest solution
+        ! snapshot, i.e. from t^{n-2}, is evicted.
+        else if (iglobaltimestep .ge. 3) then
+          call lsysbl_copyVector(rpostprocessing%rolderSolution,rpostprocessing%roldestSolution)
+          call lsysbl_copyVector(rpostprocessing%roldSolution,  rpostprocessing%rolderSolution)
+          call lsysbl_copyVector(rsolution,                     rpostprocessing%roldSolution)
+          doldestTime = dolderTime
+          dolderTime = doldTime
+          doldTime = dtime
+        end if
+
+      end select
+
+    end if
+
     ! ===============================================================
     ! Kinetic energy
     ! ===============================================================
@@ -960,6 +1392,1250 @@ contains
     
     ! Restore the "current" time.
     rproblem%rtimedependence%dtime = dtimebackup
+
+
+  contains
+
+!<subroutine>
+
+    subroutine evalTimeSpaceError(ccallbackMethod, cerrorType, &
+         derrorOldVel, derrorOldP, &
+         rcollection, dtimeSpaceErrorVel, dtimeSpaceErrorP)
+
+!<description>
+    ! Calculate accumulated time plus space discretisation error for velocity and pressure
+    ! solution.
+    ! The square of this error accumulated in dtimeSpaceErrorVel and dtimeSpaceErrorP.
+!</description>
+
+!<input>
+      ! Type of callback to evaluate analytic reference solution
+      ! =1: hardcoded in ffunction_TargetX, ffunction_TargetY and ffunction_TargetP
+      ! =2: use function parser to evaluate reference function given in configuration file
+      integer, intent(in) :: ccallbackMethod
+
+      ! Type of error to compute. Bitfield. This is a combination of the
+      ! PPERR_xxxx-constants, which specifies what to compute.
+      ! Example: PPERR_L2ERROR computes the $L_2$-error.
+      ! (used by all numerical integration schemes except trapezoidal rule)
+      integer, intent(in) :: cerrorType
+
+      ! Space discretisation error for velocity, measured in error norm cerrorType, from
+      ! previous time step (used by trapezoidal rule only)
+      real(DP), intent(in) :: derrorOldVel
+
+      ! Space discretisation error for pressure, measured in error norm cerrorType, from
+      ! previous time step (used by trapezoidal rule only)
+      real(DP), intent(in) :: derrorOldP
+!</input>
+
+!<inputoutput>
+      ! A pointer to a collection structure to provide additional
+      ! information to the coefficient routine.
+      type(t_collection), intent(inout) :: rcollection
+
+      ! Time plus space discretisation error for velocity, measured in error norm cerrorType
+      real(DP), intent(inout) :: dtimeSpaceErrorVel
+
+      ! Time plus space discretisation error for pressure, measured in error norm cerrorType
+      real(DP), intent(inout) :: dtimeSpaceErrorP
+!</inputoutput>
+
+!</subroutine>
+
+      real(DP) :: derrorVel_GaussPt1, derrorVel_GaussPt2, derrorVel_GaussPt3
+      real(DP) :: derrorP_GaussPt1, derrorP_GaussPt2, derrorP_GaussPt3
+      integer :: igaussQuadDegree
+
+      igaussQuadDegree = 0
+      select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
+      case (0) ! build square of l2 error: sum up square of (L2 or H1, per time step)
+               ! space discretisation error, ! divide this sum later by the number of time
+               ! steps performed
+        if (iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          dtimeSpaceErrorVel = dtimeSpaceErrorVel + derrorVel**2
+          dtimeSpaceErrorP   = dtimeSpaceErrorP   + derrorP**2
+        end if
+
+
+      case (1)
+        ! Approximate
+        !    || sol(t) - sol_ref(t) ||^2_L2(0,T;\Omega)
+        !    = sqrt( \int_{t^{start}}^{t^{end}} || sol(t) - sol_ref(t) ||^2_L2 dt )
+        ! by trapezoidal rule
+        !    sum_{all time steps} time step * 1/2 * (sol^{n+1}(x) + sol^{n}(x))
+        ! taking as sol^{n+1}(x) in every time step t^{n+1} (including t^{1} and t^{end})
+        ! the values of
+        !       || u(t^{n+1}) - u_ref(t^{n+1}) ||^2_L2
+        ! and
+        !       || p(t^{n+1}) - p_ref(t^{n+1}) ||^2_L2
+        ! that got just calculated in derrorVel and derrorP and as sol^{n}(x) the
+        ! corresponding values from the previous time step (for the start solution holds
+        ! n=0 and both derrorOldVel and derrorOldP are assumed to be initialised to zero).
+        if (iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+          dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+               (dtime - doldTime) * 0.5_DP * (derrorVel**2 + derrorOldVel**2)
+          dtimeSpaceErrorP = dtimeSpaceErrorP + &
+               (dtime - doldTime) * 0.5_DP * (derrorP**2 + derrorOldP**2)
+        end if
+
+
+      case (2,3)
+        ! Time-interpolate the solution with a quadratic Lagrange polynomial, then evaluate
+        !    || sol(t) - sol_ref(t) ||^2_L2(0,T;\Omega)
+        !    = sqrt( \int_{t^{start}}^{t^{end}} || sol(t) - sol_ref(t) ||^2_L2 dt )
+        ! with 2-point or 3-point Gaussian quadrature rule.
+        if (iglobaltimestep .ge. 2 .and. ilocaltimestep .eq. 0) then
+
+          ! Create temporary vectors
+          call lsysbl_createVector (rsolution, rvector_auxSum, .false.)
+          call lsysbl_createVector (rsolution, rvector_sol_GaussPt1, .false.)
+          call lsysbl_createVector (rsolution, rvector_sol_GaussPt2, .false.)
+          if (rpostprocessing%itimeSpaceDiscrErrorMethod .eq. 2) then
+            igaussQuadDegree = 2
+          else
+            igaussQuadDegree = 3
+            call lsysbl_createVector (rsolution, rvector_sol_GaussPt3, .false.)
+          end if
+
+          if (iglobaltimestep .eq. 2) then
+            ! Special case treatment
+
+            ! Calculate
+            !   \int_t^{0}^t^{1} || u(t) - u_ref(t) ||^2_L2 dt
+            ! and
+            !   \int_t^{0}^t^{1} || p(t) - p_ref(t) ||^2_L2 dt
+            !
+            ! Why is the time interval [t^{0}, t^{1}] a special case?
+            ! We need to make up for the fact of not having been able to calculate time
+            ! discretisation error in time step 1 due to missing data points for quadratic
+            ! Lagrange time-interpolation of the solution.
+            !
+            ! Time plus space discretisation error for velocity in interval [t^{0}, t^{1}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 1, &
+                   igaussQuadDegree, ffunction_TargetX, rcollection, dolderTime, doldTime)
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 2, &
+                   igaussQuadDegree, ffunction_TargetY, rcollection, dolderTime, doldTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 1  ! component
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 1, &
+                   igaussQuadDegree, fcalc_error, rcollection, dolderTime, doldTime)
+              rcollection%IquickAccess(2) = 2  ! component
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 2, &
+                   igaussQuadDegree, fcalc_error, rcollection, dolderTime, doldTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (1.0_DP * derrorVel_GaussPt1**2 + &
+                    1.0_DP * derrorVel_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+              derrorVel_GaussPt3 = sqrt(Derr3(1)**2 + Derr3(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (5.0_DP/9.0_DP * derrorVel_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorVel_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorVel_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{1} || u(t) - u_ref(t) ||^2_L2 dt
+            ! calculated.
+
+
+            ! Time plus space discretisation error for pressure in interval [t^{0}, t^{1}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 3, &
+                   igaussQuadDegree, ffunction_TargetP, rcollection, dolderTime, doldTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 3  ! component
+              call evalTimeSpaceErrorQuadLagrange(cerrorType, 3, &
+                   igaussQuadDegree, fcalc_error, rcollection, dolderTime, doldTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (1.0_DP * derrorP_GaussPt1**2 + &
+                    1.0_DP * derrorP_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+              derrorP_GaussPt3 = Derr3(3)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (5.0_DP/9.0_DP * derrorP_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorP_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorP_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{1} || p(t) - p_ref(t) ||^2_L2 dt
+            ! calculated
+
+          end if ! end special case treatment: iglobaltimestep .eq. 2
+
+
+          ! Calculate
+          !   \int_t^{n}^t^{n+1} || u(t) - u_ref(t) ||^2_L2 dt
+          ! and
+          !   \int_t^{n}^t^{n+1} || p(t) - p_ref(t) ||^2_L2 dt
+          ! (n >= 1)
+
+          ! Time and space discretisation error for velocity in interval [t^{n}, t^{n+1}]
+          select case (ccallbackMethod)
+          case (1)
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 1, &
+                 igaussQuadDegree, ffunction_TargetX, rcollection, doldTime, dtime)
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 2, &
+                 igaussQuadDegree, ffunction_TargetY, rcollection, doldTime, dtime)
+
+          case (2)
+            rcollection%IquickAccess(2) = 1  ! component
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 1, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+            rcollection%IquickAccess(2) = 2  ! component
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 2, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+          end select
+
+          if (igaussQuadDegree .eq. 2) then
+            derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+            derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+
+            ! Apply Gauss quadrature rule of degree n=2
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+            dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (1.0_DP * derrorVel_GaussPt1**2 + &
+                  1.0_DP * derrorVel_GaussPt2**2)
+
+          else ! 3-Point Gauss quadrature
+            derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+            derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+            derrorVel_GaussPt3 = sqrt(Derr3(1)**2 + Derr3(2)**2)
+
+            ! Apply Gauss quadrature rule of degree n=3
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+            dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (5.0_DP/9.0_DP * derrorVel_GaussPt1**2 + &
+                  8.0_DP/9.0_DP * derrorVel_GaussPt2**2 + &
+                  5.0_DP/9.0_DP * derrorVel_GaussPt3**2)
+          end if ! 2-Point or 3-Point Gauss quadrature
+          !   \int_t^{0}^t^{n+1} || u(t) - u_ref(t) ||^2_L2 dt
+          ! calculated.
+
+
+          ! Time plus space discretisation error for pressure in interval [t^{n}, t^{n+1}]
+          select case (ccallbackMethod)
+          case (1)
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 3, &
+                 igaussQuadDegree, ffunction_TargetP, rcollection, doldTime, dtime)
+
+          case (2)
+            rcollection%IquickAccess(2) = 3  ! component
+            call evalTimeSpaceErrorQuadLagrange(cerrorType, 3, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+          end select
+
+          if (igaussQuadDegree .eq. 2) then
+            derrorP_GaussPt1 = Derr(3)
+            derrorP_GaussPt2 = Derr2(3)
+
+            ! Apply Gauss quadrature rule of degree n=2
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+            dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (1.0_DP * derrorP_GaussPt1**2 + &
+                  1.0_DP * derrorP_GaussPt2**2)
+
+          else ! 3-Point Gauss quadrature
+            derrorP_GaussPt1 = Derr(3)
+            derrorP_GaussPt2 = Derr2(3)
+            derrorP_GaussPt3 = Derr3(3)
+
+            ! Apply Gauss quadrature rule of degree n=3
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+            dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (5.0_DP/9.0_DP * derrorP_GaussPt1**2 + &
+                  8.0_DP/9.0_DP * derrorP_GaussPt2**2 + &
+                  5.0_DP/9.0_DP * derrorP_GaussPt3**2)
+          end if ! 2-Point or 3-Point Gauss quadrature
+          !   \int_t^{0}^t^{n+1} || p(t) - p_ref(t) ||^2_L2 dt
+          ! calculated
+
+          if (igaussQuadDegree .eq. 3) then
+            call lsysbl_releaseVector (rvector_sol_GaussPt3)
+          end if
+          call lsysbl_releaseVector (rvector_sol_GaussPt2)
+          call lsysbl_releaseVector (rvector_sol_GaussPt1)
+          call lsysbl_releaseVector (rvector_auxSum)
+
+        end if  ! (iglobaltimestep .ge. 2 .and. ilocaltimestep .eq. 0)
+
+
+      case (4,5)
+        ! Time-interpolate the solution with a cubic Lagrange polynomial, then evaluate
+        !    || sol(t) - sol_ref(t) ||^2_L2(0,T;\Omega)
+        !    = sqrt( \int_{t^{start}}^{t^{end}} || sol(t) - sol_ref(t) ||^2_L2 dt )
+        ! with 2-point or 3-point Gaussian quadrature rule.
+        if (iglobaltimestep .ge. 3 .and. ilocaltimestep .eq. 0) then
+
+          ! Create temporary vectors
+          call lsysbl_createVector (rsolution, rvector_auxSum, .false.)
+          call lsysbl_createVector (rsolution, rvector_sol_GaussPt1, .false.)
+          call lsysbl_createVector (rsolution, rvector_sol_GaussPt2, .false.)
+          if (rpostprocessing%itimeSpaceDiscrErrorMethod .eq. 4) then
+            igaussQuadDegree = 2
+          else
+            igaussQuadDegree = 3
+            call lsysbl_createVector (rsolution, rvector_sol_GaussPt3, .false.)
+          end if
+
+          if (iglobaltimestep .eq. 3) then
+            ! Special case treatment
+
+            ! Why are the time intervals [t^{0}, t^{1}], [t^{1}, t^{2}] a special case?
+            ! We need to make up for the fact of not having been able to calculate time
+            ! discretisation error in time step 1 nor 2 due to missing data points for
+            ! cubic Lagrange time-interpolation of the solution.
+
+            ! velocity part 1:
+            ! Calculate
+            !   \int_t^{0}^t^{1} || u(t) - u_ref(t) ||^2_L2 dt
+            ! and
+            !   \int_t^{0}^t^{1} || p(t) - p_ref(t) ||^2_L2 dt
+            !
+            ! Time plus space discretisation error for velocity in interval [t^{0}, t^{1}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                   igaussQuadDegree, ffunction_TargetX, rcollection, &
+                   doldestTime, dolderTime)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                   igaussQuadDegree, ffunction_TargetY, rcollection, &
+                   doldestTime, dolderTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 1  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   doldestTime, dolderTime)
+              rcollection%IquickAccess(2) = 2  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   doldestTime, dolderTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(dolderTime - doldestTime) * &
+                   (1.0_DP * derrorVel_GaussPt1**2 + &
+                    1.0_DP * derrorVel_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+              derrorVel_GaussPt3 = sqrt(Derr3(1)**2 + Derr3(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(dolderTime - doldestTime) * &
+                   (5.0_DP/9.0_DP * derrorVel_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorVel_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorVel_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{1} || u(t) - u_ref(t) ||^2_L2 dt
+            ! calculated.
+
+
+            ! velocity part 2:
+            ! Calculate
+            !   \int_t^{1}^t^{2} || u(t) - u_ref(t) ||^2_L2 dt
+            ! and
+            !   \int_t^{1}^t^{2} || p(t) - p_ref(t) ||^2_L2 dt
+            !
+            ! Time plus space discretisation error for velocity in interval [t^{1}, t^{2}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                   igaussQuadDegree, ffunction_TargetX, rcollection, &
+                   dolderTime, doldTime)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                   igaussQuadDegree, ffunction_TargetY, rcollection, &
+                   dolderTime, doldTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 1  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   dolderTime, doldTime)
+              rcollection%IquickAccess(2) = 2  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   dolderTime, doldTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{1}, t^{2}]
+              ! leads to a factor of
+              !               1/2 (t^{2} - t^{1})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (1.0_DP * derrorVel_GaussPt1**2 + &
+                    1.0_DP * derrorVel_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+              derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+              derrorVel_GaussPt3 = sqrt(Derr3(1)**2 + Derr3(2)**2)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{1}, t^{2}]
+              ! leads to a factor of
+              !               1/2 (t^{2} - t^{1})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (5.0_DP/9.0_DP * derrorVel_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorVel_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorVel_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{2} || u(t) - u_ref(t) ||^2_L2 dt
+            ! calculated.
+
+
+            ! pressure part 1:
+            ! Time plus space discretisation error for pressure in interval [t^{0}, t^{1}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                   igaussQuadDegree, ffunction_TargetP, rcollection, &
+                   doldestTime, dolderTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 3  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   doldestTime, dolderTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(dolderTime - doldestTime) * &
+                   (1.0_DP * derrorP_GaussPt1**2 + &
+                    1.0_DP * derrorP_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+              derrorP_GaussPt3 = Derr3(3)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{0}, t^{1}]
+              ! leads to a factor of
+              !               1/2 (t^{1} - t^{0})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(dolderTime - doldestTime) * &
+                   (5.0_DP/9.0_DP * derrorP_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorP_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorP_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{1} || p(t) - p_ref(t) ||^2_L2 dt
+            ! calculated
+
+
+            ! pressure part 2:
+            ! Time plus space discretisation error for pressure in interval [t^{1}, t^{2}]
+            select case (ccallbackMethod)
+            case (1)
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                   igaussQuadDegree, ffunction_TargetP, rcollection, &
+                   dolderTime, doldTime)
+
+            case (2)
+              rcollection%IquickAccess(2) = 3  ! component
+              call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                   igaussQuadDegree, fcalc_error, rcollection, &
+                   dolderTime, doldTime)
+            end select
+
+            if (igaussQuadDegree .eq. 2) then
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+
+              ! Apply Gauss quadrature rule of degree n=2
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{1}, t^{2}]
+              ! leads to a factor of
+              !               1/2 (t^{2} - t^{1})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (1.0_DP * derrorP_GaussPt1**2 + &
+                    1.0_DP * derrorP_GaussPt2**2)
+
+            else ! 3-Point Gauss quadrature
+              derrorP_GaussPt1 = Derr(3)
+              derrorP_GaussPt2 = Derr2(3)
+              derrorP_GaussPt3 = Derr3(3)
+
+              ! Apply Gauss quadrature rule of degree n=3
+              ! which is defined on the interval [-1,1]. Transforming it to [t^{1}, t^{2}]
+              ! leads to a factor of
+              !               1/2 (t^{2} - t^{1})
+              ! due to the rules for integration by substitution. Weighing factors of
+              ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+              dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                   0.5_DP*(doldTime - dolderTime) * &
+                   (5.0_DP/9.0_DP * derrorP_GaussPt1**2 + &
+                    8.0_DP/9.0_DP * derrorP_GaussPt2**2 + &
+                    5.0_DP/9.0_DP * derrorP_GaussPt3**2)
+            end if ! 2-Point or 3-Point Gauss quadrature
+            !   \int_t^{0}^t^{2} || p(t) - p_ref(t) ||^2_L2 dt
+            ! calculated
+          end if ! end special case treatment: iglobaltimestep .eq. 3
+
+
+          ! Calculate
+          !   \int_t^{n}^t^{n+1} || u(t) - u_ref(t) ||^2_L2 dt
+          ! and
+          !   \int_t^{n}^t^{n+1} || p(t) - p_ref(t) ||^2_L2 dt
+          ! (n >= 2)
+
+          ! Time and space discretisation error for velocity in interval [t^{n}, t^{n+1}]
+          select case (ccallbackMethod)
+          case (1)
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                 igaussQuadDegree, ffunction_TargetX, rcollection, doldTime, dtime)
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                 igaussQuadDegree, ffunction_TargetY, rcollection, doldTime, dtime)
+
+          case (2)
+            rcollection%IquickAccess(2) = 1  ! component
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 1, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+            rcollection%IquickAccess(2) = 2  ! component
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 2, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+          end select
+
+          if (igaussQuadDegree .eq. 2) then
+            derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+            derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+
+            ! Apply Gauss quadrature rule of degree n=2
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+            dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (1.0_DP * derrorVel_GaussPt1**2 + &
+                  1.0_DP * derrorVel_GaussPt2**2)
+
+          else ! 3-Point Gauss quadrature
+            derrorVel_GaussPt1 = sqrt(Derr(1)**2 + Derr(2)**2)
+            derrorVel_GaussPt2 = sqrt(Derr2(1)**2 + Derr2(2)**2)
+            derrorVel_GaussPt3 = sqrt(Derr3(1)**2 + Derr3(2)**2)
+
+            ! Apply Gauss quadrature rule of degree n=3
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+            dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (5.0_DP/9.0_DP * derrorVel_GaussPt1**2 + &
+                  8.0_DP/9.0_DP * derrorVel_GaussPt2**2 + &
+                  5.0_DP/9.0_DP * derrorVel_GaussPt3**2)
+          end if ! 2-Point or 3-Point Gauss quadrature
+          !   \int_t^{0}^t^{n+1} || u(t) - u_ref(t) ||^2_L2 dt
+          ! calculated.
+
+
+          ! Time plus space discretisation error for pressure in interval [t^{n}, t^{n+1}]
+          select case (ccallbackMethod)
+          case (1)
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                 igaussQuadDegree, ffunction_TargetP, rcollection, doldTime, dtime)
+
+          case (2)
+            rcollection%IquickAccess(2) = 3  ! component
+            call evalTimeSpaceErrorCubicLagrange(cerrorType, 3, &
+                 igaussQuadDegree, fcalc_error, rcollection, doldTime, dtime)
+          end select
+
+          if (igaussQuadDegree .eq. 2) then
+            derrorP_GaussPt1 = Derr(3)
+            derrorP_GaussPt2 = Derr2(3)
+
+            ! Apply Gauss quadrature rule of degree n=2
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=2 are both 1.0.
+            dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (1.0_DP * derrorP_GaussPt1**2 + &
+                  1.0_DP * derrorP_GaussPt2**2)
+
+          else ! 3-Point Gauss quadrature
+            derrorP_GaussPt1 = Derr(3)
+            derrorP_GaussPt2 = Derr2(3)
+            derrorP_GaussPt3 = Derr3(3)
+
+            ! Apply Gauss quadrature rule of degree n=3
+            ! which is defined on the interval [-1,1]. Transforming it to [t^{n}, t^{n+1}]
+            ! leads to a factor of
+            !               1/2 (t^{n+1} - t^{n})
+            ! due to the rules for integration by substitution. Weighing factors of
+            ! summands for Gauss quadrature rule of degree n=3 are 5/9, 8/9, 5/9.
+            dtimeSpaceErrorP = dtimeSpaceErrorP + &
+                 0.5_DP*(dtime - doldTime) * &
+                 (5.0_DP/9.0_DP * derrorP_GaussPt1**2 + &
+                  8.0_DP/9.0_DP * derrorP_GaussPt2**2 + &
+                  5.0_DP/9.0_DP * derrorP_GaussPt3**2)
+          end if ! 2-Point or 3-Point Gauss quadrature
+          !   \int_t^{0}^t^{n+1} || p(t) - p_ref(t) ||^2_L2 dt
+          ! calculated
+
+          if (igaussQuadDegree .eq. 3) then
+            call lsysbl_releaseVector (rvector_sol_GaussPt3)
+          end if
+          call lsysbl_releaseVector (rvector_sol_GaussPt2)
+          call lsysbl_releaseVector (rvector_sol_GaussPt1)
+          call lsysbl_releaseVector (rvector_auxSum)
+
+        end if  ! (iglobaltimestep .ge. 3 .and. ilocaltimestep .eq. 0)
+
+      end select  ! rpostprocessing%itimeSpaceDiscrErrorMethod
+
+    end subroutine evalTimeSpaceError
+
+    ! ---------------------------------------------------------------------------------
+
+!<subroutine>
+
+    subroutine evalTimeSpaceErrorQuadLagrange(cerrorType, iblock, igaussQuadDegree, &
+         ffunctionReference, rcollection, dtimeStart, dtimeEnd)
+
+!<description>
+    ! Function that Lagrange (time-)interpolates the solutions from the last three time
+    ! steps (t^{n-1}, t^{n}, t^{n+1} with t^{n+1} being the current one, i.e. the one from
+    ! dtimebackup) with a quadratic polynomial, evaluates it in the Gauss points of the
+    ! Gauss quadrature rule of degree n=2 or n=3 in time interval [timeStart, timeEnd],
+    ! calculates the L2 or H1 error in these Gauss points against the reference solution`s
+    ! result in these Gauss points and returns the value.
+    ! The result is stored in Derr(iblock), Derr2(iblock) for Gauss quadrature of degree
+    ! n=2 and Derr(iblock), Derr2(iblock) and Derr3(iblock) for Gauss quadrature of
+    ! degree n=3.
+!</description>
+
+      ! Type of error to compute. Bitfield. This is a combination of the
+      ! PPERR_xxxx-constants, which specifies what to compute.
+      ! Example: PPERR_L2ERROR computes the $L_2$-error.
+      integer, intent(in) :: cerrorType
+
+      ! solution block to evaluate
+      integer, intent(in) :: iblock
+
+      ! degree of Gauss quadrature rule used for numerical integration
+      ! (valid choices: 2 and 3)
+      integer, intent(in) :: igaussQuadDegree
+
+      ! A callback function that provides the analytical reference
+      ! function to which the error should be computed.
+      include '../../../kernel/Postprocessing/intf_refFunctionSc.inc'
+
+      ! A pointer to a collection structure to provide additional
+      ! information to the coefficient routine.
+      type(t_collection), intent(inout) :: rcollection
+
+      ! start point of time interval to evaluate
+      real(DP), intent(in) :: dtimeStart
+
+      ! end point of time interval to evaluate
+      real(DP), intent(in) :: dtimeEnd
+!</subroutine>
+
+
+      ! local variable
+      real(DP) :: dtimeBackup2
+
+
+      select case (igaussQuadDegree)
+      case (2)
+        ! calculate the two Gauss points for Gauss quadrature rule of degree n=2
+        ! in [dtimeStart, dtimeEnd]
+        dtime_GaussPt1 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                - 1.0_DP/sqrt(3.0_DP) * (dtimeEnd - dtimeStart))
+        dtime_GaussPt2 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                + 1.0_DP/sqrt(3.0_DP) * (dtimeEnd - dtimeStart))
+
+        ! Quadratic Lagrange interpolate FEM solution in first Gauss point,
+        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1}) +
+        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
+        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_0(dtime_GaussPt1), &
+             timeQuadLagrangePhi_1(dtime_GaussPt1), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_2(dtime_GaussPt1), &
+             1.0_DP, &
+             rvector_sol_GaussPt1%RvectorBlock(iblock))
+        ! ... and in second Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_0(dtime_GaussPt2), &
+             timeQuadLagrangePhi_1(dtime_GaussPt2), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_2(dtime_GaussPt2), &
+             1.0_DP, &
+             rvector_sol_GaussPt2%RvectorBlock(iblock))
+
+        ! Perform error analysis to calculate ||u - u_h||_{L^2} or ||u - u_h||_{H1} over
+        ! [timeStart, timeEnd] in Gauss point s1...
+        dtimeBackup2 = rcollection%Dquickaccess(1)
+        ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
+        !     call cc_initCollectForAssembly (rproblem, rcollection)
+        ! as that would also reset rcollection%Iquickaccess(1) to the value of
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
+        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! solution is given in configuration files (evaluation), not hardcoded in
+        ! ffunction_Target*.
+        rcollection%Dquickaccess(1) = dtime_GaussPt1
+        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s2
+        rcollection%Dquickaccess(1) = dtime_GaussPt2
+        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
+
+
+      case (3)
+        ! calculate the three Gauss points for Gauss quadrature rule of degree n=3
+        ! in [dtimeStart, dtimeEnd]
+        dtime_GaussPt1 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                - sqrt(3.0_DP/5.0_DP) * (dtimeEnd - dtimeStart))
+        dtime_GaussPt2 = 0.5_DP * (dtimeStart + dtimeEnd)
+        dtime_GaussPt3 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                + sqrt(3.0_DP/5.0_DP) * (dtimeEnd - dtimeStart))
+
+        ! Cubic Lagrange interpolate FEM solution in first Gauss point,
+        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1}) +
+        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
+        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_0(dtime_GaussPt1), &
+             timeQuadLagrangePhi_1(dtime_GaussPt1), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_2(dtime_GaussPt1), &
+             1.0_DP, &
+             rvector_sol_GaussPt1%RvectorBlock(iblock))
+        ! ... and in second Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_0(dtime_GaussPt2), &
+             timeQuadLagrangePhi_1(dtime_GaussPt2), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_2(dtime_GaussPt2), &
+             1.0_DP, &
+             rvector_sol_GaussPt2%RvectorBlock(iblock))
+        ! ... and in third Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_0(dtime_GaussPt3), &
+             timeQuadLagrangePhi_1(dtime_GaussPt3), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeQuadLagrangePhi_2(dtime_GaussPt3), &
+             1.0_DP, &
+             rvector_sol_GaussPt3%RvectorBlock(iblock))
+
+        ! Perform error analysis to calculate ||u - u_h||_{L^2} or ||u - u_h||_{H1} over
+        ! [timeStart, timeEnd] in Gauss point s1...
+        dtimeBackup2 = rcollection%Dquickaccess(1)
+        ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
+        !     call cc_initCollectForAssembly (rproblem, rcollection)
+        ! as that would also reset rcollection%Iquickaccess(1) to the value of
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
+        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! solution is given in configuration files (evaluation), not hardcoded in
+        ! ffunction_Target*.
+        rcollection%Dquickaccess(1) = dtime_GaussPt1
+        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s2
+        rcollection%Dquickaccess(1) = dtime_GaussPt2
+        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s3
+        rcollection%Dquickaccess(1) = dtime_GaussPt3
+        call pperr_scalar (cerrorType, Derr3(iblock),rvector_sol_GaussPt3%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
+
+
+      case default
+        call output_line ("Invalid degree for Gauss quadrature rule.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "evalTimeSpaceErrorQuadLagrange")
+        call output_line ("Valid choices for igaussQuadDegree: 2 or 3.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "evalTimeSpaceErrorQuadLagrange")
+        call sys_halt()
+
+      end select
+
+    end subroutine evalTimeSpaceErrorQuadLagrange
+
+    ! ---------------------------------------------------------------------------------
+
+!<subroutine>
+
+    subroutine evalTimeSpaceErrorCubicLagrange(cerrorType, iblock, igaussQuadDegree, &
+         ffunctionReference, rcollection, dtimeStart, dtimeEnd)
+
+!<description>
+    ! Function that Lagrange (time-)interpolates the solutions from the last four time
+    ! steps (t^{n-2}, t^{n-1}, t^{n}, t^{n+1} with t^{n+1} being the current one, i.e. the
+    ! one from dtimebackup) with a cubic polynomial, evaluates it in the the Gauss points
+    ! of the Gauss quadrature rule of degree n=2 or n=3 in time interval [timeStart,
+    ! timeEnd], calculates the L2 or H1 error in these Gauss points against the reference
+    ! solution`s result in these Gauss points and returns the value.
+    ! The result is stored in Derr(iblock), Derr2(iblock) for Gauss quadrature of degree
+    ! n=2 and Derr(iblock), Derr2(iblock) and Derr3(iblock) for Gauss quadrature of
+    ! degree n=3.
+!</description>
+
+      ! Type of error to compute. Bitfield. This is a combination of the
+      ! PPERR_xxxx-constants, which specifies what to compute.
+      ! Example: PPERR_L2ERROR computes the $L_2$-error.
+      integer, intent(in) :: cerrorType
+
+      ! solution block to evaluate
+      integer, intent(in) :: iblock
+
+      ! degree of Gauss quadrature rule used for numerical integration
+      ! (valid choices: 2 and 3)
+      integer, intent(in) :: igaussQuadDegree
+
+      ! A callback function that provides the analytical reference
+      ! function to which the error should be computed.
+      include '../../../kernel/Postprocessing/intf_refFunctionSc.inc'
+
+      ! A pointer to a collection structure to provide additional
+      ! information to the coefficient routine.
+      type(t_collection), intent(inout) :: rcollection
+
+      ! start point of time interval to evaluate
+      real(DP), intent(in) :: dtimeStart
+
+      ! end point of time interval to evaluate
+      real(DP), intent(in) :: dtimeEnd
+!</subroutine>
+
+
+      ! local variable
+      real(DP) :: dtimeBackup2
+
+
+      select case (igaussQuadDegree)
+      case (2)
+        ! calculate the two Gauss points for Gauss quadrature rule of degree n=2
+        ! in [dtimeStart, dtimeEnd]
+        dtime_GaussPt1 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                - 1.0_DP/sqrt(3.0_DP) * (dtimeEnd - dtimeStart))
+        dtime_GaussPt2 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                + 1.0_DP/sqrt(3.0_DP) * (dtimeEnd - dtimeStart))
+
+        ! Cubic Lagrange interpolate FEM solution in first Gauss point,
+        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-2}) +
+        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n-1}) +
+        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n})   +
+        !                                     \phi3(1st Gauss Pt) * solutionblock(t^{n+1})
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldestSolution%RvectorBlock(iblock), &
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_0(dtime_GaussPt1), &
+             timeCubicLagrangePhi_1(dtime_GaussPt1), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_2(dtime_GaussPt1), &
+             1.0_DP)
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_3(dtime_GaussPt1), &
+             1.0_DP, &
+             rvector_sol_GaussPt1%RvectorBlock(iblock))
+        ! ... and in second Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldestSolution%RvectorBlock(iblock), &
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_0(dtime_GaussPt2), &
+             timeCubicLagrangePhi_1(dtime_GaussPt2), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_2(dtime_GaussPt2), &
+             1.0_DP)
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_3(dtime_GaussPt2), &
+             1.0_DP, &
+             rvector_sol_GaussPt2%RvectorBlock(iblock))
+
+        ! Perform error analysis to calculate ||u - u_h||_{L^2} or ||u - u_h||_{H1} over
+        ! [timeStart, timeEnd] in Gauss point s1...
+        dtimeBackup2 = rcollection%Dquickaccess(1)
+        ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
+        !     call cc_initCollectForAssembly (rproblem, rcollection)
+        ! as that would also reset rcollection%Iquickaccess(1) to the value of
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
+        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! solution is given in configuration files (evaluation), not hardcoded in
+        ! ffunction_Target*.
+        rcollection%Dquickaccess(1) = dtime_GaussPt1
+        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s2
+        rcollection%Dquickaccess(1) = dtime_GaussPt2
+        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
+
+
+      case (3)
+        ! calculate the three Gauss points for Gauss quadrature rule of degree n=3
+        ! in [dtimeStart, dtimeEnd]
+        dtime_GaussPt1 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                - sqrt(3.0_DP/5.0_DP) * (dtimeEnd - dtimeStart))
+        dtime_GaussPt2 = 0.5_DP * (dtimeStart + dtimeEnd)
+        dtime_GaussPt3 = 0.5_DP * (dtimeStart + dtimeEnd &
+                                + sqrt(3.0_DP/5.0_DP) * (dtimeEnd - dtimeStart))
+
+        ! Cubic Lagrange interpolate FEM solution in first Gauss point,
+        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-2}) +
+        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n-1}) +
+        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n})   +
+        !                                     \phi3(1st Gauss Pt) * solutionblock(t^{n+1})
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldestSolution%RvectorBlock(iblock), &
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_0(dtime_GaussPt1), &
+             timeCubicLagrangePhi_1(dtime_GaussPt1), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_2(dtime_GaussPt1), &
+             1.0_DP)
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_3(dtime_GaussPt1), &
+             1.0_DP, &
+             rvector_sol_GaussPt1%RvectorBlock(iblock))
+        ! ... and in second Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldestSolution%RvectorBlock(iblock), &
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_0(dtime_GaussPt2), &
+             timeCubicLagrangePhi_1(dtime_GaussPt2), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_2(dtime_GaussPt2), &
+             1.0_DP)
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_3(dtime_GaussPt2), &
+             1.0_DP, &
+             rvector_sol_GaussPt2%RvectorBlock(iblock))
+        ! ... and in third Gauss point
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldestSolution%RvectorBlock(iblock), &
+             rpostprocessing%rolderSolution%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_0(dtime_GaussPt3), &
+             timeCubicLagrangePhi_1(dtime_GaussPt3), &
+             rvector_auxSum%RvectorBlock(iblock))
+        call lsyssc_vectorLinearComb(&
+             rpostprocessing%roldSolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_2(dtime_GaussPt3), &
+             1.0_DP)
+        call lsyssc_vectorLinearComb(&
+             rsolution%RvectorBlock(iblock), &
+             rvector_auxSum%RvectorBlock(iblock), &
+             timeCubicLagrangePhi_3(dtime_GaussPt3), &
+             1.0_DP, &
+             rvector_sol_GaussPt3%RvectorBlock(iblock))
+
+        ! Perform error analysis to calculate ||u - u_h||_{L^2} or ||u - u_h||_{H1} over
+        ! [timeStart, timeEnd] in Gauss point s1...
+        dtimeBackup2 = rcollection%Dquickaccess(1)
+        ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
+        !     call cc_initCollectForAssembly (rproblem, rcollection)
+        ! as that would also reset rcollection%Iquickaccess(1) to the value of
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
+        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! solution is given in configuration files (evaluation), not hardcoded in
+        ! ffunction_Target*.
+        rcollection%Dquickaccess(1) = dtime_GaussPt1
+        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s2
+        rcollection%Dquickaccess(1) = dtime_GaussPt2
+        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        ! ... and s3
+        rcollection%Dquickaccess(1) = dtime_GaussPt3
+        call pperr_scalar (cerrorType, Derr3(iblock),rvector_sol_GaussPt3%RvectorBlock(iblock),&
+             ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
+        rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
+
+
+      case default
+        call output_line ("Invalid degree for Gauss quadrature rule.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "evalTimeSpaceErrorCubicLagrange")
+        call output_line ("Valid choices for igaussQuadDegree: 2 or 3.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "evalTimeSpaceErrorCubicLagrange")
+        call sys_halt()
+
+      end select
+
+    end subroutine evalTimeSpaceErrorCubicLagrange
+
+    ! ---------------------------------------------------------------------------------
+
+    ! ---------------------------------------------------------------------------------
+    ! Function procedures to compute the basis function in time
+    ! ---------------------------------------------------------------------------------
+
+    ! These three routines evalute the 3 (time-)interpolation quadratic Lagrange basis
+    ! polynomials \phi_0(t), \phi_1(t), \phi_2(t) on [-1,1]. The interpolated data points
+    ! are (t^{n-1}, .), (t^{n}, .) and (t^{n+1}, .).
+    ! Be sure to pass as argument a time value in [t^{n-1}, t^{n}].
+    ! We are assuming time step sizes greater than zero (otherwise we would have divisions
+    ! by zero in the following) which seems a safe assumption.
+    function timeQuadLagrangePhi_0(t)
+      real(DP) :: timeQuadLagrangePhi_0, t
+
+      ! Lagrange basis polynomial l0 := (t-t1)/(t0-t1)*(t-t2)/(t0-t2)
+      ! with t0, t1 and t2 being the three given interpolation points t^{n-1}, t^{n}, t^{n+1}
+      timeQuadLagrangePhi_0 = &
+           (t - doldTime)/(dolderTime - doldTime) * (t - dtime)/(dolderTime - dtime)
+
+    end function timeQuadLagrangePhi_0
+
+    ! ---------------------------------------------------------------------------------
+
+    function timeQuadLagrangePhi_1(t)
+      real(DP) :: timeQuadLagrangePhi_1, t
+
+      ! Lagrange basis polynomial l1 := (t-t0)/(t1-t0)*(t-t2)/(t1-t2)
+      ! with t0, t1 and t2 being the three given interpolation points t^{n-1}, t^{n}, t^{n+1}
+      timeQuadLagrangePhi_1 = &
+           (t - dolderTime)/(doldTime - dolderTime) * (t - dtime)/(doldTime - dtime)
+
+    end function timeQuadLagrangePhi_1
+
+    ! ---------------------------------------------------------------------------------
+
+    function timeQuadLagrangePhi_2(t)
+      real(DP) :: timeQuadLagrangePhi_2, t
+
+      ! Lagrange basis polynomial l2 := (t-t0)/(t2-t0)*(t-t1)/(t2-t1)
+      ! with t0, t1 and t2 being the three given interpolation points t^{n-1}, t^{n}, t^{n+1}
+      timeQuadLagrangePhi_2 = &
+           (t - dolderTime)/(dtime - dolderTime) * (t - doldTime)/(dtime - doldTime)
+
+    end function timeQuadLagrangePhi_2
+
+    ! ---------------------------------------------------------------------------------
+
+    ! These four routines evalute the 4 (time-)interpolation Lagrange basis polynomials
+    ! \phi_0(t), \phi_1(t), \phi_2(t), \phi_3(t) on [-1,1]. The interpolated data points are
+    ! (t^{n-2}, .), (t^{n-1}, .), (t^{n}, .) and (t^{n+1}, .).
+    ! Be sure to pass as argument a time value in [t^{n-2}, t^{n}].
+    ! We are assuming time step sizes greater than zero (otherwise we would have divisions
+    ! by zero in the following) which seems a safe assumption.
+    function timeCubicLagrangePhi_0(t)
+        real(DP) :: timeCubicLagrangePhi_0, t
+
+        ! Lagrange basis polynomial l0 := (t-t1)/(t0-t1) * (t-t2)/(t0-t2) * (t-t3)/(t0-t3)
+        ! with t0, t1, t2, t3 being the four given interpolation points t^{n-2}, t^{n-1},
+        ! t^{n}, t^{n+1}
+        timeCubicLagrangePhi_0 = &
+             (t - dolderTime)/(doldestTime - dolderTime) * &
+             (t - doldTime)/(doldestTime - doldTime) * &
+             (t - dtime)/(doldestTime - dtime)
+
+    end function timeCubicLagrangePhi_0
+
+    ! ---------------------------------------------------------------------------------
+
+    function timeCubicLagrangePhi_1(t)
+        real(DP) :: timeCubicLagrangePhi_1, t
+
+        ! Lagrange basis polynomial l1 := (t-t0)/(t1-t0) * (t-t2)/(t1-t2) * (t-t3)/(t1-t3)
+        ! with t0, t1, t2, t3 being the four given interpolation points t^{n-2}, t^{n-1},
+        ! t^{n}, t^{n+1}
+        timeCubicLagrangePhi_1 = &
+             (t - doldestTime)/(dolderTime - doldestTime) * &
+             (t - doldTime)/(dolderTime - doldTime) * &
+             (t - dtime)/(dolderTime - dtime)
+
+    end function timeCubicLagrangePhi_1
+
+    ! ---------------------------------------------------------------------------------
+
+    function timeCubicLagrangePhi_2(t)
+        real(DP) :: timeCubicLagrangePhi_2, t
+
+        ! Lagrange basis polynomial l2 := (t-t0)/(t2-t0) * (t-t1)/(t2-t1) * (t-t3)/(t2-t3)
+        ! with t0, t1, t2, t3 being the four given interpolation points t^{n-2}, t^{n-1},
+        ! t^{n}, t^{n+1}
+        timeCubicLagrangePhi_2 = &
+             (t - doldestTime)/(doldTime - doldestTime) * &
+             (t - dolderTime)/(doldTime - dolderTime) * &
+             (t - dtime)/(doldTime - dtime)
+
+    end function timeCubicLagrangePhi_2
+
+    ! ---------------------------------------------------------------------------------
+
+    function timeCubicLagrangePhi_3(t)
+        real(DP) :: timeCubicLagrangePhi_3, t
+
+        ! Lagrange basis polynomial l3 := (t-t0)/(t3-t0) * (t-t1)/(t3-t1) * (t-t2)/(t3-t2)
+        ! with t0, t1, t2, t3 being the four given interpolation points t^{n-2}, t^{n-1},
+        ! t^{n}, t^{n+1}
+        timeCubicLagrangePhi_3 = &
+             (t - doldestTime)/(dtime - doldestTime) * &
+             (t - dolderTime)/(dtime - dolderTime) * &
+             (t - doldTime)/(dtime - doldTime)
+
+    end function timeCubicLagrangePhi_3
 
   end subroutine
 
@@ -2107,6 +3783,11 @@ contains
         "IERRORANALYSISL2", rpostprocessing%icalcL2, 0)
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "IERRORANALYSISH1", rpostprocessing%icalcH1, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISTIMESPACE", rpostprocessing%icalcTimeSpaceDiscrErrors, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISTIMESPACEMETHOD", rpostprocessing%itimeSpaceDiscrErrorMethod, 0)
+
 
     ! Initialise a parser for the expressions.
     call fparser_create (rpostprocessing%rrefFunctionL2,NDIM2D+1)

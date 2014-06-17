@@ -170,6 +170,31 @@ srefH1ExpressionU2Y = "0"
 srefH1ExpressionPX = "0"
 srefH1ExpressionPY = "0"
 
+# Calculate accumulated time plus space discretisation error (L2 and/or H1
+# error, depending on setting of ierrorAnalysisL2 and ierrorAnalysisH1,
+# respectively) against reference solution.
+
+ierrorAnalysisTimeSpace = 1
+
+# Method to measure time plus space discretisation error
+# =0: l2 norm in time; calculate
+#        || sol(t) - sol_ref(t) ||_l2(0,T;\Omega)
+#        = 1/(number of time steps) *
+#          sum_{all time steps t} || sol(t) - sol_ref(t) ||_L2(\Omega)
+# =1: L2 norm in time,
+#        || sol(t) - sol_ref(t) ||_L2(0,T;\Omega)
+#        = sqrt( \int_{dtimeInit}^{dtimeMax} || sol(t) - sol_ref(t) ||^2_L2 dt )
+#     numerically integrated using trapezoidal rule
+# =2: L2 norm in time, numerically integrated using 2-Point Gauss quadrature
+#     rule to evaluate quadratic Lagrange polynomial (time-)interpolation of solution
+# =3: L2 norm in time, numerically integrated using 3-Point Gauss quadrature
+#     rule to evaluate quadratic Lagrange polynomial (time-)interpolation of solution
+# =4: L2 norm in time, numerically integrated using 2-Point Gauss quadrature
+#     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
+# =5: L2 norm in time, numerically integrated using 3-Point Gauss quadrature
+#     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
+ierrorAnalysisTimeSpaceMethod = 1
+
 # Calculate the kinetic energy.
 # =0: Don't calculate
 # =1: Calculate the energy

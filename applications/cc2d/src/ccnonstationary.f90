@@ -1309,7 +1309,9 @@ contains
         call cc_interpolateTimesteps (rtimestepping,roldSolution,doldtime,&
             rvector,rproblem%rtimedependence%dtime,rvectorInt,dtimeInt)
 
-        ! Postprocessing. Write out the solution if it was calculated successfully.
+        ! Postprocessing. Write out the solution if it was calculated successfully and
+        ! measure time errors for test problems (with analytically given solution).
+        rpostprocessing%ctimestepType = rtimestepping%ctimestepType
         call cc_postprocessingNonstat (rproblem,&
             roldSolution,doldtime,&
             rvector,rproblem%rtimedependence%dtime,&
@@ -1463,6 +1465,17 @@ contains
       call lsysbl_releaseVector (roldSolution)
     call lsysbl_releaseVector (rtempBlock2)
     call lsysbl_releaseVector (rtempBlock1)
+
+    ! Release vectors (possibly) allocated in cc_errorAnalysis
+    if (rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
+      if (rpostprocessing%itimeSpaceDiscrErrorMethod .ge. 4) then
+        call lsysbl_releaseVector (rpostprocessing%roldestSolution)
+      end if
+      if (rpostprocessing%itimeSpaceDiscrErrorMethod .ge. 2) then
+        call lsysbl_releaseVector (rpostprocessing%rolderSolution)
+        call lsysbl_releaseVector (rpostprocessing%roldSolution)
+      end if
+    end if
 
     ! Release existing snapshots
     call cc_releaseSnapshot (rsnapshotLastMacrostep)
