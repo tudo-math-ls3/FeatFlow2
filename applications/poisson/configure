@@ -79,9 +79,9 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 # when invoking this script are passed to the 'real' configure script as well
 # (via "$@"). They can be used to override settings hard coded here.
 ../../bin/configure \
-	--appname=poisson \
-	--programfile=src/poisson.f90 \
+  --appname=poisson \
+  --programfile=src/poisson.f90 \
         --srclist_app="`ls src/*.f90`" \
         --objdir-prefix=${OBJDIRPREFIX} \
         --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
-	"$@"
+  "$@"
