@@ -56,7 +56,6 @@ calcPointSecond = 1
 # Important: They must depend on x and y (or are constant 0 or 1)
 # constant 1 means: on the entire geometry that we have in this
 
-#common = if(x >= 1 & x<= 1.2 & y>=0.4 & y<=0.6,0,1)
 common = if( (x - 0.2)^2 + (y - 0.2)^2 <= 0.0025  ,0,1)
 onlyFirst = if( (x - 0.2)^2 + (y - 0.2)^2 <= 0.0025  ,1,0)
 onlySecond = 1

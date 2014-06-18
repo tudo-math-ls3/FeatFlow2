@@ -3,8 +3,8 @@
 # quadrature rule that we want to use for it
 
 # This applies to section "FIRST" and "SECOND"
-
-# Type of element pair that was used for the discretisation
+#
+# ielementType:  Type of element pair that was used for the discretisation:
 #  0 = Q1~(E031) / Q1~(E031) / Q0
 #  1 = Q1~(E030) / Q1~(E030) / Q0
 #  2 = Q1~(EM31) / Q1~(EM31) / Q0
@@ -30,9 +30,12 @@
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 #
+# If not specified, the code assumes ielementType=3
 #
 # NLMIN: Level where the mesh was generated
 # NLMAX: Level where the solution was calculated
+# If they are not specified, the code assumes that NLMIN=2 and NLMAX=4
+#
 #
 # sParametrisation: The prm-file for the mesh
 # sMesh: The tri-file for the mesh
@@ -43,7 +46,7 @@
 # sCubFormula: Specifies, which cubature formula is used to calculate the norm.
 #  the one set in the section  "FIRST" is used to calculate ||u1|| and ||u1 - u2||
 #  the one set in the section "SECOND" is used to calculate ||u2||
-#
+# If not specified, the code assumes sCubFormula='Auto_G3'
 # 
 # Important: For the calculation of ||u1 - u2||_L2 the program needs to evaluate
 # u2 at the cubature points of the geometry that belongs to u1 since
@@ -67,7 +70,7 @@ sMesh = '%{spredirectory}/bench1.tri'
 
 sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
 
-sCubFormula = AUTO_G2
+sCubFormula = AUTO_G1
 
 #######
 [SECOND]
@@ -82,4 +85,4 @@ sMesh = '%{spredirectory}/bench1.tri'
 
 sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
 
-sCubFormula =  AUTO_G2
+sCubFormula =  AUTO_G1

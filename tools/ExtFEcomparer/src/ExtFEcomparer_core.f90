@@ -550,7 +550,7 @@ contains
            call io_openFileForWriting(outFileNamePointValues, iunit, &
            SYS_REPLACE, bfileExists,.true.)
            ! Write a Headline
-           write (iunit,"(A)") "First function"
+           write (iunit,"(A)") "The point values of the first function are:"
            do i=1,nPoints
             write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
                  "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesFirst(i)
@@ -558,7 +558,7 @@ contains
            end do
 
            write(iunit,*) ""
-           write (iunit,"(A)") "Second function"
+           write (iunit,"(A)") "The point values of the second function are:"
            do i=1,nPoints
             write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
                  "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesSecond(i)
@@ -566,7 +566,7 @@ contains
            end do
 
            write(iunit,*) ""
-           write (iunit,"(A)") "The difference of the function values"
+           write (iunit,"(A)") "The absolute of the difference of the point values is"
            do i=1,nPoints
             write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
                  "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointValueDifference(i)
@@ -634,7 +634,7 @@ subroutine calc_L2error_velocity_2D_common(Dintvalue,rassemblyData,rintAssembly,
     ! We need a parser to read in the values
     type(t_fparser) :: rparser
     ! storage for the parser
-    character(256) :: domainDescription
+    character(LEN=SYS_STRLEN) :: domainDescription
     ! And we need the parameter list
     type(t_parlist) :: rparamlist
 
@@ -758,7 +758,7 @@ subroutine calc_L2norm_velocity_2D(Dintvalue,rassemblyData,rintAssembly,&
     ! We need a parser to read in the values
     type(t_fparser) :: rparser
     ! storage for the parser
-    character(256) :: domainDescription
+    character(LEN=SYS_STRLEN) :: domainDescription
     ! And we need the parameter list
     type(t_parlist) :: rparamlist
 
@@ -870,7 +870,7 @@ subroutine calc_L2error_pressure_2D_common(Dintvalue,rassemblyData,rintAssembly,
     ! We need a parser to read in the values
     type(t_fparser) :: rparser
     ! storage for the parser
-    character(256) :: domainDescription
+    character(LEN=SYS_STRLEN) :: domainDescription
     ! And we need the parameter list
     type(t_parlist) :: rparamlist
 
@@ -991,7 +991,7 @@ subroutine calc_L2norm_pressure_2D(Dintvalue,rassemblyData,rintAssembly,&
     ! We need a parser to read in the values
     type(t_fparser) :: rparser
     ! storage for the parser
-    character(256) :: domainDescription
+    character(LEN=SYS_STRLEN) :: domainDescription
     ! And we need the parameter list
     type(t_parlist) :: rparamlist
 

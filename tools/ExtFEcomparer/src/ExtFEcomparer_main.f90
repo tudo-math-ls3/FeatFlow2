@@ -70,13 +70,19 @@ contains
 
     ! Attention: Now both problem structures contain all information,
     ! we still need to figure out which one we need. That is done
-    ! by 2 sections in "configuration.dat"
+    ! by 2 sections in "function_specific_settings.dat"
 
     ! Write parameters in the corresponding problem structures
     ! and load the vector
     call output_line("Load the vectors and read out domain information")
     call ExtFEcomparer_init_parameters(p_rproblem1,"FIRST")
     call ExtFEcomparer_init_parameters(p_rproblem2,"SECOND")
+
+    ! Print out the parameters as some output - it is always good to have them
+    call output_line ("Parameters:")
+    call output_lbrk ()
+    call parlst_info (p_rproblem1%rparamList)
+    call output_lbrk ()
 
     ! Now find out the dimension of the problem
     call parlst_getvalue_int (p_rproblem1%rparamlist,"DOMAININFO",&

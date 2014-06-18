@@ -34,12 +34,24 @@ program ExtFEcomparer
 
   implicit none
 
+  ! For the logfiles
+  character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sbenchlogfile
+
   ! The very first thing in every application:
   ! Initialise system-wide settings:
   call sys_init()
 
   ! General output init - output to the terminal
   call output_init ()
+
+  ! Get the names of the logfiles
+  call ExtFEcomparer_getLogFiles(slogfile,serrorfile,sbenchlogfile)
+
+  ! release the old output to the terminal
+  call output_done()
+
+  ! Initialise log file for output.
+  call output_init (slogfile,serrorfile,sbenchlogfile)
 
   ! Initialise the storage management:
   call storage_init(999, 100)
@@ -62,6 +74,9 @@ program ExtFEcomparer
   ! This should display "Handles in use=0" and "Memory in use=0"!
   call output_lbrk ()
   call storage_info(.true.)
+
+  ! release the output
+  call output_done()
 
   ! Clean up the storage management, finish
   call storage_done()

@@ -65,6 +65,7 @@ subroutine ExtFEcomparer_get_parameters(rparamList)
       call parlst_readfromfile (rparamList, "./data/generalsettings.dat")
       call parlst_readfromfile (rparamList, "./data/function_specific_settings.dat")
       call parlst_readfromfile (rparamList, "./data/postprocessing.dat")
+      call parlst_readfromfile (rparamList, "./data/logfile_settings.dat")
 
     end if
 
@@ -175,5 +176,62 @@ subroutine ExtFEcomparer_doneParameters (rproblem)
 
 end subroutine
 
+!<subroutine>
+
+subroutine ExtFEcomparer_getLogFiles (slogfile,serrorfile,sbenchlogfile)
+
+    !<description>
+    ! Temporarily reads the output DAT file to get the names of the output
+    ! files.
+    !</description>
+
+    !<output>
+    ! Name of the message log file.
+    character(LEN=*), intent(out) :: slogfile
+
+    ! Name of the error log file.
+    character(LEN=*), intent(out) :: serrorfile
+
+    ! Name of the benchmark log file.
+    character(LEN=*), intent(out) :: sbenchlogfile
+    !</output>
+
+    !</subroutine>
+
+    type(t_parlist) :: rparlist
+    character(LEN=SYS_STRLEN) :: smaster
+    logical :: bexists
+
+    ! Init parameter list that accepts parameters for output files
+    call parlst_init (rparlist)
+
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/master.dat")
+
+    ! Read parameters that configure the output
+    inquire(file=smaster, exist=bexists)
+
+    if (bexists) then
+        ! Read the master file. That either one contains all parameters or
+        ! contains references to subfiles with data.
+        call parlst_readfromfile (rparlist, smaster)
+    else
+        call parlst_readfromfile (rparlist, "./data/logfile_settings.dat")
+    end if
+
+    ! Now the real initialisation of the output including log file stuff!
+    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+        "smsgLog",slogfile,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+        "serrorLog",serrorfile,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+        "sbenchLog",sbenchlogfile,"",bdequote=.true.)
+
+    ! That temporary parameter list is not needed anymore.
+    call parlst_done (rparlist)
+
+end subroutine
 
 end module

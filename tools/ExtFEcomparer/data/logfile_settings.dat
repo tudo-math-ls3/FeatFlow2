@@ -1,0 +1,20 @@
+# ------------------------------------------------------------------------
+# Output parameters
+# 
+# This file contains parameters configuring the general output
+# of the program.
+# ------------------------------------------------------------------------
+
+[LOGFILESETTINGS]
+
+# Log file for messages. ='': No log file output.
+smsgLog = '%{slogdirectory}/output.log'
+
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as smsgLog
+serrorLog = ''
+
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchLog = ''

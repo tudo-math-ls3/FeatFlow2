@@ -6,7 +6,9 @@ you can do some postprocessing with this tool.
 This tool covers the most gernal 2D-case that is possible:
 You have a function f1 and a function f2 which were calculated using different finite elements
 and even different geometries (which is interesting for penalty methods,
-testing which influence a different grid has,...)
+testing which influence a different grid has,...).
+In fact, all you need so you can work with this tool is some geometrical
+common area.
 
 
 It is coded by Malte Schuh (malte.schuh@math.tu-dortmund.de)
@@ -45,10 +47,19 @@ At the moment this tool supports only 2D and only vectors which are written out 
 - formatted output (human readable, not processor dependend)
 - no sorting strategy (which is standard in i.e. cc2d)
 
-Important: This tool really needs 2 input vectors, if you put in only 1 then it will crash.
+Important notes: 
+1) This tool really needs 2 input vectors, if you put in only 1 then it will crash.
 However I left the option for a "hack": If you want to analyze only 1 function, you can
 enter it 2 times as input file but deactivate the calculation of the things you do not
 want to calculate.
+2) This tool does not check if you input is correct, to be precise it will not check if you
+entered a solution on level 7 but set NLMAX for this function only to 3 or if you calculated
+the solution i.e. with Q2/P1 but entered that it was calculated with Q1~(EM30) / Q1~(EM30) / Q0.
+When you do this and analyze this function/compare it to another function, this code has
+unspecified behavior - this totally depends on the type of input-error.
+However, this is not a bug - it is the result of note 1): If you want to analyze 1 function (and
+not compare it to another function) then you can feed the program with any input for
+the second function and deactivate that you calculate anything with the second function.
 
 
 If you need more features or have any questions, do not hesitate to contact me.
