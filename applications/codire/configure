@@ -81,7 +81,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 ../../bin/configure \
   --appname=codire \
   --programfile=src/codire.f90 \
-        --srclist_app="`ls src/*.f90`" \
-        --objdir-prefix=${OBJDIRPREFIX} \
-        --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
+  --srclist_app="`ls src/*.f90`" \
+  --objdir-prefix=${OBJDIRPREFIX} \
+  --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
   "$@"
