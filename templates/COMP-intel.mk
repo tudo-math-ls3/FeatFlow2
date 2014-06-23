@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX       = mpiCC
 LD        = mpif90
 endif
 endif
@@ -78,6 +78,15 @@ endif
 
 
 
+# Specify -fpic for shared builds
+ifneq ($(strip $(SHARED)), NO)
+CFLAGSF77     := $(CFLAGSF77) -fpic
+CFLAGSC       := $(CFLAGSC) -fpic
+LDFLAGS_LIB   := -shared
+endif
+
+
+
 # Specify -openmp for all Intel compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
@@ -102,7 +111,7 @@ endif
 ifeq ($(strip $(F90CPP)),)
 CFLAGSF77 := $(CFLAGSF77) -fpp -I$(FEAT2BASEDIR)
 # Note: Do not remove trailing whitespace!
-MODOPTION = -module 
+MODOPTION = -module
 endif
 
 

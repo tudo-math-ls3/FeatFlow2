@@ -29,7 +29,9 @@ LDFLAGS := -read_only_relocs suppress $(LDFLAGS)
 endif
 endif
 
+# On Mac OS X the file extension for shared libs is 'dylib'.
+SHAREDLIB_EXT = dylib
+
 # In this file, the third token has been set: operating system
 # Set the flags accordingly.
 TOKEN3 := 1
-

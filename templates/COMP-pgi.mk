@@ -11,7 +11,7 @@ COMPILERNAME = PGI
 F77       = pgf77
 F90       = pgf95
 CC        = pgcc
-CXX	  = pgCC
+CXX       = pgCC
 LD        = pgf95
 
 # Compiler flag to specify the directory where module files should be
@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX       = mpiCC
 LD        = mpif90
 endif
 endif
@@ -76,6 +76,15 @@ endif
 
 
 
+# Specify -fpic for shared builds
+ifneq ($(strip $(SHARED)), NO)
+CFLAGSF77     := $(CFLAGSF77) -fpic
+CFLAGSC       := $(CFLAGSC) -fpic
+LDFLAGS_LIB   := -shared
+endif
+
+
+
 # Specify -openmp for all PGI compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
@@ -99,7 +108,7 @@ endif
 ifeq ($(strip $(F90CPP)),)
 CFLAGSF77 := $(CFLAGSF77) -Mpreprocess -I$(FEAT2BASEDIR)
 # Note: Do not remove trailing whitespace!
-MODOPTION = -module 
+MODOPTION = -module
 endif
 
 

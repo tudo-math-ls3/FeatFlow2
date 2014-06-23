@@ -868,6 +868,7 @@ ifneq ($(strip $(COPROCLIST)),)
 	@echo '  COPROCLIST   =' $()
 	@echo '  CFLAGSCOPROC =' $(CFLAGSCOPROC)
 endif
+	@echo '  EXECUTABLE   =' $(EXECUTABLE)
 	@echo '  FORCE_ID     =' $(FORCE_ID)
 	@echo '  INC          =' $(INC)
 	@echo '  INTSIZE      =' $(INTSIZE)
@@ -892,6 +893,7 @@ endif
 	@echo '  OPT          =' $(OPT)
 	@echo '  RANLIB       =' $(RANLIB)
 	@echo '  RELINK_ALWAYS=' $(RELINK_ALWAYS)
+	@echo '  SHARED       =' $(SHARED)
 	@echo '  SRCEXTRA     =' $(SRCEXTRA)
 	@echo '  SRCEXTRA_APP =' $(SRCEXTRA_APP)
 	@echo

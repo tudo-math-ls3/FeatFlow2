@@ -410,6 +410,7 @@ my %defaults = (
     CPP                  => "",
     CXX                  => "",
     CUDA                 => "",
+    EXECUTABLE           => "YES",
     F77                  => "",
     F90                  => "",
     FORCE_ID             => "NO",
@@ -443,6 +444,7 @@ my %defaults = (
     PROGRAMFILE          => "DETERMINED_ON_DEMAND_IF_UNSET",
     RANLIB               => "",
     RELINK_ALWAYS        => "YES",
+    SHARED               => "NO",
     SRCEXTRA             => [],
     SRCEXTRA_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
@@ -494,11 +496,13 @@ GetOptions (
             "cflagscuda=s{0,}"              => \@{ $cl{'CFLAGSCUDA'} },
             "cflagsf77=s{0,}"               => \@{ $cl{'CFLAGSF77'} },
             "cflagsf90=s{0,}"               => \@{ $cl{'CFLAGSF90'} },
-	    "coproclist=s{0,}"              => \@{ $cl{'COPROCLIST'} },
+            "coproclist=s{0,}"              => \@{ $cl{'COPROCLIST'} },
             "cpp=s"                         => \$cl{'CPP'},
             "cuda=s"                        => \$cl{'CUDA'},
             "cxx=s"                         => \$cl{'CXX'},
             "debug"                         => \$cl{'debug'},
+            "no-executable"                 => sub { $cl{'EXECUTABLE'} = 0 },
+            "executable:s"                  => \$cl{'EXECUTABLE'},
             "f77=s"                         => \$cl{'F77'},
             "f90=s"                         => \$cl{'F90'},
             "force-id"                      => \$cl{'FORCE_ID'},
@@ -553,6 +557,9 @@ GetOptions (
             "ranlib=s"                      => \$cl{'RANLIB'},
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
             "serial"                        => sub { $cl{'MPI'} = "no" },
+            "disable-shared"                => sub { $cl{'SHARED'} = 0 },
+            "enable-shared"                 => sub { $cl{'SHARED'} = 1 },
+            "shared:s"                      => \$cl{'SHARED'},
             "srcextra=s{0,}"                => \@{ $cl{'SRCEXTRA'} },
             "srcextra_app=s"                => \@{ $cl{'SRCEXTRA_APP'} },
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
@@ -700,6 +707,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --cuda=\""           . $cl{'CUDA'}                       . "\"" if (defined($cl{'CUDA'}) && $cl{'CUDA'});
     $options .= " --cxx=\""            . $cl{'CXX'}                        . "\"" if (defined($cl{'CXX'}) && $cl{'CXX'});
     $options .= " --debug"                                                        if (defined($cl{'debug'}) && $cl{'debug'});
+    $options .= " --executable=\""     . $cl{'EXECUTABLE'}                 . "\"" if (defined($cl{'EXECUTABLE'}) && $cl{'EXECUTABLE'});
     $options .= " --f77=\""            . $cl{'F77'}                        . "\"" if (defined($cl{'F77'}) && $cl{'F77'});
     $options .= " --f90=\""            . $cl{'F90'}                        . "\"" if (defined($cl{'F90'}) && $cl{'F90'});
     $options .= " --force-id"                                                     if (defined($cl{'FORCE_ID'}) && $cl{'FORCE_ID'} eq "YES");
@@ -741,9 +749,10 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --relink-always"                                                if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "YES");
     $options .= " --no-relink-always"                                             if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "NO");
     # --serial skipped as it is an alternative for --mode=".." only
+    $options .= " --shared=\""         . $cl{'SHARED'}                     . "\"" if (defined($cl{'SHARED'}) && $cl{'SHARED'});
     $options .= " --srcextra=\"" . join(',', @{$cl{'SRCEXTRA'}}) . "\"" if ($#{$cl{'SRCEXTRA'}} >= 0);
-    $options .= " --suppressflags=\"" . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
-    $options .= " --warn=\""          . join(',', @{$cl{'WARN'}})          . "\"" if ($#{$cl{'WARN'}} >= 0);
+    $options .= " --suppressflags=\""  . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
+    $options .= " --warn=\""           . join(',', @{$cl{'WARN'}})          . "\"" if ($#{$cl{'WARN'}} >= 0);
 
     foreach my $feat2appdir (sort @srcdirs) {
         my $dir = &concat_filename($cwd, $feat2appdir);
@@ -1042,7 +1051,7 @@ sub check_options {
     # * $cl{'OPT'} has an empty value when --opt has been specified
     # * $cl{'OPT'} has value 0 when --no-opt has been specified
     # * $cl{'OPT'} has value "string" when --opt="string" has been specified
-    foreach my $entry ('AGMG', 'MPI', 'OPT', 'OPENMP') {
+    foreach my $entry ('AGMG', 'EXECUTABLE', 'MPI', 'OPT', 'OPENMP', 'SHARED') {
 	if (defined($cl{$entry})) {
 	    $cl{$entry} = 1 if ($cl{$entry} eq "");
 	}
@@ -1064,9 +1073,9 @@ sub check_options {
     #   command line options
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
-    foreach my $entry ('AGMG', 'BINARY', 'FORCE_ID', 'INTSIZE', 'MODE',
-		       'MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
-		       'OPENMP', 'OPT', 'RELINK_ALWAYS') {
+    foreach my $entry ('AGMG', 'BINARY', 'EXECUTABLE', 'FORCE_ID', 'INTSIZE',
+		       'MODE','MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
+		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED') {
 	# Check environment variable MAKEFLAGS and give a warning if
 	# options given via environment *and* command line collide.
 	if ($ENV{'MAKEFLAGS'}) {
@@ -1127,6 +1136,7 @@ sub check_options {
         "AGMG"                => [ "yes", "no" ],
 	"BINARY"              => [ "std", "32", "64" ],
 	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "opengl" ],  # List of valid coprocessor backends
+	"EXECUTABLE"          => [ "yes", "no" ],
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
@@ -1136,6 +1146,7 @@ sub check_options {
         "OPENMP"              => [ "yes", "no" ],
 	"OPT"                 => [ "yes", "no", "expensive", "native", "native-expensive" ],
 	"RELINK_ALWAYS"       => [ "yes", "no" ],
+	"SHARED"              => [ "yes", "no" ],
 	"WARN"                => [ "debug", "deprecated", "off", "unsupported", "unusual" ],
     );
 
@@ -1415,6 +1426,16 @@ sub create_feat2AppMakefile {
         "# =32  : Force 32-bit code environment.\n" .
         "# =64  : Force 64-bit code environment.\n" .
         "BINARY              = $entry\n\n";
+
+    $entry = (defined($cl{'EXECUTABLE'})) ? $cl{'EXECUTABLE'} : $defaults{'EXECUTABLE'};
+    print MAKEFILE_HDL
+        "# Create executable?\n" .
+        "EXECUTABLE          = $entry\n\n";
+	
+    $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
+    print MAKEFILE_HDL
+	"# Create shared application?\n" .
+	"SHARED              = $entry\n\n";
 
     $entry = (defined($cl{'FORCE_ID'})) ? $cl{'FORCE_ID'} : $defaults{'FORCE_ID'};
     print MAKEFILE_HDL
@@ -2067,7 +2088,56 @@ sub create_feat2AppMakefile {
 	"endif\n" .
 	"\n\n" .
 
-	"# Makefile variable OPT must have exactly one out of three possible values:\n" .
+	"# Makefile variable EXECUTABLE must have exactly one out of two possible values:\n" .
+        "# YES or NO\n" .
+        "# In case neither YES nor NO are given as mode, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(EXECUTABLE)), YES)\n" .
+        "ifneq (\$(strip \$(EXECUTABLE)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type EXECUTABLE=\$(EXETUABLE) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
+
+
+	"# Makefile variable SHARED must have exactly one out of two possible values:\n" .
+	"# YES or NO.\n" .
+	"# In case neither APPLICATION, LIBRARY or NO is specified, unset all compiler\n" .
+	"# definitions in order to always raise an error when make is invoked.\n" .
+	"ifneq (\$(strip \$(SHARED)), YES)\n" .
+	"ifneq (\$(strip \$(SHARED)), NO)\n" .
+	"MESSAGE := \$(MESSAGE) \\\n" .
+	"\t   echo; \\\n" .
+	"\t   echo '*** Error: Compile type SHARED=\$(SHARED) unknown.'; \\\n" .
+	"\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+	"\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+	"\t   echo; \\\n" .
+	"\t   exit 1;\n" .
+	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
+	"# all the command line options a compile command usually gets.\n" .
+	"F77 = \$(MESSAGE) echo\n" .
+	"F90 = \$(F77)\n" .
+	"CC  = \$(F77)\n" .
+	"CXX = \$(F77)\n" .
+	"LD  = \$(F77)\n" .
+	"endif\n" .
+	"endif\n" .
+	"\n\n" .
+
+	"# Makefile variable OPT must have exactly one out of five possible values:\n" .
 	"# NO, YES, EXPENSIVE, NATIVE, or NATIVE-EXPENSIVE. If that requirement is not\n" .
         "# met, unset all compiler definitions in order to always raise an error when\n" .
         "# make is invoked.\n" .
@@ -2400,8 +2470,24 @@ sub create_feat2AppMakefile {
         "# Link statement for application\n" .
         "\$(APPNAME): | \$(OBJDIR) \$(LIB)\n" .
         "\$(APPNAME): \$(OBJ)\n" .
-        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
+	"ifeq (\$(EXECUTABLE),YES)\n" .
+	"ifeq (\$(SHARED),YES)\n" .
+	"\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> dynamically\"\n" .
+	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(filter-out \$(OBJPGM), \$(OBJ)) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJPGM) -L. -l\$(APPNAME) -o \$(APPNAME)\n" .
+	"else\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> statically\"\n" .
         "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
+	"endif\n\n" .
+	"else\n" .
+	"ifeq (\$(SHARED),YES)\n" .
+	"\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> dynamically\"\n" .
+	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+	"else\n" .
+        "\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> statically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).a\n" .
+	"endif\n\n" .
+	"endif\n\n" .
         "ifneq (\$(MESSAGE),)\n" .
         "\t\@\$(MESSAGE)\n" .
         "endif\n\n" .
@@ -2606,7 +2692,7 @@ sub create_feat2AppMakefile {
         "# Clean all FEAT2 object files for current architecture\n" .
         "clean-app:\n" .
         "\t\@echo \"# Removing application binary\"\n" .
-        "\t-rm -f \$(APPNAME) core\n" .
+        "\t-rm -f \$(APPNAME) lib\$(APPNAME).a lib\$(APPNAME).\$(SHAREDLIB_EXT) core\n" .
         "\t\@echo \"# Removing generated source files\"\n" .
         "\t-\$(foreach file, \\\n" .
         &format_list("\t    \$(patsubst %, \$(OBJDIR)/%, ", 16, 70, SRCLIST_GENERATED, "\\\n", "\\") . "), \\\n" .
@@ -2654,7 +2740,7 @@ sub create_feat2AppMakefile {
         "        #   Fortran 90 source files.\n" .
         "\t\@echo\n" .
         "\t\@echo \"# Removing application binary\"\n" .
-        "\t-rm -f \$(APPNAME) core\n" .
+        "\t-rm -f \$(APPNAME) lib\$(APPNAME).a lib\$(APPNAME).\$(SHAREDLIB_EXT) core\n" .
         "\t\@echo \"# Cleaning up in FEAT2 object directory:\"\n" .
         "\t\@echo \"# Removing wrapped source files, object files and\"\n" .
         "\t\@echo \"# module information files.\"\n" .
@@ -3837,6 +3923,16 @@ sub create_feat2BenchmarkMakefile {
         "# Binary type?\n" .
         "BINARY = $entry\n\n";
 
+    $entry = (defined($cl{'EXECUTABLE'})) ? $cl{'EXECUTABLE'} : $defaults{'EXECUTABLE'};
+    print MAKEFILE_HDL
+	"# Build executable?\n" .
+	"EXECUTABLE = $entry\n\n";
+	
+    $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
+    print MAKEFILE_HDL
+	"# Type of build process?\n" .
+	"SHARED = $entry\n\n";
+
     $entry = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
     print MAKEFILE_HDL
         "# Size of integers?\n" .
@@ -4333,22 +4429,24 @@ sub debug_command_line_options {
     my $colwidth = 0;
     foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
 		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
-		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP', 'WARN') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
+		       'SRCLIST_APP', 'WARN') {
 	$colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
 
     foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
 		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
-		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP', 'WARN') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
+		       'SRCLIST_APP', 'WARN') {
 	# Determine type of variable: scalar or array
 	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
@@ -5156,6 +5254,14 @@ sub print_statistics_about_feat2AppMakefile {
         print "force 64-bit code generation\n";
     }
 
+    $string = (defined($cl{'EXECUTABLE'})) ? $cl{'EXECUTABLE'} : $defaults{'EXECUTABLE'};
+    print "  Build executable                 : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
+    $string = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
+    print "  Build shared target              : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
     $string = $objdir;
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
     # with something that works on the command line: ~ and build ID.
@@ -5275,6 +5381,10 @@ sub show_help {
         "                    This flag is *not* an alias for --no-opt nor does\n" .
         "                    it result in a Makefile that creates code with\n" .
         "                    debugging symbols!\n\n" .
+	"--disable-shared    Compile statically linked binary.\n" .
+	"                    This flag is an alias for --shared=yes.\n\n" .
+	"--enable-shared     Compile dynamically linked binray.\n" .
+	"                    This flag is an alias for --shared=no.\n\n" .
         "--f77=<file>        Fortran 77 compiler\n" .
         "--f90=<file>        Fortran 90 compiler\n" .
         "--force-id          A build ID is accepted even if the system verify fails\n" .

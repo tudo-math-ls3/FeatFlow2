@@ -18,8 +18,10 @@
 # what information is missing, e.g. token 5 not set which means there is no
 # information available which BLAS implementation to use and where to find the
 # library.
-#
+
+# On Linux the file extension for shared libs is 'so'.
+SHAREDLIB_EXT = so
+
 # In this file, the third token has been set: operating system
 # Set the flags accordingly.
 TOKEN3 := 1
-

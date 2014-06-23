@@ -19,7 +19,9 @@
 # information available which BLAS implementation to use and where to find the
 # library.
 
+# On BSD the file extension for shared libs is 'so'.
+SHAREDLIB_EXT = so
+
 # In this file, the third token has been set: operating system
 # Set the flags accordingly.
 TOKEN3 := 1
-

@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX       = mpiCC
 LD        = mpif90
 endif
 endif
@@ -82,6 +82,15 @@ CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -xtypemap=integer:64
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
+
+
+
+# Specify -Kpic for shared builds
+ifneq ($(strip $(SHARED)), NO)
+CFLAGSF77     := $(CFLAGSF77) -Kpic
+CFLAGSC       := $(CFLAGSC) -Kpic
+LDFLAGS_LIB   := -G
+endif
 
 
 

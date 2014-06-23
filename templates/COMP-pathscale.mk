@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX       = mpiCC
 LD        = mpif90
 endif
 endif
@@ -76,6 +76,15 @@ endif
 
 
 
+# Specify -fPIC for shared builds
+ifneq ($(strip $(SHARED)), NO)
+CFLAGSF77     := $(CFLAGSF77) -fPIC
+CFLAGSC       := $(CFLAGSC) -fPIC
+LDFLAGS_LIB   := -shared
+endif
+
+
+
 # Specify -fopenmp for all Pathscale compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
@@ -99,7 +108,7 @@ endif
 ifeq ($(strip $(F90CPP)),)
 CFLAGSF77 := $(CFLAGSF77) -cpp -I$(FEAT2BASEDIR)
 # Note: Do not remove trailing whitespace!
-MODOPTION = -module 
+MODOPTION = -module
 endif
 
 
