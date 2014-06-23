@@ -26,7 +26,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpic++
+CXX       = mpic++
 LD        = mpif90
 endif
 endif
@@ -45,6 +45,19 @@ CXXVERSION = $(CXX) --version | head -n 1
 # compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
+
+# Specify -fopenmp for all gcc compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77     := -DUSE_OPENMP +Oopenmp $(CFLAGSF77)
+CFLAGSC       := -DUSE_OPENMP +Oopenmp $(CFLAGSC)
+LDFLAGS       := -DUSE_OPENMP +Oopenmp $(LDFLAGS)
+endif
+
+# Specify +pic=short for shared builds
+ifneq ($(strip $(SHARED)), NO)
+CFLAGSF77     := $(CFLAGSF77) +pic=short
+LDFLAGS_LIB   := -b
+endif
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
