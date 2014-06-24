@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{46124B69-7EE0-4B33-98C9-0FA1423C0285}">
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}">
 	<Platforms>
 		<Platform Name="Win32"/>
 		<Platform Name="x64"/></Platforms>
@@ -86,5 +86,5 @@
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath=".\src\basisdump.f90"/></Filter></Files>
+		<File RelativePath=".\src\ferecovery.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

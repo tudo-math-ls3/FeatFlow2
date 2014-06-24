@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "basisdump", "basisdump.vfproj", "{46124B69-7EE0-4B33-98C9-0FA1423C0285}"
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "ferecovery", "ferecovery.vfproj", "{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E} = {E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}
 	EndProjectSection
@@ -20,22 +20,22 @@ Global
 		opt-omp|x64 = opt-omp|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg|Win32.ActiveCfg = dbg|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg|Win32.Build.0 = dbg|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg|x64.ActiveCfg = dbg|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg|x64.Build.0 = dbg|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg-omp|Win32.ActiveCfg = dbg-omp|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg-omp|Win32.Build.0 = dbg-omp|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg-omp|x64.ActiveCfg = dbg-omp|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.dbg-omp|x64.Build.0 = dbg-omp|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt|Win32.ActiveCfg = opt|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt|Win32.Build.0 = opt|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt|x64.ActiveCfg = opt|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt|x64.Build.0 = opt|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt-omp|Win32.ActiveCfg = opt-omp|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt-omp|Win32.Build.0 = opt-omp|Win32
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt-omp|x64.ActiveCfg = opt-omp|x64
-		{46124B69-7EE0-4B33-98C9-0FA1423C0285}.opt-omp|x64.Build.0 = opt-omp|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg|Win32.ActiveCfg = dbg|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg|Win32.Build.0 = dbg|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg|x64.ActiveCfg = dbg|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg|x64.Build.0 = dbg|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg-omp|Win32.ActiveCfg = dbg-omp|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg-omp|Win32.Build.0 = dbg-omp|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg-omp|x64.ActiveCfg = dbg-omp|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.dbg-omp|x64.Build.0 = dbg-omp|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt|Win32.ActiveCfg = opt|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt|Win32.Build.0 = opt|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt|x64.ActiveCfg = opt|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt|x64.Build.0 = opt|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt-omp|Win32.ActiveCfg = opt-omp|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt-omp|Win32.Build.0 = opt-omp|Win32
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt-omp|x64.ActiveCfg = opt-omp|x64
+		{1DEDA53D-251F-4E18-B69D-545E19C3E7AE}.opt-omp|x64.Build.0 = opt-omp|x64
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}.dbg|Win32.ActiveCfg = dbg|Win32
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}.dbg|Win32.Build.0 = dbg|Win32
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}.dbg|x64.ActiveCfg = dbg|x64
