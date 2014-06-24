@@ -685,7 +685,7 @@ if ($cl{'regressionbenchmark'}) {
     opendir(DIRECTORY, ".") ||
         die "\n$progname: ERROR:\n" .
             "Can't open directory . for reading. This is supposed never to happen!\n";
-    my @srcdirs = grep /^(kernel_|apps_|area51_)/, readdir DIRECTORY;
+    my @srcdirs = grep /^(apps_|userapps_|tools_|tutorials_|area51_)/, readdir DIRECTORY;
     my $cwd = &cwd();
 
     # Pipe through command line options of regression benchmark configure

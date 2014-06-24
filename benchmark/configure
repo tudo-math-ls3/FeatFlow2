@@ -1,11 +1,11 @@
 #!/bin/sh
 #
 # This shell script is used to prepare the FEAT2 regression benchmark
-# for compilation. It is simply a wrapper for calling the FEAT2 
+# for compilation. It is simply a wrapper for calling the FEAT2
 # configure script which in turn creates a Makefile for the benchmark
 # as well as Makefiles for every benchmark application (i.e. all
-# directories whose name starts with either "kernel_", "apps_" or
-# "area51_".)
+# directories whose name starts with either "apps_", "userapps_"
+# "tools_", "tutorials_" or "area51_".)
 #
 # For a list of valid command line options to FEAT2's configure script, 
 # invoke this script with '--help'.
@@ -33,7 +33,7 @@ cd ${SCRIPTPATH}
 ######################################################
 # Finally, invoke the real work horse, FEAT2's configure, and instruct it
 # to prepare the FEAT2 regression benchmark for compilation, i.e. to
-# create benchmark/Makefile and {kernel_*,apps_*,area51_*}/Makefile.
+# create benchmark/Makefile and {apps_*,userapps_*,tools_*,tutorials_*,area51_*}/Makefile.
 #
 # Any command line parameters given when invoking this script are
 # passed to the 'real' configure script as well (via "$@"). They can

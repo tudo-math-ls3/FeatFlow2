@@ -1,0 +1,128 @@
+#!/bin/sh
+#
+# This shell script is used to prepare the FEAT2 regression benchmark
+# application for compilation. It is simply a wrapper for
+# calling the FEAT2 configure script, but sets some standard flags
+# that are tedious to add always manually.
+#
+# For a list of valid command line options to FEAT2's configure script, 
+# invoke this script with '--help'.
+
+extraflags=""
+
+
+######################################################
+# Don't let the script be confused by non-english messages
+# from system information programs.
+# (LC_ALL overrides the value of the LANG environment variable 
+# and the values of any other LC_* environment variables.)
+LC_ALL=C
+
+
+
+######################################################
+# We want to develop our code in the home directory (because that
+# is not only stored on a RAID system, but also backuped regularly
+# and we might accidentally delete some files which we can not 
+# recover in the nobackup area), but the home directory has disk
+# quota restrictions. Given that object files can be easily
+# recovered we store them to some scratch area without quota restrictions
+# ($HOME/nobackup) and save this way precious quota in the home directory.
+#
+# Try to come up with a reasonable location in $HOME/nobackup based on
+# the current working directory. One could simply append the current
+# working directory to a fixed object directory prefix, example:
+#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/$HOME/experimental/Featflow2/area51/cc2dmedium
+#
+# But in this case the path given to compilers to locate module files
+# (-fmod, -J options) and the path to the object file (-o option) can 
+# get rather lengthy and some compilers don't accept paths longer 132 
+# characters (e.g. PGI). So, try to come up with something more useful:
+# cut away the strings "$HOME" and "Featflow2" from the path to the
+# current directory and use that:
+#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/experimental/area51/cc2dmedium
+
+# Change to the directory where this script resides
+# (it is possible to call this script via <some path>/configure,
+# so change to <some path> first.)
+SCRIPTPATH=`dirname $0`
+cd ${SCRIPTPATH}
+
+# Specify object directory prefix. Try to use a path without quota restrictions.
+# If that one does not exist, put the object files to the main package
+# directory.
+NOQUOTADIR=${HOME}/nobackup
+if test -e $NOQUOTADIR
+  then
+    BASEDIR_OBJFILES=${NOQUOTADIR}/feat2obj
+  else
+    BASEDIR_OBJFILES=`cd ../.. && pwd || echo`/feat2obj
+  fi
+
+# To support multiple working copies of FEAT2 which all store their
+# object files beneath ${BASEDIR_OBJFILES}, but which should not interfere
+# which each other, duplicate the hierarchy of these FEAT2 installations
+# beneath ${BASEDIR_OBJFILES}. The procedure can be explained most easily
+# with an example:
+# Consider you have two FEAT2 installations, one in $HOME/Featflow and another
+# in $HOME/tmp/Featflow2, then the object files should go to ${BASEDIR_OBJFILES}
+# and ${BASEDIR_OBJFILES}/tmp, respectively.
+CWD=`/bin/pwd`
+
+# Try to shorten the directory hierarchy below ${BASEDIR_OBJFILES}.
+# Why? Because it is used to create the object directory and some
+# compilers enforce (silently) restrictions on include and module
+# directories (e.g. PGI). Do not let path to object 
+# directory become too long!
+
+# Step 1: 
+#   try to cut off the leading part ending in your username.
+FEAT2INSTDIR=${CWD}
+# $USER is used later on, but not all Unix systems define
+# this environment variable, Sun Solaris e.g. does not.
+test -z "$USER" && USER="$LOGNAME"
+# Username contained in path name?
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s|^.*/$USER/|/|;"`;
+
+# Step 2: 
+#   remove "featflow2/"
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | tr 'A-Z' 'a-z' | sed "s|/featflow2/|/|;"`;
+
+# Concatenate directory strings to come up with a directory name
+# for FEAT2 application object files
+OBJDIRPREFIX=${BASEDIR_OBJFILES}${FEAT2INSTDIR}
+
+# Create a likewise directory for all libraries which should
+# be shared among all FEAT2 applications as - being a library - 
+# they have no dependency on the FEAT2 kernel or a FEAT2 application
+# and are all compiled with identical settings.
+OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
+
+# Append a directory level if an environment variable named
+# FEAT2COMPILERVERSION is set.
+# Motivation: When testing several compiler versions, the build ID is
+# identical for all runs. As a result, the object directory for libraries is
+# shared among these compiler versions. This can lead to linker errors when
+# the object files get created by a compiler version that employs symbols not
+# present in other versions. So, when compiling the libraries with a more
+# recent compiler version and trying to link later using an older compiler
+# release, this may fail. Also, when compiling with an older compiler version
+# first and later with a newer, potential performance gains of the new
+# compiler are squandered by still re-using the object files created by the
+# older compiler version.
+if test -n "${FEAT2COMPILERVERSION}"; then
+    OBJDIRLIBPREFIX=${OBJDIRLIBPREFIX}/${FEAT2COMPILERVERSION}
+fi
+
+
+######################################################
+# Finally, invoke the main workhorse:
+../../bin/configure \
+	--appname=oshehezb-cc2d-1 \
+	--programfile=../../userapps/oshehezb-cc2d-1/src/cc2d.f90 \
+	--srclist_app="`ls ../../userapps/oshehezb-cc2d-1/src/*.f90`" \
+	--objdir-prefix=${OBJDIRPREFIX} \
+	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
+	$@
