@@ -10,6 +10,9 @@ program meshadapt
   use signals
   use storage
   use triangulation
+#ifdef __INTEL_COMPILER
+  use ifport, only: sleep
+#endif
 
   implicit none
   
