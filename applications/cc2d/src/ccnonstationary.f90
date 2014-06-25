@@ -653,31 +653,83 @@ contains
 
 !</subroutine>
 
-    ! For the implicit Euler scheme, just take the solution.
-    ! The same for the FS-Theta scheme (has probably to be changed in
-    ! the future!)
-    call lsysbl_copyVector (rvectorNew,rvectorInt)
-
-    if ((rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) .or. &
-        ((rtimestepping%ctimestepType .eq. TSCHM_ONESTEP) .and. &
-         (rtimestepping%dtheta .eq. 1.0_DP))) then
-
-      dtimeInt = dtimeNew
-
-    else
-
-      ! For the general Theta scheme, take an appropriate mean.
-      ! of the velocity vectors to compute the velocity in the point
-      ! of the timestep where the pressure lives.
-      dtimeInt = rtimestepping%dtheta*dtimeNew + (1.0_DP-rtimestepping%dtheta)*dtimeOld
+    real(DP) :: dfactor
 
 
+    if (rtimestepping%ctimestepType .eq. TSCHM_ONESTEP) then
+      ! With the implicit Euler scheme, the pressure solution lives in the endpoints in
+      ! time (of every time intervall spanned by subsequent time steps). So, velocity and
+      ! pressure live in the same points in time such that we can just take over the
+      ! solution.
+      if (rtimestepping%dtheta .eq. 1.0_DP) then
+        call lsysbl_copyVector (rvectorNew, rvectorInt)
+        dtimeInt = dtimeNew
+
+      ! With the general theta scheme, the pressure solution (being treated fully
+      ! implicitly, as opposed to the velocity variable) lives between the points in time
+      ! where the velocity solution is calculated. Take an appropriate mean in order to
+      ! have both variables live at a common point in time (mandatory for subsequent
+      ! calculations like lift and drag calculation) and interpolate *not* the pressure
+      ! variable, but the velocity variable. Because only for the latter do we always have
+      ! a start solution and as such can use it in time step 1 for the first interpolation
+      ! step.
+      else
+        dfactor = rtimestepping%dtheta
+        dtimeInt = (1.0_DP-dfactor)*dtimeOld + dfactor*dtimeNew
+
+        call lsysbl_copyVector (rvectorNew, rvectorInt)
+        call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(1),&
+             rvectorInt%RvectorBlock(1),&
+             1.0_DP - dfactor, dfactor)
+        call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
+             rvectorInt%RvectorBlock(2),&
+             1.0_DP - dfactor, dfactor)
+      end if
+
+    else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
+      ! For the fractional-step theta scheme, it is yet unclear at which exact points in
+      ! time the pressure solution (being treated fully implicitly, as opposed to the
+      ! velocity variable) lives. Pressure and velocity do definitely not live in the same
+      ! points in time. That is easily determined experimantally (turn on
+      ! ierrorAnalysisTimeSpace in postprocessing.dat and compare respective L2 errors for
+      ! a sequence of time step). As a result, pressure approximation is currently only of
+      ! assymptotically first order with fractional-step theta scheme along with second
+      ! order approximation of the velocity variable.
+      ! Best experimental order of convergence is achieved by the interpolation choice:
+      ! alpha, beta, alpha. It leads to second order approximation of the pressure
+      ! variable for larger time step sizes which then drop to first order with
+      ! diminishing time step sizes.
+      ! Again, take an appropriate mean in order to have both variables live at a common
+      ! point in time (mandatory for subsequent calculations like lift and drag
+      ! calculation) and interpolate *not* the pressure variable, but the velocity
+      ! variable. Because only for the latter do we always have a start solution and as
+      ! such can use it in time step 1 for the first interpolation step.
+
+      dfactor = 0.0_DP
+      select case (mod(rtimestepping%isubstep + 1, 3)+1)
+      ! (Note: substep gets incremented *before* postprocessing starts. Even though we are
+      !        still in the 3rd substep, the counter points already to the first substep of
+      !        the next macro time step.)
+      case (1)  ! 1st substep
+        dfactor = rtimestepping%dalpha
+
+      case (2)  ! 2nd substep
+        dfactor = rtimestepping%dbeta
+
+      case (3)  ! 3rd substep
+        dfactor = rtimestepping%dalpha
+
+      end select
+
+      dtimeInt = (1.0_DP-dfactor)*dtimeOld + dfactor*dtimeNew
+
+      call lsysbl_copyVector (rvectorNew, rvectorInt)
       call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(1),&
-          rvectorInt%RvectorBlock(1),&
-          1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
+           rvectorInt%RvectorBlock(1),&
+           1.0_DP - dfactor, dfactor)
       call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
-          rvectorInt%RvectorBlock(2),&
-          1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
+           rvectorInt%RvectorBlock(2),&
+           1.0_DP - dfactor, dfactor)
 
     end if
 
