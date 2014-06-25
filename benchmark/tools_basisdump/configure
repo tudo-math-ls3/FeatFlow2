@@ -123,6 +123,7 @@ fi
 ../../bin/configure \
 	--appname=basisdump \
 	--programfile=../../tools/basisdump/src/basisdump.f90 \
+	--srclist_app=../../tools/basisdump/src/basisdump.f90 \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@

@@ -123,6 +123,7 @@ fi
 ../../bin/configure \
 	--appname=tridump \
 	--programfile=../../tools/tridump/src/tridump.f90 \
+	--srclist_app=../../tools/tridump/src/tridump.f90 \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@

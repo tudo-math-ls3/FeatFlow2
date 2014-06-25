@@ -121,7 +121,7 @@ fi
 # Finally, invoke the main workhorse:
 ../../bin/configure \
 	--appname=meshadapt \
-	--programfile=../../tools/meshadapt/src/cc2d.f90 \
+	--programfile=../../tools/meshadapt/src/meshadapt.f90 \
 	--srclist_app="`ls ../../tools/meshadapt/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
