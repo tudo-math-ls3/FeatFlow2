@@ -791,8 +791,9 @@ if ($cl{'regressionbenchmark'}) {
         $warnings .=
             "*************************************************************\n" .
             $progname.": WARNING:\n".
-            "No subdirectory with any of the prefixes \"kernel_\", \"apps_\"\n" .
-            "or \"area51_\" could be found. You might want to check.\n" .
+            "No subdirectory with any of the prefixes \"apps_\", \"userapps_\",\n" .
+            "\"tools_\", \"tutorials_\" or \"area51_\" could be found.\n" .
+            "You might want to check.\n" .
             "*************************************************************\n\n";
     }
     closedir(DIRECTORY);
@@ -3904,8 +3905,10 @@ sub create_feat2BenchmarkMakefile {
         "APPBASE  = feat2benchmark\n" .
         "\n" .
         "# List of all applications to compile\n" .
-        "APPS     = \$(patsubst kernel_%, \$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
-        "\t   \$(patsubst apps_%,   \$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+        "APPS     = \$(patsubst apps_%,   \$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+        "\t   \$(patsubst userapps_%,   \$(APPBASE)-%, \$(filter userapps_%,   \$(SRCDIRS))) \\\n" .
+        "\t   \$(patsubst tools_%,   \$(APPBASE)-%, \$(filter tools_%,   \$(SRCDIRS))) \\\n" .
+        "\t   \$(patsubst tutorials_%,   \$(APPBASE)-%, \$(filter tutorials_%,   \$(SRCDIRS))) \\\n" .
         "\t   \$(patsubst area51_%, \$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
         "\n" .
         "# List of all *.fbconf files (containing benchmark test IDs)\n" .
@@ -3964,8 +3967,10 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "# List of all application's source directories\n" .
         "SRCDIRS  = \$(patsubst %/, %, \$(dir \$(wildcard \\\n" .
-        "\t\t\t\t\tkernel_*/$MAKEFILE \\\n" .
         "\t\t\t\t\tapps_*/$MAKEFILE \\\n" .
+        "\t\t\t\t\tuserapps_*/$MAKEFILE \\\n" .
+        "\t\t\t\t\ttools_*/$MAKEFILE \\\n" .
+        "\t\t\t\t\ttutorials_*/$MAKEFILE \\\n" .
         "\t\t\t\t\tarea51_*/$MAKEFILE)))\n" .
         "\n" .
         "# All possible test IDs\n" .
@@ -4037,8 +4042,10 @@ sub create_feat2BenchmarkMakefile {
         ".PHONY:\t\$(APPS)\n" .
         "\$(APPS): compile-libs\n" .
         "\t\@\$(MAKE) APPNAME=\$\@ \\\n" .
-        "\t\t SRCDIR=\$(filter \$(\@:\$(APPBASE)-%=kernel_%) \\\n" .
-        "\t\t\t\t \$(\@:\$(APPBASE)-%=apps_%) \\\n" .
+        "\t\t SRCDIR=\$(filter \$(\@:\$(APPBASE)-%=apps_%) \\\n" .
+        "\t\t\t\t \$(\@:\$(APPBASE)-%=userapps_%) \\\n" .
+        "\t\t\t\t \$(\@:\$(APPBASE)-%=tools_%) \\\n" .
+        "\t\t\t\t \$(\@:\$(APPBASE)-%=tutorials_%) \\\n" .
         "\t\t\t\t \$(\@:\$(APPBASE)-%=area51_%), \$(SRCDIRS)) compile-META\n" .
         "\n" .
         "# Compile a FEAT2 benchmark application\n" .
@@ -4067,8 +4074,10 @@ sub create_feat2BenchmarkMakefile {
         "# (Tricky part is reconstructing source directory name from application name.)\n" .
         "\$(APPS:%=test-compile-%):\n" .
         "\t\@\$(MAKE) APPNAME=\$(\@:test-compile-%=\$(ID)-%) \\\n" .
-        "\t\t SRCDIR=\$(filter \$(\@:test-compile-\$(APPBASE)-%=kernel_%) \\\n" .
-        "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=apps_%) \\\n" .
+        "\t\t SRCDIR=\$(filter \$(\@:test-compile-\$(APPBASE)-%=apps_%) \\\n" .
+        "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=userapps_%) \\\n" .
+        "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=tools_%) \\\n" .
+        "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=tutorials_%) \\\n" .
         "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=area51_%), \$(SRCDIRS)) compile-META\n" .
         "\n" .
         "\n" .
@@ -4188,8 +4197,10 @@ sub create_feat2BenchmarkMakefile {
         "ifneq (\$(SRCDIRS),)\n" .
         "         # the following removes binaries created by test-compile (simultaneous \n" .
         "         # compilation in one checkout with several build IDs) \n" .
-        "\t-rm -f \$(patsubst kernel_%, \$(ID)-\$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
-        "\t       \$(patsubst apps_%,   \$(ID)-\$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+        "\t-rm -f \$(patsubst apps_%, \$(ID)-\$(APPBASE)-%, \$(filter apps_%, \$(SRCDIRS))) \\\n" .
+        "\t       \$(patsubst userapps_%,   \$(ID)-\$(APPBASE)-%, \$(filter userapps_%,   \$(SRCDIRS))) \\\n" .
+        "\t       \$(patsubst tools_%,   \$(ID)-\$(APPBASE)-%, \$(filter tools_%,   \$(SRCDIRS))) \\\n" .
+        "\t       \$(patsubst tutorials_%,   \$(ID)-\$(APPBASE)-%, \$(filter tutorials_%,   \$(SRCDIRS))) \\\n" .
         "\t       \$(patsubst area51_%, \$(ID)-\$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
         "endif\n" .
         "ifneq (\$(SRCDIR),)\n" .
