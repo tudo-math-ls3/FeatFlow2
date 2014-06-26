@@ -1,0 +1,99 @@
+# PRM-file of the domain
+sfilePRM = './pre/star.prm'
+
+# TRI-file of the mesh
+sfileTRI = './pre/star.tri'
+
+# Path where to write the output log files
+sfileLOG= './log/MK_formatted/Q2/test.txt'
+
+# Path where to write output files to
+sucddir = './gmv'
+
+# GMV-file of the solution
+sfileGMV = '/test.gmv'
+
+# Convert quad mesh to triangle mesh
+iconvertToTriangleMesh = 0
+
+# Percentage value (0..1) for mesh distortion
+# 0=no distortion. E.g. 0.2=20%
+dmeshDistortion=0.0
+
+# Element type to use for the discretisation.
+# 11=Q1, 1=P1, 13=Q2, 2=P2, -30=Q1~ nonparametric, -1=mixed P1/Q1
+ielementType = 13
+#-------------------------------------------
+# Type of preconditioner
+#-------------------------------------------
+# 0 = Jacobi
+# 1 = Gauss Seidel
+# 2 = ILU0
+iprectype = 0
+
+#-------------------------------------------
+# Type of sorting (numbering) strategy
+#-------------------------------------------
+# 0 = No numbering (Standard 2-level ordering)
+# 1 = row wise numbering
+# 2 = column wise numbering
+isorttype = 1
+
+#-------------------------------------------
+# Type of stabilisation
+#-------------------------------------------
+# 0=none
+# 1=edge oriented
+istabilisation=0
+
+# Parameter for the stabilisation
+dgamma = 0.01
+
+# Minimum level of the discretisation
+NLMIN = 3
+
+# Maximum level of the discretisation
+NLMAX = 6
+
+# Type of error estimator
+# 1=L2-projection, 2=node-based ZZ, 3=element-based ZZ, 4=face-based ZZ
+ierrorestimator = 3
+
+# Output error as GMV file
+ioutputerror = 1
+
+# Anisotropic diffusion coefficients
+Dalpha = 1.0
+Dbeta = 1.0
+
+# Difussion coefficient vector
+v1= 1.0
+v2= 1.0
+
+# Type of reference solution
+# 0: u=(x-1)(x+1)(y-1)(y+1), 1 boundary component
+# 1: u=unknown, oblique flow
+# 2: u=(x-1)(x+1)(y-1)(y+1), 2 boundary components
+# 3: u according to f=32*(y(1-y) + x(1-x))
+# 4: u=unknown, u(outer boundarry component)=0, u(inner BC)=2
+
+isolution = 1
+
+#--------------------------------
+#DeflatedGMRES Solver Parameters
+#--------------------------------
+
+# Maximum Eigenvalue of preconditioned matrix 
+dmaxeigvalue = 0.0
+
+# Number of iterations
+iiterations = 1
+
+# Relaxation parameter
+drelaxation = 0.7
+
+# Maximum number of solver iterations
+imaxiter = 50
+
+# Relative stopping criterea
+dRelError = 1E-6
