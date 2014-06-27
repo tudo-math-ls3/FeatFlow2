@@ -913,9 +913,9 @@ contains
           select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
           case (0) ! l2 error
             call output_line ("||u-reference||_l2(0,T;L2(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace) / iglobaltimestep, 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
             call output_line ("||p-reference||_l2(0,T;L2(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace) / iglobaltimestep, 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
 
           case (1) ! Trapezoidal rule for numeric integration means that only 2 data
                    ! points are needed. Which are available in time step 1: start solution
@@ -1147,9 +1147,9 @@ contains
           select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
           case (0) ! l2 error
             call output_line ("||u-reference||_l2(0,T;H1(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace) / iglobaltimestep, 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
             call output_line ("||p-reference||_l2(0,T;H1(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace) / iglobaltimestep, 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
 
           case (1) ! Trapezoidal rule for numeric integration means that only 2 data
                    ! points are needed. Which are available in time step 1: start solution

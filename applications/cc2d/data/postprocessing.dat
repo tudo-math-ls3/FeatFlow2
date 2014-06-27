@@ -179,8 +179,9 @@ ierrorAnalysisTimeSpace = 1
 # Method to measure time plus space discretisation error
 # =0: l2 norm in time; calculate
 #        || sol(t) - sol_ref(t) ||_l2(0,T;\Omega)
-#        = 1/(number of time steps) *
-#          sum_{all time steps t} || sol(t) - sol_ref(t) ||_L2(\Omega)
+#        = sqrt( 1/(number of time steps + 1) *
+#                sum_{all time steps t incl. T=0}
+#                              || sol(t) - sol_ref(t) ||^2_L2(\Omega) )
 # =1: L2 norm in time,
 #        || sol(t) - sol_ref(t) ||_L2(0,T;\Omega)
 #        = sqrt( \int_{dtimeInit}^{dtimeMax} || sol(t) - sol_ref(t) ||^2_L2 dt )
