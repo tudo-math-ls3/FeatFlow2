@@ -15,5 +15,5 @@ export LC_ALL
 ../../bin/configure \
 	--appname=fecomparer \
 	--programfile=src/fecomparer.f90 \
-        --srclist_app="`ls src/*.f90`" \
+	--srclist_app="`ls src/*.f90`" \
 	"$@"
