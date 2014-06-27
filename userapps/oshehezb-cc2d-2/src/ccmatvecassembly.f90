@@ -1938,7 +1938,7 @@ contains
         rcollection%DquickAccess(1) = &
                 rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight
                 
-        call bilf_buildMatrixScalar (rform, .FALSE., rmatrix%RmatrixBlock(4,4),&
+        call bilf_buildMatrixScalar (rform, .false., rmatrix%RmatrixBlock(4,4),&
                 coeff_Domain_features,rcollection)  
                              
         ! Assemble convection+Laplace
@@ -2956,7 +2956,7 @@ contains
       type(t_matrixScalar) :: rmatrixTemp
       type(t_matrixBlock) :: rmatrixTempBlock
       type(t_vectorBlock) :: rvectorTempBlock,rdefectTempBlock
-      type(t_collection) :: rcollection
+      type(t_collection), pointer :: rcollection
       type(t_bilinearForm) :: rform
       real(DP), dimension(:), pointer :: p_Ddata
 
@@ -2987,7 +2987,7 @@ contains
       
       rcollection%DquickAccess(1) = rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight
               
-      call bilf_buildMatrixScalar (rform, .FALSE., rmatrixTemp,&
+      call bilf_buildMatrixScalar (rform, .false., rmatrixTemp,&
               coeff_Domain_features,rcollection)      
               
       ! Generate Laplace+convection operator
