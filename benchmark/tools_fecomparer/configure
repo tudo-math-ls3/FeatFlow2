@@ -123,7 +123,7 @@ fi
 ../../bin/configure \
 	--appname=fecomparer \
 	--programfile=../../tools/fecomparer/src/fecomparer.f90 \
-	--srclist_app=../../tools/fecomparer/src/fecomparer.f90 \
+	--srclist_app="`ls ../../tools/fecomparer/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@
