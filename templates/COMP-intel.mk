@@ -92,6 +92,26 @@ ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -openmp $(CFLAGSC)
 LDFLAGS       := -DUSE_OPENMP -openmp $(LDFLAGS)
+ifeq ($(call intelminversion,9,1),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP25
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP25
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP25
+endif
+ifeq ($(call intelminversion,11,0),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP30
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP30
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP30
+endif
+ifeq ($(call intelminversion,12,1),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP31
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP31
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP31
+endif
+ifeq ($(call intelminversion,14,0),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP40
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP40
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP40
+endif
 endif
 
 

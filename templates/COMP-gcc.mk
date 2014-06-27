@@ -115,6 +115,31 @@ ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77     := -DUSE_OPENMP -fopenmp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -fopenmp $(CFLAGSC)
 LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
+ifeq ($(call gccminversion,4,2),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP25
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP25
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP25
+endif
+ifeq ($(call gccminversion,4,4),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP30
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP30
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP30
+endif
+ifeq ($(call gccminversion,4,7),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP31
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP31
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP31
+endif
+ifeq ($(call gccminversion,4,9),yes)
+# Support of OpenMP 4.0 in gfortran comes with GCC 4.10
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP40
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP40
+endif
+ifeq ($(call gccminversion,4,10),yes)
+CFLAGSF77 := $(CFLAGSF77) -DHAS_OPENMP40
+CFLAGSC   := $(CFLAGSC) -DHAS_OPENMP40
+LDFLAGS   := $(LDFLAGS) -DHAS_OPENMP40
+endif
 endif
 
 
