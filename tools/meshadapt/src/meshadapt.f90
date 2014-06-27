@@ -10,9 +10,6 @@ program meshadapt
   use signals
   use storage
   use triangulation
-#ifdef __INTEL_COMPILER
-  use ifport, only: sleep
-#endif
 
   implicit none
   
@@ -153,9 +150,9 @@ program meshadapt
     call fsignal(SIGINT, perform_adaptation)
     call fsignal(SIGQUIT, perform_adaptation)
     
-    daemon: do
-      call sleep(10)
-    end do daemon
+!    daemon: do
+!      call sleep(10)
+!    end do daemon
   else
     i = perform_adaptation(SIGINT)
     i = perform_adaptation(SIGQUIT)
