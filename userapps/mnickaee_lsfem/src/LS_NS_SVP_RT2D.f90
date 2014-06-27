@@ -302,7 +302,7 @@ contains
   ! +++++++++++++++++++++++++++++++++++++++++++++++++++++
   call ls_update_solution(Rlevels,converged,diverged,&
        rvector,rvector_old,rrhs,NLMAX,NLMIN,det)
-  if (det) EXIT
+  if (det) exit
     
   end do  ! inl
   
@@ -3417,8 +3417,8 @@ contains
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
       //' S1 Rel. Err. ' //' S2 Rel. Err. ' )
-      call output_line ('--------------------------------------&
-      --------------------------------------')
+      call output_line ('--------------------------------------'//&
+          '--------------------------------------')
     end if
   end if
 
