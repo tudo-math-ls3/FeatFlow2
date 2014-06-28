@@ -1,0 +1,77 @@
+# Base name of the test-set. Shall be unique.
+
+testname = cc2d_sqbench2_referencenew_q2_step2
+
+# Test-id for the tests.
+# ="": Determine test-id automatically (default)
+
+testid = cc2d_sqbench2_referencenew_q2_step2-lv$(LV)-DTMIN$(%DTMIN)
+
+# A comment for the test which may take several lines. Each line must end
+# with a double-backslash if the comment continues in the next line.
+# the comment is included with comment characters at the beginning of the file.
+
+comment = bench1 reference calculation. Test example 3.
+
+# Application
+# If empty (""), this is not printed.
+
+appl = cc2d
+
+# Test class.
+# If empty (""), this is not printed.
+
+class = DEFAULT
+
+# An optional description of the test set.
+# May optionally contain references to the variables below.
+
+descr = cc2d_sqbench2_reference, Q2, Level $(LV), Step 1, Substep $(%DTMIN)
+
+# Data file that is used by the application to provide parameters.
+# May optionally contain references to the variables below.
+
+# sinus-type inflow.
+
+datfile = "./data/apps_cc2d/master_sqbench.dat"
+
+# Name + Path of one or multiple include file which is included prior to 
+# every test. If multiple include files are to be defined, there must be
+# one line "testinclude = "..." " for each include file.
+# May optionally contain references to the variables below.
+
+testinclude = "cc2d_bench1.defaults"
+
+# The variables.
+#
+# Constants
+
+DISCRETISATION_CWRITEFINALSOLUTION. = 2
+
+# Special settings for this subtest
+#
+# STEP 2
+# ------
+# Here, the oscillation starts.
+# We go on simulating 20 seconds with a smaller timestep size on the same level.
+# This gives us a moderately oscillating solution.
+# Here, we switch off the stabililsation.
+
+DISCRETISATION_IUPWIND. = 0
+DISCRETISATION_DUPSAM. = 0.0
+TIMEDISCRETISATION_DTIMESTEP. = 0.025
+LV:MGLEVELS = 2
+
+# Read the previous solution if it exists
+#
+# PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
+# PREVIOUSDIR~ = "cc2d_sqbench2_referencenew_q2_step1-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
+# DISCRETISATION_CTYPEINITIALSOLUTION. = `expr 2 \\* \\( $(%DTMIN) \\> 1 \\)`
+
+PREVIOUSDIR~ = "cc2d_sqbench2_referencenew_q2_step1-lv2-DTMIN1"
+
+DISCRETISATION_CTYPEINITIALSOLUTION = 2
+DISCRETISATION_SINITIALSOLUTIONFILENAME. = "./logs/$(PREVIOUSDIR)/solution"
+
+DTMIN:TIMEDISCRETISATION_DTIMEINIT = 3.5
+TIMEDISCRETISATION_DTIMEMAX. = 20.0

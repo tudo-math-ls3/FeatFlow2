@@ -1,0 +1,131 @@
+######################################################################
+#
+# MASTER.DAT file for tests with the default benchmark configuration
+#
+######################################################################
+
+# -------------------------------------------------------------------
+# This optional master file is the entry point for all data
+# which is processed by the software. The simportdatafiles(.) parameter
+# below defines a list of 'child' data files which are read during
+# the initialisation. All parameters and sections following
+# this parameter overwrite data from the DAT files; this allows
+# to centrally define crucial parameters in numeric tests while
+# the data files specify the general setting.
+#
+# If simportdatafiles(.) is not present as first parameter in this
+# file, all parameters of the software must be defined here. This
+# allows to collect all parameters in one file.
+#
+# If this file is missing, the software will search for parameters in
+# a standard set of data files.
+# -------------------------------------------------------------------
+
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data/apps_cc2d
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+# Directory for visualisation files
+spostdirectory = $LOGDIR
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = $LOGDIR
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/data/apps_cc2d
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(8) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/nonlinsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+  "%{sdatadirectory}/postprocessing.dat"
+
+# We redefine the maximum level and the benchmark result file.
+  
+[GENERALOUTPUT]
+sbenchLog = '$LOGDIR/benchmarkresultfile'
+smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}.log'
+
+[PARAMTRIANG]
+sParametrisation = '%{spredirectory}/sq_bench.prm'
+sMesh = '%{spredirectory}/sq_bench.tri'
+
+[CC-DISCRETISATION]
+NLMAX = $MGLEVEL
+iequation = $DISCRETISATION_IEQUATION
+RE = $DISCRETISATION_RE
+ielementType = $DISCRETISATION_IELEMENTTYPE
+iUpwind = $DISCRETISATION_IUPWIND
+dUpsam = $DISCRETISATION_DUPSAM
+
+ctypeInitialSolution = $DISCRETISATION_CTYPEINITIALSOLUTION
+iinitialSolutionlevel = $DISCRETISATION_IINITIALSOLUTIONLEVEL
+sinitialSolutionFilename = '$DISCRETISATION_SINITIALSOLUTIONFILENAME'
+ielementTypeInitialSolution = $DISCRETISATION_IELEMENTTYPEINITIALSOLUTION
+cwriteFinalSolution = $DISCRETISATION_CWRITEFINALSOLUTION
+swriteSolutionFilename = '$POSTPROCESSING_SWRITESOLUTIONFILENAME'
+
+iwriteSolDeltaSteps = 1000
+dwriteSolDeltaTime = 0.1
+
+[TIME-DISCRETISATION]
+itimedependence = $TIMEDISCRETISATION_ITIMEDEPENDENCE
+niterations = $TIMEDISCRETISATION_NITERATIONS
+dtimeInit = $TIMEDISCRETISATION_DTIMEINIT
+dtimeMax = $TIMEDISCRETISATION_DTIMEMAX
+dtimeStep = $TIMEDISCRETISATION_DTIMESTEP
+dtimeStepTheta = $TIMEDISCRETISATION_DTIMESTEPTHETA
+
+[CC-POSTPROCESSING]
+ioutputUCD = $POSTPROCESSING_IOUTPUTUCD
+sfilenameUCD = '$POSTPROCESSING_SFILENAMEUCD'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_lv%{CC-DISCRETISATION.NLMAX}'
+dtimeDifferenceUCD = $POSTPROCESSING_DTIMEDIFFERENCEUCD
+icalcBodyForces = $POSTPROCESSING_ICALCBODYFORCES
+iwriteBodyForces = $POSTPROCESSING_IWRITEBODYFORCES
+dbdForcesCoeff1 = $POSTPROCESSING_DBDFORCESCOEFF1
+dbdForcesCoeff2 = $POSTPROCESSING_DBDFORCESCOEFF2
+ibodyForcesFormulation = $POSTPROCESSING_IBODYFORCESFORMULATION
+cevaluatePointValues(3) =
+  0.1499999 0.199999 3 0
+  0.2500001 0.199999 3 0
+  0.4999999 0.199999 2 0
+iwritePointValues = $POSTPROCESSING_IWRITEPOINTVALUES
+sfilenamePointValues = '$POSTPROCESSING_SFILENAMEPOINTVALUES'
+
+[BDEXPRESSIONS]
+bdExpressions(3) =
+  'Dirichlet0'     0    0.0
+  'Dirichlet1'     0    1.0
+  'ParProfile'     2    $BDR_PARPROFILEMAX
+
+[CC2D-NONLINEAR]
+itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
+depsD              = $NONLINEAR_DEPSD
+depsDiv            = $NONLINEAR_DEPSDIV
+
+[CC-LINEARSOLVER]
+ismootherType = $LINEARSOLVER_ISMOOTHERTYPE
+icoarseGridSolverType = $LINEARSOLVER_ICOARSEGRIDSOLVERTYPE
+
+[CC-SMOOTHER]
+domega             = $SMOOTHER_DOMEGA
