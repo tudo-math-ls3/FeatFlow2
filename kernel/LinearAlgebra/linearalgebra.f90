@@ -999,15 +999,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1046,15 +1058,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1093,15 +1117,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1140,15 +1176,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1187,15 +1235,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1234,15 +1294,29 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
+      !$omp end simd
+#else
+      do i = 1, n
+        Iy(i) = int(Ix(i),I8)
+      end do
+#endif
 
     end if
 
@@ -1281,15 +1355,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1328,15 +1414,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1375,15 +1473,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1422,15 +1532,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1469,15 +1591,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1516,15 +1650,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1563,15 +1709,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1610,15 +1768,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1657,15 +1827,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1704,15 +1886,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1750,15 +1944,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Lx)
         Ly(i) = Lx(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Ly(i) = Lx(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -1796,15 +2002,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Sx)
         Sy(i) = Sx(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Sy(i) = Sx(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -4840,15 +5058,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -4881,15 +5111,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -4922,15 +5164,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -4963,15 +5217,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5484,15 +5750,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5528,15 +5806,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5572,15 +5862,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5616,15 +5918,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Ix(i) = ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5660,15 +5974,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Lx)
         Lx(i) = lvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Lx(i) = lvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -5704,15 +6030,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, size(Sx)
         Sx(i) = svalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd
+#endif
       do i = 1, n
         Sx(i) = svalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     end if
 
@@ -7418,16 +7756,28 @@ contains
     res = 0.0_QP
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:res)
+#endif
       do i = 1, size(Qx)
         res = res + Qx(i)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
       !res = QDOT(size(Qx),Qx,1,Qy,1)
     else
 
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:res)
+#endif
       do i = 1, n
         res = res + Qx(i)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
       !res = QDOT(n,Qx,1,Qy,1)
     end if
@@ -7839,31 +8189,55 @@ contains
     select case (cnorm)
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + abs(Fx(i)-Fy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) to has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + abs(Fx(i)-Fy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = resnorm / real(isize,SP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = sqrt(resnorm / real(isize,SP))
 
     case (LINALG_NORMMAX)
@@ -7940,42 +8314,78 @@ contains
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
       if (present(Dw)) then
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + Dw(i)*abs(Dx(i)-Dy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       else
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + abs(Dx(i)-Dy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       end if
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Dw)) then
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + Dw(i)*(Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       else
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       end if
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + abs(Dx(i)-Dy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = resnorm / real(isize,DP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = sqrt(resnorm / real(isize,DP))
 
     case (LINALG_NORMMAX)
@@ -8052,42 +8462,78 @@ contains
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
       if (present(Qw)) then
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + Qw(i)*abs(Qx(i)-Qy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       else
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + abs(Qx(i)-Qy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       end if
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Qw)) then
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + Qw(i)*(Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       else
+#ifdef HAS_OPENMP40
+        !$omp simd reduction(+:resnorm)
+#endif
         do i = 1, isize
           resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
+#ifdef HAS_OPENMP40
+        !$omp end simd
+#endif
       end if
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i)-Qy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = resnorm / real(isize,DP)
-
+      
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
+#ifdef HAS_OPENMP40
+      !$omp simd reduction(+:resnorm)
+#endif
       do i = 1, isize
         resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
       end do
+#ifdef HAS_OPENMP40
+      !$omp end simd
+#endif
       resnorm = sqrt(resnorm / real(isize,DP))
 
     case (LINALG_NORMMAX)
