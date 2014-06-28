@@ -67,8 +67,8 @@ module sse_base
   real(DP), parameter, public :: dcoraccel  = 0.0_DP
 
   ! Constants r1 and r2
-  complex(DP), parameter, public :: cr1 = sqrt( cimg*(dcoraccel-dtidalfreq)/dviscosity)
-  complex(DP), parameter, public :: cr2 = sqrt(-cimg*(dcoraccel+dtidalfreq)/dviscosity)
+  real(DP), parameter, public :: dr1 = sqrt( cimg*(dcoraccel-dtidalfreq)/dviscosity)
+  real(DP), parameter, public :: dr2 = sqrt(-cimg*(dcoraccel+dtidalfreq)/dviscosity)
 
 
 !</constantblock>

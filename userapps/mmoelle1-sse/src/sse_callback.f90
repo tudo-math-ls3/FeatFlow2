@@ -322,8 +322,8 @@ contains
     integer :: iel,ipoint
 
     ! Compute auxiliary quantities
-    caux1 = dgravaccel/(dviscosity*cr1**3)
-    caux2 = dgravaccel/(dviscosity*cr2**3)
+    caux1 = dgravaccel/(dviscosity*dr1**3)
+    caux2 = dgravaccel/(dviscosity*dr2**3)
 
     ! Loop over all elements
     do iel=1,size(Dcoefficients,3)
@@ -336,14 +336,14 @@ contains
 
         ! Compute coefficients c11 to c14
         c11 = caux1 *&
-            (dstress * sinh(cr1 * dh) /&
-            (cr1 * dviscosity * sinh(cr1 * dh) +&
-             dstress * cosh(cr2 * dh)) - cr1*dh)
+            (dstress * sinh(dr1 * dh) /&
+            (dr1 * dviscosity * sinh(dr1 * dh) +&
+             dstress * cosh(dr2 * dh)) - dr1*dh)
         c12 = cimg*c11
         c13 = caux2 *&
-            (dstress * sinh(cr2 * dh) /&
-            (cr2 * dviscosity * sinh(cr2 * dh) +&
-             dstress * cosh(cr2 * dh)) - cr2*dh)
+            (dstress * sinh(dr2 * dh) /&
+            (dr2 * dviscosity * sinh(dr2 * dh) +&
+             dstress * cosh(dr2 * dh)) - dr2*dh)
         c14 = -cimg*c13
         
         ! Compute real parts of the coefficients
@@ -442,8 +442,8 @@ contains
     integer :: iel,ipoint
 
     ! Compute auxiliary quantities
-    caux1 = dgravaccel/(dviscosity*cr1**3)
-    caux2 = dgravaccel/(dviscosity*cr2**3)
+    caux1 = dgravaccel/(dviscosity*dr1**3)
+    caux2 = dgravaccel/(dviscosity*dr2**3)
 
     ! Loop over all elements
     do iel=1,size(Dcoefficients,3)
@@ -456,14 +456,14 @@ contains
 
         ! Compute coefficients c11 to c14
         c11 =  caux1 *&
-            (dstress * sinh(cr1 * dh) /&
-            (cr1 * dviscosity * sinh(cr1 * dh) +&
-            dstress * cosh(cr2 * dh)) - cr1*dh)
+            (dstress * sinh(dr1 * dh) /&
+            (dr1 * dviscosity * sinh(dr1 * dh) +&
+            dstress * cosh(dr2 * dh)) - dr1*dh)
         c12 = cimg*c11
         c13 =  caux2 *&
-            (dstress * sinh(cr2 * dh) /&
-            (cr2 * dviscosity * sinh(cr2 * dh) +&
-            dstress * cosh(cr2 * dh)) - cr2*dh)
+            (dstress * sinh(dr2 * dh) /&
+            (dr2 * dviscosity * sinh(dr2 * dh) +&
+            dstress * cosh(dr2 * dh)) - dr2*dh)
         c14 = -cimg*c13
 
         ! Compute imaginary parts of the coefficients
@@ -1305,8 +1305,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1320,22 +1320,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -1351,22 +1351,22 @@ contains
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -1458,8 +1458,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1473,22 +1473,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
@@ -1504,22 +1504,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
@@ -1709,8 +1709,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -1724,22 +1724,22 @@ contains
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -1755,22 +1755,22 @@ contains
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -1861,8 +1861,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -1877,22 +1877,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
@@ -1908,22 +1908,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
@@ -2374,8 +2374,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -2389,22 +2389,22 @@ contains
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -2420,22 +2420,22 @@ contains
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = real(cc)
       end do
@@ -2526,8 +2526,8 @@ contains
 
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cbeta,cc,cc1,cc2,cr1,cr2
-  real(DP) :: dh
+  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
+  real(DP) :: dbeta,dh
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -2542,22 +2542,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
@@ -2573,22 +2573,22 @@ contains
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
-        cbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*cbeta*sinh(cbeta*dh) + dstress*cosh(cbeta*dh)
+        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
         calpha = dstress/calpha
 
         cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/cbeta)*sinh(cbeta*dh))
+        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
         cc     = -dtidalfreq**2/cc
 
-        cr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        cr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
+        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
 
-        cc1    = cr2*exp(cr2*dLength)/(cr2*exp(cr2*dLength)-cr1*exp(cr1*dLength))
+        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
         cc2    = 1.0_DP-cc1
 
-        cc     = cc1*cr1*cr1*cr1*exp(cr1*Dpoints(1,ipoint,iel))+&
-                 cc2*cr2*cr2*cr2*exp(cr2*Dpoints(1,ipoint,iel))
+        cc     = cc1*dr1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
+                 cc2*dr2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
 
         Dvalues(ipoint,iel) = aimag(cc)
       end do
