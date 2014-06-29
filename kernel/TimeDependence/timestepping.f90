@@ -111,8 +111,11 @@ module timestepping
   ! Identifier for one step scheme (e.g. Explicit Euler)
   integer, parameter, public :: TSCHM_ONESTEP        = 0
 
-  ! Identifier for Fractional Step scheme
+  ! Identifier for classic fractional-step theta scheme
   integer, parameter, public :: TSCHM_FRACTIONALSTEP = 1
+
+  ! Identifier for fractional-step theta scheme as proposed by Glowinski
+  integer, parameter, public :: TSCHM_FS_GLOWINSKI   = 2
 
 !</constantblock>
 
@@ -280,7 +283,7 @@ contains
 !</function>
 
     select case (rtstepScheme%ctimestepType)
-    case (TSCHM_FRACTIONALSTEP)
+    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI)
       iorder = 2
     case (TSCHM_ONESTEP)
       if (rtstepScheme%dthStep .eq. 0.5_DP) then
@@ -308,7 +311,7 @@ contains
 
 !<input>
   ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme
-  ! or TSCHM_FRACTIONALSTEP for Fractional Step.
+  ! or TSCHM_FRACTIONALSTEP/TSCHM_FS_GLOWINSKI for Fractional Step.
   integer, intent(in)    :: ctimestepType
 
   ! The initial simulational time.
@@ -325,7 +328,7 @@ contains
   !  =0.0: Forward Euler
   !  =1.0: Backward Euler
   !  =0.5: Crank Nicolson
-  ! Ignored for Fractional step. If not specified, dtheta=1.0 (Backward Euler)
+  ! Ignored for fractional-step. If not specified, dtheta=1.0 (Backward Euler)
   ! is used in one-step schemes.
   real(DP), intent(in), optional   :: dtheta
 !</input>
@@ -349,7 +352,7 @@ contains
     rtstepScheme%dtimeMacrostep   = dtime
     rtstepScheme%dtlaststep       = 0.0_DP
 
-    if (ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
+    if (ctimestepType .eq. TSCHM_ONESTEP) then
 
       rtstepScheme%ctimestepType    = TSCHM_ONESTEP
 
@@ -361,14 +364,14 @@ contains
       rtstepScheme%dtheta           = dtheta1
       rtstepScheme%dthStep          = dtstep * dtheta1
 
-    else
+    else if (ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
 
       rtstepScheme%ctimestepType    = TSCHM_FRACTIONALSTEP
 
-      ! The FS-scheme has 3 substeps.
+      ! The classic FS-theta scheme consists of 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
-      ! The FS Theta-Scheme uses by theory 4 parameters:
+      ! ... and uses by theory 4 parameters:
       !
       !   Theta   = 1 - sqrt(2) / 2
       !   Theta`  = 1 - 2 * Theta
@@ -387,6 +390,50 @@ contains
       rtstepScheme%dthetaPrime      = dthetp1
       rtstepScheme%dalpha           = dalpha
       rtstepScheme%dbeta            = dbeta
+
+    else if (ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+
+      rtstepScheme%ctimestepType    = TSCHM_FS_GLOWINSKI
+
+      ! The new FS-theta scheme as proposed in
+      !  @InBook{Glowinski2003,
+      !     author    = {Roland Glowinski},
+      !     title     = {Numerical Methods for Fluids, Part 3. Finite Element Methods for Incompressible Viscous Flow},
+      !     publisher = {North-Holland},
+      !     address   = {Amsterdam},
+      !     year      = {2003},
+      !     series    = {Handbook of Numerical Analysis, edited by Ciarlet, Philippe G. and Lions, Jacques Louis},
+      !     volume    = {9},
+      !     pages     = {3-1176},
+      !     note      = {ISBN 0-444-51224-1}
+      !  }
+      ! and analysed in
+      !  @ARTICLE{TurekRivkindHronGlowinski2006,
+      !     author       = {Turek, Stefan and Rivkind, Ludmilla and Hron, Jaroslav and Glowinski, Roland},
+      !     title        = {Numerical study of a modified time-stepping theta-scheme for incompressible flow simulations},
+      !     journal      = {J. Sci. Comput.},
+      !     year         = {2006},
+      !     volume       = {28},
+      !     number       = {2--3},
+      !     pages        = {533--547},
+      !     note         = {doi: 10.1007/s10915-006-9083-y},
+      !  }
+      ! consists of 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! ... and uses one mean parameter:
+      !
+      !   Theta   = 1 - sqrt(2) / 2
+      !
+      ! The parameter THETA in the DAT-file is ignored and replaced
+      ! by a hard-coded setting.
+      dtheta1 = 1.0_DP-sqrt(0.5_DP)
+      dthetp1 = 1.0_DP-2.0_DP*dtheta1
+
+      rtstepScheme%dtstep           = dtstep
+      rtstepScheme%dtheta           = dtheta1
+      rtstepScheme%dthetaPrime      = dthetp1
+      rtstepScheme%dthStep          = dtstep * dtheta1
 
     end if
 
@@ -432,7 +479,7 @@ contains
     ! Set the new step length
     rtstepScheme%dtstepFixed        = dtstep
 
-    if (rtstepScheme%ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
+    if (rtstepScheme%ctimestepType .eq. TSCHM_ONESTEP) then
       ! Standard time stepping scheme.
       rtstepScheme%nsubsteps        = 1
 
@@ -448,12 +495,12 @@ contains
       rtstepScheme%dweightOldRHS    = dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightStationaryRHS = dtstep
 
-    else
+    else if (rtstepScheme%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
 
-      ! In case of Fractional step, we have to modify the length of the
+      ! In case of fractional-step, we have to modify the length of the
       ! current time step according to the substep:
       !
-      ! For fractional step the handling of the time step size dtstep
+      ! For fractional-step the handling of the time step size dtstep
       ! is slightly different than for a 1-step scheme.
       ! There we are orienting on the length of the macrostep of
       ! step length 3*dtstep and break up that into three different
@@ -491,6 +538,52 @@ contains
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dthetp1
 
       end if
+
+    else if (rtstepScheme%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+
+      dtheta1 = rtstepScheme%dtheta
+      dthetp1 = rtstepScheme%dthetaPrime
+
+      ! See page 6 of
+      !  @ARTICLE{TurekRivkindHronGlowinski2006,
+      !     author       = {Turek, S. and Rivkind, L. and Hron, J. and Glowinski, R.},
+      !     title        = {Numerical study of a modified time-stepping theta-scheme for incompressible flow simulations},
+      !     journal      = {J. Sci. Comput.},
+      !     year         = {2006},
+      !     volume       = {28},
+      !     number       = {2--3},
+      !     pages        = {533--547},
+      !     note         = {doi: 10.1007/s10915-006-9083-y},
+      !  }
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtstep               =  3.0_DP * dtstep * dtheta1
+
+        rtstepScheme%dweightMatrixLHS     =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightMatrixRHS     =  SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightNewRHS        =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightOldRHS        =  0.0_DP
+        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
+
+      case (2)
+        rtstepScheme%dtstep               =  3.0_DP * dtstep * dthetp1
+
+        ! no system to be solved
+        rtstepScheme%dweightMatrixLHS     =  1.0_DP ! SYS_MAXREAL_DP
+        rtstepScheme%dweightMatrixRHS     =  0.0_DP ! SYS_MAXREAL_DP
+        rtstepScheme%dweightNewRHS        =  0.0_DP ! SYS_MAXREAL_DP
+        rtstepScheme%dweightOldRHS        =  0.0_DP ! SYS_MAXREAL_DP
+        rtstepScheme%dweightStationaryRHS = 0.0_DP !SYS_MAXREAL_DP
+
+      case (3)
+        rtstepScheme%dtstep               =  3.0_DP * dtstep * dtheta1
+
+        rtstepScheme%dweightMatrixLHS     =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightMatrixRHS     =  SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightNewRHS        =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightOldRHS        =  0.0_DP
+        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
+      end select
 
     end if
 

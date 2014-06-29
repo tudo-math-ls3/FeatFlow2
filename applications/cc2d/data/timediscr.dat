@@ -41,7 +41,7 @@ dminTimeDerivative = 0.00001              # EPSNS
 # ----------------------------------------------------------------------
 
 # Time-stepping scheme (IFRSTP);
-# 0=one step scheme, 1=fractional step
+# 0=one step scheme, 1=classic fractional step theta, 2=Glowinski new fractional step theta
 
 itimeStepScheme = 0                       # IFRSTP
 
