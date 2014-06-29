@@ -667,12 +667,26 @@ contains
 
       ! With the general theta scheme, the pressure solution (being treated fully
       ! implicitly, as opposed to the velocity variable) lives between the points in time
-      ! where the velocity solution is calculated. Take an appropriate mean in order to
-      ! have both variables live at a common point in time (mandatory for subsequent
-      ! calculations like lift and drag calculation) and interpolate *not* the pressure
-      ! variable, but the velocity variable. Because only for the latter do we always have
-      ! a start solution and as such can use it in time step 1 for the first interpolation
-      ! step.
+      ! where the velocity solution is calculated. See e.g. page 750 of paper
+      !    @article{Rang2008747,
+      !       author  = "J. Rang",
+      !       title   = "Pressure corrected implicit $\theta$-schemes for  %!" fix compiler
+      !                  the incompressible Navier--Stokes equations",     %!" warnings
+      !       journal = "Applied Mathematics and Computation",
+      !       volume  = "201",
+      !       number  = "1--2",
+      !       pages   = "747--761",
+      !       year    = "2008",
+      !       issn    = "0096-3003",
+      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
+      !       url     = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+      !       note    = "",
+      !    }
+      ! for a proof. Take an appropriate mean in order to have both variables live at a
+      ! common point in time (mandatory for subsequent calculations like lift and drag
+      ! calculation) and interpolate *not* the pressure variable, but the velocity
+      ! variable. Because only for the latter do we always have a start solution and as
+      ! such can use it in time step 1 for the first interpolation step.
       else
         dfactor = rtimestepping%dtheta
         dtimeInt = (1.0_DP-dfactor)*dtimeOld + dfactor*dtimeNew
@@ -687,18 +701,34 @@ contains
       end if
 
     else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
-      ! For the fractional-step theta scheme, it is yet unclear at which exact points in
-      ! time the pressure solution (being treated fully implicitly, as opposed to the
-      ! velocity variable) lives. Pressure and velocity do definitely not live in the same
-      ! points in time. That is easily determined experimantally (turn on
-      ! ierrorAnalysisTimeSpace in postprocessing.dat and compare respective L2 errors for
-      ! a sequence of time step). As a result, pressure approximation is currently only of
-      ! assymptotically first order with fractional-step theta scheme along with second
-      ! order approximation of the velocity variable.
-      ! Best experimental order of convergence is achieved by the interpolation choice:
-      ! alpha, beta, alpha. It leads to second order approximation of the pressure
-      ! variable for larger time step sizes which then drop to first order with
-      ! diminishing time step sizes.
+      ! For the fractional-step theta scheme, the paper
+      !    @article{Rang2008747,
+      !       author  = "J. Rang",
+      !       title   = "Pressure corrected implicit $\theta$-schemes for  %!" fix compiler
+      !                  the incompressible Navier--Stokes equations",     %!" warnings
+      !       journal = "Applied Mathematics and Computation",
+      !       volume  = "201",
+      !       number  = "1--2",
+      !       pages   = "747--761",
+      !       year    = "2008",
+      !       issn    = "0096-3003",
+      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
+      !       url     = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+      !       note    = "",
+      !    }
+      ! proves on page 751 that the pressure solution (being treated fully implicitly, as
+      ! opposed to the velocity variable) lives in three distinct points in time:
+      !   substep 1:   t^{n} + alpha theta k                    = t^{n} + (4 theta - 1) k
+      !   substep 2:   t^{n} + theta k + beta theta' k          = t^{n} + (5 theta - 1) k
+      !   substep 3:   t^{n} + (theta+theta') k + alpha theta k = t^{n} + 3 theta k
+      ! So, again pressure and velocity do definitely not live in the same point in time.
+      ! Moreover, the same paper proves that the fractional-step theta scheme suffers from
+      ! order reduction for stiff ODEs (Lemma 5.2) and due to that the pressure is only
+      ! approximated with first (!) order accuracy along with second order approximation
+      ! of the velocity variable. That can also be easily determined experimantally (turn
+      ! on ierrorAnalysisTimeSpace in postprocessing.dat and compare respective L2 errors
+      ! for a sequence of time steps for a right hand side chosen according to an
+      ! analytic, known solution).
       ! Again, take an appropriate mean in order to have both variables live at a common
       ! point in time (mandatory for subsequent calculations like lift and drag
       ! calculation) and interpolate *not* the pressure variable, but the velocity
@@ -711,13 +741,13 @@ contains
       !        still in the 3rd substep, the counter points already to the first substep of
       !        the next macro time step.)
       case (1)  ! 1st substep
-        dfactor = rtimestepping%dalpha
+        dfactor = 4.0_DP * rtimestepping%dtheta - 1.0_DP
 
       case (2)  ! 2nd substep
-        dfactor = rtimestepping%dbeta
+        dfactor = 5.0_DP * rtimestepping%dtheta - 1.0_DP
 
       case (3)  ! 3rd substep
-        dfactor = rtimestepping%dalpha
+        dfactor = 3.0_DP * rtimestepping%dtheta
 
       end select
 
