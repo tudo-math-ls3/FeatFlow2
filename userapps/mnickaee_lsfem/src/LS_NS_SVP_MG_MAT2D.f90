@@ -3489,8 +3489,8 @@ contains
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
       //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' )
-      call output_line ('--------------------------------------&
-      ----------------------------------------------------')
+      call output_line ('--------------------------------------'//&
+          '----------------------------------------------------')
     call output_line (sys_siL(inl, 5) //'  '&
     //trim(sys_sdEL(Dres_rel(1),6))//'  '&
     //trim(sys_sdEL(Dres_rel(2),6))//'  '&

@@ -479,7 +479,7 @@ contains
     
   !</subroutine>
    ! A simple circle
-    Dcoefficients (1,:,:) = SQRT( (Dpoints(1,:,:) - 0.1_DP)**2 + (Dpoints(2,:,:) - 0.1_DP)**2 ) - 0.1_DP
+    Dcoefficients (1,:,:) = sqrt( (Dpoints(1,:,:) - 0.1_DP)**2 + (Dpoints(2,:,:) - 0.1_DP)**2 ) - 0.1_DP
    
 !   !  The Osher-Fedkiw favorite star :D
 !   Dcoefficients (1,:,:) = DSQRT(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)- &
