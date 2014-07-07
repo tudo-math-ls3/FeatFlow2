@@ -158,6 +158,10 @@ case ${id} in
 		    # Intel Ivybridge
 		    cpu="ivybridge"
 		    ;;
+                280134364)
+                    # Intel Haswell
+                    cpu="haswell"
+                    ;;
 		*)
 		    # If run on a hackingtosh or on a new CPU which
 		    # has not been included in the above list yet let
