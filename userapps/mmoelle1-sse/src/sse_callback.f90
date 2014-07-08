@@ -318,7 +318,7 @@ contains
 
     ! local variables
     complex(DP) :: caux1,caux2,c11,c12,c13,c14
-    real(DP) :: dh
+    real(DP) :: dh,ds
     integer :: iel,ipoint
 
     ! Compute auxiliary quantities
@@ -334,16 +334,19 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients c11 to c14
         c11 = caux1 *&
-            (dstress * sinh(dr1 * dh) /&
+            (ds * sinh(dr1 * dh) /&
             (dr1 * dviscosity * sinh(dr1 * dh) +&
-             dstress * cosh(dr2 * dh)) - dr1*dh)
+             ds * cosh(dr2 * dh)) - dr1*dh)
         c12 = cimg*c11
         c13 = caux2 *&
-            (dstress * sinh(dr2 * dh) /&
+            (ds * sinh(dr2 * dh) /&
             (dr2 * dviscosity * sinh(dr2 * dh) +&
-             dstress * cosh(dr2 * dh)) - dr2*dh)
+             ds * cosh(dr2 * dh)) - dr2*dh)
         c14 = -cimg*c13
         
         ! Compute real parts of the coefficients
@@ -438,7 +441,7 @@ contains
 
     ! local variables
     complex(DP) :: caux1,caux2,c11,c12,c13,c14
-    real(DP) :: dh
+    real(DP) :: dh,ds
     integer :: iel,ipoint
 
     ! Compute auxiliary quantities
@@ -454,16 +457,19 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients c11 to c14
         c11 =  caux1 *&
-            (dstress * sinh(dr1 * dh) /&
+            (ds * sinh(dr1 * dh) /&
             (dr1 * dviscosity * sinh(dr1 * dh) +&
-            dstress * cosh(dr2 * dh)) - dr1*dh)
+            ds * cosh(dr2 * dh)) - dr1*dh)
         c12 = cimg*c11
         c13 =  caux2 *&
-            (dstress * sinh(dr2 * dh) /&
+            (ds * sinh(dr2 * dh) /&
             (dr2 * dviscosity * sinh(dr2 * dh) +&
-            dstress * cosh(dr2 * dh)) - dr2*dh)
+            ds * cosh(dr2 * dh)) - dr2*dh)
         c14 = -cimg*c13
 
         ! Compute imaginary parts of the coefficients
@@ -1306,7 +1312,7 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1315,14 +1321,17 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1349,11 +1358,14 @@ contains
         ! Compute bottom profile (assumed to be constant !!!)
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
+        ! Compute bottom stress (assumed to be constant !!!)
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1459,7 +1471,7 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1471,11 +1483,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1502,11 +1517,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1710,7 +1728,7 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -1719,14 +1737,17 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1752,12 +1773,15 @@ contains
         
         ! Compute bottom profile (assumed to be constant !!!)
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress (assumed to be constant !!!)
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1862,11 +1886,10 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
-
   case (DER_FUNC)
 
     do iel=1,size(Dpoints,3)
@@ -1875,11 +1898,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -1906,11 +1932,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -2375,7 +2404,7 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -2384,14 +2413,17 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -2417,12 +2449,15 @@ contains
         
         ! Compute bottom profile (assumed to be constant !!!)
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress (assumed to be constant !!!)
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -2527,11 +2562,10 @@ contains
   ! local variables
   real(DP), parameter :: dLength = 1E5_DP
   complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh
+  real(DP) :: dbeta,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
-
   case (DER_FUNC)
 
     do iel=1,size(Dpoints,3)
@@ -2540,11 +2574,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
@@ -2571,11 +2608,14 @@ contains
         ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
         ! Compute coefficients
         cLb    = 1.0E100_DP
         dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + dstress*cosh(dbeta*dh)
-        calpha = dstress/calpha
+        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
+        calpha = ds/calpha
 
         cb     = -1.0_DP/cLb
         cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))

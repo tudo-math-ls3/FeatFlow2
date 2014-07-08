@@ -12,8 +12,12 @@
 LC_ALL=C
 export LC_ALL
 
+# Admissible values for CASE_xxx are:
+# ALEX, WINANT, WALTERS, MARCHI
+
 ../../bin/configure \
-	--appname=sse \
-	--programfile=src/sse.f90 \
-        --srclist_app="`ls src/*.f90`" \
-	"$@"
+    --appname=sse \
+    --programfile=src/sse.f90 \
+    --srclist_app="`ls src/*.f90`" \
+    --apponlyflags="-DCASE_ALEX" \
+    "$@"
