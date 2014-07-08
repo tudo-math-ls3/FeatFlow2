@@ -1000,25 +1000,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1059,25 +1059,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1118,25 +1118,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1177,25 +1177,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1236,25 +1236,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1295,23 +1295,23 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end simd
+      !$omp end parallel do simd
 #else
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
@@ -1356,25 +1356,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1415,25 +1415,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1474,25 +1474,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1533,25 +1533,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1592,25 +1592,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1651,25 +1651,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1710,25 +1710,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = Ix(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1769,25 +1769,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1828,25 +1828,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1887,25 +1887,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -1945,25 +1945,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Lx) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Lx)
         Ly(i) = Lx(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Ly(i) = Lx(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -2003,25 +2003,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Sx) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Sx)
         Sy(i) = Sx(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Sy(i) = Sx(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5059,25 +5059,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5112,25 +5112,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5165,25 +5165,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5218,25 +5218,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5751,25 +5751,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5807,25 +5807,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5863,25 +5863,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5919,25 +5919,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Ix(i) = ivalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -5975,25 +5975,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Lx) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Lx)
         Lx(i) = lvalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Lx(i) = lvalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -6031,25 +6031,25 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(size(Sx) > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, size(Sx)
         Sx(i) = svalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
 #endif
       do i = 1, n
         Sx(i) = svalue
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
     end if
@@ -7757,26 +7757,26 @@ contains
     if (.not. present(n)) then
 
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:res)
+      !$omp parallel do simd if(size(Qx) > lalg_perfconfig%NITEMMIN_OMP) reduction(+:res)
 #endif
       do i = 1, size(Qx)
         res = res + Qx(i)*Qy(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
       !res = QDOT(size(Qx),Qx,1,Qy,1)
     else
 
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:res)
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP) reduction(+:res)
 #endif
       do i = 1, n
         res = res + Qx(i)*Qy(i)
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
 
       !res = QDOT(n,Qx,1,Qy,1)
@@ -8144,7 +8144,7 @@ contains
 
 !<function>
 
-  real(SP) function lalg_errorNormSP (Fx,Fy,cnorm,iposMax,n) result(resnorm)
+  real(SP) function lalg_errorNormSP (Fx,Fy,cnorm,iposMax,n,Fw) result(resnorm)
 
 !<description>
   ! Calculates the norm of two double precision vectors, !!Fx-Fy!!
@@ -8161,6 +8161,8 @@ contains
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
+  ! OPTIONAL: Weighting vector
+  real(DP), dimension(:), intent(in), optional :: Fw
 !</input>
 
 !<output>
@@ -8189,40 +8191,64 @@ contains
     select case (cnorm)
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
+      if (present(Fw)) then
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
-      do i = 1, isize
-        resnorm = resnorm + abs(Fx(i)-Fy(i))
-      end do
+        do i = 1, isize
+          resnorm = resnorm + Fw(i)*abs(Fx(i)-Fy(i))
+        end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+        !$omp end parallel do simd
 #endif
+      else
+#ifdef HAS_OPENMP40
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
+#endif
+        do i = 1, isize
+          resnorm = resnorm + abs(Fx(i)-Fy(i))
+        end do
+#ifdef HAS_OPENMP40
+        !$omp end parallel do simd
+#endif
+      end if
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
+      if (present(Fw)) then
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
-      do i = 1, isize
-        resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
-      end do
+        do i = 1, isize
+          resnorm = resnorm + Fw(i)*(Fx(i)-Fy(i))*(Fx(i)-Fy(i))
+        end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+        !$omp end parallel do simd
 #endif
+      else
+#ifdef HAS_OPENMP40
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
+#endif
+        do i = 1, isize
+          resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
+        end do
+#ifdef HAS_OPENMP40
+        !$omp end parallel do simd
+#endif
+      end if
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) to has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + abs(Fx(i)-Fy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = resnorm / real(isize,SP)
 
@@ -8230,13 +8256,13 @@ contains
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = sqrt(resnorm / real(isize,SP))
 
@@ -8315,23 +8341,23 @@ contains
       ! L1-norm: sum all entries
       if (present(Dw)) then
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + Dw(i)*abs(Dx(i)-Dy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       else
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + abs(Dx(i)-Dy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       end if
 
@@ -8339,23 +8365,23 @@ contains
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Dw)) then
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + Dw(i)*(Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       else
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       end if
       resnorm = sqrt(resnorm)
@@ -8364,13 +8390,13 @@ contains
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + abs(Dx(i)-Dy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = resnorm / real(isize,DP)
 
@@ -8378,13 +8404,13 @@ contains
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = sqrt(resnorm / real(isize,DP))
 
@@ -8463,23 +8489,23 @@ contains
       ! L1-norm: sum all entries
       if (present(Qw)) then
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + Qw(i)*abs(Qx(i)-Qy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       else
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + abs(Qx(i)-Qy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       end if
 
@@ -8487,23 +8513,23 @@ contains
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Qw)) then
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + Qw(i)*(Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       else
 #ifdef HAS_OPENMP40
-        !$omp simd reduction(+:resnorm)
+        !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
         do i = 1, isize
           resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
 #ifdef HAS_OPENMP40
-        !$omp end simd
+        !$omp end parallel do simd
 #endif
       end if
       resnorm = sqrt(resnorm)
@@ -8512,13 +8538,13 @@ contains
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i)-Qy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = resnorm / real(isize,DP)
       
@@ -8526,13 +8552,13 @@ contains
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
 #ifdef HAS_OPENMP40
-      !$omp simd reduction(+:resnorm)
+      !$omp parallel do simd if(isize > lalg_perfconfig%NITEMMIN_OMP) reduction(+:resnorm)
 #endif
       do i = 1, isize
         resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
       end do
 #ifdef HAS_OPENMP40
-      !$omp end simd
+      !$omp end parallel do simd
 #endif
       resnorm = sqrt(resnorm / real(isize,DP))
 
@@ -8585,9 +8611,15 @@ contains
   ! local variable
   integer :: i
 
+#ifdef HAS_OPENMP40
+    !$omp parallel do simd if(size(Itr) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1, size(Itr)
       Fd(i) = Fx(Itr(i))
     end do
+#ifdef HAS_OPENMP40
+    !$omp end parallel do simd
+#endif
 
   end subroutine
 
@@ -8623,9 +8655,15 @@ contains
   ! local variable
   integer :: i
 
+#ifdef HAS_OPENMP40
+    !$omp parallel do simd if(size(Itr) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1, size(Itr)
       Dd(i) = Dx(Itr(i))
     end do
+#ifdef HAS_OPENMP40
+    !$omp end parallel do simd
+#endif
 
   end subroutine
 
@@ -8661,9 +8699,15 @@ contains
   ! local variable
   integer :: i
 
+#ifdef HAS_OPENMP40
+    !$omp parallel do simd if(size(Itr) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1, size(Itr)
       Qd(i) = Qx(Itr(i))
     end do
+#ifdef HAS_OPENMP40
+    !$omp end parallel do simd
+#endif
 
   end subroutine
 
@@ -8697,9 +8741,15 @@ contains
   ! local variable
   integer :: i
 
+#ifdef HAS_OPENMP40
+    !$omp parallel do simd if(size(Itr) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1, size(Itr)
       Id(i) = Ix(Itr(i))
     end do
+#ifdef HAS_OPENMP40
+    !$omp end parallel do simd
+#endif
 
   end subroutine
 
@@ -8733,9 +8783,15 @@ contains
   ! local variable
   integer :: i
 
+#ifdef HAS_OPENMP40
+    !$omp parallel do simd if(size(Itr) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1, size(Itr)
       Id(i) = Ix(Itr(i))
     end do
+#ifdef HAS_OPENMP40
+    !$omp end parallel do simd
+#endif
 
   end subroutine
 
@@ -8878,15 +8934,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Fx) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Fx)
         Fx(i) = Fx(i) + fvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Fx(i) = Fx(i) + fvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -8924,15 +8992,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Dx) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Dx)
         Dx(i) = Dx(i) + dvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Dx(i) = Dx(i) + dvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -8971,15 +9051,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Qx) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Qx)
         Qx(i) = Qx(i) + qvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Qx(i) = Qx(i) + qvalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9118,13 +9210,29 @@ contains
     integer :: i
 
     if (.not. present(n)) then
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     else
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     end if
 
   end subroutine
@@ -9157,13 +9265,29 @@ contains
     integer :: i
 
     if (.not. present(n)) then
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     else
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     end if
 
   end subroutine
@@ -9196,13 +9320,29 @@ contains
     integer :: i
 
     if (.not. present(n)) then
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     else
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     end if
 
   end subroutine
@@ -9235,13 +9375,29 @@ contains
     integer :: i
 
     if (.not. present(n)) then
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Ix) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     else
+
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
+
     end if
 
   end subroutine
@@ -9283,15 +9439,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Fy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Fy,1)
         Fy(i) = sc*Fx(i)*Fy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Fy(i) = sc*Fx(i)*Fy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9334,15 +9502,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Dy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Dy,1)
         Dy(i) = dc*Dx(i)*Dy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Dy(i) = dc*Dx(i)*Dy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9385,15 +9565,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Qy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Qy,1)
         Qy(i) = qc*Qx(i)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Qy(i) = qc*Qx(i)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9436,15 +9628,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Dy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Dy,1)
         Dy(i) = dc*Fx(i)*Dy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Dy(i) = dc*Fx(i)*Dy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9487,15 +9691,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Qy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Qy,1)
         Qy(i) = qc*real(Fx(i),QP)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Qy(i) = qc*real(Fx(i),QP)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9538,15 +9754,27 @@ contains
 
     if (.not. present(n)) then
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(size(Qy) > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, size(Qy,1)
         Qy(i) = qc*real(Dx(i),QP)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     else
 
+#ifdef HAS_OPENMP40
+      !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
       do i = 1, n
         Qy(i) = qc*real(Dx(i),QP)*Qy(i)
       end do
+#ifdef HAS_OPENMP40
+      !$omp end parallel do simd
+#endif
 
     end if
 
@@ -9595,11 +9823,19 @@ contains
 
   ! code for increment not equal to 1
   nincx = n*incx
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = 1,nincx,incx
     qx(i) = qa*qx(i)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   return
 
   ! code for increment equal to 1
@@ -9610,7 +9846,11 @@ contains
   end do
   if( n .lt. 5 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,5
     qx(i) = qa*qx(i)
     qx(i + 1) = qa*qx(i + 1)
@@ -9618,7 +9858,11 @@ contains
     qx(i + 3) = qa*qx(i + 3)
     qx(i + 4) = qa*qx(i + 4)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine qscal
 
 ! ***************************************************************************
@@ -9680,7 +9924,11 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     qy(i) = qx(i)
     qy(i + 1) = qx(i + 1)
@@ -9690,7 +9938,11 @@ contains
     qy(i + 5) = qx(i + 5)
     qy(i + 6) = qx(i + 6)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine qcopy
 
 ! ***************************************************************************
@@ -9756,14 +10008,22 @@ contains
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,4
     qy(i) = qy(i) + qa*qx(i)
     qy(i + 1) = qy(i + 1) + qa*qx(i + 1)
     qy(i + 2) = qy(i + 2) + qa*qx(i + 2)
     qy(i + 3) = qy(i + 3) + qa*qx(i + 3)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine qaxpy
 
 ! ***************************************************************************
@@ -10017,7 +10277,11 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     dy(i) = real(sx(i),DP)
     dy(i + 1) = real(sx(i + 1),DP)
@@ -10027,7 +10291,11 @@ contains
     dy(i + 5) = real(sx(i + 5),DP)
     dy(i + 6) = real(sx(i + 6),DP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine sdcopy
 
 ! ***************************************************************************
@@ -10089,7 +10357,11 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     sy(i) = real(dx(i),SP)
     sy(i + 1) = real(dx(i + 1),SP)
@@ -10099,7 +10371,11 @@ contains
     sy(i + 5) = real(dx(i + 5),SP)
     sy(i + 6) = real(dx(i + 6),SP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
 end subroutine dscopy
 
 ! ***************************************************************************
@@ -10161,7 +10437,11 @@ end subroutine dscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     qy(i) = real(sx(i),QP)
     qy(i + 1) = real(sx(i + 1),QP)
@@ -10171,7 +10451,11 @@ end subroutine dscopy
     qy(i + 5) = real(sx(i + 5),QP)
     qy(i + 6) = real(sx(i + 6),QP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine sqcopy
 
 ! ***************************************************************************
@@ -10233,7 +10517,11 @@ end subroutine dscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     sy(i) = real(qx(i),SP)
     sy(i + 1) = real(qx(i + 1),SP)
@@ -10243,7 +10531,11 @@ end subroutine dscopy
     sy(i + 5) = real(qx(i + 5),SP)
     sy(i + 6) = real(qx(i + 6),SP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
 end subroutine qscopy
 
 ! ***************************************************************************
@@ -10305,7 +10597,11 @@ end subroutine qscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     qy(i) = real(dx(i),QP)
     qy(i + 1) = real(dx(i + 1),QP)
@@ -10315,7 +10611,11 @@ end subroutine qscopy
     qy(i + 5) = real(dx(i + 5),QP)
     qy(i + 6) = real(dx(i + 6),QP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine dqcopy
 
 ! ***************************************************************************
@@ -10377,7 +10677,11 @@ end subroutine qscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,7
     dy(i) = real(qx(i),DP)
     dy(i + 1) = real(qx(i + 1),DP)
@@ -10387,7 +10691,11 @@ end subroutine qscopy
     dy(i + 5) = real(qx(i + 5),DP)
     dy(i + 6) = real(qx(i + 6),DP)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine qdcopy
 
 ! ***************************************************************************
@@ -10453,14 +10761,22 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,4
     dy(i) = dy(i) + sa*sx(i)
     dy(i + 1) = dy(i + 1) + sa*sx(i + 1)
     dy(i + 2) = dy(i + 2) + sa*sx(i + 2)
     dy(i + 3) = dy(i + 3) + sa*sx(i + 3)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine sdaxpy
 
 ! ***************************************************************************
@@ -10526,14 +10842,22 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,4
     qy(i) = qy(i) + sa*sx(i)
     qy(i + 1) = qy(i + 1) + sa*sx(i + 1)
     qy(i + 2) = qy(i + 2) + sa*sx(i + 2)
     qy(i + 3) = qy(i + 3) + sa*sx(i + 3)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine sqaxpy
 
 ! ***************************************************************************
@@ -10599,14 +10923,22 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
   !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
   do i = mp1,n,4
     qy(i) = qy(i) + da*dx(i)
     qy(i + 1) = qy(i + 1) + da*dx(i + 1)
     qy(i + 2) = qy(i + 2) + da*dx(i + 2)
     qy(i + 3) = qy(i + 3) + da*dx(i + 3)
   end do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
   !$omp end parallel do
+#endif
   end subroutine dqaxpy
 
 ! ***************************************************************************
@@ -10660,7 +10992,11 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = mp1,n,5
       sx(i) = sa
       sx(i + 1) = sa
@@ -10668,15 +11004,27 @@ end subroutine qscopy
       sx(i + 3) = sa
       sx(i + 4) = sa
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1,nincx,incx
       sx(i) = sa
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   end if
 
   end subroutine sset
@@ -10732,7 +11080,11 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = mp1,n,5
       dx(i) = da
       dx(i + 1) = da
@@ -10740,15 +11092,27 @@ end subroutine qscopy
       dx(i + 3) = da
       dx(i + 4) = da
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1,nincx,incx
       dx(i) = da
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   end if
 
   end subroutine dset
@@ -10804,7 +11168,11 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = mp1,n,5
       qx(i) = qa
       qx(i + 1) = qa
@@ -10812,15 +11180,27 @@ end subroutine qscopy
       qx(i + 3) = qa
       qx(i + 4) = qa
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#ifdef HAS_OPENMP40
+  !$omp parallel do simd if(n > lalg_perfconfig%NITEMMIN_OMP)
+#else
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
+#endif
     do i = 1,nincx,incx
       qx(i) = qa
     end do
-    !$omp end parallel do
+#ifdef HAS_OPENMP40
+  !$omp end parallel do simd
+#else
+  !$omp end parallel do
+#endif
   end if
 
   end subroutine qset
