@@ -1934,13 +1934,13 @@ contains
 
   ! Output block for UCD output to VTK file
   type(t_ucdExport) :: rexport
-  character(len=SYS_STRLEN) :: sucddir
+  character(len=SYS_STRLEN) :: sucddir,sucdfile
 
   ! Error of FE function to reference function
   real(DP) :: derror
 
   ! Number of DOFs
-  integer :: i,ndof
+  integer :: i,ndof,iucdtype
 
   ! Method for calculating the gradient
   integer :: cgradType,cgradSubType
@@ -2095,24 +2095,55 @@ contains
 
 
     ! Start UCD export to VTK file:
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./ucd"
-    call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
-        rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
-        trim(sucddir)//"/sol_"//trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+    if (.not. sys_getenv_string("UCDDIR", sucddir))&
+        call parlst_getvalue_string(rparlist, '', 'SUCDDIR', sucddir, './ucd')
+    call parlst_getvalue_string(rparlist, '', 'UCDFILE', sucdfile, '')
+    call parlst_getvalue_int(rparlist, '', 'UCDTYPE', iucdtype, 0)
 
-    ! Add the solution and its (recovered) gradient to the UCD exporter
-    call ucd_addVectorByVertex(rexport, "u", UCD_VAR_STANDARD, &
-        rproblem%rvector%RvectorBlock(1))
-    call ucd_addVectorFieldByVertex(rexport, "grad u", UCD_VAR_STANDARD, &
-        (/p_rvectorDerivX,p_rvectorDerivY/))
-    call ucd_addVectorFieldByVertex(rexport, "grad u_x", UCD_VAR_STANDARD, &
-        (/rvectorBlockX%RvectorBlock(1),rvectorBlockX%RvectorBlock(2)/))
-    call ucd_addVectorFieldByVertex(rexport, "grad u_y", UCD_VAR_STANDARD, &
-        (/rvectorBlockY%RvectorBlock(1),rvectorBlockY%RvectorBlock(2)/))
+    if ((trim(adjustl(sucdfile)) .ne. '') .and.&
+        (iucdtype .ne. UCD_FORMAT_NONE)) then
 
-    ! Write the file to disc, that is it.
-    call ucd_write(rexport)
-    call ucd_release(rexport)
+      select case(iucdtype)
+      case(UCD_FORMAT_GMV)
+        call ucd_startGMV(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".gmv")
+      case(UCD_FORMAT_BGMV)
+        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case(UCD_FORMAT_AVS)
+        call ucd_startAVS(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case(UCD_FORMAT_VTK)
+        call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case default
+        call output_line("Invalid type of UCD output file..", &
+            OU_CLASS_ERROR,OU_MODE_STD,"sse_postprocessing")
+        call sys_halt()
+      end select
+
+      ! Add the solution and its (recovered) gradient to the UCD exporter
+      call ucd_addVectorByVertex(rexport, "u", UCD_VAR_STANDARD, &
+          rproblem%rvector%RvectorBlock(1))
+      call ucd_addVectorFieldByVertex(rexport, "grad u", UCD_VAR_STANDARD, &
+          (/p_rvectorDerivX,p_rvectorDerivY/))
+      call ucd_addVectorFieldByVertex(rexport, "grad u_x", UCD_VAR_STANDARD, &
+          (/rvectorBlockX%RvectorBlock(1),rvectorBlockX%RvectorBlock(2)/))
+      call ucd_addVectorFieldByVertex(rexport, "grad u_y", UCD_VAR_STANDARD, &
+          (/rvectorBlockY%RvectorBlock(1),rvectorBlockY%RvectorBlock(2)/))
+
+      ! Write the file to disc, that is it.
+      call ucd_write(rexport)
+      call ucd_release(rexport)
+    end if
 
     ! Clean temporal structures
     call lsysbl_releaseVector(rvectorBlock)

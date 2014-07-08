@@ -40,27 +40,41 @@ CONFIG = QUAD_Q1_POISSON_SCALAR
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug
 # purposes.
-disturbMeshFactor = 0.0
+DISTURBMESHFACTOR = 0.0
+
+# Directory for UCD output file
+UCDDIR = ./ucd
+
+# Prefix of the UCD output file
+UCDFILE = sol
+
+# Type of the UCD output file
+# =0: none
+# =1: ascii GMV
+# =2: AVS
+# =3: VTK
+# =4: binary GMV
+UCDTYPE = 0
 
 ################################################################################
 [MG-SOLVER]
 ################################################################################
 
 # Relative stopping criterion
-depsRel = 0e+0
+DEPSREL = 0e+0
 
 # Absolute stopping criterion
-depsAbs = 1e-9
+DEPSABS = 1e-9
 
 ################################################################################
 [COARSE-GRID-SOLVER]
 ################################################################################
 
 # Relative stopping criterion
-depsRel = 0e+0
+DEPSREL = 0e+0
 
 # Absolute stopping criterion
-depsAbs = 1e-12
+DEPSABS = 1e-12
 
 ################################################################################
 [TRIA_P1_POISSON_SCALAR]
