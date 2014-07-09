@@ -14,57 +14,68 @@
 \subsection{Model problem}
 The elliptic equation for sea surface elevation is given by
 \begin{alignat}{2}
--\nabla\cdot(A\nabla N)-i\omega N&=0  \quad && \text{in } \Omega,
+\nabla\cdot(A\nabla N)+i\omega N&=0  \quad && \text{in } \Omega,
 \label{eq:sse_scalar1}\\
 N&=A_{M_2} \quad && \text{on } \Gamma_D,
 \label{eq:sse_scalar2}\\
--(A\nabla N)\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N,
+(A\nabla N)\cdot\mathbf{n}&=0 \quad && \text{on } \Gamma_N,
 \label{eq:sse_scatar3}
 \end{alignat}
 where $\Gamma_D$ and $\Gamma_N$ denote the Dirichlet and Neumann boundary part and $A_{M_2}$ is the amplitude of sea surface elevation at the Dirichlet boundary. Both the sea surface elevation $N\in\mathbb{C}$ and the matrix
 $$
-A=-
+A=
 \begin{pmatrix}
 C_1 & C_2\\
 C_3 & C_4
 \end{pmatrix},\quad\text{where}\quad C_k\in\mathbb{C}, k=1,\dots,4
 $$
-consist of complex valued data. Here, the coefficients $C_1,\dots,C_4$ are complex valued functions of horizontal coordinates. Let us define
-\begin{align*}
-c_{11}&=\frac{g}{r_1^3A_\nu}\left[\frac{s \sinh r_1 h}{r_1 A_\nu \sinh r_1 h + s \cosh r_1 h}-r_1 h\right],\\
-c_{12}&=ic_{11},\\
-c_{13}&=\frac{g}{r_2^3A_\nu}\left[\frac{s \sinh r_2 h}{r_1 A_\nu \sinh r_2 h + s \cosh r_2 h}-r_2 h\right],\\
-c_{14}&=-ic_{13},
-\end{align*}
-where $i$ denotes the imaginary number, i.e. $i^2=-1$. Then, the auxiliary coefficients $C_1,\dots,C_4$ are defined as follows:
-\begin{align}
-C_1&=\frac{c_{11}+c_{13}}{2},\\
-C_2&=\frac{c_{12}+c_{14}}{2},\\
-C_3&=\frac{c_{11}-c_{13}}{2},\\
-C_4&=\frac{c_{12}-c_{14}}{2}.
-\end{align}
-The other parameters are given in the following table
+consist of complex values, where $i$ denotes the imaginary number, i.e. $i^2=-1$.
+
+Let us define the $z$-dependent function $C:\mathbb{C}\mapsto\mathbb{C}$ as
+\begin{equation}
+C(\alpha,z)=\frac{g}{\alpha^3A_v}\left[\frac{\alpha^2A_vz\sinh(\alpha h)-s\sinh(\alpha z)+\alpha z s \cosh(\alpha h)}{\alpha A_v\sinh(\alpha h)+s\cosh(\alpha h)}\right]
+\end{equation}
+and introduce the auxiliary real-valued parameters
+$$
+\alpha_1=\sqrt{i\frac{\omega+f}{A_\nu}},\qquad
+\alpha_2=\sqrt{i\frac{\omega-f}{A_\nu}}.
+$$
+Then the complex-valued coefficients $C_1,\dots,C_4$ are given by
+\begin{alignat}{4}
+C_1&=&\frac{C(\alpha_1,-h)+C(\alpha_2,-h)}{2},&& \qquad
+C_2&=&i\frac{C(\alpha_1,-h)-C(\alpha_2,-h)}{2},\\
+C_3&=&-i\frac{C(\alpha_1,-h)-C(\alpha_2,-h)}{2},&&\qquad
+C_4&=&\frac{C(\alpha_1,-h)+C(\alpha_2,-h)}{2}.
+\end{alignat}
+Note that $C_1=C_4$ and $C_2=-C_3$. The other parameters are given in the following table
 
 \begin{center}
-\begin{tabular}{|l|l|l|}
+\begin{tabular}{|l|l|l|l|}
 \hline
-notation & value & description\\
+Symbol & Value & Description & Units\\
 \hline
-$\omega$ & $1.4\times 10^{-4}$ &tidal frequency\\
-$g$ & 10 & gravitational acceleration\\
-$s$ & 0.049 & bottom stress\\
-$h$ & 10 & bottom profile\\
-$A_\nu$ & 0.012 & eddy viscosity\\
-$f$ & 0 & Coriolis acceleration (Earth rotation)\\
+$(x,y,z)$ & & Cartesian coordinates & $m$\\
+$t$ & & time & $s$\\
+$L$ & & length scale & $m$\\
+$H$ & & mean depth & $m$\\
+$h(x,y)$ & 10 & bed profile & $m$\\
+$\eta(x,y,t)$ & & sea surface elevation above $z=0$ & $m$\\
+$\mathbf{u}(x,y,z,t)$ & & velocity vector & $m s^{-1}$\\
+$f(x,y)$ & 0 & Coriolis acceleration (Earth rotation) & $s^{-1}$\\
+$g$ & 10 & gravitational acceleration & $ms^{-2}$\\
+$A_h(x,y)$ & & horizontal eddy viscosity & $m^2 s^{-1}$\\
+$A_\nu(x,y)$ & 0.012 & vertical eddy viscosity & $m^2 s^{-1}$\\
+$s(x,y)$ & 0.049 & bottom stress & $m s^{-1}$\\
+$A_{M_2}(x,y)$ & 1.0 & $M_2$ amplitude at seaward side & $m$\\
+$\omega$ & $1.4\times 10^{-4}$ &tidal frequency of $M_2$ tide & $s^{-1}$\\
 \hline
 \end{tabular}
 \end{center}
-Moreover, the auxiliary real-valued parameters $r_1=\sqrt{i\frac{f-\omega}{A_\nu}}$ and $r_2=\sqrt{-i\frac{f+\omega}{A_\nu}}$ are adopted.
 
 \subsection{Variational formulation}
 The variational formulation reads: find $N\in V_{A_{M_2}}$ such that
 \begin{equation}
-\int_\Omega(A\nabla N)\cdot\nabla \varphi- i\omega N \varphi\,\mathrm{d}\mathbf{x}=0\qquad \forall \varphi\in V_0,
+\int_\Omega(-A\nabla N)\cdot\nabla \varphi+ i\omega N \varphi\,\mathrm{d}\mathbf{x}=0\qquad \forall \varphi\in V_0,
 \end{equation}
 The essential boundary conditions have been built into the trial and test spaces
 \begin{align}
@@ -81,11 +92,11 @@ where $\{\varphi_j(\mathbf{x})\}_j$ denotes a basis of \emph{real} valued functi
 
 Instead of working with complex values directly we split them into their real and imaginary parts, i.e. $N_j=N_j^\mathrm{Re}+iN_j^\mathrm{Im}$ and use separate scalar finite element fields $N^\mathrm{Re}$ and $N^\mathrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\mathrm{Re},N^\mathrm{Im})\in V_{A_{M_2}^\mathrm{Re}}\times V_{A_{M_2}^\mathrm{Im}}$ such that
 \begin{equation}
-\sum_j\int_\Omega \nabla\varphi_i\cdot\left(A^\mathrm{Re}\nabla N_j^\mathrm{Re}-A^\mathrm{Im}\nabla N_j^\mathrm{Im}\right)+\omega \varphi_i N_j^\mathrm{Im}\,\mathrm{d}\mathbf{x}=0
+\sum_j\int_\Omega \nabla\varphi_i\cdot\left(-A^\mathrm{Re}\nabla N_j^\mathrm{Re}+A^\mathrm{Im}\nabla N_j^\mathrm{Im}\right)-\omega \varphi_i N_j^\mathrm{Im}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
 and
 \begin{equation}
-\sum_ji\int_\Omega \nabla\varphi_i\cdot\left(A^\mathrm{Im}\nabla N_j^\mathrm{Re}+A^\mathrm{Re}\nabla N_j^\mathrm{Im}\right)-\omega \varphi_i N_j^\mathrm{Re}\,\mathrm{d}\mathbf{x}=0
+\sum_ji\int_\Omega \nabla\varphi_i\cdot\left(-A^\mathrm{Im}\nabla N_j^\mathrm{Re}-A^\mathrm{Re}\nabla N_j^\mathrm{Im}\right)+\omega \varphi_i N_j^\mathrm{Re}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
 for all admissible real valued test functions $\varphi_i\in V_{0}$.
 To simplify the notation let us define the following auxiliary stiffness and mass matrices
@@ -97,8 +108,8 @@ M&=\{m_{ij}\} \qquad m_{ij}&=&\int_\Omega \varphi_i\varphi_j\,\mathrm{d}\mathbf{
 Then the problem at hand can be written in compact matrix notation as follows:
 \begin{equation}
 \begin{pmatrix}
-S^\mathrm{Re} & -S^\mathrm{Im}+\omega M\\
-S^\mathrm{Im}-\omega M &  S^\mathrm{Re}
+-S^\mathrm{Re} & S^\mathrm{Im}-\omega M\\
+-S^\mathrm{Im}+\omega M &  -S^\mathrm{Re}
 \end{pmatrix}
 \begin{pmatrix}
 N^\mathrm{Re}\\
