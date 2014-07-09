@@ -3615,7 +3615,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_clearVector (rx,dvalue)
+  subroutine lsysbl_clearVector (rx,dvalue,ifirstBlock,ilastBlock)
 
 !<description>
   ! Clears the block vector dx: Dx = 0 (or Dx = dvalue if dvalue is specified)
@@ -3629,6 +3629,14 @@ contains
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
   real(DP), intent(in), optional :: dvalue
+
+  ! OPTIONAL: If ifirstBlock is given then the clear operation starts
+  ! at the ifirstBlock scalar subvector
+  integer, intent(in), optional :: ifirstBlock
+
+  ! OPTIONAL: If ilastBlock is given then the clear operation ends
+  ! at the ilastBlock scalar subvector
+  integer, intent(in), optional :: ilastBlock
 !</inputoutput>
 
 !</subroutine>
@@ -3636,32 +3644,81 @@ contains
   ! local variables
   real(DP), dimension(:), pointer :: p_Dsource
   real(SP), dimension(:), pointer :: p_Ssource
+  integer :: ifirst,ilast,iblock
 
-  ! Take care of the data type
-  select case (rx%cdataType)
-  case (ST_DOUBLE)
-    ! Get the pointer and scale the whole data array.
-    call lsysbl_getbase_double(rx,p_Dsource)
-    if (.not. present(dvalue)) then
-      call lalg_clearVector (p_Dsource)
-    else
-      call lalg_setVector (p_Dsource,dvalue)
-    end if
+  if (present(ifirstBlock) .or. present(ilastBlock)) then
 
-  case (ST_SINGLE)
-    ! Get the pointer and scale the whole data array.
-    call lsysbl_getbase_single(rx,p_Ssource)
-    if (.not. present(dvalue)) then
-      call lalg_clearVector (p_Ssource)
-    else
-      call lalg_setVector (p_Ssource,real(dvalue,SP))
-    end if
+    ifirst=1
+    ilast =rx%nblocks
 
-  case default
-    call output_line('Unsupported data type!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_clearVector')
-    call sys_halt()
-  end select
+    if (present(ifirstBlock)) ifirst=ifirstBlock
+    if (present(ilastBlock))  ilast=ilastBlock
+
+    ! Take care of the data type
+    select case (rx%cdataType)
+    case (ST_DOUBLE)
+      ! Get the pointer and scale the data subarrays.
+      if (.not. present(dvalue)) then
+        do iblock=ifirst,ilast
+          call lsyssc_getbase_double(rx%RvectorBlock(iblock),p_Dsource)          
+          call lalg_clearVector (p_Dsource)
+        end do
+      else
+        do iblock=ifirst,ilast
+          call lsyssc_getbase_double(rx%RvectorBlock(iblock),p_Dsource)          
+          call lalg_setVector (p_Dsource,dvalue)
+        end do
+      end if
+      
+    case (ST_SINGLE)
+      ! Get the pointer and scale the whole data array.
+      if (.not. present(dvalue)) then
+        do iblock=ifirst,ilast
+          call lsyssc_getbase_single(rx%RvectorBlock(iblock),p_Ssource)
+          call lalg_clearVector (p_Ssource)
+        end do
+      else
+        do iblock=ifirst,ilast
+          call lsyssc_getbase_single(rx%RvectorBlock(iblock),p_Ssource)
+          call lalg_setVector (p_Ssource,real(dvalue,SP))
+        end do
+      end if
+      
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_clearVector')
+      call sys_halt()
+    end select
+
+  else
+    
+    ! Take care of the data type
+    select case (rx%cdataType)
+    case (ST_DOUBLE)
+      ! Get the pointer and scale the whole data array.
+      call lsysbl_getbase_double(rx,p_Dsource)
+      if (.not. present(dvalue)) then
+        call lalg_clearVector (p_Dsource)
+      else
+        call lalg_setVector (p_Dsource,dvalue)
+      end if
+      
+    case (ST_SINGLE)
+      ! Get the pointer and scale the whole data array.
+      call lsysbl_getbase_single(rx,p_Ssource)
+      if (.not. present(dvalue)) then
+        call lalg_clearVector (p_Ssource)
+      else
+        call lalg_setVector (p_Ssource,real(dvalue,SP))
+      end if
+      
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_clearVector')
+      call sys_halt()
+    end select
+
+  end if
 
   end subroutine
 
@@ -4566,7 +4623,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_clearMatrix (rmatrix,dvalue)
+  subroutine lsysbl_clearMatrix (rmatrix,dvalue,ifirstBlockRow,ilastBlockRow,&
+                                 ifirstBlockCol,ilastBlockCol)
 
 !<description>
   ! Clears the entries in all submatrices of a block matrix.
@@ -4581,20 +4639,56 @@ contains
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
   real(DP), intent(in), optional :: dvalue
+
+  ! OPTIONAL: If ifirstBlock/ifirstBlockCol is given then the clear
+  ! operation starts at the (ifirstBlockRow,ifirstBlockCol) scalar submatrix
+  integer, intent(in), optional :: ifirstBlockRow
+  integer, intent(in), optional :: ifirstBlockCol
+  
+  ! OPTIONAL: If ilastBlock/ilastBlockCol is given then the clear
+  ! operation ends at the (ilastBlockRow,ilastBlockCol) scalar submatrix
+  integer, intent(in), optional :: ilastBlockRow
+  integer, intent(in), optional :: ilastBlockCol
 !</inputoutput>
 
 !</subroutine>
 
-  integer :: i,j
+  integer :: i,j,ifirstRow,ilastRow,ifirstCol,ilastCol
 
-  ! Loop through all blocks and clear the matrices
-  ! block matrix
-  do i=1,rmatrix%nblocksPerCol
-    do j=1,rmatrix%nblocksPerRow
-      if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
+  if (present(ifirstBlockRow) .or. present(ilastBlockRow) .or.&
+      present(ifirstBlockCol) .or. present(ilastBlockCol)) then
+
+    ifirstRow=1
+    ifirstCol=1
+    ilastRow=rmatrix%nblocksPerRow
+    ilastCol=rmatrix%nblocksPerCol
+
+    if (present(ifirstBlockRow)) ifirstRow=ifirstBlockRow
+    if (present(ilastBlockRow))  ilastRow=ilastBlockRow
+    if (present(ifirstBlockCol)) ifirstRow=ifirstBlockCol
+    if (present(ilastBlockCol))  ilastRow=ilastBlockCol
+
+    ! Loop through selected blocks and clear the scalar submatrices of
+    ! the block matrix
+    do i=ifirstCol,ilastCol
+      do j=ifirstRow,ilastRow
+        if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
+      end do
     end do
-  end do
+
+  else
+
+    ! Loop through all blocks and clear the scalar submatrices of the
+    ! block matrix
+    do i=1,rmatrix%nblocksPerCol
+      do j=1,rmatrix%nblocksPerRow
+        if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
+      end do
+    end do
+
+  end if
 
   end subroutine
 
@@ -6439,8 +6533,8 @@ contains
 !<input>
   ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to
   ! position (1,1) into rdestMatrix. Default value is =1.
-  ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
-  ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
+  ! If ifirstBlockCol is not specified, this also specifies the Y-coordinate,
+  ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockCol) is put
   ! to (1,1) of rdestMatrix.
   integer, intent(in), optional :: ifirstBlock
 
