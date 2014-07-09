@@ -11,27 +11,31 @@
 !# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !#
-!# 1.) coeff_Matrix_Poisson /
-!#     coeff_Matrix_Real /
-!#     coeff_Matrix_Aimag
-!#     -> Returns analytic valyes for the system matrix.
+!# 1.) coeff_MatrixA_Poisson /
+!#     coeff_MatrixA_Real /
+!#     coeff_MatrixA_Aimag
+!#     -> Returns analytic valyes for the system matrix A.
 !#
-!# 2.) coeff_RHS_Poisson /
+!# 2.) coeff_MatrixD_Real /
+!#     coeff_MatrixD_Aimag
+!#     -> Returns analytic valyes for the system matrix D.
+!#
+!# 3.) coeff_RHS_Poisson /
 !#     coeff_RHS_Real /
 !#     coeff_RHS_Aimag /
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 3.) coeff_RHSBdr_Real /
+!# 4.) coeff_RHSBdr_Real /
 !#     coeff_RHSBdr_Aimag
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 4.) getBoundaryValues_Poisson /
+!# 5.) getBoundaryValues_Poisson /
 !#     getBoundaryValues_Real /
 !#     getBoundaryValues_Aimag
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#
-!# 5.) getReferenceFunction_Poisson /
+!# 6.) getReferenceFunction_Poisson /
 !#     getReferenceFunction_Real /
 !#     getReferenceFunction_Aimag
 !#     -> Returns the values of the analytic function and its derivatives.
@@ -39,7 +43,7 @@
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 6.) getReferenceDerivX_Poisson /
+!# 7.) getReferenceDerivX_Poisson /
 !#     getReferenceDerivX_Real /
 !#     getReferenceDerivX_Aimag
 !#     -> Returns the values of the analytic derivatives in x-direction.
@@ -47,7 +51,7 @@
 !#        $H_1$-error of the recovered FE gradient in comparison to the
 !#        analytic derivative
 !#
-!# 7.) getReferenceDerivY_Poisson /
+!# 8.) getReferenceDerivY_Poisson /
 !#     getReferenceDerivY_Real /
 !#     getReferenceDerivY_Aimag
 !#     -> Returns the values of the analytic derivatives in x-direction.
@@ -55,7 +59,7 @@
 !#        $H_1$-error of the recovered FE gradient in comparison to the
 !#        analytic derivative
 !#
-!# 8.) getReferenceDerivXX_Poisson /
+!# 9.) getReferenceDerivXX_Poisson /
 !#     getReferenceDerivXX_Real /
 !#     getReferenceDerivXX_Aimag
 !#     -> Returns the values of the analytic function and its derivatives.
@@ -63,15 +67,15 @@
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 9.) getReferenceDerivXY_Poisson /
-!#     getReferenceDerivXY_Real /
-!#     getReferenceDerivXY_Aimag
-!#     -> Returns the values of the analytic function and its derivatives.
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!# 10.) getReferenceDerivXY_Poisson /
+!#      getReferenceDerivXY_Real /
+!#      getReferenceDerivXY_Aimag
+!#      -> Returns the values of the analytic function and its derivatives.
+!#      -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 10.) getReferenceDerivYX_Poisson /
+!# 11.) getReferenceDerivYX_Poisson /
 !#      getReferenceDerivYX_Real /
 !#      getReferenceDerivYX_Aimag /
 !#      -> Returns the values of the analytic function and its derivatives.
@@ -79,7 +83,7 @@
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 11.) getReferenceDerivYY_Poisson /
+!# 12.) getReferenceDerivYY_Poisson /
 !#      getReferenceDerivYY_Real /
 !#      getReferenceDerivYY_Aimag
 !#     -> Returns the values of the analytic function and its derivatives.
@@ -117,9 +121,11 @@ module sse_callback
 
   private
 
-  public :: coeff_Matrix_Poisson
-  public :: coeff_Matrix_Real
-  public :: coeff_Matrix_Aimag
+  public :: coeff_MatrixA_Poisson
+  public :: coeff_MatrixA_Real
+  public :: coeff_MatrixA_Aimag
+  public :: coeff_MatrixD_Real
+  public :: coeff_MatrixD_Aimag
   public :: coeff_RHS_Poisson
   public :: coeff_RHS_Real
   public :: coeff_RHS_Aimag
@@ -156,7 +162,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_Matrix_Poisson(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_Poisson(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -240,7 +246,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_Matrix_Real(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_Real(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -317,13 +323,9 @@ contains
   !</subroutine>
 
     ! local variables
-    complex(DP) :: caux1,caux2,c11,c12,c13,c14
-    real(DP) :: dh,ds
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds
     integer :: iel,ipoint
-
-    ! Compute auxiliary quantities
-    caux1 = dgravaccel/(dviscosity*dr1**3)
-    caux2 = dgravaccel/(dviscosity*dr2**3)
 
     ! Loop over all elements
     do iel=1,size(Dcoefficients,3)
@@ -337,23 +339,32 @@ contains
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
-        ! Compute coefficients c11 to c14
-        c11 = caux1 *&
-            (ds * sinh(dr1 * dh) /&
-            (dr1 * dviscosity * sinh(dr1 * dh) +&
-             ds * cosh(dr2 * dh)) - dr1*dh)
-        c12 = cimg*c11
-        c13 = caux2 *&
-            (ds * sinh(dr2 * dh) /&
-            (dr2 * dviscosity * sinh(dr2 * dh) +&
-             ds * cosh(dr2 * dh)) - dr2*dh)
-        c14 = -cimg*c13
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cCalpha1
+        cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                               ds*sinh(-calpha1*dh)-&
+                    calpha1*dh*ds*cosh( calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cCalpha2
+        cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                               ds*sinh(-calpha2*dh)-&
+                    calpha2*dh*ds*cosh( calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
         
-        ! Compute real parts of the coefficients
-        Dcoefficients(1,ipoint,iel) = -0.5_DP * real( c11+c13 )      ! C1
-        Dcoefficients(2,ipoint,iel) = -0.5_DP * real( c12+c14 )      ! C2
-        Dcoefficients(3,ipoint,iel) = -0.5_DP * real((c11-c13)/cimg) ! C3
-        Dcoefficients(4,ipoint,iel) = -0.5_DP * real((c12-c14)/cimg) ! C4       
+        ! Compute real parts of the coefficients multiplied by -1
+        Dcoefficients(1,ipoint,iel) = -0.5_DP * real(       cCalpha1+cCalpha2 ) ! C1
+        Dcoefficients(2,ipoint,iel) = -0.5_DP * real( cimg*(cCalpha1-cCalpha2)) ! C2
+        Dcoefficients(3,ipoint,iel) = -0.5_DP * real(-cimg*(cCalpha1-cCalpha2)) ! C3
+        Dcoefficients(4,ipoint,iel) = -0.5_DP * real(       cCalpha1+cCalpha2 ) ! C4
       end do
     end do
 
@@ -363,7 +374,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_Matrix_Aimag(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_Aimag(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -440,13 +451,9 @@ contains
   !</subroutine>
 
     ! local variables
-    complex(DP) :: caux1,caux2,c11,c12,c13,c14
-    real(DP) :: dh,ds
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds
     integer :: iel,ipoint
-
-    ! Compute auxiliary quantities
-    caux1 = dgravaccel/(dviscosity*dr1**3)
-    caux2 = dgravaccel/(dviscosity*dr2**3)
 
     ! Loop over all elements
     do iel=1,size(Dcoefficients,3)
@@ -460,24 +467,296 @@ contains
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
-        ! Compute coefficients c11 to c14
-        c11 =  caux1 *&
-            (ds * sinh(dr1 * dh) /&
-            (dr1 * dviscosity * sinh(dr1 * dh) +&
-            ds * cosh(dr2 * dh)) - dr1*dh)
-        c12 = cimg*c11
-        c13 =  caux2 *&
-            (ds * sinh(dr2 * dh) /&
-            (dr2 * dviscosity * sinh(dr2 * dh) +&
-            ds * cosh(dr2 * dh)) - dr2*dh)
-        c14 = -cimg*c13
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cCalpha1
+        cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                               ds*sinh(-calpha1*dh)-&
+                    calpha1*dh*ds*cosh( calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cCalpha2
+        cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                               ds*sinh(-calpha2*dh)-&
+                    calpha2*dh*ds*cosh( calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
 
         ! Compute imaginary parts of the coefficients
-        Dcoefficients(1,ipoint,iel) = -0.5_DP * aimag( c11+c13 )      ! C1
-        Dcoefficients(2,ipoint,iel) = -0.5_DP * aimag( c12+c14 )      ! C2
-        Dcoefficients(3,ipoint,iel) = -0.5_DP * aimag((c11-c13)/cimg) ! C3
-        Dcoefficients(4,ipoint,iel) = -0.5_DP * aimag((c12-c14)/cimg) ! C4
-        Dcoefficients(5,ipoint,iel) = -dtidalfreq
+        Dcoefficients(1,ipoint,iel) = 0.5_DP * aimag(       cCalpha1+cCalpha2 ) ! C1
+        Dcoefficients(2,ipoint,iel) = 0.5_DP * aimag( cimg*(cCalpha1-cCalpha2)) ! C2
+        Dcoefficients(3,ipoint,iel) = 0.5_DP * aimag(-cimg*(cCalpha1-cCalpha2)) ! C3
+        Dcoefficients(4,ipoint,iel) = 0.5_DP * aimag(       cCalpha1+cCalpha2 ) ! C4
+        Dcoefficients(5,ipoint,iel) =        - dtidalfreq
+      end do
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_MatrixD_Real(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
+      rdomainIntSubset,Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    complex(DP) :: cDalpha1,cDalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds,dz
+    integer :: iel,ipoint
+
+    ! Get global z-value from collection
+    dz = rcollection%DquickAccess(1)
+
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cDalpha1
+        cDalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            ((calpha1**2)*dAv*dz*sinh(calpha1*dh)-&
+                              ds*sinh(calpha1*dz)+&
+                   calpha1*dz*ds*cosh(calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cDalpha2
+        cDalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            ((calpha2**2)*dAv*dz*sinh(calpha2*dh)-&
+                              ds*sinh(calpha2*dz)+&
+                   calpha2*dz*ds*cosh(calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+                
+        ! Compute real parts of the coefficients multiplied by -1
+        Dcoefficients(1,ipoint,iel) = -0.5_DP * real(       cDalpha1+cDalpha2 ) ! D1
+        Dcoefficients(2,ipoint,iel) = -0.5_DP * real( cimg*(cDalpha1-cDalpha2)) ! D2
+        Dcoefficients(3,ipoint,iel) = -0.5_DP * real(-cimg*(cDalpha1-cDalpha2)) ! D3
+        Dcoefficients(4,ipoint,iel) = -0.5_DP * real(       cDalpha1+cDalpha2 ) ! D4
+      end do
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_MatrixD_Aimag(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
+      rdomainIntSubset,Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    complex(DP) :: cDalpha1,cDalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds,dz
+    integer :: iel,ipoint
+
+    ! Get global z-value from collection
+    dz = rcollection%DquickAccess(1)
+
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cDalpha1
+        cDalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            ((calpha1**2)*dAv*dz*sinh(calpha1*dh)-&
+                              ds*sinh(calpha1*dz)+&
+                   calpha1*dz*ds*cosh(calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cDalpha2
+        cDalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            ((calpha2**2)*dAv*dz*sinh(calpha2*dh)-&
+                              ds*sinh(calpha2*dz)+&
+                   calpha2*dz*ds*cosh(calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+
+        ! Compute imaginary parts of the coefficients
+        Dcoefficients(1,ipoint,iel) = 0.5_DP * aimag(       cDalpha1+cDalpha2 ) ! D1
+        Dcoefficients(2,ipoint,iel) = 0.5_DP * aimag( cimg*(cDalpha1-cDalpha2)) ! D2
+        Dcoefficients(3,ipoint,iel) = 0.5_DP * aimag(-cimg*(cDalpha1-cDalpha2)) ! D3
+        Dcoefficients(4,ipoint,iel) = 0.5_DP * aimag(       cDalpha1+cDalpha2 ) ! D4
+        Dcoefficients(5,ipoint,iel) =        - dtidalfreq
       end do
     end do
     
@@ -784,7 +1063,7 @@ contains
 
 !</subroutine>
 
-    Dcoefficients (1,:,:) = 1.0_DP
+    Dcoefficients (1,:,:) = dforcing
 
   end subroutine
 
@@ -1038,15 +1317,8 @@ contains
   
 !</subroutine>
 
-    ! To get the X/Y-coordinates of the boundary point, use:
-    !
-    ! real(DP) :: dx,dy
-    !
-    ! call boundary_getCoords(rdiscretisation%p_rboundary, &
-    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-
-    ! Return unit Dirichlet boundary values for all situations.
-    Dvalues(1) = 1.0_DP
+    ! Return Dirichlet boundary values for all situations.
+    Dvalues(1) = dforcing
   
   end subroutine
 
@@ -1126,13 +1398,6 @@ contains
 !</output>
   
 !</subroutine>
-
-    ! To get the X/Y-coordinates of the boundary point, use:
-    !
-    ! real(DP) :: dx,dy
-    !
-    ! call boundary_getCoords(rdiscretisation%p_rboundary, &
-    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
@@ -1309,10 +1574,10 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC,calpha,cr1,cr2
+  real(DP) :: dAv,dh,ds
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1326,27 +1591,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real((cr1*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                    cr2*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                   (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1355,42 +1613,38 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-        
-        ! Compute bottom stress (assumed to be constant !!!)
+
+        ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real(cr1*cr2*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                            exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                       (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
-  case (DER_DERIV_y)
+  case (DER_DERIV_Y)
     Dvalues = 0.0_DP
 
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+#else
+#error 'Test case is undefined.'
+#endif
   
   end subroutine
 
@@ -1467,11 +1721,10 @@ contains
   
 !</subroutine>
 
-
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC,calpha,cr1,cr2
+  real(DP) :: dAv,dh,ds
   integer :: iel,ipoint
   
   select case (cderivative)
@@ -1485,27 +1738,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag((cr1*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                     cr2*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                    (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1519,38 +1765,34 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag(cr1*cr2*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                             exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                        (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
-  case (DER_DERIV_y)
+  case (DER_DERIV_Y)
     Dvalues = 0.0_DP
 
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -1725,10 +1967,10 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC,calpha,cr1,cr2
+  real(DP) :: dAv,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -1743,26 +1985,19 @@ contains
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real(cr1*cr2*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                            exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                       (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1771,32 +2006,25 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
-        ! Compute bottom stress (assumed to be constant !!!)
+        ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real(cr1*cr2*(cr2*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                            cr1*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                           (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1807,7 +2035,10 @@ contains
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
   
   ! ***************************************************************************
@@ -1883,10 +2114,10 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC,calpha,cr1,cr2
+  real(DP) :: dAv,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -1900,27 +2131,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag(cr1*cr2*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                             exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                        (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1934,27 +2158,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag(cr1*cr2*(cr2*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                             cr1*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                            (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -1965,6 +2182,9 @@ contains
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+#else
+#error 'Test case is undefined.'
+#endif
   
   end subroutine
 
@@ -2140,12 +2360,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -2221,12 +2445,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -2401,10 +2629,10 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC
+  real(DP) :: dAv,calpha,dh,cr1,cr2,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -2419,26 +2647,19 @@ contains
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real(cr1*cr2*(cr2*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                            cr1*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                           (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -2447,32 +2668,25 @@ contains
     do iel=1,size(Dpoints,3)
       do ipoint=1,npointsPerElement
         
-        ! Compute bottom profile (assumed to be constant !!!)
+        ! Compute bottom profile
         dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
 
-        ! Compute bottom stress (assumed to be constant !!!)
+        ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
         
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = real(cc)
+        Dvalues(ipoint,iel) = real((cr1**2)*(cr2**2)*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                                      exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                                 (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -2483,6 +2697,9 @@ contains
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+#else
+#error 'Test case is undefined.'
+#endif
   
   end subroutine
 
@@ -2559,10 +2776,10 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   ! local variables
-  real(DP), parameter :: dLength = 1E5_DP
-  complex(DP) :: cLb,calpha,cb,cc,cc1,cc2,dr1,dr2
-  real(DP) :: dbeta,dh,ds
+  complex(DP) :: cC,calpha,cr1,cr2
+  real(DP) :: dAv,dh,ds
   integer :: iel,ipoint
 
   select case (cderivative)
@@ -2576,27 +2793,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag(cr1*cr2*(cr2*exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                             cr1*exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                            (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -2610,27 +2820,20 @@ contains
 
         ! Compute bottom stress
         ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
-
+        
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+        
         ! Compute coefficients
-        cLb    = 1.0E100_DP
-        dbeta  = sqrt(-cimg*dtidalfreq/dviscosity)
-        calpha = dviscosity*dbeta*sinh(dbeta*dh) + ds*cosh(dbeta*dh)
-        calpha = ds/calpha
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*(calpha**3))*&
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
 
-        cb     = -1.0_DP/cLb
-        cc     = dgravaccel*(-dh+(calpha/dbeta)*sinh(dbeta*dh))
-        cc     = -dtidalfreq**2/cc
-
-        dr1    = (-cb+sqrt(cb**2-4.0_DP*cc))/2.0_DP
-        dr2    = (-cb-sqrt(cb**2-4.0_DP*cc))/2.0_DP
-
-        cc1    = dr2*exp(dr2*dLength)/(dr2*exp(dr2*dLength)-dr1*exp(dr1*dLength))
-        cc2    = 1.0_DP-cc1
-
-        cc     = cc1*dr1*dr1*dr1*exp(dr1*Dpoints(1,ipoint,iel))+&
-                 cc2*dr2*dr2*dr2*exp(dr2*Dpoints(1,ipoint,iel))
-
-        Dvalues(ipoint,iel) = aimag(cc)
+        Dvalues(ipoint,iel) = aimag((cr1**2)*(cr2**2)*(exp(cr1*dlength+cr2*Dpoints(1,ipoint,iel))-&
+                                                       exp(cr1*Dpoints(1,ipoint,iel)+cr2*dlength))/&
+                                                  (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength)))
       end do
     end do
 
@@ -2641,7 +2844,10 @@ contains
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -2816,12 +3022,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -2897,12 +3107,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -3077,12 +3291,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -3158,12 +3376,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -3338,12 +3560,16 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-  
+#else
+#error 'Test case is undefined.'
+#endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -3419,11 +3645,15 @@ contains
   
 !</subroutine>
 
+#if defined(CASE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+#else
+#error 'Test case is undefined.'
+#endif
   
   end subroutine
 

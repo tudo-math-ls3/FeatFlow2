@@ -730,9 +730,9 @@ contains
     ! Problem formulation in (test,trial)-notation
     !
     !  /                                                                         \
-    ! | (grad,Re(A)*grad)                   (grad,-Im(A)*grad)+\omega*(func,func) |
+    ! | (grad,-Re(A)*grad)                   (grad,Im(A)*grad)-\omega*(func,func) |
     ! |                                                                           |
-    ! | (grad,Im(A)*grad)-\omega(func,func) (grad,Re(A)*grad)                     |
+    ! | (grad,-Im(A)*grad)+\omega(func,func) (grad,-Re(A)*grad)                   |
     !  \                                                                         /
     !
     !   /     \   / \
@@ -775,7 +775,7 @@ contains
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_Matrix_Real,rproblem%rcollection)
+          coeff_MatrixA_Real,rproblem%rcollection)
 
       ! Assemble matrix block(2,2)
       call lsyssc_duplicateMatrix(&
@@ -813,7 +813,7 @@ contains
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_Matrix_Aimag,rproblem%rcollection)
+          coeff_MatrixA_Aimag,rproblem%rcollection)
       call lsyssc_scaleMatrix(&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),-1.0_DP)
 
@@ -821,7 +821,7 @@ contains
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_Matrix_Aimag,rproblem%rcollection)
+          coeff_MatrixA_Aimag,rproblem%rcollection)
     end do
 
     ! Next step: Create a RHS vector and a solution vector and a temporary
@@ -1182,6 +1182,8 @@ contains
 
     case (SSE_SCALAR)
 
+#if defined(CASE_ALEX)
+
       ! We ask the boundary routines to create a "boundary region"
       ! - which is simply a part of the boundary corresponding to
       ! a boundary segment.  A boundary region roughly contains
@@ -1201,6 +1203,82 @@ contains
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_Aimag,rproblem%rcollection)
+
+#elif defined(CASE_MARCHI)
+
+      do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
+
+        do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
+
+          ! We ask the boundary routines to create a "boundary region"
+          ! - which is simply a part of the boundary corresponding to
+          ! a boundary segment.  A boundary region roughly contains
+          ! the type, the min/max parameter value and whether the
+          ! endpoints are inside the region or not.
+          call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,&
+              rboundaryRegion)
+
+          ! Real part of the solution
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues_Real,rproblem%rcollection)
+          
+          ! Imaginary part
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues_Aimag,rproblem%rcollection)
+        end do
+      end do
+      
+#elif defined(CASE_WALTERS)
+
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      ! Real part of the solution
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Real,rproblem%rcollection)
+
+      ! Imaginary part
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Aimag,rproblem%rcollection)
+
+#elif defined(CASE_WINANT)
+      
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      ! Real part of the solution
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Real,rproblem%rcollection)
+
+      ! Imaginary part
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Aimag,rproblem%rcollection)
+
+#else
+#error 'Test case is undefined.' 
+#endif
 
     case (POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
       ! No essential boundary conditions
@@ -1945,6 +2023,13 @@ contains
   ! Method for calculating the gradient
   integer :: cgradType,cgradSubType
 
+  real(DP), dimension(:), pointer :: p_SSE_RE,p_SSE_IM
+  real(DP), dimension(:,:), pointer :: p_Dcoords
+
+  complex(DP) :: cC,cvalue
+  real(DP) :: dalpha,dh,ds,dAv,dr1,dr2
+  integer :: ivt
+
   ! Get method for calculating the gradient
   call parlst_getvalue_int(rparlist, '', 'GRADTYPE', cgradType)
   call parlst_getvalue_int(rparlist, '', 'GRADSUBTYPE', cgradSubType)
@@ -2092,9 +2177,8 @@ contains
         getReferenceDerivYY_Poisson, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error u_yy", derror)
-
-
-    ! Start UCD export to VTK file:
+    
+    ! Start UCD export to file:
     if (.not. sys_getenv_string("UCDDIR", sucddir))&
         call parlst_getvalue_string(rparlist, '', 'SUCDDIR', sucddir, './ucd')
     call parlst_getvalue_string(rparlist, '', 'UCDFILE', sucdfile, '')
@@ -2110,7 +2194,7 @@ contains
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".gmv")
       case(UCD_FORMAT_BGMV)
-        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
+        call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".vtk")
@@ -2120,7 +2204,7 @@ contains
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".vtk")
       case(UCD_FORMAT_VTK)
-        call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
+        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".vtk")
@@ -2365,33 +2449,91 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_yy)", derror)
 
-    ! Start UCD export to VTK file:
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./ucd"
-    call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
-        rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
-        trim(sucddir)//"/sol_"//trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+    ! Start UCD export to file:
+    if (.not. sys_getenv_string("UCDDIR", sucddir))&
+        call parlst_getvalue_string(rparlist, '', 'SUCDDIR', sucddir, './ucd')
+    call parlst_getvalue_string(rparlist, '', 'UCDFILE', sucdfile, '')
+    call parlst_getvalue_int(rparlist, '', 'UCDTYPE', iucdtype, 0)
 
-    ! Add the solution and its (recovered) gradient to the UCD exporter
-    call ucd_addVectorByVertex(rexport, "Re(SSE)", UCD_VAR_STANDARD, &
-        rproblem%rvector%RvectorBlock(1))
-    call ucd_addVectorByVertex(rexport, "Im(SSE)", UCD_VAR_STANDARD, &
-        rproblem%rvector%RvectorBlock(2))
-    call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE)", UCD_VAR_STANDARD, &
-        (/p_rvectorDerivX_Real,p_rvectorDerivY_Real/))
-    call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE)", UCD_VAR_STANDARD, &
-        (/p_rvectorDerivX_Aimag,p_rvectorDerivY_Aimag/))
-    call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_x)", UCD_VAR_STANDARD, &
-        (/rvectorBlockX_Real%RvectorBlock(1),rvectorBlockX_Real%RvectorBlock(2)/))
-    call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_x)", UCD_VAR_STANDARD, &
-        (/rvectorBlockX_Aimag%RvectorBlock(1),rvectorBlockX_Aimag%RvectorBlock(2)/))
-    call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_y)", UCD_VAR_STANDARD, &
-        (/rvectorBlockY_Real%RvectorBlock(1),rvectorBlockY_Real%RvectorBlock(2)/))
-    call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_y)", UCD_VAR_STANDARD, &
-        (/rvectorBlockY_Aimag%RvectorBlock(1),rvectorBlockY_Aimag%RvectorBlock(2)/))
+    if ((trim(adjustl(sucdfile)) .ne. '') .and.&
+        (iucdtype .ne. UCD_FORMAT_NONE)) then
 
-    ! Write the file to disc, that is it.
-    call ucd_write(rexport)
-    call ucd_release(rexport)
+      select case(iucdtype)
+      case(UCD_FORMAT_GMV)
+        call ucd_startGMV(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".gmv")
+      case(UCD_FORMAT_BGMV)
+        call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case(UCD_FORMAT_AVS)
+        call ucd_startAVS(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case(UCD_FORMAT_VTK)
+        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
+            rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
+            trim(sucddir)//"/"//trim(sucdfile)//"_"//&
+            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+      case default
+        call output_line("Invalid type of UCD output file..", &
+            OU_CLASS_ERROR,OU_MODE_STD,"sse_postprocessing")
+        call sys_halt()
+      end select
+      
+      call lsyssc_getbase_double(rproblem%rvector%RvectorBlock(1), p_SSE_RE)
+      call lsyssc_getbase_double(rproblem%rvector%RvectorBlock(2), p_SSE_IM)
+      call storage_getbase_double2D(&
+          rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation%h_DvertexCoords,&
+          p_Dcoords)
+
+      do ivt=1,rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation%NVT
+        dh = sse_bottomProfile(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
+        ds = sse_bottomStress(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
+        dAv = sse_eddyViscosity(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
+
+        ! Compute coefficients
+        dalpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*dalpha**3) * &
+            ((ds*sin(dalpha*dh))/(dalpha*dAv*sin(dalpha*dh)-ds*cos(dalpha*dh)) + dh*dalpha)
+        dr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
+        dr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
+
+        cvalue = (dr1*exp(dr1*dlength+dr2*p_Dcoords(1,ivt)) -&
+                  dr2*exp(dr1*p_Dcoords(1,ivt)+dr2*dlength))/&
+                 (dr1*exp(dr1*dlength)-dr2*exp(dr2*dlength))
+
+        p_SSE_RE(ivt) = p_SSE_RE(ivt)-real(cvalue)
+        p_SSE_IM(ivt) = p_SSE_IM(ivt)-aimag(cvalue)
+        
+      end do
+
+      ! Add the solution and its (recovered) gradient to the UCD exporter
+      call ucd_addVectorByVertex(rexport, "Re(SSE)", UCD_VAR_STANDARD, &
+          rproblem%rvector%RvectorBlock(1))
+      call ucd_addVectorByVertex(rexport, "Im(SSE)", UCD_VAR_STANDARD, &
+          rproblem%rvector%RvectorBlock(2))
+      call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE)", UCD_VAR_STANDARD, &
+          (/p_rvectorDerivX_Real,p_rvectorDerivY_Real/))
+      call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE)", UCD_VAR_STANDARD, &
+          (/p_rvectorDerivX_Aimag,p_rvectorDerivY_Aimag/))
+      call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_x)", UCD_VAR_STANDARD, &
+          (/rvectorBlockX_Real%RvectorBlock(1),rvectorBlockX_Real%RvectorBlock(2)/))
+      call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_x)", UCD_VAR_STANDARD, &
+          (/rvectorBlockX_Aimag%RvectorBlock(1),rvectorBlockX_Aimag%RvectorBlock(2)/))
+      call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_y)", UCD_VAR_STANDARD, &
+          (/rvectorBlockY_Real%RvectorBlock(1),rvectorBlockY_Real%RvectorBlock(2)/))
+      call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_y)", UCD_VAR_STANDARD, &
+          (/rvectorBlockY_Aimag%RvectorBlock(1),rvectorBlockY_Aimag%RvectorBlock(2)/))
+      
+      ! Write the file to disc, that is it.
+      call ucd_write(rexport)
+      call ucd_release(rexport)
+    end if
 
     ! Clean temporal structures
     call lsysbl_releaseVector(rvectorBlock_Real)

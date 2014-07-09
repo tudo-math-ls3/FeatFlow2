@@ -7,11 +7,11 @@
 !# This program is a simple test program for discretising the elliptic
 !# equation for sea surface elevation
 !#
-!#    - \Nabla \dot (A \Nabla N) - i\omega N = 0   in \Omega
+!# \Nabla \dot (A \Nabla N) + i\omega N = 0   in \Omega
 !#
-!#                                         N = N_D on \Gamma_D
+!#                                    N = N_D on \Gamma_D
 !#
-!#                     - (A \Nabla N)\cdot n = 0   on \Gamma_N
+!#                  (A \Nabla N)\cdot n = 0   on \Gamma_N
 !#
 !# for a scalar complex function $N$. This equation can be solved
 !# either as is with high-order finite elements or cast into a
@@ -37,6 +37,7 @@ program sse
   use storage
 
   use sse_main
+  use sse_base
 
   ! local variables
   type(t_timer) :: rtimerTria,rtimerDiscr,rtimerMatVec,&
@@ -87,10 +88,78 @@ program sse
   ! Initialise the convergence table
   call ctab_init(rtable)
 
+  ! Write configuration to screen
+  call output_separator (OU_SEP_STAR)
+  select case(rproblem%cproblemtype)
+  case (POISSON_SCALAR)
+    call output_line('BENCHMARK..........: Poisson problem')
+    call output_line('FORMULATION........: second-order equation')
+  case (POISSON_SYSTEM)
+    call output_line('BENCHMARK..........: Poisson problem')
+    call output_line('FORMULATION........: first-order system')
+  case (SSE_SCALAR)
+    call output_line('BENCHMARK..........: SSE problem')
+    call output_line('FORMULATION........: second-order equation')
+    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
+    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
+    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
+    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
+    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
+    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
+    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
+    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
+    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
+    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
+    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
+    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
+    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
+    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
+    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
+    
+  case (SSE_SYSTEM1)
+    call output_line('BENCHMARK..........: SSE problem')
+    call output_line('FORMULATION........: second-order equation')
+    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
+    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
+    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
+    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
+    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
+    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
+    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
+    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
+    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
+    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
+    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
+    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
+    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
+    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
+    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
+
+  case (SSE_SYSTEM2)
+    call output_line('BENCHMARK..........: SSE problem')
+    call output_line('FORMULATION........: second-order equation')
+    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
+    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
+    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
+    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
+    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
+    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
+    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
+    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
+    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
+    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
+    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
+    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
+    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
+    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
+    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
+  end select
+  call output_separator (OU_SEP_STAR)
+
   do i=ILMIN,NLMAX
 
     ! Initialisation
-    call output_line('Initialising triangulation...')
+    call output_line('Initialising triangulation')
     call stat_clearTimer(rtimerTria)
     call stat_startTimer(rtimerTria,STAT_TIMERSHORT)
     call sse_initParamTriang(rparlist,NLMIN,i,rproblem)
@@ -99,7 +168,7 @@ program sse
         '............................................................'//&
         trim(sys_sdEL(rtimerTria%delapsedReal,3))//'sec')
 
-    call output_line('Initialising discretisation...')
+    call output_line('Initialising discretisation')
     call stat_clearTimer(rtimerDiscr)
     call stat_startTimer(rtimerDiscr,STAT_TIMERSHORT)
     call sse_initDiscretisation(rparlist,rproblem)
@@ -108,7 +177,7 @@ program sse
         '............................................................'//&
         trim(sys_sdEL(rtimerDiscr%delapsedReal,3))//'sec')
 
-    call output_line('Initialising matrices/vectors...')
+    call output_line('Initialising matrices/vectors')
     call stat_clearTimer(rtimerMatVec)
     call stat_startTimer(rtimerMatVec,STAT_TIMERSHORT)
     call sse_initMatVec(rparlist,rproblem)
@@ -117,7 +186,7 @@ program sse
         '............................................................'//&
         trim(sys_sdEL(rtimerMatVec%delapsedReal,3))//'sec')
 
-    call output_line('Initialising/implementing discrete boundary conditions...')
+    call output_line('Initialising/implementing discrete boundary conditions')
     call stat_clearTimer(rtimerBC)
     call stat_startTimer(rtimerBC,STAT_TIMERSHORT)
     call sse_initDiscreteBC(rproblem)
@@ -130,7 +199,7 @@ program sse
         trim(sys_sdEL(rtimerBC%delapsedReal,3))//'sec')
 
     ! Solve the problem
-    call output_line('Solving problem...')
+    call output_line('Solving problem')
     call stat_clearTimer(rtimerSolver)
     call stat_startTimer(rtimerSolver,STAT_TIMERSHORT)
     call sse_solve(rparlist,rproblem)
@@ -140,7 +209,7 @@ program sse
         trim(sys_sdEL(rtimerSolver%delapsedReal,3))//'sec')
 
     ! Post-processing
-    call output_line('Postprocessing solution...')
+    call output_line('Postprocessing solution')
     call stat_clearTimer(rtimerPostproc)
     call stat_startTimer(rtimerPostproc,STAT_TIMERSHORT)
     call sse_postprocessing(rparlist,rproblem,rtable)
@@ -150,7 +219,7 @@ program sse
         trim(sys_sdEL(rtimerPostproc%delapsedReal,3))//'sec')
 
     ! Cleanup
-    call output_line('Freeing memory...')
+    call output_line('Freeing memory')
     call stat_clearTimer(rtimerFree)
     call stat_startTimer(rtimerFree,STAT_TIMERSHORT)
     call sse_doneMatVec(rproblem)
