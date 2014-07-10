@@ -27,6 +27,7 @@ module sse_main
   use globalsystem
   use linearalgebra
   use linearformevaluation
+  use lineariser
   use linearsolver
   use linearsystemblock
   use linearsystemscalar
@@ -66,6 +67,7 @@ module sse_main
   public :: sse_doneDiscretisation
   public :: sse_doneParamTriang
   public :: sse_outputTable
+  public :: sse_calcVelocity
 
   private
 
@@ -2001,6 +2003,7 @@ contains
   type(t_vectorBlock), target :: rvectorBlock_Real,rvectorBlock_Aimag
   type(t_vectorBlock), target :: rvectorBlockX_Real,rvectorBlockX_Aimag
   type(t_vectorBlock), target :: rvectorBlockY_Real,rvectorBlockY_Aimag
+  type(t_vectorBlock), target :: rvelocity
 
   ! Pointer to gradient components
   type(t_vectorScalar), pointer :: p_rvectorDerivX,p_rvectorDerivY
@@ -2448,6 +2451,10 @@ contains
     if ((trim(adjustl(sucdfile)) .ne. '') .and.&
         (iucdtype .ne. UCD_FORMAT_NONE)) then
 
+      ! Calculate the velocity vector
+      call sse_calcVelocity(rvelocity,0.0_DP,rproblem%rvector,&
+          rvectorBlock_Real,rvectorBlock_Aimag)
+
       select case(iucdtype)
       case(UCD_FORMAT_GMV)
         call ucd_startGMV(rexport,UCD_FLAG_STANDARD,&
@@ -2499,6 +2506,7 @@ contains
     end if
 
     ! Clean temporal structures
+    call lsysbl_releaseVector(rvelocity)
     call lsysbl_releaseVector(rvectorBlock_Real)
     call lsysbl_releaseVector(rvectorBlock_Aimag)
     call lsysbl_releaseVector(rvectorBlockX_Real)
@@ -2651,7 +2659,7 @@ contains
 
   end subroutine
 
-! ***************************************************************************
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -3293,6 +3301,131 @@ contains
     call sys_halt()
   end select
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sse_calcVelocity(rvelocity,dz,rvector,rvectorGrad_Real,&
+      rvectorGrad_Aimag,rvectorHessX_Real,rvectorHessX_Aimag,&
+      rvectorHessY_Real,rvectorHessY_Aimag)
+
+!<description>
+  ! Calculates the vertical and horizontal velocities (u,v,w) from the
+  ! first and (if present) second derivatives of the sea surface
+  ! elevation N provided via rvector. The discretisation structure is
+  ! provided via the problem structure rproblem.
+!</description>
+
+!<input>
+  ! Sea surface elevation
+  type(t_vectorBlock), intent(in) :: rvector
+
+  ! Z-coordinate, where the velocity should be calculated
+  real(DP), intent(in) :: dz
+
+  ! Gradients of the sea surface elevation
+  type(t_vectorBlock), intent(in) :: rvectorGrad_Real
+  type(t_vectorBlock), intent(in) :: rvectorGrad_Aimag
+
+  ! OPTIONAL: second derivatives of the sea surface elevation
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_Real
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_Aimag
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_Real
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_Aimag
+!</input>
+
+!<output>
+  ! Velocity vector
+  type(t_vectorBlock), intent(out) :: rvelocity
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_blockDiscretisation) :: rblockDiscr
+    type(t_vectorBlock) :: rcoordsDOF
+    real(DP), dimension(:), pointer :: p_DcoordsX,p_DcoordsY
+    real(DP), dimension(:), pointer :: p_DsseX_Real,p_DsseX_Aimag
+    real(DP), dimension(:), pointer :: p_DsseY_Real,p_DsseY_Aimag
+    real(DP), dimension(:), pointer :: p_DvelU_Real,p_DvelU_Aimag
+    real(DP), dimension(:), pointer :: p_DvelV_Real,p_DvelV_Aimag
+    complex(DP) :: calpha1,calpha2,cr1,cr2,cSSEx,cSSEY,cvelU,cvelV
+    real(DP) :: dAv,dh,ds
+    integer :: ipoint,i
+
+    ! Compute coordinates of DOFs
+    call lsysbl_createVector(rvector, rcoordsDOF, .false.)
+    call lin_calcDofCoords(rvector%RvectorBlock(1)%p_rspatialDiscr,rcoordsDOF)
+    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(1), p_DcoordsX)
+    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(2), p_DcoordsY)
+    
+    ! Create block discretisation structure
+    call spdiscr_initBlockDiscr(rblockDiscr,6,&
+        rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
+        rvector%p_rblockDiscr%p_rboundary)
+    do i=1,6
+      call spdiscr_duplicateDiscrSc(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(i), .true.)
+    end do
+       
+    ! Set pointer to horizontal velocity values
+    call lsysbl_createVector(rblockDiscr, rvelocity, .false.)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(1), p_DvelU_Real)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(2), p_DvelU_Aimag)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(3), p_DvelV_Real)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(4), p_DvelV_Aimag)
+
+    ! Set pointers to gradient values
+    call lsyssc_getbase_double(rvectorGrad_Real%RvectorBlock(1), p_DsseX_Real)
+    call lsyssc_getbase_double(rvectorGrad_Real%RvectorBlock(2), p_DsseY_Real)
+    call lsyssc_getbase_double(rvectorGrad_Aimag%RvectorBlock(1), p_DsseX_Aimag)
+    call lsyssc_getbase_double(rvectorGrad_Aimag%RvectorBlock(2), p_DsseY_Aimag)
+
+    ! Compute horizontal velocities (U,V) from analytical expressions
+    do ipoint = 1, size(p_DcoordsX)
+    
+      ! Compute bottom profile
+      dh = sse_bottomProfile(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+      
+      ! Compute bottom stress
+      ds = sse_bottomStress(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+      
+      ! Compute vertical eddy viscosity
+      dAv = sse_eddyViscosity(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+
+      ! Compute coefficients calpha1 and calpha2
+      calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+      calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+      
+      ! Compute complex sea surface elevation
+      cSSEx = cmplx(p_DsseX_Real(ipoint),p_DsseX_Aimag(ipoint))
+      cSSEy = cmplx(p_DsseY_Real(ipoint),p_DsseY_Aimag(ipoint))
+
+      ! Compute coefficient cr1
+      cr1 = dgravaccel/(dAv*(calpha1**2))*&
+          ((ds*cosh(calpha1*dz))/(calpha1*dAv*sinh(calpha1*dh)+&
+                                           ds*cosh(calpha1*dh))-1.0_DP)*&
+                                           (cSSEx+cimg*cSSEy)
+
+      ! Compute coefficient cr2
+      cr2 = dgravaccel/(dAv*(calpha2**2))*&
+          ((ds*cosh(calpha2*dz))/(calpha2*dAv*sinh(calpha2*dh)+&
+                                           ds*cosh(calpha2*dh))-1.0_DP)*&
+                                           (cSSEx-cimg*cSSEy)
+
+      ! Compute complex velocities
+      cvelU = 0.5_DP*(cr1+cr2)
+      cvelV = 0.5_DP*(cr1-cr2)/cimg
+      
+      ! And separate them into real and imaginary parts
+      p_DvelU_Real = real(cvelU)
+      p_DvelV_Real = real(cvelV)
+      p_DvelU_Aimag = aimag(cvelU)
+      p_DvelV_Aimag = aimag(cvelV)
+    end do
+    
   end subroutine
 
 end module sse_main
