@@ -2020,13 +2020,6 @@ contains
   ! Method for calculating the gradient
   integer :: cgradType,cgradSubType
 
-  real(DP), dimension(:), pointer :: p_SSE_RE,p_SSE_IM
-  real(DP), dimension(:,:), pointer :: p_Dcoords
-
-  complex(DP) :: cC,calpha,cr1,cr2,cvalue
-  real(DP) :: dh,ds,dAv
-  integer :: ivt
-
   ! Get method for calculating the gradient
   call parlst_getvalue_int(rparlist, '', 'GRADTYPE', cgradType)
   call parlst_getvalue_int(rparlist, '', 'GRADSUBTYPE', cgradSubType)
@@ -2180,7 +2173,7 @@ contains
         call parlst_getvalue_string(rparlist, '', 'SUCDDIR', sucddir, './ucd')
     call parlst_getvalue_string(rparlist, '', 'UCDFILE', sucdfile, '')
     call parlst_getvalue_int(rparlist, '', 'UCDTYPE', iucdtype, 0)
-
+    
     if ((trim(adjustl(sucdfile)) .ne. '') .and.&
         (iucdtype .ne. UCD_FORMAT_NONE)) then
 
@@ -2194,19 +2187,19 @@ contains
         call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
-            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+            trim(sys_siL(rproblem%ilvmax,2))//".gmv")
       case(UCD_FORMAT_AVS)
         call ucd_startAVS(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
-            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+            trim(sys_siL(rproblem%ilvmax,2))//".avs")
       case(UCD_FORMAT_VTK)
         call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".vtk")
       case default
-        call output_line("Invalid type of UCD output file..", &
+        call output_line("Invalid type of UCD output file.", &
             OU_CLASS_ERROR,OU_MODE_STD,"sse_postprocessing")
         call sys_halt()
       end select
@@ -2465,51 +2458,23 @@ contains
         call ucd_startBGMV(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
-            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+            trim(sys_siL(rproblem%ilvmax,2))//".gmv")
       case(UCD_FORMAT_AVS)
         call ucd_startAVS(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
-            trim(sys_siL(rproblem%ilvmax,2))//".vtk")
+            trim(sys_siL(rproblem%ilvmax,2))//".avs")
       case(UCD_FORMAT_VTK)
         call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
             rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation,&
             trim(sucddir)//"/"//trim(sucdfile)//"_"//&
             trim(sys_siL(rproblem%ilvmax,2))//".vtk")
       case default
-        call output_line("Invalid type of UCD output file..", &
+        call output_line("Invalid type of UCD output file.", &
             OU_CLASS_ERROR,OU_MODE_STD,"sse_postprocessing")
         call sys_halt()
       end select
       
-      call lsyssc_getbase_double(rproblem%rvector%RvectorBlock(1), p_SSE_RE)
-      call lsyssc_getbase_double(rproblem%rvector%RvectorBlock(2), p_SSE_IM)
-      call storage_getbase_double2D(&
-          rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation%h_DvertexCoords,&
-          p_Dcoords)
-
-      do ivt=1,rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation%NVT
-
-        dh = sse_bottomProfile(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
-        ds = sse_bottomStress(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
-        dAv = sse_eddyViscosity(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
-
-        ! Compute coefficients
-        calpha = sqrt(-cimg*dtidalfreq/dAv)
-        cC     = dgravaccel/(dAv*calpha**3) * &
-            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh)) + dh*calpha)
-        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
-        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
-
-        cvalue = (cr1*exp(cr1*dlength+cr2*p_Dcoords(1,ivt)) -&
-                  cr2*exp(cr1*p_Dcoords(1,ivt)+cr2*dlength))/&
-                 (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength))
-
-        p_SSE_RE(ivt) = p_SSE_RE(ivt)-real(cvalue)
-        p_SSE_IM(ivt) = p_SSE_IM(ivt)-aimag(cvalue)
-        
-      end do
-
       ! Add the solution and its (recovered) gradient to the UCD exporter
       call ucd_addVectorByVertex(rexport, "Re(SSE)", UCD_VAR_STANDARD, &
           rproblem%rvector%RvectorBlock(1))
@@ -3042,6 +3007,8 @@ contains
 
     call ctab_setTexCaption(rtable,"L2-error Re(SSE)","$L^2(Re(N))$")
     call ctab_setTexCaption(rtable,"L2-error Im(SSE)","$L^2(Im(N))$")
+    call ctab_setTexCaption(rtable,"H1-error Re(SSE)","$H^1(Re(N))$")
+    call ctab_setTexCaption(rtable,"H1-error Im(SSE)","$H^1(Im(N))$")
     select case(rproblem%cproblemtype)
     case (SSE_SCALAR)
       call ctab_setTexCaption(rtable,"L2-error Re(SSE_x)","$L^2(\partial_{x}^{\rm ZZ}Re(N))$")
@@ -3299,20 +3266,20 @@ contains
     call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.true.)
 
     ! Unhide imaginary parts of H1-columns
-    call ctab_setHidden(rtable,"H1-error Re(SSE)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_y)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_x)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_y)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_xx)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_xy)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_yx)-convrate",.false.)
-    call ctab_setHidden(rtable,"H1-error Re(SSE_yy)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_x)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_y)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_x)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_y)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yx)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yy)",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_xy)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yx)-convrate",.false.)
+    call ctab_setHidden(rtable,"H1-error Im(SSE_yy)-convrate",.false.)
 
     call ctab_setTexTableCaption(rtable,"$H^1$-Convergence table, imaginary part")
     call ctab_setTexTableLabel(rtable,"tab:h1_convergence_rate_aimag")
