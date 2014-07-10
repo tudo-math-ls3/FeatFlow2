@@ -1489,12 +1489,9 @@ contains
       ! Create new column with convergence rates
       allocate(p_rcolumnConvRate)
       p_rcolumnConvRate%skey = trim(skey)//'-convrate'
-      call ctab_addColumn(rtable,p_rcolumnConvRate)
+      call ctab_addColumn(rtable,p_rcolumnConvRate,p_rcolumnData)
       call ctab_evalConvergenceRate(p_rcolumnData,p_rcolumnConvRate,cevalType)
-      
-      ! Swap columns
-      p_rcolumnData => p_rcolumnData%p_rnextColumn
-      call ctab_swapColumns(rtable,p_rcolumnData,p_rcolumnConvRate)
+
     else
       ! Throw error if column does not exist
       call output_line("Column does not exist!",&
@@ -1543,12 +1540,9 @@ contains
       ! Create new column with convergence rates
       allocate(p_rcolumnConvRate)
       p_rcolumnConvRate%skey = trim(p_rcolumnData%skey)//'-convrate'
-      call ctab_addColumn(rtable,p_rcolumnConvRate)
+      call ctab_addColumn(rtable,p_rcolumnConvRate,p_rcolumnData)
       call ctab_evalConvergenceRate(p_rcolumnData,p_rcolumnConvRate,cevalType)
 
-      ! Swap columns
-      p_rcolumnData => p_rcolumnData%p_rnextColumn
-      call ctab_swapColumns(rtable,p_rcolumnData,p_rcolumnConvRate)      
     else
       ! Throw error if column does not exist
       call output_line("Column does not exist!",&
@@ -1786,7 +1780,7 @@ contains
 
 !<subroutine>
 
-  subroutine ctab_addColumn(rtable,rcolumn)
+  subroutine ctab_addColumn(rtable,rcolumn,rcolumnPrev)
 
 !<description>
     ! This subroutine adds column rcolumn to the end of the table rtable
@@ -1798,10 +1792,24 @@ contains
 
     ! Column object
     type(t_column), intent(inout), target :: rcolumn
+
+    ! OPTIONAL: Column object after which the column object rcolumn
+    ! should be inserted. If not present, then rcolumn is appended
+    ! at the end of the table.
+    type(t_column), intent(inout), target, optional :: rcolumnPrev
 !</inputoutput>
 
 !</subroutine>
 
+    if (present(rcolumnPrev)) then
+      rcolumn%p_rnextColumn => rcolumnPrev%p_rnextColumn
+      if (associated(rcolumn%p_rnextColumn))&
+          rcolumn%p_rnextColumn%p_rprevColumn => rcolumn
+      rcolumn%p_rprevColumn => rcolumnPrev
+      rcolumnPrev%p_rnextColumn => rcolumn
+      return
+    end if
+    
     if (associated(rtable%p_rfirstColumn)) then
       rtable%p_rlastColumn%p_rnextColumn => rcolumn
       rcolumn%p_rprevColumn => rtable%p_rlastColumn
