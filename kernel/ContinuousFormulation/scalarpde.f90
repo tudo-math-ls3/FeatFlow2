@@ -180,18 +180,18 @@ module scalarpde
   ! of derivatives. The form itself is encoded with the structure
   ! t_linearForm as follows:
   !
-  ! 1.) itermCount = 1                     -> 2 additive terms
+  ! 1.) itermCount = 1                     -> 1 additive term
   ! 2.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)
   ! 3.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term
   ! 4.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term
 
   type t_linearForm
 
-    ! Number of additive terms in the bilinear form
+    ! Number of additive terms in the linear form
     integer :: itermCount = 0
 
     ! Descriptors of additive terms, i.e. test function descriptors.
-    ! The descriptor itself is a DER_xxxx derivatrive
+    ! The descriptor itself is a DER_xxxx derivative
     ! identifier (c.f. module 'derivatives').
     integer, dimension(SCPDE_NNAB) :: Idescriptors = DER_FUNC
 
