@@ -4,10 +4,10 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 10
+NLMAX = 2
 
 # Minimal grid level to start with in convergence study
-ILMIN = 10
+ILMIN = 2
 
 # Minimum grid level for convergence study
 
@@ -20,7 +20,7 @@ SORTSTRATEGY =
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system (\sigma = A\nabla N)
 # =4: SSE as first-order system (\sigma = \nabla N)
-PROBLEMTYPE = 0
+PROBLEMTYPE = 2
 
 # Method for calculating the gradient of the solution
 # =0: Standard interpolation
@@ -34,8 +34,8 @@ GRADTYPE = 1
 GRADSUBTYPE = 0
 
 # Name of configuration
-#CONFIG = QUAD_Q2_SSE_SCALAR
-CONFIG = QUAD_Q1_POISSON_SCALAR
+CONFIG = TRIA_P1_SSE_SCALAR
+#CONFIG = QUAD_Q1_POISSON_SCALAR
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug
@@ -50,15 +50,21 @@ UCDFILE = sol
 
 # Type of the UCD output file
 # =0: none
-# =1: ascii GMV
+# =1: ASCII GMV
 # =2: AVS
 # =3: VTK
 # =4: binary GMV
-UCDTYPE = 0
+UCDTYPE = 4
 
 ################################################################################
 [MG-SOLVER]
 ################################################################################
+
+# Minimum number of iterations
+NMINITERATIONS = 1
+
+# Maximum number of iterations
+NMAXITERATIONS = 100
 
 # Relative stopping criterion
 DEPSREL = 0e+0
@@ -243,10 +249,10 @@ CUBATURETYPE(3) =
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_TRIA.prm
+PRMFILE = SSE_ALEX_FIXED_TRIA.prm
 
 # Domain triangulation
-TRIFILE = SSE_TRIA.tri
+TRIFILE = SSE_ALEX_FIXED_TRIA.tri
 
 # Element type
 ELEMENTTYPE = EL_P1
@@ -259,10 +265,10 @@ CUBATURETYPE = QG3_T
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_TRIA.prm
+PRMFILE = SSE_ALEX_FIXED_TRIA.prm
 
 # Domain triangulation
-TRIFILE = SSE_TRIA.tri
+TRIFILE = SSE_ALEX_FIXED_TRIA.tri
 
 # Element type
 ELEMENTTYPE = EL_P2
@@ -275,10 +281,10 @@ CUBATURETYPE = QG4_T
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_TRIA.prm
+PRMFILE = SSE_ALEX_FIXED_TRIA.prm
 
 # Domain triangulation
-TRIFILE = SSE_TRIA.tri
+TRIFILE = SSE_ALEX_FIXED_TRIA.tri
 
 # Element type
 ELEMENTTYPE = EL_P2E
@@ -291,10 +297,10 @@ CUBATURETYPE = QG5_T
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_TRIA.prm
+PRMFILE = SSE_ALEX_FIXED_TRIA.prm
 
 # Domain triangulation
-TRIFILE = SSE_TRIA.tri
+TRIFILE = SSE_ALEX_FIXED_TRIA.tri
 
 # Element type
 ELEMENTTYPE(3) =
@@ -313,10 +319,10 @@ CUBATURETYPE(3) =
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_TRIA.prm
+PRMFILE = SSE_ALEX_FIXED_TRIA.prm
 
 # Domain triangulation
-TRIFILE = SSE_TRIA.tri
+TRIFILE = SSE_ALEX_FIXED_TRIA.tri
 
 # Element type
 ELEMENTTYPE(3) =
@@ -335,10 +341,10 @@ CUBATURETYPE(3) =
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_QUAD.prm
+PRMFILE = SSE_ALEX_FIXED_QUAD.prm
 
 # Domain triangulation
-TRIFILE = SSE_QUAD.tri
+TRIFILE = SSE_ALEX_FIXED_QUAD.tri
 
 # Element type
 ELEMENTTYPE = EL_Q1
@@ -351,10 +357,10 @@ CUBATURETYPE = AUTO_G6
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_QUAD.prm
+PRMFILE = SSE_ALEX_FIXED_QUAD.prm
 
 # Domain triangulation
-TRIFILE = SSE_QUAD.tri
+TRIFILE = SSE_ALEX_FIXED_QUAD.tri
 
 # Element type
 ELEMENTTYPE = EL_Q2
@@ -367,10 +373,10 @@ CUBATURETYPE = AUTO_G6
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_QUAD.prm
+PRMFILE = SSE_ALEX_FIXED_QUAD.prm
 
 # Domain triangulation
-TRIFILE = SSE_QUAD.tri
+TRIFILE = SSE_ALEX_FIXED_QUAD.tri
 
 # Element type
 ELEMENTTYPE = EL_Q3
@@ -383,10 +389,10 @@ CUBATURETYPE = AUTO
 ################################################################################
 
 # Boundary parametrisation
-PRMFILE = SSE_QUAD.prm
+PRMFILE = SSE_ALEX_FIXED_QUAD.prm
 
 # Domain triangulation
-TRIFILE = SSE_QUAD.tri
+TRIFILE = SSE_ALEX_FIXED_QUAD.tri
 
 # Element type
 ELEMENTTYPE(3) =

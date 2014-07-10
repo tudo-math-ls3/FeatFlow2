@@ -803,25 +803,22 @@ contains
       call lsyssc_duplicateMatrix(&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_duplicateMatrix(&
-          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
-          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
       ! Assemble matrix block(1,2)
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           coeff_MatrixA_Aimag,rproblem%rcollection)
-      call lsyssc_scaleMatrix(&
-          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),-1.0_DP)
 
       ! Assemble matrix block(2,1)
-      call bilf_buildMatrixScalar(rform,.true.,&
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
-          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_MatrixA_Aimag,rproblem%rcollection)
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),-1.0_DP)
+
     end do
 
     ! Next step: Create a RHS vector and a solution vector and a temporary
@@ -2026,8 +2023,8 @@ contains
   real(DP), dimension(:), pointer :: p_SSE_RE,p_SSE_IM
   real(DP), dimension(:,:), pointer :: p_Dcoords
 
-  complex(DP) :: cC,cvalue
-  real(DP) :: dalpha,dh,ds,dAv,dr1,dr2
+  complex(DP) :: cC,calpha,cr1,cr2,cvalue
+  real(DP) :: dh,ds,dAv
   integer :: ivt
 
   ! Get method for calculating the gradient
@@ -2492,20 +2489,21 @@ contains
           p_Dcoords)
 
       do ivt=1,rproblem%RlevelInfo(rproblem%ilvmax)%rtriangulation%NVT
+
         dh = sse_bottomProfile(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
         ds = sse_bottomStress(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
         dAv = sse_eddyViscosity(p_Dcoords(1,ivt),p_Dcoords(2,ivt))
 
         ! Compute coefficients
-        dalpha = sqrt(-cimg*dtidalfreq/dAv)
-        cC     = dgravaccel/(dAv*dalpha**3) * &
-            ((ds*sin(dalpha*dh))/(dalpha*dAv*sin(dalpha*dh)-ds*cos(dalpha*dh)) + dh*dalpha)
-        dr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
-        dr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
+        calpha = sqrt(-cimg*dtidalfreq/dAv)
+        cC     = dgravaccel/(dAv*calpha**3) * &
+            ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh)) + dh*calpha)
+        cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
+        cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0/dlengthB**2 - 4.0_DP * cimg*dtidalfreq/cC))
 
-        cvalue = (dr1*exp(dr1*dlength+dr2*p_Dcoords(1,ivt)) -&
-                  dr2*exp(dr1*p_Dcoords(1,ivt)+dr2*dlength))/&
-                 (dr1*exp(dr1*dlength)-dr2*exp(dr2*dlength))
+        cvalue = (cr1*exp(cr1*dlength+cr2*p_Dcoords(1,ivt)) -&
+                  cr2*exp(cr1*p_Dcoords(1,ivt)+cr2*dlength))/&
+                 (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength))
 
         p_SSE_RE(ivt) = p_SSE_RE(ivt)-real(cvalue)
         p_SSE_IM(ivt) = p_SSE_IM(ivt)-aimag(cvalue)

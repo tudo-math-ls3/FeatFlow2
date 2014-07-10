@@ -5,14 +5,21 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
-\title{Elliptic equation of sea surface elevation}
+\title{Three-Dimensional Idealized Model for Tidal Motion in Tidal Estuaries. Part II: An Efficient Finite-Element Multigrid Approach}
 \author{Matthias M\"oller}
 \begin{document}
 \maketitle
 
-\section{Anisotropic diffusion-reaction equation}
-\subsection{Model problem}
-The elliptic equation for sea surface elevation is given by
+\begin{abstract}
+...
+\end{abstract}
+
+\section{Introduction}
+...
+
+\section{Mathematical Model}
+
+The linear elliptic partial differential equation for the sea surface elevation as derived in [?] reads
 \begin{alignat}{2}
 \nabla\cdot(A\nabla N)+i\omega N&=0  \quad && \text{in } \Omega,
 \label{eq:sse_scalar1}\\
@@ -24,10 +31,10 @@ N&=A_{M_2} \quad && \text{on } \Gamma_D,
 where $\Gamma_D$ and $\Gamma_N$ denote the Dirichlet and Neumann boundary part and $A_{M_2}$ is the amplitude of sea surface elevation at the Dirichlet boundary. Both the sea surface elevation $N\in\mathbb{C}$ and the matrix
 $$
 A=
-\begin{pmatrix}
+\begin{bmatrix}
 C_1 & C_2\\
 C_3 & C_4
-\end{pmatrix},\quad\text{where}\quad C_k\in\mathbb{C}, k=1,\dots,4
+\end{bmatrix},\quad\text{where}\quad C_k\in\mathbb{C}, k=1,\dots,4
 $$
 consist of complex values, where $i$ denotes the imaginary number, i.e. $i^2=-1$.
 
@@ -90,7 +97,7 @@ N(\mathbf{x})=\sum_{j}\varphi_j(\mathbf{x})N_j
 \end{equation}
 where $\{\varphi_j(\mathbf{x})\}_j$ denotes a basis of \emph{real} valued functions and complex valued coefficients $N_j\in\mathbb{C}$.
 
-Instead of working with complex values directly we split them into their real and imaginary parts, i.e. $N_j=N_j^\mathrm{Re}+iN_j^\mathrm{Im}$ and use separate scalar finite element fields $N^\mathrm{Re}$ and $N^\mathrm{Im}$ for discretizing each one of them. Then the problem at hand reads: find $(N^\mathrm{Re},N^\mathrm{Im})\in V_{A_{M_2}^\mathrm{Re}}\times V_{A_{M_2}^\mathrm{Im}}$ such that
+Instead of working with complex values directly we split them into their real and imaginary parts, i.e. $N_j=N_j^\mathrm{Re}+iN_j^\mathrm{Im}$ and use separate scalar finite element fields $N^\mathrm{Re}$ and $N^\mathrm{Im}$ for discretizing each one of them. Here and below superscript $(\cdot)^\mathrm{Re}$ and $(\cdot)^\mathrm{Im}$ denote the real and imaginary part, respectively. Then the problem at hand reads: find $(N^\mathrm{Re},N^\mathrm{Im})\in V_{A_{M_2}^\mathrm{Re}}\times V_{A_{M_2}^\mathrm{Im}}$ such that
 \begin{equation}
 \sum_j\int_\Omega \nabla\varphi_i\cdot\left(-A^\mathrm{Re}\nabla N_j^\mathrm{Re}+A^\mathrm{Im}\nabla N_j^\mathrm{Im}\right)-\omega \varphi_i N_j^\mathrm{Im}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
@@ -99,27 +106,27 @@ and
 \sum_ji\int_\Omega \nabla\varphi_i\cdot\left(-A^\mathrm{Im}\nabla N_j^\mathrm{Re}-A^\mathrm{Re}\nabla N_j^\mathrm{Im}\right)+\omega \varphi_i N_j^\mathrm{Re}\,\mathrm{d}\mathbf{x}=0
 \end{equation}
 for all admissible real valued test functions $\varphi_i\in V_{0}$.
-To simplify the notation let us define the following auxiliary stiffness and mass matrices
+To simplify the notation let us define the following auxiliary stiffness matrices and the standard consistent mass matrix
 \begin{alignat}{2}
-S^\mathrm{Re}&=\{s_{ij}^\mathrm{Re}\} \qquad s_{ij}^\mathrm{Re}&=&\int_\Omega \nabla\varphi_i\cdot(A^\mathrm{Re}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
+S^\mathrm{Re}&=\{s_{ij}^\mathrm{Re}\} \qquad s_{ij}^\mathrm{Re}&=&\int_\Omega \nabla\varphi_i\cdot(-A^\mathrm{Re}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
 S^\mathrm{Im}&=\{s_{ij}^\mathrm{Im}\} \qquad s_{ij}^\mathrm{Im}&=&\int_\Omega \nabla\varphi_i\cdot(A^\mathrm{Im}\nabla\varphi_j)\,\mathrm{d}\mathbf{x}\\
 M&=\{m_{ij}\} \qquad m_{ij}&=&\int_\Omega \varphi_i\varphi_j\,\mathrm{d}\mathbf{x}
 \end{alignat}
 Then the problem at hand can be written in compact matrix notation as follows:
 \begin{equation}
-\begin{pmatrix}
--S^\mathrm{Re} & S^\mathrm{Im}-\omega M\\
--S^\mathrm{Im}+\omega M &  -S^\mathrm{Re}
-\end{pmatrix}
-\begin{pmatrix}
+\begin{bmatrix}
+S^\mathrm{Re} & S^\mathrm{Im}-\omega M\\
+-S^\mathrm{Im}+\omega M &  S^\mathrm{Re}
+\end{bmatrix}
+\begin{bmatrix}
 N^\mathrm{Re}\\
 N^\mathrm{Im}
-\end{pmatrix}
+\end{bmatrix}
 =
-\begin{pmatrix}
+\begin{bmatrix}
 0\\
 0
-\end{pmatrix}
+\end{bmatrix}
 \end{equation}
 
 \section{First-order system formulation}
@@ -255,31 +262,31 @@ B_y&=\{b_{ij,y}\} \qquad b_{ij,x}&=&\int_\Omega \partial_y\psi_i\varphi_j\,\math
 \end{alignat}
 
 \begin{equation}
-\begin{pmatrix}
+\begin{bmatrix}
 0 & -\omega M & B_x^T & 0 & B_y^T & 0\\
 \omega M & 0 & 0 & B_x^T & 0 & B_y^T\\
 B_x & 0 & A & 0 & 0 & 0\\
 0 & B_x & 0 & A & 0 & 0\\
 B_y & 0 & 0 & 0 & A & 0\\
 0 & B_y & 0 & 0 & 0 & A
-\end{pmatrix}
-\begin{pmatrix}
+\end{bmatrix}
+\begin{bmatrix}
 N^\mathrm{Re}\\
 N^\mathrm{Im}\\
 \sigma_1^\mathrm{Re}\\
 \sigma_1^\mathrm{Im}\\
 \sigma_2^\mathrm{Re}\\
 \sigma_2^\mathrm{Im}
-\end{pmatrix}
+\end{bmatrix}
 =
-\begin{pmatrix}
+\begin{bmatrix}
 0\\
 0\\
 \phantom{i}\int_{\Gamma_D}A^\mathrm{Re}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
 i\int_{\Gamma_D}A^\mathrm{Im}_{M_2}\partial_x\psi^x_i\,\mathrm{d}s\\
 \phantom{i}\int_{\Gamma_D}A^\mathrm{Re}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s\\
 i\int_{\Gamma_D}A^\mathrm{Im}_{M_2}\partial_y\psi^y_i\,\mathrm{d}s
-\end{pmatrix}
+\end{bmatrix}
 \end{equation}
 
 \paragraph{Second formulation.} The problem reads: find $(N^\mathrm{Re},N^\mathrm{Im},\boldsymbol{\tau}^\mathrm{Re},\boldsymbol{\tau}^\mathrm{Im})\in [W]^2\times [\mathbf{Q}_0]^2$ such that
@@ -325,30 +332,30 @@ b^\mathrm{Im}_k&=\{b^\mathrm{Im}_{i,k}\} \qquad b^\mathrm{Im}_{i,k}&=&
 \end{alignat}
 where $\mathbf{a}^\mathrm{Re}_k$ and $\mathbf{a}^\mathrm{Im}_k$ denotes the real and imaginary parts of the $k$-th column of matrix $A$ and $n_k$ represents the $k$-th component of the outward unit normal vector. Then, the matrix form reads
 \begin{equation}
-\begin{pmatrix}
+\begin{bmatrix}
 0 & -\omega M & C_1^\mathrm{Re} & -C_1^\mathrm{Im} & C_2^\mathrm{Re} & -C_2^\mathrm{Im}\\[1ex]
 \omega M & 0 & C_1^\mathrm{Im} & C_1^\mathrm{Re} & C_2^\mathrm{Im} & C_2^\mathrm{Re}\\[1ex]
 B_x+D_1 & 0 & A & 0 & 0 & 0\\[1ex]
 0 & B_x+D_1 & 0 & A & 0 & 0\\[1ex]
 B_y+D_2 & 0 & 0 & 0 & A & 0\\[1ex]
 0 & B_y+D_2 & 0 & 0 & 0 & A
-\end{pmatrix}
-\begin{pmatrix}
+\end{bmatrix}
+\begin{bmatrix}
 N^\mathrm{Re}\\[1ex]
 N^\mathrm{Im}\\[1ex]
 \tau_1^\mathrm{Re}\\[1ex]
 \tau_1^\mathrm{Im}\\[1ex]
 \tau_2^\mathrm{Re}\\[1ex]
 \tau_2^\mathrm{Im}
-\end{pmatrix}
+\end{bmatrix}
 =
-\begin{pmatrix}
+\begin{bmatrix}
 0\\[1ex]
 0\\[1ex]
 b_1^\mathrm{Re}\\[1ex]
 b_1^\mathrm{Im}\\[1ex]
 b_2^\mathrm{Re}\\[1ex]
 b_2^\mathrm{Im}
-\end{pmatrix}
+\end{bmatrix}
 \end{equation}
 \end{document}
