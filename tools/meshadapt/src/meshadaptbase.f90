@@ -48,6 +48,8 @@ module meshadaptbase
   
   public :: t_meshAdapt
 
+  public :: madapt_alloc
+  public :: madapt_dealloc
   public :: madapt_init
   public :: madapt_done
   public :: madapt_step
@@ -71,7 +73,50 @@ contains
 
 !<subroutine>
   
-  subroutine madapt_init(ndim,smesh,rmeshAdapt)
+  subroutine madapt_alloc(rmeshAdapt)
+
+!<description>
+  ! This subroutine allocates memory for a mesh adaptation structure
+!</description>
+
+!<input>
+    ! Pointer to mesh adaptation structure
+    type(t_meshAdapt), intent(inout), pointer :: rmeshAdapt
+!</input>
+
+!</subroutine>
+
+    nullify(rmeshAdapt)
+    allocate(rmeshAdapt)
+
+  end subroutine madapt_alloc
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine madapt_dealloc(rmeshAdapt)
+
+!<description>
+  ! This subroutine deallocates memory of a mesh adaptation structure
+!</description>
+
+!<inputoutput>
+    ! Pointer to mesh adaptation structure
+    type(t_meshAdapt), intent(inout), pointer :: rmeshAdapt
+!</inputoutput>
+
+!</subroutine>
+
+    if (associated(rmeshAdapt)) deallocate(rmeshAdapt)
+
+  end subroutine madapt_dealloc
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine madapt_init(rmeshAdapt,ndim,smesh)
 
 !<description>
   ! This subroutine initialises the mesh adaptation structure
@@ -86,21 +131,14 @@ contains
 !</input>
 
 !<output>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(out) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(out) :: rmeshAdapt
 !</output>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     logical bhasPRMfile
-
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
 
     ! Check if mesh file is not empty
     if (trim(adjustl(smesh)) .eq. '') then
@@ -113,25 +151,25 @@ contains
     select case(ndim)
     case (1)
       call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
-      call tria_readTriFile1D(p_rmeshAdapt%rtriangulation,&
+      call tria_readTriFile1D(rmeshAdapt%rtriangulation,&
           './'//trim(smesh)//'.tri')
     case (2)
       inquire(file='./'//trim(smesh)//'.prm', exist=bhasPRMfile)
       if (bhasPRMfile) then
-        allocate(p_rmeshAdapt%rboundary)
+        allocate(rmeshAdapt%rboundary)
         call output_line("Reading boundary from './"//trim(smesh)//".prm'...")
-        call boundary_read_prm(p_rmeshAdapt%rboundary, './'//trim(smesh)//'.prm')
+        call boundary_read_prm(rmeshAdapt%rboundary, './'//trim(smesh)//'.prm')
         call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
-        call tria_readTriFile2D(p_rmeshAdapt%rtriangulation,&
-            './'//trim(smesh)//'.tri', p_rmeshAdapt%rboundary)
+        call tria_readTriFile2D(rmeshAdapt%rtriangulation,&
+            './'//trim(smesh)//'.tri', rmeshAdapt%rboundary)
       else
         call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
-        call tria_readTriFile2D(p_rmeshAdapt%rtriangulation,&
+        call tria_readTriFile2D(rmeshAdapt%rtriangulation,&
             './'//trim(smesh)//'.tri')
       end if
     case (3)
       call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
-      call tria_readTriFile3D (p_rmeshAdapt%rtriangulation,&
+      call tria_readTriFile3D (rmeshAdapt%rtriangulation,&
           './'//trim(smesh)//'.tri')
     case default
       call output_line("Invalid spatial dimension!",&
@@ -140,20 +178,20 @@ contains
     end select
 
     ! Initialise standard mesh
-    if(associated(p_rmeshAdapt%rboundary)) then
-      call tria_initStandardMeshFromRaw(p_rmeshAdapt%rtriangulation,&
-          p_rmeshAdapt%rboundary)
+    if(associated(rmeshAdapt%rboundary)) then
+      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
+          rmeshAdapt%rboundary)
     else
-      call tria_initStandardMeshFromRaw(p_rmeshAdapt%rtriangulation)
+      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation)
     end if
 
     ! Set some parameters manually
-    p_rmeshAdapt%rhadapt%iadaptationStrategy  = HADAPT_REDGREEN
-    p_rmeshAdapt%rhadapt%iSpec                = ior(p_rmeshAdapt%rhadapt%iSpec,&
+    rmeshAdapt%rhadapt%iadaptationStrategy  = HADAPT_REDGREEN
+    rmeshAdapt%rhadapt%iSpec                = ior(rmeshAdapt%rhadapt%iSpec,&
                                                     HADAPT_HAS_PARAMETERS)
 
     ! Initialise adaptation structure from triangulation
-    call hadapt_initFromTriangulation(p_rmeshAdapt%rhadapt, p_rmeshAdapt%rtriangulation)
+    call hadapt_initFromTriangulation(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
     
   end subroutine madapt_init
   
@@ -168,24 +206,15 @@ contains
 !</description>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
-    ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
-    
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
-    call hadapt_releaseAdaptation(p_rmeshAdapt%rhadapt)
-    call tria_done(p_rmeshAdapt%rtriangulation)
-    if(associated(p_rmeshAdapt%rboundary)) call boundary_release(p_rmeshAdapt%rboundary)
+    call hadapt_releaseAdaptation(rmeshAdapt%rhadapt)
+    call tria_done(rmeshAdapt%rtriangulation)
+    if(associated(rmeshAdapt%rboundary)) call boundary_release(rmeshAdapt%rboundary)
 
   end subroutine madapt_done
 
@@ -193,7 +222,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_direct(rindicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_direct(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -218,39 +247,30 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
-    ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
-    
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
     ! Set parameters
-    p_rmeshAdapt%rhadapt%nsubdividemax        = nrefmax
-    p_rmeshAdapt%rhadapt%drefinementTolerance = dreftol
-    p_rmeshAdapt%rhadapt%dcoarseningTolerance = dcrstol
+    rmeshAdapt%rhadapt%nsubdividemax        = nrefmax
+    rmeshAdapt%rhadapt%drefinementTolerance = dreftol
+    rmeshAdapt%rhadapt%dcoarseningTolerance = dcrstol
 
     ! Perform mesh adaptation
-    call hadapt_refreshAdaptation(p_rmeshAdapt%rhadapt, p_rmeshAdapt%rtriangulation)
-    call hadapt_performAdaptation(p_rmeshAdapt%rhadapt, rindicator)
+    call hadapt_refreshAdaptation(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
+    call hadapt_performAdaptation(rmeshAdapt%rhadapt, rindicator)
     
     ! Update triangulation structure
-    call hadapt_generateRawMesh(p_rmeshAdapt%rhadapt, p_rmeshAdapt%rtriangulation)
+    call hadapt_generateRawMesh(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
     
     ! Initialise standard mesh
-    if(associated(p_rmeshAdapt%rboundary)) then
-      call tria_initStandardMeshFromRaw(p_rmeshAdapt%rtriangulation,&
-          p_rmeshAdapt%rboundary)
+    if(associated(rmeshAdapt%rboundary)) then
+      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
+          rmeshAdapt%rboundary)
     else
-      call tria_initStandardMeshFromRaw(p_rmeshAdapt%rtriangulation)
+      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation)
     end if
 
   end subroutine madapt_step_direct
@@ -259,7 +279,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_dble1(Dindicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_dble1(rmeshAdapt,Dindicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -284,30 +304,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
         
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
     ! Create scalar indicator vector
     call lsyssc_createVector(rindicator, size(Dindicator), .true., ST_DOUBLE)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rindicator,nrefmax,dreftol,dcrstol,p_rmeshAdapt)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -318,7 +331,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_dble2(nel,Dindicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_dble2(rmeshAdapt,nel,Dindicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -346,30 +359,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
         
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
     ! Create scalar indicator vector
     call lsyssc_createVector(rindicator, size(Dindicator), .true., ST_DOUBLE)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rindicator,nrefmax,dreftol,dcrstol,p_rmeshAdapt)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -380,7 +386,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_sngl1(Findicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_sngl1(rmeshAdapt,Findicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -405,30 +411,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
     
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
     ! Create scalar indicator vector
     call lsyssc_createVector(rindicator, size(Findicator), .true., ST_DOUBLE)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rindicator,nrefmax,dreftol,dcrstol,p_rmeshAdapt)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -439,7 +438,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_sngl2(nel,Findicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_sngl2(rmeshAdapt,nel,Findicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -467,30 +466,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
     
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
-
     ! Create scalar indicator vector
     call lsyssc_createVector(rindicator, nel, .true., ST_DOUBLE)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rindicator,nrefmax,dreftol,dcrstol,p_rmeshAdapt)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -501,7 +493,7 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_fromfile(sindicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+  subroutine madapt_step_fromfile(rmeshAdapt,sindicator,nrefmax,dreftol,dcrstol)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -524,24 +516,17 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: Mesh adaptation structure
-    type(t_meshAdapt), optional, target, intent(inout) :: rmeshAdapt
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_meshAdapt), pointer :: p_rmeshAdapt
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
     character(len=SYS_STRLEN) :: sdata
     integer :: iel,ilinelen,ios,iunit,nel
-
-    if (present(rmeshAdapt)) then
-      p_rmeshAdapt => rmeshAdapt
-    else
-      p_rmeshAdapt => rmeshAdaptBase
-    end if
 
     ! Check if mesh file is not empty
     if (trim(adjustl(sindicator)) .eq. '') then
@@ -568,7 +553,7 @@ contains
     close(iunit)
     
     ! Perform mesh adaptation step
-    call madapt_step(rindicator,nrefmax,dreftol,dcrstol,p_rmeshAdapt)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
     
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -682,7 +667,7 @@ contains
       end do
       
       ! Initialise mesh adaptation structure
-      call madapt_init(ndim,smesh,rmeshAdapt)
+      call madapt_init(rmeshAdapt,ndim,smesh)
       
       iresult = merge(0,1,bdaemon)
 
@@ -702,7 +687,7 @@ contains
 
     case (SIGINT) !----- Perform mesh adaptation step --------------------------
 
-      call madapt_step(sindicator,nrefmax,dreftol,dcrstol,rmeshAdapt)
+      call madapt_step(rmeshAdapt,sindicator,nrefmax,dreftol,dcrstol)
             
       iresult = 0
 
