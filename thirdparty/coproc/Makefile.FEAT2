@@ -1,0 +1,118 @@
+#!/usr/bin/env make
+########################################################################
+#                                                                      #
+#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #
+#                                                                      #
+# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #
+#                                                                      #
+#                                                                      #
+# Contact: Applied Mathematics, TU Dortmund University                 #
+#          Vogelpothsweg 87, 44227 Dortmund                            #
+#          Germany                                                     #
+#                                                                      #
+# Web:     http://www.featflow.de/en/software/featflow2.html           #
+#          mailto:featflow@featflow.de                                 #
+#                                                                      #
+########################################################################
+
+
+################################################################################
+
+
+# inherit flags that are prone to changes
+CFLAGSCOPROC = $(CFLAGSCOPROC_FROM_FEAT2) $(APPONLYFLAGS)
+
+# Only use parameter checking if Fortran code does the same
+ifneq (,$(findstring -DENABLE_PARAMETER_CHECK,$(CFLAGSF90) $(APPONLYFLAGS)))
+CFLAGSCOPROC := $(CFLAGSCOPROC) -DENABLE_PARAMETER_CHECK
+endif
+
+# Only try to use Fortran traceback routines if Fortran code has been 
+# compiled to provide them
+ifneq (,$(findstring -DENABLE_ERROR_TRACEBACK,$(CFLAGSF90) $(APPONLYFLAGS)))
+CFLAGSCOPROC := $(CFLAGSCOPROC) -DENABLE_ERROR_TRACEBACK
+endif
+
+
+################################################################################
+
+# create header file list
+HSRC = coproc_core.h coproc_storage_cuda.h coproc_transpose.h
+
+# create source file list add object file generator rule for C sources
+SRC := $(SRC)
+OBJ = $(SRC:%.c=$(OBJDIR)/%.o)
+
+# complete list of source file (queried for purge* targets)
+SRC_COMPLETE := $(SRC)
+
+# add cuda source file list and implicit object file generator rule
+SRC_CUDA = coproc_core.cu coproc_storage_cuda.cu coproc_transpose.cu
+
+SRC_COMPLETE :=$(SRC_COMPLETE) $(SRC_CUDA)
+
+C_CUDA = $(SRC_CUDA:%.cu=%.cu.c)
+OBJ_CUDA = $(C_CUDA:%.cu.c=$(OBJDIR)/%.o)
+
+
+################################################################################
+
+
+# build library when called from main feast's Make system
+COPROCLIB = $(OBJDIR)/libcoproc.a
+all:		libcoproc.a 
+
+libcoproc.a:	$(COPROCLIB) 
+
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# usual FEAT2 lock file mechanism.
+include ../create_library.mk
+$(COPROCLIB):  LOCKFILE = ../LOCK.creating.libcoproc.a
+$(COPROCLIB):  WAITTIME = 15
+$(COPROCLIB):  RETRIES  = 24
+$(COPROCLIB):	$(OBJ) $(OBJ_CUDA)
+	@$(CREATE_LIB)
+
+
+# we need an empty rule for .cu files to avoid circular dependencies
+$(OBJDIR)/%.o: | $(OBJDIR)
+$(OBJDIR)/%.o: %.cu $(HSRC)
+	$(CUDA) $(CFLAGSCUDA) -c -o $@ $<
+$(OBJDIR)/%.o: %.c $(HSRC)
+	$(CC) $(CFLAGSCOPROC)  -o $@ -c $<
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+
+################################################################################
+
+
+# delete every file separately to prevent errors of kind:
+# execvp: rm: Arg list too long
+define remove_file
+ rm -f $(file)
+
+endef
+
+# add clean target
+clean:
+	-$(foreach file, $(SRC:%.c=$(OBJDIR)/%.o), $(remove_file))
+	-$(foreach file, $(SRC_CUDA:%.cu=$(OBJDIR)/%.o), $(remove_file))
+
+# add purge target
+purge:
+	-$(foreach file, $(patsubst %.c, $(OBJDIR)/%.o, $(filter %.c, $(SRC_COMPLETE))), $(remove_file))
+	-$(foreach file, $(patsubst %.cu, $(OBJDIR)/%.o, $(filter %.cu, $(SRC_COMPLETE))), $(remove_file))
+
+# Empty targets in order for all third party libraries to provide the same
+getlib:
+getlibs:
