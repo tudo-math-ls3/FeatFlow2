@@ -33,8 +33,10 @@ extern "C" {
   void __storage_MOD_storage_init(int*, int*, void*);
 
   // meshadaptbase.f90
-  void __meshadaptbase_MOD_madapt_init(int*, char*, void*);
-  void __meshadaptbase_MOD_madapt_done(void*);
+  void __meshadaptbase_MOD_madapt_alloc(struct t_meshAdapt**);
+  void __meshadaptbase_MOD_madapt_dealloc(struct t_meshAdapt**);
+  void __meshadaptbase_MOD_madapt_init(struct t_meshAdapt*, int*, char*);
+  void __meshadaptbase_MOD_madapt_done(struct t_meshAdapt*);
   
 #ifdef __cplusplus
 } /* end extern "C" */
