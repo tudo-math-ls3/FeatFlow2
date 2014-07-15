@@ -1218,6 +1218,11 @@ WARNING! For this application / test class there are no instructions
 	    # Squeeze in COMPILERVERSION
 	    PATHTORESULTFILE=`echo ${PATHTORESULTFILE} | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	    PATHTOREFERENCEFILE=`echo ${PATHTOREFERENCEFILE} | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    # Create directory structure where results are stored
+	    # if necessary
+	    if test ! -d ${PATHTORESULTFILE}; then
+		mkdir -p ${PATHTORESULTFILE}
+	    fi
 	    test -s ${PATHTORESULTFILE}/${FILENAME} && rm -f ${PATHTORESULTFILE}/${FILENAME}
 
 	    testall=`expr ${testall} + 1`
@@ -1258,12 +1263,6 @@ WARNING! For this application / test class there are no instructions
 	    else
 		echo
 		echo "Storing results."
-		# Create directory structure where results are stored
-		# if necessary
-		if test ! -d ${PATHTORESULTFILE}; then
-		    mkdir -p ${PATHTORESULTFILE}
-		fi
-
 		# Store results to disk
 		\cp ${LOGDIR}/${RESULTFILE}.all-levels ${PATHTORESULTFILE}/${FILENAME}
 
