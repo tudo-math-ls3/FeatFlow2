@@ -209,7 +209,7 @@
 !#             in fsystem by SYS_INFINITY_DP.
 !# </verb>
 !#
-!# In addition, the use can define his own global constant which are available
+!# In addition, the user can define his own global constant which are available
 !# throughout the complete function parser as it is the case for the standard
 !# constant defined above.
 !#
