@@ -504,7 +504,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 10.x
-		pc64-penryn-linux-pgi-*10*)
+		pc64-penryn-linux-pgi-*10.*)
 		    modules=""
 		    modules="$modules pgi/10.9-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi10
@@ -512,7 +512,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 11.x
-		pc64-penryn-linux-pgi-*11*)
+		pc64-penryn-linux-pgi-*11.*)
 		    modules=""
 		    modules="$modules pgi/11.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi11
@@ -520,7 +520,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 12.x
-		pc64-penryn-linux-pgi-*12*)
+		pc64-penryn-linux-pgi-*12.*)
 		    modules=""
 		    modules="$modules pgi/12.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi12
@@ -528,7 +528,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 13.x
-		pc64-penryn-linux-pgi-*13*)
+		pc64-penryn-linux-pgi-*13.*)
 		    modules=""
 		    modules="$modules pgi/13.5-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
