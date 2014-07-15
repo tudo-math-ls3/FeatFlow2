@@ -50,11 +50,17 @@ itimeStepScheme = 0                       # IFRSTP
 
 dtimeStepTheta = 1.0                      # THETA
 
-# Timestep-scheme for the pressure.
-# =0: Use the same timestep scheme as for the velocity.
+# Time-stepping scheme for the pressure.
+# =0: Use the same time-stepping scheme as for the velocity;
+#     sometimes referred to as pressure-corrected time-stepping schemes
+#     (Note: This approach requires the pressure from time t_n for the
+#      computation of the solution at time t_{n+1}. In particular, an
+#      initial pressure for the (Navier-)Stokes equiations has to be
+#      defined. To circumvent this difficulty, often an inconsistent
+#      treatment of the pressure is applied, hence the option =1.)
 # =1: Calculate the pressure fully implicitely (standard)
-# No effect if Implicit-Euler is used.
-# Difference can only be seen for higher order time-discretisation.
+# No effect if Implicit-Euler is used. Difference can only be seen for
+# time discretisation schemes of order > 1.
 
 ipressureFullyImplicit = 1
 
