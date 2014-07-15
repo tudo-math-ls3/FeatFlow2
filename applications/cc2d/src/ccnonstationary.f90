@@ -901,6 +901,7 @@ contains
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
 
+
     ! Some preparations for the nonlinear solver.
     !
     ! Initialise the nonlinear solver node rnlSol with parameters from
@@ -965,7 +966,11 @@ contains
               (rproblem%rtimedependence%dtime .lt. &
                rproblem%rtimedependence%dtimemax-100.0_DP*SYS_EPSREAL_DP) .and. &
               (dtimederivative .ge. &
-               rproblem%rtimedependence%dminTimeDerivative))
+               rproblem%rtimedependence%dminTimeDerivative) .or. &
+              ! when using a multi-stage time stepping scheme (like classic
+              ! fractional-step theta scheme or diagonally implicit Runge-Kutta schemes)
+              ! do not exit before all internal stages have completed
+              (rtimestepping%isubstep .gt. 1))
 
       ! Time counter
       call stat_clearTimer(rtimerTimestep)
