@@ -828,7 +828,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via hardcoded callback functions
                1, &
@@ -880,7 +880,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via expressions
                2, &
@@ -890,7 +890,6 @@ contains
                derrorL2Vel_old, derrorL2P_old, &
                rlocalCollection, derrorL2VelTimeSpace, derrorL2PTimeSpace)
         end if
-
 
       end select
       
@@ -1039,7 +1038,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via hardcoded callback functions
                1, &
@@ -1100,7 +1099,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via expressions
                2, &
@@ -1452,7 +1451,7 @@ contains
       case (0) ! build square of l2 error: sum up square of (L2 or H1, per time step)
                ! space discretisation error, ! divide this sum later by the number of time
                ! steps performed
-        if (iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+        if (iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
           dtimeSpaceErrorVel = dtimeSpaceErrorVel + derrorVel**2
           dtimeSpaceErrorP   = dtimeSpaceErrorP   + derrorP**2
         end if
