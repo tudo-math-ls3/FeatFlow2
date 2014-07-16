@@ -4325,8 +4325,13 @@ contains
 
             ! double precision matrix, double precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_dcsrmv('N',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
-                'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+            if (rx%NVAR .eq. 1) then
+              call mkl_dcsrmv('N',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
+                  'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+            else
+              call lsyssc_LAX79DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+                cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
+            end if
 #else
             call lsyssc_LAX79DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4370,8 +4375,13 @@ contains
 
             ! single precision matrix, single precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_scsrmv('N',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
-                'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+            if (rx%NEQ .eq. 1) then
+              call mkl_scsrmv('N',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
+                  'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+            else
+              call lsyssc_LAX79SPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
+                  real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
+            end if
 #else
             call lsyssc_LAX79SPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
