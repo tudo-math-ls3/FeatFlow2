@@ -494,6 +494,7 @@ contains
     type(t_timer), pointer :: p_rtimerAdaptation
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
+    type(t_timer), pointer :: p_rtimerAssemblyVector
 
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
@@ -521,6 +522,8 @@ contains
         'rtimerTriangulation', ssectionName=ssectionName)
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
+     p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -767,13 +770,19 @@ contains
         call sys_halt()
       end select
 
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
+
+      ! Start time measurement for vector assembly
+      call stat_startTimer(p_rtimerAssemblyVector)
+
       ! Perform linearised FEM-FCT post-processing
       call mhd_calcLinearisedFCT(p_rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection,&
           rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
 
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
+      ! Stop time measurement for vector assembly
+      call stat_stopTimer(p_rtimerAssemblyVector)
       
       ! Write norm of solution to benchmark logfile
       if (OU_BENCHLOG .ne. 0) then
