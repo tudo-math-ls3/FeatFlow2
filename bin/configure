@@ -5289,6 +5289,8 @@ sub print_statistics_about_feat2AppMakefile {
     if (((defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'}) ne "YES") {
 	$string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
     }
+    $string .= "-coproc" . ((defined($cl{'COPROCLIST'}) && ($#{$cl{'COPROCLIST'}})) ? "NO" : "YES");
+    $string .= "-openmp" . ((defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'});
     $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
     print "  Object files go to               : <$string>,\n";
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
@@ -5296,6 +5298,8 @@ sub print_statistics_about_feat2AppMakefile {
     $string = $objdir_lib;
     $string =~ s/\$\(HOME\)/~/;
     $string =~ s/\$\(LIBID\)/$buildID_lib/;
+    $string .= "-coproc" . ((defined($cl{'COPROCLIST'}) && ($#{$cl{'COPROCLIST'}})) ? "NO" : "YES");
+    $string .= "-openmp" . ((defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'});
     $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
     print "                                     <$string>\n";
 
