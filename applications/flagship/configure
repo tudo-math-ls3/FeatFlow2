@@ -40,10 +40,38 @@ fi
 
 ################################################################
 # Enable use of coprocessor support (if available)
-if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
+if ([ -n "${COPROC+x}" ]); then
+if ([ "$COPROC" = "20" ]); then
 APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
 SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
 COPROC="--coproc=cuda20"
+else
+if ([ "$COPROC" = "21" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda21"
+else
+if ([ "$COPROC" = "30" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda30"
+else
+if ([ "$COPROC" = "35" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda35"
+else
+if ([ "$COPROC" = "50" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda50"
+else
+COPROC=""
+fi
+fi
+fi
+fi
+fi
 else
 COPROC=""
 fi
