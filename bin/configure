@@ -1136,7 +1136,7 @@ sub check_options {
     my %validkeywords = (
         "AGMG"                => [ "yes", "no" ],
 	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "cuda50", "opengl" ],  # List of valid coprocessor backends
 	"EXECUTABLE"          => [ "yes", "no" ],
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
@@ -1492,7 +1492,7 @@ sub create_feat2AppMakefile {
 	map { $coprocs{$_} = $_; } @{ $entry };
 
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30', 'cuda35') {
+			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda50') {
 	    print MAKEFILE_HDL
 		"HAS_" . uc($entry) . "          = ";
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
@@ -1817,7 +1817,7 @@ sub create_feat2AppMakefile {
 
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30', 'cuda35') {
+			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda50') {
 	    if (defined($coprocs{$entry})) {
 		print MAKEFILE_HDL
 		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
@@ -5382,8 +5382,9 @@ sub show_help {
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
 	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
-	"                    cuda13, cuda20, cuda21, cuda30, cuda35. Note that the cpu identifier\n" .
-	"                    must always be set if coprocessor support is requested.\n" .
+	"                    cuda13, cuda20, cuda21, cuda30, cuda35, cuda50.\n" .
+    "                    Note that the identifier must always be set if coprocessor\n" .
+	"                    support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
         "--cuda=<file>       CUDA compiler\n" .
         "--cxx=<file>        C++ compiler\n" .
