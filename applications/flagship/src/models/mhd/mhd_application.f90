@@ -186,6 +186,9 @@ contains
     ! Abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
 
+    ! Timer for file IO
+    type(t_timer) :: rtimerFileIO
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
@@ -262,6 +265,9 @@ contains
         ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
         'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerFileIO', rtimerFileIO, .true.,&
         ssectionName=ssectionName)
 
     ! Create function parser
@@ -356,10 +362,16 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
+        ! Start time measurement for post-processing
+        call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
         ! Output solution to file
         call mhd_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(rtimerFileIO)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -369,9 +381,15 @@ contains
       
     else
 
+      ! Start time measurement for post-processing
+      call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
       ! Just output the computational mesh and exit
       call mhd_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
+
+      ! Stop time measurement for post-processing
+      call stat_stopTimer(rtimerFileIO)
 
     end if
 
@@ -495,6 +513,7 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
     type(t_timer), pointer :: p_rtimerAssemblyVector
+    type(t_timer), pointer :: p_rtimerFileIO
 
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
@@ -524,6 +543,8 @@ contains
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
      p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
+     p_rtimerFileIO => collct_getvalue_timer(rcollection,&
+         'rtimerFileIO', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -722,9 +743,17 @@ contains
     timeloop: do
 
       ! Check for user interaction
-      if (flagship_SIGINT(-1) > 0 )&
-          call mhd_outputSolution(rparlist, ssectionName,&
-          p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+      if (flagship_SIGINT(-1) > 0 ) then
+
+        ! Start time measurement for post-processing
+        call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
+
+        call mhd_outputSolution(rparlist, ssectionName,&
+            p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(p_rtimerFileIO)
+      end if
 
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -808,14 +837,14 @@ contains
         dtimeUCD = dtimeUCD + dstepUCD
 
         ! Start time measurement for post-processing
-        call stat_startTimer(p_rtimerPrepostProcess, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
         call mhd_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
-        call stat_stopTimer(p_rtimerPrepostProcess)
+        call stat_stopTimer(p_rtimerFileIO)
 
       end if
 

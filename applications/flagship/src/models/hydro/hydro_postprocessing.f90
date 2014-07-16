@@ -727,6 +727,7 @@ contains
     type(t_timer), pointer :: p_rtimerAssemblyMatrix
     type(t_timer), pointer :: p_rtimerAssemblyVector
     type(t_timer), pointer :: p_rtimerPrePostprocess
+    type(t_timer), pointer :: p_rtimerFileIO
     real(DP) :: dfraction
 
 
@@ -747,6 +748,8 @@ contains
         'rtimerAssemblyVector', ssectionName=ssectionName)
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
         'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerFileIO => collct_getvalue_timer(rcollection,&
+        'rtimerFileIO', ssectionName=ssectionName)
 
     ! Output statistics
     call output_lbrk()
@@ -815,6 +818,13 @@ contains
                      sys_trimr(sys_sd(dfraction*p_rtimerPrePostprocess%delapsedCPU,2),7)//' %  '//&
                      sys_trimr(sys_sd(p_rtimerPrePostprocess%delapsedCPU/&
                      (p_rtimerPrePostprocess%delapsedReal+SYS_EPSREAL_DP),2),5))
+    call output_line('Time for file IO              : '//&
+                     trim(sys_sdEL(p_rtimerFileIO%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerFileIO%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerFileIO%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerFileIO%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerFileIO%delapsedCPU/&
+                     (p_rtimerFileIO%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_lbrk()
     call output_line('Time for total simulation     : '//&
                      trim(sys_sdEL(rtimerTotal%delapsedReal,3))//'           '//&

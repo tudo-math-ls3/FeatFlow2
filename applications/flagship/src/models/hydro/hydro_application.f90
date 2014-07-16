@@ -182,6 +182,9 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
+    ! Timer for file IO
+    type(t_timer) :: rtimerFileIO
+
     ! Abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
 
@@ -261,6 +264,9 @@ contains
         ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
         'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerFileIO', rtimerFileIO, .true.,&
         ssectionName=ssectionName)
 
     ! Create function parser
@@ -355,10 +361,16 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
         
+        ! Start time measurement for post-processing
+        call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
         ! Output solution to file
         call hydro_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(rtimerFileIO)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -368,9 +380,15 @@ contains
       
     else
 
+      ! Start time measurement for post-processing
+      call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
       ! Just output the computational mesh and exit
       call hydro_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
+
+      ! Stop time measurement for post-processing
+      call stat_stopTimer(rtimerFileIO)
 
     end if
 
@@ -493,6 +511,7 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
     type(t_timer), pointer :: p_rtimerAssemblyVector
+    type(t_timer), pointer :: p_rtimerFileIO
 
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
@@ -522,6 +541,8 @@ contains
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
     p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
+    p_rtimerFileIO => collct_getvalue_timer(rcollection,&
+        'rtimerFileIO', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -718,9 +739,17 @@ contains
 
     timeloop: do
       ! Check for user interaction
-      if (flagship_SIGINT(-1) > 0 )&
-          call hydro_outputSolution(rparlist, ssectionName,&
-          p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+      if (flagship_SIGINT(-1) > 0 ) then
+
+        ! Start time measurement for post-processing
+        call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
+
+        call hydro_outputSolution(rparlist, ssectionName,&
+            p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(p_rtimerFileIO)
+      end if
 
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -766,9 +795,6 @@ contains
         call sys_halt()
       end select
 
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
-
       ! Start time measurement for vector assembly
       call stat_startTimer(p_rtimerAssemblyVector)
 
@@ -779,6 +805,9 @@ contains
 
       ! Stop time measurement for vector assembly
       call stat_stopTimer(p_rtimerAssemblyVector)
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
       
       ! Write norm of solution to benchmark logfile
       if (OU_BENCHLOG .ne. 0) then
@@ -804,14 +833,14 @@ contains
         dtimeUCD = dtimeUCD + dstepUCD
 
         ! Start time measurement for post-processing
-        call stat_startTimer(p_rtimerPrepostProcess, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
         call hydro_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
-        call stat_stopTimer(p_rtimerPrepostProcess)
+        call stat_stopTimer(p_rtimerFileIO)
 
       end if
 

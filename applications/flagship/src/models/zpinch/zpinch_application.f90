@@ -173,6 +173,9 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
+    ! Timer for file IO
+    type(t_timer) :: rtimerFileIO
+
     ! Abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
 
@@ -284,6 +287,9 @@ contains
         ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
         'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerFileIO', rtimerFileIO, .true.,&
         ssectionName=ssectionName)
 
     ! Attach the parameter list and the timers to the collection
@@ -478,9 +484,15 @@ contains
             ssectionNameHydro, ssectionNameTransport, RbdrCond,&
             rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
+        ! Start time measurement for post-processing
+        call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
         ! Output solution to file
         call zpinch_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
+        
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(rtimerFileIO)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -490,9 +502,15 @@ contains
       
     else
 
+      ! Start time measurement for post-processing
+      call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
+
       ! Just output the computational mesh and exit
       call zpinch_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
+
+      ! Stop time measurement for post-processing
+        call stat_stopTimer(rtimerFileIO)
 
     end if
 
@@ -619,6 +637,7 @@ contains
     type(t_timer), pointer :: p_rtimerAdaptation
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
+    type(t_timer), pointer :: p_rtimerFileIO
 
     ! Vector for source term
     type(t_vectorBlock), dimension(2) :: Rforce
@@ -650,6 +669,8 @@ contains
         'rtimerTriangulation', ssectionName=ssectionName)
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
+    p_rtimerFileIO => collct_getvalue_timer(rcollection,&
+        'rtimerFileIO', ssectionName=ssectionName)
     
     ! Set pointers to solver structures
     p_rsolverHydro => solver_getNextSolver(rsolver, 1)
@@ -940,9 +961,17 @@ contains
     timeloop: do
 
       ! Check for user interaction
-      if (flagship_SIGINT(-1) > 0 )&
-          call zpinch_outputSolution(rparlist, ssectionName,&
+      if (flagship_SIGINT(-1) > 0 ) then
+
+        ! Start time measurement for post-processing
+        call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
+        
+        call zpinch_outputSolution(rparlist, ssectionName,&
           p_rproblemLevel, rsolution, rtimestep%dTime)
+
+        ! Stop time measurement for post-processing
+        call stat_stopTimer(p_rtimerFileIO)
+      end if
 
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
