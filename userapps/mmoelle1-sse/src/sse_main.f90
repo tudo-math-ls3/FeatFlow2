@@ -94,8 +94,12 @@ module sse_main
     ! A scalar matrix that will recieve the prolongation matrix for this level.
     type(t_matrixScalar), dimension(6) :: rmatProl,rmatRest
 
-    ! An interlevel projection structure for changing levels
+    ! An interlevel projection structure for changing levels (scalar case)
     type(t_interlevelProjectionBlock) :: rprojection
+
+    ! Interlevel projection structures for changing levels (system case)
+    type(t_interlevelProjectionBlock) :: rprojectionA
+    type(t_interlevelProjectionBlock) :: rprojectionS
 
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
@@ -132,9 +136,6 @@ module sse_main
 
     ! A solution vector and a RHS vector on the finest level.
     type(t_vectorBlock) :: rvector,rrhs
-
-    ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation.
@@ -777,7 +778,7 @@ contains
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_MatrixA_Real,rproblem%rcollection)
+          coeff_MatrixA_SSEre,rproblem%rcollection)
 
       ! Assemble matrix block(2,2)
       call lsyssc_duplicateMatrix(&
@@ -811,7 +812,7 @@ contains
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          coeff_MatrixA_Aimag,rproblem%rcollection)
+          coeff_MatrixA_SSEim,rproblem%rcollection)
 
       ! Assemble matrix block(2,1)
       call lsyssc_duplicateMatrix(&
@@ -1022,9 +1023,9 @@ contains
 
     ! Assemble the linear forms
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
-        rproblem%rrhs%RvectorBlock(3), coeff_RHSBdr_Real, rboundaryRegion)
+        rproblem%rrhs%RvectorBlock(3), coeff_RHS_Bdr_SSEre, rboundaryRegion)
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
-        rproblem%rrhs%RvectorBlock(4), coeff_RHSBdr_Aimag, rboundaryRegion)
+        rproblem%rrhs%RvectorBlock(4), coeff_RHS_Bdr_SSEim, rboundaryRegion)
 
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
@@ -1032,9 +1033,9 @@ contains
 
     ! Assemble the linear forms
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
-        rproblem%rrhs%RvectorBlock(5), coeff_RHSBdr_Real, rboundaryRegion)
+        rproblem%rrhs%RvectorBlock(5), coeff_RHS_Bdr_SSEre, rboundaryRegion)
     call linf_buildVectorScalarBdr2d(rlinform, CUB_G3_1D, .false.,&
-        rproblem%rrhs%RvectorBlock(6), coeff_RHSBdr_Aimag, rboundaryRegion)
+        rproblem%rrhs%RvectorBlock(6), coeff_RHS_Bdr_SSEim, rboundaryRegion)
 
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
@@ -1195,13 +1196,13 @@ contains
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Real,rproblem%rcollection)
+          getBoundaryValues_SSEre,rproblem%rcollection)
 
       ! Imaginary part
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Aimag,rproblem%rcollection)
+          getBoundaryValues_SSEim,rproblem%rcollection)
 
 #elif defined(CASE_MARCHI)
 
@@ -1221,13 +1222,13 @@ contains
           call bcasm_newDirichletBConRealBD(&
               rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
               rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-              getBoundaryValues_Real,rproblem%rcollection)
+              getBoundaryValues_SSEre,rproblem%rcollection)
           
           ! Imaginary part
           call bcasm_newDirichletBConRealBD(&
               rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
               rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-              getBoundaryValues_Aimag,rproblem%rcollection)
+              getBoundaryValues_SSEim,rproblem%rcollection)
         end do
       end do
       
@@ -1245,13 +1246,13 @@ contains
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Real,rproblem%rcollection)
+          getBoundaryValues_SSEre,rproblem%rcollection)
 
       ! Imaginary part
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Aimag,rproblem%rcollection)
+          getBoundaryValues_SSEim,rproblem%rcollection)
 
 #elif defined(CASE_WINANT)
       
@@ -1267,13 +1268,13 @@ contains
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Real,rproblem%rcollection)
+          getBoundaryValues_SSEre,rproblem%rcollection)
 
       ! Imaginary part
       call bcasm_newDirichletBConRealBD(&
           rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Aimag,rproblem%rcollection)
+          getBoundaryValues_SSEim,rproblem%rcollection)
 
 #else
 #error 'Test case is undefined.' 
@@ -1358,25 +1359,36 @@ contains
   ! Error indicator during initialisation of the solver
   integer :: ierror
 
-  ! A pointer to the system matrix and the RHS vector as well as
-  ! the discretisation
+  ! A pointer to the system matrix and the RHS vector
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rrhs,p_rvector
+
+  ! Temporal vectors and matrices
+  type(t_matrixBlock), target :: rmatTmp
   type(t_vectorBlock), target :: rvecTmp,rvecTmp1,rvecTmp2,rvecTmp3,rrhsTmp2
 
   ! A solver node that accepts parameters for the linear solver
   type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
   type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
+  ! A solver node that accepts parameters for the linear solver
+  type(t_linsolNode), pointer :: p_rsolverNodeA,p_rsmootherA
+  type(t_linsolNode), pointer :: p_rcoarseGridSolverA,p_rpreconditionerA
+
+  ! A solver node that accepts parameters for the linear solver
+  type(t_linsolNode), pointer :: p_rsolverNodeS,p_rsmootherS
+  type(t_linsolNode), pointer :: p_rcoarseGridSolverS,p_rpreconditionerS
+
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
+  type(t_matrixBlock), dimension(:), pointer :: RmatricesA
+  type(t_matrixBlock), dimension(:), pointer :: RmatricesS
 
   ! One level of multigrid
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
-
-  ! Relaxation parameter
-  real(DP), parameter :: domega = 0.1_DP
+  type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfoA
+  type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfoS
 
   ! Iteration counter
   integer :: ite
@@ -1627,7 +1639,7 @@ contains
     ! Release the temporary vector
     call lsysbl_releaseVector(rvecTmp)
 
-  case (POISSON_SYSTEM+4711)
+  case (POISSON_SYSTEM)
     !---------------------------------------------------------------------------
 
     ilvmin = rproblem%ilvmin
@@ -1639,103 +1651,223 @@ contains
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
 
-!!$    ! Set up prolongation matrices
-!!$    do i=ilvmin+1,ilvmax
-!!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
-!!$
-!!$        ! Create the matrix structure of the prolongation matrix.
-!!$        call mlop_create2LvlMatrixStruct(&
-!!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
-!!$            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
-!!$            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl(j))
-!!$
-!!$        ! Assemble the entries of the prolongation matrix.
-!!$        call mlop_build2LvlProlMatrix(&
-!!$            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
-!!$            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
-!!$            .true., rproblem%RlevelInfo(i)%rmatProl(j),&
-!!$            rcubatureInfoCoarse=rproblem%RlevelInfo(i-1)%RcubatureInfo(j),&
-!!$            rcubatureInfoFine=rproblem%RlevelInfo(i)%RcubatureInfo(j))
-!!$
-!!$        ! Assemble the entries of the restriction matrix.
-!!$        call lsyssc_transposeMatrix(rproblem%RlevelInfo(i)%rmatProl(j),&
-!!$            rproblem%RlevelInfo(i)%rmatRest(j),LSYSSC_TR_ALL)
-!!$      end do
-!!$
-!!$      ! Now set up an interlevel projecton structure for this level
-!!$      ! based on the system matrix on this level.
-!!$      call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojection,&
-!!$          rproblem%RlevelInfo(i)%rmatrix)
-!!$
-!!$      ! Initialise the matrix-based projection
-!!$      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
-!!$        call mlprj_initMatrixProjection(&
-!!$            rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,j),&
-!!$            rproblem%RlevelInfo(i)%rmatProl(j),&
-!!$            rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(j))
-!!$      end do
-!!$    end do
+    ! Set up prolongation matrices
+    do i=ilvmin+1,ilvmax
+      do j=1,rproblem%RlevelInfo(i)%rdiscretisation%ncomponents
 
-!!$    ! Set up an interlevel projecton structure for the coarse-most level.
-!!$    call mlprj_initProjectionMat(rproblem%RlevelInfo(ilvmin)%rprojection,&
-!!$        rproblem%RlevelInfo(ilvmin)%rmatrix)
-!!$
-!!$    ! Create temporary vectors we need that for some preparation.
-!!$    call lsysbl_deriveSubvector(p_rrhs, rrhsTmp2, 2, 3, .false.)
-!!$    call lsysbl_deriveSubvector(p_rrhs, rvecTmp3, 2, 3, .false.)
-!!$    call lsysbl_deriveSubvector(p_rvector, rvecTmp1, 1, 1, .true.)
-!!$    call lsysbl_deriveSubvector(p_rvector, rvecTmp2, 2, 3, .true.)
-!!$
-!!$    call lsysbl_createVector(p_rrhs, rvecTmp, .false.)
+        ! Create the matrix structure of the prolongation matrix.
+        call mlop_create2LvlMatrixStruct(&
+            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
+            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl(j))
+
+        ! Assemble the entries of the prolongation matrix.
+        call mlop_build2LvlProlMatrix(&
+            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(j),&
+            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+            .true., rproblem%RlevelInfo(i)%rmatProl(j),&
+            rcubatureInfoCoarse=rproblem%RlevelInfo(i-1)%RcubatureInfo(j),&
+            rcubatureInfoFine=rproblem%RlevelInfo(i)%RcubatureInfo(j))
+
+        ! Assemble the entries of the restriction matrix.
+        call lsyssc_transposeMatrix(rproblem%RlevelInfo(i)%rmatProl(j),&
+            rproblem%RlevelInfo(i)%rmatRest(j),LSYSSC_TR_ALL)
+      end do
+
+      ! Derive submatrix for A-component
+      call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(i)%rmatrix,&
+          rmatTmp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,2,3,2,3)
+      
+      ! Now set up an interlevel projecton structure for this level
+      ! based on the matrix A on this level.
+      call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojectionA,&
+          rmatTmp)
+
+      ! Release temporal matrix
+      call lsysbl_releaseMatrix(rmatTmp)
+
+      ! Initialise the matrix-based projection
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojectionA%RscalarProjection(1,1),&
+          rproblem%RlevelInfo(i)%rmatProl(2),&
+          rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(2))
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojectionA%RscalarProjection(1,2),&
+          rproblem%RlevelInfo(i)%rmatProl(3),&
+          rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(3))
+
+      ! Derive submatrix for S-component
+      call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(i)%rmatrix,&
+          rmatTmp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,1,1,1,1)
+      
+      ! Now set up an interlevel projecton structure for this level
+      ! based on the matrix A on this level.
+      call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojectionS,&
+          rmatTmp)
+
+      call lsysbl_infoMatrix(rmatTmp)
+
+pause
+      ! Release temporal matrix
+      call lsysbl_releaseMatrix(rmatTmp)
+pause
+      ! Initialise the matrix-based projection
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojectionS%RscalarProjection(1,1),&
+          rproblem%RlevelInfo(i)%rmatProl(1),&
+          rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(1))
+    end do
+stop
+    ! Set up an interlevel projecton structure for the coarse-most level.
+    call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(ilvmin)%rmatrix,&
+        rmatTmp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,2,3,2,3)
+    call mlprj_initProjectionMat(rproblem%RlevelInfo(ilvmin)%rprojectionA,&
+        rmatTmp)
+    call lsysbl_releaseMatrix(rmatTmp)
+    
+    ! Set up an interlevel projecton structure for the coarse-most level.
+    call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(ilvmin)%rmatrix,&
+        rmatTmp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,1,1,1,1)
+    call mlprj_initProjectionMat(rproblem%RlevelInfo(ilvmin)%rprojectionS,&
+        rmatTmp)
+    call lsysbl_releaseMatrix(rmatTmp)
+    
+    stop
+
+    ! Create a temporary vector we need that for some preparation.
+    call lsysbl_createVector(p_rrhs, rvecTmp, .false.)
 
     ! Now we have to build up the level information for multigrid.
     !
-    ! Create a Multigrid-solver. Attach the above filter chain
+    ! Create two Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2(p_rsolverNode,ilvmax-ilvmin+1)
+    call linsol_initMultigrid2(p_rsolverNodeA,ilvmax-ilvmin+1)
+    call linsol_initMultigrid2(p_rsolverNodeS,ilvmax-ilvmin+1)
+
+    ! Get parameters of multigrid solver for A from parameter list
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER-A', 'nminIterations', &
+        p_rsolverNodeA%nminIterations, p_rsolverNodeA%nminIterations)
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER-A', 'nmaxIterations', &
+        p_rsolverNodeA%nmaxIterations, p_rsolverNodeA%nmaxIterations)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-A', 'depsRel', &
+        p_rsolverNodeA%depsRel, p_rsolverNodeA%depsRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-A', 'depsAbs', &
+        p_rsolverNodeA%depsAbs, p_rsolverNodeA%depsAbs)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-A', 'depsDiff', &
+        p_rsolverNodeA%depsDiff, p_rsolverNodeA%depsDiff)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-A', 'ddivRel', &
+        p_rsolverNodeA%ddivRel, p_rsolverNodeA%ddivRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-A', 'ddivAbs', &
+        p_rsolverNodeA%ddivAbs, p_rsolverNodeA%ddivAbs)
+
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER-S', 'nminIterations', &
+        p_rsolverNodeS%nminIterations, p_rsolverNodeS%nminIterations)
+    call parlst_getvalue_int(rparlist, 'MG-SOLVER-S', 'nmaxIterations', &
+        p_rsolverNodeS%nmaxIterations, p_rsolverNodeS%nmaxIterations)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-S', 'depsRel', &
+        p_rsolverNodeS%depsRel, p_rsolverNodeS%depsRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-S', 'depsAbs', &
+        p_rsolverNodeS%depsAbs, p_rsolverNodeS%depsAbs)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-S', 'depsDiff', &
+        p_rsolverNodeS%depsDiff, p_rsolverNodeS%depsDiff)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-S', 'ddivRel', &
+        p_rsolverNodeS%ddivRel, p_rsolverNodeS%ddivRel)
+    call parlst_getvalue_double(rparlist, 'MG-SOLVER-S', 'ddivAbs', &
+        p_rsolverNodeS%ddivAbs, p_rsolverNodeS%ddivAbs)
 
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
-
+      
       ! Set up a filter chain for implementing boundary conditions on that level
       call filter_initFilterChain(rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters)
       call filter_newFilterDiscBCDef(rproblem%RlevelInfo(i)%RfilterChain,&
           rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
-
+      
       ! On the coarsest grid, set up a coarse grid solver and no smoother
       ! On finer grids, set up a smoother but no coarse grid solver.
-      nullify(p_rpreconditioner)
-      nullify(p_rsmoother)
-      nullify(p_rcoarseGridSolver)
+      nullify(p_rpreconditionerA,p_rpreconditionerS)
+      nullify(p_rsmootherA,p_rsmootherS)
+      nullify(p_rcoarseGridSolverA,p_rcoarseGridSolverS)
+      
+      stop
 
       if (i .eq. ilvmin) then
-        call linsol_initUMFPACK4(p_rcoarseGridSolver)
-!!$        ! Setting up a GMRES coarse grid solver
-!!$        call linsol_initGMRES(p_rcoarseGridSolver,20,&
-!!$              Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
+        ! Set up a GMRES coarse grid solver for A-component
+        call linsol_initGMRES(p_rcoarseGridSolverA,20,&
+            Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
+        
+        ! Get parameters of coarse-grid solver from parameter list
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER-A', 'nminIterations', &
+            p_rcoarseGridSolverA%nminIterations, p_rcoarseGridSolverA%nminIterations)
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER-A', 'nmaxIterations', &
+            p_rcoarseGridSolverA%nmaxIterations, p_rcoarseGridSolverA%nmaxIterations)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER0S', 'depsRel', &
+            p_rcoarseGridSolverA%depsRel, p_rcoarseGridSolverA%depsRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-A', 'depsAbs', &
+            p_rcoarseGridSolverA%depsAbs, p_rcoarseGridSolverA%depsAbs)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-A', 'depsDiff', &
+            p_rcoarseGridSolverA%depsDiff, p_rcoarseGridSolverA%depsDiff)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-A', 'ddivRel', &
+            p_rcoarseGridSolverA%ddivRel, p_rcoarseGridSolverA%ddivRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-A', 'ddivAbs', &
+            p_rcoarseGridSolverA%ddivAbs, p_rcoarseGridSolverA%ddivAbs)
+
+        ! Set up a BiCGStab coarse grid solver (with ILU
+        ! preconditioning) for S-component
+        call linsol_initMILUs1x1(p_rpreconditionerS,0,0.0_DP)
+        call linsol_initBiCGStab(p_rcoarseGridSolverS,p_rpreconditionerS,&
+            rproblem%RlevelInfo(i)%RfilterChain)
+        
+        ! Get parameters of coarse-grid solver from parameter list
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER-S', 'nminIterations', &
+            p_rcoarseGridSolverS%nminIterations, p_rcoarseGridSolverS%nminIterations)
+        call parlst_getvalue_int(rparlist, 'COARSE-GRID-SOLVER-S', 'nmaxIterations', &
+            p_rcoarseGridSolverS%nmaxIterations, p_rcoarseGridSolverS%nmaxIterations)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER0S', 'depsRel', &
+            p_rcoarseGridSolverS%depsRel, p_rcoarseGridSolverS%depsRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-S', 'depsAbs', &
+            p_rcoarseGridSolverS%depsAbs, p_rcoarseGridSolverS%depsAbs)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-S', 'depsDiff', &
+            p_rcoarseGridSolverS%depsDiff, p_rcoarseGridSolverS%depsDiff)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-S', 'ddivRel', &
+            p_rcoarseGridSolverS%ddivRel, p_rcoarseGridSolverS%ddivRel)
+        call parlst_getvalue_double(rparlist, 'COARSE-GRID-SOLVER-S', 'ddivAbs', &
+            p_rcoarseGridSolverS%ddivAbs, p_rcoarseGridSolverS%ddivAbs)
+
       else
         ! Set up GMRES smoother for multigrid with damping parameter
-        ! 0.7, 4 smoothing steps:
-        call linsol_initGMRES(p_rsmoother,20,&
+        ! 0.7, 4 smoothing steps for A-component:
+        call linsol_initGMRES(p_rsmootherA,20,&
             Rfilter=rproblem%RlevelInfo(i)%RfilterChain)
-        call linsol_convertToSmoother(p_rsmoother,4,0.7_DP)
+        call linsol_convertToSmoother(p_rsmootherA,4,0.7_DP)
+
+        ! Set up an ILU smoother for multigrid with damping
+        ! parameter 0.7, 4 smoothing steps for S-component:
+        call linsol_initMILUs1x1(p_rsmootherS,0,0.0_DP)
+        call linsol_convertToSmoother(p_rsmootherS,4,0.7_DP)        
       end if
 
       ! And add this multi-grid level. We will use the same smoother
       ! for pre- and post-smoothing.
-      call linsol_getMultigrid2Level(p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
-      p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-      p_rlevelInfo%p_rpresmoother      => p_rsmoother
-      p_rlevelInfo%p_rpostsmoother     => p_rsmoother
+      call linsol_getMultigrid2Level(p_rsolverNodeA,i-ilvmin+1,p_rlevelInfoA)
+      p_rlevelInfoA%p_rcoarseGridSolver => p_rcoarseGridSolverA
+      p_rlevelInfoA%p_rpresmoother      => p_rsmootherA
+      p_rlevelInfoA%p_rpostsmoother     => p_rsmootherA
+
+      call linsol_getMultigrid2Level(p_rsolverNodeS,i-ilvmin+1,p_rlevelInfoS)
+      p_rlevelInfoS%p_rcoarseGridSolver => p_rcoarseGridSolverS
+      p_rlevelInfoS%p_rpresmoother      => p_rsmootherS
+      p_rlevelInfoS%p_rpostsmoother     => p_rsmootherS
 
       ! Attach the filter chain which imposes boundary conditions on that level.
-      p_rlevelInfo%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
+      p_rlevelInfoA%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
+      p_rlevelInfoS%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
 
-!!$      ! Attach our user-defined projection to the level.
-!!$      call linsol_initProjMultigrid2Level(p_rlevelInfo,&
-!!$          rproblem%RlevelInfo(i)%rprojection)
+      ! Attach our user-defined projection to the level.
+      call linsol_initProjMultigrid2Level(p_rlevelInfoS,&
+          rproblem%RlevelInfo(i)%rprojection)
     end do
 
     ! Set the output level of the solver to 2 for some output
@@ -1869,6 +2001,8 @@ contains
 
     ! Release the projection structure on the coarse mesh
     call mlprj_doneProjection(rproblem%RlevelInfo(ilvmin)%rprojection)
+    call mlprj_doneProjection(rproblem%RlevelInfo(ilvmin)%rprojectionA)
+    call mlprj_doneProjection(rproblem%RlevelInfo(ilvmin)%rprojectionS)
 
     ! Release the filter chain
     do i=ilvmin,ilvmax
@@ -1882,7 +2016,7 @@ contains
 !!$    call lsysbl_releaseVector(rvecTmp2)
 !!$    call lsysbl_releaseVector(rrhsTmp2)
 
-  case(POISSON_SYSTEM,SSE_SYSTEM1,SSE_SYSTEM2)
+  case(POISSON_SYSTEM+4711,SSE_SYSTEM1,SSE_SYSTEM2)
     !---------------------------------------------------------------------------
 
     ilvmin = rproblem%ilvmin
@@ -2000,15 +2134,15 @@ contains
 
   ! A temporal vector to store the recovered gradient
   type(t_vectorBlock), target :: rvectorBlock,rvectorBlockX,rvectorBlockY
-  type(t_vectorBlock), target :: rvectorBlock_Real,rvectorBlock_Aimag
-  type(t_vectorBlock), target :: rvectorBlockX_Real,rvectorBlockX_Aimag
-  type(t_vectorBlock), target :: rvectorBlockY_Real,rvectorBlockY_Aimag
+  type(t_vectorBlock), target :: rvectorBlock_SSEre,rvectorBlock_SSEim
+  type(t_vectorBlock), target :: rvectorBlockX_SSEre,rvectorBlockX_SSEim
+  type(t_vectorBlock), target :: rvectorBlockY_SSEre,rvectorBlockY_SSEim
   type(t_vectorBlock), target :: rvelocity
 
   ! Pointer to gradient components
   type(t_vectorScalar), pointer :: p_rvectorDerivX,p_rvectorDerivY
-  type(t_vectorScalar), pointer :: p_rvectorDerivX_Real,p_rvectorDerivY_Real
-  type(t_vectorScalar), pointer :: p_rvectorDerivX_Aimag,p_rvectorDerivY_Aimag
+  type(t_vectorScalar), pointer :: p_rvectorDerivX_SSEre,p_rvectorDerivY_SSEre
+  type(t_vectorScalar), pointer :: p_rvectorDerivX_SSEim,p_rvectorDerivY_SSEim
 
   ! Output block for UCD output to VTK file
   type(t_ucdExport) :: rexport
@@ -2234,20 +2368,20 @@ contains
 
     ! Calculate the error to the reference function.
     call pperr_scalar(PPERR_L2ERROR,derror,rproblem%rvector%RvectorBlock(1),&
-        getReferenceFunction_Real, rcubatureInfo=&
+        getReferenceFunction_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE)", derror)
     call pperr_scalar(PPERR_L2ERROR,derror,rproblem%rvector%RvectorBlock(2),&
-        getReferenceFunction_Aimag, rcubatureInfo=&
+        getReferenceFunction_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE)", derror)
 
     call pperr_scalar(PPERR_H1ERROR,derror,rproblem%rvector%RvectorBlock(1),&
-        getReferenceFunction_Real, rcubatureInfo=&
+        getReferenceFunction_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE)", derror)
     call pperr_scalar(PPERR_H1ERROR,derror,rproblem%rvector%RvectorBlock(2),&
-        getReferenceFunction_Aimag, rcubatureInfo=&
+        getReferenceFunction_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE)", derror)
 
@@ -2266,65 +2400,65 @@ contains
           rproblem%rvector%RvectorBlock(1)%p_rspatialDiscr,&
           rblockDiscr%RspatialDiscr(2), .true.)
 
-      call lsysbl_createVector(rblockDiscr, rvectorBlock_Real, .false.)
+      call lsysbl_createVector(rblockDiscr, rvectorBlock_SSEre, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(1),&
-          rvectorBlock_Real, cgradType, cgradSubType)
-      p_rvectorDerivX_Real => rvectorBlock_Real%RvectorBlock(1)
-      p_rvectorDerivY_Real => rvectorBlock_Real%RvectorBlock(2)
+          rvectorBlock_SSEre, cgradType, cgradSubType)
+      p_rvectorDerivX_SSEre => rvectorBlock_SSEre%RvectorBlock(1)
+      p_rvectorDerivY_SSEre => rvectorBlock_SSEre%RvectorBlock(2)
 
-      call lsysbl_createVector(rblockDiscr, rvectorBlock_Aimag, .false.)
+      call lsysbl_createVector(rblockDiscr, rvectorBlock_SSEim, .false.)
       call ppgrd_calcGradient(rproblem%rvector%RvectorBlock(2),&
-          rvectorBlock_Aimag, cgradType, cgradSubType)
-      p_rvectorDerivX_Aimag => rvectorBlock_Aimag%RvectorBlock(1)
-      p_rvectorDerivY_Aimag => rvectorBlock_Aimag%RvectorBlock(2)
+          rvectorBlock_SSEim, cgradType, cgradSubType)
+      p_rvectorDerivX_SSEim => rvectorBlock_SSEim%RvectorBlock(1)
+      p_rvectorDerivY_SSEim => rvectorBlock_SSEim%RvectorBlock(2)
 
     case (SSE_SYSTEM1,SSE_SYSTEM2)
       ! Set pointer to scalar solution components
-      p_rvectorDerivX_Real  => rproblem%rvector%RvectorBlock(3)
-      p_rvectorDerivX_Aimag => rproblem%rvector%RvectorBlock(4)
-      p_rvectorDerivY_Real  => rproblem%rvector%RvectorBlock(5)
-      p_rvectorDerivY_Aimag => rproblem%rvector%RvectorBlock(6)
+      p_rvectorDerivX_SSEre  => rproblem%rvector%RvectorBlock(3)
+      p_rvectorDerivX_SSEim => rproblem%rvector%RvectorBlock(4)
+      p_rvectorDerivY_SSEre  => rproblem%rvector%RvectorBlock(5)
+      p_rvectorDerivY_SSEim => rproblem%rvector%RvectorBlock(6)
     end select
 
     ! Calculate the error to the reference DerivX.
-    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX_Real,&
-        getReferenceDerivX_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX_SSEre,&
+        getReferenceDerivX_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_x)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX_Aimag,&
-        getReferenceDerivX_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivX_SSEim,&
+        getReferenceDerivX_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_x)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX_Real,&
-        getReferenceDerivX_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX_SSEre,&
+        getReferenceDerivX_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_x)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX_Aimag,&
-        getReferenceDerivX_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivX_SSEim,&
+        getReferenceDerivX_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_x)", derror)
 
     ! Calculate the error to the reference DerivY.
-    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivY_Real,&
-        getReferenceDerivY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivY_SSEre,&
+        getReferenceDerivY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_y)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivY_Aimag,&
-        getReferenceDerivY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,p_rvectorDerivY_SSEim,&
+        getReferenceDerivY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_y)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY_Real,&
-        getReferenceDerivY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY_SSEre,&
+        getReferenceDerivY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_y)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY_Aimag,&
-        getReferenceDerivY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,p_rvectorDerivY_SSEim,&
+        getReferenceDerivY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_y)", derror)
 
@@ -2345,100 +2479,100 @@ contains
     end select
 
     ! Recover second derivative by superconvergent patch recovery
-    call lsysbl_createVector(rblockDiscr, rvectorBlockX_Real, .false.)
-    call lsysbl_createVector(rblockDiscr, rvectorBlockX_Aimag, .false.)
-    call lsysbl_createVector(rblockDiscr, rvectorBlockY_Real, .false.)
-    call lsysbl_createVector(rblockDiscr, rvectorBlockY_Aimag, .false.)
-    call ppgrd_calcGradient(p_rvectorDerivX_Real, rvectorBlockX_Real,&
+    call lsysbl_createVector(rblockDiscr, rvectorBlockX_SSEre, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockX_SSEim, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockY_SSEre, .false.)
+    call lsysbl_createVector(rblockDiscr, rvectorBlockY_SSEim, .false.)
+    call ppgrd_calcGradient(p_rvectorDerivX_SSEre, rvectorBlockX_SSEre,&
         cgradType, cgradSubType)
-    call ppgrd_calcGradient(p_rvectorDerivX_Aimag, rvectorBlockX_Aimag,&
+    call ppgrd_calcGradient(p_rvectorDerivX_SSEim, rvectorBlockX_SSEim,&
         cgradType, cgradSubType)
-    call ppgrd_calcGradient(p_rvectorDerivY_Real, rvectorBlockY_Real,&
+    call ppgrd_calcGradient(p_rvectorDerivY_SSEre, rvectorBlockY_SSEre,&
         cgradType, cgradSubType)
-    call ppgrd_calcGradient(p_rvectorDerivY_Aimag, rvectorBlockY_Aimag,&
+    call ppgrd_calcGradient(p_rvectorDerivY_SSEim, rvectorBlockY_SSEim,&
         cgradType, cgradSubType)
 
     ! Calculate the error to the reference DerivXX.
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
-        getReferenceDerivXX_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_SSEre%RvectorBlock(1),&
+        getReferenceDerivXX_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_xx)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(1),&
-        getReferenceDerivXX_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_SSEim%RvectorBlock(1),&
+        getReferenceDerivXX_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_xx)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Real%RvectorBlock(1),&
-        getReferenceDerivXX_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_SSEre%RvectorBlock(1),&
+        getReferenceDerivXX_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_xx)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(1),&
-        getReferenceDerivXX_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_SSEim%RvectorBlock(1),&
+        getReferenceDerivXX_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_xx)", derror)
 
     ! Calculate the error to the reference DerivXY.
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Real%RvectorBlock(2),&
-        getReferenceDerivXY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_SSEre%RvectorBlock(2),&
+        getReferenceDerivXY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_xy)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(2),&
-        getReferenceDerivXY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockX_SSEim%RvectorBlock(2),&
+        getReferenceDerivXY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_xy)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Real%RvectorBlock(2),&
-        getReferenceDerivXY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_SSEre%RvectorBlock(2),&
+        getReferenceDerivXY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_xy)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_Aimag%RvectorBlock(2),&
-        getReferenceDerivXY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockX_SSEim%RvectorBlock(2),&
+        getReferenceDerivXY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_xy)", derror)
 
     ! Calculate the error to the reference DerivYX.
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Real%RvectorBlock(1),&
-        getReferenceDerivYX_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_SSEre%RvectorBlock(1),&
+        getReferenceDerivYX_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_yx)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(1),&
-        getReferenceDerivYX_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_SSEim%RvectorBlock(1),&
+        getReferenceDerivYX_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_yx)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Real%RvectorBlock(1),&
-        getReferenceDerivXY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_SSEre%RvectorBlock(1),&
+        getReferenceDerivXY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_yx)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(1),&
-        getReferenceDerivXY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_SSEim%RvectorBlock(1),&
+        getReferenceDerivXY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_yx)", derror)
 
     ! Calculate the error to the reference DerivYY.
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Real%RvectorBlock(2),&
-        getReferenceDerivYY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_SSEre%RvectorBlock(2),&
+        getReferenceDerivYY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Re(SSE_yy)", derror)
 
-    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(2),&
-        getReferenceDerivYY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_L2ERROR,derror,rvectorBlockY_SSEim%RvectorBlock(2),&
+        getReferenceDerivYY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "L2-error Im(SSE_yy)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Real%RvectorBlock(2),&
-        getReferenceDerivYY_Real, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_SSEre%RvectorBlock(2),&
+        getReferenceDerivYY_SSEre, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Re(SSE_yy)", derror)
 
-    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_Aimag%RvectorBlock(2),&
-        getReferenceDerivYY_Aimag, rcubatureInfo=&
+    call pperr_scalar(PPERR_H1ERROR,derror,rvectorBlockY_SSEim%RvectorBlock(2),&
+        getReferenceDerivYY_SSEim, rcubatureInfo=&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1))
     call ctab_addValue(rtable, "H1-error Im(SSE_yy)", derror)
 
@@ -2450,10 +2584,6 @@ contains
 
     if ((trim(adjustl(sucdfile)) .ne. '') .and.&
         (iucdtype .ne. UCD_FORMAT_NONE)) then
-
-      ! Calculate the velocity vector
-      call sse_calcVelocity(rvelocity,0.0_DP,rproblem%rvector,&
-          rvectorBlock_Real,rvectorBlock_Aimag)
 
       select case(iucdtype)
       case(UCD_FORMAT_GMV)
@@ -2488,18 +2618,29 @@ contains
       call ucd_addVectorByVertex(rexport, "Im(SSE)", UCD_VAR_STANDARD, &
           rproblem%rvector%RvectorBlock(2))
       call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE)", UCD_VAR_STANDARD, &
-          (/p_rvectorDerivX_Real,p_rvectorDerivY_Real/))
+          (/p_rvectorDerivX_SSEre,p_rvectorDerivY_SSEre/))
       call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE)", UCD_VAR_STANDARD, &
-          (/p_rvectorDerivX_Aimag,p_rvectorDerivY_Aimag/))
+          (/p_rvectorDerivX_SSEim,p_rvectorDerivY_SSEim/))
       call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_x)", UCD_VAR_STANDARD, &
-          (/rvectorBlockX_Real%RvectorBlock(1),rvectorBlockX_Real%RvectorBlock(2)/))
+          (/rvectorBlockX_SSEre%RvectorBlock(1),rvectorBlockX_SSEre%RvectorBlock(2)/))
       call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_x)", UCD_VAR_STANDARD, &
-          (/rvectorBlockX_Aimag%RvectorBlock(1),rvectorBlockX_Aimag%RvectorBlock(2)/))
+          (/rvectorBlockX_SSEim%RvectorBlock(1),rvectorBlockX_SSEim%RvectorBlock(2)/))
       call ucd_addVectorFieldByVertex(rexport, "Re(grad SSE_y)", UCD_VAR_STANDARD, &
-          (/rvectorBlockY_Real%RvectorBlock(1),rvectorBlockY_Real%RvectorBlock(2)/))
+          (/rvectorBlockY_SSEre%RvectorBlock(1),rvectorBlockY_SSEre%RvectorBlock(2)/))
       call ucd_addVectorFieldByVertex(rexport, "Im(grad SSE_y)", UCD_VAR_STANDARD, &
-          (/rvectorBlockY_Aimag%RvectorBlock(1),rvectorBlockY_Aimag%RvectorBlock(2)/))
+          (/rvectorBlockY_SSEim%RvectorBlock(1),rvectorBlockY_SSEim%RvectorBlock(2)/))
       
+      ! Calculate the velocity vector ...
+      call sse_calcVelocity(rvelocity,0.0_DP,rproblem%rvector,&
+          rvectorBlock_SSEre,rvectorBlock_SSEim)
+      
+      ! ... and add it to the UCD exporter
+      call ucd_addVectorFieldByVertex(rexport, "Re(Vel)", UCD_VAR_STANDARD, &
+          (/rvelocity%RvectorBlock(1),rvelocity%RvectorBlock(3),rvelocity%RvectorBlock(5)/))
+      call ucd_addVectorFieldByVertex(rexport, "Im(Vel)", UCD_VAR_STANDARD, &
+          (/rvelocity%RvectorBlock(2),rvelocity%RvectorBlock(4),rvelocity%RvectorBlock(6)/))
+      call lsysbl_releaseVector(rvelocity)
+
       ! Write the file to disc, that is it.
       call ucd_write(rexport)
       call ucd_release(rexport)
@@ -2507,12 +2648,12 @@ contains
 
     ! Clean temporal structures
     call lsysbl_releaseVector(rvelocity)
-    call lsysbl_releaseVector(rvectorBlock_Real)
-    call lsysbl_releaseVector(rvectorBlock_Aimag)
-    call lsysbl_releaseVector(rvectorBlockX_Real)
-    call lsysbl_releaseVector(rvectorBlockX_Aimag)
-    call lsysbl_releaseVector(rvectorBlockY_Real)
-    call lsysbl_releaseVector(rvectorBlockY_Aimag)
+    call lsysbl_releaseVector(rvectorBlock_SSEre)
+    call lsysbl_releaseVector(rvectorBlock_SSEim)
+    call lsysbl_releaseVector(rvectorBlockX_SSEre)
+    call lsysbl_releaseVector(rvectorBlockX_SSEim)
+    call lsysbl_releaseVector(rvectorBlockY_SSEre)
+    call lsysbl_releaseVector(rvectorBlockY_SSEim)
     call spdiscr_releaseBlockDiscr(rblockDiscr)
 
   case default
@@ -3307,9 +3448,9 @@ contains
 
 !<subroutine>
 
-  subroutine sse_calcVelocity(rvelocity,dz,rvector,rvectorGrad_Real,&
-      rvectorGrad_Aimag,rvectorHessX_Real,rvectorHessX_Aimag,&
-      rvectorHessY_Real,rvectorHessY_Aimag)
+  subroutine sse_calcVelocity(rvelocity,dz,rvector,rvectorGrad_SSEre,&
+      rvectorGrad_SSEim,rvectorHessX_SSEre,rvectorHessX_SSEim,&
+      rvectorHessY_SSEre,rvectorHessY_SSEim)
 
 !<description>
   ! Calculates the vertical and horizontal velocities (u,v,w) from the
@@ -3326,14 +3467,14 @@ contains
   real(DP), intent(in) :: dz
 
   ! Gradients of the sea surface elevation
-  type(t_vectorBlock), intent(in) :: rvectorGrad_Real
-  type(t_vectorBlock), intent(in) :: rvectorGrad_Aimag
+  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEre
+  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEim
 
   ! OPTIONAL: second derivatives of the sea surface elevation
-  type(t_vectorBlock), intent(in), optional :: rvectorHessX_Real
-  type(t_vectorBlock), intent(in), optional :: rvectorHessX_Aimag
-  type(t_vectorBlock), intent(in), optional :: rvectorHessY_Real
-  type(t_vectorBlock), intent(in), optional :: rvectorHessY_Aimag
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEre
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEim
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEre
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEim
 !</input>
 
 !<output>
@@ -3347,10 +3488,10 @@ contains
     type(t_blockDiscretisation) :: rblockDiscr
     type(t_vectorBlock) :: rcoordsDOF
     real(DP), dimension(:), pointer :: p_DcoordsX,p_DcoordsY
-    real(DP), dimension(:), pointer :: p_DsseX_Real,p_DsseX_Aimag
-    real(DP), dimension(:), pointer :: p_DsseY_Real,p_DsseY_Aimag
-    real(DP), dimension(:), pointer :: p_DvelU_Real,p_DvelU_Aimag
-    real(DP), dimension(:), pointer :: p_DvelV_Real,p_DvelV_Aimag
+    real(DP), dimension(:), pointer :: p_DsseX_SSEre,p_DsseX_SSEim
+    real(DP), dimension(:), pointer :: p_DsseY_SSEre,p_DsseY_SSEim
+    real(DP), dimension(:), pointer :: p_DvelU_SSEre,p_DvelU_SSEim
+    real(DP), dimension(:), pointer :: p_DvelV_SSEre,p_DvelV_SSEim
     complex(DP) :: calpha1,calpha2,cr1,cr2,cSSEx,cSSEY,cvelU,cvelV
     real(DP) :: dAv,dh,ds
     integer :: ipoint,i
@@ -3371,17 +3512,17 @@ contains
     end do
        
     ! Set pointer to horizontal velocity values
-    call lsysbl_createVector(rblockDiscr, rvelocity, .false.)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(1), p_DvelU_Real)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(2), p_DvelU_Aimag)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(3), p_DvelV_Real)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(4), p_DvelV_Aimag)
+    call lsysbl_createVector(rblockDiscr, rvelocity, .true.)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(1), p_DvelU_SSEre)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(2), p_DvelU_SSEim)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(3), p_DvelV_SSEre)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(4), p_DvelV_SSEim)
 
     ! Set pointers to gradient values
-    call lsyssc_getbase_double(rvectorGrad_Real%RvectorBlock(1), p_DsseX_Real)
-    call lsyssc_getbase_double(rvectorGrad_Real%RvectorBlock(2), p_DsseY_Real)
-    call lsyssc_getbase_double(rvectorGrad_Aimag%RvectorBlock(1), p_DsseX_Aimag)
-    call lsyssc_getbase_double(rvectorGrad_Aimag%RvectorBlock(2), p_DsseY_Aimag)
+    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(1), p_DsseX_SSEre)
+    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(2), p_DsseY_SSEre)
+    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(1), p_DsseX_SSEim)
+    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(2), p_DsseY_SSEim)
 
     ! Compute horizontal velocities (U,V) from analytical expressions
     do ipoint = 1, size(p_DcoordsX)
@@ -3400,8 +3541,8 @@ contains
       calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
       
       ! Compute complex sea surface elevation
-      cSSEx = cmplx(p_DsseX_Real(ipoint),p_DsseX_Aimag(ipoint))
-      cSSEy = cmplx(p_DsseY_Real(ipoint),p_DsseY_Aimag(ipoint))
+      cSSEx = cmplx(p_DsseX_SSEre(ipoint),p_DsseX_SSEim(ipoint))
+      cSSEy = cmplx(p_DsseY_SSEre(ipoint),p_DsseY_SSEim(ipoint))
 
       ! Compute coefficient cr1
       cr1 = dgravaccel/(dAv*(calpha1**2))*&
@@ -3420,11 +3561,14 @@ contains
       cvelV = 0.5_DP*(cr1-cr2)/cimg
       
       ! And separate them into real and imaginary parts
-      p_DvelU_Real = real(cvelU)
-      p_DvelV_Real = real(cvelV)
-      p_DvelU_Aimag = aimag(cvelU)
-      p_DvelV_Aimag = aimag(cvelV)
+      p_DvelU_SSEre(ipoint) = real(cvelU)
+      p_DvelV_SSEre(ipoint) = real(cvelV)
+      p_DvelU_SSEim(ipoint) = aimag(cvelU)
+      p_DvelV_SSEim(ipoint) = aimag(cvelV)
     end do
+
+    ! Release DOF coordinates
+    call lsysbl_releaseVector(rcoordsDOF)
     
   end subroutine
 

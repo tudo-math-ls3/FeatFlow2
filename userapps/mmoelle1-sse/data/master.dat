@@ -4,10 +4,10 @@
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 2
+NLMAX = 6
 
 # Minimal grid level to start with in convergence study
-ILMIN = 2
+ILMIN = 6
 
 # Minimum grid level for convergence study
 
@@ -20,7 +20,7 @@ SORTSTRATEGY =
 # =2: SSE as scalar anisotropic diffusion problem
 # =3: SSE as first-order system (\sigma = A\nabla N)
 # =4: SSE as first-order system (\sigma = \nabla N)
-PROBLEMTYPE = 2
+PROBLEMTYPE = 1
 
 # Method for calculating the gradient of the solution
 # =0: Standard interpolation
@@ -34,7 +34,7 @@ GRADTYPE = 1
 GRADSUBTYPE = 0
 
 # Name of configuration
-CONFIG = TRIA_P1_SSE_SCALAR
+CONFIG = TRIA_P2P1_POISSON_SYSTEM
 #CONFIG = QUAD_Q1_POISSON_SCALAR
 
 # This defines a percentage factor (0..1) how far the fine mesh
@@ -54,7 +54,7 @@ UCDFILE = sol
 # =2: AVS
 # =3: VTK
 # =4: binary GMV
-UCDTYPE = 4
+UCDTYPE = 3
 
 ################################################################################
 [MG-SOLVER]
@@ -83,7 +83,59 @@ DEPSREL = 0e+0
 DEPSABS = 1e-12
 
 ################################################################################
-[TRIA_P1_POISSON_SCALAR]
+[MG-SOLVER-A]
+################################################################################
+
+# Minimum number of iterations
+NMINITERATIONS = 1
+
+# Maximum number of iterations
+NMAXITERATIONS = 100
+
+# Relative stopping criterion
+DEPSREL = 0e+0
+
+# Absolute stopping criterion
+DEPSABS = 1e-9
+
+################################################################################
+[COARSE-GRID-SOLVER-A]
+################################################################################
+
+# Relative stopping criterion
+DEPSREL = 0e+0
+
+# Absolute stopping criterion
+DEPSABS = 1e-12
+
+################################################################################
+[MG-SOLVER]
+################################################################################
+
+# Minimum number of iterations
+NMINITERATIONS = 1
+
+# Maximum number of iterations
+NMAXITERATIONS = 100
+
+# Relative stopping criterion
+DEPSREL = 0e+0
+
+# Absolute stopping criterion
+DEPSABS = 1e-9
+
+################################################################################
+[COARSE-GRID-SOLVER-S]
+################################################################################
+
+# Relative stopping criterion
+DEPSREL = 0e+0
+
+# Absolute stopping criterion
+DEPSABS = 1e-12
+
+################################################################################
+[TRIA_P1_POISSON_SCALAR-S]
 ################################################################################
 
 # Boundary parametrisation

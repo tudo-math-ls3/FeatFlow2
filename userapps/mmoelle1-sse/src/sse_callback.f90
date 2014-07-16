@@ -12,84 +12,99 @@
 !#
 !#
 !# 1.) coeff_MatrixA_Poisson /
-!#     coeff_MatrixA_Real /
-!#     coeff_MatrixA_Aimag
+!#     coeff_MatrixA_SSEre /
+!#     coeff_MatrixA_SSEim
 !#     -> Returns analytic valyes for the system matrix A.
 !#
-!# 2.) coeff_MatrixD_Real /
-!#     coeff_MatrixD_Aimag
+!# 2.) coeff_MatrixA_Bdr_SSEre /
+!#     coeff_MatrixA_Bdr_SSEim
+!#     -> Returns analytic valyes for the system matrix A.
+!#
+!# 3.) coeff_MatrixD_SSEre /
+!#     coeff_MatrixD_SSEim
 !#     -> Returns analytic valyes for the system matrix D.
 !#
-!# 3.) coeff_RHS_Poisson /
-!#     coeff_RHS_Real /
-!#     coeff_RHS_Aimag /
+!# 4.) coeff_MatrixD_Bdr_SSEre /
+!#     coeff_MatrixD_Bdr_SSEim
+!#     -> Returns analytic valyes for the system matrix D.
+!#
+!# 5.) coeff_RHS_Poisson /
+!#     coeff_RHS_SSEre /
+!#     coeff_RHS_SSEim /
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 4.) coeff_RHSBdr_Real /
-!#     coeff_RHSBdr_Aimag
+!# 6.) coeff_RHS_Bdr_SSEre /
+!#     coeff_RHS_Bdr_SSEim
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 5.) getBoundaryValues_Poisson /
-!#     getBoundaryValues_Real /
-!#     getBoundaryValues_Aimag
+!# 7.) getBoundaryValues_Poisson /
+!#     getBoundaryValues_SSEre /
+!#     getBoundaryValues_SSEim
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#
-!# 6.) getReferenceFunction_Poisson /
-!#     getReferenceFunction_Real /
-!#     getReferenceFunction_Aimag
+!# 8.) getReferenceFunction_Poisson /
+!#     getReferenceFunction_SSEre /
+!#     getReferenceFunction_SSEim
 !#     -> Returns the values of the analytic function and its derivatives.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 7.) getReferenceDerivX_Poisson /
-!#     getReferenceDerivX_Real /
-!#     getReferenceDerivX_Aimag
+!# 9.) getReferenceDerivX_Poisson /
+!#     getReferenceDerivX_SSEre /
+!#     getReferenceDerivX_SSEim
 !#     -> Returns the values of the analytic derivatives in x-direction.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the recovered FE gradient in comparison to the
 !#        analytic derivative
 !#
-!# 8.) getReferenceDerivY_Poisson /
-!#     getReferenceDerivY_Real /
-!#     getReferenceDerivY_Aimag
-!#     -> Returns the values of the analytic derivatives in x-direction.
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the recovered FE gradient in comparison to the
-!#        analytic derivative
+!# 10.) getReferenceDerivY_Poisson /
+!#      getReferenceDerivY_SSEre /
+!#      getReferenceDerivY_SSEim
+!#      -> Returns the values of the analytic derivatives in x-direction.
+!#      -> Is only used for the postprocessing to calculate the $L_2$- and
+!#         $H_1$-error of the recovered FE gradient in comparison to the
+!#         analytic derivative
 !#
-!# 9.) getReferenceDerivXX_Poisson /
-!#     getReferenceDerivXX_Real /
-!#     getReferenceDerivXX_Aimag
-!#     -> Returns the values of the analytic function and its derivatives.
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the FE function in comparison to the analytic
-!#        function
+!# 11.) getReferenceDerivXX_Poisson /
+!#      getReferenceDerivXX_SSEre /
+!#      getReferenceDerivXX_SSEim
+!#      -> Returns the values of the analytic function and its derivatives.
+!#      -> Is only used for the postprocessing to calculate the $L_2$- and
+!#         $H_1$-error of the FE function in comparison to the analytic
+!#         function
 !#
-!# 10.) getReferenceDerivXY_Poisson /
-!#      getReferenceDerivXY_Real /
-!#      getReferenceDerivXY_Aimag
+!# 11.) getReferenceDerivXY_Poisson /
+!#      getReferenceDerivXY_SSEre /
+!#      getReferenceDerivXY_SSEim
 !#      -> Returns the values of the analytic function and its derivatives.
 !#      -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 11.) getReferenceDerivYX_Poisson /
-!#      getReferenceDerivYX_Real /
-!#      getReferenceDerivYX_Aimag /
+!# 12.) getReferenceDerivYX_Poisson /
+!#      getReferenceDerivYX_SSEre /
+!#      getReferenceDerivYX_SSEim /
 !#      -> Returns the values of the analytic function and its derivatives.
 !#      -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 12.) getReferenceDerivYY_Poisson /
-!#      getReferenceDerivYY_Real /
-!#      getReferenceDerivYY_Aimag
+!# 13.) getReferenceDerivYY_Poisson /
+!#      getReferenceDerivYY_SSEre /
+!#      getReferenceDerivYY_SSEim
 !#     -> Returns the values of the analytic function and its derivatives.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
+!#
+!# 14.) getAnalyticValues_Poisson /
+!#      getAnalyticValues_SSE
+!#      -> Returns the values of the analytic function and its derivatives.
+!#
+!# 15.) getAnalyticVelocities_SSE
+!#      -> Returns the values of the analytic velocities.
 !#
 !# </purpose>
 !##############################################################################
@@ -122,39 +137,46 @@ module sse_callback
   private
 
   public :: coeff_MatrixA_Poisson
-  public :: coeff_MatrixA_Real
-  public :: coeff_MatrixA_Aimag
-  public :: coeff_MatrixD_Real
-  public :: coeff_MatrixD_Aimag
+  public :: coeff_MatrixA_SSEre
+  public :: coeff_MatrixA_SSEim
+  public :: coeff_MatrixA_Bdr_SSEre
+  public :: coeff_MatrixA_Bdr_SSEim
+  public :: coeff_MatrixD_SSEre
+  public :: coeff_MatrixD_SSEim
+  public :: coeff_MatrixD_Bdr_SSEre
+  public :: coeff_MatrixD_Bdr_SSEim
   public :: coeff_RHS_Poisson
-  public :: coeff_RHS_Real
-  public :: coeff_RHS_Aimag
-  public :: coeff_RHSBdr_Real
-  public :: coeff_RHSBdr_Aimag
+  public :: coeff_RHS_SSEre
+  public :: coeff_RHS_SSEim
+  public :: coeff_RHS_Bdr_SSEre
+  public :: coeff_RHS_Bdr_SSEim
   public :: getBoundaryValues_Poisson
-  public :: getBoundaryValues_Real
-  public :: getBoundaryValues_Aimag
+  public :: getBoundaryValues_SSEre
+  public :: getBoundaryValues_SSEim
   public :: getReferenceFunction_Poisson
-  public :: getReferenceFunction_Real
-  public :: getReferenceFunction_Aimag
+  public :: getReferenceFunction_SSEre
+  public :: getReferenceFunction_SSEim
   public :: getReferenceDerivX_Poisson
-  public :: getReferenceDerivX_Real
-  public :: getReferenceDerivX_Aimag
+  public :: getReferenceDerivX_SSEre
+  public :: getReferenceDerivX_SSEim
   public :: getReferenceDerivY_Poisson
-  public :: getReferenceDerivY_Real
-  public :: getReferenceDerivY_Aimag
+  public :: getReferenceDerivY_SSEre
+  public :: getReferenceDerivY_SSEim
   public :: getReferenceDerivXX_Poisson
-  public :: getReferenceDerivXX_Real
-  public :: getReferenceDerivXX_Aimag
+  public :: getReferenceDerivXX_SSEre
+  public :: getReferenceDerivXX_SSEim
   public :: getReferenceDerivXY_Poisson
-  public :: getReferenceDerivXY_Real
-  public :: getReferenceDerivXY_Aimag
+  public :: getReferenceDerivXY_SSEre
+  public :: getReferenceDerivXY_SSEim
   public :: getReferenceDerivYX_Poisson
-  public :: getReferenceDerivYX_Real
-  public :: getReferenceDerivYX_Aimag
+  public :: getReferenceDerivYX_SSEre
+  public :: getReferenceDerivYX_SSEim
   public :: getReferenceDerivYY_Poisson
-  public :: getReferenceDerivYY_Real
-  public :: getReferenceDerivYY_Aimag
+  public :: getReferenceDerivYY_SSEre
+  public :: getReferenceDerivYY_SSEim
+  public :: getAnalyticValues_Poisson
+  public :: getAnalyticValues_SSE
+  public :: getAnalyticVelocities_SSE
 
 contains
   
@@ -246,7 +268,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_MatrixA_Real(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_SSEre(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -374,7 +396,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_MatrixA_Aimag(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_SSEim(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -503,7 +525,319 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_MatrixD_Real(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixA_Bdr_SSEre(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,ibct,DpointPar,IdofsTrial,&
+      IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
+
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:), allocatable :: Dnormal
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds
+    integer :: iel,ipoint
+
+    ! Allocate temporal memory
+    allocate(Dnormal(npointsPerElement,nelements,NDIM2D))
+
+    ! Compute the normal vectors in the cubature points on the boundary
+    call boundary_calcNormalVec2D(Dpoints, Dpoints,&
+        Dnormal(:,:,1), Dnormal(:,:,2), 1)
+    
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cCalpha1
+        cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                               ds*sinh(-calpha1*dh)-&
+                    calpha1*dh*ds*cosh( calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cCalpha2
+        cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                               ds*sinh(-calpha2*dh)-&
+                    calpha2*dh*ds*cosh( calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+        
+        ! Compute real parts of the coefficients
+        Dcoefficients(1,ipoint,iel) =&
+            0.5_DP * real(       cCalpha1+cCalpha2 ) * Dnormal(ipoint,iel,1) ! C1
+        Dcoefficients(2,ipoint,iel) =&
+            0.5_DP * real( cimg*(cCalpha1-cCalpha2)) * Dnormal(ipoint,iel,2) ! C2
+        Dcoefficients(3,ipoint,iel) =&
+            0.5_DP * real(-cimg*(cCalpha1-cCalpha2)) * Dnormal(ipoint,iel,1) ! C3
+        Dcoefficients(4,ipoint,iel) =&
+            0.5_DP * real(       cCalpha1+cCalpha2 ) * Dnormal(ipoint,iel,2) ! C4
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Dnormal)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_MatrixA_Bdr_SSEim(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,ibct,DpointPar,IdofsTrial,&
+      IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
+
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:), allocatable :: Dnormal
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds
+    integer :: iel,ipoint
+
+    ! Allocate temporal memory
+    allocate(Dnormal(npointsPerElement,nelements,NDIM2D))
+
+    ! Compute the normal vectors in the cubature points on the boundary
+    call boundary_calcNormalVec2D(Dpoints, Dpoints,&
+        Dnormal(:,:,1), Dnormal(:,:,2), 1)
+    
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cCalpha1
+        cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                               ds*sinh(-calpha1*dh)-&
+                    calpha1*dh*ds*cosh( calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cCalpha2
+        cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                               ds*sinh(-calpha2*dh)-&
+                    calpha2*dh*ds*cosh( calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+        
+        ! Compute real parts of the coefficients multiplied by -1
+        Dcoefficients(1,ipoint,iel) =&
+            -0.5_DP * aimag(       cCalpha1+cCalpha2 ) * Dnormal(ipoint,iel,1) ! C1
+        Dcoefficients(2,ipoint,iel) =&
+            -0.5_DP * aimag( cimg*(cCalpha1-cCalpha2)) * Dnormal(ipoint,iel,2) ! C2
+        Dcoefficients(3,ipoint,iel) =&
+            -0.5_DP * aimag(-cimg*(cCalpha1-cCalpha2)) * Dnormal(ipoint,iel,1) ! C3
+        Dcoefficients(4,ipoint,iel) =&
+            -0.5_DP * aimag(       cCalpha1+cCalpha2 ) * Dnormal(ipoint,iel,2) ! C4
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Dnormal)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_MatrixD_SSEre(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -634,7 +968,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_MatrixD_Aimag(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_MatrixD_SSEim(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -766,6 +1100,324 @@ contains
 
 !<subroutine>
 
+  subroutine coeff_MatrixD_Bdr_SSEre(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,ibct,DpointPar,IdofsTrial,&
+      IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
+
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:), allocatable :: Dnormal
+    complex(DP) :: cDalpha1,cDalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds,dz
+    integer :: iel,ipoint
+
+    ! Allocate temporal memory
+    allocate(Dnormal(npointsPerElement,nelements,NDIM2D))
+
+    ! Compute the normal vectors in the cubature points on the boundary
+    call boundary_calcNormalVec2D(Dpoints, Dpoints,&
+        Dnormal(:,:,1), Dnormal(:,:,2), 1)
+    
+    ! Get global z-value from collection
+    dz = rcollection%DquickAccess(1)
+
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cDalpha1
+        cDalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            ((calpha1**2)*dAv*dz*sinh(calpha1*dh)-&
+                              ds*sinh(calpha1*dz)+&
+                   calpha1*dz*ds*cosh(calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cDalpha2
+        cDalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            ((calpha2**2)*dAv*dz*sinh(calpha2*dh)-&
+                              ds*sinh(calpha2*dz)+&
+                   calpha2*dz*ds*cosh(calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+        
+        ! Compute real parts of the coefficients
+        Dcoefficients(1,ipoint,iel) =&
+            0.5_DP * real(       cDalpha1+cDalpha2 ) * Dnormal(ipoint,iel,1) ! D1
+        Dcoefficients(2,ipoint,iel) =&
+            0.5_DP * real( cimg*(cDalpha1-cDalpha2)) * Dnormal(ipoint,iel,2) ! D2
+        Dcoefficients(3,ipoint,iel) =&
+            0.5_DP * real(-cimg*(cDalpha1-cDalpha2)) * Dnormal(ipoint,iel,1) ! D3
+        Dcoefficients(4,ipoint,iel) =&
+            0.5_DP * real(       cDalpha1+cDalpha2 ) * Dnormal(ipoint,iel,2) ! D4
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Dnormal)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_MatrixD_Bdr_SSEim(rdiscretisationTrial,rdiscretisationTest,&
+      rform,nelements,npointsPerElement,Dpoints,ibct,DpointPar,IdofsTrial,&
+      IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
+
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:), allocatable :: Dnormal
+    complex(DP) :: cDalpha1,cDalpha2,calpha1,calpha2
+    real(DP) :: dAv,dh,ds,dz
+    integer :: iel,ipoint
+
+    ! Allocate temporal memory
+    allocate(Dnormal(npointsPerElement,nelements,NDIM2D))
+
+    ! Compute the normal vectors in the cubature points on the boundary
+    call boundary_calcNormalVec2D(Dpoints, Dpoints,&
+        Dnormal(:,:,1), Dnormal(:,:,2), 1)
+    
+    ! Get global z-value from collection
+    dz = rcollection%DquickAccess(1)
+
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        ! Compute bottom profile
+        dh = sse_bottomProfile(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute bottom stress
+        ds = sse_bottomStress(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute vertical eddy viscosity
+        dAv = sse_eddyViscosity(Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel))
+
+        ! Compute coefficients calpha1 and calpha2
+        calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+        calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+
+        ! Compute coefficient cDalpha1
+        cDalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+            ((calpha1**2)*dAv*dz*sinh(calpha1*dh)-&
+                              ds*sinh(calpha1*dz)+&
+                   calpha1*dz*ds*cosh(calpha1*dh))/&
+            (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+
+        ! Compute coefficient cDalpha2
+        cDalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+            ((calpha2**2)*dAv*dz*sinh(calpha2*dh)-&
+                              ds*sinh(calpha2*dz)+&
+                   calpha2*dz*ds*cosh(calpha2*dh))/&
+            (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+        
+        ! Compute real parts of the coefficients multiplied by -1
+        Dcoefficients(1,ipoint,iel) =&
+            -0.5_DP * aimag(       cDalpha1+cDalpha2 ) * Dnormal(ipoint,iel,1) ! D1
+        Dcoefficients(2,ipoint,iel) =&
+            -0.5_DP * aimag( cimg*(cDalpha1-cDalpha2)) * Dnormal(ipoint,iel,2) ! D2
+        Dcoefficients(3,ipoint,iel) =&
+            -0.5_DP * aimag(-cimg*(cDalpha1-cDalpha2)) * Dnormal(ipoint,iel,1) ! D3
+        Dcoefficients(4,ipoint,iel) =&
+            -0.5_DP * aimag(       cDalpha1+cDalpha2 ) * Dnormal(ipoint,iel,2) ! D4
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Dnormal)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine coeff_RHS_Poisson(rdiscretisation,rform, &
       nelements,npointsPerElement,Dpoints, &
       IdofsTest,rdomainIntSubset,&
@@ -840,7 +1492,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_Real(rdiscretisation,rform, &
+  subroutine coeff_RHS_SSEre(rdiscretisation,rform, &
       nelements,npointsPerElement,Dpoints, &
       IdofsTest,rdomainIntSubset,&
       Dcoefficients,rcollection)
@@ -910,7 +1562,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_Aimag(rdiscretisation,rform, &
+  subroutine coeff_RHS_SSEim(rdiscretisation,rform, &
       nelements,npointsPerElement,Dpoints, &
       IdofsTest,rdomainIntSubset,&
       Dcoefficients,rcollection)
@@ -980,7 +1632,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHSBdr_Real(rdiscretisation, rform,&
+  subroutine coeff_RHS_Bdr_SSEre(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1071,7 +1723,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHSBdr_Aimag(rdiscretisation, rform,&
+  subroutine coeff_RHS_Bdr_SSEim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1244,7 +1896,7 @@ contains
 
 !<subroutine>
 
-  subroutine getBoundaryValues_Real(Icomponents,rdiscretisation,rboundaryRegion,&
+  subroutine getBoundaryValues_SSEre(Icomponents,rdiscretisation,rboundaryRegion,&
       ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
 !<description>
@@ -1326,7 +1978,7 @@ contains
 
 !<subroutine>
 
-  subroutine getBoundaryValues_Aimag(Icomponents,rdiscretisation,rboundaryRegion,&
+  subroutine getBoundaryValues_SSEim(Icomponents,rdiscretisation,rboundaryRegion,&
       ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
 !<description>
@@ -1505,7 +2157,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceFunction_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceFunction_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -1652,7 +2304,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceFunction_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceFunction_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -1898,7 +2550,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivX_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivX_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2045,7 +2697,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivX_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivX_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2291,7 +2943,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivY_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivY_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2376,7 +3028,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivY_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivY_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2560,7 +3212,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivXX_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivXX_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2707,7 +3359,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivXX_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivXX_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -2953,7 +3605,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivXY_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivXY_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3038,7 +3690,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivXY_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivXY_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3222,7 +3874,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivYX_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivYX_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3307,7 +3959,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivYX_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivYX_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3491,7 +4143,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivYY_Real(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivYY_SSEre(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3576,7 +4228,7 @@ contains
 
 !<subroutine>
 
-  subroutine getReferenceDerivYY_Aimag(cderivative,rdiscretisation, &
+  subroutine getReferenceDerivYY_SSEim(cderivative,rdiscretisation, &
       nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
       Dvalues,rcollection)
   
@@ -3656,5 +4308,186 @@ contains
 #endif
   
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine getAnalyticValues_Poisson(dx,dy,&
+      du,du_x,du_y,du_xx,du_xy,du_yy)
+
+!<description>
+    ! This function computes the values of the analytic function and
+    ! its derivatives.
+!</description>
+
+!<input>
+    ! Coordinates
+    real(DP), intent(in) :: dx,dy
+!</input>
+
+!<output>
+    ! Solution value
+    real(DP), intent(out) :: du
+
+    ! Values of the first derivatives
+    real(DP), intent(out) :: du_x,du_y
+
+    ! Values of the second derivatives
+    real(DP), intent(out) :: du_xx,du_xy,du_yy
+!</output>
+!</subroutine>
+
+    ! Solution values
+    du = sin(SYS_PI*dx) * sin(SYS_PI*dy)
+
+    ! Values of first derivatives
+    du_x = SYS_PI * cos(SYS_PI*dx) * sin(SYS_PI*dy)
+    du_y = SYS_PI * sin(SYS_PI*dx) * cos(SYS_PI*dy)
+
+    ! Values of second derivatives
+    du_xx = -SYS_PI*SYS_PI * sin(SYS_PI*dx) * sin(SYS_PI*dy)
+    du_xy =  SYS_PI*SYS_PI * cos(SYS_PI*dx) * cos(SYS_PI*dy)
+    du_yy = -SYS_PI*SYS_PI * sin(SYS_PI*dx) * sin(SYS_PI*dy)
+
+  end subroutine getAnalyticValues_Poisson
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine getAnalyticValues_SSE(dx,dy,&
+      cN,cN_x,cN_y,cN_xx,cN_xy,cN_yy)
+
+!<description>
+    ! This function computes the values of the analytic function and
+    ! its derivatives.
+!</description>
+
+!<input>
+    ! Coordinates
+    real(DP), intent(in) :: dx,dy
+!</input>
+
+!<output>
+    ! Solution value
+    complex(DP), intent(out) :: cN
+
+    ! Values of the first derivatives
+    complex(DP), intent(out) :: cN_x,cN_y
+
+    ! Values of the second derivatives
+    complex(DP), intent(out) :: cN_xx,cN_xy,cN_yy
+!</output>
+!</subroutine>
+
+#if defined(CASE_ALEX)
+    ! local variables
+    complex(DP) :: cC,calpha,cr1,cr2
+    real(DP) :: dAv,dh,ds
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+    
+    ! Compute coefficients
+    calpha = sqrt(-cimg*dtidalfreq/dAv)
+    cC     = dgravaccel/(dAv*(calpha**3))*&
+        ((ds*sin(calpha*dh))/(calpha*dAv*sin(calpha*dh)-ds*cos(calpha*dh))+dh*calpha)
+    cr1    = 0.5_DP * (1.0_DP/dlengthB + sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+    cr2    = 0.5_DP * (1.0_DP/dlengthB - sqrt( 1.0_DP/(dlengthB**2) - 4.0_DP*cimg*dtidalfreq/cC))
+
+    ! Solution values    
+    cN = (cr1*exp(cr1*dlength+cr2*dx)-&
+          cr2*exp(cr1*dx+cr2*dlength))/&
+         (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength))
+
+    ! Values of first derivatives
+    cN_x = cr1*cr2*(cr2*exp(cr1*dlength+cr2*dx)-&
+                    cr1*exp(cr1*dx+cr2*dlength))/&
+                   (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength))
+    cN_y = cmplx(0.0_DP,0.0_DP)
+
+    ! Values of second derivatives
+    cN_xx = (cr1**2)*(cr2**2)*(exp(cr1*dlength+cr2*dx)-&
+                               exp(cr1*dx+cr2*dlength))/&
+                          (cr1*exp(cr1*dlength)-cr2*exp(cr2*dlength))
+    cN_xy = cmplx(0.0_DP,0.0_DP)
+    cN_yy = cmplx(0.0_DP,0.0_DP)
+#else
+#error 'Test case is undefined.'
+#endif
+
+  end subroutine getAnalyticValues_SSE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine getAnalyticVelocities_SSE(dx,dy,dz,cU,cV,cW)
+
+!<description>
+    ! This function computes the values of the analytic function and
+    ! its derivatives.
+!</description>
+
+!<input>
+    ! Coordinates
+    real(DP), intent(in) :: dx,dy,dz
+!</input>
+
+!<output>
+    ! Velocity values
+    complex(DP), intent(out) :: cU,cV,cW
+!</output>
+!</subroutine>
+
+#if defined(CASE_ALEX)
+    ! local variables
+    complex(DP) :: calpha,cbeta,calpha1,calpha2,cr1,cr2
+    complex(DP) :: cN,cN_x,cN_y,cN_xx,cN_xy,cN_yy
+    real(DP) :: dAv,dh,ds
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+    
+    ! Compute sea-surface elevation and its derivatives
+    call getAnalyticValues_SSE(dx,dy,cN,cN_x,cN_y,cN_xx,cN_xy,cN_yy)
+
+    ! Compute coefficients
+    calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel/dAv))
+    calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel/dAv))
+
+    cr1 = dgravaccel/(dAv*calpha1**2)*((ds*cosh(calpha1*dz))/&
+        (calpha1*dAv*sinh(calpha1*dh) + ds*cosh(calpha1*dh))-1.0_DP)*(cN_x+cimg*cN_y)
+    cr2 = dgravaccel/(dAv*calpha2**2)*((ds*cosh(calpha2*dz))/&
+        (calpha2*dAv*sinh(calpha2*dh) + ds*cosh(calpha2*dh))-1.0_DP)*(cN_x-cimg*cN_y)
+
+    ! Horizontal velocities
+    cU = 0.5_DP*(cr1+cr2)
+    cV = 0.5_DP*(cr1-cr2)/cimg
+
+    ! Vertical velocity
+    cbeta  = sqrt(cimg*dtidalfreq/dAv);
+    calpha = ds/(dAv*cbeta*sinh(cbeta*dheight)+ds*cosh(cbeta*dheight))
+    cW     = dgravaccel/(cimg*dtidalfreq)*(cN_x/dlengthB - cN_xx)*&
+        (dz-calpha/cbeta*sinh(cbeta*dz)) + cimg*dtidalfreq*cN
+
+#else
+#error 'Test case is undefined.'
+#endif
+
+  end subroutine getAnalyticVelocities_SSE
 
 end module sse_callback
