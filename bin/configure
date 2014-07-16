@@ -1386,6 +1386,10 @@ sub create_feat2AppMakefile {
 	"########################################################################\n" .
 	"\n";
 
+    print MAKEFILE_HDL
+        "# Get name of Makefile for recursive make invocations\n" .
+        "MAKEFILE_NAME         = \$(firstword \$(MAKEFILE_LIST))\n\n";
+
     if (defined($cl{'ID'})) {
 	print MAKEFILE_HDL
 	    "# Fix a particular build ID, do not use the default one\n" .
@@ -2735,7 +2739,7 @@ sub create_feat2AppMakefile {
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge:\tpurge-libs purge-app\n" .
         "\t\@echo \"# Removing Makefile\"\n" .
-        "\t-rm -f $MAKEFILE $MAKEFILE.bak\n\n" .
+        "\t-rm -f $MAKEFILE $MAKEFILE.bak $(MAKEFILE_NAME)\n\n" .
 
         "# Clean all FEAT2 object files for all architectures\n" .
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
@@ -2798,7 +2802,7 @@ sub create_feat2AppMakefile {
         "\t\@if test -z \"\$(FILE)\"; then \\\n" .
         "\t    echo \"ERROR: No file specified to delete in directory\"; \\\n" .
         "\t    echo \"       \$(OBJDIR).\"; \\\n" .
-        "\t    echo \"Usage: \$(MAKE) delete FILE=<module.o>\"; \\\n" .
+        "\t    echo \"Usage: \$(MAKE) -f \$(MAKEFILE_NAME) delete FILE=<module.o>\"; \\\n" .
         "\telse \\\n" .
         "\t    if test -f \"\$(OBJDIR)/\$(FILE)\"; then \\\n" .
         "\t\techo \"# Removing \$(OBJDIR)/\$(FILE)\"; \\\n" .
@@ -3014,11 +3018,11 @@ sub create_feat2AppMakefile {
         "\t\$(patsubst %, lib%, \$(BUILDLIB)) \\\n" .
         "\t\$(patsubst %, lib%.a, \$(BUILDLIB))\n" .
         "\$(BUILDLIB):\n" .
-        "\t@\$(MAKE) \$(OBJDIR_LIB)/lib\$@.a\n" .
+        "\t@\$(MAKE) -f \$(MAKEFILE_NAME) \$(OBJDIR_LIB)/lib\$@.a\n" .
         "\$(patsubst %, lib%, \$(BUILDLIB)):\n" .
-        "\t@\$(MAKE) \$(OBJDIR_LIB)/\$@.a\n" .
+        "\t@\$(MAKE) -f \$(MAKEFILE_NAME) \$(OBJDIR_LIB)/\$@.a\n" .
         "\$(patsubst %, lib%.a, \$(BUILDLIB)):\n" .
-        "\t@\$(MAKE) \$(OBJDIR_LIB)/\$@\n\n" .
+        "\t@\$(MAKE) -f \$(MAKEFILE_NAME) \$(OBJDIR_LIB)/\$@\n\n" .
 
     # Shortcuts for all FEAT2 object files:
     # e.g. invoke 'make assembly.o' to have 'make $(OBJDIR)/assembly.o' built
@@ -3030,7 +3034,7 @@ sub create_feat2AppMakefile {
         "\$(patsubst %.f, %.o, \$(notdir \$(SRCF77))) \\\n" .
         "\$(patsubst %.f90, %.o, \$(notdir \$(SRCF90) \$(notdir \$(PROGRAM_FILE)))) \\\n" .
         "\$(notdir \$(OBJEXTRA)):\n" .
-        "\t\@\$(MAKE) \$(OBJDIR)/\$\@\n\n\n\n";
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) \$(OBJDIR)/\$\@\n\n\n\n";
 
 
     ##############################################################################
@@ -3052,7 +3056,7 @@ sub create_feat2AppMakefile {
     #    "\t\@\$(foreach target, \\\n" .
     #    "\t    check-settings-objdir check-settings-objdir_lib \\\n" .
     #    "\t    store-settings-objdir store-settings-objdir_lib, \\\n" .
-    #    "\t    \$(MAKE) \$(target) || exit 1; )\n" .
+    #    "\t    \$(MAKE) -f \$(MAKEFILE_NAME) \$(target) || exit 1; )\n" .
     #    "endif\n\n" .
 
         "OBJDIR_LOCKFILE     = \$(OBJDIR)/LOCK.compile-env-settings\n" .
@@ -3077,7 +3081,7 @@ sub create_feat2AppMakefile {
         "\t\techo \"#\"; \\\n" .
         "\t\techo; \\\n" .
         "\t\tsleep \$(WAITTIME); \\\n" .
-        "\t\t\$(MAKE) check-or-store-settings; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) check-or-store-settings; \\\n" .
         "\t    else \\\n" .
         "\t\techo; \\\n" .
         "\t\techo \"#\"; \\\n" .
@@ -3095,9 +3099,9 @@ sub create_feat2AppMakefile {
         "\t    touch \$(OBJDIR_LOCKFILE); \\\n" .
         "\t    error=0; \\\n" .
         "\t    if test -s \$(OBJDIR)/\$(COMPILER_SETTINGS); then \\\n" .
-        "\t\t\$(MAKE) check-settings-objdir || error=1; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) check-settings-objdir || error=1; \\\n" .
         "\t    else \\\n" .
-        "\t\t\$(MAKE) store-settings-objdir || error=1; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) store-settings-objdir || error=1; \\\n" .
         "\t    fi; \\\n" .
         "\t    rm -f \$(OBJDIR_LOCKFILE); \\\n" .
         "\t    if test \$\${error} = 1; then \\\n" .
@@ -3119,7 +3123,7 @@ sub create_feat2AppMakefile {
         "\t\techo \"#\"; \\\n" .
         "\t\techo; \\\n" .
         "\t\tsleep \$(WAITTIME); \\\n" .
-        "\t\t\$(MAKE) check-or-store-settings; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) check-or-store-settings; \\\n" .
         "\t    else \\\n" .
         "\t\techo; \\\n" .
         "\t\techo \"#\"; \\\n" .
@@ -3137,9 +3141,9 @@ sub create_feat2AppMakefile {
         "\t    touch \$(OBJDIR_LIB_LOCKFILE); \\\n" .
         "\t    error=0; \\\n" .
         "\t    if test -s \$(OBJDIR_LIB)/\$(COMPILER_SETTINGS); then \\\n" .
-        "\t\t\$(MAKE) check-settings-objdir_lib || error=1; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) check-settings-objdir_lib || error=1; \\\n" .
         "\t    else \\\n" .
-        "\t\t\$(MAKE) store-settings-objdir_lib || error=1; \\\n" .
+        "\t\t\$(MAKE) -f \$(MAKEFILE_NAME) store-settings-objdir_lib || error=1; \\\n" .
         "\t    fi; \\\n" .
         "\t    rm -f \$(OBJDIR_LIB_LOCKFILE); \\\n" .
         "\t    if test \$\${error} = 1; then \\\n" .
@@ -3265,7 +3269,7 @@ sub create_feat2AppMakefile {
         "\t    echo \"# build.\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
         "\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars}\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
         "\t    echo \"# ---------------------------------------------------------------------\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
@@ -3301,9 +3305,9 @@ sub create_feat2AppMakefile {
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# Once again: This FEAT2 application SHOULD BE RECOMPILED.\"; \\\n" .
         "\t    echo \"# Please issue at least a\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-app; \$(MAKE) \$\${overwrittenmakevars} obj\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean-app; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} obj\"; \\\n" .
         "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) -f \$()MAKEFILENAME \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars}\"; \\\n" .
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# (Note: If you believe this is a false positive result and know what\"; \\\n" .
         "\t    echo \"#        you are doing you can deactivate this object files\"; \\\n" .
@@ -3383,7 +3387,7 @@ sub create_feat2AppMakefile {
         "\t    echo \"# build.\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
         "\t    overwrittenmakevars=\"`echo \$(MAKEFLAGS) | awk '/^.* -- / { sub(/^.* -- /, \"\"); print \$0}'`\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) -f $\(MAKEFILENAME) \$\${overwrittenmakevars} libs\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean-libs; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} libs\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
         "\t    echo \"# ---------------------------------------------------------------------\"; \\\n" .
         "\t    echo \"#\"; \\\n" .
@@ -3419,9 +3423,9 @@ sub create_feat2AppMakefile {
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# Once again: The libraries this FEAT2 application relies on SHOULD BE\"; \\\n" .
         "\t    echo \"# RECOMPILED. Please issue at least a\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean-libs; \$(MAKE) \$\${overwrittenmakevars} libs\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean-libs; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} libs\"; \\\n" .
         "\t    echo \"# or if you prefer tabula rasa\"; \\\n" .
-        "\t    echo \"#     % \$(MAKE) \$\${overwrittenmakevars} clean; \$(MAKE) \$\${overwrittenmakevars}\"; \\\n" .
+        "\t    echo \"#     % \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars} clean; \$(MAKE) -f \$(MAKEFILE_NAME) \$\${overwrittenmakevars}\"; \\\n" .
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# (Note: If you believe this is a false positive result and know what\"; \\\n" .
         "\t    echo \"#        you are doing you can deactivate this object files\"; \\\n" .
@@ -4026,8 +4030,8 @@ sub create_feat2BenchmarkMakefile {
         ".PHONY:\tbenchmark compile compile-libs compile-apps compile-META libs\n" .
         "compile:\tbenchmark\n" .
         "benchmark:\n" .
-        "\t\@\$(MAKE) compile-libs\n" .
-        "\t\@\$(MAKE) compile-apps\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) compile-libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) compile-apps\n" .
         "\n" .
         "libs:\tcompile-libs\n" .
         "compile-libs:\n" .
@@ -4048,7 +4052,7 @@ sub create_feat2BenchmarkMakefile {
         "#  lead to a re-compilation)\n" .
         ".PHONY:\t\$(APPS)\n" .
         "\$(APPS): compile-libs\n" .
-        "\t\@\$(MAKE) APPNAME=\$\@ \\\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) APPNAME=\$\@ \\\n" .
         "\t\t SRCDIR=\$(filter \$(\@:\$(APPBASE)-%=apps_%) \\\n" .
         "\t\t\t\t \$(\@:\$(APPBASE)-%=userapps_%) \\\n" .
         "\t\t\t\t \$(\@:\$(APPBASE)-%=tools_%) \\\n" .
@@ -4072,15 +4076,15 @@ sub create_feat2BenchmarkMakefile {
         ".PHONY:\ttest-compile test-compile-apps \$(APPS:%=test-compile-%)\n" .
         "test-compile:\tOPT=NO\n" .
         "test-compile:\n" .
-        "#\t\@\$(MAKE) compile-libs\n" .
-        "\t\@\$(MAKE) test-compile-apps\n" .
+        "#\t\@\$(MAKE) -f \$(MAKEFILE_NAME) compile-libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) test-compile-apps\n" .
         "\n" .
         "test-compile-apps:\t\$(foreach APP, \$(APPS), test-compile-\$(APP) )\n" .
         "\n" .
         "# Compile a single FEAT2 benchmark application\n" .
         "# (Tricky part is reconstructing source directory name from application name.)\n" .
         "\$(APPS:%=test-compile-%):\n" .
-        "\t\@\$(MAKE) APPNAME=\$(\@:test-compile-%=\$(ID)-%) \\\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) APPNAME=\$(\@:test-compile-%=\$(ID)-%) \\\n" .
         "\t\t SRCDIR=\$(filter \$(\@:test-compile-\$(APPBASE)-%=apps_%) \\\n" .
         "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=userapps_%) \\\n" .
         "\t\t\t\t \$(\@:test-compile-\$(APPBASE)-%=tools_%) \\\n" .
@@ -4113,22 +4117,22 @@ sub create_feat2BenchmarkMakefile {
 	"        # bin/nec_schedule_tests. Example:\n" .
 	"        #  make AUTOPART0020 AUTOPART0021 BC0001 BC0003 NAVSTO-SOL11-0002 run\n" .
         "\t\@echo \$\@ >> \$(TEMPORARY_RUN_SCRIPT)\n" .
-        "\t\@\$(MAKE) TESTCASES=\$(TEMPORARY_RUN_SCRIPT) create-script\n\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) TESTCASES=\$(TEMPORARY_RUN_SCRIPT) create-script\n\n" .
 
         "# Create script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in a accordingly named\n" .
         "# *.fbconf file.\n" .
         ".PHONY:\t\$(TESTSETS) create-script\n" .
         "\$(TESTSETS):\n" .
-        "\t\@\$(MAKE) TESTCASES=\$\@.fbconf create-script\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) TESTCASES=\$\@.fbconf create-script\n" .
         "\n" .
         "# Create a sh script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in tests/\$(TESTCASES).\n" .
 	".PHONY: create-script\n" .
 	"create-script:\n" .
         "\t\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
-        "\t\@\$(MAKE) create-script-header\n" .
-        "\t\@\$(MAKE) create-script-body\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) create-script-header\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) create-script-body\n" .
 	"\n" .
 	".PHONY: create-script-header\n" .
 	"create-script-header:  COMPILERVERSION=\n" .
@@ -4249,7 +4253,7 @@ sub create_feat2BenchmarkMakefile {
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) purge-app ); )\n" .
         "\t\@-\$(foreach dir, \$(SRCDIRS), rm \$(dir)/$MAKEFILE \$(dir)/$MAKEFILE.bak; )\n" .
         "endif\n" .
-        "\trm -f $MAKEFILE $MAKEFILE.bak\n" .
+        "\trm -f $MAKEFILE $MAKEFILE.bak $(MAKEFILE_NAME)\n" .
         "\n\n\n" .
 
 
