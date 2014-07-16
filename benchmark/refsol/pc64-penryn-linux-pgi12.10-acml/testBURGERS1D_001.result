@@ -36,7 +36,7 @@ MG: Iterations/Rate of convergence: 2 /4.318011908101007E-02
 NLSOL: Iteration 7, !!RES!! = 4.012371320275172E-06
 MG: Iterations/Rate of convergence: 2 /3.575555643697238E-02
 NLSOL: Iteration 8, !!RES!! = 1.445299167629763E-06
-MG: Iterations/Rate of convergence: 2 /4.735425181609333E-02
+MG: Iterations/Rate of convergence: 2 /4.735425181609332E-02
 NLSOL: Iteration 9, !!RES!! = 4.746702577898629E-07
 MG: Iterations/Rate of convergence: 2 /5.416323288746311E-02
 NLSOL: Iteration 10, !!RES!! = 1.679158506469274E-07
@@ -44,7 +44,7 @@ MG: Iterations/Rate of convergence: 2 /5.246937427054679E-02
 NLSOL: Iteration 11, !!RES!! = 5.334386399620902E-08
 MG: Iterations/Rate of convergence: 2 /4.856293193505468E-02
 NLSOL: Iteration 12, !!RES!! = 1.812491174764904E-08
-MG: Iterations/Rate of convergence: 2 /3.833142158339768E-02
+MG: Iterations/Rate of convergence: 2 /3.833142158339767E-02
 NLSOL: Iteration 13, !!RES!! = 5.809180454756322E-09
 
 Nonlinear solver statistics
