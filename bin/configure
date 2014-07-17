@@ -3912,6 +3912,10 @@ sub create_feat2BenchmarkMakefile {
     }
 
     print MAKEFILE_HDL
+        "# Get name of Makefile for recursive make invocations\n" .
+        "MAKEFILE_NAME         = \$(firstword \$(MAKEFILE_LIST))\n\n";
+
+    print MAKEFILE_HDL
         "# Basename of all FEAT2 benchmark applications\n" .
         "APPBASE  = feat2benchmark\n" .
         "\n" .
@@ -4035,14 +4039,14 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "libs:\tcompile-libs\n" .
         "compile-libs:\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) libs\n" .
         "\n" .
         "# Generic rule to build a specific library only\n" .
         ".PHONY:\tagmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "\tliblapack.a libsplib.a libumfpack.a splib umfpack\n" .
         "agmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "liblapack.a libsplib.a libumfpack.a splib umfpack:\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "\n" .
         "compile-apps:\t\$(foreach APP, \$(APPS), \$(APP) )\n" .
         "\n" .
@@ -4062,7 +4066,7 @@ sub create_feat2BenchmarkMakefile {
         "# Compile a FEAT2 benchmark application\n" .
         "compile-META:\n" .
         "\t\@echo \"# Compiling FEAT2 benchmark application \$(APP)...\"\n" .
-        "\t\@( \$(MAKE) -C\$(SRCDIR) APPNAME=../\$(APPNAME) )\n" .
+        "\t\@( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) APPNAME=../\$(APPNAME) )\n" .
         "\t\@echo \"# FEAT2 benchmark application \$(APPNAME) successfully compiled.\"\n" .
         "\n" .
         "\n" .
@@ -4216,10 +4220,10 @@ sub create_feat2BenchmarkMakefile {
         "endif\n" .
         "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
-	"\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
-        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) clean-app ); )\n" .
+	"\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(dir) clean-app ); )\n" .
         "endif\n" .
         "endif\n\n" .
         "# Clean up all FEAT2 object files for all applications for current architecture\n" .
@@ -4229,17 +4233,17 @@ sub create_feat2BenchmarkMakefile {
         "clean-app:\n" .
         "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
-        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) \$\@ ); )\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(dir) \$\@ ); )\n" .
         "endif\n" .
         "endif\n\n" .
         "clean-libs:\n" .
         "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
-	"\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
+	"\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
         "endif\n" .
         "endif\n\n" .
         "# Clean up FEAT2 output and auxiliary files for the FEAT2 benchmark,\n" .
@@ -4247,10 +4251,10 @@ sub create_feat2BenchmarkMakefile {
         "# for all build IDs.\n" .
         "purge:\tclean\n" .
         "ifneq (\$(SRCDIR),)\n" .
-        "\t\@\$(MAKE) -C\$(SRCDIR) purge-libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) purge-libs\n" .
         "endif\n" .
         "ifneq (\$(SRCDIRS),)\n" .
-        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) purge-app ); )\n" .
+        "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(dir) purge-app ); )\n" .
         "\t\@-\$(foreach dir, \$(SRCDIRS), rm \$(dir)/$MAKEFILE \$(dir)/$MAKEFILE.bak; )\n" .
         "endif\n" .
         "\trm -f $MAKEFILE $MAKEFILE.bak $(MAKEFILE_NAME)\n" .
