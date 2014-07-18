@@ -184,7 +184,7 @@
 
 module transformation
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use fsystem
   use genoutput

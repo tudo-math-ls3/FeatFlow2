@@ -15,7 +15,7 @@ module signals
 
 #include "kernel/feat2macros.h"
 
-!$use omp_lib
+!$ use omp_lib
   use genoutput
 
   implicit none

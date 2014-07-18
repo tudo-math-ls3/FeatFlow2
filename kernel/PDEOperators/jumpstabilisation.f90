@@ -46,7 +46,7 @@
 
 module jumpstabilisation
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use bilinearformevaluation
   use cubature

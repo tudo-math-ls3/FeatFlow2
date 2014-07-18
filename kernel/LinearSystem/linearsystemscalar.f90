@@ -349,7 +349,7 @@
 
 module linearsystemscalar
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistInt
   use arraylistInt_Int
   use dofmapping

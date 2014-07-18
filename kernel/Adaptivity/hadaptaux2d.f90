@@ -281,7 +281,7 @@
 
 module hadaptaux2d
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistInt
   use basicgeometry
   use collection

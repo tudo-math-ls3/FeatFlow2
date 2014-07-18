@@ -38,7 +38,7 @@
 
 module dofmapping
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use element
   use fsystem

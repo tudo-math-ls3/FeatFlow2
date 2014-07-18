@@ -39,7 +39,7 @@
 
 module pprocnavierstokes
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use bcassemblybase
   use boundary

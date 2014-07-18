@@ -74,7 +74,7 @@
 
 module hadaptaux1d
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistInt
   use collection
   use fsystem

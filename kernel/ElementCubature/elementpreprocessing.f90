@@ -68,7 +68,7 @@
 
 module elementpreprocessing
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use derivatives
   use element

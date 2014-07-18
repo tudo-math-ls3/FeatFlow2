@@ -1,6 +1,6 @@
 module arraylistSP
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistbase
   use fsystem
   use genoutput

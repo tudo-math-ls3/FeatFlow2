@@ -48,7 +48,7 @@ module afcstabscalarfct
 
 #include "kernel/feat2macros.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabscalar
   use basicgeometry

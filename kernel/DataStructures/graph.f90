@@ -73,7 +73,7 @@
 
 module graph
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistInt
   use fsystem
   use genoutput

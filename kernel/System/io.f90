@@ -37,7 +37,7 @@
 
 module io
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
 

@@ -66,7 +66,7 @@
 
 module multileveloperators
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use collection
   use cubature

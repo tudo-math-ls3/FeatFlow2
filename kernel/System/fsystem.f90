@@ -128,7 +128,7 @@
 
 module fsystem
 
-!$use omp_lib
+!$ use omp_lib
 
   implicit none
 

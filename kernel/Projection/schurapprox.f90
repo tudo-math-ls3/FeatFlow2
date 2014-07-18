@@ -98,7 +98,7 @@
 
 module schurapprox
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
   use linearsystemscalar

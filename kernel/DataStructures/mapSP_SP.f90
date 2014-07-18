@@ -1,6 +1,6 @@
 module mapSP_SP
 
-!$use omp_lib
+!$ use omp_lib
   use mapbase
   use fsystem
   use genoutput

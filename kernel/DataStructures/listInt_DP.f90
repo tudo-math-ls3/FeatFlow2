@@ -1,6 +1,6 @@
 module listInt_DP
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
   use listbase

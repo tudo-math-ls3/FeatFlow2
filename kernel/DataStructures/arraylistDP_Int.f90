@@ -1,6 +1,6 @@
 module arraylistDP_Int
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistbase
   use fsystem
   use genoutput

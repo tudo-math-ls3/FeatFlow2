@@ -66,7 +66,7 @@
 
 module trilinearformevaluation
 
-!$use omp_lib
+!$ use omp_lib
   use bilinearformevaluation
   use collection, only: t_collection
   use cubature

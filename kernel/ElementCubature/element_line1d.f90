@@ -11,7 +11,7 @@
 
 module element_line1d
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use elementbase
   use derivatives

@@ -19,7 +19,7 @@
 
 module hadaptaux3d
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use fsystem
   use hadaptaux

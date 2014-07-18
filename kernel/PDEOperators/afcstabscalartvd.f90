@@ -49,7 +49,7 @@
 
 module afcstabscalartvd
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabscalar
   use basicgeometry

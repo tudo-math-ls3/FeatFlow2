@@ -72,7 +72,7 @@
 
 module hadaptaux
 
-!$use omp_lib
+!$ use omp_lib
   use arraylistInt
   use basicgeometry
   use fsystem

@@ -12,7 +12,7 @@
 
 module element_prism3d
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use derivatives
   use elementbase

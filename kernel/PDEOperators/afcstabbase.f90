@@ -154,7 +154,7 @@
 !##############################################################################
 module afcstabbase
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use fsystem
   use genoutput

@@ -1,6 +1,6 @@
 module mapDP
 
-!$use omp_lib
+!$ use omp_lib
   use mapbase
   use fsystem
   use genoutput

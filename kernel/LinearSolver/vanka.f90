@@ -170,7 +170,7 @@
 
 module vanka
 
-!$use omp_lib
+!$ use omp_lib
   use dofmapping
   use element
   use fsystem

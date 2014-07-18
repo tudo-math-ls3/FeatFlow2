@@ -32,7 +32,7 @@
 
 module domainintegration
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use element
   use fsystem

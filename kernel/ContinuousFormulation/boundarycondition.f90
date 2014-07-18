@@ -129,7 +129,7 @@
 
 module boundarycondition
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use boundary
   use fictitiousboundary

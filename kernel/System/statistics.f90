@@ -137,7 +137,7 @@ module statistics
 
 #include "kernel/feat2macros.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
 

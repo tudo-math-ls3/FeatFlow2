@@ -137,7 +137,7 @@
 
 module ucd
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use storage
   use genoutput

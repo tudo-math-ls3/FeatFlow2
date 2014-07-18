@@ -39,7 +39,7 @@
 
 module afcstabscalar
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use fsystem
   use genoutput

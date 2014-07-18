@@ -132,7 +132,7 @@ module storage
 #include "kernel/feat2macros.h"
 #include "kernel/feat2constants.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use fpersistence
   use genoutput

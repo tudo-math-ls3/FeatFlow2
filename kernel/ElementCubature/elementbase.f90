@@ -12,7 +12,7 @@
 
 module elementbase
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use derivatives
   use fsystem
