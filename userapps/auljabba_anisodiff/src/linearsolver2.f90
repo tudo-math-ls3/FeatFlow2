@@ -650,7 +650,7 @@
 
 module linearsolver2
 
-!$use omp_lib
+!$ use omp_lib
 #ifndef ENABLE_AGMG
   use agmgdummy
 #endif

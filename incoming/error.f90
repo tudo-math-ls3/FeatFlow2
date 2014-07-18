@@ -11,7 +11,7 @@
 !##############################################################################
 module error
 
-!$use omp_lib
+!$ use omp_lib
   use genoutput
   use fsystem
 
