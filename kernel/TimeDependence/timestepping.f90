@@ -117,6 +117,18 @@ module timestepping
   ! Identifier for fractional-step theta scheme as proposed by Glowinski
   integer, parameter, public :: TSCHM_FS_GLOWINSKI   = 2
 
+  ! Identifier for classic fractional-step theta scheme in DIRK context
+  integer, parameter, public :: TSCHM_FS_DIRK        = 3
+
+  ! Identifier for DIRK34L as proposed by Joachim Rang
+  integer, parameter, public :: TSCHM_DIRK34La       = 4
+
+  ! Identifier for another solution of the defining equations for DIRK34L
+  integer, parameter, public :: TSCHM_DIRK34Lb       = 5
+
+  ! Identifier for DIRK44L as proposed by Joachim Rang
+  integer, parameter, public :: TSCHM_DIRK44L        = 6
+
 !</constantblock>
 
 !</constants>
@@ -204,6 +216,22 @@ module timestepping
     ! Special values for Fractional Step.
     real(DP)                 :: dthStep
 
+    ! Coefficients for diagonally implicit Runge-Kutta schemes
+    real(DP), dimension(4,4) :: dcoeffA
+
+    ! Coefficients for diagonally implicit Runge-Kutta schemes
+    real(DP), dimension(4)   :: dcoeffB
+
+    ! Coefficients for diagonally implicit Runge-Kutta schemes
+    real(DP), dimension(4)   :: dcoeffC
+
+    ! Simulation time in stage 1 of a diagonally implicit Runge-Kutta schemes, substeps
+    ! determine their time using this base
+    real(DP)                 :: dtimeDIRKstage1
+
+    ! step length parameter for diagonally implicit Runge-Kutta schemes
+    real(DP)                 :: dtau
+
     ! Weight in front of the matrix on the LHS.
     real(DP)                 :: dweightMatrixLHS
 
@@ -283,7 +311,11 @@ contains
 !</function>
 
     select case (rtstepScheme%ctimestepType)
-    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI)
+    case (TSCHM_DIRK44L)
+      iorder = 4
+    case (TSCHM_DIRK34La, TSCHM_DIRK34Lb)
+      iorder = 3
+    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI, TSCHM_FS_DIRK)
       iorder = 2
     case (TSCHM_ONESTEP)
       if (rtstepScheme%dthStep .eq. 0.5_DP) then
@@ -311,7 +343,9 @@ contains
 
 !<input>
   ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme
-  ! or TSCHM_FRACTIONALSTEP/TSCHM_FS_GLOWINSKI for Fractional Step.
+  ! or TSCHM_FRACTIONALSTEP/TSCHM_FS_GLOWINSKI for Fractional Step or
+  ! TSCHM_DIRK34La/b or TSCHM_DIRK44L for diagonally implicit, stiffly
+  ! accurate, L-stable Runge-Kutta method of 3rd or 4th order
   integer, intent(in)    :: ctimestepType
 
   ! The initial simulational time.
@@ -328,8 +362,8 @@ contains
   !  =0.0: Forward Euler
   !  =1.0: Backward Euler
   !  =0.5: Crank Nicolson
-  ! Ignored for fractional-step. If not specified, dtheta=1.0 (Backward Euler)
-  ! is used in one-step schemes.
+  ! Ignored for fractional-step and DIRK schemes. If not specified, dtheta=1.0 (Backward
+  ! Euler) is used in one-step schemes.
   real(DP), intent(in), optional   :: dtheta
 !</input>
 
@@ -398,19 +432,23 @@ contains
       ! The new FS-theta scheme as proposed in
       !  @InBook{Glowinski2003,
       !     author    = {Roland Glowinski},
-      !     title     = {Numerical Methods for Fluids, Part 3. Finite Element Methods for Incompressible Viscous Flow},
+      !     title     = {Numerical Methods for Fluids, Part 3. Finite Element Methods
+      !                  for Incompressible Viscous Flow},
       !     publisher = {North-Holland},
       !     address   = {Amsterdam},
       !     year      = {2003},
-      !     series    = {Handbook of Numerical Analysis, edited by Ciarlet, Philippe G. and Lions, Jacques Louis},
+      !     series    = {Handbook of Numerical Analysis, edited by Ciarlet, Philippe G.
+      !                  and Lions, Jacques Louis},
       !     volume    = {9},
       !     pages     = {3-1176},
       !     note      = {ISBN 0-444-51224-1}
       !  }
       ! and analysed in
       !  @ARTICLE{TurekRivkindHronGlowinski2006,
-      !     author       = {Turek, Stefan and Rivkind, Ludmilla and Hron, Jaroslav and Glowinski, Roland},
-      !     title        = {Numerical study of a modified time-stepping theta-scheme for incompressible flow simulations},
+      !     author       = {Turek, Stefan and Rivkind, Ludmilla and Hron, Jaroslav and
+      !                     Glowinski, Roland},
+      !     title        = {Numerical study of a modified time-stepping theta-scheme for
+      !                     incompressible flow simulations},
       !     journal      = {J. Sci. Comput.},
       !     year         = {2006},
       !     volume       = {28},
@@ -421,7 +459,7 @@ contains
       ! consists of 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
-      ! ... and uses one mean parameter:
+      ! ... and uses one main parameter:
       !
       !   Theta   = 1 - sqrt(2) / 2
       !
@@ -434,6 +472,278 @@ contains
       rtstepScheme%dtheta           = dtheta1
       rtstepScheme%dthetaPrime      = dthetp1
       rtstepScheme%dthStep          = dtstep * dtheta1
+
+    else if (ctimestepType .eq. TSCHM_FS_DIRK) then
+
+      rtstepScheme%ctimestepType    = TSCHM_FS_DIRK
+
+      ! The classic fractional-step theta scheme reinterpreted as DIRK scheme,
+      ! see section 5 of
+      !    @article{Rang2008747,
+      !       author  = "J. Rang",
+      !       title   = "Pressure corrected implicit $\theta$-schemes for %!" fix compiler
+      !                  the incompressible Navier--Stokes equations",    %!" warnings
+      !       journal = "Applied Mathematics and Computation",
+      !       volume  = "201",
+      !       number  = "1--2",
+      !       pages   = "747--761",
+      !       year    = "2008",
+      !       issn    = "0096-3003",
+      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
+      !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+      !       note    = "",
+      !    }
+      ! consists of 4 stages, but only 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! ... and uses several parameter:
+      dtheta1 = 1.0_DP-sqrt(0.5_DP)
+      dthetp1 = 1.0_DP-2.0_DP*dtheta1
+      dalpha  = dthetp1 / (1.0_DP-dtheta1)
+      dbeta   = dtheta1 / (1.0_DP-dtheta1)
+      rtstepScheme%dcoeffA = &
+       ! (0             0                        0                       0           )
+       ! (\theta\beta   \theta\alpha             0                       0           )
+       ! (\theta\beta   (\theta+\theta')\alpha   \theta'\beta            0           )
+       ! (\theta\beta   (\theta+\theta')\alpha   (\theta+\theta')\beta   \theta\alpha)
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            dtheta1*dbeta, &
+                            dtheta1*dbeta, &
+                            dtheta1*dbeta, &
+                            ! second column
+                            0.0_DP, &
+                            dtheta1*dalpha, &
+                            (dtheta1+dthetp1)*dalpha, &
+                            (dtheta1+dthetp1)*dalpha, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            dthetp1*dbeta, &
+                            (dtheta1+dthetp1)*dbeta, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            dtheta1*dalpha /), shape = (/ 4,4 /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
+              dtheta1, &                ! sum(rtstepScheme%dcoeffA(2,:))
+              dtheta1+dthetp1, &        ! sum(rtstepScheme%dcoeffA(3,:))
+              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+
+    else if (ctimestepType .eq. TSCHM_DIRK34La) then
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK34La
+
+      ! The DIRK34L scheme as proposed in section 4.1 of
+      !  @TechReport{Rang200702,
+      !     author      = {Rang, Joachim},
+      !     title       = {Design of {DIRK} schemes for solving the
+      !                    {N}avier--{S}tokes equations},
+      !     institution = {Institute of Scientific Computing},
+      !     address     = {Technical University Braunschweig, Brunswick, Germany},
+      !     year        = {2007},
+      !     month       = feb,
+      !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
+      !     note        = {Informatikbericht Nr. 2007-02},
+      !  }
+      ! and compared to other time-stepping schemes in
+      !  @article{John2010514,
+      !     author  = "Volker John and Joachim Rang",
+      !     title   = "Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations",
+      !     journal = "Computer Methods in Applied Mechanics and Engineering ",
+      !     volume  = "199",
+      !     number  = "9--12",
+      !     pages   = "514--524",
+      !     year    = "2010",
+      !     note    = "",
+      !     issn    = "0045-7825",
+      !     doi     = "http://dx.doi.org/10.1016/j.cma.2009.10.005",
+      !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
+      !  }
+      ! consists of 4 stages, but only 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! ... and uses several parameter:
+      rtstepScheme%dcoeffA = &
+       ! see \cite[p. 14]{Rang200702}:
+       !
+       ! (0                      0                  0                   0                )
+       ! (0.158983899988677      0.158983899988677  0                   0                )
+       ! (1-1.072..-0.158..      1.07248627073437   0.158983899988677   0                )
+       ! (1-0.76..-0.09..-0.15.. 0.7685298292769537 0.0966483609791597  0.158983899988677)
+       !
+       ! Note: the values 0.1558983899988677 and 0.09666483609791597 given in the paper
+       !       are wrong as does prove a test where the coefficients are inserted into the
+       !       four defining equations B(2), B(3), \hat{B}(2) and R(\infty) on page 15 of
+       !       said paper.
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            0.158983899988677_DP, &
+                            1.0_DP - 0.158983899988677_DP  - 1.07248627073437_DP, &
+                            1.0_DP - 0.7685298292769537_DP - 0.0966483609791597_DP &
+                                   - 0.158983899988677_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.158983899988677_DP, &
+                            1.07248627073437_DP, &
+                            0.7685298292769537_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.158983899988677_DP, &
+                            0.0966483609791597_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.158983899988677_DP /), shape = (/ 4,4 /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
+              0.317967799977354_DP, &   ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
+              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+
+    else if (ctimestepType .eq. TSCHM_DIRK34Lb) then
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK34Lb
+
+      ! The definint equations of the DIRK34L scheme as proposed in section 4.1 of
+      !  @TechReport{Rang200702,
+      !     author      = {Rang, Joachim},
+      !     title       = {Design of {DIRK} schemes for solving the
+      !                    {N}avier--{S}tokes equations},
+      !     institution = {Institute of Scientific Computing},
+      !     address     = {Technical University Braunschweig, Brunswick, Germany},
+      !     year        = {2007},
+      !     month       = feb,
+      !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
+      !     note        = {Informatikbericht Nr. 2007-02},
+      !  }
+      ! have a second viable solution not presented in said paper. These equations are
+      !     a22*(1-2*a42-a22)+(2*a32-1)*a43 = 0
+      !                       2*a32*a22+a22 = 1/2
+      !                   2*a22*a42+a43+a22 = 1/2
+      !                 4*a22^2*a42+a43+a22 = 1/3
+      ! As DIRK34L it consists of 4 stages, but only 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! ... and uses several parameter. Matrix A of the Butcher table has he following
+      ! entries:
+      rtstepScheme%dcoeffA = &
+       !  A := Matrix([[0, 0, 0, 0],
+       !               [a22, a22, 0, 0],
+       !               [1-a32-a22, a32, a22, 0],
+       !               [1-a42-a43-a22, a42, a43, a22]])
+       !     =
+       ! (0                      0                  0                   0            )
+       ! (0.4358665214           0.4358665214       0                   0            )
+       ! (1-.073..-0.435..       0.0735700902       0.4358665214        0            )
+       ! (1-1.49..+1.23..-0.43.. 1.490563387       -1.235239880         0.4358665214 )
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            0.4358665214_DP, &
+                            1.0_DP - 0.0735700902_DP - 0.4358665214_DP, &
+                            1.0_DP - 1.490563387_DP +  1.235239880_DP &
+                                   - 0.4358665214_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.4358665214_DP, &
+                            0.0735700902_DP, &
+                            1.490563387_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.4358665214_DP, &
+                            -1.235239880_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.4358665214_DP /), shape = (/ 4,4 /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
+              0.8717330428_DP, &        ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
+              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+
+    else if (ctimestepType .eq. TSCHM_DIRK44L) then
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK44L
+
+      ! The DIRK44L scheme as proposed in section 4.2 of
+      !  @TechReport{Rang200702,
+      !     author      = {Rang, Joachim},
+      !     title       = {Design of {DIRK} schemes for solving the
+      !                    {N}avier--{S}tokes equations},
+      !     institution = {Institute of Scientific Computing},
+      !     address     = {Technical University Braunschweig, Brunswick, Germany},
+      !     year        = {2007},
+      !     month       = feb,
+      !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
+      !     note        = {Informatikbericht Nr. 2007-02},
+      !  }
+      ! consists of 4 stages, but only 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! ... and uses several parameter:
+      rtstepScheme%dcoeffA = &
+       ! see \cite[p. 16]{Rang200702}:
+       !
+       ! (0                    0                           0                          0  )
+       ! (1/4                  1/4                         0                          0  )
+       ! (1 - a32 - a33        (3 a44 - 2)/(3(3 a44 - 1))  (6 a44 - 1)/(6(3 a44 - 1)) 0  )
+       ! (1 - a42 - a43 - a44  2/3                         1/6 - a44                  a44)
+       !
+       ! with a44 := 1/3-sqrt(2)/6 yields
+       !
+       ! (0                    0                           0                          0  )
+       ! (1/4                  1/4                         0                          0  )
+       ! (1/3 - sqrt(2)/6      1/3 + sqrt(2)/3             1/3 - sqrt(2)/6            0  )
+       ! 1/6                   2/3                         sqrt(2)/6 - 1/6  1/3-sqrt(2)/6)
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            0.25_DP, &
+                            (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.25_DP, &
+                            (1.0_DP + sqrt(2.0_DP))/3.0_DP, &
+                            2.0_DP/3.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
+                            (sqrt(2.0_DP) - 1.0_DP)/6.0_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            (2.0_DP - sqrt(2.0_DP))/6.0_DP /), shape = (/ 4,4 /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &  ! sum(rtstepScheme%dcoeffA(1,:))
+              0.5_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP, &  ! sum(rtstepScheme%dcoeffA(3,:))
+              1.0_DP /)  ! sum(rtstepScheme%dcoeffA(4,:))
 
     end if
 
@@ -474,7 +784,8 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtheta1,dthetp1,dalpha,dbeta
+    real(DP) :: dtheta1, dthetp1, dalpha, dbeta
+
 
     ! Set the new step length
     rtstepScheme%dtstepFixed        = dtstep
@@ -513,6 +824,16 @@ contains
       dalpha  = rtstepScheme%dalpha
       dbeta   = rtstepScheme%dbeta
 
+      ! Note: the factor 3 the time step gets scaled with below is necessary to be
+      !       consistent with the increment of the macro time step as done in
+      !       timstp_nextSubstepWeights():
+      !            real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+      !       This, in turn, is done to be able to compare the results of 3 Backward Euler
+      !       or Crank-Nicolson steps with 1 (macro) step of the classic fractional-step
+      !       theta scheme - this way all three schemes have had comparable computational
+      !       costs and after completion of this macro time step their respective
+      !       solutions live in the same point in time.
+
       if (rtstepScheme%isubstep .ne. 2) then
 
         ! 1st and 3rd substep
@@ -547,7 +868,8 @@ contains
       ! See page 6 of
       !  @ARTICLE{TurekRivkindHronGlowinski2006,
       !     author       = {Turek, S. and Rivkind, L. and Hron, J. and Glowinski, R.},
-      !     title        = {Numerical study of a modified time-stepping theta-scheme for incompressible flow simulations},
+      !     title        = {Numerical study of a modified time-stepping theta-scheme
+      !                     for incompressible flow simulations},
       !     journal      = {J. Sci. Comput.},
       !     year         = {2006},
       !     volume       = {28},
@@ -555,34 +877,101 @@ contains
       !     pages        = {533--547},
       !     note         = {doi: 10.1007/s10915-006-9083-y},
       !  }
+
+      ! Note: the factor 3 the time step gets scaled with below is necessary to be
+      !       consistent with the increment of the macro time step as done in
+      !       timstp_nextSubstepWeights():
+      !            real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+      !       This, in turn, is done to be able to compare the results of 3 Backward Euler
+      !       or Crank-Nicolson steps with 1 (macro) step of the classic fractional-step
+      !       theta scheme - this way all three schemes have had comparable computational
+      !       costs and after completion of this macro time step their respective
+      !       solutions live in the same point in time.
       select case (rtstepScheme%isubstep)
       case (1)
-        rtstepScheme%dtstep               =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dtstep               = 3.0_DP * dtstep * dtheta1
 
-        rtstepScheme%dweightMatrixLHS     =  3.0_DP * dtstep * dtheta1
-        rtstepScheme%dweightMatrixRHS     =  SYS_MAXREAL_DP ! not applicable
-        rtstepScheme%dweightNewRHS        =  3.0_DP * dtstep * dtheta1
-        rtstepScheme%dweightOldRHS        =  0.0_DP
+        rtstepScheme%dweightMatrixLHS     = 3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightNewRHS        = 3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightOldRHS        = 0.0_DP
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
 
       case (2)
-        rtstepScheme%dtstep               =  3.0_DP * dtstep * dthetp1
+        rtstepScheme%dtstep               = 3.0_DP * dtstep * dthetp1
 
         ! no system to be solved
-        rtstepScheme%dweightMatrixLHS     =  1.0_DP ! SYS_MAXREAL_DP
-        rtstepScheme%dweightMatrixRHS     =  0.0_DP ! SYS_MAXREAL_DP
-        rtstepScheme%dweightNewRHS        =  0.0_DP ! SYS_MAXREAL_DP
-        rtstepScheme%dweightOldRHS        =  0.0_DP ! SYS_MAXREAL_DP
-        rtstepScheme%dweightStationaryRHS = 0.0_DP !SYS_MAXREAL_DP
+        rtstepScheme%dweightMatrixLHS     = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightStationaryRHS = SYS_MAXREAL_DP ! not applicable
 
       case (3)
-        rtstepScheme%dtstep               =  3.0_DP * dtstep * dtheta1
+        rtstepScheme%dtstep               = 3.0_DP * dtstep * dtheta1
 
-        rtstepScheme%dweightMatrixLHS     =  3.0_DP * dtstep * dtheta1
-        rtstepScheme%dweightMatrixRHS     =  SYS_MAXREAL_DP ! not applicable
-        rtstepScheme%dweightNewRHS        =  3.0_DP * dtstep * dtheta1
-        rtstepScheme%dweightOldRHS        =  0.0_DP
+        rtstepScheme%dweightMatrixLHS     = 3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+        rtstepScheme%dweightNewRHS        = 3.0_DP * dtstep * dtheta1
+        rtstepScheme%dweightOldRHS        = 0.0_DP
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
+      end select
+
+    else if (rtstepScheme%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+             rtstepScheme%ctimestepType .eq. TSCHM_DIRK34La .or. &
+             rtstepScheme%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+             rtstepScheme%ctimestepType .eq. TSCHM_DIRK44L) then
+      ! tau, corresponding to the \tau from \cite[p. 517]{John2010514}, gets chosen such
+      ! that
+      !                      tau = 3 * prescribed time step size
+      ! Note: the factor 3 is necessary to be consistent with the increment of the macro
+      !       time step as done in timstp_nextSubstepWeights():
+      !            real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+      !       This, in turn, is done to be able to compare the results of 3 Backward Euler
+      !       or Crank-Nicolson steps with 1 (macro) step of the classic fractional-step
+      !       theta scheme or one sweep of DIRK34L or DIRK44L - this way all five time
+      !       stepping schemes involved comparable computational costs and after
+      !       completion of this macro time step their respective solutions live in the
+      !       same point in time.
+      rtstepScheme%dtau = 3.0_DP * dtstep
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtimeDIRKstage1      = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep               = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
+        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(2,2)
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable for
+        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! symmetry reasons
+        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! with substeps 2 and 3
+        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                            sum(rtstepScheme%dcoeffA(2,:))
+
+      case (2)
+        rtstepScheme%dtstep               = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                                 rtstepScheme%dcoeffC(2))
+        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(3,3)
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable, because old
+        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! solutions get queried at 2
+        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! and right hand side at 3
+                                                           ! points in time, not merely 2.
+        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                            sum(rtstepScheme%dcoeffA(3,:))
+
+      case (3)
+        ! Yes, this particular setting ...%dtstep choice leads indeed for DIRK34L and
+        ! DIRK44L to a seemingly time step size of 0. At least that is what gets displayed
+        ! in the log. But this setting is only for display, internally the DIRK algorithms
+        ! rely on the parameter tau and coefficients c_i to determine the time step size.
+        rtstepScheme%dtstep               = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
+                                                                 rtstepScheme%dcoeffC(3))
+
+        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(4,4)
+        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable, because old
+        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! solutions get queried at 3
+        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! and right hand side at 4
+                                                           ! points in time, not merely 2.
+        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                            sum(rtstepScheme%dcoeffA(4,:))
+
       end select
 
     end if

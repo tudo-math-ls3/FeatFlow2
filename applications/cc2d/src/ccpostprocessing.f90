@@ -661,7 +661,7 @@ contains
     real(DP) :: dtimebackup
     type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
     type(t_collection) :: rlocalCollection
-    integer :: iglobaltimestep, ilocaltimestep
+    integer :: iglobaltimestep, cignoreTimeStep
     integer :: ctypeInitialSolution
 
     ! all subsequent variables for calculation of accumulated time plus space
@@ -676,7 +676,7 @@ contains
     real(DP), save :: doldestTime = 0.0_DP, dolderTime = 0.0_DP, doldTime = 0.0_DP
     integer :: ipostprocTimeInterpSolution
     real(DP) :: dtime_GaussPt1, dtime_GaussPt2, dtime_GaussPt3
-                                             ! Gauss points for 2- or 3-Point-Gauss quadrature
+                                         ! Gauss points for 2- or 3-Point-Gauss quadrature
     real(DP), dimension(3) :: Derr2, Derr3
     type(t_vectorBlock) :: rvector_sol_GaussPt1, rvector_sol_GaussPt2
     type(t_vectorBlock) :: rvector_sol_GaussPt3, rvector_auxSum
@@ -713,17 +713,17 @@ contains
         "SFILENAMEERRORANALYSISL2", sfilenameErrorAnalysisL2, "", bdequote=.true.)
     if (sfilenameErrorAnalysisL2 .eq. "") &
       iwriteErrorAnalysisL2 = 0
-    
+
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
         "SFILENAMEERRORANALYSISH1", sfilenameErrorAnalysisH1, "", bdequote=.true.)
     if (sfilenameErrorAnalysisH1 .eq. "") &
       iwriteErrorAnalysisH1 = 0
-    
+
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
         "SFILENAMEKINETICENERGY", sfilenameKineticEnergy, "", bdequote=.true.)
     if (sfilenameKineticEnergy .eq. "") &
       iwriteKineticEnergy = 0
-      
+
     ! Create an cubature info structure which contains our cubature rule
     call spdiscr_createDefCubStructure(&
         rsolution%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfoUV,int(icubError,I32))
@@ -760,16 +760,29 @@ contains
       !       practice for 3 different analytic solution pairs for the transient Stokes
       !       problem.
       if (rproblem%itimedependence .ne. 0) then
-!        if (rpostprocessing%ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
-          iglobaltimestep = rproblem%rtimedependence%itimestep
-          ilocaltimestep = 0
-!        else
-!          iglobaltimestep = rproblem%rtimedependence%itimestep / 3
-!          ilocaltimestep = mod(rproblem%rtimedependence%itimestep,3)
-!        end if
+        iglobaltimestep = rproblem%rtimedependence%itimestep
+        cignoreTimeStep = 0
+        if (rpostprocessing%ctimestepType .eq. TSCHM_DIRK34La .or. &
+            rpostprocessing%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+            rpostprocessing%ctimestepType .eq. TSCHM_DIRK44L) then
+          ! The 2nd and 3rd substep of the time stepping schemes DIRK34L and DIRK44L do
+          ! live in the same time step and to avoid coinciding interpolation points the
+          ! result of the 2nd substep should not get considered for interpolation of the
+          ! accumulated time plus space discretisation error.
+          iglobaltimestep = rproblem%rtimedependence%itimestep &
+                            - int(rproblem%rtimedependence%itimestep / 3)
+          select case (mod(rproblem%rtimedependence%itimestep,3))
+          case (1)
+            cignoreTimeStep = 0
+          case (2)
+            cignoreTimeStep = 1
+          case (0)
+            cignoreTimeStep = 0
+          end select
+        end if
       end if
     end if
-    
+
 
     ! The error analysis might take place at an arbitrary time.
     ! Therefore, modify the "current" time to the time where we want to
@@ -778,7 +791,7 @@ contains
     ! for evaluation from here.
     dtimebackup = rproblem%rtimedependence%dtime
     rproblem%rtimedependence%dtime = dtime
-    
+
     if ((rpostprocessing%icalcL2 .ne. 0) .or. &
         (rpostprocessing%icalcH1 .ne. 0) .or. &
         (icalcEnergy .ne. 0)) then
@@ -786,25 +799,25 @@ contains
       call output_line ("Error Analysis")
       call output_line ("--------------")
     end if
-    
+
     ! When writing to a file is enabled, delete the file in the first timestep.
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
-    
+
     ! ===============================================================
     ! Error computation. L2 error
     ! ===============================================================
-    
+
     if (rpostprocessing%icalcL2 .ne. 0) then
-    
+
       select case (rpostprocessing%icalcL2)
-      
+
       ! -------------------------------
       ! Compute using callback functions
       ! -------------------------------
       case (1)
         call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-      
+
         ! Calculate space discretisation error
 
         ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
@@ -815,7 +828,7 @@ contains
         call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
                           ffunction_TargetY,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoUV)
-                           
+
         derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
         call pperr_scalar (PPERR_L2ERROR,Derr(3),rsolution%RvectorBlock(3),&
@@ -828,7 +841,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. cignoreTimeStep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via hardcoded callback functions
                1, &
@@ -839,15 +852,15 @@ contains
                rproblem%rcollection, derrorL2VelTimeSpace, derrorL2PTimeSpace)
         end if
 
-      
+
         call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-      
+
       ! -------------------------------
       ! Compute via expressions
       ! -------------------------------
       case (2)
 
-        ! Prepare a collection      
+        ! Prepare a collection
         rlocalCollection%IquickAccess(1) = 0       ! L2-error
         rlocalCollection%DquickAccess(:) = 0.0_DP
         rlocalCollection%DquickAccess(1) = dtime   ! Time
@@ -866,7 +879,7 @@ contains
         call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
                           fcalc_error,rlocalCollection,&
                           rcubatureInfo=rcubatureInfoUV)
-                           
+
         derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
         rlocalCollection%IquickAccess(2) = 3  ! component
@@ -880,7 +893,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. cignoreTimeStep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via expressions
                2, &
@@ -892,9 +905,9 @@ contains
         end if
 
       end select
-      
+
       call output_line ("||u-reference||_L2 = "//trim(sys_sdEP(derrorVel,15,6)) )
-      if (ilocaltimestep .eq. 0) then
+      if (cignoreTimeStep .eq. 0) then
         call output_line ("||p-reference||_L2 = "//trim(sys_sdEP(derrorP,15,6)) )
       else
         call output_line ("||p-reference||_L2 = infeasible in intermediate time steps")
@@ -902,7 +915,7 @@ contains
 
       if (rproblem%itimedependence .ne. 0 .and. &
           rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
-        if (ilocaltimestep .ne. 0) then
+        if (cignoreTimeStep .ne. 0) then
           call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
                "not evaluated in intermediate time steps")
           call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
@@ -912,9 +925,11 @@ contains
           select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
           case (0) ! l2 error
             call output_line ("||u-reference||_l2(0,T;L2(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorL2VelTimeSpace / &
+                                                 (iglobaltimestep + 1.0_DP)), 15, 6)) )
             call output_line ("||p-reference||_l2(0,T;L2(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorL2PTimeSpace / &
+                                                 (iglobaltimestep + 1.0_DP)), 15, 6)) )
 
           case (1) ! Trapezoidal rule for numeric integration means that only 2 data
                    ! points are needed. Which are available in time step 1: start solution
@@ -940,7 +955,7 @@ contains
               call output_line ("                                               " // &
                                 " time step 2 onwards.)")
             else if (iglobaltimestep .ge. 2) then
-              ! iglobaltimestep >= 2, ilocaltimestep = 0
+              ! iglobaltimestep >= 2, cignoreTimeStep = 0
               call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
                                 trim(sys_sdEP(sqrt(derrorL2VelTimeSpace), 15, 6)) )
               call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
@@ -958,7 +973,7 @@ contains
               call output_line ("                                               " // &
                                 " time step 3 onwards.)")
             else if (iglobaltimestep .ge. 3) then
-              ! iglobaltimestep >= 3, ilocaltimestep = 0
+              ! iglobaltimestep >= 3, cignoreTimeStep = 0
               call output_line ("||u-reference||_{0,T;L2(Omega)} = " // &
                                 trim(sys_sdEP(sqrt(derrorL2VelTimeSpace), 15, 6)) )
               call output_line ("||p-reference||_{0,T;L2(Omega)} = " // &
@@ -988,7 +1003,7 @@ contains
         write (iunit,"(A)") trim (stemp)
         close (iunit)
       end if
-      
+
     end if
 
     ! ===============================================================
@@ -996,15 +1011,15 @@ contains
     ! ===============================================================
 
     if (rpostprocessing%icalcH1 .ne. 0) then
-    
+
       select case (rpostprocessing%icalcH1)
-      
+
       ! -------------------------------
       ! Compute using callback functions
       ! -------------------------------
       case (1)
         call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-      
+
         ! Calculate space discretisation error
 
         ! Perform error analysis to calculate and add ||u-z||_{H^1}.
@@ -1015,14 +1030,14 @@ contains
         call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
                           ffunction_TargetY,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoUV)
-                      
-        derrorVel = -1.0_DP     
+
+        derrorVel = -1.0_DP
 !SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
 !          for PPERR_H1ERROR!
         if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
           derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
         end if
-        
+
         call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
                           ffunction_TargetP,rproblem%rcollection,&
                           rcubatureInfo=rcubatureInfoP)
@@ -1038,7 +1053,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. cignoreTimeStep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via hardcoded callback functions
                1, &
@@ -1050,13 +1065,13 @@ contains
         end if
 
         call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-      
+
       ! -------------------------------
       ! Compute via expressions
       ! -------------------------------
       case (2)
-      
-        ! Prepare a collection      
+
+        ! Prepare a collection
         rlocalCollection%IquickAccess(1) = 1       ! H1-error
         rlocalCollection%DquickAccess(:) = 0.0_DP
         rlocalCollection%DquickAccess(1) = dtime   ! Time
@@ -1075,14 +1090,14 @@ contains
         call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
                           fcalc_error,rlocalCollection,&
                           rcubatureInfo=rcubatureInfoUV)
-                      
-        derrorVel = -1.0_DP     
+
+        derrorVel = -1.0_DP
 !SB: Note: This if condition is never true as pperr_scalar_conf() runs sqrt() on return value
 !          for PPERR_H1ERROR!
         if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
           derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
         end if
-        
+
         rlocalCollection%IquickAccess(2) = 3  ! component
         call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
                           fcalc_error,rlocalCollection,&
@@ -1099,7 +1114,7 @@ contains
         ! Calculate accumulated time plus space discretisation error
         if (rproblem%itimedependence .ne. 0 .and. &
             rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0 .and. &
-            iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
+            iglobaltimestep .ge. 0 .and. cignoreTimeStep .eq. 0) then
           call evalTimeSpaceError(&
                ! Evaluate analytic reference solution via expressions
                2, &
@@ -1111,7 +1126,7 @@ contains
         end if
 
       end select
-      
+
       ! derrorVel/derrorP=-1 indicates that the error is not available.
       if (derrorVel .ne. -1.0_DP) then
         call output_line ("||u-reference||_H1 = "//trim(sys_sdEP(derrorVel,15,6)),&
@@ -1122,7 +1137,7 @@ contains
         call output_line ("||u-reference||_H1 = not available",&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
-      
+
       if (derrorP .ne. -1.0_DP) then
         call output_line ("||p-reference||_H1 = "//trim(sys_sdEP(derrorP,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
@@ -1136,7 +1151,7 @@ contains
 
       if (rproblem%itimedependence .ne. 0 .and. &
           rpostprocessing%icalcTimeSpaceDiscrErrors .ne. 0) then
-        if (ilocaltimestep .ne. 0) then
+        if (cignoreTimeStep .ne. 0) then
           call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
                "not evaluated in intermediate time steps")
           call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
@@ -1146,9 +1161,11 @@ contains
           select case (rpostprocessing%itimeSpaceDiscrErrorMethod)
           case (0) ! l2 error
             call output_line ("||u-reference||_l2(0,T;H1(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorH1VelTimeSpace / &
+                                                 (iglobaltimestep + 1.0_DP)), 15, 6)) )
             call output_line ("||p-reference||_l2(0,T;H1(Omega)) = " // &
-                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace / (iglobaltimestep + 1.0_DP)), 15, 6)) )
+                              trim(sys_sdEP(sqrt(derrorH1PTimeSpace / &
+                                                 (iglobaltimestep + 1.0_DP)), 15, 6)) )
 
           case (1) ! Trapezoidal rule for numeric integration means that only 2 data
                    ! points are needed. Which are available in time step 1: start solution
@@ -1174,7 +1191,7 @@ contains
               call output_line ("                                               " // &
                                 " time step 2 onwards.)")
             else if (iglobaltimestep .ge. 2) then
-              ! iglobaltimestep >= 2, ilocaltimestep = 0
+              ! iglobaltimestep >= 2, cignoreTimeStep = 0
               call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
                                 trim(sys_sdEP(sqrt(derrorH1VelTimeSpace), 15, 6)) )
               call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
@@ -1192,7 +1209,7 @@ contains
               call output_line ("                                               " // &
                                 " time step 3 onwards.)")
             else if (iglobaltimestep .ge. 3) then
-              ! iglobaltimestep >= 3, ilocaltimestep = 0
+              ! iglobaltimestep >= 3, cignoreTimeStep = 0
               call output_line ("||u-reference||_{0,T;H1(Omega)} = " // &
                                 trim(sys_sdEP(sqrt(derrorH1VelTimeSpace), 15, 6)) )
               call output_line ("||p-reference||_{0,T;H1(Omega)} = " // &
@@ -1222,7 +1239,7 @@ contains
         write (iunit,"(A)") trim(stemp)
         close (iunit)
       end if
-      
+
     end if
 
 
@@ -1233,7 +1250,7 @@ contains
         ! some intermediate steps. Not the case, though, for the Fractional Step Theta
         ! scheme. Omitting the two intermediate steps leads to overestimation of error
         ! reduction rates!
-        ilocaltimestep .eq. 0) then
+        cignoreTimeStep .eq. 0) then
 
       call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
            "ctypeInitialSolution",ctypeInitialSolution,0)
@@ -1290,8 +1307,9 @@ contains
         ! snapshots in the right order. For later time steps shift them by one such that
         ! the oldest solution snapshot, i.e. from t^{n-1}, is evicted.
         else if (iglobaltimestep .ge. 2) then
-          call lsysbl_copyVector(rpostprocessing%roldSolution,rpostprocessing%rolderSolution)
-          call lsysbl_copyVector(rsolution,                   rpostprocessing%roldSolution)
+          call lsysbl_copyVector(rpostprocessing%roldSolution, &
+                                 rpostprocessing%rolderSolution)
+          call lsysbl_copyVector(rsolution, rpostprocessing%roldSolution)
           dolderTime = doldTime
           doldTime = dtime
         end if
@@ -1303,8 +1321,8 @@ contains
           call lsysbl_createVector (rsolution, rpostprocessing%roldestSolution, .false.)
           call lsysbl_createVector (rsolution, rpostprocessing%rolderSolution, .false.)
           call lsysbl_createVector (rsolution, rpostprocessing%roldSolution, .false.)
-          ! Store current solution which will be used in time step 3 as antepenultimate time
-          ! step
+          ! Store current solution which will be used in time step 3 as antepenultimate
+          ! time step
           call lsysbl_copyVector (rsolution, rpostprocessing%roldestSolution)
           doldestTime = dtime
 
@@ -1324,9 +1342,11 @@ contains
         ! order. For later time steps shift them by one such that the oldest solution
         ! snapshot, i.e. from t^{n-2}, is evicted.
         else if (iglobaltimestep .ge. 3) then
-          call lsysbl_copyVector(rpostprocessing%rolderSolution,rpostprocessing%roldestSolution)
-          call lsysbl_copyVector(rpostprocessing%roldSolution,  rpostprocessing%rolderSolution)
-          call lsysbl_copyVector(rsolution,                     rpostprocessing%roldSolution)
+          call lsysbl_copyVector(rpostprocessing%rolderSolution, &
+                                 rpostprocessing%roldestSolution)
+          call lsysbl_copyVector(rpostprocessing%roldSolution, &
+                                 rpostprocessing%rolderSolution)
+          call lsysbl_copyVector(rsolution, rpostprocessing%roldSolution)
           doldestTime = dolderTime
           dolderTime = doldTime
           doldTime = dtime
@@ -1433,10 +1453,12 @@ contains
       ! information to the coefficient routine.
       type(t_collection), intent(inout) :: rcollection
 
-      ! Time plus space discretisation error for velocity, measured in error norm cerrorType
+      ! Time plus space discretisation error for velocity, measured in error norm
+      ! cerrorType
       real(DP), intent(inout) :: dtimeSpaceErrorVel
 
-      ! Time plus space discretisation error for pressure, measured in error norm cerrorType
+      ! Time plus space discretisation error for pressure, measured in error norm
+      ! cerrorType
       real(DP), intent(inout) :: dtimeSpaceErrorP
 !</inputoutput>
 
@@ -1451,7 +1473,7 @@ contains
       case (0) ! build square of l2 error: sum up square of (L2 or H1, per time step)
                ! space discretisation error, ! divide this sum later by the number of time
                ! steps performed
-        if (iglobaltimestep .ge. 0 .and. ilocaltimestep .eq. 0) then
+        if (iglobaltimestep .ge. 0 .and. cignoreTimeStep .eq. 0) then
           dtimeSpaceErrorVel = dtimeSpaceErrorVel + derrorVel**2
           dtimeSpaceErrorP   = dtimeSpaceErrorP   + derrorP**2
         end if
@@ -1471,7 +1493,7 @@ contains
         ! that got just calculated in derrorVel and derrorP and as sol^{n}(x) the
         ! corresponding values from the previous time step (for the start solution holds
         ! n=0 and both derrorOldVel and derrorOldP are assumed to be initialised to zero).
-        if (iglobaltimestep .gt. 0 .and. ilocaltimestep .eq. 0) then
+        if (iglobaltimestep .gt. 0 .and. cignoreTimeStep .eq. 0) then
           dtimeSpaceErrorVel = dtimeSpaceErrorVel + &
                (dtime - doldTime) * 0.5_DP * (derrorVel**2 + derrorOldVel**2)
           dtimeSpaceErrorP = dtimeSpaceErrorP + &
@@ -1480,11 +1502,12 @@ contains
 
 
       case (2,3)
-        ! Time-interpolate the solution with a quadratic Lagrange polynomial, then evaluate
+        ! Time-interpolate the solution with a quadratic Lagrange polynomial, then
+        ! evaluate
         !    || sol(t) - sol_ref(t) ||^2_L2(0,T;\Omega)
         !    = sqrt( \int_{t^{start}}^{t^{end}} || sol(t) - sol_ref(t) ||^2_L2 dt )
         ! with 2-point or 3-point Gaussian quadrature rule.
-        if (iglobaltimestep .ge. 2 .and. ilocaltimestep .eq. 0) then
+        if (iglobaltimestep .ge. 2 .and. cignoreTimeStep .eq. 0) then
 
           ! Create temporary vectors
           call lsysbl_createVector (rsolution, rvector_auxSum, .false.)
@@ -1726,7 +1749,7 @@ contains
           call lsysbl_releaseVector (rvector_sol_GaussPt1)
           call lsysbl_releaseVector (rvector_auxSum)
 
-        end if  ! (iglobaltimestep .ge. 2 .and. ilocaltimestep .eq. 0)
+        end if  ! (iglobaltimestep .ge. 2 .and. cignoreTimeStep .eq. 0)
 
 
       case (4,5)
@@ -1734,7 +1757,7 @@ contains
         !    || sol(t) - sol_ref(t) ||^2_L2(0,T;\Omega)
         !    = sqrt( \int_{t^{start}}^{t^{end}} || sol(t) - sol_ref(t) ||^2_L2 dt )
         ! with 2-point or 3-point Gaussian quadrature rule.
-        if (iglobaltimestep .ge. 3 .and. ilocaltimestep .eq. 0) then
+        if (iglobaltimestep .ge. 3 .and. cignoreTimeStep .eq. 0) then
 
           ! Create temporary vectors
           call lsysbl_createVector (rsolution, rvector_auxSum, .false.)
@@ -2097,7 +2120,7 @@ contains
           call lsysbl_releaseVector (rvector_sol_GaussPt1)
           call lsysbl_releaseVector (rvector_auxSum)
 
-        end if  ! (iglobaltimestep .ge. 3 .and. ilocaltimestep .eq. 0)
+        end if  ! (iglobaltimestep .ge. 3 .and. cignoreTimeStep .eq. 0)
 
       end select  ! rpostprocessing%itimeSpaceDiscrErrorMethod
 
@@ -2164,9 +2187,9 @@ contains
                                 + 1.0_DP/sqrt(3.0_DP) * (dtimeEnd - dtimeStart))
 
         ! Quadratic Lagrange interpolate FEM solution in first Gauss point,
-        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1}) +
-        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
-        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
+        !  rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1})+
+        !                                    \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
+        !                                    \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
         call lsyssc_vectorLinearComb(&
              rpostprocessing%rolderSolution%RvectorBlock(iblock), &
              rpostprocessing%roldSolution%RvectorBlock(iblock), &
@@ -2199,16 +2222,18 @@ contains
         ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
         !     call cc_initCollectForAssembly (rproblem, rcollection)
         ! as that would also reset rcollection%Iquickaccess(1) to the value of
-        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
-        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being
+        ! used to identify whether L2 or H1 errors are to be calculated in case reference
         ! solution is given in configuration files (evaluation), not hardcoded in
         ! ffunction_Target*.
         rcollection%Dquickaccess(1) = dtime_GaussPt1
-        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+        call pperr_scalar (cerrorType, Derr(iblock), &
+             rvector_sol_GaussPt1%RvectorBlock(iblock), &
              ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
         ! ... and s2
         rcollection%Dquickaccess(1) = dtime_GaussPt2
-        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+        call pperr_scalar (cerrorType, Derr2(iblock), &
+             rvector_sol_GaussPt2%RvectorBlock(iblock), &
              ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
         rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
 
@@ -2223,9 +2248,9 @@ contains
                                 + sqrt(3.0_DP/5.0_DP) * (dtimeEnd - dtimeStart))
 
         ! Cubic Lagrange interpolate FEM solution in first Gauss point,
-        !   rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1}) +
-        !                                     \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
-        !                                     \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
+        !  rvector_sol(1st Gauss Pt,block) = \phi0(1st Gauss Pt) * solutionblock(t^{n-1})+
+        !                                    \phi1(1st Gauss Pt) * solutionblock(t^{n}) +
+        !                                    \phi2(1st Gauss Pt) * solutionblock(t^{n+1})
         call lsyssc_vectorLinearComb(&
              rpostprocessing%rolderSolution%RvectorBlock(iblock), &
              rpostprocessing%roldSolution%RvectorBlock(iblock), &
@@ -2271,20 +2296,23 @@ contains
         ! manipulate rcollection%Dquickaccess(1) directly, do NOT use
         !     call cc_initCollectForAssembly (rproblem, rcollection)
         ! as that would also reset rcollection%Iquickaccess(1) to the value of
-        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being used
-        ! to identify whether L2 or H1 errors are to be calculated in case reference
+        ! rproblem%itimedependence whereas rcollection%Iquickaccess(1) is already being
+        ! used to identify whether L2 or H1 errors are to be calculated in case reference
         ! solution is given in configuration files (evaluation), not hardcoded in
         ! ffunction_Target*.
         rcollection%Dquickaccess(1) = dtime_GaussPt1
-        call pperr_scalar (cerrorType, Derr(iblock), rvector_sol_GaussPt1%RvectorBlock(iblock),&
+        call pperr_scalar (cerrorType, Derr(iblock), &
+             rvector_sol_GaussPt1%RvectorBlock(iblock), &
              ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
         ! ... and s2
         rcollection%Dquickaccess(1) = dtime_GaussPt2
-        call pperr_scalar (cerrorType, Derr2(iblock),rvector_sol_GaussPt2%RvectorBlock(iblock),&
+        call pperr_scalar (cerrorType, Derr2(iblock), &
+             rvector_sol_GaussPt2%RvectorBlock(iblock),&
              ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
         ! ... and s3
         rcollection%Dquickaccess(1) = dtime_GaussPt3
-        call pperr_scalar (cerrorType, Derr3(iblock),rvector_sol_GaussPt3%RvectorBlock(iblock),&
+        call pperr_scalar (cerrorType, Derr3(iblock), &
+             rvector_sol_GaussPt3%RvectorBlock(iblock), &
              ffunctionReference, rcollection, rcubatureInfo=rcubatureInfoUV)
         rcollection%Dquickaccess(1) = dtimeBackup2   ! restore value
 
@@ -3336,6 +3364,8 @@ contains
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
     type(t_collection) :: rcollection
+
+    type(t_vectorBlock) :: rexact
     
     character(SYS_STRLEN) :: sfile,sfilename
     
@@ -3529,7 +3559,17 @@ contains
 
     call ucd_addVectorByVertex (rexport, "pressure_raw", UCD_VAR_STANDARD, &
         rvector%RvectorBlock(3), DER_FUNC)
-    
+
+    call lsysbl_createVector (rprjVector, rexact, .false.)
+    call anprj_discrDirect (rexact%RvectorBlock(1), ffunction_TargetX, rproblem%rcollection)
+    call anprj_discrDirect (rexact%RvectorBlock(2), ffunction_TargetY, rproblem%rcollection)
+    call ucd_addVectorFieldByVertex (rexport, "velocity_exact", UCD_VAR_STANDARD, &
+        (/ rexact%RvectorBlock(1),rexact%RvectorBlock(2) /) )
+
+    call anprj_discrDirect (rexact%RvectorBlock(3), ffunction_TargetP, rproblem%rcollection)
+    call ucd_addVectorByVertex (rexport, "pressure_exact", UCD_VAR_STANDARD, &
+        rexact%RvectorBlock(3), DER_FUNC)
+
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
@@ -3569,6 +3609,7 @@ contains
     call ucd_write (rexport)
     call ucd_release (rexport)
     
+call lsysbl_releaseVector (rexact)
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)
     

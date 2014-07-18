@@ -372,6 +372,7 @@ contains
 !</subroutine>
 
     ! local variables
+    integer :: i
     type(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     type(t_nonlinearCCMatrix) :: rnonlinearCCMatrix
     type(t_timer) :: rtimerRHSgeneration
@@ -379,9 +380,36 @@ contains
     ! auxiliary vector for Glowinski2003-FS-theta scheme
     type(t_vectorBlock), save :: rsolutionAux
 
+    ! auxiliary vectors for diagonally implicit Runge-Kutta schemes:
+    !
+    ! <tex>$ f(t_{m} + c_{j} k) - N(U_{j}) U_{j} - B P_{j} $,
+    ! see \cite[p. 517]{Rang200702}</tex> needed in right hand side assembly
+    type(t_vectorBlock), dimension(3), save :: rvectorAuxFmjUjplusBPj
+    ! U_0, solution from last macro time step
+    type(t_vectorBlock), save :: rsolutionFromLastMacroTimeStep
+
     ! DEBUG!!!
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
+
+    if ((rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+         rtimestepping%ctimestepType .eq. TSCHM_DIRK44L)) then
+      select case (rtimestepping%isubstep)
+      case (1)
+        ! Store (velocity) solution from macro time step t_n for later use in subsequent
+        ! stages of DIRK scheme where it is needed to assembly the right hand side vector.
+        call lsysbl_createVector (rvector, rsolutionFromLastMacroTimeStep, .false.)
+        call lsysbl_copyVector (rvector, rsolutionFromLastMacroTimeStep)
+
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(1), .false.)
+      case (2)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(2), .false.)
+      case (3)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(3), .false.)
+      end select
+    end if
 
     if (rtimestepping%ctimestepType .eq. TSCHM_FS_GLOWINSKI .and. &
         rtimestepping%isubstep .eq. 1) then
@@ -419,171 +447,308 @@ contains
       rnlSolver%dtimeNLpreconditioning = 0.0_DP
 
     else
-      ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
-      ! boundary conditions of rrhs to that vector so that rtempVectorRhs
-      ! acts as a RHS vector.
-      call lsysbl_assignDiscrIndirect(rrhs,rtempVectorRhs)
+      if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+! Note: inhomogeneous Neumann boundary conditions not supported (as of yet)!
 
-      ! DEBUG!!!
-      !CALL lsysbl_getbase_double (rvector,p_Ddata)
-      !CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata2)
+        ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
+        ! boundary conditions of rrhs to that vector so that rtempVectorRhs
+        ! acts as a RHS vector.
+        call lsysbl_assignDiscrIndirect(rrhs, rtempVectorRhs)
 
-      ! We have an equation of the type
-      !
-      !   d/dt u(x,t)  +  N(u(x,t)) u(x,t) =  f(x,t)
-      !
-      ! Which is discretised in time with a Theta scheme, leading to
-      !
-      !   $$ u_{n+1} + w_1*N(u_n+1) u_{n+1}
-      !      =   u_n + w_2*N(u_n) u_n  +  w_3*f_{n+1}  +  w_4*f_n $$
-      !
-      ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
-      !
-      ! The RHS of that equation therefore contains parts of the solution
-      ! u_n, of the old RHS f_n and the new RHS f_{n+1}. At first, we make
-      ! a weighted copy of the current RHS f_n to the "global" RHS vector
-      ! according to the time stepping scheme.
-      !
-      !
-      ! If we have inhomogeneous Neumann boundary conditions, the situation
-      ! is slightly more complicated. The weak formulation of, e.g., the
-      ! Stokes equations reads (note that there is a "k" included in the
-      ! coefficients w_i, so w_i/k is constant!):
-      !
-      !    ( (u_n+1 - u_n)/k , phi )  +  nu w_1/k (grad u_n+1, grad phi)       -  nu w_2/k (grad u_n, grad phi)
-      !                               -  nu w_1/k (du_n+1/dn , phi     )_Gamma +  nu w_2/k (du_n/dn , phi     )_Gamma
-      !                               -           (p         , grad phi)
-      !                               +           (p n       , phi     )_Gamma
-      !  =   w_3/k ( f_n+1, phi)
-      !    + w_4/k ( f_n  , phi)
-      !
-      ! The pressure is used fully implicitely, so the meaning of the pressure
-      ! depends on the timestepping scheme used. For the CN scheme, e.g.,
-      ! the above formula reads (keep in mind that FF2 stores the time step k
-      ! in the pressure variable, i.e. 'p' is in fact 'k p')
-      !
-      !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)       +  nu/2 (grad u_n, grad phi)
-      !                               -  nu/2  (du_n+1/dn , phi     )_Gamma -  nu/2 (du_n/dn , phi     )_Gamma
-      !                               -        (p_n+1/2   , grad phi)
-      !                               +        (p_n+1/2 n , phi     )
-      !  =   1/2 ( f_n+1  , phi)  +  1/2 ( f_n  , phi)
-      !
-      ! Some terms can be combined. For example, in the CN method, one could write
-      !
-      !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)       +  nu/2 (grad u_n, grad phi)
-      !                               -  nu     (du_n+1/2 / dn , phi )_Gamma
-      !                               -         (p_n+1/2       , grad phi)
-      !                               +         (p_n+1/2 n     , phi     )_Gamma
-      !  =  ( f_n+1/2, phi)
-      !
-      ! which gives
-      !
-      !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
-      !                               -        (p_n+1/2, grad phi)
-      !  =  ( f_n+1/2, phi )          +        (nu du_n+1/2 / dn - p_n+1/2 n, phi)_Gamma
-      !
-      ! To implement inhomogeneous Neumann boundary conditions, one replaces
-      ! the inhomogeneity on the RHS by the data, which results in
-      !
-      !  =  ( f_n+1/2  , phi           +         (g_n+1/2 , phi)_Gamma
-      !
-      ! so one has "g_n+1/2  =  nu du_n+1/2 / dn - p_n+1/2 n", and as a consequence, the
-      ! inhomogeneity has to be evaluated at the midpoint in time. Alternatively, both
-      ! parts can be calculated with the trapezoidal rule (approximating the midpoint rule),
-      ! so one ends up with
-      !
-      !  =  ( (f_n+1 + f_n)/2  , phi)  +  ( (g_n+1 + g_n)/2 , phi)_Gamma
-      !
-      ! Similar arguments can also be used in the general case. Here, one has to assemble
-      !
-      !  =  ( w_3 f_n+1 + w_4 f_n  , phi)  +  ( w_1 g_n+1 - w_2 g_n , phi)_Gamma
-      !
-      ! where "w_1 g_n+1 - w_2 g_n" approximates "( du/dn - p n, phi)" at the
-      ! point in time corresponding to p.
-      !
-      !
-      ! So what to do? We have "(f_n,phi)" from the last timestep and calculate
-      ! "( w_3 f_n+1 + w_4 f_n  , phi )  +  ( w_1 g_n+1 - w_2 g_n , phi )_Gamma"
-      ! in the following.
+        ! substep 1:
+        !   right hand side needed at t_n and t_n + c2 k,
+        !   old solution U_n, P_n
 
-      ! Set up w_4*f_n.
-      call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
-           rtimestepping%dweightOldRHS,0.0_DP)
+        ! substep 2:
+        !   right hand side needed at t_n, t_n + c2 k and t_n + c3 k,
+        !   old solution U_n, P_n and the solution from substep 1
 
-      ! Inhomogeneous Neumann part: "( -w_2 g_n, phi )_Gamma"
-      call cc_assembleInhomNeumann (rproblem,&
-          rproblem%rcollection,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
+        ! substep 3:
+        !   right hand side needed at t_n, t_n + c2 k, t_n + c3 k and t_n+1
+        !   old solution U_n, P_n and the solutions from substep 1 and 2.
 
-      ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
-      ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
-      ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
-      ! Switch off the B-matrices as we do not need them for this defect.
-      !
-      ! Do not implement any boundary conditions when assembling this -- it is not
-      ! a defect vector!
-      ! The BC`s are implemented at the end when the full RHS is finished...
-
-      call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
-
-      if (rtimestepping%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
-        rnonlinearCCMatrix%dmass = 1.0_DP
-        rnonlinearCCMatrix%dstokes = 0.0_DP
-        rnonlinearCCMatrix%dconvection = 0.0_DP
-        rnonlinearCCMatrix%dgradient = 0.0_DP
+        ! Algorithm:
+        ! in substep 1: re-use pre-assembled f_n, assemble N(u_n) and store the result of
+        !                         f_n - N(u_n) u_n - B p_n
+        !               for re-use in subsequent substeps. Then assemble f(t_n + c2 k)
+        !               and calculate
+        !                  M u_n + k a21 (f(t_n) - N(u_n) u_n - B p_n)
+        !                        + k a22 f(t_n + c2 k)
+        !               as right hand side vector
+        ! in substep 2: re-use pre-assembled f(t_n + c2 k), assemble N(u(t_n + c2 k)) and
+        !               store the result of
+        !                   f(t_n + c2 k) - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k)
+        !               for re-use in subsequent substeps. Then assemble f(t_n + c3 k)
+        !               and calculate
+        !                  M u_n + k a31 (f(t_n) - N(u_n) u_n - B p_n)
+        !                        + k a32 (f(t_n + c2 k)
+        !                                 - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k))
+        !                        + k a33 f(t_n + c3 k)
+        ! in substep 3: re-use pre-assembled f(t_n + c3 k), assemble N(u(t_n + c3 k)).
+        !               Then assemble f(t_n + c4 k) = f(t_n+1) and calculate
+        !                  M u_n + k a41 (f(t_n) - N(u_n) u_n - B p_n)
+        !                        + k a42 (f(t_n + c2 k)
+        !                                 - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k))
+        !                        + k a43 (f(t_n + c3 k)
+        !                                 - N(u(t_n + c3 k)) u(t_n + c3 k) - B p(t_n + c3 k))
+        !                        + k a44 f(t_n+1)
+        call lsysbl_vectorLinearComb(&
+             rrhs, rvectorAuxFmjUjplusBPj(rtimestepping%isubstep), &
+             1.0_DP, 0.0_DP)
+        ! Set up N(u(t_n + c_i k)) in order to calculate
+        !      f_(t_n + c_i k) - N(u(t_n + c_i k)) u(t_n + c_i k) - B p(t_n + c_i k),
+        ! (i = substep) explicitly exploiting the knowledge that c_1 = 0 for DIRK34L and
+        ! DIRK44L such that f(t_n) - calculated in the previous time step - can be
+        ! re-used.
+        ! Note that there is no need to scale the pressure here explicitly, as opposed to
+        ! the case for the general theta and fractional-step scheme.  Do not implement any
+        ! boundary conditions when assembling this, they are implemented at the end when
+        ! the full RHS is finished...
+        call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
+        rnonlinearCCMatrix%dmass = 0.0_DP
+        rnonlinearCCMatrix%dstokes = -1.0_DP
+        rnonlinearCCMatrix%dconvection = -real(1-rproblem%rphysics%iequation,DP)
+        rnonlinearCCMatrix%dgradient = -1.0_DP
         rnonlinearCCMatrix%ddivergence = 0.0_DP
+        ! Now really calculate
+        !    f_(t_n + c_i k) =
+        !            f_(t_n + c_i k) - N(u(t_n + c_i k)) u(t_n + c_i k) - B p(t_n + c_i k)
+        ! (i = substep).
+        call cc_nonlinearMatMul (&
+             rnonlinearCCMatrix, rvector, rvectorAuxFmjUjplusBPj(rtimestepping%isubstep),&
+             1.0_DP, 1.0_DP, rproblem)
+
+        ! f = M u_{time before stage 1} + \tau \sum_j^{i-1} a_ij (f(t_n + c_j k)
+        !                                                - N(u(t_n + c_j k)) u(t_n + c_j k)
+        !                                                - B p(t_n + c_j k))
+        ! (i = substep+1).
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+             rsolutionFromLastMacroTimeStep%RvectorBlock(1), &
+             rtempVectorRhs%RvectorBlock(1), &
+             1.0_DP, 0.0_DP)
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+             rsolutionFromLastMacroTimeStep%RvectorBlock(2), &
+             rtempVectorRhs%RvectorBlock(2), &
+             1.0_DP, 0.0_DP)
+        do i = 1, rtimestepping%isubstep
+          call lsysbl_vectorLinearComb(&
+               rvectorAuxFmjUjplusBPj(i), rtempVectorRhs, &
+               rtimestepping%dcoeffA(rtimestepping%isubstep+1,i) * rtimestepping%dtau, &
+               1.0_DP)
+        end do
+
+        ! -------------------------------------------
+        ! Switch to the next point in time where the right hand side gets evaluated
+        rproblem%rtimedependence%dtime = &
+             rtimestepping%dtimeDIRKstage1 + &
+             rtimestepping%dcoeffC(rtimestepping%isubstep+1) * rtimestepping%dtau
+
+        ! Discretise the boundary conditions at the new point in time --
+        ! if the boundary conditions are nonconstant in time!
+        if (rproblem%iboundary .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
+
+        ! -------------------------------------------
+
+        ! Generate (f_n+1, phi) into the rrhs overwriting the previous rhs.
+        ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
+        call stat_clearTimer(rtimerRHSgeneration)
+        call stat_startTimer(rtimerRHSgeneration)
+        call cc_generateBasicRHS (rproblem,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
+             rproblem%rrhsassembly,rrhs)
+
+        ! Add (k a_ii * f_{n+1}, phi) with i = substep+1 to the current RHS.
+        call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
+             rtimestepping%dcoeffA(rtimestepping%isubstep+1,rtimestepping%isubstep+1) * &
+             rtimestepping%dtau, 1.0_DP)
+print *, "DEBUG RHS: weight new RHS: ", rtimestepping%dcoeffA(rtimestepping%isubstep+1,rtimestepping%isubstep+1) * &
+             rtimestepping%dtau
+
+        ! Ensure f(3) is zero
+        call lsyssc_clearVector(rtempVectorRhs%RvectorBlock(3))
+
+        call stat_stopTimer(rtimerRHSgeneration)
+        rproblem%rstatistics%dtimeRHSAssembly = &
+             rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
+
       else
-        rnonlinearCCMatrix%dmass = 1.0_DP
-        rnonlinearCCMatrix%dstokes = rtimestepping%dweightMatrixRHS
-        rnonlinearCCMatrix%dconvection = rtimestepping%dweightMatrixRHS * &
-             real(1-rproblem%rphysics%iequation,DP)
 
-        rnonlinearCCMatrix%dgradient = 0.0_DP
-        rnonlinearCCMatrix%ddivergence = 0.0_DP
-      end if
+        ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
+        ! boundary conditions of rrhs to that vector so that rtempVectorRhs
+        ! acts as a RHS vector.
+        call lsysbl_assignDiscrIndirect(rrhs,rtempVectorRhs)
 
-      ! Fully implicit pressure? There is only a difference if Crank-Nicolson
-      ! is used.
-      if (ipressureFullyImplicit .ne. 1) then
-        rnonlinearCCMatrix%dgradient = rtimestepping%dweightMatrixRHS
-      end if
+        ! DEBUG!!!
+        !CALL lsysbl_getbase_double (rvector,p_Ddata)
+        !CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata2)
 
-      ! Calculate   rtempVectorRhs := rnonlinearCCMatrix rvector + rtempVectorRhs
-      call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,1.0_DP,1.0_DP,rproblem)
+        ! We have an equation of the type
+        !
+        !   d/dt u(x,t)  +  N(u(x,t)) u(x,t) =  f(x,t)
+        !
+        ! Which is discretised in time with a Theta scheme, leading to
+        !
+        !   $$ u_{n+1} + w_1*N(u_n+1) u_{n+1}
+        !      =   u_n + w_2*N(u_n) u_n  +  w_3*f_{n+1}  +  w_4*f_n $$
+        !
+        ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
+        !
+        ! The RHS of that equation therefore contains parts of the solution
+        ! u_n, of the old RHS f_n and the new RHS f_{n+1}. At first, we make
+        ! a weighted copy of the current RHS f_n to the "global" RHS vector
+        ! according to the time stepping scheme.
+        !
+        !
+        ! If we have inhomogeneous Neumann boundary conditions, the situation
+        ! is slightly more complicated. The weak formulation of, e.g., the
+        ! Stokes equations reads (note that there is a "k" included in the
+        ! coefficients w_i, so w_i/k is constant!):
+        !
+        !    ( (u_n+1 - u_n)/k , phi )  +  nu w_1/k (grad u_n+1, grad phi)       -  nu w_2/k (grad u_n, grad phi)
+        !                               -  nu w_1/k (du_n+1/dn , phi     )_Gamma +  nu w_2/k (du_n/dn , phi     )_Gamma
+        !                               -           (p         , grad phi)
+        !                               +           (p n       , phi     )_Gamma
+        !  =   w_3/k ( f_n+1, phi)
+        !    + w_4/k ( f_n  , phi)
+        !
+        ! The pressure is used fully implicitely, so the meaning of the pressure
+        ! depends on the timestepping scheme used. For the CN scheme, e.g.,
+        ! the above formula reads (keep in mind that FF2 stores the time step k
+        ! in the pressure variable, i.e. 'p' is in fact 'k p')
+        !
+        !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)       +  nu/2 (grad u_n, grad phi)
+        !                               -  nu/2  (du_n+1/dn , phi     )_Gamma -  nu/2 (du_n/dn , phi     )_Gamma
+        !                               -        (p_n+1/2   , grad phi)
+        !                               +        (p_n+1/2 n , phi     )
+        !  =   1/2 ( f_n+1  , phi)  +  1/2 ( f_n  , phi)
+        !
+        ! Some terms can be combined. For example, in the CN method, one could write
+        !
+        !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)       +  nu/2 (grad u_n, grad phi)
+        !                               -  nu     (du_n+1/2 / dn , phi )_Gamma
+        !                               -         (p_n+1/2       , grad phi)
+        !                               +         (p_n+1/2 n     , phi     )_Gamma
+        !  =  ( f_n+1/2, phi)
+        !
+        ! which gives
+        !
+        !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+        !                               -        (p_n+1/2, grad phi)
+        !  =  ( f_n+1/2, phi )          +        (nu du_n+1/2 / dn - p_n+1/2 n, phi)_Gamma
+        !
+        ! To implement inhomogeneous Neumann boundary conditions, one replaces
+        ! the inhomogeneity on the RHS by the data, which results in
+        !
+        !  =  ( f_n+1/2  , phi           +         (g_n+1/2 , phi)_Gamma
+        !
+        ! so one has "g_n+1/2 = nu du_n+1/2 / dn - p_n+1/2 n", and as a consequence, the
+        ! inhomogeneity has to be evaluated at the midpoint in time. Alternatively, both
+        ! parts can be calculated with the trapezoidal rule (approximating the midpoint
+        ! rule), so one ends up with
+        !
+        !  =  ( (f_n+1 + f_n)/2  , phi)  +  ( (g_n+1 + g_n)/2 , phi)_Gamma
+        !
+        ! Similar arguments can also be used in the general case. Here, one has to
+        ! assemble
+        !
+        !  =  ( w_3 f_n+1 + w_4 f_n  , phi)  +  ( w_1 g_n+1 - w_2 g_n , phi)_Gamma
+        !
+        ! where "w_1 g_n+1 - w_2 g_n" approximates "( du/dn - p n, phi)" at the
+        ! point in time corresponding to p.
+        !
+        !
+        ! So what to do? We have "(f_n,phi)" from the last timestep and calculate
+        ! "( w_3 f_n+1 + w_4 f_n  , phi )  +  ( w_1 g_n+1 - w_2 g_n , phi )_Gamma"
+        ! in the following.
 
-      ! -------------------------------------------
-      ! Switch to the next point in time.
-      rproblem%rtimedependence%dtime = rtimestepping%dcurrenttime + rtimestepping%dtstep
+        ! Set up w_4*f_n.
+        call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
+             rtimestepping%dweightOldRHS,0.0_DP)
 
-      ! Discretise the boundary conditions at the new point in time --
-      ! if the boundary conditions are nonconstant in time!
-      if (rproblem%iboundary .ne. 0) then
-        call cc_updateDiscreteBC (rproblem)
-      end if
+        ! Inhomogeneous Neumann part: "( -w_2 g_n, phi )_Gamma"
+        call cc_assembleInhomNeumann (rproblem,&
+             rproblem%rcollection,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
 
-      ! -------------------------------------------
+        ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
+        ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
+        ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
+        ! Switch off the B-matrices as we do not need them for this defect.
+        !
+        ! Do not implement any boundary conditions when assembling this -- it is not
+        ! a defect vector!
+        ! The BC`s are implemented at the end when the full RHS is finished...
 
-      ! Generate (f_n+1, phi) into the rrhs overwriting the previous rhs.
-      ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
-      call stat_clearTimer(rtimerRHSgeneration)
-      call stat_startTimer(rtimerRHSgeneration)
-      call cc_generateBasicRHS (rproblem,&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
-          rproblem%rrhsassembly,rrhs)
+        call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
 
-      ! Add (w_3 * f_{n+1}, phi) to the current RHS.
-      call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
-           rtimestepping%dweightNewRHS,1.0_DP)
+        if (rtimestepping%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+          rnonlinearCCMatrix%dmass = 1.0_DP
+          rnonlinearCCMatrix%dstokes = 0.0_DP
+          rnonlinearCCMatrix%dconvection = 0.0_DP
+          rnonlinearCCMatrix%dgradient = 0.0_DP
+          rnonlinearCCMatrix%ddivergence = 0.0_DP
+        else
+          rnonlinearCCMatrix%dmass = 1.0_DP
+          rnonlinearCCMatrix%dstokes = rtimestepping%dweightMatrixRHS
+          rnonlinearCCMatrix%dconvection = rtimestepping%dweightMatrixRHS * &
+               real(1-rproblem%rphysics%iequation,DP)
 
-      ! Add the inhomogeneous Neumann BCs to the RHS: "(w_1 g_n , phi)_Gamma"
-      call cc_assembleInhomNeumann (rproblem,&
-          rproblem%rcollection,rtempVectorRhs,rtimestepping%dweightMatrixLHS)
+          rnonlinearCCMatrix%dgradient = 0.0_DP
+          rnonlinearCCMatrix%ddivergence = 0.0_DP
+        end if
 
-      call stat_stopTimer(rtimerRHSgeneration)
-      rproblem%rstatistics%dtimeRHSAssembly = &
-          rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
+        ! Fully implicit pressure? There is only a difference if Crank-Nicolson
+        ! is used.
+        if (ipressureFullyImplicit .ne. 1) then
+          rnonlinearCCMatrix%dgradient = rtimestepping%dweightMatrixRHS
+        end if
+
+        ! Calculate   rtempVectorRhs := rnonlinearCCMatrix rvector + rtempVectorRhs
+        call cc_nonlinearMatMul (rnonlinearCCMatrix, rvector, rtempVectorRhs, &
+             1.0_DP, 1.0_DP, rproblem)
+
+        ! -------------------------------------------
+        ! Switch to the next point in time.
+        rproblem%rtimedependence%dtime = rtimestepping%dcurrenttime + rtimestepping%dtstep
+
+        ! Discretise the boundary conditions at the new point in time --
+        ! if the boundary conditions are nonconstant in time!
+        if (rproblem%iboundary .ne. 0) then
+          call cc_updateDiscreteBC (rproblem)
+        end if
+
+        ! -------------------------------------------
+
+        ! Generate (f_n+1, phi) into the rrhs overwriting the previous rhs.
+        ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
+        call stat_clearTimer(rtimerRHSgeneration)
+        call stat_startTimer(rtimerRHSgeneration)
+        call cc_generateBasicRHS (rproblem,&
+             rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
+             rproblem%rrhsassembly,rrhs)
+
+        ! Add (w_3 * f_{n+1}, phi) to the current RHS.
+        call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
+             rtimestepping%dweightNewRHS,1.0_DP)
+
+        ! Add the inhomogeneous Neumann BCs to the RHS: "(w_1 g_n , phi)_Gamma"
+        call cc_assembleInhomNeumann (rproblem,&
+             rproblem%rcollection,rtempVectorRhs,rtimestepping%dweightMatrixLHS)
+
+        call stat_stopTimer(rtimerRHSgeneration)
+        rproblem%rstatistics%dtimeRHSAssembly = &
+             rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
+      end if  ! DIRK scheme or general theta/fractional-step theta scheme
 
       ! Implement boundary conditions into the RHS and solution vector, not
       ! into the matrices; the latter is done during the nonlinear iteration.
@@ -669,6 +834,19 @@ contains
            1.0_DP - rtimestepping%dtheta, rtimestepping%dtheta)
 
       call lsysbl_releaseVector (rsolutionAux)
+    end if
+
+    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+      if (rtimestepping%isubstep .eq. rtimestepping%nsubsteps) then
+        ! Free up (velocity) solution from macro time step t_n
+        call lsysbl_releaseVector (rsolutionFromLastMacroTimeStep)
+        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(3))
+        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(2))
+        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(1))
+      end if
     end if
 
     ! Finally tell the time stepping scheme that we completed the time step.
@@ -766,7 +944,8 @@ contains
              1.0_DP - dfactor, dfactor)
       end if
 
-    else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
+    else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK) then
       if (ipressureFullyImplicit .eq. 1) then
         ! For the fractional-step theta scheme, the paper
         !    @article{Rang2008747,
@@ -841,6 +1020,20 @@ contains
       ! lives for this time stepping scheme. Do not interpolate just yet.
       call lsysbl_copyVector (rvectorNew, rvectorInt)
       dtimeInt = dtimeNew
+
+    else if (rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+      ! Velocity and pressure are treated in the same way by these two time stepping
+      ! schemes, namely semi-implicitly. They should both live in the same point in time.
+      call lsysbl_copyVector (rvectorNew, rvectorInt)
+      dtimeInt = dtimeNew
+
+    else
+      call output_line ("unknown time stepping scheme with index" // &
+                        trim(sys_siL(rtimestepping%ctimestepType, 2)), &
+                        OU_CLASS_ERROR, OU_MODE_STD, "cc_interpolateTimesteps")
+      call sys_halt()
 
     end if
 
@@ -929,6 +1122,13 @@ contains
     ! Initialise the time stepping scheme according to the problem configuration
     call cc_initTimeSteppingScheme (rproblem%rparamList,rtimestepping,&
         ipressureFullyImplicit)
+    ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the velocity
+    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+      ipressureFullyImplicit = 0
+    end if
 
     ! Initialise the preconditioner for the nonlinear iteration
     call cc_initPreconditioner (rproblem,&
