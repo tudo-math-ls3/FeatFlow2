@@ -1129,9 +1129,21 @@ contains
     real(DP) :: doldDefect
     integer :: iiterations
 
+    real(DP) :: tt0,tt1,ttt0,ttt1
+    real(DP), save :: ttcheck,ttnorm,ttcopy,ttspmv,ttssor,ttlincomb,tttotal
+
+    !$ ttt0 = omp_get_wtime()
+
     ! Check compatibility
+    !$ tt0 = omp_get_wtime()
     call lsysbl_isVectorCompatible(ru, rf)
+    !$ tt1 = omp_get_wtime()
+    !$ ttcheck = ttcheck+tt1-tt0
+
+    !$ tt0 = omp_get_wtime()
     rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+    !$ tt1 = omp_get_wtime()
+    !$ ttnorm = ttnorm+tt1-tt0
 
     ! Check for not-a-number in right-hand side
     if (sys_isNAN(rsolver%dinitialRHS)) then
@@ -1173,19 +1185,31 @@ contains
     p_rres    => rsolver%p_rsolverSSOR%rtempVector
 
     ! Check compatibility
+    !$ tt0 = omp_get_wtime()
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isVectorCompatible(ru, p_rres)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
+    !$ tt1 = omp_get_wtime()
+    !$ ttcheck = ttcheck+tt1-tt0
 
     ! Compute initial residual
+    !$ tt0 = omp_get_wtime()
     call lsysbl_copyVector(rf, p_rres)
+    !$ tt1 = omp_get_wtime()
+    !$ ttcopy = ttcopy+tt1-tt0
+
+    !$ tt0 = omp_get_wtime()
     call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+    !$ tt1 = omp_get_wtime()
+    !$ ttspmv = ttspmv+tt1-tt0
 
     ! Compute norm of initial defect
+    !$ tt0 = omp_get_wtime()
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
     rsolver%dfinalDefect   = rsolver%dinitialDefect
     doldDefect             = rsolver%dinitialDefect
-
+    !$ tt1 = omp_get_wtime()
+    !$ ttnorm = ttnorm+tt1-tt0
 
     ! Check if initial residual is too large ...
     if (solver_testDivergence(rsolver)) then
@@ -1223,17 +1247,33 @@ contains
     correction: do iiterations = 1, rsolver%nmaxIterations
 
       ! Precondition the linear residual
+      !$ tt0 = omp_get_wtime()
       call linsol_precondSSOR(rsolver, p_rres)
+      !$ tt1 = omp_get_wtime()
+      !$ ttssor = ttssor+tt1-tt0
 
       ! Update solution
+      !$ tt0 = omp_get_wtime()
       call lsysbl_vectorLinearComb(p_rres, ru, 1.0_DP, 1.0_DP)
+      !$ tt1 = omp_get_wtime()
+      !$ ttlincomb = ttlincomb+tt1-tt0
 
       ! Compute residual
+      !$ tt0 = omp_get_wtime()
       call lsysbl_copyVector(rf, p_rres)
+      !$ tt1 = omp_get_wtime()
+      !$ ttcopy = ttcopy+tt1-tt0
+
+      !$ tt0 = omp_get_wtime()
       call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+      !$ tt1 = omp_get_wtime()
+      !$ ttspmv = ttspmv+tt1-tt0
 
       ! Compute norm of residual
+      !$ tt0 = omp_get_wtime()
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
+      !$ tt1 = omp_get_wtime()
+      !$ ttnorm = ttnorm+tt1-tt0
 
       if (rsolver%coutputModeVerbose .gt. 0) then
         call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
@@ -1304,7 +1344,10 @@ contains
     end do correction
 
     ! Compute convergence rate
+    !$ tt0 = omp_get_wtime()
     call solver_statistics(rsolver, iiterations)
+    !$ tt1 = omp_get_wtime()
+    !$ ttcheck = ttcheck+tt1-tt0
 
     if (rsolver%coutputModeInfo .gt. 0) then
       call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
@@ -1325,6 +1368,18 @@ contains
       call output_separator(OU_SEP_PERC,OU_CLASS_MSG,rsolver%coutputModeInfo)
       call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
     end if
+
+    !$ ttt1 = omp_get_wtime()
+    tttotal = tttotal+ttt1-ttt0
+
+    print *, "check  :",ttcheck,100*ttcheck/tttotal
+    print *, "norm   :",ttnorm,100*ttnorm/tttotal
+    print *, "copy   :",ttcopy,100*ttcopy/tttotal
+    print *, "spmv   :",ttspmv,100*ttspmv/tttotal
+    print *, "ssor   :",ttssor,100*ttssor/tttotal
+    print *, "lincomb:",ttlincomb,100*ttlincomb/tttotal
+    print *, "TOTAL  :",tttotal
+    print *, "--------"
 
   end subroutine linsol_solveSSOR
 
@@ -2614,6 +2669,7 @@ contains
       integer :: ieq,icol,ild
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = 1, neq
         daux = 0.0_DP
 
@@ -2626,6 +2682,8 @@ contains
         ! Update solution vector
         Du(ieq)=(Du(ieq)-daux*domega)/Da(Kld(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat7_double
 
     !*************************************************************
@@ -2646,6 +2704,7 @@ contains
       integer :: ieq,icol,ild
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = 1, neq
         daux = 0.0_DP
 
@@ -2664,6 +2723,8 @@ contains
         ! Update solution vector
         Du(ieq)=(Du(ieq)-daux*domega)/Da(Kdiagonal(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat9_double
 
     !*************************************************************
@@ -2683,6 +2744,7 @@ contains
       integer :: ieq,icol,ild
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = 1, neq
         daux = 0.0_DP
 
@@ -2696,8 +2758,10 @@ contains
         ! Update solution vector
         Du(ieq) = (Du(ieq)-daux*domega)/Da(Kld(ieq))
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
 
@@ -2711,6 +2775,8 @@ contains
         ! Update solution vector
         Du(ieq) = Du(ieq)-daux*domega/Da(Kld(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat7_double
 
     !*************************************************************
@@ -2731,6 +2797,7 @@ contains
       integer :: ieq,icol,ild
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = 1, neq
         daux = 0.0_DP
 
@@ -2743,8 +2810,10 @@ contains
         ! Update solution vector
         Du(ieq) = (Du(ieq)-daux*domega)/Da(Kdiagonal(ieq))
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(daux,ild,icol)
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
 
@@ -2757,6 +2826,8 @@ contains
         ! Update solution vector
         Du(ieq)=Du(ieq)-daux*domega/Da(Kdiagonal(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat9_double
 
     !*************************************************************
@@ -2774,22 +2845,25 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq) = (Du(:,ieq)-daux*domega)/Da(:,Kld(ieq))
+        Du(:,ieq) = (Du(:,ieq)-Daux*domega)/Da(:,Kld(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat7IntlD_double
 
     !*************************************************************
@@ -2808,28 +2882,31 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = 1,neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq)=(Du(:,ieq)-daux*domega)/Da(:,Kdiagonal(ieq))
+        Du(:,ieq)=(Du(:,ieq)-Daux*domega)/Da(:,Kdiagonal(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat9IntlD_double
 
     !*************************************************************
@@ -2847,38 +2924,43 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up left part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
           if (icol .ge. ieq) exit
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq)=(Du(:,ieq)-daux*domega)/Da(:,Kld(ieq))
+        Du(:,ieq)=(Du(:,ieq)-Daux*domega)/Da(:,Kld(ieq))
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = neq-1, 1, -1
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up right part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
           if (icol .le. ieq) cycle
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq) = Du(:,ieq)-daux*domega/Da(:,Kld(ieq))
+        Du(:,ieq) = Du(:,ieq)-Daux*domega/Da(:,Kld(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat7IntlD_double
 
     !*************************************************************
@@ -2897,36 +2979,41 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = 1,neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq) = (Du(:,ieq)-daux*domega)/Da(:,Kdiagonal(ieq))
+        Du(:,ieq) = (Du(:,ieq)-Daux*domega)/Da(:,Kdiagonal(ieq))
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol)
       do ieq = neq-1, 1, -1
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
-          daux = daux+Da(:,ild)*Du(:,icol)
+          Daux = Daux+Da(:,ild)*Du(:,icol)
         end do
 
         ! Update solution vector
-        Du(:,ieq) = Du(:,ieq)-daux*domega/Da(:,Kdiagonal(ieq))
+        Du(:,ieq) = Du(:,ieq)-Daux*domega/Da(:,Kdiagonal(ieq))
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat9IntlD_double
 
     !*************************************************************
@@ -2944,12 +3031,13 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild,ivar,jvar
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar,jvar)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -2957,16 +3045,18 @@ contains
 
           do ivar = 1, nvar
             do jvar = 1, nvar
-              daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar) = Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
         end do
 
         ! Update solution vector
         do ivar = 1,nvar
-          Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kld(ieq))
+          Du(ivar,ieq) = (Du(ivar,ieq)-Daux(ivar)*domega)/Da(ivar,ivar,Kld(ieq))
         end do
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat7Intl1_double
 
     !*************************************************************
@@ -2985,40 +3075,49 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild,ivar,jvar
 
       ! Process complete matrix from top-left to bottom-right
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar,jvar)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
 
+          !$omp simd collapse(2)
           do ivar=1,nvar
             do jvar=1,nvar
-              daux(ivar)=daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar)=Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
+          !$omp end simd
         end do
 
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
 
+          !$omp simd collapse(2)
           do ivar=1,nvar
             do jvar=1,nvar
-              daux(ivar)=daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar)=Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
+          !$omp end simd
         end do
 
         ! Update solution vector
+        !$omp simd
         do ivar = 1, nvar
-          Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
+          Du(ivar,ieq) = (Du(ivar,ieq)-Daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
         end do
+        !$omp end simd
       end do
+      !$omp end parallel do
+
     end subroutine sor_Mat9Intl1_double
 
     !*************************************************************
@@ -3036,12 +3135,13 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild,ivar,jvar
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -3049,7 +3149,7 @@ contains
           if (icol .ge. ieq) exit
 
           do ivar = 1, nvar
-            daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
+            Daux(ivar) = Daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
         end do
 
@@ -3062,20 +3162,22 @@ contains
 
             ! Loop over all lower-left column-blocks
             do jvar = 1, ivar-1
-              daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar) = Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
         end do
 
         ! Update solution vector
         do ivar = 1, nvar
-          Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kld(ieq))
+          Du(ivar,ieq) = (Du(ivar,ieq)-Daux(ivar)*domega)/Da(ivar,ivar,Kld(ieq))
         end do
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar)
       do ieq = neq-1, 1, -1
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -3083,7 +3185,7 @@ contains
           if (icol .le. ieq) cycle
 
           do ivar = 1,nvar
-            daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
+            Daux(ivar) = Daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
         end do
 
@@ -3096,16 +3198,18 @@ contains
 
             ! Loop over all upper-right column-blocks
             do jvar = ivar+1, nvar
-              daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar) = Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
         end do
 
         ! Update solution vector
         do ivar = 1, nvar
-          Du(ivar,ieq) = Du(ivar,ieq)-daux(ivar)*domega/Da(ivar,ivar,Kld(ieq))
+          Du(ivar,ieq) = Du(ivar,ieq)-Daux(ivar)*domega/Da(ivar,ivar,Kld(ieq))
         end do
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat7Intl1_double
 
     !*************************************************************
@@ -3124,19 +3228,20 @@ contains
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
 
-      real(DP), dimension(nvar) :: daux
+      real(DP), dimension(nvar) :: Daux
       integer :: ieq,icol,ild,ivar,jvar
 
       ! Process lower left triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar,jvar)
       do ieq = 1, neq
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
 
           do ivar = 1,nvar
-            daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
+            Daux(ivar) = Daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
         end do
 
@@ -3149,27 +3254,29 @@ contains
 
             ! Loop over all lower-left column-blocks
             do jvar = 1, ivar-1
-              daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar) = Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
         end do
 
         ! Update solution vector
         do ivar = 1, nvar
-          Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
+          Du(ivar,ieq) = (Du(ivar,ieq)-Daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
         end do
       end do
+      !$omp end parallel do
 
       ! Process upper right triangular matrix
+      !$omp parallel do default(shared) private(Daux,ild,icol,ivar,jvar)
       do ieq = neq-1, 1, -1
-        daux = 0.0_DP
+        Daux = 0.0_DP
 
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
 
           do ivar = 1, nvar
-            daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
+            Daux(ivar) = Daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
         end do
 
@@ -3182,16 +3289,18 @@ contains
 
             ! Loop over all upper-right column-blocks
             do jvar = ivar+1, nvar
-              daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
+              Daux(ivar) = Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
         end do
 
         ! Update solution vector
         do ivar = 1, nvar
-          Du(ivar,ieq) = Du(ivar,ieq)-daux(ivar)*domega/Da(ivar,ivar,Kdiagonal(ieq))
+          Du(ivar,ieq) = Du(ivar,ieq)-Daux(ivar)*domega/Da(ivar,ivar,Kdiagonal(ieq))
         end do
       end do
+      !$omp end parallel do
+
     end subroutine ssor_Mat9Intl1_double
   end subroutine linsol_precondSSOR
 
