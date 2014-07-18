@@ -681,7 +681,7 @@ contains
 !<subroutine>
 
   subroutine cc_interpolateTimesteps (rtimestepping,rvectorOld,dtimeOld,&
-      rvectorNew,dtimeNew,rvectorInt,dtimeInt)
+      rvectorNew,dtimeNew,rvectorInt,dtimeInt,ipressureFullyImplicit)
 
 !<description>
   ! Interpolates the solution of the old and new timestep to a common
@@ -704,6 +704,9 @@ contains
 
   ! Point in time of the current timestep
   real(dp), intent(in) :: dtimeNew
+
+  ! Set to 1 if the pressure should be discretised fully implicitely, 0 otherwise.
+  integer, intent(in) :: ipressureFullyImplicit
 !</input>
 
 !<inputoutput>
@@ -733,8 +736,8 @@ contains
       ! where the velocity solution is calculated. See e.g. page 750 of paper
       !    @article{Rang2008747,
       !       author  = "J. Rang",
-      !       title   = "Pressure corrected implicit $\theta$-schemes for  %!" fix compiler
-      !                  the incompressible Navier--Stokes equations",     %!" warnings
+      !       title   = "Pressure corrected implicit $\theta$-schemes for %!" fix compiler
+      !                  the incompressible Navier--Stokes equations",    %!" warnings
       !       journal = "Applied Mathematics and Computation",
       !       volume  = "201",
       !       number  = "1--2",
@@ -742,7 +745,7 @@ contains
       !       year    = "2008",
       !       issn    = "0096-3003",
       !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
-      !       url     = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+      !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
       !       note    = "",
       !    }
       ! for a proof. Take an appropriate mean in order to have both variables live at a
@@ -764,65 +767,74 @@ contains
       end if
 
     else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
-      ! For the fractional-step theta scheme, the paper
-      !    @article{Rang2008747,
-      !       author  = "J. Rang",
-      !       title   = "Pressure corrected implicit $\theta$-schemes for  %!" fix compiler
-      !                  the incompressible Navier--Stokes equations",     %!" warnings
-      !       journal = "Applied Mathematics and Computation",
-      !       volume  = "201",
-      !       number  = "1--2",
-      !       pages   = "747--761",
-      !       year    = "2008",
-      !       issn    = "0096-3003",
-      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
-      !       url     = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
-      !       note    = "",
-      !    }
-      ! proves on page 751 that the pressure solution (being treated fully implicitly, as
-      ! opposed to the velocity variable) lives in three distinct points in time:
-      !   substep 1:   t^{n} + alpha theta k                    = t^{n} + (4 theta - 1) k
-      !   substep 2:   t^{n} + theta k + beta theta' k          = t^{n} + (5 theta - 1) k
-      !   substep 3:   t^{n} + (theta+theta') k + alpha theta k = t^{n} + 3 theta k
-      ! So, again pressure and velocity do definitely not live in the same point in time.
-      ! Moreover, the same paper proves that the fractional-step theta scheme suffers from
-      ! order reduction for stiff ODEs (Lemma 5.2) and due to that the pressure is only
-      ! approximated with first (!) order accuracy along with second order approximation
-      ! of the velocity variable. That can also be easily determined experimantally (turn
-      ! on ierrorAnalysisTimeSpace in postprocessing.dat and compare respective L2 errors
-      ! for a sequence of time steps for a right hand side chosen according to an
-      ! analytic, known solution).
-      ! Again, take an appropriate mean in order to have both variables live at a common
-      ! point in time (mandatory for subsequent calculations like lift and drag
-      ! calculation) and interpolate *not* the pressure variable, but the velocity
-      ! variable. Because only for the latter do we always have a start solution and as
-      ! such can use it in time step 1 for the first interpolation step.
+      if (ipressureFullyImplicit .eq. 1) then
+        ! For the fractional-step theta scheme, the paper
+        !    @article{Rang2008747,
+        !       author  = "J. Rang",
+        !       title   = "Pressure corrected implicit $\theta$-schemes   %!" fix compiler
+        !                  for the incompressible Navier--Stokes
+        !                  equations",                                    %!" warnings
+        !       journal = "Applied Mathematics and Computation",
+        !       volume  = "201",
+        !       number  = "1--2",
+        !       pages   = "747--761",
+        !       year    = "2008",
+        !       issn    = "0096-3003",
+        !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
+        !       url ="http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+        !       note    = "",
+        !    }
+        ! proves on page 751 that the pressure solution (being treated fully implicitly,
+        ! as opposed to the velocity variable) lives in three distinct points in time:
+        !   substep 1:  t^{n} + alpha theta k                    = t^{n} + (4 theta - 1) k
+        !   substep 2:  t^{n} + theta k + beta theta' k          = t^{n} + (5 theta - 1) k
+        !   substep 3:  t^{n} + (theta+theta') k + alpha theta k = t^{n} + 3 theta k
+        ! So, again pressure and velocity do definitely not live in the same point in
+        ! time.  Moreover, the same paper proves that the fractional-step theta scheme
+        ! suffers from order reduction for stiff ODEs (Lemma 5.2) and due to that the
+        ! pressure is only approximated with first (!) order accuracy along with second
+        ! order approximation of the velocity variable. That can also be easily determined
+        ! experimantally (turn on ierrorAnalysisTimeSpace in postprocessing.dat and
+        ! compare respective L2 errors for a sequence of time steps for a right hand side
+        ! chosen according to an analytic, known solution).
+        ! Again, take an appropriate mean in order to have both variables live at a common
+        ! point in time (mandatory for subsequent calculations like lift and drag
+        ! calculation) and interpolate *not* the pressure variable, but the velocity
+        ! variable. Because only for the latter do we always have a start solution and as
+        ! such can use it in time step 1 for the first interpolation step.
 
-      dfactor = 0.0_DP
-      select case (mod(rtimestepping%isubstep + 1, 3)+1)
-      ! (Note: substep gets incremented *before* postprocessing starts. Even though we are
-      !        still in the 3rd substep, the counter points already to the first substep of
-      !        the next macro time step.)
-      case (1)  ! 1st substep
-        dfactor = 4.0_DP * rtimestepping%dtheta - 1.0_DP
+        dfactor = 0.0_DP
+        select case (mod(rtimestepping%isubstep + 1, 3)+1)
+          ! (Note: substep gets incremented *before* postprocessing starts. Even though we
+          !        are still in the 3rd substep, the counter points already to the first
+          !        substep of the next macro time step.)
+        case (1)  ! 1st substep
+          dfactor = 4.0_DP * rtimestepping%dtheta - 1.0_DP
 
-      case (2)  ! 2nd substep
-        dfactor = 5.0_DP * rtimestepping%dtheta - 1.0_DP
+        case (2)  ! 2nd substep
+          dfactor = 5.0_DP * rtimestepping%dtheta - 1.0_DP
 
-      case (3)  ! 3rd substep
-        dfactor = 3.0_DP * rtimestepping%dtheta
+        case (3)  ! 3rd substep
+          dfactor = 3.0_DP * rtimestepping%dtheta
 
-      end select
+        end select
 
-      dtimeInt = (1.0_DP-dfactor)*dtimeOld + dfactor*dtimeNew
+        dtimeInt = (1.0_DP-dfactor)*dtimeOld + dfactor*dtimeNew
 
-      call lsysbl_copyVector (rvectorNew, rvectorInt)
-      call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(1),&
-           rvectorInt%RvectorBlock(1),&
-           1.0_DP - dfactor, dfactor)
-      call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
-           rvectorInt%RvectorBlock(2),&
-           1.0_DP - dfactor, dfactor)
+        call lsysbl_copyVector (rvectorNew, rvectorInt)
+        call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(1),&
+             rvectorInt%RvectorBlock(1),&
+             1.0_DP - dfactor, dfactor)
+        call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
+             rvectorInt%RvectorBlock(2),&
+             1.0_DP - dfactor, dfactor)
+
+      else
+        ! Velocity and pressure are treated in the same way, namely semi-implicitly. They
+        ! should both live in the same point in time.
+        call lsysbl_copyVector (rvectorNew, rvectorInt)
+        dtimeInt = dtimeNew
+      end if ! treat pressure implicitly or semi-implicitly?
 
     else if (rtimestepping%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
       ! For the time being, it is unknown at which point in time the pressure variable
@@ -1463,7 +1475,8 @@ contains
         ! Calculate an interpolated solution vector where the time of
         ! pressure and velocity matches.
         call cc_interpolateTimesteps (rtimestepping,roldSolution,doldtime,&
-            rvector,rproblem%rtimedependence%dtime,rvectorInt,dtimeInt)
+            rvector,rproblem%rtimedependence%dtime,rvectorInt,dtimeInt,&
+            ipressureFullyImplicit)
 
         ! Postprocessing. Write out the solution if it was calculated successfully and
         ! measure time errors for test problems (with analytically given solution).
