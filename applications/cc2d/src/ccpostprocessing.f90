@@ -3365,10 +3365,9 @@ contains
     integer(I32) :: ieltype
     type(t_collection) :: rcollection
 
-    type(t_vectorBlock) :: rexact
-    
     character(SYS_STRLEN) :: sfile,sfilename
-    
+
+
     ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
                               "IOUTPUTUCD", ioutputUCD, 0)
@@ -3560,16 +3559,6 @@ contains
     call ucd_addVectorByVertex (rexport, "pressure_raw", UCD_VAR_STANDARD, &
         rvector%RvectorBlock(3), DER_FUNC)
 
-    call lsysbl_createVector (rprjVector, rexact, .false.)
-    call anprj_discrDirect (rexact%RvectorBlock(1), ffunction_TargetX, rproblem%rcollection)
-    call anprj_discrDirect (rexact%RvectorBlock(2), ffunction_TargetY, rproblem%rcollection)
-    call ucd_addVectorFieldByVertex (rexport, "velocity_exact", UCD_VAR_STANDARD, &
-        (/ rexact%RvectorBlock(1),rexact%RvectorBlock(2) /) )
-
-    call anprj_discrDirect (rexact%RvectorBlock(3), ffunction_TargetP, rproblem%rcollection)
-    call ucd_addVectorByVertex (rexport, "pressure_exact", UCD_VAR_STANDARD, &
-        rexact%RvectorBlock(3), DER_FUNC)
-
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
@@ -3591,7 +3580,7 @@ contains
     ! Write out the viscosity if nonconstant
     if (rproblem%rphysics%cviscoModel .ne. 0) then
       
-      ! Prepare the collection. The "next" collection points to the user defined 
+      ! Prepare the collection. The "next" collection points to the user defined
       ! collection.
       call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
           rcollection,rvector,rproblem%rcollection)
@@ -3608,21 +3597,20 @@ contains
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
-    
-call lsysbl_releaseVector (rexact)
+
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)
-    
+
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
-    
+
     ! Release the dynamic level information structure including the
     ! discretised BC`s, not used anymore.
     call cc_doneDynamicLevelInfo (rdynamicInfo)
-    
+
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-    
+
     if (present(dtime)) then
       ! Restore the current simulation time.
       rproblem%rtimedependence%dtime = dtimebackup

@@ -569,8 +569,6 @@ contains
         call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
              rtimestepping%dcoeffA(rtimestepping%isubstep+1,rtimestepping%isubstep+1) * &
              rtimestepping%dtau, 1.0_DP)
-print *, "DEBUG RHS: weight new RHS: ", rtimestepping%dcoeffA(rtimestepping%isubstep+1,rtimestepping%isubstep+1) * &
-             rtimestepping%dtau
 
         ! Ensure f(3) is zero
         call lsyssc_clearVector(rtempVectorRhs%RvectorBlock(3))
