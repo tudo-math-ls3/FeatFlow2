@@ -24,7 +24,7 @@ module zpinch_preprocessing
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use fparser
   use genoutput

@@ -198,7 +198,7 @@ module hydro_callback1d
 #include "flagship.h"
 #include "hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundarycondaux
   use collection

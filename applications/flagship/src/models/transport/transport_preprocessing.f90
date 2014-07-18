@@ -44,7 +44,7 @@ module transport_preprocessing
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabscalar
   use afcstabscalarfct

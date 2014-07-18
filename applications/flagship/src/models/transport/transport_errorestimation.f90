@@ -38,7 +38,7 @@ module transport_errorestimation
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use boundary
   use collection

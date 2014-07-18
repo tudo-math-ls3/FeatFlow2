@@ -215,7 +215,7 @@ module hydro_callback2d
 #include "kernel/System/fmath.h"
 #include "kernel/feat2constants.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundary
   use boundaryaux

@@ -26,7 +26,7 @@ module flagship_callback
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use fsystem
   use genoutput

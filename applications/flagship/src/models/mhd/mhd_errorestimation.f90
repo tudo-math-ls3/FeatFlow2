@@ -25,7 +25,7 @@ module mhd_errorestimation
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use fsystem
   use genoutput

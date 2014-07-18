@@ -139,7 +139,7 @@ module solveraux
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
 #ifndef ENABLE_AGMG
   use agmgdummy
 #endif

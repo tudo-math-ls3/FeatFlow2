@@ -203,7 +203,7 @@ module hydro_callback3d
 #include "hydro.h"
 #include "kernel/System/fmath.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use collection
   use fsystem

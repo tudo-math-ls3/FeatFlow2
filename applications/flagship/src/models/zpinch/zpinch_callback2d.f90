@@ -61,7 +61,7 @@ module zpinch_callback2d
 #include "flagship.h"
 #include "models/hydro/hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use collection
   use hydro_basic
   use fsystem

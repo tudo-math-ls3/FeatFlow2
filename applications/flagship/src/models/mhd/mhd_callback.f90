@@ -102,7 +102,7 @@ module mhd_callback
 #include "flagship.h"
 #include "mhd.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabsystem
   use afcstabsystemfct

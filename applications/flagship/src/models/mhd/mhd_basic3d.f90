@@ -25,7 +25,7 @@ module mhd_basic3d
 #include "flagship.h"
 #include "mhd.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
   use linearsystemblock

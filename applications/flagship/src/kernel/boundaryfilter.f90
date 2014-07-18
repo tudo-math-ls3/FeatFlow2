@@ -48,7 +48,7 @@ module boundaryfilter
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundary
   use boundarycondaux

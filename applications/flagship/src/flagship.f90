@@ -25,7 +25,7 @@ program flagship
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fparser
   use fsystem
   use genoutput

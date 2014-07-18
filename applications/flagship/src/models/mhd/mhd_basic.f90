@@ -40,7 +40,7 @@ module mhd_basic
 #include "flagship.h"
 #include "mhd.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundarycondaux
   use fparser

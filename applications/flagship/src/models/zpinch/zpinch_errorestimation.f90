@@ -21,7 +21,7 @@ module zpinch_errorestimation
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use hydro_basic
   use linearsystemblock

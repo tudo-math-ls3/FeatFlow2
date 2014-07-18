@@ -20,7 +20,7 @@ module flagship_signals
   
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
   use signals

@@ -107,7 +107,7 @@ module hydro_callback
 #include "hydro.h"
 #include "hydro_callback.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabsystem
   use afcstabsystemfct

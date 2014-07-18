@@ -128,7 +128,7 @@ module transport_application
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use boundarycondaux
   use boundaryfilter
   use collection

@@ -228,7 +228,7 @@ module mhd_callback2d
 #include "mhd.h"
 #include "kernel/System/fmath.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundary
   use boundarycondaux

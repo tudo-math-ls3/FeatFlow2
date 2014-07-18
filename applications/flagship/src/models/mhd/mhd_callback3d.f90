@@ -214,7 +214,7 @@ module mhd_callback3d
 #include "mhd.h"
 #include "kernel/System/fmath.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use collection
   use fsystem

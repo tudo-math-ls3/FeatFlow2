@@ -26,7 +26,7 @@ module transport_postprocessing
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use bilinearformevaluation
   use collection
   use derivatives

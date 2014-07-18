@@ -25,7 +25,7 @@ module hydro_basic1d
 #include "flagship.h"
 #include "hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use fsystem
   use genoutput
   use linearsystemblock

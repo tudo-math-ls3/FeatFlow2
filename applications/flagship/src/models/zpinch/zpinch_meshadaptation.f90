@@ -32,7 +32,7 @@ module zpinch_meshadaptation
 #include "flagship.h"
 #include "models/hydro/hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use collection
   use flagship_basic

@@ -33,7 +33,7 @@ module zpinch_callback
 #include "flagship.h"
 #include "models/hydro/hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabscalarfct
   use afcstabsystemfct

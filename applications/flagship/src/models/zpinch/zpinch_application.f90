@@ -40,7 +40,7 @@ module zpinch_application
 
 #include "flagship.h"
 
-!$use omp_lib
+!$ use omp_lib
   use basicgeometry
   use boundarycondaux
   use boundaryfilter

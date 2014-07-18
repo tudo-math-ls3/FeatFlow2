@@ -39,7 +39,7 @@ module hydro_preprocessing
 #include "flagship.h"
 #include "hydro.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabsystem
   use afcstabsystemfct
