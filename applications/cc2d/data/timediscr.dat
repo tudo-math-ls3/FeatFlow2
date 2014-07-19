@@ -77,7 +77,8 @@ dtimeStepTheta = 1.0                      # THETA
 #      treatment of the pressure is applied, hence the option =1.)
 # =1: Calculate the pressure fully implicitely (standard)
 # No effect if Implicit-Euler is used. Difference can only be seen for
-# time discretisation schemes of order > 1.
+# time discretisation schemes of order > 1. Flag is ignored for DIRK
+# schemes and forcibly set to 0.
 
 ipressureFullyImplicit = 1
 
