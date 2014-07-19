@@ -52,6 +52,8 @@
 
 module groupfemsystem
 
+#include "openmp.h"
+
 !$ use omp_lib
   use afcstabbase
   use basicgeometry
@@ -2483,24 +2485,18 @@ contains
         allocate(Dcoefficients(NVAR,2,p_rperfconfig%NEDGESIM))
       end if
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, size(IedgeList,2), p_rperfconfig%NEDGESIM
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(size(IedgeList,2),IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -2539,15 +2535,19 @@ contains
                 jj = IedgeList(6,iedge)
 
                 ! Update the global operator
+                !omp(40,$omp simd collapse(2),)
                 do ivar = 1, NVAR
                   do jvar = 1, NVAR
                     ijpos = NVAR*(ivar-1)+jvar
+                    !$omp atomic
                     rarray(jvar,ivar)%p_Ddata(ii) = rarray(jvar,ivar)%p_Ddata(ii)&
                                                   + Dcoefficients(ijpos,1,idx)
+                    !$omp atomic
                     rarray(jvar,ivar)%p_Ddata(jj) = rarray(jvar,ivar)%p_Ddata(jj)&
                                                   + Dcoefficients(ijpos,2,idx)
                   end do
                 end do
+                !omp(40,$omp end simd,)
               end do
 
             else   ! matrix is block-diagonal
@@ -2562,12 +2562,16 @@ contains
                 jj = IedgeList(6,iedge)
 
                 ! Update the global operator
+                !omp(40,$omp simd,)
                 do ivar = 1, NVAR
+                  !$omp atomic
                   rarray(ivar,ivar)%p_Ddata(ii) = rarray(ivar,ivar)%p_Ddata(ii)&
                                                 + Dcoefficients(ivar,1,idx)
+                  !$omp atomic
                   rarray(ivar,ivar)%p_Ddata(jj) = rarray(ivar,ivar)%p_Ddata(jj)&
                                                 + Dcoefficients(ivar,2,idx)
                 end do
+                !omp(40,$omp end simd,)
               end do
 
             end if
@@ -2590,6 +2594,7 @@ contains
                   ji = IedgeList(4,iedge)
 
                   ! Update the global operator
+                  !omp(40,$omp simd collapse(2),)
                   do ivar = 1, NVAR
                     do jvar = 1, NVAR
                       ijpos = NVAR*(ivar-1)+jvar
@@ -2597,6 +2602,7 @@ contains
                       rarray(jvar,ivar)%p_Ddata(ji) = Dcoefficients(ijpos,2,idx)
                     end do
                   end do
+                  !omp(40,$omp end simd,)
                 end do
 
               else   ! matrix is block-diagonal
@@ -2611,10 +2617,12 @@ contains
                   ji = IedgeList(4,iedge)
 
                   ! Update the global operator
+                  !omp(40,$omp simd,)
                   do ivar = 1, NVAR
                     rarray(ivar,ivar)%p_Ddata(ij) = Dcoefficients(ivar,1,idx)
                     rarray(ivar,ivar)%p_Ddata(ji) = Dcoefficients(ivar,2,idx)
                   end do
+                  !omp(40,$omp end simd,)
                 end do
 
               end if
@@ -2633,6 +2641,7 @@ contains
                   ji = IedgeList(4,iedge)
 
                   ! Update the global operator
+                  !omp(40,$omp simd collapse(2),)
                   do ivar = 1, NVAR
                     do jvar = 1, NVAR
                       ijpos = NVAR*(ivar-1)+jvar
@@ -2642,6 +2651,7 @@ contains
                                                     + Dcoefficients(ijpos,2,idx)
                     end do
                   end do
+                  !omp(40,$omp end simd,)
                 end do
 
               else   ! matrix is block-diagonal
@@ -2656,12 +2666,14 @@ contains
                   ji = IedgeList(4,iedge)
 
                   ! Update the global operator
+                  !omp(40,$omp simd,)
                   do ivar = 1, NVAR
                     rarray(ivar,ivar)%p_Ddata(ij) = rarray(ivar,ivar)%p_Ddata(ij)&
                                                   + Dcoefficients(ivar,1,idx)
                     rarray(ivar,ivar)%p_Ddata(ji) = rarray(ivar,ivar)%p_Ddata(ji)&
                                                   + Dcoefficients(ivar,2,idx)
                   end do
+                  !omp(40,$omp end simd,)
                 end do
 
               end if
@@ -2670,7 +2682,198 @@ contains
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle NEDGESIM edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most NEDGESIM edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+              DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
+            end do
+
+            ! Use callback function to compute off-diagonal entries
+            call fcb_calcMatrixSys_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                Dcoefficients(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+            ! What type of assembly are we?
+            if (ccType .eq. GFEM_MATC_LUMPED) then
+
+              ! Loop through all edges in the current set and scatter
+              ! the entries to the diagonal of the global matrix
+              if (bisFullMatrix) then
+
+                do idx = 1, IEDGEmax-IEDGEset+1
+
+                  ! Get actual edge number
+                  iedge = idx+IEDGEset-1
+
+                  ! Get position of diagonal entries
+                  ii = IedgeList(5,iedge)
+                  jj = IedgeList(6,iedge)
+
+                  ! Update the global operator
+                  do ivar = 1, NVAR
+                    do jvar = 1, NVAR
+                      ijpos = NVAR*(ivar-1)+jvar
+                      rarray(jvar,ivar)%p_Ddata(ii) = rarray(jvar,ivar)%p_Ddata(ii)&
+                                                    + Dcoefficients(ijpos,1,idx)
+                      rarray(jvar,ivar)%p_Ddata(jj) = rarray(jvar,ivar)%p_Ddata(jj)&
+                                                    + Dcoefficients(ijpos,2,idx)
+                    end do
+                  end do
+                end do
+
+              else   ! matrix is block-diagonal
+
+                do idx = 1, IEDGEmax-IEDGEset+1
+
+                  ! Get actual edge number
+                  iedge = idx+IEDGEset-1
+
+                  ! Get position of diagonal entries
+                  ii = IedgeList(5,iedge)
+                  jj = IedgeList(6,iedge)
+
+                  ! Update the global operator
+                  do ivar = 1, NVAR
+                    rarray(ivar,ivar)%p_Ddata(ii) = rarray(ivar,ivar)%p_Ddata(ii)&
+                                                  + Dcoefficients(ivar,1,idx)
+                    rarray(ivar,ivar)%p_Ddata(jj) = rarray(ivar,ivar)%p_Ddata(jj)&
+                                                  + Dcoefficients(ivar,2,idx)
+                  end do
+                end do
+
+              end if
+
+            else
+
+              ! Loop through all edges in the current set
+              ! and scatter the entries to the global matrix
+              if (bclear) then
+
+                if (bisFullMatrix) then
+
+                  do idx = 1, IEDGEmax-IEDGEset+1
+
+                    ! Get actual edge number
+                    iedge = idx+IEDGEset-1
+
+                    ! Get position of off-diagonal entries
+                    ij = IedgeList(3,iedge)
+                    ji = IedgeList(4,iedge)
+
+                    ! Update the global operator
+                    do ivar = 1, NVAR
+                      do jvar = 1, NVAR
+                        ijpos = NVAR*(ivar-1)+jvar
+                        rarray(jvar,ivar)%p_Ddata(ij) = Dcoefficients(ijpos,1,idx)
+                        rarray(jvar,ivar)%p_Ddata(ji) = Dcoefficients(ijpos,2,idx)
+                      end do
+                    end do
+                  end do
+
+                else   ! matrix is block-diagonal
+
+                  do idx = 1, IEDGEmax-IEDGEset+1
+
+                    ! Get actual edge number
+                    iedge = idx+IEDGEset-1
+
+                    ! Get position of off-diagonal entries
+                    ij = IedgeList(3,iedge)
+                    ji = IedgeList(4,iedge)
+
+                    ! Update the global operator
+                    do ivar = 1, NVAR
+                      rarray(ivar,ivar)%p_Ddata(ij) = Dcoefficients(ivar,1,idx)
+                      rarray(ivar,ivar)%p_Ddata(ji) = Dcoefficients(ivar,2,idx)
+                    end do
+                  end do
+
+                end if
+
+              else   ! do not clear matrix
+
+                if (bisFullMatrix) then
+
+                  do idx = 1, IEDGEmax-IEDGEset+1
+
+                    ! Get actual edge number
+                    iedge = idx+IEDGEset-1
+
+                    ! Get position of off-diagonal entries
+                    ij = IedgeList(3,iedge)
+                    ji = IedgeList(4,iedge)
+
+                    ! Update the global operator
+                    do ivar = 1, NVAR
+                      do jvar = 1, NVAR
+                        ijpos = NVAR*(ivar-1)+jvar
+                        rarray(jvar,ivar)%p_Ddata(ij) = rarray(jvar,ivar)%p_Ddata(ij)&
+                                                      + Dcoefficients(ijpos,1,idx)
+                        rarray(jvar,ivar)%p_Ddata(ji) = rarray(jvar,ivar)%p_Ddata(ji)&
+                                                      + Dcoefficients(ijpos,2,idx)
+                      end do
+                    end do
+                  end do
+
+                else   ! matrix is block-diagonal
+
+                  do idx = 1, IEDGEmax-IEDGEset+1
+
+                    ! Get actual edge number
+                    iedge = idx+IEDGEset-1
+
+                    ! Get position of off-diagonal entries
+                    ij = IedgeList(3,iedge)
+                    ji = IedgeList(4,iedge)
+
+                    ! Update the global operator
+                    do ivar = 1, NVAR
+                      rarray(ivar,ivar)%p_Ddata(ij) = rarray(ivar,ivar)%p_Ddata(ij)&
+                                                    + Dcoefficients(ivar,1,idx)
+                      rarray(ivar,ivar)%p_Ddata(ji) = rarray(ivar,ivar)%p_Ddata(ji)&
+                                                    + Dcoefficients(ivar,2,idx)
+                    end do
+                  end do
+
+                end if
+              end if
+            end if
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -3584,38 +3787,32 @@ contains
 
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax
-      integer :: iedge,igroup,ii,jj,ij,ji
+      integer :: iedge,igroup,ivar,ii,jj,ij,ji
 
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ii,jj,ij,ji)&
+      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ivar,ii,jj,ij,ji)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(Dcoefficients(MVAR,2,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, size(IedgeList,2), p_rperfconfig%NEDGESIM
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(size(IedgeList,2),IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -3644,17 +3841,27 @@ contains
             ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
 
-                ! Get actual edge number
-                iedge = idx+IEDGEset-1
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
 
-                ! Get position of diagonal entries
-                ii = IedgeList(5,iedge)
-                jj = IedgeList(6,iedge)
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
 
-                ! Update the global operator
-                Ddata(:,ii) = Ddata(:,ii) + Dcoefficients(:,1,idx)
-                Ddata(:,jj) = Ddata(:,jj) + Dcoefficients(:,2,idx)
+              ! Update the global operator
+              !omp(40,$omp simd,)
+              do ivar=1,NVAR
+                !$omp atomic
+                Ddata(ivar,ii) = Ddata(ivar,ii) + Dcoefficients(ivar,1,idx)
               end do
+              !omp(40,$omp end simd,)
+              !omp(40,$omp simd,)
+              do ivar=1,NVAR
+                !$omp atomic
+                Ddata(ivar,jj) = Ddata(ivar,jj) + Dcoefficients(ivar,2,idx)
+              end do
+              !omp(40,$omp end simd,)
+            end do
 
           else
 
@@ -3697,7 +3904,110 @@ contains
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle NEDGESIM edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most NEDGESIM edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+              DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+            end do
+
+            ! Use callback function to compute off-diagonal entries
+            call fcb_calcMatrixSys_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                Dcoefficients(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+            ! What type of assembly are we?
+            if (ccType .eq. GFEM_MATC_LUMPED) then
+
+              ! Loop through all edges in the current set and scatter
+              ! the entries to the diagonal of the global matrix
+              do idx = 1, IEDGEmax-IEDGEset+1
+
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+
+                ! Get position of diagonal entries
+                ii = IedgeList(5,iedge)
+                jj = IedgeList(6,iedge)
+
+                ! Update the global operator
+                Ddata(:,ii) = Ddata(:,ii) + Dcoefficients(:,1,idx)
+                Ddata(:,jj) = Ddata(:,jj) + Dcoefficients(:,2,idx)
+              end do
+
+            else
+
+              ! Loop through all edges in the current set
+              ! and scatter the entries to the global matrix
+              if (bclear) then
+
+                do idx = 1, IEDGEmax-IEDGEset+1
+
+                  ! Get actual edge number
+                  iedge = idx+IEDGEset-1
+
+                  ! Get position of off-diagonal entries
+                  ij = IedgeList(3,iedge)
+                  ji = IedgeList(4,iedge)
+
+                  ! Update the global operator
+                  Ddata(:,ij) = Dcoefficients(:,1,idx)
+                  Ddata(:,ji) = Dcoefficients(:,2,idx)
+                end do
+
+              else   ! do not clear matrix
+
+                do idx = 1, IEDGEmax-IEDGEset+1
+
+                  ! Get actual edge number
+                  iedge = idx+IEDGEset-1
+
+                  ! Get position of off-diagonal entries
+                  ij = IedgeList(3,iedge)
+                  ji = IedgeList(4,iedge)
+
+                  ! Update the global operator
+                  Ddata(:,ij) = Ddata(:,ij) + Dcoefficients(:,1,idx)
+                  Ddata(:,ji) = Ddata(:,ji) + Dcoefficients(:,2,idx)
+                end do
+
+              end if
+            end if
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -4960,35 +5270,29 @@ contains
       real(DP), dimension(:,:,:), pointer :: DfluxesAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
 
       if (bclear) call lalg_clearVector(Ddata)
 
       !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
+      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,ivar,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, size(IedgeList,2), p_rperfconfig%NEDGESIM
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(size(IedgeList,2), IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5022,13 +5326,84 @@ contains
             j = IedgeList(2,iedge)
 
             ! Update the global vector
-            Ddata(i,:) = Ddata(i,:)+DfluxesAtEdge(:,1,idx)
-            Ddata(j,:) = Ddata(j,:)+DfluxesAtEdge(:,2,idx)
+            !omp(40,$omp simd,)
+            do ivar=1,NVAR
+              !$omp atomic
+              Ddata(i,ivar) = Ddata(i,ivar)+DfluxesAtEdge(ivar,1,idx)
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVAR
+              !$omp atomic
+              Ddata(j,ivar) = Ddata(j,ivar)+DfluxesAtEdge(ivar,2,idx)
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle NEDGESIM edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most NEDGESIM edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+              DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
+            end do
+
+            ! Use callback function to compute internodal fluxes
+            call fcb_calcFluxSys_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vector
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Update the global vector
+              Ddata(i,:) = Ddata(i,:)+DfluxesAtEdge(:,1,idx)
+              Ddata(j,:) = Ddata(j,:)+DfluxesAtEdge(:,2,idx)
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -5212,36 +5587,30 @@ contains
       real(DP), dimension(:,:,:), pointer :: DfluxesAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
 
       if (bclear) call lalg_clearVector(Ddata)
 
       !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)&
+      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,ivar,j)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, size(IedgeList,2), p_rperfconfig%NEDGESIM
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(size(IedgeList,2), IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5275,13 +5644,84 @@ contains
             j = IedgeList(2,iedge)
 
             ! Update the global vector
-            Ddata(:,i) = Ddata(:,i)+DfluxesAtEdge(:,1,idx)
-            Ddata(:,j) = Ddata(:,j)+DfluxesAtEdge(:,2,idx)
+            !omp(40,$omp simd,)
+            do ivar=1,NVAR
+              !$omp atomic
+              Ddata(ivar,i) = Ddata(ivar,i)+DfluxesAtEdge(ivar,1,idx)
+            end do
+            !omp(40,$omp end simd,)            
+            !omp(40,$omp simd,)
+            do ivar=1,NVAR
+              !$omp atomic
+              Ddata(ivar,j) = Ddata(ivar,j)+DfluxesAtEdge(ivar,2,idx)
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle NEDGESIM edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most NEDGESIM edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+              DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+            end do
+
+            ! Use callback function to compute internodal fluxes
+            call fcb_calcFluxSys_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vector
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Update the global vector
+              Ddata(:,i) = Ddata(:,i)+DfluxesAtEdge(:,1,idx)
+              Ddata(:,j) = Ddata(:,j)+DfluxesAtEdge(:,2,idx)
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)

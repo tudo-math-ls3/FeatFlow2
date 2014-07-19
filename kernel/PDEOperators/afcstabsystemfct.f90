@@ -41,6 +41,8 @@
 
 module afcstabsystemfct
 
+#include "kernel/openmp.h"
+
 !$ use omp_lib
   use afcstabbase
   use afcstabsystem
@@ -701,31 +703,21 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
 
       ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
-
-
-      !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      real(DP), dimension(NVAR) :: F_ij,Fp_ij,Fm_ij
+      integer :: i,iedge,igroup,ivar,j
 
       ! Clear P`s
-      !$omp sections
-      !$omp section
       call lalg_clearVector(Dpp)
-      !$omp section
       call lalg_clearVector(Dpm)
-      !$omp end sections
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
+      !$omp parallel default(shared) private(i,ivar,j,F_ij,Fp_ij,Fm_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
 
           ! Get node numbers
           i  = IedgeList(1,iedge)
@@ -734,15 +726,74 @@ contains
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
 
-          ! Compute the sums of antidiffusive increments
-          Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
-          Dpp(:,j) = Dpp(:,j) + max(0.0_DP,-F_ij)
-          Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
-          Dpm(:,j) = Dpm(:,j) + min(0.0_DP,-F_ij)
-        end do
-        !$omp end do
+          ! Separate fluxes into positive/negative contributions
+          Fp_ij = max(0.0_DP, F_ij)
+          Fm_ij = min(0.0_DP, F_ij)
 
-      end do ! igroup
+          ! Compute the sums of antidiffusive increments
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpp(ivar,i) = Dpp(ivar,i) + Fp_ij(ivar)   ! += max(0.0_DP, F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpp(ivar,j) = Dpp(ivar,j) - Fm_ij(ivar)   ! += max(0.0_DP,-F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpm(ivar,i) = Dpm(ivar,i) + Fm_ij(ivar)   ! += min(0.0_DP, F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpm(ivar,j) = Dpm(ivar,j) - Fp_ij(ivar)   ! += min(0.0_DP,-F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          
+        end do
+        !$omp end do omp(40,simd,)
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Apply multiplicative correction factor
+            F_ij = Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Separate fluxes into positive/negative contributions
+            Fp_ij = max(0.0_DP, F_ij)
+            Fm_ij = min(0.0_DP, F_ij)
+
+            ! Compute the sums of antidiffusive increments
+            Dpp(:,i) = Dpp(:,i) + Fp_ij   ! += max(0.0_DP, F_ij)
+            Dpp(:,j) = Dpp(:,j) - Fm_ij   ! += max(0.0_DP,-F_ij)
+            Dpm(:,i) = Dpm(:,i) + Fm_ij   ! += min(0.0_DP, F_ij)
+            Dpm(:,j) = Dpm(:,j) - Fp_ij   ! += min(0.0_DP,-F_ij)
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
 
     end subroutine doADIncrementsDP
@@ -772,45 +823,34 @@ contains
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
 
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
-      !$omp         IEDGEmax,i,idx,iedge,j)&
+      !$omp         IEDGEmax,i,idx,iedge,ivar,j)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Clear P`s
-      !$omp sections
-      !$omp section
-      call lalg_clearVector(Dpp)
-      !$omp section
-      call lalg_clearVector(Dpm)
-      !$omp end sections
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
+      if (size(IedgeListIdx) .eq. 2) then
+        
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -845,15 +885,99 @@ contains
             j = IedgeList(2,iedge)
 
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
-            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpp(ivar,i) = Dpp(ivar,i) + max(0.0_DP, DtransformedFluxesAtEdge(ivar,1,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpp(ivar,j) = Dpp(ivar,j) + max(0.0_DP, DtransformedFluxesAtEdge(ivar,2,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpm(ivar,i) = Dpm(ivar,i) + min(0.0_DP, DtransformedFluxesAtEdge(ivar,1,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpm(ivar,j) = Dpm(ivar,j) + min(0.0_DP, DtransformedFluxesAtEdge(ivar,2,idx))
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+              IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle  edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most  edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+              DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
+              DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+            end do
+
+            ! Use callback function to compute transformed fluxes
+            call fcb_calcFluxTransformation_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                IEDGEmax-IEDGEset+1,&
+                DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vectors
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Compute the sums of positive/negative antidiffusive increments
+              Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+              Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+              Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+              Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -881,28 +1005,19 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: Diff
-      integer :: i,iedge,igroup,j
-
-      !$omp parallel default(shared) private(i,j,Diff)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      integer :: i,iedge,igroup,ivar,j
 
       ! Clear Q`s
-      !$omp sections
-      !$omp section
       call lalg_clearVector(Dqp)
-      !$omp section
       call lalg_clearVector(Dqm)
-      !$omp end sections
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
+      !$omp parallel default(shared) private(i,ivar,j,Diff)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
+        !$omp do omp(40,simd,)
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Get node numbers
@@ -914,14 +1029,65 @@ contains
 
           ! Compute the distance to a local extremum
           ! of the predicted solution
-          Dqp(:,i) = max(Dqp(:,i), Diff)
-          Dqp(:,j) = max(Dqp(:,j),-Diff)
-          Dqm(:,i) = min(Dqm(:,i), Diff)
-          Dqm(:,j) = min(Dqm(:,j),-Diff)
-        end do
-        !$omp end do
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqp(ivar,i) = max(Dqp(ivar,i), Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqp(ivar,j) = max(Dqp(ivar,j),-Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqm(ivar,i) = min(Dqm(ivar,i), Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqm(ivar,j) = min(Dqm(ivar,j),-Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          end do
+          !$omp end do omp(40,simd,)
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Compute solution difference
+            Diff = Dx(j,:)-Dx(i,:)
+
+            ! Compute the distance to a local extremum
+            ! of the predicted solution
+            Dqp(:,i) = max(Dqp(:,i), Diff)
+            Dqp(:,j) = max(Dqp(:,j),-Diff)
+            Dqm(:,i) = min(Dqm(:,i), Diff)
+            Dqm(:,j) = min(Dqm(:,j),-Diff)
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
 
     end subroutine doBoundsDP
@@ -947,42 +1113,32 @@ contains
       real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
-
-      !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
 
       ! Clear Q`s
-      !$omp sections
-      !$omp section
       call lalg_clearVector(Dqp)
-      !$omp section
       call lalg_clearVector(Dqm)
-      !$omp end sections
+
+      !$omp parallel default(shared)&
+      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,ivar,iedge)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -1015,16 +1171,98 @@ contains
             j = IedgeList(2,iedge)
 
             ! Compute the distance to a local extremum of the predicted solution
-            Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
-            Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
-            Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
-            Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqp(ivar,i) = max(Dqp(ivar,i), DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqp(ivar,j) = max(Dqp(ivar,j),-DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqm(ivar,i) = min(Dqm(ivar,i), DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqm(ivar,j) = min(Dqm(ivar,j),-DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else 
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
 
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle  edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most  edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+              DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
+            end do
+
+            ! Use callback function to compute transformed differences
+            call fcb_calcDiffTransformation_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                IEDGEmax-IEDGEset+1,&
+                DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vector
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Compute the distance to a local extremum of the predicted solution
+              Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
+              Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
+              Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
+              Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
+      
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedDataAtEdge)
@@ -1054,20 +1292,13 @@ contains
       if (dscale .eq. 0.0_DP) then
 
         ! Clear R`s
-        !$omp parallel sections
-        !$omp section
         call lalg_clearVector(Drp)
-        !$omp section
         call lalg_clearVector(Drm)
-        !$omp end parallel sections
 
       else
 
-        !$omp parallel sections default(shared) private(daux,ieq,ivar)
-
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp parallel default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -1078,11 +1309,9 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
+        !$omp end do nowait
 
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -1093,9 +1322,8 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
-
-        !$omp end parallel sections
+        !$omp end do
+        !$omp end parallel
 
       end if
 
@@ -1123,20 +1351,13 @@ contains
       if (dscale .eq. 0.0_DP) then
 
         ! Clear R`s
-        !$omp parallel sections
-        !$omp section
         call lalg_clearVector(Drp)
-        !$omp section
         call lalg_clearVector(Drm)
-        !$omp end parallel sections
 
       else
 
-        !$omp parallel sections default(shared) private(daux,ieq,ivar)
-
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp parallel default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -1147,11 +1368,9 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
+        !$omp end do nowait
 
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -1162,9 +1381,8 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
-
-        !$omp end parallel sections
+        !$omp end do
+        !$omp end parallel
 
       end if
 
@@ -1519,36 +1737,69 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
+      integer :: i,iedge,igroup,ivar,j
 
-      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp parallel default(shared) private(i,ivar,j,F_ij)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
+      if (size(IedgeListIdx) .eq. 2) then
+        
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
 
-          ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
 
-          ! Correct antidiffusive flux
-          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+            ! Correct antidiffusive flux
+            F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
 
-          ! Apply limited antidiffusive fluxes
-          Dy(i,:) = Dy(i,:) + F_ij
-          Dy(j,:) = Dy(j,:) - F_ij
+            ! Apply limited antidiffusive fluxes
+            !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(i,ivar) = Dy(i,ivar) + F_ij(ivar)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(j,ivar) = Dy(j,ivar) - F_ij(ivar)
+          end do
+          !omp(40,$omp end simd,)
         end do
-        !$omp end do
+        !$omp end do omp(40,simd,)
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
 
-      end do ! igroup
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Correct antidiffusive flux
+            F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Apply limited antidiffusive fluxes
+            Dy(i,:) = Dy(i,:) + F_ij
+            Dy(j,:) = Dy(j,:) - F_ij
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
 
     end subroutine doCorrectDP
@@ -1573,21 +1824,16 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
+      integer :: i,iedge,igroup,ivar,j
 
-      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp parallel default(shared) private(i,ivar,j,F_ij)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
 
           ! Get node numbers
           i  = IedgeList(1,iedge)
@@ -1597,12 +1843,50 @@ contains
           F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
 
           ! Apply limited antidiffusive fluxes
-          Dy(i,:) = Dy(i,:) + F_ij/ML(i)
-          Dy(j,:) = Dy(j,:) - F_ij/ML(j)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(i,ivar) = Dy(i,ivar) + F_ij(ivar)/ML(i)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(j,ivar) = Dy(j,ivar) - F_ij(ivar)/ML(j)
+          end do
+          !omp(40,$omp end simd,)
         end do
-        !$omp end do
+        !$omp end do omp(40,simd,)
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Correct antidiffusive flux
+            F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Apply limited antidiffusive fluxes
+            Dy(i,:) = Dy(i,:) + F_ij/ML(i)
+            Dy(j,:) = Dy(j,:) - F_ij/ML(j)
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
 
     end subroutine doCorrectScaleByMassDP
@@ -2258,48 +2542,97 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
 
       ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
-
-
-      !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      real(DP), dimension(NVAR) :: F_ij,Fp_ij,Fm_ij
+      integer :: i,iedge,igroup,ivar,j
 
       ! Clear P`s
-      !$omp sections
-      !$omp section
       call lalg_clearVector(Dpp)
-      !$omp section
       call lalg_clearVector(Dpm)
-      !$omp end sections
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
+      !$omp parallel default(shared) private(i,ivar,j,F_ij,Fp_ij,Fm_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
+          
           ! Get node numbers
           i  = IedgeList(1,iedge)
           j  = IedgeList(2,iedge)
-
+          
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
+          
+          ! Separate fluxes into positive/negative contributions
+          Fp_ij = max(0.0_DP, F_ij)
+          Fm_ij = min(0.0_DP, F_ij)
 
           ! Compute the sums of antidiffusive increments
-          Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
-          Dpp(:,j) = Dpp(:,j) + max(0.0_DP,-F_ij)
-          Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
-          Dpm(:,j) = Dpm(:,j) + min(0.0_DP,-F_ij)
-        end do
-        !$omp end do
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpp(ivar,i) = Dpp(ivar,i) + Fp_ij(ivar)   ! += max(0.0_DP, F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpp(ivar,j) = Dpp(ivar,j) - Fm_ij(ivar)   ! += max(0.0_DP,-F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpm(ivar,i) = Dpm(ivar,i) + Fm_ij(ivar)   ! += min(0.0_DP, F_ij)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dpm(ivar,j) = Dpm(ivar,j) - Fp_ij(ivar)   ! += min(0.0_DP,-F_ij)
+          end do
+          !omp(40,$omp end simd,)
 
-      end do ! igroup
+        end do
+        !$omp end do omp(40,simd,)
+        
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+          
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            
+            ! Apply multiplicative correction factor
+            F_ij = Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Separate fluxes into positive/negative contributions
+            Fp_ij = max(0.0_DP, F_ij)
+            Fm_ij = min(0.0_DP, F_ij)
+            
+            ! Compute the sums of antidiffusive increments
+            Dpp(:,i) = Dpp(:,i) + Fp_ij   ! += max(0.0_DP, F_ij)
+            Dpp(:,j) = Dpp(:,j) - Fm_ij   ! += max(0.0_DP,-F_ij)
+            Dpm(:,i) = Dpm(:,i) + Fm_ij   ! += min(0.0_DP, F_ij)
+            Dpm(:,j) = Dpm(:,j) - Fp_ij   ! += min(0.0_DP,-F_ij)
+          end do
+          !$omp end do omp(40,simd,)
+          
+        end do ! igroup
+        
+      end if
       !$omp end parallel
 
     end subroutine doADIncrementsDP
@@ -2329,44 +2662,34 @@ contains
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
+
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
-      !$omp         IEDGEmax,i,idx,iedge,j)&
+      !$omp         IEDGEmax,i,idx,iedge,ivar,j)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Clear P`s
-      !$omp sections
-      !$omp section
-      call lalg_clearVector(Dpp)
-      !$omp section
-      call lalg_clearVector(Dpm)
-      !$omp end sections
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -2401,15 +2724,99 @@ contains
             j = IedgeList(2,iedge)
 
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
-            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpp(ivar,i) = Dpp(ivar,i) + max(0.0_DP, DtransformedFluxesAtEdge(ivar,1,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpp(ivar,j) = Dpp(ivar,j) + max(0.0_DP, DtransformedFluxesAtEdge(ivar,2,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpm(ivar,i) = Dpm(ivar,i) + min(0.0_DP, DtransformedFluxesAtEdge(ivar,1,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dpm(ivar,j) = Dpm(ivar,j) + min(0.0_DP, DtransformedFluxesAtEdge(ivar,2,idx))
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle  edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most  edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+              DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+              DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+            end do
+
+            ! Use callback function to compute transformed fluxes
+            call fcb_calcFluxTransformation_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                IEDGEmax-IEDGEset+1,&
+                DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vectors
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Compute the sums of positive/negative antidiffusive increments
+              Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+              Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+              Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+              Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -2437,29 +2844,20 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: Diff
-      integer :: i,iedge,igroup,j
+      integer :: i,iedge,igroup,ivar,j
+      
+      ! Clear Q`s
+      call lalg_clearVector(Dqp)
+      call lalg_clearVector(Dqm)
 
-      !$omp parallel default(shared) private(i,j,Diff)&
+      !$omp parallel default(shared) private(i,ivar,j,Diff)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Clear Q`s
-      !$omp sections
-      !$omp section
-      call lalg_clearVector(Dqp)
-      !$omp section
-      call lalg_clearVector(Dqm)
-      !$omp end sections
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
 
           ! Get node numbers
           i  = IedgeList(1,iedge)
@@ -2470,14 +2868,66 @@ contains
 
           ! Compute the distance to a local extremum
           ! of the predicted solution
-          Dqp(:,i) = max(Dqp(:,i), Diff)
-          Dqp(:,j) = max(Dqp(:,j),-Diff)
-          Dqm(:,i) = min(Dqm(:,i), Diff)
-          Dqm(:,j) = min(Dqm(:,j),-Diff)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqp(ivar,i) = max(Dqp(ivar,i), Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqp(ivar,j) = max(Dqp(ivar,j),-Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqm(ivar,i) = min(Dqm(ivar,i), Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dqm(ivar,j) = min(Dqm(ivar,j),-Diff(ivar))
+          end do
+          !omp(40,$omp end simd,)
         end do
-        !$omp end do
+        !$omp end do omp(40,simd,)
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Compute solution difference
+            Diff = Dx(:,j)-Dx(:,i)
+
+            ! Compute the distance to a local extremum
+            ! of the predicted solution
+            Dqp(:,i) = max(Dqp(:,i), Diff)
+            Dqp(:,j) = max(Dqp(:,j),-Diff)
+            Dqm(:,i) = min(Dqm(:,i), Diff)
+            Dqm(:,j) = min(Dqm(:,j),-Diff)
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+    end if
+
       !$omp end parallel
 
     end subroutine doBoundsDP
@@ -2503,42 +2953,32 @@ contains
       real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
-
-      !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,ivar,j
 
       ! Clear Q`s
-      !$omp sections
-      !$omp section
       call lalg_clearVector(Dqp)
-      !$omp section
       call lalg_clearVector(Dqm)
-      !$omp end sections
+
+      !$omp parallel default(shared)&
+      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,iedge,ivar,j)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
 
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -2571,15 +3011,97 @@ contains
             j = IedgeList(2,iedge)
 
             ! Compute the distance to a local extremum of the predicted solution
-            Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
-            Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
-            Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
-            Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqp(ivar,i) = max(Dqp(ivar,i), DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqp(ivar,j) = max(Dqp(ivar,j),-DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqm(ivar,i) = min(Dqm(ivar,i), DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
+            !omp(40,$omp simd,)
+            do ivar=1,NVARtransformed
+              !$omp atomic
+              Dqm(ivar,j) = min(Dqm(ivar,j),-DtransformedDataAtEdge(ivar,idx))
+            end do
+            !omp(40,$omp end simd,)
           end do
         end do
         !$omp end do
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over the edges
+          !$omp do schedule(static,1)
+          do IEDGEset = IedgeListIdx(igroup),&
+                        IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+            ! We always handle  edges simultaneously.
+            ! How many edges have we actually here?
+            ! Get the maximum edge number, such that we handle
+            ! at most  edges simultaneously.
+
+            IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+            ! Loop through all edges in the current set
+            ! and prepare the auxiliary arrays
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Fill auxiliary arrays
+              DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+              DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+            end do
+
+            ! Use callback function to compute transformed differences
+            call fcb_calcDiffTransformation_sim(&
+                DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+                IEDGEmax-IEDGEset+1,&
+                DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                rcollection)
+
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global vector
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of nodes
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
+
+              ! Compute the distance to a local extremum of the predicted solution
+              Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
+              Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
+              Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
+              Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+            end do
+          end do
+          !$omp end do
+
+        end do ! igroup
+
+      end if
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -2606,24 +3128,18 @@ contains
       ! local variables
       real(DP) :: daux
       integer :: ieq,ivar
+      !$ integer :: inum_threads
 
       if (dscale .eq. 0.0_DP) then
 
         ! Clear R`s
-        !$omp parallel sections
-        !$omp section
         call lalg_clearVector(Drp)
-        !$omp section
         call lalg_clearVector(Drm)
-        !$omp end parallel sections
 
       else
 
-        !$omp parallel sections default(shared) private(daux,ieq,ivar)
-
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp parallel default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -2634,11 +3150,9 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
+        !$omp end do nowait
 
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -2649,9 +3163,8 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
-
-        !$omp end parallel sections
+        !$omp end do
+        !$omp end parallel
 
       end if
 
@@ -2679,20 +3192,13 @@ contains
       if (dscale .eq. 0.0_DP) then
 
         ! Clear R`s
-        !$omp parallel sections
-        !$omp section
         call lalg_clearVector(Drp)
-        !$omp section
         call lalg_clearVector(Drm)
-        !$omp end parallel sections
 
       else
 
-        !$omp parallel sections default(shared) private(daux,ieq,ivar)
-
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp parallel default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -2703,11 +3209,9 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
+        !$omp end do nowait
 
-        !$omp section
-
-        !$omp parallel do default(shared) private(daux,ieq,ivar)
+        !$omp do
         do ieq = 1, NEQ
           daux = ML(ieq)/dscale
           do ivar = 1, NVAR
@@ -2718,9 +3222,8 @@ contains
             end if
           end do
         end do
-        !$omp end parallel do
-
-        !$omp end parallel sections
+        !$omp end do
+        !$omp end parallel
 
       end if
 
@@ -3076,36 +3579,69 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
+      integer :: i,iedge,igroup,ivar,j
 
-      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp parallel default(shared) private(i,ivar,j,F_ij)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
+          
           ! Get node numbers
           i  = IedgeList(1,iedge)
           j  = IedgeList(2,iedge)
-
+          
           ! Correct antidiffusive flux
           F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
-
+          
           ! Apply limited antidiffusive fluxes
-          Dy(:,i) = Dy(:,i) + F_ij
-          Dy(:,j) = Dy(:,j) - F_ij
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(ivar,i) = Dy(ivar,i) + F_ij(ivar)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(ivar,j) = Dy(ivar,j) - F_ij(ivar)
+          end do
+          !omp(40,$omp end simd,)
         end do
-        !$omp end do
+        !$omp end do omp(40,simd,)
+        
+      else
 
-      end do ! igroup
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Correct antidiffusive flux
+            F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Apply limited antidiffusive fluxes
+            Dy(:,i) = Dy(:,i) + F_ij
+            Dy(:,j) = Dy(:,j) - F_ij
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
 
     end subroutine doCorrectDP
@@ -3130,21 +3666,16 @@ contains
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
-      integer :: i,iedge,igroup,j
+      integer :: i,iedge,igroup,ivar,j
 
-      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp parallel default(shared) private(i,ivar,j,F_ij)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+      if (size(IedgeListIdx) .eq. 2) then
 
         ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        !$omp do omp(40,simd,)
+        do iedge = 1, NEDGE
 
           ! Get node numbers
           i  = IedgeList(1,iedge)
@@ -3154,13 +3685,52 @@ contains
           F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
 
           ! Apply limited antidiffusive fluxes
-          Dy(:,i) = Dy(:,i) + F_ij/ML(i)
-          Dy(:,j) = Dy(:,j) - F_ij/ML(j)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(ivar,i) = Dy(ivar,i) + F_ij(ivar)/ML(i)
+          end do
+          !omp(40,$omp end simd,)
+          !omp(40,$omp simd,)
+          do ivar=1,NVAR
+            !$omp atomic
+            Dy(ivar,j) = Dy(ivar,j) - F_ij(ivar)/ML(j)
+          end do
+          !omp(40,$omp end simd,)
         end do
-        !$omp end do
+        !$omp end do omp(40,simd,)
 
-      end do ! igroup
+      else
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+
+          ! Do nothing for empty groups
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+          ! Loop over all edges
+          !$omp do omp(40,simd,)
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+
+            ! Get node numbers
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+
+            ! Correct antidiffusive flux
+            F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+            ! Apply limited antidiffusive fluxes
+            Dy(:,i) = Dy(:,i) + F_ij/ML(i)
+            Dy(:,j) = Dy(:,j) - F_ij/ML(j)
+          end do
+          !$omp end do omp(40,simd,)
+
+        end do ! igroup
+
+      end if
       !$omp end parallel
+
     end subroutine doCorrectScaleByMassDP
 
   end subroutine afcsys_buildVectorFCTScalar
