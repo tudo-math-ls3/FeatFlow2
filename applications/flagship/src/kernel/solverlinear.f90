@@ -3087,34 +3087,46 @@ contains
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
 
+#ifdef HAS_OPENMP40
           !$omp simd collapse(2)
+#endif
           do ivar=1,nvar
             do jvar=1,nvar
               Daux(ivar)=Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
+#ifdef HAS_OPENMP40
           !$omp end simd
+#endif
         end do
 
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
 
+#ifdef HAS_OPENMP40
           !$omp simd collapse(2)
+#endif
           do ivar=1,nvar
             do jvar=1,nvar
               Daux(ivar)=Daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
             end do
           end do
+#ifdef HAS_OPENMP40
           !$omp end simd
+#endif
         end do
 
         ! Update solution vector
+#ifdef HAS_OPENMP40
         !$omp simd
+#endif
         do ivar = 1, nvar
           Du(ivar,ieq) = (Du(ivar,ieq)-Daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
         end do
+#ifdef HAS_OPENMP40
         !$omp end simd
+#endif
       end do
       !$omp end parallel do
 
