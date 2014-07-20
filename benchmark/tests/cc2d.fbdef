@@ -138,13 +138,13 @@ DISCRETISATION_IEQUATION = 1
 ##########
 # Test 100
 #
-# Nontationary Navier-Stokes on level 2,3,4,5.
+# Nonstationary Navier-Stokes on level 2,3,4,5.
 # Q1~ element, SD(0.1)
-# 5 timesteps with timestep 0.01, Backward-Euler
+# 6 time steps with time step size 0.01, Backward-Euler
 ##########
 
 testid   = CC2D_100
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 5 timesteps BE
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 6 time steps BE
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 DISCRETISATION_IEQUATION = 0
@@ -163,13 +163,13 @@ BDR_PARPROFILEMAX = 1.5
 ##########
 # Test 101
 #
-# Nontationary Navier-Stokes on level 2,3,4,5.
-# Q1~ element, SD(0.1)
-# 5 timesteps with timestep 0.01, Crank-Nicolson
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.3)
+# 6 time steps with time step size 0.01, Crank-Nicolson
 ##########
 
 testid   = CC2D_101
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 5 timesteps CN
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.3), 6 time steps CN
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
@@ -177,13 +177,13 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 ##########
 # Test 102
 #
-# Nontationary Navier-Stokes on level 2,3.
+# Nonstationary Navier-Stokes on level 2,3.
 # Q2 element, SD(0.2)
-# 5 timesteps with timestep 0.01, Backward-Euler
+# 6 time steps with time step size 0.01, Backward-Euler
 ##########
 
 testid   = CC2D_102
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.2), 5 timesteps BE
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.2), 6 time steps BE
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 DISCRETISATION_IELEMENTTYPE = 4
@@ -194,13 +194,13 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
 ##########
 # Test 103
 #
-# Nontationary Navier-Stokes on level 2,3.
+# Nonstationary Navier-Stokes on level 2,3.
 # Q2 element, SD(0.2)
-# 5 timesteps with timestep 0.01, Crank-Nicolson
+# 6 time steps with time step size 0.01, Crank-Nicolson
 ##########
 
 testid   = CC2D_103
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.2), 5 timesteps CN
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.2), 6 time steps CN
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
@@ -208,13 +208,13 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 ##########
 # Test 104
 #
-# Nontationary Navier-Stokes on level 2,3.
+# Nonstationary Navier-Stokes on level 2,3.
 # Q1~ element, EOJ(0.01)
-# 5 timesteps with timestep 0.01, Crank-Nicolson
+# 6 time steps with time step size 0.01, Crank-Nicolson
 ##########
 
 testid   = CC2D_104
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 5 timesteps CN
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 6 time steps CN
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 DISCRETISATION_IELEMENTTYPE = 3
