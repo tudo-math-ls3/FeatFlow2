@@ -69,7 +69,10 @@ DISCRETISATION_RE = 1000
 DISCRETISATION_IELEMENTTYPE = 3
 DISCRETISATION_IUPWIND = 0
 DISCRETISATION_DUPSAM = 1.0
+DISCRETISATION_IPROJTYPEVELOCITY = 0
+DISCRETISATION_IPROJTYPEPRESSURE = 0
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
+TIMEDISCRETISATION_ITIMESTEPSCHEME = 0
 TIMEDISCRETISATION_NITERATIONS = 10000
 TIMEDISCRETISATION_DTIMESTEP = 0.1
 TIMEDISCRETISATION_DTIMEINIT = 0.0
@@ -222,3 +225,118 @@ DISCRETISATION_IUPWIND = 5
 DISCRETISATION_DUPSAM = 0.01
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 
+##########
+# Test 105
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q1~ element, SD(0.1)
+# 6 time steps with time step size 0.01, classic fractional-step theta-scheme
+##########
+
+testid   = CC2D_105
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 6 time steps FS
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3,4,5
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.1
+TIMEDISCRETISATION_ITIMESTEPSCHEME = 1
+
+# ##########
+# # Test 106
+# #
+# # Nonstationary Navier-Stokes on level 2,3.
+# # Q1~ element, SD(0.1)
+# # 6 time steps with time step size 0.01, simplified alternative
+# # fractional-step theta-scheme as proposed by Glowinski
+# ##########
+#
+# # disabled test as solver yields NaN after a few time steps, possible due to the
+# # algorithm being instable.
+# # With OpenBLAS in particular, one gets on refinemet level 3 a segfaults in
+# # time step 4 because the solver diverged in time step 3 and then the BLAS
+# # routine IDAMAX of OpenBLAS returns a value "vectorlength+1" in
+# # linearalgebra.f90:8045 due to all values of the input vector being NaN.
+#
+# testid   = CC2D_106
+# descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 6 time steps FS-Glowinski
+# datfile  = ./data/apps_cc2d/master_bench.dat
+# mglevels = 2,3,4,5
+# TIMEDISCRETISATION_ITIMESTEPSCHEME = 2
+
+##########
+# Test 107
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q1~ element, SD(0.1)
+# 6 time steps with time step size 0.01, DIRK_FS with 3 initial CN steps
+##########
+
+testid   = CC2D_107
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 3 initial CN steps, then DIRK_FS
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -3
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+##########
+# Test 108
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q1~ element, SD(0.1)
+# 6 time steps with time step size 0.01, DIRK34La with 3 initial CN steps
+##########
+
+testid   = CC2D_108
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 3 initial CN steps, then DIRK34La
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -4
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+##########
+# Test 109
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 6 time steps with time step size 0.01, DIRK34La with 3 initial CN steps
+##########
+
+testid   = CC2D_109
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 3 initial CN steps, then DIRK34La
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+DISCRETISATION_IELEMENTTYPE = 17
+DISCRETISATION_IPROJTYPEVELOCITY = 1
+DISCRETISATION_IPROJTYPEPRESSURE = 1
+LINEARSOLVER_ISMOOTHERTYPE = 0
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -4
+
+##########
+# Test 110
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 6 time steps with time step size 0.01, DIRK34Lb with 3 initial CN steps
+##########
+
+testid   = CC2D_110
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then DIRK34Lb
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -5
+
+##########
+# Test 111
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 6 time steps with time step size 0.01, DIRK44L with 3 initial CN steps
+##########
+
+testid   = CC2D_111
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then DIRK44L
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -6
