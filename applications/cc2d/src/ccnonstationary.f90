@@ -992,7 +992,7 @@ contains
         ! such can use it in time step 1 for the first interpolation step.
 
         dfactor = 0.0_DP
-        select case (mod(rtimestepping%isubstep + 1, 3)+1)
+        select case (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps)+1)
           ! (Note: substep gets incremented *before* postprocessing starts. Even though we
           !        are still in the 3rd substep, the counter points already to the first
           !        substep of the next macro time step.)
@@ -1098,8 +1098,9 @@ contains
 
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
-    type(t_vectorBlock) :: rpredictedSolution,roldSolution
-    real(DP) :: doldtime
+    type(t_vectorBlock) :: rpredictedSolution
+    type(t_vectorBlock) :: rprevTimeStepSolution, rprevMacroTimeStepSolution
+    real(DP) :: dprevTimeStepTime, dprevMacroTimeStepTime
 
     logical :: babortTimestep
     integer :: ipressureFullyImplicit
@@ -1162,7 +1163,7 @@ contains
         rvector,rproblem%rtimedependence%dtimeInit,&
         rvector,rproblem%rtimedependence%dtimeInit,&
         rvector,rproblem%rtimedependence%dtimeInit,&
-        0,rpostprocessing)
+        0,rpostprocessing,bisIntermediateStage=.FALSE.)
 
     ! Reset counter of current macro step repetitions.
     irepetition = 0
@@ -1170,6 +1171,11 @@ contains
     !----------------------------------------------------
     ! Timeloop
     !----------------------------------------------------
+
+    ! Snapshot the current solution for the later calculation of the
+    ! time derivative.
+    call lsysbl_copyVector (rvector, rprevMacroTimeStepSolution)
+    dprevMacroTimeStepTime = rproblem%rtimedependence%dtime
 
     ! Start with the 1st timestep
     rproblem%rtimedependence%itimeStep = 1
@@ -1391,10 +1397,10 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
         call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
-        ! Snapshot the current solution for the later calculation of the
-        ! time derivative.
-        call lsysbl_copyVector (rvector,roldSolution)
-        doldtime = rproblem%rtimedependence%dtime
+        ! Snapshot the current solution for the later calculation of an interpolated
+        ! solution vector where the time of pressure and velocity matches.
+        call lsysbl_copyVector (rvector,rprevTimeStepSolution)
+        dprevTimeStepTime = rproblem%rtimedependence%dtime
 
         ! Proceed to next time step -- if we are allowed to.
         call cc_performTimestep (rproblem,rvector,rrhs,&
@@ -1709,46 +1715,66 @@ contains
 
         ! Calculate an interpolated solution vector where the time of
         ! pressure and velocity matches.
-        call cc_interpolateTimesteps (rtimestepping,roldSolution,doldtime,&
-            rvector,rproblem%rtimedependence%dtime,rvectorInt,dtimeInt,&
-            ipressureFullyImplicit)
+        call cc_interpolateTimesteps (rtimestepping, &
+             rprevTimeStepSolution, dprevTimeStepTime,&
+             rvector, rproblem%rtimedependence%dtime, rvectorInt, dtimeInt, &
+             ipressureFullyImplicit)
 
         ! Postprocessing. Write out the solution if it was calculated successfully and
         ! measure time errors for test problems (with analytically given solution).
         rpostprocessing%ctimestepType = rtimestepping%ctimestepType
-        call cc_postprocessingNonstat (rproblem,&
-            roldSolution,doldtime,&
-            rvector,rproblem%rtimedependence%dtime,&
-            rvectorInt,dtimeInt,&
-            rproblem%rtimedependence%itimeStep,rpostprocessing)
+        call cc_postprocessingNonstat (rproblem, &
+            rprevTimeStepSolution, dprevTimeStepTime, &
+            rvector, rproblem%rtimedependence%dtime, &
+            rvectorInt, dtimeInt, &
+            rproblem%rtimedependence%itimeStep, rpostprocessing, &
+            ! (Note: substep gets incremented *before* postprocessing starts. So, even
+            !        though we are, e.g., still in the 3rd substep, the counter points
+            !        already to the first substep of the next macro time step.)
+            bisIntermediateStage=&
+               (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .ne. &
+                rtimestepping%nsubsteps))
 
         call lsysbl_releaseVector (rvectorInt)
 
-        call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-        call output_line ("Analysing time derivative...",&
-            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+        ! Calculate time derivative, ignoring results from intermediate stages in a
+        ! multi-stage time stepping scheme (FS, DIRK). This is actually non-optional as
+        ! some DIRK schemes (DIRK34La, DIRK34Lb, DIRK44L) have multiple stages where the
+        ! solution lives in the same point in time such that naive calculation of the time
+        ! derivate fails due to coinciding interpolation points.
+        ! (Note: substep gets incremented *before* postprocessing starts. So, even though
+        !        we are, e.g., still in the 3rd substep, the counter points already to the
+        !        first substep of the next macro time step.)
+        if (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .eq. &
+                rtimestepping%nsubsteps) then
+          call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          call output_line ("Analysing time derivative...",&
+               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
-        ! Calculate the norm of the time derivative. This allows the DO-loop
-        ! above to check if the solution got stationary.
-        dtimeDerivative = cc_timeDerivative (&
-            rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl,&
-            rvector,roldSolution,rtimestepping%dtstep,rtempBlock1,rtimeDerivative)
+          ! Calculate the norm of the time derivative. This allows the DO-loop
+          ! above to check if the solution got stationary.
+          dtimeDerivative = cc_timeDerivative (&
+               rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl, &
+               rvector, rprevTimeStepSolution, rtimestepping%dtstep, rtempBlock1, &
+               rtimeDerivative)
 
-        ! Print the results of the time analysis.
+          ! Print the results of the time analysis.
 
-        call output_line ("Time derivative:  " &
-            //" RELU(L2)=" &
-            //trim(sys_sdEP(rtimeDerivative%drelUL2,9,2)) &
-            //"  RELP(L2)=" &
-            //trim(sys_sdEP(rtimeDerivative%drelPL2,9,2)) &
-            //"  REL=" &
-            //trim(sys_sdEP(dtimeDerivative,9,2)),&
-            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+          call output_line ("Time derivative:  " &
+               //" RELU(L2)=" &
+               //trim(sys_sdEP(rtimeDerivative%drelUL2,9,2)) &
+               //"  RELP(L2)=" &
+               //trim(sys_sdEP(rtimeDerivative%drelPL2,9,2)) &
+               //"  REL=" &
+               //trim(sys_sdEP(dtimeDerivative,9,2)),&
+               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
 
-        if (dtimederivative .lt. rproblem%rtimedependence%dminTimeDerivative) then
-          call output_line ("Solution reached stationary status. Stopping simulation...",&
-          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          if (dtimederivative .lt. rproblem%rtimedependence%dminTimeDerivative) then
+            call output_line ("Solution reached stationary status. " // &
+                 "Stopping simulation...", coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          end if
         end if
+
         !CALL output_line ("#"&
         !    //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))&
         !    //" (" &
@@ -1845,10 +1871,22 @@ contains
 
       else  ! IF (babortTimestep) THEN
 
-        ! No, time step is ok. If this is the last time step of the macrostep,
+        ! Snapshot the current solution for the later calculation of the time derivative
+        ! (for which intermediate stages in a multi-stage time stepping scheme (FS, DIRK)
+        ! are to be ignored).
+        ! (Note: substep gets incremented *before* postprocessing starts. So, even
+        !        though we are, e.g., still in the 3rd substep, the counter points
+        !        already to the first substep of the next macro time step.)
+        if (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .eq. &
+                rtimestepping%nsubsteps) then
+          call lsysbl_copyVector (rvector, rprevMacroTimeStepSolution)
+          dprevMacroTimeStepTime = rproblem%rtimedependence%dtime
+        end if
+
+        ! No, time step is ok. If this is the last time step of the macro step,
         ! reset the repetition counter such that it starts with 0 for the
         ! next macrostep.
-        if (mod(rproblem%rtimedependence%itimeStep,3) .eq. 0) then
+        if (mod(rproblem%rtimedependence%itimeStep, rtimestepping%nsubsteps) .eq. 0) then
           irepetition = 0
         end if
 
@@ -1865,8 +1903,10 @@ contains
     ! Release the temporary vectors
     if (rpredictedSolution%NEQ .ne. 0) &
       call lsysbl_releaseVector (rpredictedSolution)
-    if (roldSolution%NEQ .ne. 0) &
-      call lsysbl_releaseVector (roldSolution)
+    if (rprevTimeStepSolution%NEQ .ne. 0) &
+      call lsysbl_releaseVector (rprevTimeStepSolution)
+    if (rprevMacroTimeStepSolution%NEQ .ne. 0) &
+      call lsysbl_releaseVector (rprevMacroTimeStepSolution)
     call lsysbl_releaseVector (rtempBlock2)
     call lsysbl_releaseVector (rtempBlock1)
 

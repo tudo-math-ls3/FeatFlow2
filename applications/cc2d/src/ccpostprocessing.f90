@@ -72,30 +72,30 @@ module ccpostprocessing
   use vectorio
   use io
   use fparser
-  
+
   use collection
   use convection
-  
+
   use ucd
-  
+
   use pprocnavierstokes
   use pprocerror
-  
+
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
   use feevaluation2
-  
+
   use ccboundaryconditionparser
   use ccgeneraldiscretisation
   use ccmatvecassembly
   use ccbasic
   use cccallback
-  
+
   use analyticprojection
-  
+
   implicit none
-  
+
 !<types>
 
 !<typeblock>
@@ -109,7 +109,7 @@ module ccpostprocessing
     ! A discretisation structure that describes a piecewise constant discretisation
     ! (usually P0 or Q0).
     type(t_spatialDiscretisation) :: rdiscrConstant
-    
+
     ! A discretisation structure that describes a piecewise linear discretisation
     ! (usually P1 or Q1).
     type(t_spatialDiscretisation) :: rdiscrLinear
@@ -117,10 +117,10 @@ module ccpostprocessing
     ! A discretisation structure that describes a piecewise quadratic discretisation
     ! (usually P2 or Q2).
     type(t_spatialDiscretisation) :: rdiscrQuadratic
-    
+
     ! Whether nonstationary postprocessing should be used or not.
     logical              :: bnonstationaryPostprocessing
-    
+
     ! Next file extension for UCD output file.
     integer              :: inextFileSuffixUCD = 0
 
@@ -141,7 +141,7 @@ module ccpostprocessing
 
     ! A vector that describes the streamfunction
     type(t_vectorScalar) :: rvectorStreamfunction
-    
+
     ! A vector that describes the H1-error of the velocity field in the vertices
     type(t_vectorScalar) :: rvectorH1err
 
@@ -167,7 +167,7 @@ module ccpostprocessing
     ! Whether or not to compute L2 errors and if yes, which callback to evaluate analytic
     ! reference solution
     integer :: icalcL2
-    
+
     ! Whether or not to compute H1 errors and if yes, which callback to evaluate analytic
     ! reference solution
     integer :: icalcH1
@@ -180,7 +180,7 @@ module ccpostprocessing
 
     ! Parser object that encapsules error definitions for the L2 error.
     type(t_fparser) :: rrefFunctionL2
-  
+
     ! Parser object that encapsules error definitions for the H1 error.
     type(t_fparser) :: rrefFunctionH1
 
@@ -189,7 +189,7 @@ module ccpostprocessing
 !</typeblock>
 
 !</types>
-  
+
 contains
 
   ! ***************************************************************************
@@ -197,7 +197,7 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingStationary (rproblem,rvector,rpostprocessing)
-  
+
 !<description>
   ! Postprocessing of solutions of stationary simulations.
   ! Writes the solution into a GMV file, calculates forces,...
@@ -226,28 +226,28 @@ contains
 
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,0.0_DP,rproblem)
-    
+
     ! Calculate point values
     call cc_evaluatePoints (rvector,0.0_DP,rproblem)
 
     ! Calculate flux values
     call cc_evaluateFlux (rvector,0.0_DP,rproblem)
-    
+
     ! Calculate the divergence
     call cc_calculateDivergence (rvector,rproblem)
-    
+
     ! Error analysis, comparison to reference function.
     rpostprocessing%ctimestepType = -1
     call cc_errorAnalysis (rvector,0.0_DP,rpostprocessing,rproblem)
-    
+
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     call cc_writeUCD (rpostprocessing, rvector, rproblem)
-    
+
     ! Gather statistics
     call stat_stopTimer(rtimer)
     rproblem%rstatistics%dtimePostprocessing = &
       rproblem%rstatistics%dtimePostprocessing + rtimer%delapsedReal
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -255,8 +255,9 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
-      dtimePrev,rvector,dtime,rvectorInt,dtimeInt,istep,rpostprocessing)
-  
+      dtimePrev, rvector, dtime, rvectorInt, dtimeInt, istep, rpostprocessing, &
+      bisIntermediateStage)
+
 !<description>
   ! Postprocessing of solutions of transient simulations.
   ! Writes the solution into a GMV file, calculates forces,...
@@ -277,23 +278,27 @@ contains
 
   ! Time of the previous timestep. Coincides with dtime
   ! if there is no previous timestep.
-  real(dp), intent(in) :: dtimePrev
+  real(DP), intent(in) :: dtimePrev
 
   ! Solution vector of the current timestep.
   type(t_vectorBlock), intent(in) :: rvector
 
   ! Time of the current timestep.
-  real(dp), intent(in) :: dtime
-  
+  real(DP), intent(in) :: dtime
+
   ! Interpolated (in time) solution vector. Velocity and pressure
   ! represent the same point in time.
   type(t_vectorBlock), intent(in) :: rvectorInt
-  
+
   ! Time of the interpolated solution vector.
-  real(dp), intent(in) :: dtimeInt
-  
+  real(DP), intent(in) :: dtimeInt
+
   ! Number of the timestep. =0: initial solution
   integer, intent(in) :: istep
+
+  ! Whether or not visualisation output should get considered (it should not in
+  ! intermediate stages of a multi-stage time stepping scheme (like FS or DIRK)
+  logical, intent(in) :: bisIntermediateStage
 !</input>
 
 !</subroutine>
@@ -306,7 +311,7 @@ contains
     integer :: ipostprocTimeInterpSolution
     integer :: iwriteSolDeltaSteps
     type(t_vectorBlock) :: rintVector
-    real(dp) :: dweight,dwriteSolDeltaTime
+    real(DP) :: dweight,dwriteSolDeltaTime
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
@@ -315,45 +320,49 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "ipostprocTimeInterpSolution", ipostprocTimeInterpSolution, 1)
 
-    ! Think about writing out the solution...
-    call parlst_getvalue_double (rproblem%rparamList, "CC-DISCRETISATION", &
-        "dwriteSolDeltaTime", dwriteSolDeltaTime, 0.0_DP)
-    call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
-        "iwriteSolDeltaSteps", iwriteSolDeltaSteps, 1)
-    if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
-    
-    ! Figure out if we have to write the solution. This is the case if
-    ! 1.) Previous and current time is the same (= first call) or
-    ! 2.) The solution "crossed the next timestep".
-  
-    if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
-      itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
-      itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
-    else
-      itime1 = 0
-      itime2 = 1
-    end if
-  
-    if (itime1 .ne. itime2) then
-      ! Write the raw solution
-      call cc_writeSolution (rproblem,rvector,dtime)
-    else
-      ! The second option is that the timestep matches.
-      if (mod(istep,iwriteSolDeltaSteps) .eq. 0) then
+    if (.not. bisIntermediateStage) then
+      ! Think about writing out the solution...
+      call parlst_getvalue_double (rproblem%rparamList, "CC-DISCRETISATION", &
+           "dwriteSolDeltaTime", dwriteSolDeltaTime, 0.0_DP)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+           "iwriteSolDeltaSteps", iwriteSolDeltaSteps, 1)
+      if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
+
+      ! Figure out if we have to write the solution. This is the case if
+      ! 1.) Previous and current time is the same (= first call) or
+      ! 2.) The solution "crossed the next timestep".
+
+      if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+        itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+        itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+      else
+        itime1 = 0
+        itime2 = 1
+      end if
+
+      if (itime1 .ne. itime2) then
         ! Write the raw solution
         call cc_writeSolution (rproblem,rvector,dtime)
+      else
+        ! The second option is that the timestep matches.
+        if (mod(istep,iwriteSolDeltaSteps) .eq. 0) then
+          ! Write the raw solution
+          call cc_writeSolution (rproblem,rvector,dtime)
+        end if
       end if
     end if
-    
-    if (ipostprocTimeInterpSolution .ne. 0) then
-      ! Calculate body forces.
-      call cc_calculateBodyForces (rvectorInt,dtimeInt,rproblem)
-      
-      ! Calculate point values
-      call cc_evaluatePoints (rvectorInt,dtimeInt,rproblem)
 
-      ! Calculate flux values
-      call cc_evaluateFlux (rvector,dtimeInt,rproblem)
+    if (ipostprocTimeInterpSolution .ne. 0) then
+      if (.not. bisIntermediateStage) then
+        ! Calculate body forces.
+        call cc_calculateBodyForces (rvectorInt,dtimeInt,rproblem)
+
+        ! Calculate point values
+        call cc_evaluatePoints (rvectorInt,dtimeInt,rproblem)
+
+        ! Calculate flux values
+        call cc_evaluateFlux (rvector,dtimeInt,rproblem)
+      end if
 
       ! Calculate the divergence
       call cc_calculateDivergence (rvectorInt,rproblem)
@@ -361,115 +370,121 @@ contains
       ! Error analysis, comparison to reference function.
       call cc_errorAnalysis (rvectorInt,dtimeInt,rpostprocessing,rproblem)
     else
-      ! Calculate body forces.
-      call cc_calculateBodyForces (rvector,dtime,rproblem)
-      
-      ! Calculate point values
-      call cc_evaluatePoints (rvector,dtime,rproblem)
+      if (.not. bisIntermediateStage) then
+        ! Calculate body forces.
+        call cc_calculateBodyForces (rvector,dtime,rproblem)
 
-      ! Calculate flux values
-      call cc_evaluateFlux (rvector,dtime,rproblem)
+        ! Calculate point values
+        call cc_evaluatePoints (rvector,dtime,rproblem)
 
-      ! Calculate the divergence
-      call cc_calculateDivergence (rvector,rproblem)
+        ! Calculate flux values
+        call cc_evaluateFlux (rvector,dtime,rproblem)
+
+        ! Calculate the divergence
+        call cc_calculateDivergence (rvector,rproblem)
+      end if
 
       ! Error analysis, comparison to reference function.
       call cc_errorAnalysis (rvectorInt,dtimeInt,rpostprocessing,rproblem)
 
     end if
-    
-    ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
-    !
-    ! In a nonstationary simulation, first check if we are allowed
-    ! to write something.
 
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DMINTIMEUCD", dminTime, -1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DMAXTIMEUCD", dmaxTime, 1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DTIMEDIFFERENCEUCD", dtimeDifferenceUCD, 0.0_DP)
-                                    
-    if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
-        (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
-    
-      ! Figure out if we have to write the solution. This is the case if
-      ! 1.) Precious and current time is the same or
-      ! 2.) The solution crossed the next ucd timestep.
-    
-      if ((dtimeDifferenceUCD .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
-        itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
-        itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
-      else
-        itime1 = 0
-        itime2 = 1
-      end if
-    
-      if (itime1 .ne. itime2) then
-        ! Probably we have to interpolate the solution to the point dtime in time.
-        call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
-            "IINTERPOLATESOLUTIONUCD", iinterpolateSolutionUCD,1)
-        if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
-            .or. (dtimePrev .eq. dtime)) then
-          ! No interpolation
-          call cc_writeUCD (rpostprocessing, rvector, rproblem, dtime)
+    if (.not. bisIntermediateStage) then
+      ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
+      !
+      ! In a nonstationary simulation, first check if we are allowed
+      ! to write something.
+
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DMINTIMEUCD", dminTime, -1.E100_DP)
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DMAXTIMEUCD", dmaxTime, 1.E100_DP)
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DTIMEDIFFERENCEUCD", dtimeDifferenceUCD, 0.0_DP)
+
+      if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
+           (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
+
+        ! Figure out if we have to write the solution. This is the case if
+        ! 1.) Precious and current time is the same or
+        ! 2.) The solution crossed the next ucd timestep.
+
+        if ((dtimeDifferenceUCD .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+          itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
+          itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
         else
-          ! Interpolate and write out the interpolated solution.
-          call lsysbl_copyVector (rvectorPrev,rintVector)
-          dpptime = real(itime2,dp)*dtimeDifferenceUCD + rproblem%rtimedependence%dtimeInit
-          dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
-          call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
-          call cc_writeUCD (rpostprocessing, rintVector, rproblem, dpptime)
-          call lsysbl_releaseVector (rintVector)
+          itime1 = 0
+          itime2 = 1
+        end if
+
+        if (itime1 .ne. itime2) then
+          ! Probably we have to interpolate the solution to the point dtime in time.
+          call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+               "IINTERPOLATESOLUTIONUCD", iinterpolateSolutionUCD,1)
+          if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
+               .or. (dtimePrev .eq. dtime)) then
+            ! No interpolation
+            call cc_writeUCD (rpostprocessing, rvector, rproblem, dtime)
+          else
+            ! Interpolate and write out the interpolated solution.
+            call lsysbl_copyVector (rvectorPrev,rintVector)
+            dpptime = real(itime2, DP) * dtimeDifferenceUCD + &
+                      rproblem%rtimedependence%dtimeInit
+            dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
+            call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
+            call cc_writeUCD (rpostprocessing, rintVector, rproblem, dpptime)
+            call lsysbl_releaseVector (rintVector)
+          end if
+        end if
+      end if
+
+      ! Write film output (raw data vectors)
+      !
+      ! First check if we are allowed to write something.
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DMINTIMEFILM", dminTime, -1.E100_DP)
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DMAXTIMEFILM", dmaxTime, 1.E100_DP)
+      call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+           "DTIMEDIFFERENCEFILM", dtimeDifferenceFilm, 0.0_DP)
+
+      if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
+           (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
+
+        ! Figure out if we have to write the solution. This is the case if
+        ! 1.) Precious and current time is the same ot
+        ! 2.) The solution crossed the next ucd timestep.
+
+        if ((dtimeDifferenceFilm .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+          itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
+          itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
+        else
+          itime1 = 0
+          itime2 = 1
+        end if
+
+        if (itime1 .ne. itime2) then
+          ! Probably we have to interpolate the solution to the point dtime in time.
+          call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+               "IINTERPOLATESOLUTIONFILM", iinterpolateSolutionFilm,1)
+          if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
+               .or. (dtimePrev .eq. dtime)) then
+            ! No interpolation
+            call cc_writeFilm (rpostprocessing, rvector, rproblem, dtime)
+          else
+            ! Interpolate and write out the interpolated solution.
+            call lsysbl_copyVector (rvectorPrev,rintVector)
+            dpptime = real(itime2,DP) * dtimeDifferenceFilm + &
+                      rproblem%rtimedependence%dtimeInit
+            dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
+            call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
+            call cc_writeFilm (rpostprocessing, rintVector, rproblem, dpptime)
+            call lsysbl_releaseVector (rintVector)
+          end if
         end if
       end if
     end if
-    
-    ! Write film output (raw data vectors)
-    !
-    ! First check if we are allowed to write something.
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DMINTIMEFILM", dminTime, -1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DMAXTIMEFILM", dmaxTime, 1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "DTIMEDIFFERENCEFILM", dtimeDifferenceFilm, 0.0_DP)
-                                    
-    if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
-        (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
-    
-      ! Figure out if we have to write the solution. This is the case if
-      ! 1.) Precious and current time is the same ot
-      ! 2.) The solution crossed the next ucd timestep.
-    
-      if ((dtimeDifferenceFilm .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
-        itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
-        itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
-      else
-        itime1 = 0
-        itime2 = 1
-      end if
-    
-      if (itime1 .ne. itime2) then
-        ! Probably we have to interpolate the solution to the point dtime in time.
-        call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
-            "IINTERPOLATESOLUTIONFILM", iinterpolateSolutionFilm,1)
-        if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
-            .or. (dtimePrev .eq. dtime)) then
-          ! No interpolation
-          call cc_writeFilm (rpostprocessing, rvector, rproblem, dtime)
-        else
-          ! Interpolate and write out the interpolated solution.
-          call lsysbl_copyVector (rvectorPrev,rintVector)
-          dpptime = real(itime2,dp)*dtimeDifferenceFilm + rproblem%rtimedependence%dtimeInit
-          dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
-          call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
-          call cc_writeFilm (rpostprocessing, rintVector, rproblem, dpptime)
-          call lsysbl_releaseVector (rintVector)
-        end if
-      end if
-    end if
-    
+
     ! Gather statistics
     call stat_stopTimer(rtimer)
     rproblem%rstatistics%dtimePostprocessing = &
@@ -478,25 +493,25 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine fcalc_error (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
-  
+
   use basicgeometry
   use triangulation
   use collection
   use scalarpde
   use domainintegration
-  
+
 !<description>
   ! This routine is called during the calculation of L2/H1 errors.
   ! It evaluates errors being given as expressions.
 !</description>
-  
+
 !<input>
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
@@ -507,13 +522,13 @@ contains
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
   type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-  
+
   ! Number of elements, where the coefficients must be computed.
   integer, intent(in)                                         :: nelements
-  
+
   ! Number of points per element, where the coefficients must be computed
   integer, intent(in)                                         :: npointsPerElement
-  
+
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! DIMENSION(NDIM2D,npointsPerElement,nelements)
@@ -532,7 +547,7 @@ contains
   ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
-  
+
 !</input>
 
 !<output>
@@ -542,7 +557,7 @@ contains
   !   DIMENSION(npointsPerElement,nelements)
   real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
-  
+
 !</subroutine>
 
     ! local variables
@@ -552,31 +567,31 @@ contains
 
     ! Type. 0=L2 error, 1=H1 error
     ctype = rcollection%IquickAccess(1)
-  
+
     ! Underlying component of the expression to evaluate
     icomponent = rcollection%IquickAccess(2)
-    
+
     ! Fill the evaluation structure
     Rval(:) = 0.0_DP
     Rval(7:11) = rcollection%DquickAccess(1:5)
-    
+
     select case (ctype)
-    
+
     ! ---------------------------------
     ! L2 error
     ! ---------------------------------
     case (0)
       do ielement = 1,nelements
         do ipoint = 1,npointsPerElement
-        
+
           ! Get the point coordinates.
           Rval(1) = Dpoints(1,ipoint,ielement)
           Rval(2) = Dpoints(2,ipoint,ielement)
-          
+
           ! Evaluate
           call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
               icomponent, Rval, Dvalues(ipoint,ielement))
-        
+
         end do
       end do
 
@@ -584,33 +599,33 @@ contains
     ! H1 error
     ! ---------------------------------
     case (1)
-    
+
       ! ---------------------------------
       ! X or Y derivative?
       ! ---------------------------------
       select case (cderivative)
-      
+
       ! Component in the parser array.
       ! 1,3,5 = X-derivative, 2,4,6 = Y-derivative
       case (DER_DERIV2D_X)
         iparsercomp = NDIM2D*icomponent-1
-    
+
       case (DER_DERIV2D_Y)
         iparsercomp = NDIM2D*icomponent
 
       end select
-    
+
       do ielement = 1,nelements
         do ipoint = 1,npointsPerElement
-        
+
           ! Get the point coordinates.
           Rval(1) = Dpoints(1,ipoint,ielement)
           Rval(2) = Dpoints(2,ipoint,ielement)
-          
+
           ! Evaluate
           call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
               iparsercomp, Rval, Dvalues(ipoint,ielement))
-        
+
         end do
       end do
 
@@ -628,11 +643,11 @@ contains
   ! in the .DAT file.
   ! The result of the error analysis is written to the standard output.
 !</description>
-  
+
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in) :: rsolution
-  
+
   ! Solution time. =0 for stationary simulations.
   real(DP), intent(in) :: dtime
 
@@ -1361,15 +1376,15 @@ contains
     ! ===============================================================
 
     if (icalcEnergy .ne. 0) then
-    
+
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-    
+
       ! Perform error analysis to calculate and add 1/2||u||^2_{L^2}.
       call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
           rcubatureInfo=rcubatureInfoUV)
       call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
           rcubatureInfo=rcubatureInfoUV)
-                         
+
       denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
       call output_line ("||u_1||_L2         = "//trim(sys_sdEP(Derr(1),15,6)),&
@@ -1381,9 +1396,9 @@ contains
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       call output_line ("1/2||u||^2_L2      = "//trim(sys_sdEP(denergy,15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-      
+
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-      
+
       if (iwriteKineticEnergy .ne. 0) then
         ! Write the result to a text file.
         ! Format: timestep current-time value
@@ -1404,11 +1419,11 @@ contains
       end if
 
     end if
-    
+
     ! Release the cubature information structures
     call spdiscr_releaseCubStructure(rcubatureInfoUV)
     call spdiscr_releaseCubStructure(rcubatureInfoP)
-    
+
     ! Restore the "current" time.
     rproblem%rtimedependence%dtime = dtimebackup
 
@@ -2667,21 +2682,21 @@ contains
   end subroutine
 
 ! *****************************************************************
-  
+
 !<subroutine>
 
   subroutine ffunctionBDForcesVisco (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset, &
                 Dvalues,rcollection)
-  
+
   use basicgeometry
   use triangulation
   use scalarpde
   use domainintegration
   use spatialdiscretisation
   use collection
-  
+
 !<description>
   ! Called in the postprocessing during the calculation of the body forces.
   ! Returns a nonconstant coefficient in the body force integral.
@@ -2689,7 +2704,7 @@ contains
   ! Wrapper to the ffunctionViscoModel callback routine which has
   ! nearly the same interface.
 !</description>
-  
+
 !<input>
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
@@ -2700,13 +2715,13 @@ contains
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
   type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-  
+
   ! Number of elements, where the coefficients must be computed.
   integer, intent(in)                                         :: nelements
-  
+
   ! Number of points per element, where the coefficients must be computed
   integer, intent(in)                                         :: npointsPerElement
-  
+
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! DIMENSION(NDIM2D,npointsPerElement,nelements)
@@ -2725,7 +2740,7 @@ contains
   ! Optional: A collection structure to provide additional
   ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
-  
+
 !</input>
 
 !<output>
@@ -2735,7 +2750,7 @@ contains
   !   DIMENSION(npointsPerElement,nelements)
   real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
-  
+
 !</subroutine>
 
     ! cderivative will always be DER_FUNC here. Call ffunctionViscoModel
@@ -2744,7 +2759,7 @@ contains
               nelements,npointsPerElement,Dpoints, &
               IdofsTest,rdomainIntSubset, &
               Dvalues,rcollection)
-              
+
   end subroutine
 
 !******************************************************************************
@@ -2757,11 +2772,11 @@ contains
   ! Calculates body forces as configured in the .DAT file.
   ! The result is written to the standard output.
 !</description>
-  
+
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
-  
+
   ! Evaluation time. Must be set to 0.0 for stationary simulations.
   real(DP), intent(in) :: dtime
 !</input>
@@ -2772,17 +2787,17 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     ! local variables
     type(t_collection) :: rcollection
-    
+
     ! Forces on the object
     real(DP), dimension(NDIM2D) :: Dforces
     real(DP) :: dbdForcesCoeff1,dbdForcesCoeff2
     type(t_boundaryRegion) :: rregion
     integer :: cformulation
     integer :: ibodyForcesFormulation,icalcBodyForces,ibodyForcesBdComponent
-    
+
     integer :: iwriteBodyForces
     character(len=SYS_STRLEN) :: sfilenameBodyForces
     character(len=SYS_STRLEN) :: stemp
@@ -2790,7 +2805,7 @@ contains
     integer :: cflag
     logical :: bfileExists
     type(t_vectorScalar) :: rcharfct
-    
+
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "icalcBodyForces", icalcBodyForces, 1)
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
@@ -2801,10 +2816,10 @@ contains
         "dbdForcesCoeff1", dbdForcesCoeff1, rproblem%rphysics%dnu)
     call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
         "dbdForcesCoeff2", dbdForcesCoeff2, 0.1_DP * 0.2_DP**2)
-    
+
     ! Probably cancel the calculation
     if (icalcBodyForces .eq. 0) return
-    
+
     ! Information about writing body forces to a file.
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "IWRITEBODYFORCES", iwriteBodyForces, 0)
@@ -2816,8 +2831,8 @@ contains
     ! When writing to a file is enabled, delete the file in the first timestep.
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
-      
-    
+
+
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
     if ((rsolution%p_rblockDiscr%RspatialDiscr(1)% &
@@ -2829,13 +2844,13 @@ contains
       call boundary_createRegion (rproblem%rboundary, &
           ibodyForcesBdComponent, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-      
+
       select case (icalcBodyForces)
       case (1)
         ! Old implementation:
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G4_1D,&
             dbdForcesCoeff1,dbdForcesCoeff2)
-        
+
       case (2)
         ! Extended calculation method.
         !
@@ -2855,12 +2870,12 @@ contains
           if (rproblem%rphysics%isubequation .eq. 1) &
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
-          
+
         ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
             rcollection,rsolution,rproblem%rcollection)
-          
+
         if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G4_1D,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
@@ -2869,21 +2884,21 @@ contains
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,&
               rcollection,ntempArrays=5)
         end if
-        
+
       case (3)
         ! Old implementation:
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G4_2D,&
             dbdForcesCoeff1,dbdForcesCoeff2)
 
       case (4)
-    
+
         ! Create a characteristic function of the boundary segment
         call lsyssc_createVector (&
             rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(1),&
             rcharfct,.true.)
-            
+
         call anprj_charFctRealBdComp (rregion,rcharfct)
-        
+
         ! Select the tensor formulation to use.
         select case (ibodyForcesFormulation)
         case (0)
@@ -2900,7 +2915,7 @@ contains
           if (rproblem%rphysics%isubequation .eq. 1) &
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
-          
+
         ! Prepare a collection structure in the form necessary for
         ! the computation of a nonconstant viscosity.
         !
@@ -2908,7 +2923,7 @@ contains
         ! collection.
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
             rcollection,rsolution,rproblem%rcollection)
-          
+
         if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
@@ -2917,9 +2932,9 @@ contains
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,&
               rcollection,ntempArrays=5)
         end if
-        
+
         call lsyssc_releaseVector(rcharfct)
-        
+
       end select
 
       call output_lbrk()
@@ -2931,7 +2946,7 @@ contains
           //trim(sys_sdEP(Dforces(1),15,6)) // " / "&
           //trim(sys_sdEP(Dforces(2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-      
+
       if (iwriteBodyForces .ne. 0) then
         ! Write the result to a text file.
         ! Format: timestep current-time value
@@ -2949,9 +2964,9 @@ contains
         write (iunit,"(A)") trim(stemp)
         close (iunit)
       end if
-      
+
     end if
-    
+
   end subroutine
 
 !******************************************************************************
@@ -2964,7 +2979,7 @@ contains
   ! Calculates the divergence of a solution.
   ! The result is written to the standard output.
 !</description>
-  
+
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in) :: rsolution
@@ -2984,7 +2999,7 @@ contains
     type(t_fev2Vectors) :: revalVectors
     type(t_vectorScalar), target :: rtempVector
     type(t_scalarCubatureInfo) :: rcubatureInfo
-    
+
     call spdiscr_getElemGroupInfo (rsolution%p_rblockDiscr%RspatialDiscr(1),1,ieltype)
 
     ! -------------------------------------------------------------
@@ -2997,7 +3012,7 @@ contains
     ! -------------------------------------------------------------
 
     ddivergence = 0.0_DP
-    
+
     ! Create a temporary vector
     call lsyssc_createVector (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
         rtempVector,.true.)
@@ -3009,17 +3024,17 @@ contains
     call lsyssc_matVec (&
         rproblem%RlevelInfo(rproblem%nlmax)%rasmTempl%rmatrixD2, rsolution%RvectorBlock(2), &
         rtempVector, 1.0_DP, 1.0_DP)
-        
+
     ddivergence = lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
-    
+
     call lsyssc_releaseVector (rtempVector)
-      
+
     ! -------------------------------------------------------------
     ! Calculate the L2-norm of the divergence. This is a
     ! pointwise calculation.
     ! -------------------------------------------------------------
-    
-    ! Set up the cubature      
+
+    ! Set up the cubature
     call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
                                 "scubError",stemp,"")
     if (stemp .eq. "") then
@@ -3032,23 +3047,23 @@ contains
     ! Create an cubature info structure which contains our cubature rule
     call spdiscr_createDefCubStructure(&
         rsolution%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfo,int(icubError,I32))
-    
+
     ! Calculate the divergence via block assembly methods.
     call fev2_addVectorFieldToEvalList (revalVectors,1,&
         rsolution%RvectorBlock(1),rsolution%RvectorBlock(2))
-    
+
     call bma_buildIntegral (ddivergenceL2norm,BMA_CALC_STANDARD,&
         bma_fcalc_divergenceL2norm, revalVectors=revalVectors,&
         rcubatureInfo=rcubatureInfo)
-        
+
     call fev2_releaseVectorList (revalVectors)
-    
+
     ! Release cubature
     call spdiscr_releaseCubStructure(rcubatureInfo)
-  
+
     ! Taking the square root gives the L2 norm
     ddivergenceL2norm = sqrt(ddivergenceL2norm)
-          
+
     ! -------------------------------------------------------------
     ! Print
     ! -------------------------------------------------------------
@@ -3060,7 +3075,7 @@ contains
         //trim(sys_sdEP(ddivergence,15,6)),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
     call output_line ("||div u||_L2      = " &
         //trim(sys_sdEP(ddivergenceL2norm,15,6)),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-          
+
   end subroutine
 
 !******************************************************************************
@@ -3072,11 +3087,11 @@ contains
 !<description>
   ! Evaluates the solution in a number of points as configured in the DAT file.
 !</description>
-  
+
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
-  
+
   ! Solution time. =0 for stationary simulations.
   real(DP), intent(in) :: dtime
 !</input>
@@ -3107,22 +3122,22 @@ contains
     ! Get the number of points to evaluate
     npoints = parlst_querysubstrings (rproblem%rparamList, "CC-POSTPROCESSING", &
         "CEVALUATEPOINTVALUES")
-        
+
     if (npoints .eq. 0) return
-    
+
     ! Allocate memory for the values
     allocate(Dvalues(npoints))
     allocate(Dcoords(NDIM2D,npoints))
     allocate(Itypes(npoints))
     allocate(Ider(npoints))
-    
+
     ! Read the points
     do i=1,npoints
       call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
           "CEVALUATEPOINTVALUES", sparam, "", i)
       read (sparam,*) Dcoords(1,i),Dcoords(2,i),Itypes(i),Ider(i)
     end do
-    
+
     ! Evaluate the function in these points.
     do i=1,npoints
       select case (Ider(i))
@@ -3135,11 +3150,11 @@ contains
       case default
         iderType = DER_FUNC2D
       end select
-      
+
       call fevl_evaluate (iderType, Dvalues(i:i), rsolution%RvectorBlock(Itypes(i)), &
           Dcoords(:,i:i),cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
     end do
-    
+
     ! Print the values to the terminal
     call output_lbrk()
     call output_line ("Point values")
@@ -3149,18 +3164,18 @@ contains
           "(",Dcoords(1,i),",",Dcoords(2,i),") = ",Dvalues(i)
       call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
     end do
-    
+
     ! Get information about writing the stuff into a DAT file.
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "IWRITEPOINTVALUES", iwritePointValues, 0)
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
         "SFILENAMEPOINTVALUES", sfilenamePointValues, """""", bdequote=.true.)
     if (sfilenamePointValues .eq. "") iwritePointValues = 0
-    
+
     ! When writing to a file is enabled, delete the file in the first timestep.
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
-    
+
     if (iwritePointValues .ne. 0) then
       ! Write the result to a text file.
       ! Format: timestep current-time value value value ...
@@ -3187,7 +3202,7 @@ contains
       write (iunit,ADVANCE="YES",FMT="(A)") ""
       close (iunit)
     end if
-    
+
     deallocate(Ider)
     deallocate(Itypes)
     deallocate(Dcoords)
@@ -3204,11 +3219,11 @@ contains
 !<description>
   ! Evaluates the flux thropugh a set of lines as configured in the DAT file.
 !</description>
-  
+
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
-  
+
   ! Simulation time. =0 for stationary simulations
   real(DP), intent(in) :: dtime
 !</input>
@@ -3232,25 +3247,25 @@ contains
     ! Get the number of points to evaluate
     nlines = parlst_querysubstrings (rproblem%rparamList, "CC-POSTPROCESSING", &
         "CEVALUATEFLUXVALUES")
-        
+
     if (nlines .eq. 0) return
-    
+
     ! Allocate memory for the values
     allocate(Dvalues(nlines))
     allocate(Dcoords(NDIM2D,nlines,2))
-    
+
     ! Read the points
     do i=1,nlines
       call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
           "CEVALUATEFLUXVALUES", sparam, "", i)
       read (sparam,*) Dcoords(1,i,1),Dcoords(2,i,1),Dcoords(1,i,2),Dcoords(2,i,2)
     end do
-    
+
     ! Calculate the flux
     do i=1,nlines
       call ppns2D_calcFluxThroughLine (rsolution,Dcoords(1:2,i,1),Dcoords(1:2,i,2),Dvalues(i))
     end do
-    
+
     ! Print the values to the terminal
     call output_lbrk()
     call output_line ("Flux values")
@@ -3261,18 +3276,18 @@ contains
           Dcoords(1,i,2),",",Dcoords(2,i,2),") = ",Dvalues(i)
       call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
     end do
-    
+
     ! Get information about writing the stuff into a DAT file.
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "IWRITEFLUXVALUES", iwriteFluxValues, 0)
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
         "SFILENAMEFLUXVALUES", sfilenameFluxValues, """""",bdequote=.true.)
     if (sfilenameFluxValues .eq. "") iwriteFluxValues = 0
-    
+
     ! When writing to a file is enabled, delete the file in the first timestep.
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
-    
+
     if (iwriteFluxValues .ne. 0) then
       ! Write the result to a text file.
       ! Format: timestep current-time value value value ...
@@ -3299,7 +3314,7 @@ contains
       write (iunit,ADVANCE="YES",FMT="(A)") ""
       close (iunit)
     end if
-    
+
     deallocate(Dcoords)
     deallocate(Dvalues)
 
@@ -3315,11 +3330,11 @@ contains
   ! Writes an UCD postprocessing file as configured in the DAT file.
   ! (-> GMV, AVS, Paraview,...)
 !</description>
-  
+
 !<input>
   ! Solution vector.
   type(t_vectorBlock), intent(in) :: rvector
-  
+
   ! OPTIONAL: Simulation time.
   ! Must be ommitted in stationary simulations.
   real(DP), intent(in), optional :: dtime
@@ -3328,7 +3343,7 @@ contains
 !<inputoutput>
   ! Problem structure.
   type(t_problem), intent(inout), target :: rproblem
-  
+
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
@@ -3345,22 +3360,22 @@ contains
 
     ! A pointer to the triangulation.
     type(t_triangulation), pointer :: p_rtriangulation
-    
+
     ! A vector accepting Q1 data
     type(t_vectorBlock) :: rprjVector
-    
+
     ! A discretisation structure for Q1
     type(t_blockDiscretisation) :: rprjDiscretisation
 
     ! A dynamic level information structure containing the BC"s.
     type(t_dynamicLevelInfo), target :: rdynamicInfo
-    
+
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    
+
     ! Backup of current simulation time.
     real(DP) :: dtimebackup
-    
+
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
     type(t_collection) :: rcollection
@@ -3379,9 +3394,9 @@ contains
     if (ilevelUCD .le. 0) then
       ilevelUCD = rproblem%NLMAX+ilevelUCD
     end if
-    
+
     ilevelUCD = min(rproblem%NLMAX,max(rproblem%NLMIN,ilevelUCD))
-    
+
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
     ! Therefore, we first have to convert the vector to a form that
@@ -3393,9 +3408,9 @@ contains
     ! structure based on Q1/P1 by copying the main guiding block
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
-    
+
     call spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
-    
+
     call spdiscr_deriveDiscr_triquad (rvector%p_rblockDiscr%RspatialDiscr(1), &
                  EL_P1, EL_Q1, rprjDiscretisation%RspatialDiscr(1))
 
@@ -3404,13 +3419,13 @@ contains
 
     call spdiscr_deriveDiscr_triquad (rvector%p_rblockDiscr%RspatialDiscr(3), &
                  EL_P0, EL_Q0, rprjDiscretisation%RspatialDiscr(3))
-                 
+
     ! The pressure discretisation substructure stays the old.
     !
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
     call lsysbl_createVector (rprjDiscretisation,rprjVector,.false.)
-    
+
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
@@ -3428,64 +3443,64 @@ contains
 
     ! Initialise the dynamic level information structure
     call cc_initDynamicLevelInfo (rdynamicInfo)
-    
+
     ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
-                            
+
     ! The same way, discretise boundary conditions of fictitious boundary components.
     call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection)
-    
+
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector,rdynamicInfo%rdiscreteBC)
     call vecfil_discreteFBCsol (rprjVector,rdynamicInfo%rdiscreteFBC)
-    
+
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
                                  "SFILENAMEUCD", sfilename, "", bdequote=.true.)
-                                 
+
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//"."//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
-                                 
+
     ! Now we have a Q1/Q1/Q0 solution in rprjVector -- on the level NLMAX.
     ! The next step is to project it down to level ilevelUCD.
     ! Due to the fact that solutions are usually 2-level-ordered,
     ! this can be shortened by taking only the first NVT vertices
     ! of the solution vector!
-    
+
     ! From the attached discretisation, get the underlying triangulation
     ! of that level
     p_rtriangulation => rproblem%RlevelInfo(ilevelUCD)%rtriangulation
-    
+
     ! Start UCD export to GMV file:
     call output_lbrk ()
     call output_line ("Writing visualisation file: "//sfile)
-    
+
     select case (ioutputUCD)
     case (1)
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
 
     case (2)
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
-          
+
     case (3)
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
 
     case (5)
       call ucd_startBGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
-          
+
     case default
       call output_line ("Invalid visualisation output type.", &
                         OU_CLASS_ERROR,OU_MODE_STD,"cc_writeUCD")
       call sys_halt()
     end select
-        
+
     ! Is there a simulation time?
     if (present(dtime)) &
       call ucd_setSimulationTime (rexport,dtime)
-    
+
     ! Write the configuration of the application as comment block
     ! to the output file.
     call ucd_addCommentLine (rexport,"Configuration:")
@@ -3496,10 +3511,10 @@ contains
     ! Get the velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
-    
+
     ! Moving frame velocity subtraction deactivated, gives pictures
     ! that can hardly be interpreted.
-    
+
 !    ! Is the moving-frame formulatino active?
 !    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
 !        "imovingFrame",imovingFrame,0)
@@ -3526,7 +3541,7 @@ contains
     !     p_Ddata2(1:p_rtriangulation%NVT))
     call ucd_addVarVertBasedVec (rexport,"velocity",&
         p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
-    
+
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,"pressure",UCD_VAR_STANDARD, &
@@ -3536,7 +3551,7 @@ contains
     if (rvector%p_rblockDiscr%RspatialDiscr(3)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
       call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(3),1,ieltype)
-                
+
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
         call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
         call ucd_addVariableVertexBased (rexport,"pressure",UCD_VAR_STANDARD, &
@@ -3549,7 +3564,7 @@ contains
             p_Ddata(1:p_rtriangulation%NVT))
       end if
     end if
-    
+
     ! Write the solution in "raw" format. This does a kernal-internal projection
     ! into the Q1 space and writes out the solution in the vertices.
     ! Boundary conditions are not imposed.
@@ -3562,24 +3577,24 @@ contains
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
         ccomplexity .eq. SPDISC_UNIFORM) then
-        
+
       call spdiscr_getElemGroupInfo (rvector%p_rblockDiscr%RspatialDiscr(1),1,ieltype)
 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
-          
+
         call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
-        
+
         call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
         call ucd_addVariableVertexBased (rexport,"streamfunction",&
             UCD_VAR_STANDARD, p_Ddata(1:p_rtriangulation%NVT))
-            
+
       end if
-      
+
     end if
-    
+
     ! Write out the viscosity if nonconstant
     if (rproblem%rphysics%cviscoModel .ne. 0) then
-      
+
       ! Prepare the collection. The "next" collection points to the user defined
       ! collection.
       call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -3636,11 +3651,11 @@ contains
   ! Note: This file is usually only used in a nonstationary simulation.
   ! In a stationary simulation, Film output makes no sense!
 !</description>
-  
+
 !<input>
   ! Solution vector.
   type(t_vectorBlock), intent(in) :: rvector
-  
+
   ! Simulation time.
   real(DP), intent(in) :: dtime
 !</input>
@@ -3648,7 +3663,7 @@ contains
 !<inputoutput>
   ! Problem structure.
   type(t_problem), intent(inout), target :: rproblem
-  
+
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
@@ -3659,7 +3674,7 @@ contains
 
     ! local variables
     integer :: ioutputFilm,ilevelFilm
-    
+
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfilename
@@ -3667,7 +3682,7 @@ contains
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
-    
+
     ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
                               "IOUTPUTFILM", ioutputFilm, 0)
@@ -3676,19 +3691,19 @@ contains
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
                                  "SFILENAMEFILM", sfilename, "", bdequote=.true.)
-                                 
+
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//"."//sys_si0(rpostprocessing%inextFileSuffixFilm,5)
-                                 
+
     ! Level of output:
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
                               "ILEVELFILM", ilevelFilm, 0)
     if (ilevelFilm .le. 0) then
       ilevelFilm = rproblem%NLMAX+ilevelFilm
     end if
-    
+
     ilevelFilm = min(rproblem%NLMAX,max(rproblem%NLMIN,ilevelFilm))
-    
+
     if (ilevelFilm .lt. rproblem%NLMIN) then
       call output_line ("Warning: Level for solution vector is < NLMIN! " // &
           "Writing out at level NLMIN!", &
@@ -3696,7 +3711,7 @@ contains
       call sys_halt()
       ilevelFilm = rproblem%NLMIN
     end if
-    
+
     ! Write formatted output?
     bformatted = ioutputFilm .ne. 2
 
@@ -3704,13 +3719,13 @@ contains
     call lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
 
     do ilev = rproblem%NLMAX,ilevelFilm+1,-1
-      
+
       ! Initialise a vector for the lower level and a prolongation structure.
       call lsysbl_createVector (&
           rproblem%RlevelInfo(ilev-1)%rdiscretisation,rvector2,.false.)
-      
+
       call mlprj_initProjectionVec (rprojection,rvector2)
-      
+
       ! Interpolate to the next higher level.
       ! (Do not "restrict"! Restriction would be for the dual space = RHS vectors!)
 
@@ -3719,13 +3734,13 @@ contains
       call mlprj_performInterpolation (rprojection,rvector2,rvector1, &
                                        rvectorTemp)
       if (NEQ .ne. 0) call lsyssc_releaseVector (rvectorTemp)
-      
+
       ! Swap rvector1 and rvector2. Release the fine grid vector.
       call lsysbl_swapVectors (rvector1,rvector2)
       call lsysbl_releaseVector (rvector2)
-      
+
       call mlprj_doneProjection (rprojection)
-      
+
     end do
 
     call output_lbrk ()
@@ -3782,7 +3797,7 @@ contains
     !
     ! For simplicity, we use only the discretisation structure of the X-velocity
     ! to derive everything.
-    
+
     p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
@@ -3792,11 +3807,11 @@ contains
     ! Piecewise linear space:
     call spdiscr_deriveDiscr_triquad (p_rdiscr%RspatialDiscr(1), &
                  EL_P1, EL_Q1, rpostprocessing%rdiscrLinear)
-  
+
     ! Piecewise quadratic space:
     call spdiscr_deriveDiscr_triquad (p_rdiscr%RspatialDiscr(1), &
                  EL_P2, EL_Q2, rpostprocessing%rdiscrQuadratic)
-  
+
     ! Initialise the time/file suffix when the first UCD file is to be written out.
     rpostprocessing%bnonstationaryPostprocessing = (rproblem%itimedependence .ne. 0)
     if (rproblem%itimedependence .ne. 0) then
@@ -3805,7 +3820,7 @@ contains
       call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
          "ISTARTSUFFIXFILM", rpostprocessing%inextFileSuffixFilm, 1)
     end if
-    
+
     ! Prepare computation of L2/H1 errors
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "IERRORANALYSISL2", rpostprocessing%icalcL2, 0)
@@ -3820,7 +3835,7 @@ contains
     ! Initialise a parser for the expressions.
     call fparser_create (rpostprocessing%rrefFunctionL2,NDIM2D+1)
     call fparser_create (rpostprocessing%rrefFunctionH1,NDIM2D*(NDIM2D+1))
-    
+
     ! Parse expressions specifying the reference functions for the L2/H1 error.
     !
     ! L2 error
@@ -3838,7 +3853,7 @@ contains
           "srefL2ExpressionP",sexpression,"0",bdequote=.true.)
       call fparser_parseFunction (rpostprocessing%rrefFunctionL2, 3, sexpression, EXPRVARIABLES)
     end if
-    
+
     ! H1 error
     if (rpostprocessing%icalcH1 .eq. 2) then
       ! Read parameters
@@ -3861,7 +3876,7 @@ contains
       call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
           "srefH1ExpressionPX",sexpression,"0",bdequote=.true.)
       call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 5, sexpression, EXPRVARIABLES)
-                                      
+
       call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
           "srefH1ExpressionPY",sexpression,"0",bdequote=.true.)
       call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 6, sexpression, EXPRVARIABLES)
@@ -3902,11 +3917,11 @@ contains
       rpostprocessingDst%inextFileSuffixUCD = rpostprocessingSrc%inextFileSuffixUCD
       rpostprocessingDst%inextFileSuffixFilm = rpostprocessingSrc%inextFileSuffixFilm
     end if
-                                    
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine cc_clearpostprocessing (rpostprocessing)
@@ -3945,7 +3960,7 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine cc_donepostprocessing (rpostprocessing)
@@ -3968,10 +3983,10 @@ contains
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrLinear)
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
-    
+
     call fparser_release (rpostprocessing%rrefFunctionH1)
     call fparser_release (rpostprocessing%rrefFunctionL2)
-  
+
   end subroutine
 
 end module
