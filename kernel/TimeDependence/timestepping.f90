@@ -1028,7 +1028,7 @@ contains
 !</subroutine>
 
     if (rtstepScheme%ctimestepType .lt. 0) then
-      call output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
+      call output_line('timstp_nextSubstepTime: Time stepping structure not initialised!')
     end if
 
     ! Increase the simulation time

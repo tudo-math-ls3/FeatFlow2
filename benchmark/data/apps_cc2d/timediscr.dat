@@ -59,6 +59,8 @@ dminTimeDerivative = 0.00001              # EPSNS
 # 6=diagonally implicit Runge-Kutta method DIRK44L (stiffly accurate,
 #   L-stable, convergence order=4 for velocity, =2 for pressure, three
 #   internal steps, requires pressure start solution)
+# <=-3=three time steps with a one step scheme to generate an initial pressure
+#   solution, then the DIRK scheme with identifier |itimeStepScheme|
 
 itimeStepScheme = 0                       # IFRSTP
 

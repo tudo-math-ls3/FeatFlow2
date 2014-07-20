@@ -317,12 +317,23 @@ contains
         "TIME-DISCRETISATION", "DTIMEINIT", dtimemin, 0.0_DP)
 
     ! Initialise the time stepping in the problem structure
+    if (cscheme .lt. 0) then
+      cscheme = 0
+    end if
     call timstp_init (rtimestepping, &
                       cscheme, dtimemin, dtstep, dtheta)
 
     ! Discretisation of the pressure.
     call parlst_getvalue_int (rparams, &
         "TIME-DISCRETISATION", "IPRESSUREFULLYIMPLICIT", ipressureFullyImplicit, 1)
+
+    ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the velocity
+    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+      ipressureFullyImplicit = 0
+    end if
 
   end subroutine
 
@@ -1088,7 +1099,7 @@ contains
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
     type(t_vectorBlock) :: rpredictedSolution,roldSolution
-    real(dp) :: doldtime
+    real(DP) :: doldtime
 
     logical :: babortTimestep
     integer :: ipressureFullyImplicit
@@ -1103,6 +1114,9 @@ contains
 
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
+
+    integer :: iaux
+    real(DP) :: daux1, daux2, daux3
 
 
     ! Some preparations for the nonlinear solver.
@@ -1120,13 +1134,6 @@ contains
     ! Initialise the time stepping scheme according to the problem configuration
     call cc_initTimeSteppingScheme (rproblem%rparamList,rtimestepping,&
         ipressureFullyImplicit)
-    ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the velocity
-    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
-      ipressureFullyImplicit = 0
-    end if
 
     ! Initialise the preconditioner for the nonlinear iteration
     call cc_initPreconditioner (rproblem,&
@@ -1181,6 +1188,36 @@ contains
               ! fractional-step theta scheme or diagonally implicit Runge-Kutta schemes)
               ! do not exit before all internal stages have completed
               (rtimestepping%isubstep .gt. 1))
+
+      if (rproblem%rtimedependence%itimeStep .eq. 4) then
+        ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
+        ! scheme A to generate a suitable start solution for scheme B.
+        ! (Why the choice of 4? Why not re-check after 1 time step with scheme A? Because
+        !  all the schemes B in question consist of 3 time steps and changing from scheme
+        !  A to B makes it possible to keep the algorithm to determine the time plus space
+        !  discretisation error in cc_errorAnalysis() which needs to consider only some
+        !  time steps of scheme B simple, read: not depending on an initially different
+        !  time stepping scheme A.)
+        call parlst_getvalue_int (rproblem%rparamList, &
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", rtimestepping%ctimestepType, 0)
+        if (rtimestepping%ctimestepType .le. -TSCHM_FS_DIRK) then
+          ! Re-initialise the time stepping in the problem structure
+          iaux = abs(rtimestepping%ctimestepType)
+          daux1 = rtimestepping%dcurrentTime
+          daux2 = rtimestepping%dtstep
+          daux3 = rtimestepping%dtheta
+          call timstp_init (rtimestepping, iaux, daux1, daux2, daux3)
+
+          ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
+          ! velocity
+          if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+            ipressureFullyImplicit = 0
+          end if
+        end if
+      end if
 
       ! Time counter
       call stat_clearTimer(rtimerTimestep)
@@ -1452,7 +1489,7 @@ contains
               ! We do not do anything in this case. The repetition technique will
               ! later decide on whether to repeat the step or to stop the
               ! computation.
-              call output_line ("Nonlinear solver broke down. Solution probably garbage!",&
+              call output_line("Nonlinear solver broke down. Solution probably garbage!",&
                   coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
             case (TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)

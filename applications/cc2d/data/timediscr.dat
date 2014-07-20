@@ -41,24 +41,26 @@ dminTimeDerivative = 0.00001              # EPSNS
 # ----------------------------------------------------------------------
 
 # Time-stepping scheme (IFRSTP);
-# 0=one step scheme
-# 1=classic fractional step theta (stiffly accurate, A-stable, convergence
-#   order=2 for velocity, =1 for pressure, three internal steps)
-# 2=Glowinski new fractional step theta (stiffly accurate, A-stable,
-#   conv. order=2 for velocity, =1 for pressure, three internal steps)
-# 3=classic fractional step theta, implemented as diagonally implicit
-#   Runge-Kutta method (stiffly accurate, A-stable, convergence order=2 for
-#   velocity, =1 for pressure, three internal steps, requires pressure start
-#   solution)
-# 4=diagonally implicit Runge-Kutta method DIRK34L variant A (stiffly
-#   accurate, L-stable, convergence order=3 for velocity, =2 for pressure,
-#   three internal steps, requires pressure start solution)
-# 5=diagonally implicit Runge-Kutta method DIRK34L variant B (stiffly
-#   accurate, L-stable, convergence order=3 for velocity, =2 for pressure,
-#   three internal steps, requires pressure start solution)
-# 6=diagonally implicit Runge-Kutta method DIRK44L (stiffly accurate,
-#   L-stable, convergence order=4 for velocity, =2 for pressure, three
-#   internal steps, requires pressure start solution)
+#   0=one step scheme
+#   1=classic fractional step theta (stiffly accurate, A-stable, convergence
+#      order=2 for velocity, =1 for pressure, three internal steps)
+#   2=Glowinski new fractional step theta (stiffly accurate, A-stable,
+#     conv. order=2 for velocity, =1 for pressure, three internal steps)
+#   3=classic fractional step theta, implemented as diagonally implicit
+#     Runge-Kutta method (stiffly accurate, A-stable, convergence order=2 for
+#     velocity, =1 for pressure, three internal steps, requires pressure start
+#     solution)
+#   4=diagonally implicit Runge-Kutta method DIRK34L variant A (stiffly
+#     accurate, L-stable, convergence order=3 for velocity, =2 for pressure,
+#     three internal steps, requires pressure start solution)
+#   5=diagonally implicit Runge-Kutta method DIRK34L variant B (stiffly
+#     accurate, L-stable, convergence order=3 for velocity, =2 for pressure,
+#     three internal steps, requires pressure start solution)
+#   6=diagonally implicit Runge-Kutta method DIRK44L (stiffly accurate,
+#     L-stable, convergence order=4 for velocity, =2 for pressure, three
+#     internal steps, requires pressure start solution)
+# <=-3=three time steps with a one step scheme to generate an initial pressure
+#   solution, then the DIRK scheme with identifier |itimeStepScheme|
 
 itimeStepScheme = 0                       # IFRSTP
 
@@ -94,7 +96,7 @@ ipressureFullyImplicit = 1
 
 cadaptiveTimeStepping = 0                 # IADTIM
 
-# max. number of repetitions for cadaptiveTimeStepping > 0 (IREPIT)
+# max. number of repetitions for |cadaptiveTimeStepping| > 0 (IREPIT)
 
 irepetitions = 3                          # IREPIT
 
