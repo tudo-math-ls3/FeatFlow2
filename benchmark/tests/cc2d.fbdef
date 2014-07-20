@@ -142,7 +142,7 @@ DISCRETISATION_IEQUATION = 1
 # Test 100
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q1~ element, SD(0.1)
+# Q1~ element, SD(0.3)
 # 6 time steps with time step size 0.01, Backward-Euler
 ##########
 
@@ -181,7 +181,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 # Test 102
 #
 # Nonstationary Navier-Stokes on level 2,3.
-# Q2 element, SD(0.2)
+# Q2 element, SD(1.2)
 # 6 time steps with time step size 0.01, Backward-Euler
 ##########
 
