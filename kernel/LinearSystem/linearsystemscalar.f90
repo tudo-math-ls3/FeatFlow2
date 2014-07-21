@@ -4497,7 +4497,7 @@ contains
               call lsyssc_LAX79INTL1DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 #endif
-              
+
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDDPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4685,9 +4685,11 @@ contains
       if(bvirt_trans) then
         ! Yes, so exchange NEQ with NCOLS
         NEQ = rmatrix%NCOLS
+        NCOLS = rmatrix%NEQ
       else
         ! No, so simply copy NEQ
         NEQ = rmatrix%NEQ
+        NCOLS = rmatrix%NCOLS
       end if
 
       ! Select the right MV multiplication routine from the matrix format
