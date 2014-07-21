@@ -54,6 +54,10 @@ contains
   ! User defined object
   type(t_problem), pointer :: p_rproblem
 
+! Note: Code does not support GCC 4.3 due to compiler error. GFortran 4.3 would throw
+!       the following error falsely: The component 'p_robj' is a PRIVATE type and cannot
+!       be a component of 't_void_ptr', which is PUBLIC.
+
 #define CASTTYPE t_problem
 #define CASTVAR  p_rproblem
 #define CASTGOBJ rgenericObject
@@ -67,7 +71,7 @@ contains
 
   subroutine printarray (rcollection)
   type(t_collection), intent(inout) :: rcollection
-  
+
     type(t_problem), pointer :: p_rproblem
     integer :: i
     
