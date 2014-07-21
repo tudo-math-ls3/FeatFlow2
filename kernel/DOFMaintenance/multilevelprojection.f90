@@ -1844,7 +1844,7 @@ contains
             rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
             1.0_DP, 0.0_DP)
         else
-          ! The restriction is the transposed f the prolongation.
+          ! The restriction is the transposed of the prolongation.
           call lsyssc_matVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
             rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
             1.0_DP, 0.0_DP, .true.)
