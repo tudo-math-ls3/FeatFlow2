@@ -119,6 +119,9 @@ use File::Copy qw(move);
 # the current hostname
 use Sys::Hostname;
 
+# Color screen output using ANSI escape sequences
+use Term::ANSIColor qw(:constants);
+
 
 # Some constants
 (my $progname=$0) =~ s/^.*\/(.*)/$1/;
@@ -138,6 +141,7 @@ my $testfileext = "fbdef";
 # especially helpful when debugging.
 use IO::Handle;
 STDOUT->autoflush(1);
+STDERR->autoflush(1);
 
 use constant VERSION => 2.13;
 
@@ -221,8 +225,8 @@ foreach my $testfile (@testfiles) {
     $testfile = $testsdir . "/" . $testfile;
     print STDERR "$progname: Parsing test coding file <$testfile>... ";
     local(*TESTFILE);
-    open(TESTFILE, $testfile)
-    or die "\n$progname: ERROR: Cannot open file <$testfile>: $!\n\n";
+    open(TESTFILE, "<", $testfile)
+        or die "\n$progname: ERROR: Cannot open file <$testfile>: $!\n\n";
 
     # Hash that contains for every keyword defined througout a test coding file
     # the latest settings. Used to supplement incomplete definitions.
@@ -241,24 +245,24 @@ foreach my $testfile (@testfiles) {
     #LINE: while (<TESTFILE>) {
     LINE: foreach (@filecontent) {
         $lineno++;
-        
+
         if ($lineno % 10000 == 0) {
             print STDERR "$lineno lines parsed.\n";
         }
-        
+
         my $origline = $_;
-    
+
         # Remove any inlined comments
         $_ =~ s/\#.+$//;
-    
+
         # Remove trailing white space
         $_ =~ s/\s+$//;
-    
+
         # Ignore comments (i.e. lines starting with a '#')
         next LINE if ($_ =~ m/^\s*\#/);
         # Ignore empty lines
         next LINE if ($_ =~ m/^\s*$/);
-    
+
         # Store test ID
         if ($_ =~ m%^\s*testid\s*=\s*(.+)$%i) {
             $testid = $1;
@@ -289,25 +293,26 @@ foreach my $testfile (@testfiles) {
                     }
                 }
             }
-    
+
         # match a line like
-            #   include <some char><file name><same char>
+        #   include <some char><file name><same char>
         # (nice, reusing a match in a pattern...)
         } elsif ($_ =~ m%^\s*include\s+(.)([^\1]+?)\1\s*$%i) {
             # include another file
             my $includeFile = $2;
-    
+
             &readIncludeFile($includeFile, $testid, \%{ $test{$testid} }, \%inherited);
-    
+
         } else {
             &storeSetting($_, $origline, $testfile, $lineno, $testid, \%{ $test{$testid} }, \%inherited);
         }
     }
+    undef @filecontent;
 
     if ($lineno % 10000 != 0) {
         print STDERR "$lineno lines parsed.\n";
     }
-    
+
     # Don't inherit defaults from other *.$testfileext files
     undef %inherited;
     $testid = "";
@@ -318,9 +323,9 @@ foreach my $testfile (@testfiles) {
 
 if ($numTestfiles == 0) {
     die "\n$progname: ERROR:\n" .
-    "  Not a single file matching *.$testfileext has been found in directory\n" .
-    "  <$testsdir/>. Without such FEAT2 benchmark test definition\n" .
-    "  files it is not possible to create a FEAT2 benchmark run script.\n\n";
+        "  Not a single file matching *.$testfileext has been found in directory\n" .
+        "  <$testsdir/>. Without such FEAT2 benchmark test definition\n" .
+        "  files it is not possible to create a FEAT2 benchmark run script.\n\n";
 }
 
 
@@ -342,22 +347,22 @@ my @idsToCode = ();
 foreach my $file (@ARGV) {
     print STDERR "Parsing file <$file>...\n" if ($debugScript);
     local(*FILE);
-    open(FILE, $file)
-    or warn "$progname: WARNING: Cannot open file <$file>: $!\n";
+    open(FILE, "<", $file)
+        or warn "$progname: WARNING: Cannot open file <$file>: $!\n";
 
-    LINE2: while (<FILE>) {
+   LINE2: while (<FILE>) {
         # Ignore comments (i.e. lines starting with a '#')
         next LINE2 if ($_ =~ m/^\#/);
         # Ignore empty lines
         next LINE2 if ($_ =~ m/^\s*$/);
-        
+
         # Remove any inlined comments
         $_ =~ s/\#.+$//;
-        
+
         # Remove white spaces (trim)
         chomp($_);
         $_ =~ s/^\s*(\S+)\s*$/$1/;
-        
+
         print STDERR "Found ID <" . $_ . ">.\n" if ($debugScript);
         push @idsToCode, split('\s+', $_);
     }
@@ -371,52 +376,81 @@ my @subentry    = ();
 my @subsubentry = ();
 my $testidsFound = 0;
 my @vars2export = ();
+my %warningShownForKeyword = ();
 my @testidsok = ();
 ID: foreach my $testid (@idsToCode) {
     # Check whether anything at all has been defined in any of
-    # the *.$testfileext files for the requested ID.
+    # the *.$testfileext files for the requested test ID.
     if (scalar(keys %{ $test{$testid} }) == 0) {
         warn "$progname: WARNING:\n" .
-         "  Test case with ID <$testid> is undefined!\n";
+             "  Test case with ID <$testid> is undefined!\n";
         next ID;
     }
 
     # Check whether a minimal set of keywords has been defined
-    # in any of the *.$testfileext files for the requested ID.
+    # in any of the *.$testfileext files for the requested test ID.
     foreach my $check ( 'CLASS', 'DESCR', 'APPL', 'MGLEVELS', 'DATFILE' ) {
-    unless (defined($test{$testid}{$check})) {
-        warn "$progname: WARNING:\n" .
-         "  Test case with ID <$testid> is incompletely defined!\n" .
-         "  Keyword <$check> not found.\n";
-        next ID;
-    }
+        unless (defined($test{$testid}{$check})) {
+            warn "$progname: WARNING:\n" .
+                 "  Test case with ID <$testid> is incompletely defined!\n" .
+                 "  Keyword <$check> not found.\n";
+            next ID;
+        }
     }
 
+    # Check whether any keyword defined for the requested test ID
+    # has been overwritten on the command line (by means of an environment variable)
+    foreach my $keyword ( keys %{ $test{$testid} }, "LOGDIR" ) {
+        if (defined($ENV{$keyword})) {
+            $test{$testid}{$keyword} = $ENV{$keyword};
+            if (! defined($warningShownForKeyword{$keyword})) {
+                $warningShownForKeyword{$keyword} = 1;
+                if ($keyword eq "DISPLAY" && $test{$testid}{$keyword} ne ":0") {
+                    print STDERR BOLD, RED, "$progname: WARNING:\n" .
+                        "  Value of keyword <$keyword> from *.fbdef file overwritten by\n" .
+                        "  accordingly named environment variable! Tests using the OpenGL\n" .
+                        "  backend of the coproc library are likely to fail!\n" .
+                        "  You may want to add 'DISPLAY=:0' as argument to your 'make' command\n" .
+                        "  when creating this test suite control script - or unset the DISPLAY\n" .
+                        "  environment altogether prior to creating it.";
+                    for (my $i=1; $i <= 15; $i++) {
+                        print STDERR "."; sleep 1;
+                    }
+                    print STDERR RESET, "\n";
+                } else {
+                    warn "$progname: WARNING:\n" .
+                        "  Value of keyword <$keyword> from *.fbdef file overwritten by\n" .
+                        "  accordingly named environment variable!\n";
+
+                }
+            }
+        }
+    }
 
     if (exists($test{$testid}{'HOSTPERMISSIONS'})) {
         my $allowed = 0;
         foreach my $entry ( @{ $test{$testid}{'HOSTPERMISSIONS'} } ) {
             $entry =~ m/^(.)(.*)$/;
             my ($perm, $regexp) = ($1, $2);
-    
+
             if ($perm eq "+") {
-            $perm = 1;
+                $perm = 1;
             } else {
-            $perm = 0;
+                $perm = 0;
             }
             print STDERR "Splitting up $entry into $perm and $regexp.\n" if ($debugScript);
-    
+
             if ($regexp eq "all" || $host =~ m/$regexp/) {
-            $allowed = $perm;
+                $allowed = $perm;
             }
         }
-    
+
         if (! $allowed) {
             my ($allowedHosts, $deniedHosts) = ("", "");
             foreach my $entry ( @{ $test{$testid}{'HOSTPERMISSIONS'} } ) {
                 $entry =~ m/^(.)(.*)$/;
                 my ($perm, $regexp) = ($1, $2);
-        
+
                 if ($perm eq "+") {
                     $allowedHosts .= ", " . $regexp;
                 } else {
@@ -425,7 +459,7 @@ ID: foreach my $testid (@idsToCode) {
             }
             $allowedHosts =~ s/^, //;
             $deniedHosts  =~ s/^, //;
-    
+
             warn "$progname: WARNING:\n" .
                 "  Test case with ID <$testid> is coded not to be run on current host, <$host>:\n" .
                 "  list of allowed hosts: " . $allowedHosts . "\n" .
@@ -441,25 +475,25 @@ ID: foreach my $testid (@idsToCode) {
         foreach my $entry ( @{ $test{$testid}{'BUILDIDPERMISSIONS'} } ) {
             $entry =~ m/^(.)(.*)$/;
             my ($perm, $regexp) = ($1, $2);
-    
+
             if ($perm eq "+") {
                 $perm = 1;
             } else {
                 $perm = 0;
             }
             print STDERR "Splitting up $entry into $perm and $regexp.\n" if ($debugScript);
-    
+
             if ($regexp eq "all" || $buildID =~ m/$regexp/) {
                 $allowed = $perm;
             }
         }
-    
+
         if (! $allowed) {
             my ($allowedBuildIDs, $deniedBuildIDs) = ("", "");
             foreach my $entry ( @{ $test{$testid}{'BUILDIDPERMISSIONS'} } ) {
                 $entry =~ m/^(.)(.*)$/;
                 my ($perm, $regexp) = ($1, $2);
-        
+
                 if ($perm eq "+") {
                     $allowedBuildIDs .= ", " . $regexp;
                 } else {
@@ -468,12 +502,12 @@ ID: foreach my $testid (@idsToCode) {
             }
             $allowedBuildIDs =~ s/^, //;
             $deniedBuildIDs  =~ s/^, //;
-    
+
             warn "$progname: WARNING:\n" .
-            "  Test case with ID <$testid> is coded not to be run for current build ID, <$buildID>:\n" .
-            "  list of allowed build IDs: " . $allowedBuildIDs . "\n" .
-            "  list of denied build IDs : " . $deniedBuildIDs . "\n" .
-                "  Test will be skipped.\n";
+                 "  Test case with ID <$testid> is coded not to be run for current build ID, <$buildID>:\n" .
+                 "  list of allowed build IDs: " . $allowedBuildIDs . "\n" .
+                 "  list of denied build IDs : " . $deniedBuildIDs . "\n" .
+                 "  Test will be skipped.\n";
             next ID;
         }
     }
@@ -493,10 +527,10 @@ ID: foreach my $testid (@idsToCode) {
         $requestedExecmode = "serial";
     } else {
         warn "$progname: WARNING:\n" .
-            "  Environment variable MPI is set to <" . $ENV{"MPI"} . 
+            "  Environment variable MPI is set to <" . $ENV{"MPI"} .
             ">. Only YES and NO are permitted..\n" .
         next ID;
-        }
+    }
     if ($test{$testid}{EXECMODE} !~ m/\b$requestedExecmode\b/i) {
         warn "$progname: WARNING:\n" .
             "  Test case with ID <$testid> is coded to work with execmode <$test{$testid}{EXECMODE}>.\n" .
@@ -507,7 +541,6 @@ ID: foreach my $testid (@idsToCode) {
         # So, if multiple execmodes are given, override value with the currently active one.
         $test{$testid}{EXECMODE} = $requestedExecmode;
     }
-
 
 
     # Write to screen or append to file?
@@ -542,35 +575,37 @@ ID: foreach my $testid (@idsToCode) {
         # Rename or overwrite?
         unless ($cl{'overwrite-log-directory'}) {
             if ( -d "$test{$testid}{LOGDIR}.prev" ) {
-            unlink <$test{$testid}{LOGDIR}.prev/*>;
-            rmdir $test{$testid}{LOGDIR} . ".prev" ||
-                die "\n$progname: ERROR:\n" .
-                    "  Cannot remove directory <$test{$testid}{LOGDIR}.prev>: $!\n";
+                print STDERR "$progname: Removing old log directory <$test{$testid}{LOGDIR}.prev> (this might take a while)... ";
+                unlink <$test{$testid}{LOGDIR}.prev/*>;
+                rmdir $test{$testid}{LOGDIR} . ".prev" ||
+                    die "\n$progname: ERROR:\n" .
+                        "  Cannot remove directory <$test{$testid}{LOGDIR}.prev>: $!\n";
+                print STDERR "Done.\n";
             }
             # rename existing (clobbering any existing *.prev directory) and create a new one.
             File::Copy::move("$test{$testid}{LOGDIR}", "$test{$testid}{LOGDIR}.prev") ||
-            die "\n$progname: ERROR:\n" .
-                "  This script tried to rename a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
-                "  but an error occured: $?\n\n";
+                die "\n$progname: ERROR:\n" .
+                    "  This script tried to rename a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
+                    "  but an error occured: $?\n\n";
             File::Path::mkpath($test{$testid}{LOGDIR}) ||
-            die "\n$progname: ERROR:\n" .
-                "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
-                "  but an error occured: $?\n\n";
+                die "\n$progname: ERROR:\n" .
+                    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
+                    "  but an error occured: $?\n\n";
         }
     } else {
         # Directory did not yet exist.
-    
+
         if ( -e $test{$testid}{LOGDIR} ) {
             # some file system object with the desired name
             # already exists and it is not a directory. Issue an error.
             die "\n$progname: ERROR:\n" .
-            "  This script was about to create a directory named <" . $test{$testid}{LOGDIR} . ">.\n" .
-            "  But there exists already such a file system object and it is no directory. Please check.\n\n";
+                "  This script was about to create a directory named <" . $test{$testid}{LOGDIR} . ">.\n" .
+                "  But there exists already such a file system object and it is no directory. Please check.\n\n";
         } else {
             File::Path::mkpath($test{$testid}{LOGDIR}) ||
-            die "\n$progname: ERROR:\n" .
-                "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
-                "  but an error occured: $?\n\n";
+                die "\n$progname: ERROR:\n" .
+                    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
+                    "  but an error occured: $?\n\n";
         }
     }
 
@@ -589,7 +624,7 @@ ID: foreach my $testid (@idsToCode) {
     foreach my $entry (sort keys %{ $test{$testid} }) {
         # Skip entries we already handled
         next if ("DESCR TESTID EXECMODE BUILDIDPERMISSIONS HOSTPERMISSIONS" =~ m/\b$entry\b/i);
-    
+
         &formatted_print_env_variable($entry, $test{$testid}{$entry}, $fieldlength);
         push @vars2export, $entry;
     }
@@ -621,19 +656,20 @@ ID: foreach my $testid (@idsToCode) {
     my $length = length("export");
     print STDOUT "export";
     foreach my $entry (sort keys %{ $test{$testid} }) {
-        unless ($entry =~ m/\b(HOST|BUILDID)PERMISSIONS\b/i) {
-            $length += length($entry) + 1;
-    
-            if ($length < 80) {
-                print STDOUT " $entry";
-            } else {
-                print STDOUT "\nexport $entry";
-                $length = length("export");
-            }
+#        unless ($entry =~ m/\b(HOST|BUILDID)PERMISSIONS\b/i) {
+        next if ("BUILDIDPERMISSIONS HOSTPERMISSIONS" =~ m/\b$entry\b/i);
+
+        $length += length($entry) + 1;
+
+        if ($length < 80) {
+            print STDOUT " $entry";
+        } else {
+            print STDOUT "\nexport $entry";
+            $length = length("export");
         }
     }
     print STDOUT "\n";
-    print STDOUT "export TESTID\n";
+    print STDOUT "export EXECMODE TESTID\n";
 
     # All non-interactive MPI jobs need to have the environment variables
     # FEAT2 uses in its master.dat's explicitly set with the 'mpirun' command.
@@ -651,23 +687,23 @@ ID: foreach my $testid (@idsToCode) {
     # Now, explicitly unset all previously set environment variables to
     # provide a clean environment for subsequent tests.
     print STDOUT "# Now, explicitly unset all previously set environment variables to\n" .
-             "# provide a clean environment for subsequent tests.\n";
+                 "# provide a clean environment for subsequent tests.\n";
     $length = length("unset");
     print STDOUT "unset";
     foreach my $entry (sort keys %{ $test{$testid} }) {
         unless ($entry =~ m/\b(HOST|BUILDID)PERMISSIONS\b/i) {
             $length += length($entry) + 1;
-    
+
             if ($length < 80) {
-            print STDOUT " $entry";
+                print STDOUT " $entry";
             } else {
-            print STDOUT "\nunset $entry";
-            $length = length("unset");
+                print STDOUT "\nunset $entry";
+                $length = length("unset");
             }
         }
     }
     print STDOUT "\nunset TESTID\n\n";
-    
+
     push (@testidsok,$testid);
 
     if ($cl{'append-to-files'}) {
@@ -681,12 +717,12 @@ ID: foreach my $testid (@idsToCode) {
 
 if ($testidsFound == 0) {
     die "\n\n$progname: ERROR:\n" .
-    "  Not a single test case found in " . join(' ', @ARGV) . "\n" .
-    "  is found to be valid. Either no definition in one\n" .
-    "  of the following files:\n  * " .
-    join("\n  * ", sort @testfiles) . "\n" .
-    "  could be found or the current hostname is not listed as valid host\n" .
-    "  for any of the test IDs.\n\n";
+        "  Not a single test case found in " . join(' ', @ARGV) . "\n" .
+        "  is found to be valid. Either no definition in one\n" .
+        "  of the following files:\n  * " .
+        join("\n  * ", sort @testfiles) . "\n" .
+        "  could be found or the current hostname is not listed as valid host\n" .
+        "  for any of the test IDs.\n\n";
 }
 
 
@@ -710,8 +746,8 @@ sub formatted_print_env_variable {
     my ($variablename, $value, $fieldlength) = (@_);
 
     print STDOUT
-    # Print environment variable definition: keyword=value
-    $variablename . "=" . $value . "\n";
+        # Print environment variable definition: keyword=value
+        $variablename . "=" . $value . "\n";
     return;
 }
 
@@ -767,7 +803,7 @@ sub splitup {
         # Handle special case of first item where keyword is already known.
         # Store it (keyword in uppercase).
         $hash{$keyword} = $subentry[0];
-    
+
         # If the value does have subitems, export them as well
         # (again keyword in uppercase).
         for (my $i = 1; $i <= $#subentry; $i++) {
@@ -786,9 +822,9 @@ sub findInArray {
     my ( $arrayRef, $string ) = @_;
 
     for (my $i = 0; $i <= $#{ $arrayRef }; $i++) {
-    if (${ $arrayRef }[$i] eq $string) {
-        return $i;
-    }
+        if (${ $arrayRef }[$i] eq $string) {
+            return $i;
+        }
     }
     return -1;
 }
@@ -848,21 +884,21 @@ sub updateAllowDenySettings {
         # allowhosts = tesla, previous setting neither one of "all|any|none":
         #                      => 1) append
         #                      => 2) remove tesla from denyhosts list, if present
-    
+
         foreach my $entry (split(/\s*,\s*/, lc($value))) {
             # Deal with special values 'all' / 'any'
             if ($entry eq "all" || $entry eq "any") {
                 # AllowHosts: all
                 &clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+all");
-        
-                # Deal with special values 'none'
+
+            # Deal with special values 'none'
             } elsif ($entry eq "none") {
                 # AllowHosts: none <=> DenyHosts: all
                 &clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-all");
             }
-    
+
             # A host is given, append/replace/don't append as appropriate.
             else {
                 # Remove host from denylist (if present), add it to allowlist
@@ -891,14 +927,14 @@ sub updateAllowDenySettings {
                 # AllowHosts: all
                 &clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-all");
-        
-                # Deal with special values 'none'
+
+            # Deal with special values 'none'
             } elsif ($entry eq "none") {
                 # AllowHosts: none <=> DenyHosts: all
                 &clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+all");
             }
-    
+
             # A host is given, append/replace/don't append as appropriate.
             else {
                 # Remove host from allowlist (if present), add it to denylist
@@ -934,21 +970,21 @@ sub updateAllowDenySettings {
         #                         => 1) append
         #                         => 2) remove pc-opteron-linux64-.*.-.* from denyBuildIds
         #                               list, if present
-    
+
         foreach my $entry (split(/\s*,\s*/, lc($value))) {
             # Deal with special values 'all' / 'any'
             if ($entry eq "all" || $entry eq "any") {
                 # AllowBuildIDs: all
                 &clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+all");
-        
-                # Deal with special values 'none'
+
+            # Deal with special values 'none'
             } elsif ($entry eq "none") {
                 # AllowBuildIDs: none <=> DenyBuildIDs: all
                 &clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-all");
             }
-    
+
             # A host is given, append/replace/don't append as appropriate.
             else {
                 # Remove host from denylist (if present), add it to allowlist
@@ -983,21 +1019,21 @@ sub updateAllowDenySettings {
         #                        => 1) append
         #                        => 2) remove pc-opteron-linux64-.*.-.* from allowBuildIds
         #                              list, if present
-    
+
         foreach my $entry (split(/\s*,\s*/, lc($value))) {
             # Deal with special values 'all' / 'any'
             if ($entry eq "all" || $entry eq "any") {
                 # AllowBuildIDs: all
                 &clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-all");
-        
-                # Deal with special values 'none'
+
+            # Deal with special values 'none'
             } elsif ($entry eq "none") {
                 # AllowBuildIDs: none <=> DenyBuildIDs: all
                 &clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
                 &addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+all");
             }
-    
+
             # A host is given, append/replace/don't append as appropriate.
             else {
                 # Remove host from allowlist (if present), add it to denylist
@@ -1046,7 +1082,7 @@ sub storeSetting {
         # Remove leading white space
         # (any trailing white space has been remove on the complete line already)
         $value =~ s/^\s*//;
-    
+
         if ($testid ne "") {
             if ($value ne "") {
                 # Special handling of ALLOW*, DENY* because they are realised as
@@ -1068,12 +1104,12 @@ sub storeSetting {
                 if (exists(${ $currentTestHashRef }{uc($keyword)})) {
                     # Unset keyword
                     printf STDERR
-                    "Unsetting test{$testid}{$keyword}\n" if ($debugScript);
+                        "Unsetting test{$testid}{$keyword}\n" if ($debugScript);
                     delete ${ $currentTestHashRef }{uc($keyword)};
                 }
             }
         }
-    
+
         if ($value ne "") {
             # Store new settings as defaults for next entry
             printf STDERR "Storing as new inherited value: '$keyword' => $value\n" if ($debugScript);
@@ -1109,30 +1145,30 @@ sub readIncludeFile {
         warn "$progname: WARNING: Cannot include file <$testfile>: Neither file nor link\n";
     } else {
         local(*INCLUDEFILE);
-    
+
         print STDERR "Parsing test coding file <$testfile>...\n" if ($debugScript);
-        open(INCLUDEFILE, $testfile)
+        open(INCLUDEFILE, "<", $testfile)
             or warn "$progname: WARNING: Cannot read defaults from file <$testfile>: $!\n";
         my $lineno = 0;
-    
+
         # First read the file, then evaluate.
         my @filecontent = <INCLUDEFILE>;
         # LINE: while (<INCLUDEFILE>) {
         LINE: foreach (@filecontent) {
             $lineno++;
             my $origline = $_;
-    
+
             # Remove any inlined comments
             $_ =~ s/\#.+$//;
-    
+
             # Remove trailing white space
             $_ =~ s/\s+$//;
-    
+
             # Ignore comments (i.e. lines starting with a '#')
             next LINE if ($_ =~ m/^\s*\#/);
             # Ignore empty lines
             next LINE if ($_ =~ m/^\s*$/);
-    
+
             # match a line like
             #   include <some char><file name><same char>
             # (nice, reusing a match in a pattern...)
@@ -1144,7 +1180,8 @@ sub readIncludeFile {
                 &storeSetting($_, $origline, $testfile, $lineno, $testid, $currentTestHashRef, $inheritedHashRef);
             }
         }
-        close(INCLUDEFILE);
+        # close(INCLUDEFILE);
+        undef @filecontent;
         print STDERR "Finished parsing include file <$testfile>.\n" if ($debugScript);
     }
 
@@ -1192,19 +1229,19 @@ sub show_version {
 sub show_help {
     print
         "Usage: $progname [options] <file>\n" .
-    "\n" .
-    "where <file> is an ASCII file containing a list of test IDs.\n" .
-    "\n" .
-    "This script parses an fbconf file (or more generally a given ASCII\n" .
-    "file containing a list of test IDs, one or multiple per line), looks\n" .
-    "up the settings associated with these test IDs (stored in one of the\n" .
-    "fbdef files in subdirectory 'tests') and creates instruction blocks\n" .
-    "(environment variable declarations in uppercase in sh syntax) for\n" .
-    "all the tests requested. These instructions are integrated into\n" .
-    "'runtests'. If a test ID is found for which there is no definition\n" .
-    "in any of the fbdef files, it will report a warning and ignore the\n" .
-    "test ID\n" .
-    "\n" .
+        "\n" .
+        "where <file> is an ASCII file containing a list of test IDs.\n" .
+        "\n" .
+        "This script parses an fbconf file (or more generally a given ASCII\n" .
+        "file containing a list of test IDs, one or multiple per line), looks\n" .
+        "up the settings associated with these test IDs (stored in one of the\n" .
+        "fbdef files in subdirectory 'tests') and creates instruction blocks\n" .
+        "(environment variable declarations in uppercase in sh syntax) for\n" .
+        "all the tests requested. These instructions are integrated into\n" .
+        "'runtests'. If a test ID is found for which there is no definition\n" .
+        "in any of the fbdef files, it will report a warning and ignore the\n" .
+        "test ID\n" .
+        "\n" .
         "Command line options:\n" .
         "---------------------\n" .
         "--append-to-files <string>\n" .
