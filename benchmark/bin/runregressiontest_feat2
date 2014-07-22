@@ -476,13 +476,13 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.8.2"
 		    ;;
 
-		# GNU compiler suite 4.9.0
+		# GNU compiler suite 4.9.1
 		pc64-penryn-linux-gcc-*4.9)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.9.0"
+		    modules="$modules gcc/4.9.1"
 		    LIDOJOBNAMEPREFIX=ff2-gcc49
-		    COMPILERNAME="GCC 4.9.0"
+		    COMPILERNAME="GCC 4.9.1"
 		    ;;
 
 		# default GNU compiler suite
