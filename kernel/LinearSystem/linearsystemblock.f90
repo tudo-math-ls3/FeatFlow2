@@ -1761,7 +1761,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
+  call storage_new ('lsysbl_createVecBlockDirDims', 'Vector', &
                       iisize, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
 
@@ -1873,7 +1873,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
+  call storage_new ('lsysbl_createVecBlockDirDims2', 'Vector', &
                       iisize, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
 
@@ -1986,7 +1986,7 @@ contains
   if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
 
   ! Allocate one large new vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', iNEQ, cdata, &
+  call storage_new ('lsysbl_createVecBlockIndirect', 'Vector', iNEQ, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
 
@@ -6155,7 +6155,7 @@ contains
     ! Next question: should we share the vector content or not?
     if (.not. bshareContent) then
       ! Allocate a new large vector holding all data.
-      call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
+      call storage_new ('lsysbl_deriveSubvector', 'Vector', &
                           rvectorDest%NEQ, rvectorDest%cdataType, &
                           rvectorDest%h_Ddata, ST_NEWBLOCK_NOINIT)
       rvectorDest%RvectorBlock(1:ncount)%h_Ddata = rvectorDest%h_Ddata
