@@ -200,6 +200,11 @@
     ! Pointer to stack data
     FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_StackData => null()
 
+#ifdef T_THREAD_SAFE
+    ! OpenMP: Write-lock
+    !$ integer(omp_lock_kind) :: ilock
+#endif
+    
   end type
 
 !</typeblock>
@@ -240,6 +245,10 @@ contains
     allocate(rstack%p_StackData(rstack%istackSize))
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_init_lock(rstack%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -258,6 +267,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_lock(rstack%ilock)
+#endif
+
 #ifdef T_STORAGE
     if (rstack%h_StackData .ne. ST_NOHANDLE)&
         call storage_free(rstack%h_StackData)
@@ -269,6 +282,10 @@ contains
 
     rstack%istackSize     = 0
     rstack%istackPosition = 0
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_lock(rstack%ilock)
+#endif
 
   end subroutine
 
@@ -288,7 +305,15 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_lock(rstack%ilock)
+#endif
+
     rstack%istackPosition = 0
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_lock(rstack%ilock)
+#endif
 
   end subroutine
 
@@ -363,6 +388,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_lock(rstack%ilock)
+#endif
+
 #ifdef T_STORAGE
     if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
@@ -396,6 +425,10 @@ contains
     ! Push data to stack
     rstack%istackPosition = rstack%istackPosition+1
     rstack%p_StackData(rstack%istackPosition) = data
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_lock(rstack%ilock)
+#endif
 
   end subroutine
 
@@ -451,8 +484,16 @@ contains
 !</output>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_lock(rstack%ilock)
+#endif
+
     call stack_top(rstack, data)
     rstack%istackPosition = rstack%istackPosition-1
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_lock(rstack%ilock)
+#endif
 
   end subroutine
 
@@ -516,12 +557,20 @@ contains
     ! local variable
     integer :: i
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_lock(rstackDest%ilock)
+#endif
+
     ! Create empty stack
     call stack_create(rstackDest, rstackSrc%istackSize)
 
     do i = 1, rstackSrc%istackSize
       rstackDest%p_StackData(i) = rstackSrc%p_StackData(i)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_lock(rstackDest%ilock)
+#endif
 
   end subroutine
 
@@ -790,8 +839,8 @@ contains
     rptr%p_robj => rstack
     
     ! Transfer the void pointer structure to the generic object
-    rgenericObject = transfer(rptr, rgenericObject)
-    
+    rgenericObject = transfer(rptr, rgenericObject)    
+
   end subroutine
 
   !************************************************************************
