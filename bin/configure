@@ -2740,7 +2740,7 @@ sub create_feat2AppMakefile {
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge:\tpurge-libs purge-app\n" .
         "\t\@echo \"# Removing Makefile\"\n" .
-        "\t-rm -f $MAKEFILE $MAKEFILE.bak $(MAKEFILE_NAME)\n\n" .
+        "\t-rm -f $MAKEFILE $MAKEFILE.bak \$(MAKEFILE_NAME)\n\n" .
 
         "# Clean all FEAT2 object files for all architectures\n" .
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
