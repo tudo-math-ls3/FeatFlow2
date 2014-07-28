@@ -604,7 +604,7 @@ contains
       p_rcolumn%idigits = idigits
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_setPrecision")
       call sys_halt()
     end if
@@ -646,7 +646,7 @@ contains
       p_rcolumn%bscientific = bscientific
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_setScientific")
       call sys_halt()
     end if
@@ -689,7 +689,7 @@ contains
       p_rcolumn%stexCaption = sstring
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_setTexCaption")
       call sys_halt()
     end if
@@ -786,7 +786,7 @@ contains
       p_rcolumn%stexFormat = sstring
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_setTexFormat")
       call sys_halt()
     end if
@@ -828,7 +828,7 @@ contains
       p_rcolumn%bhidden = bhidden
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_setHidden")
       call sys_halt()
     end if
@@ -1112,7 +1112,7 @@ contains
 
     else 
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("At least one of the column does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_swapColumnsByNumber")
       call sys_halt()
     end if
@@ -1494,7 +1494,7 @@ contains
 
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//skey//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_evalConvRateByKey")
       call sys_halt()
     end if
@@ -1545,7 +1545,7 @@ contains
 
     else
       ! Throw error if column does not exist
-      call output_line("Column does not exist!",&
+      call output_line("Column '"//trim(sys_si(inumber,5))//"' does not exist!",&
           OU_CLASS_ERROR,OU_MODE_STD,"ctab_evalConvRateByNumber")
       call sys_halt()
     end if
