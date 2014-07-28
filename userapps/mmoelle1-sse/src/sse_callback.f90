@@ -39,8 +39,8 @@
 !#     coeff_RHS_SSEim /
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 6.) coeff_RHS_Bdr_SSEre /
-!#     coeff_RHS_Bdr_SSEim /
+!# 6.) coeff_RHS_Bdr_SSEre   /
+!#     coeff_RHS_Bdr_SSEim   /
 !#     coeff_RHSb1_Bdr_SSEre /
 !#     coeff_RHSb1_Bdr_SSEim /
 !#     coeff_RHSb2_Bdr_SSEre /
@@ -50,8 +50,10 @@
 !# 7.) getBoundaryValues_Poisson /
 !#     getBoundaryValues_SSEre   /
 !#     getBoundaryValues_SSEim   /
-!#     getBoundaryValues_SSE2re  /
-!#     getBoundaryValues_SSE2im  
+!#     getBoundaryValues3_SSE2   /
+!#     getBoundaryValues4_SSE2   /
+!#     getBoundaryValues5_SSE2   /
+!#     getBoundaryValues6_SSE2
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#
@@ -175,8 +177,10 @@ module sse_callback
   public :: getBoundaryValues_Poisson
   public :: getBoundaryValues_SSEre
   public :: getBoundaryValues_SSEim
-  public :: getBoundaryValues_SSE2re
-  public :: getBoundaryValues_SSE2im
+  public :: getBoundaryValues3_SSE2
+  public :: getBoundaryValues4_SSE2
+  public :: getBoundaryValues5_SSE2
+  public :: getBoundaryValues6_SSE2
   public :: getReferenceFunction_Poisson
   public :: getReferenceFunction_SSEre
   public :: getReferenceFunction_SSEim
@@ -917,7 +921,7 @@ contains
         
         ! Compute real parts of the coefficients
         Dcoefficients(1,ipoint,iel) = 0.5_DP * real( cimg*(cCalpha1-cCalpha2)) ! C2
-        Dcoefficients(1,ipoint,iel) = 0.5_DP * real(       cCalpha1+cCalpha2 ) ! C4
+        Dcoefficients(2,ipoint,iel) = 0.5_DP * real(       cCalpha1+cCalpha2 ) ! C4
       end do
     end do
 
@@ -1043,12 +1047,12 @@ contains
         
         ! Compute imaginary parts of the coefficients
         Dcoefficients(1,ipoint,iel) = 0.5_DP * aimag( cimg*(cCalpha1-cCalpha2)) ! C2
-        Dcoefficients(1,ipoint,iel) = 0.5_DP * aimag(       cCalpha1+cCalpha2 ) ! C4
+        Dcoefficients(2,ipoint,iel) = 0.5_DP * aimag(       cCalpha1+cCalpha2 ) ! C4
       end do
     end do
 
   end subroutine
- 
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -2723,8 +2727,16 @@ contains
     ! Compute the normal vectors in the cubature points on the boundary
     call boundary_calcNormalVec2D(Dpoints, Dpoints,&
         Dnormal(:,:,1), Dnormal(:,:,2), 1)
-    
-    Dcoefficients (1,:,:) = dforcing * Dnormal(1,:,:)
+  
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+      
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+        
+        Dcoefficients (1,ipoint,iel) = dforcing * Dnormal(ipoint,iel,1)
+      end do
+    end do
     
     ! Deallocate temporal memory
     deallocate(Dnormal)
@@ -2936,7 +2948,15 @@ contains
     call boundary_calcNormalVec2D(Dpoints, Dpoints,&
         Dnormal(:,:,1), Dnormal(:,:,2), 1)
     
-    Dcoefficients (1,:,:) = dforcing * Dnormal(2,:,:)
+    ! Loop over all elements
+    do iel=1,size(Dcoefficients,3)
+      
+      ! Loop over all points per element
+      do ipoint=1,size(Dcoefficients,2)
+
+        Dcoefficients (1,ipoint,iel) = dforcing * Dnormal(ipoint,iel,2)
+      end do
+    end do
     
     ! Deallocate temporal memory
     deallocate(Dnormal)
@@ -3210,172 +3230,6 @@ contains
 
 !<subroutine>
 
-  subroutine getBoundaryValues_SSE2re(Icomponents,rdiscretisation,rboundaryRegion,&
-      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  
-!<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions. It calculates a special quantity on the boundary, which is
-  ! then used by the discretisation routines to generate a discrete
-  ! "snapshot" of the (actually analytic) boundary conditions.
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary:
-  !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
-  !   2=2nd solution component, e.g. Y-velocity,...)
-  integer, dimension(:), intent(in) :: Icomponents
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-  
-  ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(in) :: rboundaryRegion
-  
-  ! The element number on the boundary which is currently being processed
-  integer, intent(in) :: ielement
-  
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  integer, intent(in) :: cinfoNeeded
-  
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC :
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV :
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  integer, intent(in) :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC :
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV :
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
-  !   dwhere = 0 (not used)
-  real(DP), intent(in) :: dwhere
-    
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
-  type(t_collection), intent(inout), optional :: rcollection
-
-!</input>
-
-!<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1).
-  ! If multiple values are needed, they are collected here (e.g. for
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  real(DP), dimension(:), intent(out) :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    ! Return Dirichlet boundary values for all situations.
-    Dvalues(1) = dforcing
-  print *, Icomponents
-stop
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine getBoundaryValues_SSE2im(Icomponents,rdiscretisation,rboundaryRegion,&
-      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  
-!<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions. It calculates a special quantity on the boundary, which is
-  ! then used by the discretisation routines to generate a discrete
-  ! "snapshot" of the (actually analytic) boundary conditions.
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary:
-  !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
-  !   2=2nd solution component, e.g. Y-velocity,...)
-  integer, dimension(:), intent(in) :: Icomponents
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-  
-  ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(in) :: rboundaryRegion
-  
-  ! The element number on the boundary which is currently being processed
-  integer, intent(in) :: ielement
-  
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  integer, intent(in) :: cinfoNeeded
-  
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC :
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV :
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  integer, intent(in) :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC :
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV :
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
-  !   dwhere = 0 (not used)
-  real(DP), intent(in) :: dwhere
-    
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
-  type(t_collection), intent(inout), optional :: rcollection
-
-!</input>
-
-!<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1).
-  ! If multiple values are needed, they are collected here (e.g. for
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  real(DP), dimension(:), intent(out) :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    ! Return Dirichlet boundary values for all situations.
-    Dvalues(1) = dforcing
-  
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
   subroutine getBoundaryValues_SSEim(Icomponents,rdiscretisation,rboundaryRegion,&
       ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
@@ -3451,6 +3305,506 @@ stop
 
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBoundaryValues3_SSE2(Icomponents,rdiscretisation,rboundaryRegion,&
+      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions. It calculates a special quantity on the boundary, which is
+  ! then used by the discretisation routines to generate a discrete
+  ! "snapshot" of the (actually analytic) boundary conditions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary:
+  !   Icomponents(1) defines the number of the boundary component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
+  !   2=2nd solution component, e.g. Y-velocity,...)
+  integer, dimension(:), intent(in) :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Boundary region that is currently being processed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+  
+  ! The element number on the boundary which is currently being processed
+  integer, intent(in) :: ielement
+  
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in) :: cinfoNeeded
+  
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   iwhere = number of the edge where the value integral mean value
+  !            should be computed
+  integer, intent(in) :: iwhere
+
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   dwhere = 0 (not used)
+  real(DP), intent(in) :: dwhere
+    
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! Local variables
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2,cc1,cc2,cc3,cc4
+    real(DP) :: dAv,dh,ds,dx,dy,dnx,dny
+
+    ! Compute the coordinates of the point on the boundary
+    call boundary_getCoords(rdiscretisation%p_rboundary, 1, dwhere, dx, dy)
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+
+    ! Compute coefficients calpha1 and calpha2
+    calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+    calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+    
+    ! Compute coefficient cCalpha1
+    cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+        (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                           ds*sinh(-calpha1*dh)-&
+                calpha1*dh*ds*cosh( calpha1*dh))/&
+        (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+    
+    ! Compute coefficient cCalpha2
+    cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+        (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                           ds*sinh(-calpha2*dh)-&
+                calpha2*dh*ds*cosh( calpha2*dh))/&
+        (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+    
+    ! Compute the coefficients
+    cc1 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C1
+    cc2 = 0.5_DP * ( cimg*(cCalpha1-cCalpha2)) ! C2
+    cc3 = 0.5_DP * (-cimg*(cCalpha1-cCalpha2)) ! C3
+    cc4 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C4
+    
+    ! Compute the normal vector in the point on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+    ! Return real part of boundary condition for x-component
+    Dvalues(1) = 0.0_DP!real(cc2*dnx+cc4*dny)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBoundaryValues4_SSE2(Icomponents,rdiscretisation,rboundaryRegion,&
+      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions. It calculates a special quantity on the boundary, which is
+  ! then used by the discretisation routines to generate a discrete
+  ! "snapshot" of the (actually analytic) boundary conditions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary:
+  !   Icomponents(1) defines the number of the boundary component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
+  !   2=2nd solution component, e.g. Y-velocity,...)
+  integer, dimension(:), intent(in) :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Boundary region that is currently being processed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+  
+  ! The element number on the boundary which is currently being processed
+  integer, intent(in) :: ielement
+  
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in) :: cinfoNeeded
+  
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   iwhere = number of the edge where the value integral mean value
+  !            should be computed
+  integer, intent(in) :: iwhere
+
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   dwhere = 0 (not used)
+  real(DP), intent(in) :: dwhere
+    
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! Local variables
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2,cc1,cc2,cc3,cc4
+    real(DP) :: dAv,dh,ds,dx,dy,dnx,dny
+
+    ! Compute the coordinates of the point on the boundary
+    call boundary_getCoords(rdiscretisation%p_rboundary, 1, dwhere, dx, dy)
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+
+    ! Compute coefficients calpha1 and calpha2
+    calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+    calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+    
+    ! Compute coefficient cCalpha1
+    cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+        (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                           ds*sinh(-calpha1*dh)-&
+                calpha1*dh*ds*cosh( calpha1*dh))/&
+        (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+    
+    ! Compute coefficient cCalpha2
+    cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+        (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                           ds*sinh(-calpha2*dh)-&
+                calpha2*dh*ds*cosh( calpha2*dh))/&
+        (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+    
+    ! Compute the coefficients
+    cc1 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C1
+    cc2 = 0.5_DP * ( cimg*(cCalpha1-cCalpha2)) ! C2
+    cc3 = 0.5_DP * (-cimg*(cCalpha1-cCalpha2)) ! C3
+    cc4 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C4
+    
+    ! Compute the normal vector in the point on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+    ! Return real part of boundary condition for x-component
+    Dvalues(1) = 0.0_DP!aimag(cc2*dnx+cc4*dny)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBoundaryValues5_SSE2(Icomponents,rdiscretisation,rboundaryRegion,&
+      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions. It calculates a special quantity on the boundary, which is
+  ! then used by the discretisation routines to generate a discrete
+  ! "snapshot" of the (actually analytic) boundary conditions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary:
+  !   Icomponents(1) defines the number of the boundary component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
+  !   2=2nd solution component, e.g. Y-velocity,...)
+  integer, dimension(:), intent(in) :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Boundary region that is currently being processed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+  
+  ! The element number on the boundary which is currently being processed
+  integer, intent(in) :: ielement
+  
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in) :: cinfoNeeded
+  
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   iwhere = number of the edge where the value integral mean value
+  !            should be computed
+  integer, intent(in) :: iwhere
+
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   dwhere = 0 (not used)
+  real(DP), intent(in) :: dwhere
+    
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! Local variables
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2,cc1,cc2,cc3,cc4
+    real(DP) :: dAv,dh,ds,dx,dy,dnx,dny
+
+    ! Compute the coordinates of the point on the boundary
+    call boundary_getCoords(rdiscretisation%p_rboundary, 1, dwhere, dx, dy)
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+
+    ! Compute coefficients calpha1 and calpha2
+    calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+    calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+    
+    ! Compute coefficient cCalpha1
+    cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+        (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                           ds*sinh(-calpha1*dh)-&
+                calpha1*dh*ds*cosh( calpha1*dh))/&
+        (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+    
+    ! Compute coefficient cCalpha2
+    cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+        (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                           ds*sinh(-calpha2*dh)-&
+                calpha2*dh*ds*cosh( calpha2*dh))/&
+        (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+    
+    ! Compute the coefficients
+    cc1 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C1
+    cc2 = 0.5_DP * ( cimg*(cCalpha1-cCalpha2)) ! C2
+    cc3 = 0.5_DP * (-cimg*(cCalpha1-cCalpha2)) ! C3
+    cc4 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C4
+    
+    ! Compute the normal vector in the point on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+    ! Return real part of boundary condition for x-component
+    Dvalues(1) = 0.0_DP!real(-cc1*dnx-cc3*dny)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBoundaryValues6_SSE2(Icomponents,rdiscretisation,rboundaryRegion,&
+      ielement,cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions. It calculates a special quantity on the boundary, which is
+  ! then used by the discretisation routines to generate a discrete
+  ! "snapshot" of the (actually analytic) boundary conditions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary:
+  !   Icomponents(1) defines the number of the boundary component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
+  !   2=2nd solution component, e.g. Y-velocity,...)
+  integer, dimension(:), intent(in) :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Boundary region that is currently being processed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+  
+  ! The element number on the boundary which is currently being processed
+  integer, intent(in) :: ielement
+  
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in) :: cinfoNeeded
+  
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   iwhere = number of the point in the triangulation or
+  !          = 0, if only the parameter value of the point is known; this
+  !               can be found in dwhere,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   iwhere = number of the edge where the value integral mean value
+  !            should be computed
+  integer, intent(in) :: iwhere
+
+  ! A reference to a geometric object where information should be computed.
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
+  !   dwhere = parameter value of the point where the value should be computed,
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
+  !   dwhere = 0 (not used)
+  real(DP), intent(in) :: dwhere
+    
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! Local variables
+    complex(DP) :: cCalpha1,cCalpha2,calpha1,calpha2,cc1,cc2,cc3,cc4
+    real(DP) :: dAv,dh,ds,dx,dy,dnx,dny
+
+    ! Compute the coordinates of the point on the boundary
+    call boundary_getCoords(rdiscretisation%p_rboundary, 1, dwhere, dx, dy)
+
+    ! Compute bottom profile
+    dh = sse_bottomProfile(dx,dy)
+    
+    ! Compute bottom stress
+    ds = sse_bottomStress(dx,dy)
+    
+    ! Compute vertical eddy viscosity
+    dAv = sse_eddyViscosity(dx,dy)
+
+    ! Compute coefficients calpha1 and calpha2
+    calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+    calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+    
+    ! Compute coefficient cCalpha1
+    cCalpha1 = dgravaccel/(dAv*(calpha1**3))*&
+        (-(calpha1**2)*dAv*dh*sinh( calpha1*dh)-&
+                           ds*sinh(-calpha1*dh)-&
+                calpha1*dh*ds*cosh( calpha1*dh))/&
+        (calpha1*dAv*sinh(calpha1*dh)+ds*cosh(calpha1*dh))
+    
+    ! Compute coefficient cCalpha2
+    cCalpha2 = dgravaccel/(dAv*(calpha2**3))*&
+        (-(calpha2**2)*dAv*dh*sinh( calpha2*dh)-&
+                           ds*sinh(-calpha2*dh)-&
+                calpha2*dh*ds*cosh( calpha2*dh))/&
+        (calpha2*dAv*sinh(calpha2*dh)+ds*cosh(calpha2*dh))
+    
+    ! Compute the coefficients
+    cc1 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C1
+    cc2 = 0.5_DP * ( cimg*(cCalpha1-cCalpha2)) ! C2
+    cc3 = 0.5_DP * (-cimg*(cCalpha1-cCalpha2)) ! C3
+    cc4 = 0.5_DP * (       cCalpha1+cCalpha2 ) ! C4
+    
+    ! Compute the normal vector in the point on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+    ! Return real part of boundary condition for x-component
+    Dvalues(1) = 0.0_DP!aimag(-cc1*dnx-cc3*dny)
   
   end subroutine
 

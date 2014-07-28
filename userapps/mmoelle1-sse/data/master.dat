@@ -14,14 +14,6 @@ ILMIN = 6
 # Sort strategy
 SORTSTRATEGY =
 
-# Problem type
-# =0: Standard Poisson problem
-# =1: Standard Poisson problem as first-order system
-# =2: SSE as scalar anisotropic diffusion problem
-# =3: SSE as first-order system (\sigma = A\nabla N)
-# =4: SSE as first-order system (\sigma = \nabla N)
-PROBLEMTYPE = 1
-
 # Method for calculating the gradient of the solution
 # =0: Standard interpolation
 # =1: super-convergent patch recovery (ZZ-technique)
@@ -33,9 +25,19 @@ GRADTYPE = 1
 # =2: face-wise patch-recovery
 GRADSUBTYPE = 0
 
+# Problem type
+# =0: Standard Poisson problem
+# =1: Standard Poisson problem as first-order system
+# =2: SSE as scalar anisotropic diffusion problem
+# =3: SSE as first-order system (\sigma = A\nabla N)
+# =4: SSE as first-order system (\sigma = \nabla N)
+PROBLEMTYPE = 1
+
 # Name of configuration
-CONFIG = TRIA_P2P1_POISSON_SYSTEM
 #CONFIG = QUAD_Q1_POISSON_SCALAR
+CONFIG = QUAD_Q2Q1_POISSON_SYSTEM
+#CONFIG = QUAD_Q1_SSE_SCALAR
+#CONFIG = QUAD_Q2Q1_SSE_SYSTEM
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug

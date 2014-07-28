@@ -489,7 +489,7 @@ contains
 
   ! local variables
   character(len=SYS_STRLEN) :: ssortstrategy
-  integer :: i,ibdrSegment
+  integer :: i,iboundarySeg
 
   ! A boundary segment
   type(t_boundaryRegion) :: rboundaryRegion
@@ -544,14 +544,6 @@ contains
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
           rcollection=rproblem%rcollection)
-
-      ! For debugging purposes only
-      !rform%ballCoeffConstant = .false.
-      !
-      !call bilf_buildMatrixScalar(rform,.true.,&
-      !    rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
-      !    rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-      !    coeff_Matrix_Poisson,rproblem%rcollection)
     end do
 
     ! Next step: Create a RHS vector and a solution vector and a temporary
@@ -1059,11 +1051,18 @@ contains
       ! The contribution of the mass matrix evaluated along the
       ! Neumann boundary needs to be included in the bilinear form.
 
-      do ibdrSegment = 1,3
+      do iboundarySeg = 1,3
         
         ! Create boundary region
-        call boundary_createRegion(rproblem%rboundary,1,ibdrSegment,rboundaryRegion)
-        rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+        call boundary_createRegion(rproblem%rboundary,1,iboundarySeg,rboundaryRegion)
+        select case(iboundarySeg)
+        case(1)
+          rboundaryRegion%iproperties = BDR_PROP_WITHEND
+        case(2)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+        case(3)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+        end select
 
         ! (3,1)-block boundary term: (q_x,Re(N)*n_x)
         ! (4,2)-block boundary term: (q_x,Im(N)*n_x) shares all data
@@ -1209,7 +1208,7 @@ contains
     
     ! Create boundary region
     call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
-    rboundaryRegion%iproperties = 0_I32
+    rboundaryRegion%iproperties = 0_I32!BDR_PROP_WITHSTART+BDR_PROP_WITHEND
 
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
@@ -1227,10 +1226,10 @@ contains
     
 #elif defined(CASE_MARCHI)
     
-    do ibdrSegment = 1,4
+    do iboundarySeg = 1,4
 
       ! Create boundary region
-      call boundary_createRegion(rproblem%rboundary,1,ibdrSegment,rboundaryRegion)
+      call boundary_createRegion(rproblem%rboundary,1,iboundarySeg,rboundaryRegion)
       
       ! Initialise the linear form along the boundary
       rlinform%itermCount = 1
@@ -1406,7 +1405,7 @@ contains
 
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
-
+      
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
 
         do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
@@ -1516,11 +1515,11 @@ contains
 #endif
 
     case (POISSON_SYSTEM)
-      ! No essential boundary conditions
+      ! There are no essential boundary conditions to impose
 
     case (SSE_SYSTEM1)
 
-      print *, "Not implemented yet"
+      print *, "Not implxsemented yet"
       stop
 
     case (SSE_SYSTEM2)
@@ -1532,20 +1531,44 @@ contains
       ! a boundary segment.  A boundary region roughly contains
       ! the type, the min/max parameter value and whether the
       ! endpoints are inside the region or not.
-      call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
-      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
 
-      ! Real part of the solution
-      call bcasm_newDirichletBConRealBD(&
-          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
-          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_SSE2re,rproblem%rcollection)
+      do iboundSeg = 1,3
+        
+        call boundary_createRegion(rproblem%rboundary,1,iboundSeg,rboundaryRegion)
 
-      ! Imaginary part
-      call bcasm_newDirichletBConRealBD(&
-          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
-          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_SSE2im,rproblem%rcollection)
+        select case(iboundSeg)
+        case(1)
+          rboundaryRegion%iproperties = BDR_PROP_WITHEND
+        case(2)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+        case(3)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+        end select
+        
+        ! Real part of the solution $Re(\tau_x)$
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,3,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues3_SSE2,rproblem%rcollection)
+        
+        ! Imaginary part of the solution $Im(\tau_x)$
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,4,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues4_SSE2,rproblem%rcollection)
+
+        ! Real part of the solution $Re(\tau_y)$
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,5,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues5_SSE2,rproblem%rcollection)
+        
+        ! Imaginary part of the solution $Im(\tau_y)$
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,6,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues6_SSE2,rproblem%rcollection)
+      end do
 
 #elif defined(CASE_MARCHI)
 
@@ -2732,9 +2755,9 @@ stop
 
     case (SSE_SYSTEM1,SSE_SYSTEM2)
       ! Set pointer to scalar solution components
-      p_rvectorDerivX_SSEre  => rproblem%rvector%RvectorBlock(3)
+      p_rvectorDerivX_SSEre => rproblem%rvector%RvectorBlock(3)
       p_rvectorDerivX_SSEim => rproblem%rvector%RvectorBlock(4)
-      p_rvectorDerivY_SSEre  => rproblem%rvector%RvectorBlock(5)
+      p_rvectorDerivY_SSEre => rproblem%rvector%RvectorBlock(5)
       p_rvectorDerivY_SSEim => rproblem%rvector%RvectorBlock(6)
     end select
 
