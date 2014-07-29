@@ -20,6 +20,11 @@ module sse_base
   public :: sse_bottomStress
   public :: sse_eddyViscosity
 
+#ifdef UE_COMPILER_INTEL
+  public :: sinh
+  public :: cosh
+#endif
+
 !<constants>
 
 !<constantblock description="Constants for problem type">
@@ -413,4 +418,50 @@ contains
 
   end function sse_eddyViscosity
 
+  ! ***************************************************************************
+#ifdef USE_COMPILER_INTEL
+!<function>
+
+  elemental function sinh(cx) result(cy)
+
+!<description>
+    ! Complex valued hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: cx
+!</input>
+
+!<result>
+    complex(DP) :: cy
+!</result>
+!</function>
+
+    sinh = -cmplx(0.0_DP,1.0_DP) * sin(cmplx(0.0_DP,1.0_DP)*cx) 
+
+  end function
+#endif
+  ! ***************************************************************************
+#ifdef USE_COMPILER_INTEL
+!<function>
+
+  elemental function cosh(cx) result(cy)
+
+!<description>
+    ! Complex valued hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: cx
+!</input>
+
+!<result>
+    complex(DP) :: cy
+!</result>
+!</function>
+
+    sinh = cos(cmplx(0.0_DP,1.0_DP)*cx) 
+
+  end function
+#endif
 end module sse_base
