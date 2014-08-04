@@ -44,17 +44,20 @@
 !#
 !# 6.) coeff_AnalyticSolution_X
 !#     -> Returns analytical values for the desired flow field in X-direction.
-!#     -> Is used for setting up the initial solution.
+!#     -> Is one of two possibilities to set up the initial solution (the other one being
+!#        cc_AnalyticSolution2_X).
 !#     -> In the basic implementation, this calls ffunction_TargetX.
 !#
 !# 7.) coeff_AnalyticSolution_Y
 !#     -> Returns analytical values for the desired flow field in Y-direction.
-!#     -> Is used for setting up the initial solution.
+!#     -> Is one of two possibilities to set up the initial solution (the other one being
+!#        cc_AnalyticSolution2_Y).
 !#     -> In the basic implementation, this calls ffunction_TargetY.
 !#
 !# 8.) coeff_AnalyticSolution_P
 !#     -> Returns analytical values for the desired pressure.
-!#     -> Is used for setting up the initial solution.
+!#     -> Is one of two possibilities to set up the initial solution (the other one being
+!#        cc_AnalyticSolution2_P).
 !#     -> In the basic implementation, this calls ffunction_TargetP.
 !#
 !# 9.) ffunction_TargetX

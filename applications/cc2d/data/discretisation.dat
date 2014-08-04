@@ -22,6 +22,10 @@
 #     the callback functions coeff_AnalyticSolution_X, 
 #     coeff_AnalyticSolution_Y and coeff_AnalyticSolution_P
 #     in cccallback.f90.
+# =4: Analytical initial solution as given in
+#     CC-POSTPROCESSING.srefL2ExpressionU1,
+#     CC-POSTPROCESSING.srefL2ExpressionU2,
+#     CC-POSTPROCESSING.srefL2ExpressionP.
 
 ctypeInitialSolution = 0
 

@@ -18,33 +18,51 @@
 !# 2.) cc_allocMatVec / cc_generateBasicMat / cc_doneMatVec
 !#     -> Allocates/ Generates / Releases memory for vectors/matrices on all levels.
 !#
-!# 4.) cc_allocTemplateMatrices / cc_generateTemplateMatrices /
+!# 3.) cc_allocTemplateMatrices / cc_generateTemplateMatrices /
 !#     cc_releaseTemplateMatrices
 !#     -> Allocates/Assembles/Releases matrix entries of template matrices
 !#        (Stokes, B) on one level
 !#
-!# 5.) cc_generateBasicMat
+!# 4.) cc_generateBasicMat
 !#     -> Assembles the matrix entries of all template matrices on all levels.
 !#
-!# 6.) cc_generateBasicRHS
+!# 5.) cc_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
 !#        implemented
 !#
-!# 7.) cc_doneDiscretisation
+!# 6.) cc_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
-!# 8.) cc_initInitialSolution
+!# 7.) cc_initInitialSolution
 !#     -> Init solution vector according to parameters in the DAT file
 !#
-!# 9.) cc_writeSolution
+!# 8.) cc_writeSolution
 !#     -> Write solution vector as configured in the DAT file.
 !#
-!# 10.) cc_initDynamicLevelInfo
-!#      -> Initialises the dynamic level information structure of one level
-!#         with basic information
+!# 9.) cc_initDynamicLevelInfo
+!#     -> Initialises the dynamic level information structure of one level
+!#        with basic information
 !#
-!# 11.) cc_doneDynamicLevelInfo
+!# 10.) cc_doneDynamicLevelInfo
 !#      -> Releases the dynamic level information structure of one level
+!#
+!# 11.) cc_AnalyticSolution2_X
+!#      -> Returns analytical values for the desired flow field in X-direction.
+!#      -> Is the second of two possibilities to set up the initial solution.
+!#      -> In the basic implementation, this parses the function definition given in
+!#         configuration file keyword "srefL2ExpressionU1".
+!#
+!# 12.) cc_AnalyticSolution2_Y
+!#      -> Returns analytical values for the desired flow field in Y-direction.
+!#      -> Is the second of two possibilities to set up the initial solution.
+!#      -> In the basic implementation, this parses the function definition given in
+!#         configuration file keyword "srefL2ExpressionU2".
+!#
+!# 13.) cc_AnalyticSolution2_P
+!#      -> Returns analytical values for the desired pressure.
+!#      -> Is the second of two possibilities to set up the initial solution.
+!#      -> In the basic implementation, this parses the function definition given in
+!#         configuration file keyword "srefL2ExpressionP".
 !#
 !# Auxiliary routines
 !#
@@ -91,6 +109,10 @@ module ccgeneraldiscretisation
   use ccnonlinearcoreinit
 
   implicit none
+
+  private :: cc_AnalyticSolution2_X
+  private :: cc_AnalyticSolution2_Y
+  private :: cc_AnalyticSolution2_P
 
 contains
 
@@ -1888,6 +1910,8 @@ contains
     type(t_vectorBlock) :: rsingleRHS,rsingleSol
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo) :: rcubatureInfo
+    type(t_fparser), target :: rrefFunction
+    character(len=PARLST_LENLINEBUF) :: sexpression
 
     ! Get the parameter what to do with rvector
     call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
@@ -2039,7 +2063,7 @@ contains
       ! Release the temp vector
       call lsysbl_releaseVector (rvector1)
 
-    case (3)
+    case (3,4)
 
       ! We have to create the solution by analytical callback functions.
       ! To do this for an arbitrary finite element, we have to do an
@@ -2076,23 +2100,66 @@ contains
       call spdiscr_createDefCubStructure (p_rdiscretisation%RspatialDiscr(1),&
           rcubatureInfo,rproblem%rrhsAssembly%icubF)
 
-      ! Discretise the X-velocity part:
-      call linf_buildVectorScalar (&
-                p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-                rvector1%RvectorBlock(1),coeff_AnalyticSolution_X,&
-                rproblem%rcollection)
+      if (ctypeInitialSolution .eq. 3) then
 
-      ! Y-velocity:
-      call linf_buildVectorScalar (&
-                p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
-                rvector1%RvectorBlock(2),coeff_AnalyticSolution_Y,&
-                rproblem%rcollection)
+        ! Discretise the X-velocity part:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
+             rvector1%RvectorBlock(1),coeff_AnalyticSolution_X,&
+             rproblem%rcollection)
 
-      ! Pressure:
-      call linf_buildVectorScalar (&
-                p_rdiscretisation%RspatialDiscr(3),rlinform,.true.,&
-                rvector1%RvectorBlock(3),coeff_AnalyticSolution_P,&
-                rproblem%rcollection)
+        ! Y-velocity:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
+             rvector1%RvectorBlock(2),coeff_AnalyticSolution_Y,&
+             rproblem%rcollection)
+
+        ! Pressure:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(3),rlinform,.true.,&
+             rvector1%RvectorBlock(3),coeff_AnalyticSolution_P,&
+             rproblem%rcollection)
+
+      else ! ctypeInitialSolution = 4
+
+        ! Initialise a parser for the expressions.
+        call fparser_create (rrefFunction,NDIM2D+1)
+
+        ! Read parameters
+        call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+             "srefL2ExpressionU1",sexpression,"0",bdequote=.true.)
+        call fparser_parseFunction (rrefFunction, 1, sexpression, EXPRVARIABLES)
+
+        call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+             "srefL2ExpressionU2",sexpression,"0",bdequote=.true.)
+        call fparser_parseFunction (rrefFunction, 2, sexpression, EXPRVARIABLES)
+
+        call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+             "srefL2ExpressionP",sexpression,"0",bdequote=.true.)
+        call fparser_parseFunction (rrefFunction, 3, sexpression, EXPRVARIABLES)
+
+        rproblem%rcollection%p_rfparserQuickAccess1 => rrefFunction
+
+        ! Discretise the X-velocity part:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
+             rvector1%RvectorBlock(1),cc_AnalyticSolution2_X,&
+             rproblem%rcollection)
+
+        ! Y-velocity:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
+             rvector1%RvectorBlock(2),cc_AnalyticSolution2_Y,&
+             rproblem%rcollection)
+
+        ! Pressure:
+        call linf_buildVectorScalar (&
+             p_rdiscretisation%RspatialDiscr(3),rlinform,.true.,&
+             rvector1%RvectorBlock(3),cc_AnalyticSolution2_P,&
+             rproblem%rcollection)
+
+        call fparser_release (rrefFunction)
+      end if
 
       call spdiscr_releaseCubStructure (rcubatureInfo)
 
@@ -2324,6 +2391,297 @@ contains
 
     ! Release temp memory.
     call lsysbl_releaseVector (rvector1)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_AnalyticSolution2_X (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=4.
+    ! It returns analytical values for the X-velocity in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)      :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in)         :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)         :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+
+  !</input>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)     :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    integer :: ielement, ipoint
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
+
+
+    ! Fill the evaluation structure
+    Rval(:) = 0.0_DP
+    Rval(7:11) = rcollection%DquickAccess(1:5)
+
+    do ielement = 1,nelements
+      do ipoint = 1,npointsPerElement
+
+        ! Get the point coordinates.
+        Rval(1) = Dpoints(1,ipoint,ielement)
+        Rval(2) = Dpoints(2,ipoint,ielement)
+
+        ! Evaluate
+        call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+             1, Rval, Dcoefficients(1,ipoint,ielement))
+
+      end do
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_AnalyticSolution2_Y (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=4.
+    ! It returns analytical values for the Y-velocity in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)      :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in)         :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)         :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+
+  !</input>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)     :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    integer :: ielement, ipoint
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
+
+
+    ! Fill the evaluation structure
+    Rval(:) = 0.0_DP
+    Rval(7:11) = rcollection%DquickAccess(1:5)
+
+    do ielement = 1,nelements
+      do ipoint = 1,npointsPerElement
+
+        ! Get the point coordinates.
+        Rval(1) = Dpoints(1,ipoint,ielement)
+        Rval(2) = Dpoints(2,ipoint,ielement)
+
+        ! Evaluate
+        call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+             2, Rval, Dcoefficients(1,ipoint,ielement))
+
+      end do
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_AnalyticSolution2_P (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+  !<description>
+    ! This routine is called upon program start if ctypeInitialSolution=4.
+    ! It returns analytical values for the pressure in the
+    ! initial solution vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)      :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in)         :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)         :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+
+  !</input>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)     :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    integer :: ielement, ipoint
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
+
+
+    ! Fill the evaluation structure
+    Rval(:) = 0.0_DP
+    Rval(7:11) = rcollection%DquickAccess(1:5)
+
+    do ielement = 1,nelements
+      do ipoint = 1,npointsPerElement
+
+        ! Get the point coordinates.
+        Rval(1) = Dpoints(1,ipoint,ielement)
+        Rval(2) = Dpoints(2,ipoint,ielement)
+
+        ! Evaluate
+        call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+             3, Rval, Dcoefficients(1,ipoint,ielement))
+
+      end do
+    end do
 
   end subroutine
 
