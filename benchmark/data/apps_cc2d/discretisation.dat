@@ -11,15 +11,15 @@
 
 # Type of the initial solution.
 # =0: Use zero solution.
-# =1: Read from file. isolutionStart specifies the level of the initial 
+# =1: Read from file. isolutionStart specifies the level of the initial
 #     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as formatted text file.
-# =2: Read from file. isolutionStart specifies the level of the initial 
+# =2: Read from file. isolutionStart specifies the level of the initial
 #     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as unformatted binary file.
 #     (smaller, but processor dependent and not human readable!)
 # =3: Analytical initial solution. Create the solution by calling
-#     the callback functions coeff_AnalyticSolution_X, 
+#     the callback functions coeff_AnalyticSolution_X,
 #     coeff_AnalyticSolution_Y and coeff_AnalyticSolution_P
 #     in cccallback.f90.
 # =4: Analytical initial solution as given in
@@ -31,11 +31,11 @@ ctypeInitialSolution = 0
 
 # If ctypeInitialSolution=1: Level of the initial solution in the file
 # to be read.
-# =1,2,3,...: File sinitialSolutionFilename specifies a solution on 
+# =1,2,3,...: File sinitialSolutionFilename specifies a solution on
 #             level iinitialSolutionLevel.
 #             iinitialSolutionlevel must be in the range
 #             nlmin <= iinitialSolutionlevel <= nlmax
-# =0,-1,-2,...: File sinitialSolutionFilename specifies a solution on 
+# =0,-1,-2,...: File sinitialSolutionFilename specifies a solution on
 #               level (NLMAX+iinitialSolutionLevel).
 
 iinitialSolutionlevel = 0
@@ -47,7 +47,7 @@ sinitialSolutionFilename = ''
 # Element type to use for the initial solution.
 # =-1: The initial solution is given in the same FEM space as specified
 #      by ielementType below
-# >=0: The initial solution is given in the FEM space 
+# >=0: The initial solution is given in the FEM space
 #      ielementTypeInitialSolution. All FEM spaces that are possible
 #      for ielementType are available here.
 
@@ -59,16 +59,16 @@ ielementTypeInitialSolution = -1
 #
 # =0: don't write
 # =1: write on level specified by iwriteSolutionLevel, use formatted output.
-#     For a nonstationary simulation: Write out the solution after the last 
+#     For a nonstationary simulation: Write out the solution after the last
 #     timestep.
 # =2: write on level specified by iwriteSolutionLevel, use unformatted output.
-#     For a nonstationary simulation: Write out the solution after the last 
+#     For a nonstationary simulation: Write out the solution after the last
 #     timestep.
 # =3: write on level specified by iwriteSolutionLevel, use formatted output.
-#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps 
+#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps
 #     timesteps or every dwriteSolDeltaTime interval of simulation time.
 # =4: write on level specified by iwriteSolutionLevel, use unformatted output.
-#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps 
+#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps
 #     timesteps or every dwriteSolDeltaTime interval of simulation time.
 #
 # To write out raw solution data during a nonstationary simulation,
@@ -98,18 +98,18 @@ swriteSolutionFilename = ''
 # Timestep counter for writing out solutions if cwriteFinalSolution=3/4.
 # The solution will be written out every iwriteSolDeltaSteps timesteps.
 # =1: write out every timestep.
-# This switch works cumulative to iwriteSolDeltaSteps, so the solution is
-# written out if either the condition given by iwriteSolDeltaSteps or 
+# This switch works cumulative to iwriteSolDeltaTime, so the solution is
+# written out if either the condition given by iwriteSolDeltaSteps or
 # dwriteSolDeltaTime is reached.
 
 iwriteSolDeltaSteps = 1
 
 # Timestep interval for writing out solutions if cwriteFinalSolution=3/4.
 # The solution will be written out after each time interval of length
-# dwriteSolDeltaTime. 
+# dwriteSolDeltaTime.
 # =0.0: write out every timestep.
 # This switch works cumulative to iwriteSolDeltaSteps, so the solution is
-# written out if either the condition given by iwriteSolDeltaSteps or 
+# written out if either the condition given by iwriteSolDeltaSteps or
 # dwriteSolDeltaTime is reached.
 
 dwriteSolDeltaTime = 0.0
@@ -140,9 +140,9 @@ isubEquation = 0
 # =0: Constant viscosity NU = 1/RE (standard)
 # =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
 # =2: Bingham fluid: nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
-# =3: General viscoplastic fluid: nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1), 
+# =3: General viscoplastic fluid: nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1),
 #     nu_0 = 1/RE, z = ||D(u)||^2 + dviscoEps^2
-# >3: User defined viscosity defined in the callback function 
+# >3: User defined viscosity defined in the callback function
 #     cccallback.f90: getNonconstantViscosity
 
 cviscoModel = 0
@@ -164,10 +164,10 @@ dviscoyield = 1.0
 RE = 1000
 
 # Type of bdry. conditions.
-# 0=DIRICHLET stationary, 
-# 1=Pressure drop nonstationary, 
+# 0=DIRICHLET stationary,
+# 1=Pressure drop nonstationary,
 # 2=NEUMANN part. nonstationary (standard)
-# Must be >= 1 for moving fictitious boundary components and/or 
+# Must be >= 1 for moving fictitious boundary components and/or
 # nonstationary boundary conditions.
 
 iBoundary = 2
@@ -186,23 +186,47 @@ imovingFrame = 0
 
 # ------------------------------------------------------------------------
 
-# Type of right hand side. 
+# Type of right hand side.
 # 0=zero
-# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
+# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y
 #   before the simulation
-# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
+# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y
 #   in every timestep of the simulation
 # 3=Stationary RHS prescribed by a file.
 # 4=Nonstationary RHS prescribed by a sequence of files.
 #   The files are linearly interpolated in time if necessary.
-#   The parameters srhsfilename, drhsXXXX and irhsXXXX below
+#   The parameters sfilenameRHS, drhsXXXX and irhsXXXX below
 #   define the file sequence.
+# 5=Nonstationary RHS prescribed by the expressions below.
 
 iRHS = 2
 
+# For iRHS=5: Expressions that define the RHS.
+# The following variables are valid in the expression:
+#
+#    X      = x-coordinate
+#    Y      = y-coordinate
+#    TIME   = current time
+#    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
+#    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
+#    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
+#    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
+#
+# The following constants are defined:
+#
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+#
+# X-velocity, Y-velocity and pressure.
+
+srhsExpressionX = "0.0"
+srhsExpressionY = "0.0"
+srhsExpressionP = "0.0"
+
 # For irhs=4: Basic filename of the file sequence defining the right hand
 # side. An index ".00000", ".00001",... is appended to this filename.
-# The files are uniformly distributed in the time interval 
+# The files are uniformly distributed in the time interval
 # [drhsTimeInit..drhsTimeMax] and interpolated in time if necessary.
 
 sfilenameRHS = ""
@@ -231,15 +255,20 @@ drhsTimeInit = %{TIME-DISCRETISATION.dtimeInit}
 
 drhsTimeMax = %{TIME-DISCRETISATION.dtimeMax}
 
-# Multiplier for the RHS, X-component. If a RHS was read from a file sequence, 
+# Multiplier for the RHS, X-component. If a RHS was read from a file sequence,
 # it is multiplied by this value before being used.
 
 drhsMultiplyX = 1.0
 
-# Multiplier for the RHS, Y-component. If a RHS was read from a file sequence, 
+# Multiplier for the RHS, Y-component. If a RHS was read from a file sequence,
 # it is multiplied by this value before being used.
 
 drhsMultiplyY = 1.0
+
+# Multiplier for the RHS, P/divergence-component. If a RHS was read from a file sequence,
+# it is multiplied by this value before being used.
+
+drhsMultiplyP = 1.0
 
 # ------------------------------------------------------------------------
 
@@ -251,14 +280,20 @@ drhsMultiplyY = 1.0
 #  4 = Q2 (E013) / Q2 (E013) / QP1
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 #  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-#  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+#  7 = Q1~(EN30) / Q1~(EN30) / Q0 (nonparametric, new interface implementation of 3)
 #  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
 # 13 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric, solves local system; slower than 12 but more stable)
+# 14 = Q1~(EB30) / Q1~(EB30) / QP1 (parametric, experimental)
+# 15 = Q1~(EB30) / Q1~(EB30) / QP1 (nonparametric, experimental)
+# 16 = Q2        / Q2        / P1dc (nonparametric pressure)
+# 17 = Q3        / Q3        / P2dc (nonparametric pressure
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
-# 30 = P1~(E020) / P1~(E020) / P0 
+# 30 = P1~(E020) / P1~(E020) / P0
+# 50 = Q2~(EN50) / Q2~(EN50) / QP1 (nonparametric velocity + pressure)
+# 51 = Q3~(EN51) / Q3~(EN51) / QP2 (nonparametric velocity + pressure)
 
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
@@ -269,7 +304,7 @@ ielementType = 3
 
 # ------------------------------------------------------------------------
 
-# Type of stabilization of the convective term. 
+# Type of stabilization of the convective term.
 # 0=Streamline Diffusion (Q1~, Q2)
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
@@ -328,30 +363,30 @@ iMassLumpType      = 0
 
 istrongDerivativeBmatrix = 0
 
-# cubature formula for Mass matrix. 
+# cubature formula for Mass matrix. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubMass           = 
+scubMass           =
 
-# cubature formula for Stokes/Laplacian matrix.
+# cubature formula for Stokes/Laplacian matrix. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubStokes         = 
+scubStokes         =
 
-# cubature formula for Pressure matrices B.
+# cubature formula for Pressure matrices B. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubB              = 
+scubB              =
 
-# cubature formula for RHS F.
+# cubature formula for RHS F. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubF              = 
+scubF              =
 
 # cubature formula for the EOJ stabilisation (1D along edges).
 # ="": use default cubature formula.
 
-scubEOJ            = 
+scubEOJ            =
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
@@ -360,16 +395,16 @@ scubEOJ            =
 # Works only with Q1~ discretisation.
 
 # Configure adaptive matrix generation.
-# 0=no adaptive matrix gen.=standard; 
-# 1=switch to constant mat. gen., depending on dAdMatThreshold; 
+# 0=no adaptive matrix gen.=standard;
+# 1=switch to constant mat. gen., depending on dAdMatThreshold;
 # 2=switch mat. gen. depenting on size of ncurrent and neighbour element
 
 iAdaptiveMatrix    = 0
 
-# Treshold parameter: 
-# switch construction of coarse grid matrices from standard finite element 
-# approach to locally constant interpolation for all rows belonging to elements 
-# with aspect ratio >= dAdMatThreshold; 
+# Treshold parameter:
+# switch construction of coarse grid matrices from standard finite element
+# approach to locally constant interpolation for all rows belonging to elements
+# with aspect ratio >= dAdMatThreshold;
 # 0D0=all elements; 20D0=standard; -1D0=infinity=no matrix modifications
 
 dAdMatThreshold    = 20.0
@@ -401,7 +436,7 @@ iinterpolationOrderVel   = -1
 
 iinterpolationOrderPress = -1
 
-# Prolongation/restriction variant for nonconforming elements 
+# Prolongation/restriction variant for nonconforming elements
 # E030/EM30/E031/EM31 for the velocity.
 # = 0: Use default prol/rest,
 # = 1: Use standard prol/rest, equally weighted (1/2 from left, 1/2 from right),
