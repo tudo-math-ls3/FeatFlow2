@@ -780,19 +780,18 @@ contains
         if (rpostprocessing%ctimestepType .eq. TSCHM_DIRK34La .or. &
             rpostprocessing%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
             rpostprocessing%ctimestepType .eq. TSCHM_DIRK44L) then
-          ! The 2nd and 3rd substep of the time stepping schemes DIRK34L and DIRK44L do
-          ! live in the same time step and to avoid coinciding interpolation points the
-          ! result of the 2nd substep should not get considered for interpolation of the
-          ! accumulated time plus space discretisation error.
+          ! The last two stages, i.e. the 2nd and 3rd substep of the time stepping schemes
+          ! DIRK34L (variant a and b) and DIRK44L do live in the same time step and to
+          ! avoid coinciding interpolation points the result of the 2nd substep should not
+          ! get considered for interpolation of the accumulated time plus space
+          ! discretisation error.
           iglobaltimestep = rproblem%rtimedependence%itimestep &
                             - int(rproblem%rtimedependence%itimestep / 3)
           select case (mod(rproblem%rtimedependence%itimestep,3))
-          case (1)
+          case (1,0)
             cignoreTimeStep = 0
           case (2)
             cignoreTimeStep = 1
-          case (0)
-            cignoreTimeStep = 0
           end select
         end if
       end if

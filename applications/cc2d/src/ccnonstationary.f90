@@ -329,9 +329,11 @@ contains
 
     ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the velocity
     if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
       ipressureFullyImplicit = 0
     end if
 
@@ -403,10 +405,12 @@ contains
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
 
-    if ((rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-         rtimestepping%ctimestepType .eq. TSCHM_DIRK44L)) then
+    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
       select case (rtimestepping%isubstep)
       case (1)
         ! Store (velocity) solution from macro time step t_n for later use in subsequent
@@ -459,9 +463,11 @@ contains
 
     else
       if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
           rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
           rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
 ! Note: inhomogeneous Neumann boundary conditions not supported (as of yet)!
 
         ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
@@ -846,13 +852,17 @@ contains
     end if
 
     if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
       if (rtimestepping%isubstep .eq. rtimestepping%nsubsteps) then
         ! Free up (velocity) solution from macro time step t_n
         call lsysbl_releaseVector (rsolutionFromLastMacroTimeStep)
-        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(3))
+        if (rtimestepping%nsubsteps .ge. 3) then
+          call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(3))
+        end if
         call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(2))
         call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(1))
       end if
@@ -1030,9 +1040,11 @@ contains
       call lsysbl_copyVector (rvectorNew, rvectorInt)
       dtimeInt = dtimeNew
 
-    else if (rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
+    else if (rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
              rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
       ! Velocity and pressure are treated in the same way by these two time stepping
       ! schemes, namely semi-implicitly. They should both live in the same point in time.
       call lsysbl_copyVector (rvectorNew, rvectorInt)
@@ -1195,18 +1207,46 @@ contains
               ! do not exit before all internal stages have completed
               (rtimestepping%isubstep .gt. 1))
 
+      if (rproblem%rtimedependence%itimeStep .eq. 3) then
+        ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
+        ! scheme A to generate a suitable start solution for scheme B.
+        ! (Why the choice of 3? Why not re-check after 1 time step with scheme A? Because
+        !  the scheme DIRK23L consists of 2 time (sub)steps and changing from scheme A to
+        !  DIRK23L after 2 time steps with A is consistent with how we treat other DIRK
+        !  schemes consisting of more than 2 substeps.)
+        call parlst_getvalue_int (rproblem%rparamList, &
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", rtimestepping%ctimestepType, 0)
+        if (rtimestepping%ctimestepType .eq. -TSCHM_DIRK23L) then
+          ! Re-initialise the time stepping in the problem structure
+          iaux = abs(rtimestepping%ctimestepType)
+          daux1 = rtimestepping%dcurrentTime
+          daux2 = rtimestepping%dtstep
+          daux3 = rtimestepping%dtheta
+          call timstp_init (rtimestepping, iaux, daux1, daux2, daux3)
+
+          ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
+          ! velocity
+          ipressureFullyImplicit = 0
+        end if
+      end if
+
       if (rproblem%rtimedependence%itimeStep .eq. 4) then
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
         ! scheme A to generate a suitable start solution for scheme B.
         ! (Why the choice of 4? Why not re-check after 1 time step with scheme A? Because
-        !  all the schemes B in question consist of 3 time steps and changing from scheme
-        !  A to B makes it possible to keep the algorithm to determine the time plus space
-        !  discretisation error in cc_errorAnalysis() which needs to consider only some
-        !  time steps of scheme B simple, read: not depending on an initially different
-        !  time stepping scheme A.)
+        !  all the schemes B in question consist of 3 time (sub)steps and changing from
+        !  scheme A to B after 3 time steps makes it possible to keep the algorithm simple
+        !  that determines the time plus space discretisation error in cc_errorAnalysis():
+        !  the algorithm does not need to consider whether initially a different time
+        !  stepping scheme (A) is used.)
         call parlst_getvalue_int (rproblem%rparamList, &
              "TIME-DISCRETISATION", "ITIMESTEPSCHEME", rtimestepping%ctimestepType, 0)
-        if (rtimestepping%ctimestepType .le. -TSCHM_FS_DIRK) then
+        select case (-rtimestepping%ctimestepType)
+        case (TSCHM_FS_DIRK, &
+              TSCHM_DIRK34La, &
+              TSCHM_DIRK34Lb, &
+              TSCHM_DIRK44L, &
+              TSCHM_DIRK54L)
           ! Re-initialise the time stepping in the problem structure
           iaux = abs(rtimestepping%ctimestepType)
           daux1 = rtimestepping%dcurrentTime
@@ -1219,10 +1259,11 @@ contains
           if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-              rtimestepping%ctimestepType .eq. TSCHM_DIRK44L) then
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
             ipressureFullyImplicit = 0
           end if
-        end if
+        end select
       end if
 
       ! Time counter

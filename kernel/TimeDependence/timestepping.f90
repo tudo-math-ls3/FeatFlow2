@@ -120,14 +120,23 @@ module timestepping
   ! Identifier for classic fractional-step theta scheme in DIRK context
   integer, parameter, public :: TSCHM_FS_DIRK        = 3
 
-  ! Identifier for DIRK34L as proposed by Joachim Rang
-  integer, parameter, public :: TSCHM_DIRK34La       = 4
+  ! Identifier for (E)DIRK23L
+  ! (In ODE literature also known as a cyclic combination of trapezoidal rule and the BDF2
+  !  scheme)
+  integer, parameter, public :: TSCHM_DIRK23L        = 4
 
-  ! Identifier for another solution of the defining equations for DIRK34L
-  integer, parameter, public :: TSCHM_DIRK34Lb       = 5
+  ! Identifier for (ES)DIRK34L as proposed by Joachim Rang
+  integer, parameter, public :: TSCHM_DIRK34La       = 5
 
-  ! Identifier for DIRK44L as proposed by Joachim Rang
-  integer, parameter, public :: TSCHM_DIRK44L        = 6
+  ! Identifier for another solution of the defining equations for (ES)DIRK34L
+  ! (In literature also known as ESDIRK 3/2a)
+  integer, parameter, public :: TSCHM_DIRK34Lb       = 6
+
+  ! Identifier for (E)DIRK44L as proposed by Joachim Rang
+  integer, parameter, public :: TSCHM_DIRK44L        = 7
+
+  ! Identifier for (E)DIRK54L
+  integer, parameter, public :: TSCHM_DIRK54L        = 8
 
 !</constantblock>
 
@@ -311,11 +320,9 @@ contains
 !</function>
 
     select case (rtstepScheme%ctimestepType)
-    case (TSCHM_DIRK44L)
-      iorder = 4
-    case (TSCHM_DIRK34La, TSCHM_DIRK34Lb)
+    case (TSCHM_DIRK54L, TSCHM_DIRK44L, TSCHM_DIRK34La, TSCHM_DIRK34Lb)
       iorder = 3
-    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI, TSCHM_FS_DIRK)
+    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI, TSCHM_FS_DIRK, TSCHM_DIRK23L)
       iorder = 2
     case (TSCHM_ONESTEP)
       if (rtstepScheme%dthStep .eq. 0.5_DP) then
@@ -342,10 +349,10 @@ contains
 !</description>
 
 !<input>
-  ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme
-  ! or TSCHM_FRACTIONALSTEP/TSCHM_FS_GLOWINSKI for Fractional Step or
-  ! TSCHM_DIRK34La/b or TSCHM_DIRK44L for diagonally implicit, stiffly
-  ! accurate, L-stable Runge-Kutta method of 3rd or 4th order
+  ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme or
+  ! TSCHM_FRACTIONALSTEP/TSCHM_FS_GLOWINSKI for fractional-step or
+  ! TSCHM_DIRK23L/TSCHM_DIRK34La/TSCHM_DIRK34Lb/TSCHM_DIRK44L/TSCHM_DIRK54L for diagonally
+  ! implicit, stiffly accurate, L-stable Runge-Kutta method of order up to 3/2
   integer, intent(in)    :: ctimestepType
 
   ! The initial simulational time.
@@ -386,7 +393,8 @@ contains
     rtstepScheme%dtimeMacrostep   = dtime
     rtstepScheme%dtlaststep       = 0.0_DP
 
-    if (ctimestepType .eq. TSCHM_ONESTEP) then
+    select case (ctimestepType)
+    case (TSCHM_ONESTEP)
 
       rtstepScheme%ctimestepType    = TSCHM_ONESTEP
 
@@ -398,11 +406,13 @@ contains
       rtstepScheme%dtheta           = dtheta1
       rtstepScheme%dthStep          = dtstep * dtheta1
 
-    else if (ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
+
+    case (TSCHM_FRACTIONALSTEP)
 
       rtstepScheme%ctimestepType    = TSCHM_FRACTIONALSTEP
 
-      ! The classic FS-theta scheme consists of 3 substeps...
+      ! The classic FS-theta scheme is a strongly A-stable scheme that provides 2nd ordner
+      ! for velocity and 1st order for the pressure and consists of 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses by theory 4 parameters:
@@ -425,7 +435,8 @@ contains
       rtstepScheme%dalpha           = dalpha
       rtstepScheme%dbeta            = dbeta
 
-    else if (ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+
+    case (TSCHM_FS_GLOWINSKI)
 
       rtstepScheme%ctimestepType    = TSCHM_FS_GLOWINSKI
 
@@ -456,7 +467,8 @@ contains
       !     pages        = {533--547},
       !     note         = {doi: 10.1007/s10915-006-9083-y},
       !  }
-      ! consists of 3 substeps...
+      ! also provides 2nd ordner for velocity and 1st order for the pressure and consists
+      ! of 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses one main parameter:
@@ -473,11 +485,12 @@ contains
       rtstepScheme%dthetaPrime      = dthetp1
       rtstepScheme%dthStep          = dtstep * dtheta1
 
-    else if (ctimestepType .eq. TSCHM_FS_DIRK) then
+
+    case (TSCHM_FS_DIRK)
 
       rtstepScheme%ctimestepType    = TSCHM_FS_DIRK
 
-      ! The classic fractional-step theta scheme reinterpreted as DIRK scheme,
+      ! The classic fractional-step theta scheme can be reinterpreted as a DIRK scheme,
       ! see section 5 of
       !    @article{Rang2008747,
       !       author  = "J. Rang",
@@ -493,7 +506,10 @@ contains
       !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
       !       note    = "",
       !    }
-      ! consists of 4 stages, but only 3 substeps...
+      ! (only difference: enforced semi-implicit treatment of the pressure, no fully
+      !  implicit treatment like proposed in Tureks's book) that is strongly A-stable,
+      ! provides 2nd ordner for velocity and 1st order for the pressure and consists of 4
+      ! stages (but the first step is explicit), so only 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses several parameter:
@@ -528,6 +544,20 @@ contains
                             0.0_DP, &
                             dtheta1*dalpha /), shape = (/ 4,4 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      !  @article{John2010514,
+      !     author  = "Volker John and Joachim Rang",
+      !     title   = "Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations",
+      !     journal = "Computer Methods in Applied Mechanics and Engineering ",
+      !     volume  = "199",
+      !     number  = "9--12",
+      !     pages   = "514--524",
+      !     year    = "2010",
+      !     note    = "",
+      !     issn    = "0045-7825",
+      !     doi     = "http://dx.doi.org/10.1016/j.cma.2009.10.005",
+      !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
+      !  }
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
       rtstepScheme%dcoeffC = &
@@ -536,7 +566,140 @@ contains
               dtheta1+dthetp1, &        ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
 
-    else if (ctimestepType .eq. TSCHM_DIRK34La) then
+
+    case (TSCHM_DIRK23L)
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK23L
+
+      ! The DIRK23L scheme is an L-stable diagonally implicit Runge-Kutta scheme of 2nd
+      ! ordner for velocity and pressure that consists of 3 stages (but first step is
+      ! explicit), so only 2 substeps...
+      rtstepScheme%nsubsteps        = 2
+      ! ... and has been identified as identical to the scheme proposed in
+      !  @MISC{Fredebeul89,
+      !     author = {Fredebeul, Christoph},
+      !     title  = {{Konstruktion neuer schrittwechsel- und steif-stabiler zyklischer
+      !                linearer Mehrschrittverfahren}},
+      !     note   = {Diplomarbeit, Universit\"{a}t Dortmund, 1989},
+      !  }
+      ! by Peter Albrecht on page 173 of
+      !  @book{
+      !     author = {Albrecht, Peter},
+      !     title  = {{Verfahren zur L\"{o}sung gew\"{o}hnlicher Differentialgleichungen
+      !                unter Einschluss linearer zyklischer Verfahren und mit einer
+      !                wesentlich vereinfachten Theorie der Runge-Kutta Verfahren}},
+      !     note   = {to be released in 2015}
+      !  }
+
+      ! Parameters
+      !      a21 = a22 = 1/4, a31 = a32 = a33 = 1/3
+      ! are determined using Maple and the following instructions:
+      !
+      !    with(LinearAlgebra):
+      !    s := 3;
+      !    A := Matrix([[0, 0, 0], [a21, a22, 0], [a31, a32, a33]]);
+      !    # condition C(1) + plus C(2) (i=1) to conclude that c1 = a11 = 0
+      !    c := Vector([0, a21+a22, a31+a32+a33]);
+      !    # "stiffly accurate" constraint:
+      !    b := Row(A, 3);
+      !    # Butcher conditions for velocity order p=2 and pressure order q=2
+      !    B1 := b[1]+b[2]+b[3] = 1;
+      !    B2 := simplify(Multiply(b, c) = 1/2);
+      !    #   = a32*a21+a32*a22+a33*a31+a33*a32+a33^2 = 1/2;
+      !    C1 := Multiply(A, Vector(s, 1)) = c;
+      !    #     / 0           \ = / 0           \
+      !    #   = | a21+a22     | = | a21+a22     |
+      !    #     \ a31+a32+a33 / = \ a31+a32+a33 /
+      !    C2 := simplify(Multiply(A, c)) =
+      !          simplify(zip(proc(x,y) options operator, arrow; (1/2)*x^2 end proc,c,c));
+      !    # =>
+      !    C2row2 := (Row(op(1, C2), 2))(1) = (Row(op(2, C2), 2))(1);
+      !    #       = a22*(a21+a22) = (1/2)*(a21+a22)^2
+      !    C2row3 := (Row(op(1, C2), 3))(1) = (Row(op(2, C2), 3))(1);
+      !    #       = a32*a21+a32*a22+a33*a31+a33*a32+a33^2 = (1/2)*(a31+a32+a33)^2
+      !    solutions := [solve({B1, B2, C2row2, C2row3}, {a21, a22, a31, a32, a33})];
+      !
+      !    # yields two solutions:
+      !    # 1: {a21 = -a22, a22 = a22, a31 = -a32+1/2, a32 = a32, a33 = 1/2},
+      !    # 2: {a21 = a22, a22 = a22, a31 = -a32+2*a32*a22+1/2, a32 = a32,
+      !    #     a33 = -2*a32*a22+1/2}
+      !    # Solution 1 is only A-stable as confirmed by the following Maple instructions:
+      !    assign(solutions[1]);
+      !    s := 3;
+      !    R0 := proc (z) options operator, arrow;
+      !          Determinant(IdentityMatrix(s)-z*A+z*Multiply(Vector(s, 1), b))/
+      !            Determinant(IdentityMatrix(s)-z*A) end proc;
+      !    with(MultiSeries, limit); limit(abs(R0(z)), z = -infinity);
+      !    # evaluates to "1"; so A-stability only, independent of the choice for a22 and
+      !    # a32.
+      !    # Solution 2 leads to an L-stable scheme like this
+      !    unassign('a21', 'a22', 'a31', 'a32', 'a33');
+      !    assign(solutions[2]);
+      !    s := 3;
+      !    R0 := proc (z) options operator, arrow;
+      !          Determinant(IdentityMatrix(s)-z*A+z*Multiply(Vector(s, 1), b))/
+      !            Determinant(IdentityMatrix(s)-z*A) end proc;
+      !    with(MultiSeries, limit); limit(abs(R0(z)), z = -infinity);
+      !    # leads to the condition
+      !    #   -2 a32 a22^2 + 2 a32 a22 - a22/2 = 0
+      !    # Given that
+      !    solutions := [solve({B1, B2, C2row2, C2row3,
+      !                         a21 = a22, a31 = -a32+2*a32*a22+1/2,
+      !                         a33 = -2*a32*a22+1/2, a33 <> 0,
+      !                         -2*a32*a22^2+2*a32*a22-(1/2)*a22 = 0},
+      !                        {a21, a22, a31, a32, a33})];
+      !    # leads to a solution with one free parameter.
+      !    #  {a21 = (1/4)*(4*a32-1)/a32, a22 = (1/4)*(4*a32-1)/a32,
+      !    #   a31 = a32, a32 = a32, a33 = -2*a32+1}
+      !    # Try to fix the free parameter by minimising additionally the distance of the
+      !    # stability function R0(z) and the exponential function (to which R0(z) is an
+      !    # approximation anyway):
+      !    simplify(taylor(R0(z)-exp(z), z = 0, 4));
+      !    # evaluates to
+      !    #         (-16*a32+24*a32^2+3)/(24*a32) * z^3 + O(z^4)
+      !    # Minimise the coefficient of z^3:
+      !    solve(diff(-16*a32+24*a32^2+3, a32) = 0);
+      !    # leads to
+      !    #       a32 = 1/3
+      !    # and subsequently to
+      !    #       a21 = a22 = 1/4
+      !    #       a31 = a32 = a33 = 1/3
+
+      ! ... and uses several parameter:
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            0.25_DP, &
+                            1.0_DP/3.0_DP, &
+                            0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.25_DP, &
+                            1.0_DP/3.0_DP, &
+                            0.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/3.0_DP, &
+                            0.0_DP, &
+                            ! fourth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 4,4 /) )
+      ! b_i = a_{3i}     (Butcher condition B(1)
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (Butcher condition C(1))
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &         ! sum(rtstepScheme%dcoeffA(1,:))
+              1.0_DP/2.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
+              0.0_DP /)         ! 4th entry only to have 1 structure for all DIRK schemes
+
+
+    case (TSCHM_DIRK34La)
 
       rtstepScheme%ctimestepType    = TSCHM_DIRK34La
 
@@ -567,7 +730,9 @@ contains
       !     doi     = "http://dx.doi.org/10.1016/j.cma.2009.10.005",
       !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
       !  }
-      ! consists of 4 stages, but only 3 substeps...
+      ! is an L-stable diagonally implicit Runge-Kutta scheme of 3rd ordner for velocity
+      ! and 2nd order for pressure that consists of 4 stages (but the first step is
+      ! explicit), so only 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses several parameter:
@@ -579,10 +744,18 @@ contains
        ! (1-1.072..-0.158..      1.07248627073437   0.158983899988677   0                )
        ! (1-0.76..-0.09..-0.15.. 0.7685298292769537 0.0966483609791597  0.158983899988677)
        !
-       ! Note: the values 0.1558983899988677 and 0.09666483609791597 given in the paper
+       ! Note: the values 0.1558983899988677 and 0.09666483609791597 given in both papers
        !       are wrong as does prove a test where the coefficients are inserted into the
-       !       four defining equations B(2), B(3), \hat{B}(2) and R(\infty) on page 15 of
-       !       said paper.
+       !       defining equations on page 15 of said paper:
+       !         B1 := b[1]+b[2]+b[3]+b[4] = 1;
+       !         B2 := simplify(Multiply(b, c) = 1/2);
+       !         B3 := simplify(Multiply(b, Vector([c(1)^2,c(2)^2,c(3)^2,c(4)^2]))=1/3);
+       !         C1 := Multiply(A, Vector(4, 1)) = c;
+       !         C2 := simplify(Multiply(A, c)) =
+       !               simplify(Vector([(1/2)*c(1)^2,(1/2)*c(2)^2,
+       !                                (1/2)*c(3)^2,(1/2)*c(4)^2]));
+       !         B2hat := 2*a32*a22+a22 = 1/2;
+       !         Rinfty := a22*(1-2*a42-a22)+(2*a32-1)*a43 = 0;
        reshape( source = (/ &
                             ! first column
                             0.0_DP, &
@@ -614,11 +787,12 @@ contains
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
 
-    else if (ctimestepType .eq. TSCHM_DIRK34Lb) then
+
+    case (TSCHM_DIRK34Lb)
 
       rtstepScheme%ctimestepType    = TSCHM_DIRK34Lb
 
-      ! The definint equations of the DIRK34L scheme as proposed in section 4.1 of
+      ! The defining equations of the DIRK34L scheme as proposed in section 4.1 of
       !  @TechReport{Rang200702,
       !     author      = {Rang, Joachim},
       !     title       = {Design of {DIRK} schemes for solving the
@@ -635,7 +809,27 @@ contains
       !                       2*a32*a22+a22 = 1/2
       !                   2*a22*a42+a43+a22 = 1/2
       !                 4*a22^2*a42+a43+a22 = 1/3
-      ! As DIRK34L it consists of 4 stages, but only 3 substeps...
+      ! As with (ES)DIRK34La it is an L-stable diagonally implicit Runge-Kutta scheme of
+      ! 3rd ordner for velocity and 2nd order for pressure.
+      ! This scheme is in literature known as ESDIRK 3/2a, see page 497 of
+      !  @article{Kvaerno2004,
+      !     author    = {Kv\ae{}rn\o, Anne},
+      !     title     = {Singly Diagonally Implicit {R}unge--{K}utta Methods with an
+      !                  Explicit First Stage},
+      !     journal   = {BIT Numerical Mathematics},
+      !     volume    = {44},
+      !     number    = {3},
+      !     year      = {2004},
+      !     issn      = {0006-3835},
+      !     publisher = {Kluwer Academic Publishers},
+      !     pages     = {489-502},
+      !     doi       = {10.1023/B:BITN.0000046811.70614.38},
+      !     url       = {http://dx.doi.org/10.1023/B%3ABITN.0000046811.70614.38},
+      !     language  = {English},
+      !     keywords  = {stiff ODEs; singular perturbation problems;Runge--Kutta methods},
+      !  }
+      ! Like DIRK34La it consists of 4 stages (but the first step is explicit), so only 3
+      ! substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses several parameter. Matrix A of the Butcher table has he following
@@ -653,25 +847,25 @@ contains
        reshape( source = (/ &
                             ! first column
                             0.0_DP, &
-                            0.4358665214_DP, &
-                            1.0_DP - 0.0735700902_DP - 0.4358665214_DP, &
+                            0.43586652150845899941_DP, &
+                            1.0_DP - 0.0735700902_DP - 0.43586652150845899941_DP, &
                             1.0_DP - 1.490563387_DP +  1.235239880_DP &
-                                   - 0.4358665214_DP, &
+                                   - 0.43586652150845899941_DP, &
                             ! second column
                             0.0_DP, &
-                            0.4358665214_DP, &
+                            0.43586652150845899941_DP, &
                             0.0735700902_DP, &
                             1.490563387_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
-                            0.4358665214_DP, &
+                            0.43586652150845899941_DP, &
                             -1.235239880_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            0.4358665214_DP /), shape = (/ 4,4 /) )
+                            0.43586652150845899941_DP /), shape = (/ 4,4 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -681,11 +875,12 @@ contains
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
 
-    else if (ctimestepType .eq. TSCHM_DIRK44L) then
+
+    case (TSCHM_DIRK44L)
 
       rtstepScheme%ctimestepType    = TSCHM_DIRK44L
 
-      ! The DIRK44L scheme as proposed in section 4.2 of
+      ! The (E)DIRK44L scheme as proposed in section 4.2 of
       !  @TechReport{Rang200702,
       !     author      = {Rang, Joachim},
       !     title       = {Design of {DIRK} schemes for solving the
@@ -697,7 +892,26 @@ contains
       !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
       !     note        = {Informatikbericht Nr. 2007-02},
       !  }
-      ! consists of 4 stages, but only 3 substeps...
+      ! is an L-stable diagonally implicit Runge-Kutta scheme that theoretically provides
+      ! 4th order for the velocity and 2nd order for the pressure (for stiff problems like
+      ! the transient incompressible Navier-Stokes equations), but in practice the order
+      ! is reduced to 3/2 - as with (ES)DIRK34La and (ES)DIRK34Lb.
+      !
+      ! Peter Albrecht shows in
+      !  @article{doi:10.1137/S0036142994260872,
+      !     author  = {Albrecht, Peter},
+      !     title   = {The {R}unge--{K}utta Theory in a Nutshell},
+      !     journal = {SIAM Journal on Numerical Analysis},
+      !     volume  = {33},
+      !     number  = {5},
+      !     pages   = {1712-1735},
+      !     year    = {1996},
+      !     doi     = {10.1137/S0036142994260872},
+      !     URL     = {http://dx.doi.org/10.1137/S0036142994260872},
+      !     }
+      ! why the order can not exceed 3/2 for stiff problems.
+      !
+      ! It consists of 4 stages (but the first step is explicit), so only 3 substeps...
       rtstepScheme%nsubsteps        = 3
 
       ! ... and uses several parameter:
@@ -745,7 +959,129 @@ contains
               1.0_DP, &  ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP /)  ! sum(rtstepScheme%dcoeffA(4,:))
 
-    end if
+
+    case (TSCHM_DIRK54L)
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK54L
+
+      ! The (E)DIRK54L scheme is inspired by
+      !  @TechReport{Rang200702,
+      !     author      = {Rang, Joachim},
+      !     title       = {Design of {DIRK} schemes for solving the
+      !                    {N}avier--{S}tokes equations},
+      !     institution = {Institute of Scientific Computing},
+      !     address     = {Technical University Braunschweig, Brunswick, Germany},
+      !     year        = {2007},
+      !     month       = feb,
+      !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
+      !     note        = {Informatikbericht Nr. 2007-02},
+      !  }
+      ! and the fact that the Runge-Kutta theory states that an s-stage RK method can have
+      ! convergence order of p <= s+1. Indeed, this scheme is an L-stable diagonally
+      ! implicit Runge-Kutta scheme that theoretically provides 5th order for the velocity
+      ! and 2nd order for the pressure (for stiff problems like the transient
+      ! incompressible Navier-Stokes equations), but in practice the order is reduced to
+      ! 3/2 - the same as with (ES)DIRK34La, (ES)DIRK34Lb and (E)DIRK44L.
+      !
+      ! Peter Albrecht shows in
+      !  @article{doi:10.1137/S0036142994260872,
+      !     author  = {Albrecht, Peter},
+      !     title   = {The {R}unge--{K}utta Theory in a Nutshell},
+      !     journal = {SIAM Journal on Numerical Analysis},
+      !     volume  = {33},
+      !     number  = {5},
+      !     pages   = {1712-1735},
+      !     year    = {1996},
+      !     doi     = {10.1137/S0036142994260872},
+      !     URL     = {http://dx.doi.org/10.1137/S0036142994260872},
+      !     }
+      ! why the order can not exceed 3/2 for stiff problems.
+      !
+      ! It consists of 4 stages (but the first step is explicit), so only 3 substeps...
+      rtstepScheme%nsubsteps        = 3
+
+      ! Parameters
+      !                         178         432        10        27        125
+      ! a21 = a22 = 1/6, a31 = ----, a32 = ----, a33 = --, a42 = --, a43 = ---, a44 = 1/24
+      !                        1075        1075        43        56        336
+      ! are determined using Maple and the following instructions:
+      !
+      !    with(LinearAlgebra):
+      !    # Butcher conditions for velocity order p=5 and pressure order q=2
+      !    B2 := (a21+a22)*a42+(a31+a32+a33)*a43+a44 = 1/2;
+      !    B3 := (a21+a22)^2*a42+(a31+a32+a33)^2*a43+a44 = 1/3;
+      !    B4 := (a21+a22)^3*a42+(a31+a32+a33)^3*a43+a44 = 1/4;
+      !    B5 := (a21+a22)^4*a42+(a31+a32+a33)^4*a43+a44 = 1/5;
+      !    C2i2_using_C2i1 := a21 = a22;
+      !    C2i3_using_C1 := a32*(a21+a22)+a33*(a31+a32+a33) = (1/2)*(a31+a32+a33)^2;
+      !    # L stability condition: stability function for limes z vs. -\infty:
+      !    Rinfty := a31*a22*a43 + a43*a22*a33 + a44*a22*a33 - a22*a43*a32
+      !              - a22*a33 + 2*a42*a22*a33 = 0;
+      !    # A cleverly chosen additional constraint to fix the free parameter a33
+      !    # minimises the distance of the stability function R0(z) and the exponential
+      !    # function (to which R0(z) is an approximation anyway) by minimising the
+      !    # coefficient of z^4 of the Taylor expansion of the difference:
+      !    Xtra := a31+a32+a33 = 4/5;
+      !    solutions := [solve({B2, B3, B4, B5, C2i2_using_C2i1, C2i3_using_C1,
+      !                         Rinfty, Xtra}, {a21, a22, a31, a32, a33, a42, a43, a44})]:
+      !    assign(solutions[1]);
+      !    # Butcher condition B(1)
+      !    a41 := 1 - a42 - a43 - a44;
+      !    A := Matrix([[0, 0, 0, 0], [a21, a22, 0, 0], [a31, a32, a33, 0],
+      !                 [a41, a42, a43, a44]]):
+      !    c := Vector([0, a21+a22, a31+a32+a33, a41+a42+a43+a44]):
+      !    b := Transpose(Vector([a41, a42, a43, a44])):
+      !
+      ! Check Butcher conditions B(2)-B(5):
+      !    simplify(Multiply(b, c) = 1/2);
+      !    simplify(Multiply(b, Vector([c(1)^2, c(2)^2, c(3)^2, c(4)^2])) = 1/3);
+      !    simplify(Multiply(b, Vector([c(1)^3, c(2)^3, c(3)^3, c(4)^3])) = 1/4);
+      !    simplify(Multiply(b, Vector([c(1)^4, c(2)^4, c(3)^4, c(4)^4])) = 1/5);
+      ! Check Butcher condition C(1)-C(2):
+      !    Multiply(A, Vector([1, 1, 1, 1])) = c;
+      !    simplify(Multiply(A, c)) = simplify(Vector([(1/2)*c(1)^2, (1/2)*c(2)^2,
+      !                                                (1/2)*c(3)^2, (1/2)*c(4)^2]));
+      ! Check L-stability:
+      !    R0 := proc (z) options operator, arrow;
+      !           Determinant(IdentityMatrix(4) - z*A+z*Multiply(Vector([1, 1, 1, 1]), b))
+      !               /
+      !           Determinant(IdentityMatrix(4)-z*A) end proc;
+      !    with(MultiSeries, limit):
+      !    limit(abs(R0(z)), z = -infinity);
+      ! Check distance of stability and exponential function:
+      !    evalf(simplify(taylor(R0(z)-exp(z), z = 0, 5)));
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            178.0_DP/1075.0_DP, &
+                            5.0_DP/48.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            432.0_DP/1075.0_DP, &
+                            27.0_DP/56.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            10.0_DP/43.0_DP, &
+                            125.0_DP/336.0_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/24.0_DP /), shape = (/ 4,4 /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &         ! sum(rtstepScheme%dcoeffA(1,:))
+              1.0_DP/3.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
+              0.8_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
+              1.0_DP /)         ! sum(rtstepScheme%dcoeffA(4,:))
+
+    end select
 
     ! Initialise the weights for the first time step by calling
     ! timstp_setBaseSteplength with time step length = dtstep
@@ -790,7 +1126,8 @@ contains
     ! Set the new step length
     rtstepScheme%dtstepFixed        = dtstep
 
-    if (rtstepScheme%ctimestepType .eq. TSCHM_ONESTEP) then
+    select case (rtstepScheme%ctimestepType)
+    case (TSCHM_ONESTEP)
       ! Standard time stepping scheme.
       rtstepScheme%nsubsteps        = 1
 
@@ -806,7 +1143,8 @@ contains
       rtstepScheme%dweightOldRHS    = dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightStationaryRHS = dtstep
 
-    else if (rtstepScheme%ctimestepType .eq. TSCHM_FRACTIONALSTEP) then
+
+    case (TSCHM_FRACTIONALSTEP)
 
       ! In case of fractional-step, we have to modify the length of the
       ! current time step according to the substep:
@@ -860,7 +1198,8 @@ contains
 
       end if
 
-    else if (rtstepScheme%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+
+    case (TSCHM_FS_GLOWINSKI)
 
       dtheta1 = rtstepScheme%dtheta
       dthetp1 = rtstepScheme%dthetaPrime
@@ -917,10 +1256,41 @@ contains
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
       end select
 
-    else if (rtstepScheme%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-             rtstepScheme%ctimestepType .eq. TSCHM_DIRK34La .or. &
-             rtstepScheme%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-             rtstepScheme%ctimestepType .eq. TSCHM_DIRK44L) then
+
+    case (TSCHM_DIRK23L)
+      ! experimental
+      ! tau, corresponding to the \tau from \cite[p. 517]{John2010514}, gets chosen such
+      ! that
+      !                      tau = 2 * prescribed time step size
+      ! Note: the factor 2 is necessary to be consistent with the increment of the macro
+      !       time step as done in timstp_nextSubstepWeights():
+      !            real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+      !       This, in turn, is done to be able to compare the results of 2 Backward Euler
+      !       or Crank-Nicolson steps with 1 (macro) step of DIRK23L - this way these time
+      !       stepping schemes involve comparable computational costs and after
+      !       completion of this macro time step their respective solutions live in the
+      !       same point in time.
+      rtstepScheme%dtau = 2.0_DP * dtstep
+
+      if (rtstepScheme%isubstep .eq. 1) then
+        rtstepScheme%dtimeDIRKstage1      = rtstepScheme%dcurrentTime
+      end if
+      rtstepScheme%dtstep               = rtstepScheme%dtau * &
+                                             rtstepScheme%dcoeffC(rtstepScheme%isubstep+1)
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,:))
+
+
+    case (TSCHM_FS_DIRK, &
+          TSCHM_DIRK34La, &
+          TSCHM_DIRK34Lb, &
+          TSCHM_DIRK44L, &
+          TSCHM_DIRK54L)
       ! tau, corresponding to the \tau from \cite[p. 517]{John2010514}, gets chosen such
       ! that
       !                      tau = 3 * prescribed time step size
@@ -930,51 +1300,26 @@ contains
       !       This, in turn, is done to be able to compare the results of 3 Backward Euler
       !       or Crank-Nicolson steps with 1 (macro) step of the classic fractional-step
       !       theta scheme or one sweep of DIRK34L or DIRK44L - this way all five time
-      !       stepping schemes involved comparable computational costs and after
+      !       stepping schemes involve comparable computational costs and after
       !       completion of this macro time step their respective solutions live in the
       !       same point in time.
       rtstepScheme%dtau = 3.0_DP * dtstep
-      select case (rtstepScheme%isubstep)
-      case (1)
+
+      if (rtstepScheme%isubstep .eq. 1) then
         rtstepScheme%dtimeDIRKstage1      = rtstepScheme%dcurrentTime
-        rtstepScheme%dtstep               = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
-        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(2,2)
-        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable for
-        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! symmetry reasons
-        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! with substeps 2 and 3
-        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                            sum(rtstepScheme%dcoeffA(2,:))
+      end if
+      rtstepScheme%dtstep               = rtstepScheme%dtau * &
+                                             rtstepScheme%dcoeffC(rtstepScheme%isubstep+1)
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,:))
 
-      case (2)
-        rtstepScheme%dtstep               = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
-                                                                 rtstepScheme%dcoeffC(2))
-        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(3,3)
-        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable, because old
-        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! solutions get queried at 2
-        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! and right hand side at 3
-                                                           ! points in time, not merely 2.
-        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                            sum(rtstepScheme%dcoeffA(3,:))
 
-      case (3)
-        ! Yes, this particular setting ...%dtstep choice leads indeed for DIRK34L and
-        ! DIRK44L to a seemingly time step size of 0. At least that is what gets displayed
-        ! in the log. But this setting is only for display, internally the DIRK algorithms
-        ! rely on the parameter tau and coefficients c_i to determine the time step size.
-        rtstepScheme%dtstep               = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
-                                                                 rtstepScheme%dcoeffC(3))
-
-        rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * rtstepScheme%dcoeffA(4,4)
-        rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable, because old
-        rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! solutions get queried at 3
-        rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! and right hand side at 4
-                                                           ! points in time, not merely 2.
-        rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                            sum(rtstepScheme%dcoeffA(4,:))
-
-      end select
-
-    end if
+    end select
 
   end subroutine
 
