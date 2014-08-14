@@ -129,6 +129,8 @@
 !#                                      the solver and its properties.
 !#     linsol_setMatrices             - Attach the system matrices of all levels to the
 !#                                      solver
+!# or  linsol_setMatrix               - Attach the system matrix of a single level to
+!#                                      the solver.
 !# 4.) linsol_initStructure           - Allow the solvers to perform problem-
 !#                                      structure specific initialisation
 !#                                      (e.g. symbolical factorisation).
@@ -680,7 +682,6 @@ module linearsolver
   public :: linsol_setMatrices
   public :: linsol_setMatrix
   public :: linsol_matricesCompatible
-  public :: linsol_setOnelevelMatrixDirect
   public :: linsol_initStructure
   public :: linsol_initData
   public :: linsol_updateStructure
@@ -2990,43 +2991,7 @@ contains
     end select
 
   end subroutine
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-  
-  subroutine linsol_setOnelevelMatrixDirect (rsolverNode,rmatrix)
-  
-!<description>
-  ! This is a special-case subroutine for the case that there is only
-  ! one level to solve (e.g. when solving directly with UMFPACK).
-  ! rmatrix is exactly one matrix of the level where to solve.
-!</description>
-  
-!<input>
-  ! System matrices of the discretisation.
-  type(t_matrixBlock), intent(in),target :: rmatrix
-!</input>
-  
-!<inputoutput>
-  ! The solver node which should be initialised
-  type(t_linsolNode), intent(inout)                     :: rsolverNode
-!</inputoutput>
 
-!</subroutine>
-
-  ! t_matrixBlock structure array that receives the matrix pointer;
-  ! it has length 1 here in this special situation.
-  type(t_matrixBlock), dimension(1) :: Rmatrices
-    
-    ! Copy the matrix pointer.
-    Rmatrices(1) = rmatrix
-    
-    ! Call the standard initialisation routine
-    call linsol_setMatrices (rsolverNode,Rmatrices)
-
-  end subroutine
-  
   ! ***************************************************************************
   
 !<subroutine>
