@@ -1129,6 +1129,7 @@ contains
     type(t_c2d2postprocessing) :: rpostprocessingBackup
 
     integer :: iaux
+    integer :: cscheme
     real(DP) :: daux1, daux2, daux3
 
 
@@ -1215,14 +1216,13 @@ contains
         !  DIRK23L after 2 time steps with A is consistent with how we treat other DIRK
         !  schemes consisting of more than 2 substeps.)
         call parlst_getvalue_int (rproblem%rparamList, &
-             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", rtimestepping%ctimestepType, 0)
-        if (rtimestepping%ctimestepType .eq. -TSCHM_DIRK23L) then
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
+        if (cscheme .eq. -TSCHM_DIRK23L) then
           ! Re-initialise the time stepping in the problem structure
-          iaux = abs(rtimestepping%ctimestepType)
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
           daux3 = rtimestepping%dtheta
-          call timstp_init (rtimestepping, iaux, daux1, daux2, daux3)
+          call timstp_init (rtimestepping, abs(cscheme), daux1, daux2, daux3)
 
           ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
           ! velocity
@@ -1240,19 +1240,18 @@ contains
         !  the algorithm does not need to consider whether initially a different time
         !  stepping scheme (A) is used.)
         call parlst_getvalue_int (rproblem%rparamList, &
-             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", rtimestepping%ctimestepType, 0)
-        select case (-rtimestepping%ctimestepType)
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
+        select case (-cscheme)
         case (TSCHM_FS_DIRK, &
               TSCHM_DIRK34La, &
               TSCHM_DIRK34Lb, &
               TSCHM_DIRK44L, &
               TSCHM_DIRK54L)
           ! Re-initialise the time stepping in the problem structure
-          iaux = abs(rtimestepping%ctimestepType)
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
           daux3 = rtimestepping%dtheta
-          call timstp_init (rtimestepping, iaux, daux1, daux2, daux3)
+          call timstp_init (rtimestepping, abs(cscheme), daux1, daux2, daux3)
 
           ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
           ! velocity
