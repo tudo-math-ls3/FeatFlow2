@@ -61,21 +61,23 @@ if test -e $NOQUOTADIR
     BASEDIR_OBJFILES=`cd ../.. && pwd || echo`/feat2obj
   fi
 
-# To support multiple working copies of FEAT2 which all store their
-# object files beneath ${BASEDIR_OBJFILES}, but which should not interfere
-# which each other, duplicate the hierarchy of these FEAT2 installations
-# beneath ${BASEDIR_OBJFILES}. The procedure can be explained most easily
-# with an example:
-# Consider you have two FEAT2 installations, one in $HOME/Featflow and another
-# in $HOME/tmp/Featflow2, then the object files should go to ${BASEDIR_OBJFILES}
-# and ${BASEDIR_OBJFILES}/tmp, respectively.
+# To support multiple working copies of FEAT2 which all store their object
+# files beneath ${BASEDIR_OBJFILES}, but which should not interfere which each
+# other, duplicate the hierarchy of these FEAT2 installations beneath
+# ${BASEDIR_OBJFILES}. The procedure can be explained most easily with an
+# example:
+# Consider you have two FEAT2 installations, one in $HOME/Featflow and
+# another in $HOME/tmp/Featflow2, then the object files should go to
+# ${BASEDIR_OBJFILES} and ${BASEDIR_OBJFILES}/tmp, respectively.
 CWD=`/bin/pwd`
 
 # Try to shorten the directory hierarchy below ${BASEDIR_OBJFILES}.
-# Why? Because it is used to create the object directory and some
-# compilers enforce (silently) restrictions on include and module
-# directories (e.g. PGI). Do not let path to object 
-# directory become too long!
+# Why? Because it is used to create the object directory and some compilers
+# enforce (silently) restrictions on include and module directories (e.g.
+# PGI compiler version 7-13 supports include paths only up to a length of 162
+# characters. Longer paths cause the error "Unable to open include file"
+# for every 'include' statement.).
+# So, do not let path to object directory become too long!
 
 # Step 1: 
 #   try to cut off the leading part ending in your username.
@@ -115,6 +117,45 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 if test -n "${FEAT2COMPILERVERSION}"; then
     OBJDIRLIBPREFIX=${OBJDIRLIBPREFIX}/${FEAT2COMPILERVERSION}
 fi
+
+
+######################################################
+# Sanity check. Don't let path to object directory become too long!
+# (The PGI compiler cannot handle including files from a directory
+#  whose path exceeds a length of 162 characters. It will complain about
+#  "Unable to open include file" even though the file exists in the given
+#  path. Given that include files are transferred to the object directory
+#  during the build process, object directories may not exceed this length.
+#  This constraint only holds for include files for PGI, not for module
+#  files.
+#  Instead of 162 characters use a smaller number given that the object
+#  directory prefix will get appended the build ID, whether or not to use
+#  coprocessors, Open MP, optimisation flags etc. such that the full object
+#  directory path may be considerably longer than 162 characters. )
+# But only check if the directory determined above will actually be
+# used: If --objdir-prefix is overridden on the command line (when this
+# script is invoked), there is no point in checking the length.
+case "$@" in
+    *--objdir-prefix=*)
+	;;
+    *)
+	if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "110" ]; then
+	   echo "$0: ERROR."
+	   echo "    Sorry, the object directory prefix is too long."
+	   echo "    The full object directory path - which will include also build ID info,"
+	   echo "    whether or not to use coprocessors and/or OpenMP and whether to do a debug"
+	   echo "    or release build - will most likely exceeds 162 characters. This may lead"
+	   echo "    to compilation errors, e.g. PGI 7-13 will not be able to locate include"
+	   echo "    files from a directory that long."
+	   echo "    Please abbreviate the object directory which is currently"
+	   echo "    set to:"
+	   echo "<"${OBJDIRPREFIX}">"
+	   echo
+	   echo "Application not configured."
+	   exit 1
+	fi
+	;;
+esac
 
 
 ######################################################
