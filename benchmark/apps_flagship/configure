@@ -192,9 +192,10 @@ case "$@" in
     *--objdir-prefix=*)
 	;;
     *)
-	if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "110" ]; then
+	if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "106" ]; then
 	   echo "$0: ERROR."
-	   echo "    Sorry, the object directory prefix is too long."
+	   echo "    Sorry, the object directory prefix, argument to command line option"
+           echo "    --objdir-prefix, is too long."
 	   echo "    The full object directory path - which will include also build ID info,"
 	   echo "    whether or not to use coprocessors and/or OpenMP and whether to do a debug"
 	   echo "    or release build - will most likely exceeds 162 characters. This may lead"
