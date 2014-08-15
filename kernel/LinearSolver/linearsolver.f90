@@ -558,6 +558,9 @@
 !#      18.) linsol_initBlockUpwGS
 !#           -> Block GS using upwind numbering of elements (for DG discretisations)
 !#
+!#      19.) linsol_initMatrixPrec
+!#           -> Matrix preconditioner
+!#
 !# 9.) What is this linsol_matricesCompatible?
 !#
 !#     This allows to check a set of system matrices against a solver node.
@@ -718,6 +721,7 @@ module linearsolver
   public :: linsol_initBlockUpwGS
   public :: linsol_initSpecDefl
   public :: linsol_initDeflGMRES
+  public :: linsol_initMatrixPrec
   
   public :: linsol_newMatrixSet
   public :: linsol_addMatrix
@@ -834,6 +838,9 @@ module linearsolver
   
   ! Block Upwind GS iteration
   integer, parameter, public :: LINSOL_ALG_BLOCKUPWGS    = 61
+  
+  ! Matrix preconditioner
+  integer, parameter, public :: LINSOL_ALG_MATRIX_PREC   = 62
   
 !</constantblock>
 
@@ -1428,6 +1435,9 @@ module linearsolver
     
     ! Pointer to a structure for the block upwind GS preconditioner; NULL() if not set
     type (t_linsolSubnodeBlockUpwGS), pointer     :: p_rsubnodeBlockUpwGS   => null()
+    
+    ! Pointer to a structure for the matrix preconditioner; NULL() if not set
+    type (t_linsolSubnodeMatrixPrec), pointer     :: p_rsubnodeMatrixPrec   => null()
 
   end type
   
@@ -1504,6 +1514,25 @@ module linearsolver
 
 !</typeblock>
 
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the matrix preconditioner.
+  
+  type t_linsolSubnodeMatrixPrec
+  
+    ! Temporary vector to use during the solution process
+    type(t_vectorBlock) :: rvecTemp
+
+    ! The preconditioner matrix
+    type(t_matrixBlock) :: rmatPrec
+  
+  end type
+  
+  public :: t_linsolSubnodeMatrixPrec
+
+!</typeblock>
 ! *****************************************************************************
 
 !<typeblock>
@@ -2980,7 +3009,7 @@ contains
       call linsol_matCompatSchur (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
 
     case (LINSOL_ALG_DEFLGMRES)
-      ! Ask Schur and its subsolvers if the matrices are ok.
+      ! Ask deflated GMRES and its subsolvers if the matrices are ok.
       call linsol_matCompatDeflGMRES (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
 
     case default
@@ -3086,6 +3115,8 @@ contains
       call linsol_initStructureDeflGMRES (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_BLOCKUPWGS)
       call linsol_initStructureBlockUpwGS (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_MATRIX_PREC)
+      call linsol_initStructureMatrixPrec (rsolverNode,ierror,isubgroup)
     end select
 
     ! stop timer and update solver time
@@ -3445,6 +3476,8 @@ contains
       call linsol_doneStructureDeflGMRES (rsolverNode,isubgroup)
     case (LINSOL_ALG_BLOCKUPWGS)
       call linsol_doneStructureBlockUpwGS (rsolverNode,isubgroup)
+    case (LINSOL_ALG_MATRIX_PREC)
+      call linsol_doneStructureMatrixPrec (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -3527,6 +3560,8 @@ contains
       call linsol_doneSpecDefl (p_rsolverNode)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_doneDeflGMRES (p_rsolverNode)
+    case (LINSOL_ALG_MATRIX_PREC)
+      call linsol_doneMatrixPrec (p_rsolverNode)
     end select
     
     ! Clean up the associated matrix structure.
@@ -3880,6 +3915,8 @@ contains
       call linsol_precDeflGMRES (rsolverNode,rd)
     case (LINSOL_ALG_BLOCKUPWGS)
       call linsol_precDefBlockUpwGS (rsolverNode,rd)
+    case (LINSOL_ALG_MATRIX_PREC)
+      call linsol_precMatrixPrec (rsolverNode,rd)
     end select
 
     ! stop timer and update solver time
@@ -4037,7 +4074,7 @@ contains
     allocate(p_rsolverNode)
 
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the Defect Correction iteration
 ! *****************************************************************************
@@ -6020,7 +6057,222 @@ contains
     end subroutine
   
   end subroutine
+
+! *****************************************************************************
+! Routines for the Matrix preconditioner
+! *****************************************************************************
+
+!<subroutine>
   
+  subroutine linsol_initMatrixPrec (p_rsolverNode, rmatPrec, domega)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the matrix preconditioner.
+  ! The node can be used to directly solve a problem or to be attached as
+  ! solver or preconditioner to another solver structure. The node can be
+  ! deleted by linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! The block matrix to used as a preconditioner.
+  type(t_matrixBlock), intent(in) :: rmatPrec
+  
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  real(DP), optional :: domega
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_MATRIX_PREC
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                                LINSOL_ABIL_DIRECT
+    
+    ! Allocate the subnode for the matrix preconditioner.
+    allocate(p_rsolverNode%p_rsubnodeMatrixPrec)
+    
+    ! Store the preconditioner matrix
+    call lsysbl_duplicateMatrix(rmatPrec, &
+        p_rsolverNode%p_rsubnodeMatrixPrec%rmatPrec,&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+    
+    ! Save domega to the structure.
+    if (present(domega)) p_rsolverNode%domega = domega
+  
+  end subroutine
+! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initStructureMatrixPrec (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Create the temporary vector
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
+        rsolverNode%p_rsubnodeMatrixPrec%rvecTemp,.false.,.false., &
+        rsolverNode%cdefaultDataType)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneStructureMatrixPrec (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! Cancel here, if we do not belong to the subgroup to be released
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Release temporary data if associated
+    if (rsolverNode%p_rsubnodeMatrixPrec%rvecTemp%NEQ .gt. 0) &
+      call lsysbl_releaseVector (rsolverNode%p_rsubnodeMatrixPrec%rvecTemp)
+      
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneMatrixPrec (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the solver from
+  ! the heap.
+!</description>
+  
+!<input>
+  ! A pointer to a t_linsolNode structure of the solver.
+  type(t_linsolNode), pointer         :: rsolverNode
+!</input>
+  
+!</subroutine>
+    
+    ! Release memory if still associated
+    call linsol_doneStructureMatrixPrec (rsolverNode, rsolverNode%isolverSubgroup)
+    
+    ! Release the subnode
+    deallocate(rsolverNode%p_rsubnodeMatrixPrec)
+
+  end subroutine
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  subroutine linsol_precMatrixPrec (rsolverNode,rd)
+  
+!<description>
+  ! Applies the matrix preconditioner.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Jacobi solver
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Status reset
+    rsolverNode%iresult = 0
+
+    ! copy the defect to the temporary vector
+    call lsysbl_copyVector(rd, rsolverNode%p_rsubnodeMatrixPrec%rvecTemp)
+    
+    ! perform a matrix-vector multiplication with our preconditioner matrix
+    call lsysbl_matVec(rsolverNode%p_rsubnodeMatrixPrec%rmatPrec, &
+      rsolverNode%p_rsubnodeMatrixPrec%rvecTemp, rd, &
+      rsolverNode%domega, 0.0_DP)
+  
+  end subroutine
+
 ! *****************************************************************************
 ! Routines for the VANKA CC2D/CC3D solver
 ! *****************************************************************************
