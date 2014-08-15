@@ -1271,12 +1271,14 @@ contains
       !       completion of this macro time step their respective solutions live in the
       !       same point in time.
       rtstepScheme%dtau = 2.0_DP * dtstep
-
-      if (rtstepScheme%isubstep .eq. 1) then
-        rtstepScheme%dtimeDIRKstage1      = rtstepScheme%dcurrentTime
-      end if
-      rtstepScheme%dtstep               = rtstepScheme%dtau * &
-                                             rtstepScheme%dcoeffC(rtstepScheme%isubstep+1)
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtimeDIRKstage1    = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep             = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
+      case (2)
+        rtstepScheme%dtstep             = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                               rtstepScheme%dcoeffC(2))
+      end select
       rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
                      rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
       rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
@@ -1304,12 +1306,22 @@ contains
       !       completion of this macro time step their respective solutions live in the
       !       same point in time.
       rtstepScheme%dtau = 3.0_DP * dtstep
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtimeDIRKstage1    = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep             = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
+      case (2)
+        rtstepScheme%dtstep             = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                               rtstepScheme%dcoeffC(2))
+      case (3)
+        ! Yes, this particular setting ...%dtstep choice leads indeed for DIRK34L and
+        ! DIRK44L to a seemingly time step size of 0. At least that is what gets displayed
+        ! in the log. But this setting is only for display, internally the DIRK algorithms
+        ! rely on the parameter tau and coefficients c_i to determine the time step size.
+        rtstepScheme%dtstep             = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
+                                                               rtstepScheme%dcoeffC(3))
+      end select
 
-      if (rtstepScheme%isubstep .eq. 1) then
-        rtstepScheme%dtimeDIRKstage1      = rtstepScheme%dcurrentTime
-      end if
-      rtstepScheme%dtstep               = rtstepScheme%dtau * &
-                                             rtstepScheme%dcoeffC(rtstepScheme%isubstep+1)
       rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
                      rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
       rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
@@ -1317,7 +1329,6 @@ contains
       rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
                                       sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,:))
-
 
     end select
 
