@@ -57,7 +57,7 @@ include 'defaults.inc'
 # global settings for all poisson tests defined in this file
 #============================================================
 
-appl = anisotropicdiffusion
+appl = anisodiff
 class = DEFAULT
 
 # Test 1
