@@ -128,7 +128,7 @@ Time-Step 4, Time = 0.03000, Stepsize: DT3 = 0.02615
 Time-Step 4 (Repetition = 0, Substep = 1 of 1) at time = 0.05615 finished.
 -------------------------------------------------------------------------------
 Starting postprocessing of the time step...
-||def(div u)||_l2 =    3.226522E-14
+||def(div u)||_l2 =    3.226546E-14
 ||div u||_L2      =    6.700809E-01
 ||u_1||_L2         =    9.681721E-01
 ||u_2||_L2         =    9.614418E-02
@@ -153,7 +153,7 @@ Time-Step 5, Time = 0.05615, Stepsize: DT3 = 0.00385
 Time-Step 5 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 -------------------------------------------------------------------------------
 Starting postprocessing of the time step...
-||def(div u)||_l2 =    4.464364E-14
+||def(div u)||_l2 =    4.464343E-14
 ||div u||_L2      =    6.606489E-01
 ||u_1||_L2         =    9.687396E-01
 ||u_2||_L2         =    9.665647E-02
@@ -180,10 +180,10 @@ Time-Step 6 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.571702E+01 /    1.306700E+00
-        p (   0.1500,   0.2000) = 0.2050141800E+01
-        p (   0.2500,   0.2000) = 0.5652660970E+00
+        p (   0.1500,   0.2000) = 0.2050141801E+01
+        p (   0.2500,   0.2000) = 0.5652660972E+00
        u2 (   0.5000,   0.2000) = 0.5570334470E-02
-||def(div u)||_l2 =    1.291607E-14
+||def(div u)||_l2 =    1.291601E-14
 ||div u||_L2      =    6.584537E-01
 ||u_1||_L2         =    9.686477E-01
 ||u_2||_L2         =    9.631363E-02
@@ -322,7 +322,7 @@ Time-Step 4, Time = 0.03000, Stepsize: DT3 = 0.02615
 Time-Step 4 (Repetition = 0, Substep = 1 of 1) at time = 0.05615 finished.
 -------------------------------------------------------------------------------
 Starting postprocessing of the time step...
-||def(div u)||_l2 =    1.701099E-14
+||def(div u)||_l2 =    1.701096E-14
 ||div u||_L2      =    3.112857E-01
 ||u_1||_L2         =    9.698424E-01
 ||u_2||_L2         =    9.721498E-02
@@ -347,7 +347,7 @@ Time-Step 5, Time = 0.05615, Stepsize: DT3 = 0.00385
 Time-Step 5 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 -------------------------------------------------------------------------------
 Starting postprocessing of the time step...
-||def(div u)||_l2 =    2.192859E-14
+||def(div u)||_l2 =    2.192867E-14
 ||div u||_L2      =    3.127898E-01
 ||u_1||_L2         =    9.705262E-01
 ||u_2||_L2         =    9.777326E-02
@@ -374,10 +374,10 @@ Time-Step 6 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.359269E+01 /    5.416104E-01
-        p (   0.1500,   0.2000) = 0.2044501373E+01
-        p (   0.2500,   0.2000) = 0.6390966254E+00
+        p (   0.1500,   0.2000) = 0.2044501374E+01
+        p (   0.2500,   0.2000) = 0.6390966258E+00
        u2 (   0.5000,   0.2000) = 0.1948446733E-02
-||def(div u)||_l2 =    1.628561E-14
+||def(div u)||_l2 =    1.628568E-14
 ||div u||_L2      =    3.011838E-01
 ||u_1||_L2         =    9.703233E-01
 ||u_2||_L2         =    9.735100E-02
