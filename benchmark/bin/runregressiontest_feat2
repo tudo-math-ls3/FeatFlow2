@@ -390,7 +390,7 @@ fb_customise() {
 	lidong1|lidong2)
 	    # set various parameters
 	    ARCH=LiDO
-	    COMPILEWITHPROCS=2
+	    COMPILEWITHPROCS=13
 	    CREATEDOCU="no"
 	    SVNURL=https://svn.mathematik.tu-dortmund.de:20443/svn/Featflow2
 	    MAILX="mailx"
