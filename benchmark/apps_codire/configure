@@ -136,25 +136,29 @@ fi
 # used: If --objdir-prefix is overridden on the command line (when this
 # script is invoked), there is no point in checking the length.
 case "$@" in
-    *--objdir-prefix=*)
-	;;
-    *)
-	if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "106" ]; then
-	   echo "$0: ERROR."
-	   echo "    Sorry, the object directory prefix, argument to command line option"
-           echo "    --objdir-prefix, is too long."
-	   echo "    The full object directory path - which will include also build ID info,"
-	   echo "    whether or not to use coprocessors and/or OpenMP and whether to do a debug"
-	   echo "    or release build - will most likely exceeds 162 characters. This may lead"
-	   echo "    to compilation errors, e.g. PGI 7-13 will not be able to locate include"
-	   echo "    files from a directory that long."
-	   echo "    Please abbreviate the object directory which is currently"
-	   echo "    set to:"
-	   echo "<"${OBJDIRPREFIX}">"
-	   echo
-	   echo "Application not configured."
-	   exit 1
-	fi
+    *--id=[A-Za-z0-9_-]*-pgi*)
+        case "$@" in
+	    *--objdir-prefix=*)
+	        ;;
+	    *)
+		if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "105" ]; then
+		    echo "$0: ERROR."
+		    echo "    Sorry, the object directory prefix, argument to command line option"
+		    echo "    --objdir-prefix, is too long for the PGI compiler."
+		    echo "    The full object directory path - which will include also build ID info,"
+		    echo "    whether or not to use coprocessors and/or OpenMP and whether to do a debug"
+		    echo "    or release build - will most likely exceeds 162 characters. This will lead"
+		    echo "    to compilation errors with PGI 7-13 which will not be able to locate include"
+		    echo "    files from a directory that long."
+		    echo "    Please abbreviate the object directory which is currently"
+		    echo "    set to:"
+		    echo "<"${OBJDIRPREFIX}">"
+		    echo
+		    echo "Application not configured."
+		    exit 1
+		fi
+		;;
+	esac
 	;;
 esac
 
