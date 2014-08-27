@@ -726,6 +726,7 @@ fb_runAndEvalBenchmarkTest() {
     # (the former loop.inc file)
 
     # set logfile for output during execution and remove contents of previous result comparison
+    test -d ${LOGDIR} || mkdir ${LOGDIR}
     EXECUTIONLOG=${LOGDIR}/${RUNLOGFILE}
     \rm ${LOGDIR}/${RESULTFILE} 1>/dev/null 2>&1
 
