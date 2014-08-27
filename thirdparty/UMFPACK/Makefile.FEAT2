@@ -2,7 +2,8 @@
 
 #-------------------------------------------------------------------------------
 # UMFPACK Makefile for compiling on Unix systems (for GNU Make)
-# (adapted for the FEAT2 package, based on Lib/GNUmakefile from UMFPACK 5.2)
+# (adapted for the FEAT2 package, based on Lib/GNUmakefile from UMFPACK 5.2,
+#  tweaked to work with UMFPACK 5.7.0)
 #
 # Whereever UMFPACK Makefile instructions have been altered, the original
 # ones immediately precede the new ones and carry the prefix #FEAT2#.
@@ -39,21 +40,21 @@ UMFCH = umf_assemble umf_blas3_update umf_build_tuples umf_create_element \
 	umf_valid_symbolic umf_grow_front umf_start_front \
 	umf_store_lu umf_scale
 
-# non-user-callable umf_*.[ch] files, int/UF_long versions only (no real/complex):
+# non-user-callable umf_*.[ch] files, int/SuiteSparse_long versions only (no real/complex):
 UMFINT = umf_analyze umf_apply_order umf_colamd umf_free umf_fsize \
 	umf_is_permutation umf_malloc umf_realloc umf_report_perm \
 	umf_singletons umf_cholmod
 
 # non-user-callable, created from umf_ltsolve.c, umf_utsolve.c,
-# umf_triplet.c, and umf_assemble.c , with int/UF_long and real/complex versions:
+# umf_triplet.c, and umf_assemble.c , with int/SuiteSparse_long and real/complex versions:
 UMF_CREATED = umf_lhsolve umf_uhsolve umf_triplet_map_nox \
 	umf_triplet_nomap_x umf_triplet_nomap_nox umf_triplet_map_x \
 	umf_assemble_fixq umf_store_lu_drop
 
-# non-user-callable, int/UF_long and real/complex versions:
+# non-user-callable, int/SuiteSparse_long and real/complex versions:
 UMF = $(UMF_CREATED) $(UMFCH)
 
-# user-callable umfpack_*.[ch] files (int/UF_long and real/complex):
+# user-callable umfpack_*.[ch] files (int/SuiteSparse_long and real/complex):
 UMFPACK = umfpack_col_to_triplet umfpack_defaults umfpack_free_numeric \
 	umfpack_free_symbolic umfpack_get_numeric umfpack_get_lunz \
 	umfpack_get_symbolic umfpack_get_determinant umfpack_numeric \
@@ -66,12 +67,12 @@ UMFPACK = umfpack_col_to_triplet umfpack_defaults umfpack_free_numeric \
 	umfpack_load_symbolic umfpack_save_symbolic
 
 # user-callable, created from umfpack_solve.c (umfpack_wsolve.h exists, though):
-# with int/UF_long and real/complex versions:
+# with int/SuiteSparse_long and real/complex versions:
 UMFPACKW = #FEAT2# umfpack_wsolve
 
 USER = $(UMFPACKW) $(UMFPACK)
 
-# user-callable, only one version for int/UF_long, real/complex, *.[ch] files:
+# user-callable, only one version for int/SuiteSparse_long, real/complex, *.[ch] files:
 GENERIC = umfpack_timer umfpack_tictoc umfpack_global
 
 #-------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
 
 
 #-------------------------------------------------------------------------------
-# compile each int and UF_long routine (with no real/complex version)
+# compile each int and SuiteSparse_long routine (with no real/complex version)
 #-------------------------------------------------------------------------------
 
 #FEAT2 Substitution Rule# All object files got a '$(OBJDIR)/' prefix
@@ -413,7 +414,7 @@ include ../unpack.mk
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
 
-AMD_TARBALL = ../AMD-2.3.1.tar.gz
+AMD_TARBALL = ../AMD-2.4.0.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -431,9 +432,9 @@ $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TA
 # try to build the UMFPACK library (e.g. parallel make of the 
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME      = "AMD 2.3.1 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME      = "AMD 2.4.0 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE  = ../LOCK.unpack.amd-2.3.1.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE  = ../LOCK.unpack.amd-2.4.0.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES   = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD  = echo
@@ -441,9 +442,9 @@ $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.3.1.tar.gz
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.4.0.tar.gz
 $(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.3.1.tar.gz
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.4.0.tar.gz
 $(AMD_TARBALL):  WAITTIME = 15
 $(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
@@ -454,7 +455,7 @@ $(AMD_TARBALL):
 # Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
 
-SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.2.1.tar.gz
+SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.3.1.tar.gz
 
 # List of required source files from SuiteSparse_config package. Purpose: let
 # them share a single common prerequisite that in turn is created by unpacking
@@ -471,9 +472,9 @@ LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_co
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.2.1 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.3.1 sources"
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL   = $(SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.2.1.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.3.1.tar.gz
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES   = 24
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD  = echo
@@ -481,9 +482,9 @@ $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.2.1.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.3.1.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.2.1.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.3.1.tar.gz
 $(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
 $(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
 $(SUITESPARSE_CONFIG_TARBALL):
@@ -494,7 +495,7 @@ $(SUITESPARSE_CONFIG_TARBALL):
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-UMFPACK_TARBALL = ../UMFPACK-5.6.2.tar.gz
+UMFPACK_TARBALL = ../UMFPACK-5.7.0.tar.gz
 
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -518,9 +519,9 @@ SRC_UMFPACK = Include/umfpack.h \
 LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/README.txt
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL) $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.6.2 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.7.0 sources"
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.6.2.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.7.0.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
@@ -534,9 +535,9 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.6.2.tar.gz
+$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.7.0.tar.gz
 $(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.6.2.tar.gz
+$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.7.0.tar.gz
 $(UMFPACK_TARBALL):  WAITTIME = 15
 $(UMFPACK_TARBALL):  RETRIES  = 24
 $(UMFPACK_TARBALL):
