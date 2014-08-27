@@ -134,7 +134,7 @@ print "tests failing execution  : $testexecfailed\n\n";
 # Print list of failed tests
 if ($testdeviant > 0) {
   print "\n";
-  print "The tests with deviating results are coded in the following files:\n";
+  print "The tests with deviating results have the following IDs:\n";
   print join("\n", @listOfDeviantTests) . "\n";
 }
 
@@ -143,15 +143,14 @@ if ($testdeviant > 0) {
 if ($testunverified > 0) {
   print "\n";
   print "The tests that could not be verified due to a missing\n";
-  print "reference solution are coded in the following files\n";
+  print "reference solution have the following IDs\n";
   print join("\n", @listOfUnveriTests) . "\n";
 }
 
 # Print list of tests that crashed
 if ($testexecfailed > 0) {
   print "\n";
-  print "The tests that crashed during execution are coded in\n";
-  print "the following files\n";
+  print "The tests that crashed during execution have the following IDs:\n";
   print join("\n", @listOfCrashedTests) . "\n";
 }
 print "\n";

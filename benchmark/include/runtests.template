@@ -680,7 +680,7 @@ fb_footer() {
     # Print list of failed tests
     if test ${testdeviant} -gt 0; then
 	echo
-	echo "The tests with deviating results are coded in the following files:"
+	echo "The tests with deviating results have the following IDs:"
 	echo ${listOfDeviantTests} | tr ' ' '\n'
     fi
 
@@ -689,15 +689,14 @@ fb_footer() {
     if test ${testunverified} -gt 0; then
 	echo
 	echo "The tests that could not be verified due to a missing"
-	echo "reference solution are coded in the following files:"
+	echo "reference solution have the following IDs:"
 	echo ${listOfUnveriTests} | tr ' ' '\n'
     fi
 
     # Print list of tests that crashed
     if test ${testexecfailed} -gt 0; then
 	echo
-	echo "The tests that crashed during execution are coded in"
-	echo "the following files:"
+	echo "The tests that crashed during execution have the following IDs:"
 	echo ${listOfCrashedTests} | tr ' ' '\n'
     fi
 

@@ -66,7 +66,7 @@ if ($debugScript) {
 # follow now in the log file
 if ($testsConspicuous > 0 || $testsCrashed > 0) {
     FILE: while (<INFILE>) {
-	if (m/^The tests with deviating results are coded in the following files:/) {
+	if (m/^The tests with deviating results have the following IDs:/) {
 	    # Read till we find first empty line indicating
 	    # end of tests that deviated
 	    $_ = <INFILE>;
@@ -80,7 +80,7 @@ if ($testsConspicuous > 0 || $testsCrashed > 0) {
 	    }
 	}
 
-	if (m/^The tests that (could not be verified due to a missing|crashed during execution are coded in)/) {
+	if (m/^The tests that (could not be verified due to a missing|crashed during execution have the following IDs)/) {
 	    # Skip next line as it's still text.
 	    $_ = <INFILE>;
 
