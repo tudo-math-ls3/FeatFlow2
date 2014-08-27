@@ -544,6 +544,7 @@ fb_customise() {
 		    ;;
 
 		# Sun Studio compiler suite 12.1
+                # (discouraged: Internal compiler error triggered for optimised builds)
 		pc64-penryn-linux-sunstudio-*12.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
@@ -553,6 +554,9 @@ fb_customise() {
 		    ;;
 
 		# Oracle Studio compiler suite 12.2
+                # (discouraged: Internal compiler error triggered for optimised
+                #  builds of application feat2benchmark-burgers1d during
+                #  compilation of module linearsystemscalar.o)
 		pc64-penryn-linux-sunstudio-*12.2)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
@@ -562,6 +566,9 @@ fb_customise() {
 		    ;;
 
 		# Oracle Studio compiler suite 12.3
+                # (discouraged: Internal compiler error triggered for optimised
+                #  builds of application feat2benchmark-cc2d_fbbfs during
+                #  compilation of module bilinearformevaluation.o)
 		pc64-penryn-linux-sunstudio-*12.3)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
@@ -570,13 +577,20 @@ fb_customise() {
 		    COMPILERNAME="OracleStudio 12.3"
 		    ;;
 
+		# Oracle Studio compiler suite 12.4beta
+		pc64-penryn-linux-sunstudio-*12.4beta)
+		    modules=""
+		    modules="$modules oraclestudio/12.4beta-201407"
+		    LIDOJOBNAMEPREFIX=ff2-sun124beta
+		    COMPILERNAME="OracleStudio 12.4 Beta (Release 2014-July)"
+		    ;;
+
 		# default Oracle Studio compiler suite
 		pc64-penryn-linux-sunstudio-*)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules oraclestudio/12.3"
-		    LIDOJOBNAMEPREFIX=ff2-sun123
-		    COMPILERNAME="OracleStudio 12.3"
+		    modules="$modules oraclestudio/12.4beta-201407"
+		    LIDOJOBNAMEPREFIX=ff2-sun124beta
+		    COMPILERNAME="OracleStudio 12.4 Beta (Release 2014-July)"
 		    ;;
 
 		# Open64 compiler suite 4.5.2
