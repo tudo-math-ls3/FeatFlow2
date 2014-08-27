@@ -1317,7 +1317,10 @@ fb_configureBenchmark() {
      echo "") >> $GLOBALLOG
 
     if [ "$USEMODULES""x" = "yesx" ]; then
-	(module -t list 2>&1 | tr '\n' ' ' | sed 's/Currently Loaded Modulefiles:/Currently Loaded Modulefiles:\n/'; echo) 1>> $GLOBALLOG
+	# Print out all currently loaded modulefiles one a single line that is
+	# ready to be copied and pasted. So, remove anything impeding this:
+	# numbers module alias tags like "(default)" etc.
+	(module -t list 2>&1 | sed '2,$ { :x; N; s/\n/ /g; s/([^)]*)//; tx; }') 1>> $GLOBALLOG
     else
 	echo "Environment set up without modules on this machine." >> $GLOBALLOG
     fi
