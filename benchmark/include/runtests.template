@@ -1102,7 +1102,7 @@ fb_runAndEvalBenchmarkTest() {
 				echo "Note: To start debugging, issue 'run ${DATFILE}' at the gdb command prompt"
 				echo
 				echo
-				eval gdb ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				eval gdb ${PWD}/${appname} ${outputredirect}
 				;;
 
 			    DBX)
