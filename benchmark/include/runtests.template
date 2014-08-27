@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # ===================================================================
-# Script that runs an arbitrary number of FEAST benchmark tests.
-# These tests are identified by their benchmark test id (e.g. BC0011,
-# SBBLAS0018, STOKES-SOL3-0001, generally any sequence of non-blanks
+# Script that runs an arbitrary number of FEAT2 benchmark tests.
+# These tests are identified by their benchmark test id (e.g. CC2D_002,
+# POISSON_001, FLAGSHIP_TRANSPORT_003_1D, generally any sequence of non-blanks
 # specified as value of the keyword 'testid') and defined in *.fbdef
 # files in the subdirectory 'tests/'.
 #
@@ -653,17 +653,23 @@ fb_initialiseEnv() {
 
 
 fb_footer() {
-    # (the former footer.inc file)
+    header="$1"  # IN
+    prefix="$2"  # IN
+    footer="$3"  # IN
 
-    echo
-    echo "SUMMARY:"
-    echo
-    echo "tests in total           : "${testall}
-    echo "tests successfully passed: "${testpass}
-    echo "tests deviant            : "${testdeviant}
-    echo "tests unverifiable       : "${testunverified}
-    echo "tests failing execution  : "${testexecfailed}
-    echo
+    if test -z "${header}"; then
+       echo
+       echo "SUMMARY:"
+       echo
+    else
+       echo ${header}
+    fi
+
+    echo ${prefix}"tests in total           : "${testall}
+    echo ${prefix}"tests successfully passed: "${testpass}
+    echo ${prefix}"tests deviant            : "${testdeviant}
+    echo ${prefix}"tests unverifiable       : "${testunverified}
+    echo ${prefix}"tests failing execution  : "${testexecfailed}
 
     # In order that an outer runregressiontest script easily gets to know
     # which tests failed, store the information to file, too.
@@ -694,7 +700,12 @@ fb_footer() {
 	echo "the following files:"
 	echo ${listOfCrashedTests} | tr ' ' '\n'
     fi
-    echo
+
+    if test -z "${footer}"; then
+	echo
+    else
+	echo ${footer}
+    fi
 }
 
 
@@ -1174,7 +1185,7 @@ fb_runAndEvalBenchmarkTest() {
 		# Every application is supposed to output data that can be compared
 		# to previous results. Preferably line per program run.
 		# To provide utmost flexibility, based on either application name or
-	        # test class one can add tailored instructions here, e.g. to provide
+		# test class one can add tailored instructions here, e.g. to provide
 		# a header for the table like program output.
 		case "${CLASS}" in
 		    CC2D)
@@ -1397,6 +1408,25 @@ WARNING! For this application / test class there are no instructions
 
     # shut down MPI universe
     eval ${MPISTOP} ${outputredirect}
+
+    # Show test statistics if user presses or has pressed a key - if stdin is a terminal.
+    #
+    # To accomplish this with shell builtins we would require 'read' to support a
+    # timeout option which is not available in plain sh. Bash (at least version 3.2 and
+    # higher, not sure about earlier versions) supports it, but bash 4.1.5 tends to
+    # choke on named pipe used elsewhere in this script (at least in 1% of cases)
+    # leading to spurious test crashes unrelated to programming or input errors. So, the
+    # bash shell builtin 'read' is not an option either.
+    # Rely on the Perl module Term::ReadKey - which may not be available, though
+    if test -t 0; then  # STDIN typically has file descriptor 0
+       if perl -c include/query_key_pressed.pl 1>/dev/null 2>/dev/null; then
+           if ! perl include/query_key_pressed.pl; then
+               echo
+               echo
+               fb_footer "+---- intermediate summary ----" "|" "+------------------------------";
+           fi
+       fi
+    fi
 
     echo " "
     echo " "
