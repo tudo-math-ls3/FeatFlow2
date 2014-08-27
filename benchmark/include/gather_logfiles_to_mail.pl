@@ -26,8 +26,8 @@ my $debugScript = 0;
 my $fieldDelimiter = qr{^RUNTIME :};
 
 my $logcontent;
-my (@listOfDeviantTests, @listOfUnveriTests, @listOfCrashedTests);
-my ($testall, $testpass, $testdeviant, $testunverified, $testexecfailed) = (0,0,0,0,0);
+my (@listOfDeviantTests, @listOfUnveriTests, @listOfCrashedTests, @listOfTooSlowTests);
+my ($testall, $testpass, $testdeviant, $testdeviantSignificant, $testunverified, $testexecfailed, $testwalltime, $testunknown) = (0,0,0,0,0,0,0,0);
 
 # variables for command line options
 my $cl_help    = "";
@@ -68,58 +68,81 @@ unless (@files) {
 }
 foreach my $file (sort @files) {
     $file = $directory . "/" . $file;
-    open(INFILE, "<", $file) or
+    my $fileOk = 1;
+    open(INFILE, "<", $file) or $fileOk = 0;
+    if (! $fileOk) {
 	warn "$progname: Cannot open file <$file>: $!\n";
-    print STDERR "Parsing $file... " if ($debugScript);
-    my $show = 1;
-    my $testID = "";
-    my $testfinished = 0;
-    while (<INFILE>) {
-	# Find out test ID
-	if (m/^TESTID\s+=\s+(\S+)\s*$/) {
-	    $testall++;
-	    $testID = $1;
-	    $show = 1;
-	    $testfinished = 0;
-	}
+    } else {
+	print STDERR "Parsing $file... " if ($debugScript);
+	my $show = 1;
+	my $testID = "";
+	my $testfinished = 0;
+	while (<INFILE>) {
+	    # Find out test ID
+	    if (m/^TESTID\s+=\s+(\S+)\s*$/) {
+		$testall++;
+		$testID = $1;
+		$show = 1;
+		$testfinished = 0;
+	    }
 
-	# Copy content to standard output till delimiter is found
-	print if ($show);
-	if (m/$fieldDelimiter/) {
-	    $show = 0;
+	    # Copy content to standard output till delimiter is found
+	    print if ($show);
+	    if (m/$fieldDelimiter/) {
+		$show = 0;
 
-	    # test finished somehow, either killed by queueing system
-	    # because of wallclock time limit or ended by itself.
-	    $testfinished = 1;
-	}
+		# test finished somehow, either killed by queueing system
+		# because of wallclock time limit or ended by itself.
+		$testfinished = 1;
+	    }
+	    if (m/=>> PBS: job killed: walltime \d+ exceeded limit \d+/) {
+		# test finished by being killed by queueing system because of
+		# wallclock time limit. The job may or may not have had the time to
+		# write the final statistics section which we normally parse.
+		$testfinished = 1;
+		$testwalltime++;
+		push @listOfTooSlowTests, $testID;
+	    }
 
-	# As soon as we reached statistics section (show == 0),
-	# try to find out if the test succeeded, deviated, failed or is new
-	if (! $show) {
-	    if (m/^tests successfully passed\s*:\s*(\d+)/) {
-		$testpass += $1;
-	    } elsif (m/^tests deviant\s*:\s*(\d+)/) {
-		$testdeviant += $1;
-		push @listOfDeviantTests, $testID if ($1 > 0);
-	    } elsif (m/^tests unverifiable\s*:\s*(\d+)/) {
-		$testunverified += $1;
-		push @listOfUnveriTests, $testID if ($1 > 0);
-	    } elsif (m/^tests failing execution\s*:\s*(\d+)/) {
-		$testexecfailed += $1;
-		push @listOfCrashedTests, $testID if ($1 > 0);
+	    # As soon as we reached statistics section (show == 0),
+	    # try to find out if the test succeeded, deviated, failed or is new
+	    if (! $show) {
+		if (m/^tests successfully passed\s*:\s*(\d+)/) {
+		    $testpass += $1;
+		} elsif (m/^tests deviant\s*:\s*(\d+)(.*)$/) {
+		    $testdeviant += $1;
+		    push @listOfDeviantTests, $testID if ($1 > 0 && ! $2);
+		    if ($2) {
+			push @listOfDeviantTests, $testID . " (significant difference)" if ($1 > 0);
+			my $significantDeviations = $2;
+			$significantDeviations =~ s/^.*thereof (\d+) significantly.*$/$1/;
+			$testdeviantSignificant += $significantDeviations;
+		    }
+		} elsif (m/^tests unverifiable\s*:\s*(\d+)/) {
+		    $testunverified += $1;
+		    push @listOfUnveriTests, $testID if ($1 > 0);
+		} elsif (m/^tests failing execution\s*:\s*(\d+)/) {
+		    $testexecfailed += $1;
+		    push @listOfCrashedTests, $testID if ($1 > 0);
+		}
 	    }
 	}
-    }
-    if ($testfinished == 0) {
-        # If test did not finish (= logfile truncated), add test ID
-        # to list of crashed tests
-	$testexecfailed += 1;
-	push @listOfCrashedTests, $testID;
-    }
+	if ($testfinished == 0) {
+	    if ($testID eq "") {
+		$testunknown += 1;
+		warn "$progname: File <$file> does not contain test ID!\n";
+	    } else {
+		# If test did not finish (= logfile truncated), add test ID
+		# to list of crashed tests
+		$testexecfailed += 1;
+		push @listOfCrashedTests, $testID;
+	    }
+	}
 
-    close(INFILE);
-    print STDERR "done\n" if ($debugScript);
-    print "\n";
+	close(INFILE);
+	print STDERR "done\n" if ($debugScript);
+	print "\n";
+    }
 }
 
 # Final statistics
@@ -127,9 +150,16 @@ print "\nSUMMARY:\n\n";
 
 print "tests in total           : $testall\n";
 print "tests successfully passed: $testpass\n";
-print "tests deviant            : $testdeviant\n";
+if ($testdeviantSignificant > 0) {
+    print "tests deviant            : $testdeviant (thereof $testdeviantSignificant significantly)\n";
+} else {
+    print "tests deviant            : $testdeviant\n";
+}
 print "tests unverifiable       : $testunverified\n";
-print "tests failing execution  : $testexecfailed\n\n";
+print "tests failing execution  : " . ($testexecfailed + $testwalltime) . "\n";
+print "tests with unknown status: $testunknown\n" if ($testunknown > 0);
+print "\n";
+
 
 # Print list of failed tests
 if ($testdeviant > 0) {
@@ -143,8 +173,15 @@ if ($testdeviant > 0) {
 if ($testunverified > 0) {
   print "\n";
   print "The tests that could not be verified due to a missing\n";
-  print "reference solution have the following IDs\n";
+  print "reference solution have the following IDs:\n";
   print join("\n", @listOfUnveriTests) . "\n";
+}
+
+# Print list of tests that ran too long
+if ($testwalltime > 0) {
+  print "\n";
+  print "The tests that exceeded their assigned walltime have the following IDs:\n";
+  print join("\n", @listOfTooSlowTests) . "\n";
 }
 
 # Print list of tests that crashed
@@ -152,6 +189,13 @@ if ($testexecfailed > 0) {
   print "\n";
   print "The tests that crashed during execution have the following IDs:\n";
   print join("\n", @listOfCrashedTests) . "\n";
+}
+
+if ($testunknown > 0) {
+    print "\n";
+    print "WARNING: $testunknown test" if ($testunknown == 1);
+    print "WARNING: $testunknown tests" if ($testunknown > 1);
+    print " failed without even printing the test description. Job file corrupt?\n";
 }
 print "\n";
 
