@@ -24,45 +24,116 @@ module signals
   public :: fsignal
 
 !<constants>
-!<constantblock description="Types of signals">
 
-  integer, parameter, public :: SIGHUP    =  1   ! Hangup (POSIX).
-  integer, parameter, public :: SIGINT    =  2   ! Interrupt (ANSI).
-  integer, parameter, public :: SIGQUIT   =  3   ! Quit (POSIX).
-  integer, parameter, public :: SIGILL    =  4   ! Illegal instruction (ANSI).
-  integer, parameter, public :: SIGTRAP   =  5   ! Trace trap (POSIX).
-  integer, parameter, public :: SIGABRT   =  6   ! Abort (ANSI).
-  integer, parameter, public :: SIGIOT    =  6   ! IOT trap (4.2 BSD).
-  integer, parameter, public :: SIGBUS    =  7   ! BUS error (4.2 BSD).
-  integer, parameter, public :: SIGFPE    =  8   ! Floating-point exception (ANSI).
-  integer, parameter, public :: SIGKILL   =  9   ! Kill, unblockable (POSIX).
-  integer, parameter, public :: SIGUSR1   = 10   ! User-defined signal 1 (POSIX).
-  integer, parameter, public :: SIGSEGV   = 11   ! Segmentation violation (ANSI).
-  integer, parameter, public :: SIGUSR2   = 12   ! User-defined signal 2 (POSIX).
-  integer, parameter, public :: SIGPIPE   = 13   ! Broken pipe (POSIX).
-  integer, parameter, public :: SIGALRM   = 14   ! Alarm clock (POSIX).
-  integer, parameter, public :: SIGTERM   = 15   ! Termination (ANSI).
-  integer, parameter, public :: SIGSTKFLT = 16   ! Stack fault.
-  integer, parameter, public :: SIGCLD    = 17   ! Same as SIGCHLD (System V).
-  integer, parameter, public :: SIGCHLD   = 17   ! Child status has changed (POSIX).
-  integer, parameter, public :: SIGCONT   = 18   ! Continue (POSIX).
-  integer, parameter, public :: SIGSTOP   = 19   ! Stop, unblockable (POSIX).
-  integer, parameter, public :: SIGTSTP   = 20   ! Keyboard stop (POSIX).
-  integer, parameter, public :: SIGTTIN   = 21   ! Background read from tty (POSIX).
-  integer, parameter, public :: SIGTTOU   = 22   ! Background write to tty (POSIX).
-  integer, parameter, public :: SIGURG    = 23   ! Urgent condition on socket (4.2 BSD).
-  integer, parameter, public :: SIGXCPU   = 24   ! CPU limit exceeded (4.2 BSD).
-  integer, parameter, public :: SIGXFSZ   = 25   ! File size limit exceeded (4.2 BSD).
-  integer, parameter, public :: SIGVTALRM = 26   ! Virtual alarm clock (4.2 BSD).
-  integer, parameter, public :: SIGPROF   = 27   ! Profiling alarm clock (4.2 BSD).
-  integer, parameter, public :: SIGWINCH  = 28   ! Window size change (4.3 BSD, Sun).
-  integer, parameter, public :: SIGPOLL   = 29   ! Pollable event occurred (System V).
-  integer, parameter, public :: SIGIO     = 29   ! I/O now possible (4.2 BSD).
-  integer, parameter, public :: SIGPWR    = 30   ! Power failure restart (System V).
-  integer, parameter, public :: SIGSYS    = 31   ! Bad system call.
-  integer, parameter, public :: SIGUNUSED = 31
-
+#if FEAT2_PP_OS_IS_LINUX() || FEAT2_PP_OS_IS_SOLARIS()
+!<constantblock description="Types of signals available on Linux and SUN Solaris systems">
+  integer, parameter, public :: SIGHUP    =  1   ! terminal line hangup
+  integer, parameter, public :: SIGINT    =  2   ! interrupt program
+  integer, parameter, public :: SIGQUIT   =  3   ! quit program
+  integer, parameter, public :: SIGILL    =  4   ! illegal instruction
+  integer, parameter, public :: SIGTRAP   =  5   ! trace trap
+  integer, parameter, public :: SIGABRT   =  6   ! abort program (formerly SIGIOT)
+  integer, parameter, public :: SIGBUS    =  7   ! bus error
+  integer, parameter, public :: SIGFPE    =  8   ! floating-point exception
+  integer, parameter, public :: SIGKILL   =  9   ! kill program
+  integer, parameter, public :: SIGUSR1   = 10   ! user defined signal 1
+  integer, parameter, public :: SIGSEGV   = 11   ! segmentation violation
+  integer, parameter, public :: SIGUSR2   = 12   ! user defined signal 2
+  integer, parameter, public :: SIGPIPE   = 13   ! write on a pipe with no reader
+  integer, parameter, public :: SIGALRM   = 14   ! real-time timer expired
+  integer, parameter, public :: SIGTERM   = 15   ! software termination signal
+  integer, parameter, public :: SIGSTKFLT = 16   ! stack fault
+  integer, parameter, public :: SIGCHLD   = 17   ! child status has changed
+  integer, parameter, public :: SIGCONT   = 18   ! continue after stop
+  integer, parameter, public :: SIGSTOP   = 19   ! stop (cannot be caught or ignored)
+  integer, parameter, public :: SIGTSTP   = 20   ! stop signal generated from keyboard
+  integer, parameter, public :: SIGTTIN   = 21   ! background read attempted from control terminal
+  integer, parameter, public :: SIGTTOU   = 22   ! background write attempted to control terminal
+  integer, parameter, public :: SIGURG    = 23   ! urgent condition present on socket
+  integer, parameter, public :: SIGXCPU   = 24   ! cpu time limit exceeded (see setrlimit(2))
+  integer, parameter, public :: SIGXFSZ   = 25   ! file size limit exceeded (see setrlimit(2))
+  integer, parameter, public :: SIGVTALRM = 26   ! virtual time alarm (see setitimer(2))
+  integer, parameter, public :: SIGPROF   = 27   ! profiling timer alarm (see setitimer(2))
+  integer, parameter, public :: SIGWINCH  = 28   ! window size change
+  integer, parameter, public :: SIGIO     = 29   ! I/O is possible on a descriptor (see fcntl(2))
+  integer, parameter, public :: SIGPWR    = 30   ! power failure restart
+  integer, parameter, public :: SIGSYS    = 31   ! non-existent system call invoked
 !</constantblock>
+
+#elif FEAT2_PP_OS_IS_OSX()
+!<constantblock description="Types of signals available on Mac OSX systems">
+  integer, parameter, public :: SIGHUP    =  1   ! terminal line hangup
+  integer, parameter, public :: SIGINT    =  2   ! interrupt program
+  integer, parameter, public :: SIGQUIT   =  3   ! quit program
+  integer, parameter, public :: SIGILL    =  4   ! illegal instruction
+  integer, parameter, public :: SIGTRAP   =  5   ! trace trap
+  integer, parameter, public :: SIGABRT   =  6   ! abort program (formerly SIGIOT)
+  integer, parameter, public :: SIGEMT    =  7   ! emulate instruction executed
+  integer, parameter, public :: SIGFPE    =  8   ! floating-point exception
+  integer, parameter, public :: SIGKILL   =  9   ! kill program
+  integer, parameter, public :: SIGBUS    = 10   ! bus error
+  integer, parameter, public :: SIGSEGV   = 11   ! segmentation violation
+  integer, parameter, public :: SIGSYS    = 12   ! non-existent system call invoked
+  integer, parameter, public :: SIGPIPE   = 13   ! write on a pipe with no reader
+  integer, parameter, public :: SIGALRM   = 14   ! real-time timer expired
+  integer, parameter, public :: SIGTERM   = 15   ! software termination signal
+  integer, parameter, public :: SIGURG    = 16   ! urgent condition present on socket
+  integer, parameter, public :: SIGSTOP   = 17   ! stop (cannot be caught or ignored)
+  integer, parameter, public :: SIGTSTP   = 18   ! stop signal generated from keyboard
+  integer, parameter, public :: SIGCONT   = 19   ! continue after stop
+  integer, parameter, public :: SIGCHLD   = 20   ! child status has changed
+  integer, parameter, public :: SIGTTIN   = 21   ! background read attempted from control terminal
+  integer, parameter, public :: SIGTTOU   = 22   ! background write attempted to control terminal
+  integer, parameter, public :: SIGIO     = 23   ! I/O is possible on a descriptor (see fcntl(2))
+  integer, parameter, public :: SIGXCPU   = 24   ! cpu time limit exceeded (see setrlimit(2))
+  integer, parameter, public :: SIGXFSZ   = 25   ! file size limit exceeded (see setrlimit(2))
+  integer, parameter, public :: SIGVTALRM = 26   ! virtual time alarm (see setitimer(2))
+  integer, parameter, public :: SIGPROF   = 27   ! profiling timer alarm (see setitimer(2))
+  integer, parameter, public :: SIGWINCH  = 28   ! window size change
+  integer, parameter, public :: SIGINFO   = 29   ! status request from keyboard
+  integer, parameter, public :: SIGUSR1   = 30   ! user defined signal 1
+  integer, parameter, public :: SIGUSR2   = 31   ! user defined signal 2
+!</constantblock>
+
+#elif FEAT2_PP_OS_IS_CYGWIN()
+!<constantblock description="Types of signals available on Cygwin systems">
+  integer, parameter, public :: SIGHUP    =  1   ! hangup
+  integer, parameter, public :: SIGINT    =  2   ! interrupt
+  integer, parameter, public :: SIGQUIT   =  3   ! quit
+  integer, parameter, public :: SIGILL    =  4   ! illegal instruction (not reset when caught)
+  integer, parameter, public :: SIGTRAP   =  5   ! trace trap (not reset when caught)
+  integer, parameter, public :: SIGABRT   =  6   ! used by abort
+  integer, parameter, public :: SIGEMT    =  7   ! EMT instruction
+  integer, parameter, public :: SIGFPE    =  8   ! floating point exception
+  integer, parameter, public :: SIGKILL   =  9   ! kill (cannot be caught or ignored)
+  integer, parameter, public :: SIGBUS    = 10   ! bus error
+  integer, parameter, public :: SIGSEGV   = 11   ! segmentation violation
+  integer, parameter, public :: SIGSYS    = 12   ! bad argument to system call
+  integer, parameter, public :: SIGPIPE   = 13   ! write on a pipe with no one to read it
+  integer, parameter, public :: SIGALRM   = 14   ! alarm clock
+  integer, parameter, public :: SIGTERM   = 15   ! software termination signal from kill
+  integer, parameter, public :: SIGURG    = 16   ! urgent condition on IO channel
+  integer, parameter, public :: SIGSTOP   = 17   ! sendable stop signal not from tty
+  integer, parameter, public :: SIGTSTP   = 18   ! stop signal from tty
+  integer, parameter, public :: SIGCONT   = 19   ! continue a stopped process
+  integer, parameter, public :: SIGCHLD   = 20   ! to parent on child stop or exit
+  integer, parameter, public :: SIGCLD    = 20   ! System V name for SIGCHLD
+  integer, parameter, public :: SIGTTIN   = 21   ! to readers pgrp upon background tty read
+  integer, parameter, public :: SIGTTOU   = 22   ! like TTIN for output if (tp->t_local&LTOSTOP)
+  integer, parameter, public :: SIGIO     = 23   ! input/output possible
+  integer, parameter, public :: SIGPOLL   = 23   ! System V name for SIGIO
+  integer, parameter, public :: SIGXCPU   = 24   ! exceeded CPU time limit
+  integer, parameter, public :: SIGXFSZ   = 25   ! exceeded file size limit
+  integer, parameter, public :: SIGVTALRM = 26   ! virtual time alarm
+  integer, parameter, public :: SIGPROF   = 27   ! profiling time alarm
+  integer, parameter, public :: SIGWINCH  = 28   ! window changed
+  integer, parameter, public :: SIGLOST   = 29   ! resource lost (eg, record-lock lost)
+  integer, parameter, public :: SIGPWR    = 29   ! power failure
+  integer, parameter, public :: SIGUSR1   = 30   ! user defined signal 1
+  integer, parameter, public :: SIGUSR2   = 31   ! user defined signal 2
+!</constantblock>
+#endif
+
 !</constants>
 
   ! *****************************************************************************
