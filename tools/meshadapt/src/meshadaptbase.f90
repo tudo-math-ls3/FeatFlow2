@@ -55,6 +55,13 @@ module meshadaptbase
   public :: madapt_step
   public :: madapt_signalhandler
 
+  public :: madapt_getNEL
+  public :: madapt_getNVT
+  public :: madapt_getNDIM
+  public :: madapt_getVertexCoords
+  public :: madapt_getNeighboursAtElement
+  public :: madapt_getVerticesAtElement
+
   interface madapt_step
     module procedure madapt_step_direct
     module procedure madapt_step_dble1
@@ -64,9 +71,6 @@ module meshadaptbase
     module procedure madapt_step_fromfile
   end interface madapt_step
 
-  ! global variables
-  type(t_meshAdapt), target, save :: rmeshAdaptBase
-  
 contains
   
   ! ***************************************************************************
@@ -253,8 +257,20 @@ contains
 
 !</subroutine>
 
+    if (nrefmax .lt. rmeshAdapt%rhadapt%nsubdividemax) then
+      if (hadapt_getSubdivisonLevel(rmeshAdapt%rhadapt) .le. nrefmax) then
+        rmeshAdapt%rhadapt%nsubdividemax = nrefmax
+      else
+        call output_line("Maximum refinement level cannot be smaller than "//&
+            "refinement level in current mesh!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"madapt_step_direct")
+        call sys_halt()
+      end if
+    else
+      rmeshAdapt%rhadapt%nsubdividemax = nrefmax
+    end if
+
     ! Set parameters
-    rmeshAdapt%rhadapt%nsubdividemax        = nrefmax
     rmeshAdapt%rhadapt%drefinementTolerance = dreftol
     rmeshAdapt%rhadapt%dcoarseningTolerance = dcrstol
 
@@ -710,5 +726,207 @@ contains
     end select
 
   end function madapt_signalhandler
+
+  ! ***************************************************************************
+
+!<function>
+
+  function madapt_getNEL(rmeshAdapt) result(NEL)
+
+!<description>
+    ! Returns the number of elements
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<result>
+    ! Number of elements
+    integer :: NEL
+!</result>
+
+!</function>
+
+    NEL = rmeshAdapt%rtriangulation%NEL
+
+  end function madapt_getNEL
+
+  ! ***************************************************************************
+
+!<function>
+
+  function madapt_getNVT(rmeshAdapt) result(NVT)
+
+!<description>
+    ! Returns the number of vertices
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<result>
+    ! Number of elements
+    integer :: NVT
+!</result>
+
+!</function>
+
+    NVT = rmeshAdapt%rtriangulation%NVT
+
+  end function madapt_getNVT
+
+  ! ***************************************************************************
+
+!<function>
+
+  function madapt_getNDIM(rmeshAdapt) result(NDIM)
+
+!<description>
+    ! Returns the number of spatial dimensions
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<result>
+    ! Number of spatial dimensions
+    integer :: NDIM
+!</result>
+
+!</function>
+
+    NDIM = rmeshAdapt%rtriangulation%NDIM
+
+  end function madapt_getNDIM
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine madapt_getVertexCoords(rmeshAdapt,DvertexCoords)
+
+!<description>
+    ! Returns the vertex coordinates
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<output>
+    ! Array of vertex coordinates
+    real(DP), dimension(*), intent(out) :: DvertexCoords
+!</output>
+
+!</subroutine>
+
+    ! local variable
+    integer :: i,j,n,m
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    
+    call storage_getbase_double2d(&
+        rmeshAdapt%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    n = size(p_DvertexCoords,1)
+    m = size(p_DvertexCoords,2)
+
+    do j=1,m
+      do i=1,n
+        DvertexCoords(n*(j-1)+i) = p_DvertexCoords(i,j)
+      end do
+    end do
+
+  end subroutine madapt_getVertexCoords
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine madapt_getNeighboursAtElement(rmeshAdapt,IneighboursAtElement)
+
+!<description>
+    ! Returns the element-adjacency list
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<output>
+    ! Element-adjacency array
+    integer, dimension(*), intent(out) :: IneighboursAtElement
+!</output>
+
+!</subroutine>
+
+!</subroutine>
+
+    ! local variable
+    integer :: i,j,n,m
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    
+    call storage_getbase_int2d(&
+        rmeshAdapt%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+
+    n = size(p_IneighboursAtElement,1)
+    m = size(p_IneighboursAtElement,2)
+
+    do j=1,m
+      do i=1,n
+        IneighboursAtElement(n*(j-1)+i) = p_IneighboursAtElement(i,j)
+      end do
+    end do
+    
+  end subroutine madapt_getNeighboursAtElement
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine madapt_getVerticesAtElement(rmeshAdapt,IverticesAtElement)
+
+!<description>
+    ! Returns the vertices-at-element list
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<output>
+    ! Vertices-at-element array
+    integer, dimension(*), intent(out) :: IverticesAtElement
+!</output>
+
+!</subroutine>
+
+!</subroutine>
+
+    ! local variable
+    integer :: i,j,n,m
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    
+    call storage_getbase_int2d(&
+        rmeshAdapt%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+
+    n = size(p_IverticesAtElement,1)
+    m = size(p_IverticesAtElement,2)
+
+    do j=1,m
+      do i=1,n
+        IverticesAtElement(n*(j-1)+i) = p_IverticesAtElement(i,j)
+      end do
+    end do
+    
+  end subroutine madapt_getVerticesAtElement
 
 end module meshadaptbase

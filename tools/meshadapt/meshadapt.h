@@ -35,9 +35,17 @@ extern "C" {
   // meshadaptbase.f90
   void __meshadaptbase_MOD_madapt_alloc(struct t_meshAdapt**);
   void __meshadaptbase_MOD_madapt_dealloc(struct t_meshAdapt**);
-  void __meshadaptbase_MOD_madapt_init(struct t_meshAdapt*, int*, char*);
+  void __meshadaptbase_MOD_madapt_init(struct t_meshAdapt*, int*, char*, int);
+  void __meshadaptbase_MOD_madapt_step_fromfile(struct t_meshAdapt*, char*, int*, double*, double*, int);
+  void __meshadaptbase_MOD_madapt_step_dble2(struct t_meshAdapt*, int*, double*, int*, double*, double*);
   void __meshadaptbase_MOD_madapt_done(struct t_meshAdapt*);
-  
+  int  __meshadaptbase_MOD_madapt_getnel(struct t_meshAdapt*);
+  int  __meshadaptbase_MOD_madapt_getnvt(struct t_meshAdapt*);
+  int  __meshadaptbase_MOD_madapt_getndim(struct t_meshAdapt*);
+  void __meshadaptbase_MOD_madapt_getvertexcoords(struct t_meshAdapt*, double*);
+  void __meshadaptbase_MOD_madapt_getverticesatelement(struct t_meshAdapt*, int*);
+  void __meshadaptbase_MOD_madapt_getneighboursatelement(struct t_meshAdapt*, int*);
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif

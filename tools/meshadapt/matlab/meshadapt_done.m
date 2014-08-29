@@ -1,0 +1,22 @@
+function meshadapt_done
+%MESHADAPT_DONE Finalisation of mesh adaptation
+%
+%   MESHADAPT_DONE
+% 
+%   deallocates all externally allocated memory and stored as libpointer
+%   LP_MESHADAPT in global memory and finalises the Featflow2 back-end.
+%
+% Author: M. Moller, TU Delft, 2014.
+    
+    global lp_meshadapt
+    
+    % Finalisation
+    calllib('meshadapt', 'meshadaptbase_MOD_madapt_done', lp_meshadapt);
+    calllib('meshadapt', 'meshadaptbase_MOD_madapt_dealloc', lp_meshadapt);
+    clear -global lp_meshadapt
+
+    % Clean up the storage management, finish
+    calllib('meshadapt', 'storage_MOD_storage_done', [])
+
+    % Unload shared library
+    unloadlibrary meshadapt
