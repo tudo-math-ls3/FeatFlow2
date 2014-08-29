@@ -90,6 +90,7 @@ module hadaptaux
   private
   public :: t_hadapt
   public :: hadapt_genElementsAtVertex
+  public :: hadapt_getSubdivisonLevel
   public :: hadapt_getBoundary
   public :: hadapt_getNVE
   public :: hadapt_getNeighboursAtElement
@@ -1356,6 +1357,41 @@ contains
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_BOUNDARY)
 
   end subroutine hadapt_setBoundary
+
+  ! ***************************************************************************
+
+!<function>
+
+  function hadapt_getSubdivisonLevel(rhadapt) result(isubdivisionLevel)
+
+!<description>
+    ! This function calculates the deepest subdivision level present
+    ! in the adaptivity structure. If the structure is not
+    ! initialised, then this routine returns -1.
+!</description>
+
+!<input>
+    ! Adaptivity structure
+    type(t_hadapt), intent(in) :: rhadapt
+!</input>
+
+!<result>
+    ! Deepest subdivision level
+    integer :: IsubdivisionLevel
+!</result>
+!</function>
+
+    ! local variable
+    integer, dimension(:), pointer :: p_IvertexAge
+
+    if (rhadapt%h_IvertexAge .eq. ST_NOHANDLE) then
+      isubdivisionLevel = -1
+    else
+      call storage_getbase_int(rhadapt%h_IvertexAge, p_IvertexAge)
+      isubdivisionLevel = maxval(p_IvertexAge)
+    end if
+
+  end function hadapt_getSubdivisonLevel
 
   ! ***************************************************************************
 
