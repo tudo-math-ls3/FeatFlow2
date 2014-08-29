@@ -39,7 +39,8 @@
 !#     coeff_RHS_SSEim /
 !#     -> Returns analytical values for the right hand side of the equation.
 !#
-!# 6.) coeff_RHS_Bdr_SSEre   /
+!# 6.) coeff_RHS_Bdr_Poisson /
+!#     coeff_RHS_Bdr_SSEre   /
 !#     coeff_RHS_Bdr_SSEim   /
 !#     coeff_RHSb1_Bdr_SSEre /
 !#     coeff_RHSb1_Bdr_SSEim /
@@ -168,6 +169,7 @@ module sse_callback
   public :: coeff_RHS_Poisson
   public :: coeff_RHS_SSEre
   public :: coeff_RHS_SSEim
+  public :: coeff_RHS_Bdr_Poisson
   public :: coeff_RHS_Bdr_SSEre
   public :: coeff_RHS_Bdr_SSEim
   public :: coeff_RHSb1_Bdr_SSEre
@@ -288,7 +290,7 @@ contains
     
   !</subroutine>
 
-    Dcoefficients(:,:,:) = 1.0_DP
+    Dcoefficients(:,:,:) = dpoisson
 
   end subroutine
 
@@ -2428,6 +2430,117 @@ contains
 
 !<subroutine>
 
+  subroutine coeff_RHS_Bdr_Poisson(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates. According
+    ! to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! linear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
+    !
+    ! This routine handles the primal problem for the
+    ! convection-diffusion equation.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+#if defined(CASE_POISSON_DIRICHLET)
+
+    call output_line("There is no boundary integral in this benc", &
+        OU_CLASS_ERROR,OU_MODE_STD,"coeff_RHS_Bdr_Poisson")
+    call sys_halt()
+
+#elif defined(CASE_POISSON_NEUMANN)
+
+    Dcoefficients (1,:,:) = -ddirichlet
+
+#else
+#error 'Test case is undefined.'
+#endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine coeff_RHS_Bdr_SSEre(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -3139,8 +3252,56 @@ contains
   
 !</subroutine>
 
-    ! Return zero Dirichlet boundary values for all situations.
-    Dvalues(1) = 0.0_DP
+#if defined(CASE_POISSON_DIRICHLET)
+
+    select case(rcollection%IquickAccess(1))
+    case(1)
+      
+      ! Return Dirichlet boundary values for all situations.
+      Dvalues(1) = ddirichlet
+      
+    case default
+      call output_line("There is no boundary integral in this benchmark", &
+          OU_CLASS_ERROR,OU_MODE_STD,"getBoundaryValues_Poisson")
+      call sys_halt()
+    end select
+
+#elif defined(CASE_POISSON_NEUMANN)
+
+    ! local variables
+    real(DP) :: dnx,dny
+
+    select case(rcollection%IquickAccess(1))
+    case(1)
+
+      ! Return Dirichlet boundary values for all situations.
+      Dvalues(1) = ddirichlet
+
+    case(2)
+
+      ! Compute the normal vector in the point on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+      ! Return Neumann boundary values for all situations.
+      Dvalues(1) = dneumann*dnx
+
+    case(3)
+
+      ! Compute the normal vector in the point on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary, 1, dwhere, dnx, dny)
+
+      ! Return Neumann boundary values for all situations.
+      Dvalues(1) = dneumann*dny
+
+    case default
+      call output_line("There is no boundary integral in this benchmark", &
+          OU_CLASS_ERROR,OU_MODE_STD,"getBoundaryValues_Poisson")
+      call sys_halt()
+    end select
+
+#else
+#error 'Test case is undefined.'
+#endif
   
   end subroutine
 
@@ -3978,7 +4139,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC,calpha,cr1,cr2
   real(DP) :: dAv,dh,ds
@@ -4125,7 +4286,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC,calpha,cr1,cr2
   real(DP) :: dAv,dh,ds
@@ -4371,7 +4532,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC,calpha,cr1,cr2
   real(DP) :: dAv,dh,ds
@@ -4518,7 +4679,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC,calpha,cr1,cr2
   real(DP) :: dAv,dh,ds
@@ -4764,7 +4925,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -4849,7 +5010,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -5033,7 +5194,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC
   real(DP) :: dAv,calpha,dh,cr1,cr2,ds
@@ -5180,7 +5341,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   ! local variables
   complex(DP) :: cC,calpha,cr1,cr2
   real(DP) :: dAv,dh,ds
@@ -5426,7 +5587,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -5511,7 +5672,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -5695,7 +5856,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -5780,7 +5941,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -5964,7 +6125,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -6049,7 +6210,7 @@ contains
   
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
   select case (cderivative)
   case DEFAULT
     ! Unknown. Set the result to 0.0.
@@ -6133,7 +6294,7 @@ contains
 !</output>
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
     ! local variables
     complex(DP) :: cC,calpha,cr1,cr2
     real(DP) :: dAv,dh,ds
@@ -6199,7 +6360,7 @@ contains
 !</output>
 !</subroutine>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_SSE_ALEX)
     ! local variables
     complex(DP) :: calpha,cbeta,calpha1,calpha2,cr1,cr2
     complex(DP) :: cN,cN_x,cN_y,cN_xx,cN_xy,cN_yy

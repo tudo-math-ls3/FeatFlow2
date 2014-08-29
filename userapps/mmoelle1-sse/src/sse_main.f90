@@ -504,7 +504,7 @@ contains
     !
     ! Problem formulation in (test,trial)-notation
     !
-    ! (grad_x,grad_x)*u + (grad_y,grad_y)*u = (func,f)
+    ! (grad_x,grad_x)*u + (grad_y,grad_y)*u = (func,f) + bc.s
     !
     do i=rproblem%ilvmin,rproblem%ilvmax
 
@@ -577,6 +577,28 @@ contains
         rlinform,.true.,rproblem%rrhs%RvectorBlock(1),&
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1),&
         coeff_RHS_Poisson,rproblem%rcollection)
+
+#if defined(CASE_POISSON_DIRICHLET)
+    ! No boundary contributions to the system matrix
+
+#elif defined(CASE_POISSON_NEUMANN)
+
+    ! Create boundary region - part 2
+    call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(1),coeff_RHS_Bdr_Poisson,rboundaryRegion)
+
+    ! Create boundary region - part 4
+    call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(1),coeff_RHS_Bdr_Poisson,rboundaryRegion)
+#else
+#error 'Test case is undefined.' 
+#endif
 
   case (POISSON_SYSTEM)
     !---------------------------------------------------------------------------
@@ -709,6 +731,43 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1),&
         coeff_RHS_Poisson,rproblem%rcollection)
     call lsyssc_scaleVector(rproblem%rrhs%RvectorBlock(1),-1.0_DP)
+
+#if defined(CASE_POISSON_DIRICHLET)
+    ! No boundary integrals
+
+#elif defined(CASE_POISSON_NEUMANN)
+    ! Initialise the linear form along the boundary
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC
+
+    ! Create boundary region - part 1
+    call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
+
+    rproblem%rcollection%IquickAccess(1) = 2
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(2),coeff_RHS_Bdr_Poisson,rboundaryRegion,&
+        rproblem%rcollection)
+
+    rproblem%rcollection%IquickAccess(1) = 3
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHS_Bdr_Poisson,rboundaryRegion,&
+        rproblem%rcollection)
+
+    ! Create boundary region - part 3
+    call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
+
+    rproblem%rcollection%IquickAccess(1) = 2
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(2),coeff_RHS_Bdr_Poisson,rboundaryRegion,&
+        rproblem%rcollection)
+
+    rproblem%rcollection%IquickAccess(1) = 3
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHS_Bdr_Poisson,rboundaryRegion,&
+        rproblem%rcollection)
+#else
+#error 'Test case is undefined.' 
+#endif
 
   case (SSE_SCALAR)
     !---------------------------------------------------------------------------
@@ -1046,7 +1105,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(6,2),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-#if defined(CASE_ALEX) || defined(CASE_WINANT)
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
 
       ! The contribution of the mass matrix evaluated along the
       ! Neumann boundary needs to be included in the bilinear form.
@@ -1089,12 +1148,12 @@ contains
             coeff_MatrixD2_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
       end do
       
-#elif defined(CASE_MARCHI)
+#elif defined(CASE_SSE_MARCHI)
 
       ! There are no Neumann boundary conditions that need to be
       ! included in the bilinear form.
 
-#elif defined(CASE_WALTERS)
+#elif defined(CASE_SSE_WALTERS)
 
       ! Create boundary region - part 1
       call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
@@ -1201,7 +1260,7 @@ contains
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
 
-#if defined(CASE_ALEX) || defined(CASE_WINANT)
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
 
     ! The contribution of the mass matrix evaluated along the
     ! Neumann boundary needs to be included in the bilinear form.
@@ -1224,7 +1283,7 @@ contains
     call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
         rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
     
-#elif defined(CASE_MARCHI)
+#elif defined(CASE_SSE_MARCHI)
     
     do iboundarySeg = 1,4
 
@@ -1247,7 +1306,7 @@ contains
       
     end do
 
-#elif defined(CASE_WALTERS)
+#elif defined(CASE_SSE_WALTERS)
 
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
@@ -1405,7 +1464,9 @@ contains
 
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
-      
+
+#if defined(CASE_POISSON_DIRICHLET)
+
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
 
         do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
@@ -1429,6 +1490,7 @@ contains
           !   be applied to matrices and vectors
           ! - Add the calculated discrete BC`s to rdiscreteBC for
           !   later use.
+          rproblem%rcollection%IquickAccess(1) = 1
           call bcasm_newDirichletBConRealBD(&
               rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
               rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
@@ -1436,9 +1498,35 @@ contains
         end do
       end do
 
+#elif defined(CASE_POISSON_NEUMANN)
+
+      ! Create boundary region - part 1
+      call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      rproblem%rcollection%IquickAccess(1) = 1
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+
+      ! Create boundary region - part 3
+      call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      rproblem%rcollection%IquickAccess(1) = 1
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+
+#else
+#error 'Test case is undefined.' 
+#endif
+
     case (SSE_SCALAR)
 
-#if defined(CASE_ALEX) || defined(CASE_WINANT)
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
 
       ! We ask the boundary routines to create a "boundary region"
       ! - which is simply a part of the boundary corresponding to
@@ -1460,7 +1548,7 @@ contains
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_SSEim,rproblem%rcollection)
 
-#elif defined(CASE_MARCHI)
+#elif defined(CASE_SSE_MARCHI)
 
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
 
@@ -1488,7 +1576,7 @@ contains
         end do
       end do
       
-#elif defined(CASE_WALTERS)
+#elif defined(CASE_SSE_WALTERS)
 
       ! We ask the boundary routines to create a "boundary region"
       ! - which is simply a part of the boundary corresponding to
@@ -1515,7 +1603,48 @@ contains
 #endif
 
     case (POISSON_SYSTEM)
+
+#if defined(CASE_POISSON_DIRICHLET)
+
       ! There are no essential boundary conditions to impose
+
+#elif defined(CASE_POISSON_NEUMANN)
+
+      ! Create boundary region - part 2
+      call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = 0_I32!BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      rproblem%rcollection%IquickAccess(1) = 2
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+
+      rproblem%rcollection%IquickAccess(1) = 3
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,3,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+      
+      ! Create boundary region - part 4
+      call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = 0_I32!BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      rproblem%rcollection%IquickAccess(1) = 2
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+
+      rproblem%rcollection%IquickAccess(1) = 3
+      call bcasm_newDirichletBConRealBD(&
+          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,3,&
+          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+          getBoundaryValues_Poisson,rproblem%rcollection)
+
+#else
+#error 'Test case is undefined.' 
+#endif
 
     case (SSE_SYSTEM1)
 
@@ -1524,7 +1653,7 @@ contains
 
     case (SSE_SYSTEM2)
 
-#if defined(CASE_ALEX) || defined(CASE_WINANT)
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
 
       ! We ask the boundary routines to create a "boundary region"
       ! - which is simply a part of the boundary corresponding to
@@ -1570,7 +1699,7 @@ contains
             getBoundaryValues6_SSE2,rproblem%rcollection)
       end do
 
-#elif defined(CASE_MARCHI)
+#elif defined(CASE_SSE_MARCHI)
 
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
 
@@ -1598,7 +1727,7 @@ contains
         end do
       end do
       
-#elif defined(CASE_WALTERS)
+#elif defined(CASE_SSE_WALTERS)
 
       ! We ask the boundary routines to create a "boundary region"
       ! - which is simply a part of the boundary corresponding to

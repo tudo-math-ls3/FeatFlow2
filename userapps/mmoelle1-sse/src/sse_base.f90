@@ -56,7 +56,34 @@ module sse_base
 
 !</constantblock>
 
-#if defined(CASE_ALEX)
+#if defined(CASE_POISSON_DIRICHLET)
+!<constantblock description="Problem parameters for pure Dirichlet Poisson benchmark">
+
+  ! Scaling parameter
+  real(DP), parameter, public :: dpoisson       = 1.0_DP
+
+  ! Dirichlet boundary value (=u_D)
+  real(DP), parameter, public :: ddirichlet     = 3.0_DP
+
+#elif defined(CASE_POISSON_NEUMANN)
+
+!<constantblock description="Problem parameters for mixed Dirichlet-Neumann Poisson benchmark">
+
+  ! Scaling parameter
+  real(DP), parameter, public :: dpoisson       = 1.0_DP
+
+  ! Dirichlet boundary value (=u_D)
+  real(DP), parameter, public :: ddirichlet     = 3.0_DP
+
+  ! Neumann boundary value (=g)
+  real(DP), parameter, public :: dneumann       = 0.0_DP
+
+#else
+#error 'Test case is undefined.'
+#endif
+
+
+#if defined(CASE_SSE_ALEX)
 !<constantblock description="Problem parameters for Alex benchmark">
 
   ! Length of the channel (=L)
@@ -102,8 +129,11 @@ module sse_base
   ! Vertical eddy viscosity (=Av0)
   real(DP), parameter, public :: dviscosity     = 0.019_DP
 
+  ! Flag indicating the existence of an analytical solution
+  logical, parameter, public :: bhasAnalyticSolution = .true.
+
 !</constantblock>
-#elif defined(CASE_MARCHI)
+#elif defined(CASE_SSE_MARCHI)
 !<constantblock description="Problem parameters for Marchi benchmark">
 
   ! Length of the channel (=L)
@@ -149,8 +179,11 @@ module sse_base
   ! Vertical eddy viscosity (=Av0)
   real(DP), parameter, public :: dviscosity     = SYS_MAXREAL_DP
 
+  ! Flag indicating the existence of an analytical solution
+  logical, parameter, public :: bhasAnalyticSolution = .false.
+
 !</constantblock>
-#elif defined(CASE_WALTERS)
+#elif defined(CASE_SSE_WALTERS)
 !<constantblock description="Problem parameters for Walters benchmark">
 
   ! Length of the channel (=L)
@@ -196,8 +229,11 @@ module sse_base
   ! Vertical eddy viscosity (=Av0)
   real(DP), parameter, public :: dviscosity     = 0.012_DP
 
+  ! Flag indicating the existence of an analytical solution
+  logical, parameter, public :: bhasAnalyticSolution = .false.
+
 !</constantblock>
-#elif defined(CASE_WINANT)
+#elif defined(CASE_SSE_WINANT)
 !<constantblock description="Problem parameters for Winant benchmark">
 
   ! Length of the channel (=L)
@@ -242,6 +278,9 @@ module sse_base
 
   ! Vertical eddy viscosity (=Av0)
   real(DP), parameter, public :: dviscosity     = 1.0E-3_DP
+
+  ! Flag indicating the existence of an analytical solution
+  logical, parameter, public :: bhasAnalyticSolution = .false.
 
 !</constantblock>
 #else
