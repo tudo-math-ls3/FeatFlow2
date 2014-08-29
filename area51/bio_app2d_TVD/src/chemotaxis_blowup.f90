@@ -2255,8 +2255,8 @@ print*,"filename = ",stat_ouput
                     sbuf = adjustl(sdata)
                     if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                         ! convert the string to the double precision vector entry
-    !                     dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
-                        dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")
+    !                     dvalue = sys_StringToDouble(sbuf,"(ES27.20E3)")
+                        dvalue = sys_StringToDouble(sbuf,"(ES16.8E3)")
                         ! and put it into the vector
                         p_vectorentries1 ( ientry ) = dvalue
                         ientry = ientry+1
@@ -2295,8 +2295,8 @@ print*,"filename = ",stat_ouput
                                 sbuf = adjustl(sdata)
                                 if (.not. (len(sbuf) >= 7 .and. sbuf(1:7).eq."endvars")) then
                                     ! convert the string to the double precision vector entry
-    !                                 dvalue = sys_Str2Double(sbuf,"(ES27.20E3)")
-                                    dvalue = sys_Str2Double(sbuf,"(ES16.8E3)")
+    !                                 dvalue = sys_StringToDouble(sbuf,"(ES27.20E3)")
+                                    dvalue = sys_StringToDouble(sbuf,"(ES16.8E3)")
                                     ! and put it into the vector
                                     p_vectorentries2 ( ientry ) = dvalue
                                     ientry = ientry+1
