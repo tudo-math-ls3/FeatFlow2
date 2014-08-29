@@ -548,7 +548,7 @@ contains
     
     do iel=1,nel
       call io_readlinefromfile(iunit, sdata, ilinelen, ios)
-      p_Dindicator(iel) = sys_str2Double(sdata, "(F20.10)")
+      p_Dindicator(iel) = sys_stringToDouble(sdata, "(F20.10)")
     end do
     close(iunit)
     
