@@ -9,7 +9,7 @@
 !#
 !# Calling example:
 !#
-!# meshadapt -read2d mymesh -error myerror.dat -refmax 3 \
+!# meshadapt -read2d mymesh -indicator myindicator.dat -refmax 3 \
 !#           -reftol 0.8 -crstol 0.2
 !#
 !# The initial 2D mesh is read from the TRI/PRM file mymesh.tri/prm
@@ -42,21 +42,14 @@ program meshadapt
   ! Initialise the FEAT 2.0 storage management
   call storage_init(100, 100)
   
-  ! Register signal handler
-  call fsignal(SIGUSR2, madapt_signalhandler)
-  call fsignal(SIGINT,  madapt_signalhandler)
-  call fsignal(SIGQUIT, madapt_signalhandler)
-  call fsignal(SIGHUP,  madapt_signalhandler)
-  call fsignal(SIGTERM, madapt_signalhandler)
-  
   if (madapt_signalhandler(SIGUSR1) .eq. 0) then
     
     ! We are in daemon mode, hence, register signal handler
-    call fsignal(SIGUSR2, madapt_signalhandler)
-    call fsignal(SIGINT,  madapt_signalhandler)
-    call fsignal(SIGQUIT, madapt_signalhandler)
-    call fsignal(SIGHUP,  madapt_signalhandler)
-    call fsignal(SIGTERM, madapt_signalhandler)
+    call fsignal(SIGUSR2, madapt_signalhandler) ! export mesh
+    call fsignal(SIGINT,  madapt_signalhandler) ! single step
+    call fsignal(SIGQUIT, madapt_signalhandler) ! finalise
+    call fsignal(SIGHUP,  madapt_signalhandler) ! finalise
+    call fsignal(SIGTERM, madapt_signalhandler) ! finalise
 
     daemon: do
       ! Perform mesh adaptation step?
