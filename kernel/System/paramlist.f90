@@ -1420,7 +1420,7 @@ contains
                                        isubstring=iarrayindex)
   end if
 
-  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+  fvalue = sys_StringToSingle(svalue,'(E17.10E2)')
 
   end subroutine
 
@@ -1488,7 +1488,7 @@ contains
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
                                      bexists, iarrayindex)
 
-  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+  fvalue = sys_StringToSingle(svalue,'(E17.10E2)')
 
   end subroutine
 
@@ -1560,7 +1560,7 @@ contains
                                         isubstring=iarrayindex)
   end if
 
-  fvalue = sys_Str2Single(svalue,'(E17.10E2)')
+  fvalue = sys_StringToSingle(svalue,'(E17.10E2)')
 
   end subroutine
 
@@ -1627,7 +1627,7 @@ contains
                                        isubstring=iarrayindex)
   end if
 
-  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  dvalue = sys_StringToDouble(svalue,'(E27.19E3)')
 
   end subroutine
 
@@ -1695,7 +1695,7 @@ contains
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
                                      bexists, iarrayindex)
 
-  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  dvalue = sys_StringToDouble(svalue,'(E27.19E3)')
 
   end subroutine
 
@@ -1768,7 +1768,7 @@ contains
                                         isubstring=iarrayindex)
   end if
 
-  dvalue = sys_Str2Double(svalue,'(E27.19E3)')
+  dvalue = sys_StringToDouble(svalue,'(E27.19E3)')
 
   end subroutine
 

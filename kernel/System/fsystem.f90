@@ -58,10 +58,10 @@
 !# 13.) sys_flush
 !#      -> Flush file (if available)
 !#
-!# 14.) sys_str2Double
+!# 14.) sys_strintToDouble
 !#      -> Convert string to double value
 !#
-!# 15.) sys_str2Single
+!# 15.) sys_stringToSingle
 !#      -> Convert string to single value
 !#
 !# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP ,sys_sdL ,sys_sdEL,
@@ -146,8 +146,8 @@ module fsystem
   public :: sys_getFreeUnit
   public :: sys_fileExists
   public :: sys_flush
-  public :: sys_str2Double
-  public :: sys_str2Single
+  public :: sys_stringToDouble
+  public :: sys_stringToSingle
   public :: sys_smem
   public :: sys_smemL
   public :: sys_sl
@@ -1042,7 +1042,7 @@ contains
 
 !<function>
 
-  function sys_str2Double(svalue,sformat) result(dvalue)
+  function sys_stringToDouble(svalue,sformat) result(dvalue)
 
 !<description>
     ! This routine converts a given string that provides a valid
@@ -1094,13 +1094,13 @@ contains
       read(svalueTemp,sformat) dvalue
     end if
 
-  end function sys_str2Double
+  end function sys_stringToDouble
 
 !************************************************************************
 
 !<function>
 
-  function sys_str2Single(svalue,sformat) result(fvalue)
+  function sys_stringToSingle(svalue,sformat) result(fvalue)
 
 !<description>
     ! This routine converts a given string that provides a valid
@@ -1152,7 +1152,7 @@ contains
       read(svalueTemp,sformat) fvalue
     end if
 
-  end function sys_str2Single
+  end function sys_stringToSingle
 
 !************************************************************************
 
