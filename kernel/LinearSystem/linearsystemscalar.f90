@@ -4673,6 +4673,56 @@ contains
           call sys_halt()
         end select
 
+      case (LSYSSC_MATRIX1)
+
+        ! Take care of the precision of the matrix
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Format 1 multiplication
+          call lsyssc_getbase_double (rmatrix,p_Da)
+
+          ! Take care of the precision of the vectors
+          select case (rx%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer
+            call lsyssc_getbase_double (rx,p_Dx)
+            call lsyssc_getbase_double (ry,p_Dy)
+
+            ! double precision matrix, double precision vectors
+            call DGEMV('N', NEQ, NCOLS, cx, p_Da, NEQ, p_Dx, 1, cy, p_Dy, 1)
+
+          case default
+            call output_line('Invalid combination of matrix/vector precision!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          ! Format 1 multiplication
+          call lsyssc_getbase_single (rmatrix,p_Fa)
+
+          ! Take care of the precision of the vectors
+          select case (rx%cdataType)
+          case (ST_SINGLE)
+            ! Set pointer
+            call lsyssc_getbase_single (rx,p_Fx)
+            call lsyssc_getbase_single (ry,p_Fy)
+
+            ! single precision matrix, single precision vectors
+            call SGEMV('N', NEQ, NCOLS, cx, p_Da, NEQ, p_Dx, 1, cy, p_Dy, 1)
+
+          case default
+            call output_line('Invalid combination of matrix/vector precision!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+            call sys_halt()
+          end select
+
+        case default
+          call output_line('Invalid matrix precision!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+          call sys_halt()
+        end select
+
       case default
         call output_line('Invalid matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
@@ -4850,6 +4900,56 @@ contains
           call sys_halt()
         end select
 
+      case (LSYSSC_MATRIX1)
+
+        ! Take care of the precision of the matrix
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Format 1 multiplication
+          call lsyssc_getbase_double (rmatrix,p_Da)
+
+          ! Take care of the precision of the vectors
+          select case (rx%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer
+            call lsyssc_getbase_double (rx,p_Dx)
+            call lsyssc_getbase_double (ry,p_Dy)
+
+            ! double precision matrix, double precision vectors
+            call DGEMV('T', NEQ, NCOLS, cx, p_Da, NEQ, p_Dx, 1, cy, p_Dy, 1)
+
+          case default
+            call output_line('Invalid combination of matrix/vector precision!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          ! Format 1 multiplication
+          call lsyssc_getbase_single (rmatrix,p_Fa)
+
+          ! Take care of the precision of the vectors
+          select case (rx%cdataType)
+          case (ST_SINGLE)
+            ! Set pointer
+            call lsyssc_getbase_single (rx,p_Fx)
+            call lsyssc_getbase_single (ry,p_Fy)
+
+            ! single precision matrix, single precision vectors
+            call SGEMV('T', NEQ, NCOLS, cx, p_Da, NEQ, p_Dx, 1, cy, p_Dy, 1)
+
+          case default
+            call output_line('Invalid combination of matrix/vector precision!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+            call sys_halt()
+          end select
+
+        case default
+          call output_line('Invalid matrix precision!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
+          call sys_halt()
+        end select
+        
       case default
         call output_line('Invalid matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
@@ -6045,7 +6145,7 @@ contains
       ! This is a matrix-dependent task
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
-          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         if (brelease .and. &
@@ -6086,7 +6186,7 @@ contains
       ! Which source matrix do we have?
       select case (rsourceMatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
-          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
 
         rdestMatrix%h_Da = rsourceMatrix%h_Da
 
@@ -6167,7 +6267,7 @@ contains
 
         ! Which source matrix do we have?
         select case (rsourceMatrix%cmatrixFormat)
-        case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
+        case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
 
           if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
 
@@ -6184,7 +6284,7 @@ contains
 
           end if
 
-          case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+        case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
 
           if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
 
