@@ -206,12 +206,33 @@ contains
                                       bnoZero, ifile, sfile, sformat,dthres)
     case default
       call output_line ('Unsupported matrix precision!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
+                        OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrixHR')
       call sys_halt()
     end select
+    
+  case (LSYSSC_MATRIX1)
+    ! Matrix precision?
+    select case (rmatrix%cdataType)
+    case (ST_DOUBLE)
+      ! Get the data arrays and write the matrix
+      if (.not.lsyssc_hasMatrixContent(rmatrix)) then
+        call output_line('Matrix has no data',&
+            OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrixHR')
+        call sys_halt()
+      end if
+      call lsyssc_getbase_double (rmatrix,p_Da)
+
+      call matio_writeMatrix1_DP (p_Da, rmatrix%NEQ, rmatrix%NCOLS, sarray, &
+                                  bnoZero, ifile, sfile, sformat, dthres)
+    case default
+      call output_line ('Unsupported matrix precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrixHR')
+      call sys_halt()
+    end select
+
   case default
     call output_line ('Unknown matrix format!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
+                      OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrixHR')
     call sys_halt()
   end select
 
