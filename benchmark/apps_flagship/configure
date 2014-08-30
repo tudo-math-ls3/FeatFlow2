@@ -194,7 +194,7 @@ case "$@" in
 	    *--objdir-prefix=*)
 	        ;;
 	    *)
-		if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "105" ]; then
+		if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "102" ]; then
 		    echo "$0: ERROR."
 		    echo "    Sorry, the object directory prefix, argument to command line option"
 		    echo "    --objdir-prefix, is too long for the PGI compiler."
