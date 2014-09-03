@@ -1,7 +1,8 @@
 function meshadapt(ndim,smesh,nref,refmax,reftol,crstol)
-%MESHADAPT mesh adaptation wrapper
+%MESHADAPT demo mesh adaptation wrapper
 %
-%   MESHADAPT prototypical implementation of a wrapper function which
+%   MESHADAPT(NDIM,SMESH,NREF,REFMAX,REFTOL,CRSTOL)
+%   is a prototypical implementation of a wrapper function which
 %   calls the mesh adaptation procedure implemented in Featflow2
 %
 % Input arguments:
@@ -34,10 +35,10 @@ function meshadapt(ndim,smesh,nref,refmax,reftol,crstol)
     end
     
     % Get data from adaptation structure
-    [nel,nvt] = meshadapt_data()
+    [nel,nvt] = meshadapt_data();
     
     % Get mesh from adaptation structure
-    [coords,vertices,neighbours] = meshadapt_mesh()
+    [coords,vertices,neighbours] = meshadapt_mesh();
             
     % Finalisation
     meshadapt_done();
