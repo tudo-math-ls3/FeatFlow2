@@ -1283,8 +1283,7 @@ contains
               TSCHM_DIRK34La, &
               TSCHM_DIRK34Lb, &
               TSCHM_DIRK44L, &
-              TSCHM_DIRK54L, &
-              TSCHM_SDIRK2)
+              TSCHM_DIRK54L)
           ! Re-initialise the time stepping in the problem structure
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
@@ -1297,8 +1296,7 @@ contains
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-              rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-              rtimestepping%ctimestepType .eq. TSCHM_SDIRK2) then
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
             ipressureFullyImplicit = 0
           end if
         end select
