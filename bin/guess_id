@@ -308,7 +308,11 @@ case ${id} in
 			    cpu="sandybridge"
 			    ;;
 			58|62)
-		            # Core i5-{3210M,3320M,3360M,3470T} + i7-3770K
+		            # Ivy Bridge (Core i5-{3210M,3320M,3360M,3470T} + i7-3770K)
+		            # Ivy Bridge-E (Core i7-49xx)
+		            # Ivy Bridge-EN (Xeon E5-14xx v2 and Xeon E5-24xx v2)
+		            # Ivy Bridge-EP (Xeon E5-16xx v2, Xeon E5-26xx v2 and Xeon E5-46xx v2)
+		            # (see also https://en.wikipedia.org/wiki/Ivy_Bridge_%28microarchitecture%29)
 			    cpu="ivybridge"
 			    ;;
 			60|69)
