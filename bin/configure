@@ -2487,24 +2487,24 @@ sub create_feat2AppMakefile {
         "# Link statement for application\n" .
         "\$(APPNAME): | \$(OBJDIR) \$(LIB)\n" .
         "\$(APPNAME): \$(OBJ)\n" .
-	"ifeq (\$(EXECUTABLE),YES)\n" .
-	"ifeq (\$(SHARED),YES)\n" .
-	"\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> dynamically\"\n" .
-	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(filter-out \$(OBJPGM), \$(OBJ)) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
-	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJPGM) -L. -l\$(APPNAME) -o \$(APPNAME)\n" .
-	"else\n" .
+        "ifeq (\$(EXECUTABLE),YES)\n" .
+        "ifeq (\$(SHARED),YES)\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> dynamically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(filter-out \$(OBJPGM), \$(OBJ)) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJPGM) -L. -l\$(APPNAME) -o \$(APPNAME)\n" .
+        "else\n" .
         "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> statically\"\n" .
         "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
-	"endif\n\n" .
-	"else\n" .
-	"ifeq (\$(SHARED),YES)\n" .
-	"\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> dynamically\"\n" .
-	"\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
-	"else\n" .
+        "endif\n\n" .
+        "else\n" .
+        "ifeq (\$(SHARED),YES)\n" .
+        "\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> dynamically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+        "else\n" .
         "\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> statically\"\n" .
         "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).a\n" .
-	"endif\n\n" .
-	"endif\n\n" .
+        "endif\n\n" .
+        "endif\n\n" .
         "ifneq (\$(MESSAGE),)\n" .
         "\t\@\$(MESSAGE)\n" .
         "endif\n\n" .
@@ -2518,8 +2518,24 @@ sub create_feat2AppMakefile {
         "#  will not harm other modules. Then, use this make target to\n" .
         "#  shortcut the build.)\n" .
         "link: | \$(OBJDIR)\n" .
-        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
-        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n\n" .
+        "ifeq (\$(EXECUTABLE),YES)\n" .
+        "ifeq (\$(SHARED),YES)\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> dynamically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(filter-out \$(OBJPGM), \$(OBJ)) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJPGM) -L. -l\$(APPNAME) -o \$(APPNAME)\n" .
+        "else\n" .
+        "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)> statically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
+        "endif\n\n" .
+        "else\n" .
+        "ifeq (\$(SHARED),YES)\n" .
+        "\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> dynamically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(LDFLAGS_LIB) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).\$(SHAREDLIB_EXT)\n" .
+        "else\n" .
+        "\t\@echo \"# Linking FEAT2 library <\$(APPNAME)> statically\"\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o lib\$(APPNAME).a\n" .
+        "endif\n\n" .
+        "endif\n\n" .
 
     # Global dependencies for object files
         "# Global dependencies for object files\n" .
