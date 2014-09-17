@@ -333,7 +333,9 @@ contains
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
       ipressureFullyImplicit = 0
     end if
 
@@ -397,7 +399,7 @@ contains
     !
     ! <tex>$ f(t_{m} + c_{j} k) - N(U_{j}) U_{j} - B P_{j} $,
     ! see \cite[p. 517]{Rang200702}</tex> needed in right hand side assembly
-    type(t_vectorBlock), dimension(3), save :: rvectorAuxFmjUjplusBPj
+    type(t_vectorBlock), dimension(5), save :: rvectorAuxFmjUjplusBPj
     ! U_0, solution from last macro time step
     type(t_vectorBlock), save :: rsolutionFromLastMacroTimeStep
 
@@ -410,19 +412,29 @@ contains
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
-      select case (rtimestepping%isubstep)
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+      ! explicit first stage: use rtimestepping%isubstep - 1
+      ! implicit first stage: use rtimestepping%isubstep
+      select case (rtimestepping%isubstep - &
+                   merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.))
       case (1)
         ! Store (velocity) solution from macro time step t_n for later use in subsequent
-        ! stages of DIRK scheme where it is needed to assembly the right hand side vector.
-        call lsysbl_createVector (rvector, rsolutionFromLastMacroTimeStep, .false.)
+        ! stages of DIRK scheme where it is needed to assembly the right hand side
+        ! vector.
+        call lsysbl_createVector (rvector,rsolutionFromLastMacroTimeStep,bclear=.false.)
         call lsysbl_copyVector (rvector, rsolutionFromLastMacroTimeStep)
 
-        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(1), .false.)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(1), bclear=.false.)
       case (2)
-        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(2), .false.)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(2), bclear=.false.)
       case (3)
-        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(3), .false.)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(3), bclear=.false.)
+      case (4)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(4), bclear=.false.)
+      case (5)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(5), bclear=.false.)
       end select
     end if
 
@@ -467,7 +479,9 @@ contains
           rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
           rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
           rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
 ! Note: inhomogeneous Neumann boundary conditions not supported (as of yet)!
 
         ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
@@ -475,76 +489,45 @@ contains
         ! acts as a RHS vector.
         call lsysbl_assignDiscrIndirect(rrhs, rtempVectorRhs)
 
-        ! substep 1:
-        !   right hand side needed at t_n and t_n + c2 k,
-        !   old solution U_n, P_n
-
-        ! substep 2:
-        !   right hand side needed at t_n, t_n + c2 k and t_n + c3 k,
-        !   old solution U_n, P_n and the solution from substep 1
-
-        ! substep 3:
-        !   right hand side needed at t_n, t_n + c2 k, t_n + c3 k and t_n+1
-        !   old solution U_n, P_n and the solutions from substep 1 and 2.
-
         ! Algorithm:
-        ! in substep 1: re-use pre-assembled f_n, assemble N(u_n) and store the result of
-        !                         f_n - N(u_n) u_n - B p_n
-        !               for re-use in subsequent substeps. Then assemble f(t_n + c2 k)
-        !               and calculate
-        !                  M u_n + k a21 (f(t_n) - N(u_n) u_n - B p_n)
-        !                        + k a22 f(t_n + c2 k)
-        !               as right hand side vector
-        ! in substep 2: re-use pre-assembled f(t_n + c2 k), assemble N(u(t_n + c2 k)) and
-        !               store the result of
-        !                   f(t_n + c2 k) - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k)
-        !               for re-use in subsequent substeps. Then assemble f(t_n + c3 k)
-        !               and calculate
-        !                  M u_n + k a31 (f(t_n) - N(u_n) u_n - B p_n)
-        !                        + k a32 (f(t_n + c2 k)
-        !                                 - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k))
-        !                        + k a33 f(t_n + c3 k)
-        ! in substep 3: re-use pre-assembled f(t_n + c3 k), assemble N(u(t_n + c3 k)).
-        !               Then assemble f(t_n + c4 k) = f(t_n+1) and calculate
-        !                  M u_n + k a41 (f(t_n) - N(u_n) u_n - B p_n)
-        !                        + k a42 (f(t_n + c2 k)
-        !                                 - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k))
-        !                        + k a43 (f(t_n + c3 k)
-        !                                 - N(u(t_n + c3 k)) u(t_n + c3 k) - B p(t_n + c3 k))
-        !                        + k a44 f(t_n+1)
-        call lsysbl_vectorLinearComb(&
-             rrhs, rvectorAuxFmjUjplusBPj(rtimestepping%isubstep), &
-             1.0_DP, 0.0_DP)
-        ! Set up N(u(t_n + c_i k)) in order to calculate
-        !      f_(t_n + c_i k) - N(u(t_n + c_i k)) u(t_n + c_i k) - B p(t_n + c_i k),
-        ! (i = substep) explicitly exploiting the knowledge that c_1 = 0 for DIRK34L and
-        ! DIRK44L such that f(t_n) - calculated in the previous time step - can be
-        ! re-used.
-        ! Note that there is no need to scale the pressure here explicitly, as opposed to
-        ! the case for the general theta and fractional-step scheme.  Do not implement any
-        ! boundary conditions when assembling this, they are implemented at the end when
-        ! the full RHS is finished...
+        ! in substep 1:
+        !     re-use pre-assembled f_n, assemble N(u_n) and store the result of
+        !               f_n - N(u_n) u_n - B p_n
+        !     for re-use in subsequent substeps. Then assemble f(t_n + c2 k) and calculate
+        !        M u_n + k a21 (f(t_n) - N(u_n) u_n - B p_n)
+        !              + k a22 f(t_n + c2 k)
+        !     as right hand side vector
+        ! in substep 2:
+        !     re-use pre-assembled f(t_n + c2 k), assemble N(u(t_n + c2 k)) and store the
+        !     result of
+        !         f(t_n + c2 k) - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k)
+        !     for re-use in subsequent substeps. Then assemble f(t_n + c3 k) and calculate
+        !        M u_n + k a31 (f(t_n) - N(u_n) u_n - B p_n)
+        !              + k a32 (f(t_n + c2 k)
+        !                       - N(u(t_n + c2 k)) u(t_n + c2 k) - B p(t_n + c2 k))
+        !              + k a33 f(t_n + c3 k)
+        ! in substep i:
+        !     re-use pre-assembled f(t_n + c_{i-1} k), assemble N(u(t_n + c_{i-1} k)).
+        !     Then assemble f(t_n + c_i k) = f(t_n+1) and calculate
+        !        M u_n + k a_{i,1} (f(t_n + c1 k)
+        !                           - N(u(t_n + c1 k)) u(t_n + c1 k) - B p(t_n + c1 k))
+        !              + ...
+        !              + k a_{i,i-1} (f(t_n + c_i k)
+        !                           - N(u(t_n + c_i k)) u(t_n + c_i k) - B p(t_n + c_i k))
+        !              + k a_{i,i} f(t_n+1)
+
+        ! f = M u_{time before stage 1} +
+        !     \tau \sum_{j=1}^{i-1} a_{i,j} (f(t_n + c_j k)
+        !                                    - N(u(t_n + c_j k)) u(t_n + c_j k)
+        !                                    - B p(t_n + c_j k))
+        ! (i = current substep aka stage).
+        !
+        ! step 1:
+        !    f = M u_{time before stage 1}
         call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
              rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
              rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
              rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
-        rnonlinearCCMatrix%dmass = 0.0_DP
-        rnonlinearCCMatrix%dstokes = -1.0_DP
-        rnonlinearCCMatrix%dconvection = -real(1-rproblem%rphysics%iequation,DP)
-        rnonlinearCCMatrix%dgradient = -1.0_DP
-        rnonlinearCCMatrix%ddivergence = 0.0_DP
-        ! Now really calculate
-        !    f_(t_n + c_i k) =
-        !            f_(t_n + c_i k) - N(u(t_n + c_i k)) u(t_n + c_i k) - B p(t_n + c_i k)
-        ! (i = substep).
-        call cc_nonlinearMatMul (&
-             rnonlinearCCMatrix, rvector, rvectorAuxFmjUjplusBPj(rtimestepping%isubstep),&
-             1.0_DP, 1.0_DP, rproblem)
-
-        ! f = M u_{time before stage 1} + \tau \sum_j^{i-1} a_ij (f(t_n + c_j k)
-        !                                                - N(u(t_n + c_j k)) u(t_n + c_j k)
-        !                                                - B p(t_n + c_j k))
-        ! (i = substep+1).
         call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
              rsolutionFromLastMacroTimeStep%RvectorBlock(1), &
              rtempVectorRhs%RvectorBlock(1), &
@@ -553,18 +536,60 @@ contains
              rsolutionFromLastMacroTimeStep%RvectorBlock(2), &
              rtempVectorRhs%RvectorBlock(2), &
              1.0_DP, 0.0_DP)
-        do i = 1, rtimestepping%isubstep
+        if (rtimestepping%isubstep .gt. 1) then
+          ! step 2:
+          !   Determine (f(t_n + c_{i-1} k) - N(u(t_n + c_{i-1} k)) u(t_n + c_{i-1} k)
+          !                                 - B p(t_n + c_{i-1} k))
+          ! (i = current substep aka stage).
+          !
+          ! rvectorAuxFmjUjplusBPj(rtimestepping%isubstep-1) = rrhs
           call lsysbl_vectorLinearComb(&
-               rvectorAuxFmjUjplusBPj(i), rtempVectorRhs, &
-               rtimestepping%dcoeffA(rtimestepping%isubstep+1,i) * rtimestepping%dtau, &
-               1.0_DP)
-        end do
+               rrhs, rvectorAuxFmjUjplusBPj(rtimestepping%isubstep-1), &
+               1.0_DP, 0.0_DP)
+          ! Set up N(u(t_n + c_{i-1} k)) in order to calculate
+          !      f_(t_n + c_{i-1} k) - N(u(t_n + c_{i-1} k)) u(t_n + c_{i-1} k)
+          !                          - B p(t_n + c_{i-1} k),
+          ! (i = current substep aka stage).
+          ! Note that there is no need to scale the pressure here explicitly, as opposed
+          ! to the case for the general theta and fractional-step scheme.
+          ! Do not implement any boundary conditions when assembling this, they are
+          ! implemented at the end when the full RHS is finished...
+          rnonlinearCCMatrix%dmass = 0.0_DP
+          rnonlinearCCMatrix%dstokes = -1.0_DP
+          rnonlinearCCMatrix%dconvection = -real(1-rproblem%rphysics%iequation,DP)
+          rnonlinearCCMatrix%dgradient = -1.0_DP
+          rnonlinearCCMatrix%ddivergence = 0.0_DP
+          ! Now store the final result of
+          !      f_(t_n + c_{i-1} k) - N(u(t_n + c_{i-1} k)) u(t_n + c_{i-1} k)
+          !                          - B p(t_n + c_{i-1} k)
+          ! (i = current substep aka stage).
+          call cc_nonlinearMatMul (&
+               rnonlinearCCMatrix, rvector, &
+               rvectorAuxFmjUjplusBPj(rtimestepping%isubstep-1), 1.0_DP, 1.0_DP, rproblem)
+
+          ! step 3:
+          ! f = M u_{time before stage 1} +
+          !     \tau \sum_{j=1}^{i-1} a_ij (f(t_n + c_j k)
+          !                                 - N(u(t_n + c_j k)) u(t_n + c_j k)
+          !                                 - B p(t_n + c_j k))
+          ! (i = current substep aka stage).
+          do i = 1, rtimestepping%isubstep-1
+            ! stage 1: do nothing
+            ! stage 2: rvectorAuxFmjUjplusBPj(1) got filled in this stage, use it
+            ! stage i, i>=3: rvectorAuxFmjUjplusBPj(i) got filled in this stage, use
+            !          rvectorAuxFmjUjplusBPj(<=i)
+            call lsysbl_vectorLinearComb(&
+                 rvectorAuxFmjUjplusBPj(i), rtempVectorRhs, &
+                 rtimestepping%dcoeffA(rtimestepping%isubstep,i) * rtimestepping%dtau, &
+                 1.0_DP)
+          end do
+        end if
 
         ! -------------------------------------------
         ! Switch to the next point in time where the right hand side gets evaluated
         rproblem%rtimedependence%dtime = &
              rtimestepping%dtimeDIRKstage1 + &
-             rtimestepping%dcoeffC(rtimestepping%isubstep+1) * rtimestepping%dtau
+             rtimestepping%dcoeffC(rtimestepping%isubstep) * rtimestepping%dtau
 
         ! Discretise the boundary conditions at the new point in time --
         ! if the boundary conditions are nonconstant in time!
@@ -584,7 +609,7 @@ contains
 
         ! Add (k a_ii * f_{n+1}, phi) with i = substep+1 to the current RHS.
         call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
-             rtimestepping%dcoeffA(rtimestepping%isubstep+1,rtimestepping%isubstep+1) * &
+             rtimestepping%dcoeffA(rtimestepping%isubstep,rtimestepping%isubstep) * &
              rtimestepping%dtau, 1.0_DP)
 
         ! Ensure f(3) is zero
@@ -856,15 +881,18 @@ contains
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
         rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
       if (rtimestepping%isubstep .eq. rtimestepping%nsubsteps) then
         ! Free up (velocity) solution from macro time step t_n
         call lsysbl_releaseVector (rsolutionFromLastMacroTimeStep)
-        if (rtimestepping%nsubsteps .ge. 3) then
-          call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(3))
-        end if
-        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(2))
-        call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(1))
+        do i = 5, 1, -1
+          if (i .le. rtimestepping%nsubsteps - &
+                     merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.)) then
+            call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(i))
+          end if
+        end do
       end if
     end if
 
@@ -1002,7 +1030,11 @@ contains
         ! such can use it in time step 1 for the first interpolation step.
 
         dfactor = 0.0_DP
-        select case (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps)+1)
+        ! explicit first stage: rtimestepping%isubstep == 2,3 or 4?
+        ! implicit first stage: rtimestepping%isubstep == 1,2 or 3?
+        select case (mod(rtimestepping%isubstep + 1 - &
+                     merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.), &
+                     rtimestepping%nsubsteps)+1)
           ! (Note: substep gets incremented *before* postprocessing starts. Even though we
           !        are still in the 3rd substep, the counter points already to the first
           !        substep of the next macro time step.)
@@ -1044,7 +1076,9 @@ contains
              rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
              rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
              rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
+             rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
       ! Velocity and pressure are treated in the same way by these two time stepping
       ! schemes, namely semi-implicitly. They should both live in the same point in time.
       call lsysbl_copyVector (rvectorNew, rvectorInt)
@@ -1128,7 +1162,6 @@ contains
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
 
-    integer :: iaux
     integer :: cscheme
     real(DP) :: daux1, daux2, daux3
 
@@ -1203,10 +1236,13 @@ contains
                rproblem%rtimedependence%dtimemax-100.0_DP*SYS_EPSREAL_DP) .and. &
               (dtimederivative .ge. &
                rproblem%rtimedependence%dminTimeDerivative) .or. &
-              ! when using a multi-stage time stepping scheme (like classic
-              ! fractional-step theta scheme or diagonally implicit Runge-Kutta schemes)
-              ! do not exit before all internal stages have completed
-              (rtimestepping%isubstep .gt. 1))
+              ! When using a multi-stage time stepping scheme (like classic
+              ! fractional-step theta scheme or diagonally implicit Runge-Kutta scheme)
+              ! do not exit before all internal stages have completed.
+              ! (Note that for DIRK schemes with an explicit first stage the first stage
+              ! really performed is stage 2.)
+              (rtimestepping%isubstep .gt. &
+               1 + merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.)))
 
       if (rproblem%rtimedependence%itimeStep .eq. 3) then
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
@@ -1234,11 +1270,12 @@ contains
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
         ! scheme A to generate a suitable start solution for scheme B.
         ! (Why the choice of 4? Why not re-check after 1 time step with scheme A? Because
-        !  all the schemes B in question consist of 3 time (sub)steps and changing from
-        !  scheme A to B after 3 time steps makes it possible to keep the algorithm simple
-        !  that determines the time plus space discretisation error in cc_errorAnalysis():
-        !  the algorithm does not need to consider whether initially a different time
-        !  stepping scheme (A) is used.)
+        !  all the schemes B in question consist of 4 stages with the first one being
+        !  explicit, i.e. 3 time (sub)steps and changing from scheme A to B after 3 time
+        !  steps makes it possible to keep the algorithm simple that determines the time
+        !  plus space discretisation error in cc_errorAnalysis(): the algorithm does not
+        !  need to consider whether initially a different time stepping scheme (A) is
+        !  used.)
         call parlst_getvalue_int (rproblem%rparamList, &
              "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
         select case (-cscheme)
@@ -1246,7 +1283,8 @@ contains
               TSCHM_DIRK34La, &
               TSCHM_DIRK34Lb, &
               TSCHM_DIRK44L, &
-              TSCHM_DIRK54L)
+              TSCHM_DIRK54L, &
+              TSCHM_SDIRK2)
           ! Re-initialise the time stepping in the problem structure
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
@@ -1259,10 +1297,57 @@ contains
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
               rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-              rtimestepping%ctimestepType .eq. TSCHM_DIRK54L) then
+              rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
+              rtimestepping%ctimestepType .eq. TSCHM_SDIRK2) then
             ipressureFullyImplicit = 0
           end if
         end select
+      end if
+
+      if (rproblem%rtimedependence%itimeStep .eq. 5) then
+        ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
+        ! scheme A to generate a suitable start solution for scheme B.
+        ! (Why the choice of 5? Why not re-check after 1 time step with scheme A? Because
+        !  the scheme SDIRK2 consists of 4 stages (the first one being implicit, too),
+        !  i.e. 4 time (sub)steps and changing from scheme A to SDIRK3PR after 5 time
+        !  steps with A is consistent with how we treat other DIRK schemes consisting of
+        !  less than 5 substeps.)
+        call parlst_getvalue_int (rproblem%rparamList, &
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
+        if (cscheme .eq. -TSCHM_SDIRK2) then
+          ! Re-initialise the time stepping in the problem structure
+          daux1 = rtimestepping%dcurrentTime
+          daux2 = rtimestepping%dtstep
+          daux3 = rtimestepping%dtheta
+          call timstp_init (rtimestepping, abs(cscheme), daux1, daux2, daux3)
+
+          ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
+          ! velocity
+          ipressureFullyImplicit = 0
+        end if
+      end if
+
+      if (rproblem%rtimedependence%itimeStep .eq. 6) then
+        ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
+        ! scheme A to generate a suitable start solution for scheme B.
+        ! (Why the choice of 6? Why not re-check after 1 time step with scheme A? Because
+        !  the scheme SDIRK3PR consists of 5 stages (the first one being implicit, too),
+        !  i.e. 5 time (sub)steps and changing from scheme A to SDIRK3PR after 5 time
+        !  steps with A is consistent with how we treat other DIRK schemes consisting of
+        !  less than 5 substeps.)
+        call parlst_getvalue_int (rproblem%rparamList, &
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
+        if (cscheme .eq. -TSCHM_SDIRK3PR) then
+          ! Re-initialise the time stepping in the problem structure
+          daux1 = rtimestepping%dcurrentTime
+          daux2 = rtimestepping%dtstep
+          daux3 = rtimestepping%dtheta
+          call timstp_init (rtimestepping, abs(cscheme), daux1, daux2, daux3)
+
+          ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
+          ! velocity
+          ipressureFullyImplicit = 0
+        end if
       end if
 
       ! Time counter
@@ -1428,13 +1513,26 @@ contains
         !  "     Step size "//TRIM(sys_sdL(rtimestepping%dtstep,5)))
         call output_lbrk (coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-        call output_line ("Time-Step "// &
-            trim(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
-            ", Time = "// &
-            trim(sys_sdL(rproblem%rtimedependence%dtime,5))// &
-            ", Stepsize: DT3 = "// &
-            trim(sys_sdL(rtimestepping%dtstep,5)),&
-            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+        if (rtimestepping%nsubsteps .gt. 1) then
+          call output_line ("Time-Step "// &
+               trim(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+               ", Time = "// &
+               trim(sys_sdL(rproblem%rtimedependence%dtime,5))// &
+               ", Stepsize: DT3 = "// &
+               trim(sys_sdL(rtimestepping%dtstep,5)) // &
+               " (stage " // &
+               trim(sys_siL(rtimestepping%isubstep,1)) // &
+               ")", &
+               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+        else
+          call output_line ("Time-Step "// &
+               trim(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+               ", Time = "// &
+               trim(sys_sdL(rproblem%rtimedependence%dtime,5))// &
+               ", Stepsize: DT3 = "// &
+               trim(sys_sdL(rtimestepping%dtstep,5)),&
+               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+        end if
         call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
         ! Snapshot the current solution for the later calculation of an interpolated
@@ -1769,11 +1867,13 @@ contains
             rvectorInt, dtimeInt, &
             rproblem%rtimedependence%itimeStep, rpostprocessing, &
             ! (Note: substep gets incremented *before* postprocessing starts. So, even
-            !        though we are, e.g., still in the 3rd substep, the counter points
-            !        already to the first substep of the next macro time step.)
+            !        though we are, e.g., still in the 3rd substep, the counter does
+            !        already point to the first substep of the next macro time step.)
+            ! explicit first stage: rtimestepping%isubstep > 2?
+            ! implicit first stage: rtimestepping%isubstep > 1?
             bisIntermediateStage=&
-               (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .ne. &
-                rtimestepping%nsubsteps))
+               (rtimestepping%isubstep - &
+                merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .gt. 1))
 
         call lsysbl_releaseVector (rvectorInt)
 
@@ -1783,10 +1883,13 @@ contains
         ! solution lives in the same point in time such that naive calculation of the time
         ! derivate fails due to coinciding interpolation points.
         ! (Note: substep gets incremented *before* postprocessing starts. So, even though
-        !        we are, e.g., still in the 3rd substep, the counter points already to the
-        !        first substep of the next macro time step.)
-        if (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .eq. &
-                rtimestepping%nsubsteps) then
+        !        we are, e.g., still in the 3rd substep, the counter does already point to
+        !        the first substep of the next macro time step.)
+        !
+        ! explicit first stage: rtimestepping%isubstep == 2?
+        ! implicit first stage: rtimestepping%isubstep == 1?
+        if (rtimestepping%isubstep - &
+            merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .eq. 1) then
           call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           call output_line ("Analysing time derivative...",&
                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
@@ -1914,11 +2017,14 @@ contains
         ! Snapshot the current solution for the later calculation of the time derivative
         ! (for which intermediate stages in a multi-stage time stepping scheme (FS, DIRK)
         ! are to be ignored).
-        ! (Note: substep gets incremented *before* postprocessing starts. So, even
-        !        though we are, e.g., still in the 3rd substep, the counter points
-        !        already to the first substep of the next macro time step.)
-        if (mod(rtimestepping%isubstep + 1, rtimestepping%nsubsteps) + 1 .eq. &
-                rtimestepping%nsubsteps) then
+        ! (Note: substep gets incremented *before* postprocessing starts. So, even though
+        !        we are, e.g., still in the 3rd substep, the counter does already point to
+        !        the first substep of the next macro time step.)
+        !
+        ! explicit first stage: rtimestepping%isubstep == 2?
+        ! implicit first stage: rtimestepping%isubstep == 1?
+        if (rtimestepping%isubstep - &
+            merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .eq. 1) then
           call lsysbl_copyVector (rvector, rprevMacroTimeStepSolution)
           dprevMacroTimeStepTime = rproblem%rtimedependence%dtime
         end if

@@ -311,18 +311,18 @@ contains
 
     ! Calculate d:=u2-u1
     call lsysbl_vectorLinearComb (rSolutionNew,rsolutionOld,1.0_DP,-1.0_DP,rauxVector)
-    
+
     ! Get the length of the subvectors
     nequ = rSolutionNew%RvectorBlock(1)%NEQ+rSolutionNew%RvectorBlock(2)%NEQ
     neqp = rSolutionNew%RvectorBlock(3)%NEQ
-    
+
     ! Calculate the different norms of the error functionals for the standard
     ! (Navier-)Stokes equation -- all at once.
     !
     ! ||d||_l2 / dtstep
     Cnorms = LINALG_NORML2
     call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
-    
+
     p_rtimeNorm%drelUL2 = sqrt( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
         / (sqrt(real(nequ,DP)) * dtstep)
     p_rtimeNorm%drelPL2 = Dnorms1(3) / (sqrt(real(neqp,DP)) * dtstep)
@@ -333,7 +333,7 @@ contains
 
     p_rtimeNorm%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtstep
     p_rtimeNorm%drelPmax = Dnorms1(3) / dtstep
-    
+
     ! Return the value in the desired norm
     select case (ctimeErrorControl)
     case DEFAULT
@@ -355,7 +355,9 @@ contains
       dtimenorm = min(p_rtimeNorm%drelUL2,p_rtimeNorm%drelPL2,&
                       p_rtimeNorm%drelUmax,p_rtimeNorm%drelPmax)
     end select
-    
+
+!    dtimenorm = abs(dtimenorm)
+
   end function
-  
+
 end module

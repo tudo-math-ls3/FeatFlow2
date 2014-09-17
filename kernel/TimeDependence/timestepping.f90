@@ -138,6 +138,12 @@ module timestepping
   ! Identifier for (E)DIRK54L
   integer, parameter, public :: TSCHM_DIRK54L        = 8
 
+  ! Identifier for SDIRK3PR
+  integer, parameter, public :: TSCHM_SDIRK3PR       = 9
+
+  ! Identifier for SDIRK2
+  integer, parameter, public :: TSCHM_SDIRK2         = 10
+
 !</constantblock>
 
 !</constants>
@@ -188,15 +194,21 @@ module timestepping
     ! Usually TSCHM_ONESTEP for one step schemes
     integer                  :: ctimestepType = -1
 
-    ! Current substep in time step scheme. Normally =1.
-    ! For time stepping schemes with multiple substeps (Fractional Step),
-    ! this counts the current substep 1..nsubsteps.
+    ! Current substep in time step scheme.
+    ! For general theta schemes (e.g. Forward/Backward Euler, Crank-Nicolson) =1.
+    ! For time stepping schemes with multiple substeps (Fractional Step, DIRK schemes with
+    ! implicit first stage)), this counts the current substep 1..nsubsteps.
+    ! For DIRK schemes with explicit first stage this counts 2..nsubsteps.
     integer                  :: isubstep
 
-    ! Number of substeps of the time stepping scheme. Normally =1.
-    ! For time stepping schemes with multiple substeps (Fractional Step),
-    ! this is the number of substeps.
+    ! Number of substeps of the time stepping scheme.
+    ! For general theta schemes (e.g. Forward/Backward Euler, Crank-Nicolson) =1.
+    ! For time stepping schemes with multiple substeps (Fractional Step, DIRK schemes)
+    ! this is the number of substeps (DIRK theory refers to them as stages).
     integer                  :: nsubsteps
+
+    ! Whether or not the first stage of a DIRK scheme is explicit
+    logical                  :: bexplicitFirstStage = .FALSE.
 
     ! Current simulation time, this structure represents
     real(DP)                 :: dcurrentTime
@@ -226,13 +238,13 @@ module timestepping
     real(DP)                 :: dthStep
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(4,4) :: dcoeffA
+    real(DP), dimension(5,5) :: dcoeffA
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(4)   :: dcoeffB
+    real(DP), dimension(5)   :: dcoeffB
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(4)   :: dcoeffC
+    real(DP), dimension(5)   :: dcoeffC
 
     ! Simulation time in stage 1 of a diagonally implicit Runge-Kutta schemes, substeps
     ! determine their time using this base
@@ -320,7 +332,8 @@ contains
 !</function>
 
     select case (rtstepScheme%ctimestepType)
-    case (TSCHM_DIRK54L, TSCHM_DIRK44L, TSCHM_DIRK34La, TSCHM_DIRK34Lb)
+    case (TSCHM_DIRK54L, TSCHM_DIRK44L, TSCHM_DIRK34La, TSCHM_DIRK34Lb, &
+          TSCHM_SDIRK3PR, TSCHM_SDIRK2)
       iorder = 3
     case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI, TSCHM_FS_DIRK, TSCHM_DIRK23L)
       iorder = 2
@@ -509,8 +522,11 @@ contains
       ! (only difference: enforced semi-implicit treatment of the pressure, no fully
       !  implicit treatment like proposed in Tureks's book) that is strongly A-stable,
       ! provides 2nd ordner for velocity and 1st order for the pressure and consists of 4
-      ! stages (but the first step is explicit), so only 3 substeps...
-      rtstepScheme%nsubsteps        = 3
+      ! stages, ...
+      rtstepScheme%nsubsteps = 4
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
 
       ! ... and uses several parameter:
       dtheta1 = 1.0_DP-sqrt(0.5_DP)
@@ -528,21 +544,32 @@ contains
                             dtheta1*dbeta, &
                             dtheta1*dbeta, &
                             dtheta1*dbeta, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             dtheta1*dalpha, &
                             (dtheta1+dthetp1)*dalpha, &
                             (dtheta1+dthetp1)*dalpha, &
+                            0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             dthetp1*dbeta, &
                             (dtheta1+dthetp1)*dbeta, &
+                            0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            dtheta1*dalpha /), shape = (/ 4,4 /) )
+                            dtheta1*dalpha, &
+                            0.0_DP, &
+                            ! fifth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       !  @article{John2010514,
       !     author  = "Volker John and Joachim Rang",
@@ -564,7 +591,8 @@ contains
            (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
               dtheta1, &                ! sum(rtstepScheme%dcoeffA(2,:))
               dtheta1+dthetp1, &        ! sum(rtstepScheme%dcoeffA(3,:))
-              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
+              0.0_DP /)
 
 
     case (TSCHM_DIRK23L)
@@ -572,9 +600,12 @@ contains
       rtstepScheme%ctimestepType    = TSCHM_DIRK23L
 
       ! The DIRK23L scheme is an L-stable diagonally implicit Runge-Kutta scheme of 2nd
-      ! ordner for velocity and pressure that consists of 3 stages (but first step is
-      ! explicit), so only 2 substeps...
-      rtstepScheme%nsubsteps        = 2
+      ! ordner for velocity and pressure that consists of 3 stages, ...
+      rtstepScheme%nsubsteps = 3
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
       ! ... and has been identified as identical to the scheme proposed in
       !  @MISC{Fredebeul89,
       !     author = {Fredebeul, Christoph},
@@ -673,30 +704,41 @@ contains
                             0.25_DP, &
                             1.0_DP/3.0_DP, &
                             0.0_DP, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             1.0_DP/3.0_DP, &
+                            0.0_DP, &
                             0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             1.0_DP/3.0_DP, &
                             0.0_DP, &
-                            ! fourth column only needed to be able to use one data
-                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            ! fourth and fifth column only needed to be able to use one
+                            ! data structure for all DIRK schemes
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            0.0_DP /), shape = (/ 4,4 /) )
+                            0.0_DP, &
+                            0.0_DP, &
+                            !
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{3i}     (Butcher condition B(1)
-      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(3,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (Butcher condition C(1))
       rtstepScheme%dcoeffC = &
            (/ 0.0_DP, &         ! sum(rtstepScheme%dcoeffA(1,:))
               1.0_DP/2.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
-              0.0_DP /)         ! 4th entry only to have 1 structure for all DIRK schemes
+              0.0_DP, &         ! 4th entry only to have 1 structure for all DIRK schemes
+              0.0_DP /)         ! 5th entry dito
 
 
     case (TSCHM_DIRK34La)
@@ -731,9 +773,11 @@ contains
       !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
       !  }
       ! is an L-stable diagonally implicit Runge-Kutta scheme of 3rd ordner for velocity
-      ! and 2nd order for pressure that consists of 4 stages (but the first step is
-      ! explicit), so only 3 substeps...
-      rtstepScheme%nsubsteps        = 3
+      ! and 2nd order for pressure that consists of 4 stages, ...
+      rtstepScheme%nsubsteps = 4
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
 
       ! ... and uses several parameter:
       rtstepScheme%dcoeffA = &
@@ -763,21 +807,32 @@ contains
                             1.0_DP - 0.158983899988677_DP  - 1.07248627073437_DP, &
                             1.0_DP - 0.7685298292769537_DP - 0.0966483609791597_DP &
                                    - 0.158983899988677_DP, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.158983899988677_DP, &
                             1.07248627073437_DP, &
                             0.7685298292769537_DP, &
+                            0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.158983899988677_DP, &
                             0.0966483609791597_DP, &
+                            0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            0.158983899988677_DP /), shape = (/ 4,4 /) )
+                            0.158983899988677_DP, &
+                            0.0_DP, &
+                            ! fifth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -785,7 +840,8 @@ contains
            (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
               0.317967799977354_DP, &   ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
-              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
+              0.0_DP /)
 
 
     case (TSCHM_DIRK34Lb)
@@ -828,9 +884,11 @@ contains
       !     language  = {English},
       !     keywords  = {stiff ODEs; singular perturbation problems;Runge--Kutta methods},
       !  }
-      ! Like DIRK34La it consists of 4 stages (but the first step is explicit), so only 3
-      ! substeps...
-      rtstepScheme%nsubsteps        = 3
+      ! Like DIRK34La it consists of 4 stages, ...
+      rtstepScheme%nsubsteps = 4
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
 
       ! ... and uses several parameter. Matrix A of the Butcher table has he following
       ! entries:
@@ -851,21 +909,32 @@ contains
                             1.0_DP - 0.0735700902_DP - 0.43586652150845899941_DP, &
                             1.0_DP - 1.490563387_DP +  1.235239880_DP &
                                    - 0.43586652150845899941_DP, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.43586652150845899941_DP, &
                             0.0735700902_DP, &
                             1.490563387_DP, &
+                            0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.43586652150845899941_DP, &
-                            -1.235239880_DP, &
+                           -1.235239880_DP, &
+                            0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            0.43586652150845899941_DP /), shape = (/ 4,4 /) )
+                            0.43586652150845899941_DP, &
+                            0.0_DP, &
+                            ! fifth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -873,7 +942,8 @@ contains
            (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
               0.8717330428_DP, &        ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
-              1.0_DP /)                 ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
+              0.0_DP /)
 
 
     case (TSCHM_DIRK44L)
@@ -911,8 +981,11 @@ contains
       !     }
       ! why the order can not exceed 3/2 for stiff problems.
       !
-      ! It consists of 4 stages (but the first step is explicit), so only 3 substeps...
-      rtstepScheme%nsubsteps        = 3
+      ! It consists of 4 stages, ...
+      rtstepScheme%nsubsteps = 4
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
 
       ! ... and uses several parameter:
       rtstepScheme%dcoeffA = &
@@ -935,21 +1008,32 @@ contains
                             0.25_DP, &
                             (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
                             1.0_DP/6.0_DP, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             (1.0_DP + sqrt(2.0_DP))/3.0_DP, &
                             2.0_DP/3.0_DP, &
+                            0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
                             (sqrt(2.0_DP) - 1.0_DP)/6.0_DP, &
+                            0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            (2.0_DP - sqrt(2.0_DP))/6.0_DP /), shape = (/ 4,4 /) )
+                            (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
+                            0.0_DP, &
+                            ! fifth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -957,7 +1041,8 @@ contains
            (/ 0.0_DP, &  ! sum(rtstepScheme%dcoeffA(1,:))
               0.5_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &  ! sum(rtstepScheme%dcoeffA(3,:))
-              1.0_DP /)  ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &  ! sum(rtstepScheme%dcoeffA(4,:))
+              0.0_DP /)
 
 
     case (TSCHM_DIRK54L)
@@ -997,8 +1082,11 @@ contains
       !     }
       ! why the order can not exceed 3/2 for stiff problems.
       !
-      ! It consists of 4 stages (but the first step is explicit), so only 3 substeps...
-      rtstepScheme%nsubsteps        = 3
+      ! It consists of 4 stages, ...
+      rtstepScheme%nsubsteps = 4
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
 
       ! Parameters
       !                         178         432        10        27        125
@@ -1057,21 +1145,32 @@ contains
                             1.0_DP/6.0_DP, &
                             178.0_DP/1075.0_DP, &
                             5.0_DP/48.0_DP, &
+                            0.0_DP, &
                             ! second column
                             0.0_DP, &
                             1.0_DP/6.0_DP, &
                             432.0_DP/1075.0_DP, &
                             27.0_DP/56.0_DP, &
+                            0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             10.0_DP/43.0_DP, &
                             125.0_DP/336.0_DP, &
+                            0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            1.0_DP/24.0_DP /), shape = (/ 4,4 /) )
+                            1.0_DP/24.0_DP, &
+                            0.0_DP, &
+                            ! fifth column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -1079,7 +1178,140 @@ contains
            (/ 0.0_DP, &         ! sum(rtstepScheme%dcoeffA(1,:))
               1.0_DP/3.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               0.8_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
-              1.0_DP /)         ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &         ! sum(rtstepScheme%dcoeffA(4,:))
+              0.0_DP /)
+
+
+    case (TSCHM_SDIRK2)
+
+      rtstepScheme%ctimestepType    = TSCHM_SDIRK2
+
+      ! The SDIRK2 scheme was first described in
+      !   @article{Cameron200261,
+      !    author  = {Frank Cameron and Mikko Palmroth and Robert Piche},
+      !    title   = {Quasi stage order conditions for \{SDIRK\} methods},
+      !    journal = {Applied Numerical Mathematics},
+      !    volume  = {42},
+      !    number  = {1-3},
+      !    pages   = {61-75},
+      !    year    = {2002},
+      !    note    = {Numerical Solution of Differential and Differential-Algebraic
+      !               Equations, 4-9 September 2000, Halle, Germany},
+      !    issn    = {0168-9274},
+      !    doi     = {http://dx.doi.org/10.1016/S0168-9274(01)00142-8},
+      !    url     = {http://www.sciencedirect.com/science/article/pii/S0168927401001428},
+      !   }
+      ! It consists of 4 stages (the first step is NOT explicit)
+      rtstepScheme%nsubsteps        = 4
+      rtstepScheme%bexplicitFirstStage = .FALSE.
+
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.25_DP, &
+                            1.0_DP/7_DP, &
+                            61.0_DP/144.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.25_DP, &
+                            -49.0_DP/144.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.25_DP, &
+                            0.75_DP, &
+                            0.0_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.25_DP, &
+                            0.0_DP, &
+                            ! fifth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP /), shape = (/ 5,5 /) )
+      ! b_i = a_{4i}     (see \cite[p. 68, equation (16)]{Cameron200261})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
+      ! c_i = \sum_{j=1}^i a_{ij}  (see \cite[p. 68, equation (16)]{Cameron200261})
+      rtstepScheme%dcoeffC = &
+           (/ sum(rtstepScheme%dcoeffA(1,:)), &
+              sum(rtstepScheme%dcoeffA(2,:)), &
+              sum(rtstepScheme%dcoeffA(3,:)), &
+              sum(rtstepScheme%dcoeffA(4,:)), &
+              sum(rtstepScheme%dcoeffA(5,:)) /)
+
+
+    case (TSCHM_SDIRK3PR)
+
+      rtstepScheme%ctimestepType    = TSCHM_SDIRK3PR
+
+      ! The TSCHM_SDIRK3PR stems from
+      !   @article{Rang2014105,
+      !     author  = {Joachim Rang},
+      !     title   = {An analysis of the Prothero--Robinson example for
+      !                constructing new \{DIRK\} and \{ROW\} methods},
+      !     journal = {Journal of Computational and Applied Mathematics},
+      !     volume  = {262},
+      !     number  = {0},
+      !     pages   = {105-114},
+      !     year    = {2014},
+      !     note    = {Selected Papers from NUMDIFF-13},
+      !     issn    = {0377-0427},
+      !     doi     = {http://dx.doi.org/10.1016/j.cam.2013.09.062},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0377042713005177},
+      !   }
+      ! It consists of 5 stages (the first step is NOT explicit)
+      rtstepScheme%nsubsteps        = 5
+      rtstepScheme%bexplicitFirstStage = .FALSE.
+
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.25_DP, &
+                            7.0_DP/22_DP, &
+                           -8.539056974_DP, &
+                            0.4655139533_DP, &
+                            0.6726076809_DP, &
+                            ! second column
+                            0.0_DP, &
+                            0.25_DP, &
+                            10.89085338_DP, &
+                            0.2982636266_DP, &
+                           -0.05938120413_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.25_DP, &
+                           -0.01377757995_DP, &
+                           -0.01322647675_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.25_DP, &
+                            0.15_DP, &
+                            ! fifth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.25_DP /), shape = (/ 5,5 /) )
+      ! b_i = a_{5i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(5,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ sum(rtstepScheme%dcoeffA(1,:)), &
+              sum(rtstepScheme%dcoeffA(2,:)), &
+              sum(rtstepScheme%dcoeffA(3,:)), &
+              sum(rtstepScheme%dcoeffA(4,:)), &
+              sum(rtstepScheme%dcoeffA(5,:)) /)
 
     end select
 
@@ -1272,20 +1504,27 @@ contains
       !       same point in time.
       rtstepScheme%dtau = 2.0_DP * dtstep
       select case (rtstepScheme%isubstep)
+#if defined(DEBUG) || defined(_DEBUG)
       case (1)
+        call output_line ("DIRK23L scheme has an explicit first stage. " // &
+                          "This line should be unreachable!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "timstp_setBaseSteplength")
+        call sys_halt()
+#endif
+      case (2)
         rtstepScheme%dtimeDIRKstage1    = rtstepScheme%dcurrentTime
         rtstepScheme%dtstep             = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
-      case (2)
+      case (3)
         rtstepScheme%dtstep             = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
                                                                rtstepScheme%dcoeffC(2))
       end select
       rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
-                     rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
       rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,:))
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
 
 
     case (TSCHM_FS_DIRK, &
@@ -1307,13 +1546,22 @@ contains
       !       same point in time.
       rtstepScheme%dtau = 3.0_DP * dtstep
       select case (rtstepScheme%isubstep)
+#if defined(DEBUG) || defined(_DEBUG)
       case (1)
+        call output_line ("Time stepping scheme " // &
+                          trim(sys_siL(rtstepScheme%ctimestepType,2)) // &
+                          " has an explicit first stage." // &
+                          " This line should be unreachable!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "timstp_setBaseSteplength")
+        call sys_halt()
+#endif
+      case (2)
         rtstepScheme%dtimeDIRKstage1    = rtstepScheme%dcurrentTime
         rtstepScheme%dtstep             = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
-      case (2)
+      case (3)
         rtstepScheme%dtstep             = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
                                                                rtstepScheme%dcoeffC(2))
-      case (3)
+      case (4)
         ! Yes, this particular setting ...%dtstep choice leads indeed for DIRK34L and
         ! DIRK44L to a seemingly time step size of 0. At least that is what gets displayed
         ! in the log. But this setting is only for display, internally the DIRK algorithms
@@ -1323,12 +1571,68 @@ contains
       end select
 
       rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
-                     rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,rtstepScheme%isubstep+1)
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
       rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
       rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep+1,:))
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
+
+
+    case (TSCHM_SDIRK2)
+      rtstepScheme%dtau = 4.0_DP * dtstep
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtimeDIRKstage1 = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep          = rtstepScheme%dtau * rtstepScheme%dcoeffC(1)
+      case (2)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(2)-&
+                                                            rtstepScheme%dcoeffC(1))
+      case (3)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                            rtstepScheme%dcoeffC(2))
+      case (4)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
+                                                            rtstepScheme%dcoeffC(3))
+      end select
+
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
+
+
+    case (TSCHM_SDIRK3PR)
+      rtstepScheme%dtau = 5.0_DP * dtstep
+      select case (rtstepScheme%isubstep)
+      case (1)
+        rtstepScheme%dtimeDIRKstage1 = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep          = rtstepScheme%dtau * rtstepScheme%dcoeffC(1)
+      case (2)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(2)-&
+                                                            rtstepScheme%dcoeffC(1))
+      case (3)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                            rtstepScheme%dcoeffC(2))
+      case (4)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
+                                                            rtstepScheme%dcoeffC(3))
+      case (5)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(5)-&
+                                                            rtstepScheme%dcoeffC(4))
+      end select
+
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
+
 
     end select
 
@@ -1421,9 +1725,17 @@ contains
 
     if (rtstepScheme%isubstep .gt. rtstepScheme%nsubsteps) then
       rtstepScheme%isubstep = 1
+      if (rtstepScheme%bexplicitFirstStage) then
+        rtstepScheme%isubstep = rtstepScheme%isubstep + 1
+      end if
+
       ! Set the time with a slightly different approach to prevent rounding errors.
       rtstepScheme%dtimeMacrostep = rtstepScheme%dtimeMacrostep + &
-          real(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+          ! if first stage of time stepping scheme is explicit,
+          ! reduce number of stages by 1
+          real(rtstepScheme%nsubsteps - &
+                   merge(1,0,rtstepScheme%bexplicitFirstStage .eq. .TRUE.),DP) * &
+          rtstepScheme%dtstepFixed
       rtstepScheme%dcurrentTime = rtstepScheme%dtimeMacrostep
     end if
 

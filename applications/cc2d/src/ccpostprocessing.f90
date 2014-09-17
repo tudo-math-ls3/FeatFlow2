@@ -779,18 +779,56 @@ contains
         cignoreTimeStep = 0
         if (rpostprocessing%ctimestepType .eq. TSCHM_DIRK34La .or. &
             rpostprocessing%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-            rpostprocessing%ctimestepType .eq. TSCHM_DIRK44L) then
-          ! The last two stages, i.e. the 2nd and 3rd substep of the time stepping schemes
-          ! DIRK34L (variant a and b) and DIRK44L do live in the same time step and to
-          ! avoid coinciding interpolation points the result of the 2nd substep should not
-          ! get considered for interpolation of the accumulated time plus space
-          ! discretisation error.
-          iglobaltimestep = rproblem%rtimedependence%itimestep &
-                            - int(rproblem%rtimedependence%itimestep / 3)
+            rpostprocessing%ctimestepType .eq. TSCHM_DIRK44L  .or. &
+            rpostprocessing%ctimestepType .eq. TSCHM_DIRK54L) then
+          ! The velocity and pressure solution in the intermediate stages of the time
+          ! stepping schemes DIRK34L (variant a and b) and DIRK44L are typically wrong.
+          !
+          ! Note: Divisor 3 = nsubsteps - 1, given that all these schemes have 4 stages
+          !       with an explicit first stage such that 3 time steps are sufficient for a
+          !       complete sweep.
+          iglobaltimestep = int(rproblem%rtimedependence%itimestep / 3)
           select case (mod(rproblem%rtimedependence%itimestep,3))
-          case (1,0)
+          case (0)
             cignoreTimeStep = 0
-          case (2)
+          case (1,2)
+            cignoreTimeStep = 1
+          end select
+        end if
+        if (rpostprocessing%ctimestepType .eq. TSCHM_SDIRK2) then
+          ! The velocity and pressure solution in the intermediate stages of the time
+          ! stepping scheme SDIRK2 are typically wrong.
+          !
+          ! Note: Divisor 4 = nsubsteps, given that this time stepping scheme has 4 stages
+          !       with an implicit first stage such that really 4 time steps are needed
+          !       for a complete sweep.
+          iglobaltimestep = int(rproblem%rtimedependence%itimestep / 4)
+          select case (mod(rproblem%rtimedependence%itimestep,4))
+          case (0)
+            cignoreTimeStep = 0
+          case (1,2,3,4)
+            cignoreTimeStep = 1
+          end select
+        end if
+        if (rpostprocessing%ctimestepType .eq. TSCHM_SDIRK3PR) then
+          ! The velocity and pressure solution in the intermediate stages of the time
+          ! stepping scheme SDIRK3PR is typically wrong as does show a manual application
+          ! of the schemeto the nonlinear Stokes problem with homogeneous right hand side
+          ! and inhomogeneous pure Dirichlet boundary conditions for the velocity set
+          ! according to the analytic solution (u1, u2, p) = (t^2, t^2, -2t(x+y-1)):
+          ! Without loss of generality let T=[0,2] and time step size t_m = 2. Then, one
+          ! sweep of SDIRK3PR suffices to reach T=2, starting from T=0. The velocity
+          ! solution is exactly approximated in every intermediate stage, but the pressure
+          ! solution is only correct when stage 5 is completed.
+          !
+          ! Note: Divisor 5 = nsubsteps, given that this time stepping scheme has 5 stages
+          !       with an implicit first stage such that really 5 time steps are needed
+          !       for a complete sweep.
+          iglobaltimestep = int(rproblem%rtimedependence%itimestep / 5)
+          select case (mod(rproblem%rtimedependence%itimestep,5))
+          case (0)
+            cignoreTimeStep = 0
+          case (1,2,3,4)
             cignoreTimeStep = 1
           end select
         end if

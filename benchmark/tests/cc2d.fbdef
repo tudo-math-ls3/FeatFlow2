@@ -230,7 +230,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q1~ element, SD(0.1)
-# 6 time steps with time step size 0.01, classic fractional-step theta-scheme
+# 6 time steps with average time step size 0.01, classic fractional-step theta-scheme
 ##########
 
 testid   = CC2D_105
@@ -269,7 +269,7 @@ TIMEDISCRETISATION_ITIMESTEPSCHEME = 1
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q1~ element, SD(0.1)
-# 6 time steps with time step size 0.01, DIRK_FS with 3 initial CN steps
+# 6 time steps with average time step size 0.01, DIRK_FS with 3 initial CN steps
 ##########
 
 testid   = CC2D_107
@@ -284,7 +284,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q1~ element, SD(0.1)
-# 6 time steps with time step size 0.01, (ES)DIRK34La with 3 initial CN steps
+# 6 time steps with average time step size 0.01, (ES)DIRK34La with 3 initial CN steps
 ##########
 
 testid   = CC2D_108
@@ -299,7 +299,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q3 element, SD(0.1)
-# 6 time steps with time step size 0.01, (ES)DIRK34La with 3 initial CN steps
+# 6 time steps with average time step size 0.01, (ES)DIRK34La with 3 initial CN steps
 ##########
 
 testid   = CC2D_109
@@ -318,7 +318,7 @@ TIMEDISCRETISATION_ITIMESTEPSCHEME = -5
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q3 element, SD(0.1)
-# 6 time steps with time step size 0.01, (ES)DIRK34Lb with 3 initial CN steps
+# 6 time steps with average time step size 0.01, (ES)DIRK34Lb with 3 initial CN steps
 ##########
 
 testid   = CC2D_110
@@ -332,7 +332,7 @@ TIMEDISCRETISATION_ITIMESTEPSCHEME = -6
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q3 element, SD(0.1)
-# 6 time steps with time step size 0.01, (ES)DIRK44L with 3 initial CN steps
+# 6 time steps with average time step size 0.01, (ES)DIRK44L with 3 initial CN steps
 ##########
 
 testid   = CC2D_111
@@ -346,7 +346,7 @@ TIMEDISCRETISATION_ITIMESTEPSCHEME = -7
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q3 element, SD(0.1)
-# 6 time steps with time step size 0.01, DIRK54L with 3 initial CN steps
+# 6 time steps with average time step size 0.01, DIRK54L with 3 initial CN steps
 ##########
 
 testid   = CC2D_112
@@ -360,7 +360,7 @@ TIMEDISCRETISATION_ITIMESTEPSCHEME = -8
 #
 # Nonstationary Navier-Stokes on level 2,3.
 # Q3 element, SD(0.1)
-# 6 time steps with time step size 0.01, DIRK23L with 2 initial CN steps
+# 6 time steps with average time step size 0.01, DIRK23L with 2 initial CN steps
 ##########
 
 testid   = CC2D_113
@@ -368,3 +368,31 @@ descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 TIMEDISCRETISATION_ITIMESTEPSCHEME = -4
+
+##########
+# Test 114
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 8 time steps with average time step size 0.01, SDIRK2 with 4 initial CN steps
+##########
+
+testid   = CC2D_114
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 4 initial CN steps, then SDIRK2
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -9
+
+##########
+# Test 115
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, SDIRK3PR with 5 initial CN steps
+##########
+
+testid   = CC2D_115
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 5 initial CN steps, then SDIRK3PR
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -10
