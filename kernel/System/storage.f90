@@ -36,7 +36,7 @@
 !#  2.) storage_done
 !#      -> Cleans up the storage management
 !#
-!#  3.) storage_info
+!#  3.) storage_info / storage_info_handle
 !#      -> Prints statistics about the heap to the terminal
 !#
 !#  4.) storage_new
@@ -922,6 +922,7 @@ module storage
   public :: storage_done
   public :: storage_free
   public :: storage_info
+  public :: storage_info_handle
   public :: storage_clear
   public :: storage_getdatatype
   public :: storage_getdimension
@@ -14830,6 +14831,63 @@ contains
 
 !<subroutine>
 
+  subroutine storage_info_handle (ihandle, rheap)
+
+!<description>
+  ! This routine prints information about the current memory consumption
+  ! memory block identified by ihandle to screen.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be displayed
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(in), target, optional :: rheap
+!</input>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    ! Loop through the heap and search allocated handles
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_NOHANDLE) then
+      if (p_rheap%p_Rdescriptors(ihandle)%idimension .eq. 1) then
+        call output_line ( &
+            'Handle ' // trim(sys_siL(ihandle,10)) // ', 1D, Length=' // &
+            trim(sys_smemL(p_rheap%p_Rdescriptors(ihandle)%imemBytes)) //&
+            ', Type=' // trim(sys_siL(p_rheap%p_Rdescriptors(ihandle)%idataType,15)) //&
+            ', Name=' // trim(adjustl(p_rheap%p_Rdescriptors(ihandle)%sname)) //&
+            ', Caller=' // trim(adjustl(p_rheap%p_Rdescriptors(ihandle)%scaller)))
+      else
+        call output_line ( &
+            'Handle ' // trim(sys_siL(ihandle,10)) // ', 2D, Length=' // &
+            trim(sys_smemL(p_rheap%p_Rdescriptors(ihandle)%imemBytes)) // &
+            ', Type=' // trim(sys_siL(p_rheap%p_Rdescriptors(ihandle)%idataType,15)) //&
+            ', Name=' // trim(adjustl(p_rheap%p_Rdescriptors(ihandle)%sname)) //&
+            ', Caller=' // trim(adjustl(p_rheap%p_Rdescriptors(ihandle)%scaller)))
+      end if
+    else
+      call output_line ('Handle invalid!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'storage_info_handle')
+      call sys_halt()
+    end if
+    
+  end subroutine storage_info_handle
+
+!************************************************************************
+
+!<subroutine>
+
   subroutine storage_getdatatype (ihandle, idatatype, rheap)
 
 !<description>
@@ -14837,7 +14895,7 @@ contains
 !</description>
 
 !<input>
-  ! Handle of the memory block to be releases
+  ! Handle of the memory block to be released
   integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
