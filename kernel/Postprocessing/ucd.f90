@@ -3755,19 +3755,25 @@ contains
       ! Deallocate temporal memory
       deallocate(X,Y,Z)
 
-!!$
-!!$
-!!$      ! Write tracer variables if specified
-!!$      DO i=1,rexport%ntracerVariables
-!!$        WRITE (mfile,'(A32)') rexport%p_StracerVariableNames(i)
-!!$
-!!$        CALL storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
-!!$        DO j=1,rexport%ntracers
-!!$          WRITE (mfile,rexport%sdataFormat) p_Ddata(j)
-!!$        END DO
-!!$      END DO
+      ! Allocate temporal memory
+      allocate(VAR(rexport%ntracers))
 
+      ! Write all tracers
+      do i=1,rexport%ntracerVariables
+      
+        call storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
+  
+        do j=1,rexport%ntracers
+          VAR(j) = p_Ddata(j)
+        end do
 
+        call fgmvwrite_tracers_name_data(1, trim(rexport%p_StracerVariableNames(i)), VAR)
+        
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(VAR)
+      
       call fgmvwrite_tracers_endtrace()
 
     end if
