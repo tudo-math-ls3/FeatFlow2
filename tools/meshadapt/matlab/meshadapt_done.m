@@ -11,12 +11,12 @@ function meshadapt_done
     global lp_meshadapt
     
     % Finalisation
-    calllib('meshadapt', 'meshadaptbase_MOD_madapt_done', lp_meshadapt);
-    calllib('meshadapt', 'meshadaptbase_MOD_madapt_dealloc', lp_meshadapt);
+    %calllib('meshadapt', 'madapt_done', lp_meshadapt);
+    calllib('meshadapt', 'madapt_dealloc', lp_meshadapt);
     clear -global lp_meshadapt
 
     % Clean up the storage management, finish
-    calllib('meshadapt', 'storage_MOD_storage_done', [])
+    calllib('meshadapt', 'storage_done', [])
 
     % Unload shared library
     unloadlibrary meshadapt

@@ -13,9 +13,6 @@ function [nel,nvt,ndim] = meshadapt_data()
     global lp_meshadapt
     
     % Get data from adaptation structure
-    nel = calllib('meshadapt', 'meshadaptbase_MOD_madapt_getnel', ...
-                  lp_meshadapt);
-    nvt = calllib('meshadapt', 'meshadaptbase_MOD_madapt_getnvt', ...
-                  lp_meshadapt);
-    ndim = calllib('meshadapt', 'meshadaptbase_MOD_madapt_getndim', ...
-                   lp_meshadapt);
+    nel = calllib('meshadapt', 'madapt_getnel', lp_meshadapt);
+    nvt = calllib('meshadapt', 'madapt_getnvt', lp_meshadapt);
+    ndim = calllib('meshadapt', 'madapt_getndim', lp_meshadapt);

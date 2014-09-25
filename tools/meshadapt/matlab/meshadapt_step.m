@@ -19,5 +19,5 @@ function meshadapt_step(indicator,refmax,reftol,crstol)
     global lp_meshadapt
     
     % Perform one step of mesh adaptation
-    calllib('meshadapt', 'meshadaptbase_MOD_madapt_step_dble2', lp_meshadapt, ...
+    calllib('meshadapt', 'madapt_step_dble2', lp_meshadapt, ...
             length(indicator), indicator(:), refmax, reftol, crstol);

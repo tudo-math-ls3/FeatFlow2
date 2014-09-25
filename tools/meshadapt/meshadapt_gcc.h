@@ -6,6 +6,12 @@
  * NOTE: This header file only provides access to a limited number of
  *       functions and subroutine and sometimes omits optional
  *       arguments or makes them mandatory.
+ *
+ *       This header file is adjusted to the calling conventions of
+ *       the GNU compiler suite. That is, the full name of a
+ *       subroutine/functions implemented in a module file reads:
+ *
+ *       __modfile_MOD_subroutine_name()
  */
 
 #include "types.h"
