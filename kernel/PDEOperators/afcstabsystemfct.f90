@@ -845,7 +845,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -927,7 +927,7 @@ contains
           do IEDGEset = IedgeListIdx(igroup),&
               IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-            ! We always handle  edges simultaneously.
+            ! We always handle NEDGESIM edges simultaneously.
             ! How many edges have we actually here?
             ! Get the maximum edge number, such that we handle
             ! at most  edges simultaneously.
@@ -1133,7 +1133,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1213,7 +1213,7 @@ contains
           do IEDGEset = IedgeListIdx(igroup),&
                         IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-            ! We always handle  edges simultaneously.
+            ! We always handle NEDGESIM edges simultaneously.
             ! How many edges have we actually here?
             ! Get the maximum edge number, such that we handle
             ! at most  edges simultaneously.
@@ -1476,7 +1476,7 @@ contains
       !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle  edges simultaneously.
+        ! We always handle NEDGESIM edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
@@ -1639,7 +1639,7 @@ contains
       !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle  edges simultaneously.
+        ! We always handle NEDGESIM edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
@@ -2244,7 +2244,7 @@ contains
       elseif (present(fcb_calcDiffTransformation_sim)) then
         ! Standard routine with difference transformation
         call doBoundsTransformedDP(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEQ, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
             p_Dx, p_Dqp, p_Dqm)
       else
         ! Standard routine without difference transformation
@@ -2684,7 +2684,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -2766,7 +2766,7 @@ contains
           do IEDGEset = IedgeListIdx(igroup),&
                         IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-            ! We always handle  edges simultaneously.
+            ! We always handle NEDGESIM edges simultaneously.
             ! How many edges have we actually here?
             ! Get the maximum edge number, such that we handle
             ! at most  edges simultaneously.
@@ -2973,7 +2973,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -3053,7 +3053,7 @@ contains
           do IEDGEset = IedgeListIdx(igroup),&
                         IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-            ! We always handle  edges simultaneously.
+            ! We always handle NEDGESIM edges simultaneously.
             ! How many edges have we actually here?
             ! Get the maximum edge number, such that we handle
             ! at most  edges simultaneously.
@@ -3318,7 +3318,7 @@ contains
       !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle  edges simultaneously.
+        ! We always handle NEDGESIM edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
@@ -3481,7 +3481,7 @@ contains
       !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle  edges simultaneously.
+        ! We always handle NEDGESIM edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
@@ -4430,7 +4430,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -4476,7 +4476,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -5462,7 +5462,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -5508,7 +5508,7 @@ contains
         !$omp do schedule(static,1)
         do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.

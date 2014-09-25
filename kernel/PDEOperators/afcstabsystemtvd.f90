@@ -285,7 +285,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -385,7 +385,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -499,7 +499,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -605,7 +605,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -693,7 +693,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -807,7 +807,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -913,7 +913,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1007,7 +1007,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1095,7 +1095,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1487,7 +1487,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1587,7 +1587,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1701,7 +1701,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1807,7 +1807,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -1895,7 +1895,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -2009,7 +2009,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -2115,7 +2115,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -2209,7 +2209,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
@@ -2297,7 +2297,7 @@ contains
         do IEDGEset = IedgeListIdx(igroup),&
                       IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle  edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.

@@ -40,12 +40,9 @@ module afcstabsystem
 
 !$ use omp_lib
   use afcstabbase
-!  use basicgeometry
-!  use collection
   use fsystem
   use genoutput
   use groupfembase
-!  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use perfconfig
