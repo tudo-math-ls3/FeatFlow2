@@ -38,6 +38,7 @@ module hydro_postprocessing
   use flagship_basic
   use fsystem
   use genoutput
+  use io
   use linearformevaluation
   use lineariser
   use linearsystemblock
@@ -293,7 +294,7 @@ contains
       ! local variables
       type(t_vectorScalar) :: rvector1,rvector2,rvector3
       real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
-      character(len=SYS_NAMELEN) :: cvariable
+      character(len=SYS_NAMELEN) :: sucdvariable
       integer :: isize,ndim,ivariable,nvariable
 
       ! Set pointers
@@ -339,9 +340,9 @@ contains
           
           ! Get variable name
           call parlst_getvalue_string(rparlist, trim(soutputName),&
-              'sucdvariable', cvariable, isubstring=ivariable)
+              'sucdvariable', sucdvariable, isubstring=ivariable)
           
-          if (trim(cvariable) .eq. 'velocity') then
+          if (trim(sucdvariable) .eq. 'velocity') then
             
             ! Special treatment of velocity vector
             select case(ndim)
@@ -410,7 +411,7 @@ contains
               end if
             end select
 
-          elseif (trim(cvariable) .eq. 'momentum') then
+          elseif (trim(sucdvariable) .eq. 'momentum') then
             
             ! Special treatment of momentum vector
             select case(ndim)
@@ -484,25 +485,25 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ,  NVAR1D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ,  NVAR2D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ,  NVAR3D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             end select
             
             if (bconvert) then
-              call hydro_convertVariableDim(p_Ddata1, cvariable,&
+              call hydro_convertVariableDim(p_Ddata1, sucdvariable,&
                   density_ref, velocity_ref, length_ref)
             end if
 
-            call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
+            call ucd_addVariableVertexBased(rexport, sucdvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
 
             if (btracers) then
-              call ucd_addTracerVariable(rexport, cvariable//csuffix,&
+              call ucd_addTracerVariable(rexport, sucdvariable//csuffix,&
                   p_Ddata1)
             end if
             
@@ -516,9 +517,9 @@ contains
           
           ! Get variable name
           call parlst_getvalue_string(rparlist, trim(soutputName),&
-              'sucdvariable', cvariable, isubstring=ivariable)
+              'sucdvariable', sucdvariable, isubstring=ivariable)
           
-          if (trim(cvariable) .eq. 'velocity') then
+          if (trim(sucdvariable) .eq. 'velocity') then
 
             ! Special treatment of velocity vector
             select case(ndim)
@@ -586,7 +587,7 @@ contains
               end if
             end select
             
-          elseif (trim(cvariable) .eq. 'momentum') then
+          elseif (trim(sucdvariable) .eq. 'momentum') then
 
             ! Special treatment of momentum vector
             select case(ndim)
@@ -659,25 +660,25 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
-                  cvariable, Ddata, p_Ddata1)
+                  sucdvariable, Ddata, p_Ddata1)
             end select
 
             if (bconvert) then
-              call hydro_convertVariableDim(p_Ddata1, cvariable,&
+              call hydro_convertVariableDim(p_Ddata1, sucdvariable,&
                   density_ref, velocity_ref, length_ref)
             end if
 
-            call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
+            call ucd_addVariableVertexBased(rexport, sucdvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
             if (btracers) then
-              call ucd_addTracerVariable(rexport, cvariable//csuffix,&
+              call ucd_addTracerVariable(rexport, sucdvariable//csuffix,&
                   p_Ddata1)
             end if
 
@@ -972,6 +973,7 @@ contains
     ! section names
     character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: sfesolution
+    character(LEN=SYS_STRLEN) :: sfevariable
 
     ! persistent variable
     integer, save :: ifilenumber = 1
@@ -979,15 +981,23 @@ contains
     ! local variables
     type(t_vectorScalar) :: rvector
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataVariable
-    integer :: isize,isystemFormat,iunit,ndim
+    integer :: isize,isystemFormat,cf,ndim,ivariable,nvariable
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName,&
                                 'output', soutputName)
     call parlst_getvalue_string(rparlist, trim(soutputName),&
-                                'sfesolution', sfesolution)
+                                'sfesolution', sfesolution,'')
+    if (trim(adjustl(sfesolution)) .eq. '') return
+
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'isystemformat', isystemformat)
+
+    ! Get number of variables to be written
+    nvariable = max(1,&
+        parlst_querysubstrings(rparlist,&
+        trim(soutputName), 'sfevariable'))
+    if (nvariable .eq. 0) return
 
     ! Set pointer
     call lsysbl_getbase_double(rsolution, p_Ddata)
@@ -1000,101 +1010,112 @@ contains
     call lsyssc_createVector(rvector, isize, .false.)
     call lsyssc_getbase_double(rvector, p_DdataVariable)
 
+    ! Open file for writing
+    call io_openFileForWriting(trim(adjustl(sfesolution))//&
+        '.'//trim(sys_si0(ifilenumber,5))//'.raw', cf,&
+        SYS_REPLACE, bformatted=.false.)
+
     ! Increase filenumber by one
     ifilenumber = ifilenumber+1
 
-    ! Open file for writing
-    iunit=sys_getFreeUnit()
-    open (UNIT=iunit,FILE=trim(adjustl(sfesolution))//&
-          '.'//trim(sys_si0(ifilenumber,5))//'.raw')
-
+    ! Write individual variables to file
     select case(isystemFormat)
     case(SYSTEM_INTERLEAVEFORMAT)
 
       select case(ndim)
       case (NDIM1D)
-        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
+
       case (NDIM2D)
-        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
-            'velocity_y', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
+
       case (NDIM3D)
-        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_y', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_z', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
       end select
       
     case (SYSTEM_BLOCKFORMAT)
 
       select case(ndim)
       case (NDIM1D)
-        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
+
       case (NDIM2D)
-        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
-            'velocity_y', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
+
       case (NDIM3D)
-        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
-            'density', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_x', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_y', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
-            'velocity_z', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
-        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
-            'total_energy', p_Ddata, p_DdataVariable)
-        call vecio_writeArray(p_DdataVariable, iunit, '')
+        ! Loop over all variables
+        do ivariable =1,nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'sfevariable', sfevariable, isubstring=ivariable)
+          
+          ! Get variable data
+          call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+              trim(adjustl(sfevariable)), p_Ddata, p_DdataVariable)
+          write(cf) isize,trim(adjustl(sfevariable))
+          call vecio_writeArray(p_DdataVariable, cf, '')
+        end do
       end select
 
     case default
@@ -1103,6 +1124,9 @@ contains
       call sys_halt()
     end select
     
+    ! Release temporal memory
+    call lsyssc_releaseVector(rvector)
+
   end subroutine hydro_outputFeSolution
 
 end module hydro_postprocessing

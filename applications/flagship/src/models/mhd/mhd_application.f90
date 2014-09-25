@@ -183,11 +183,11 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
-    ! Abstract problem descriptor
-    type(t_problemDescriptor) :: rproblemDescriptor
-
     ! Timer for file IO
     type(t_timer) :: rtimerFileIO
+
+    ! Abstract problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
 
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
@@ -370,6 +370,10 @@ contains
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
+        ! Output FE-solution to file
+        call mhd_outputFeSolution(rparlist, ssectionNAme,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal)
+
         ! Stop time measurement for post-processing
         call stat_stopTimer(rtimerFileIO)
 
@@ -541,10 +545,10 @@ contains
         'rtimerTriangulation', ssectionName=ssectionName)
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
-     p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
+    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
-     p_rtimerFileIO => collct_getvalue_timer(rcollection,&
-         'rtimerFileIO', ssectionName=ssectionName)
+    p_rtimerFileIO => collct_getvalue_timer(rcollection,&
+        'rtimerFileIO', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -748,8 +752,12 @@ contains
         ! Start time measurement for post-processing
         call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
 
+        ! Output solution to UCD file
         call mhd_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+        ! Output FE-solution to file
+        call mhd_outputFeSolution(rparlist, ssectionNAme,&
+            rproblem%p_rproblemLevelMax, rsolution)
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(p_rtimerFileIO)
@@ -799,9 +807,6 @@ contains
         call sys_halt()
       end select
 
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
-
       ! Start time measurement for vector assembly
       call stat_startTimer(p_rtimerAssemblyVector)
 
@@ -812,6 +817,9 @@ contains
 
       ! Stop time measurement for vector assembly
       call stat_stopTimer(p_rtimerAssemblyVector)
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
       
       ! Write norm of solution to benchmark logfile
       if (OU_BENCHLOG .ne. 0) then
@@ -847,7 +855,6 @@ contains
         call stat_stopTimer(p_rtimerFileIO)
 
       end if
-
 
       !-------------------------------------------------------------------------
       ! Perform adaptation

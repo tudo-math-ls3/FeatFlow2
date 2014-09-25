@@ -364,10 +364,14 @@ contains
         ! Start time measurement for post-processing
         call stat_startTimer(rtimerFileIO, STAT_TIMERSHORT)
 
-        ! Output solution to file
+        ! Output solution to UCD file
         call hydro_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
+        ! Output FE-solution to file
+        call hydro_outputFeSolution(rparlist, ssectionNAme,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal)
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(rtimerFileIO)
@@ -744,8 +748,13 @@ contains
         ! Start time measurement for post-processing
         call stat_startTimer(p_rtimerFileIO, STAT_TIMERSHORT)
 
+        ! Output solution to UCD file
         call hydro_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+
+        ! Output FE-solution to file
+        call hydro_outputFeSolution(rparlist, ssectionNAme,&
+            rproblem%p_rproblemLevelMax, rsolution)
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(p_rtimerFileIO)
@@ -843,7 +852,6 @@ contains
         call stat_stopTimer(p_rtimerFileIO)
 
       end if
-
 
       !-------------------------------------------------------------------------
       ! Perform adaptation
