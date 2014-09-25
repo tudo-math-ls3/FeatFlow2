@@ -19,6 +19,9 @@
 !#      -> Performs conservative projection of the solution from
 !#         a given FE-space to another FE-space
 !#
+!# 4.) hydro_outputFeSolution
+!#     -> Outputs the FE-solution in raw format
+!#
 !# </purpose>
 !##############################################################################
 
@@ -47,6 +50,7 @@ module hydro_postprocessing
   use stdoperators
   use triangulation
   use ucd
+  use vectorio
 
   ! Modules from hydrodynamic model
   use hydro_basic
@@ -62,6 +66,7 @@ module hydro_postprocessing
   public :: hydro_outputSolution
   public :: hydro_outputStatistics
   public :: hydro_projectSolution
+  public :: hydro_outputFeSolution
 
 contains
 
@@ -937,5 +942,167 @@ contains
     call collct_done(rcollection)
 
   end subroutine hydro_projectSolution
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_outputFeSolution(rparlist, ssectionName,&
+      rproblemLevel, rsolution)
+
+!<description>
+    ! This subroutine exports the FE-solution vector in RAW format
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+!</input>
+!</subroutine>
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: soutputName
+    character(LEN=SYS_STRLEN) :: sfesolution
+
+    ! persistent variable
+    integer, save :: ifilenumber = 1
+
+    ! local variables
+    type(t_vectorScalar) :: rvector
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataVariable
+    integer :: isize,isystemFormat,iunit,ndim
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName),&
+                                'sfesolution', sfesolution)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'isystemformat', isystemformat)
+
+    ! Set pointer
+    call lsysbl_getbase_double(rsolution, p_Ddata)
+
+    ! Calculate data
+    isize = size(p_Ddata)/hydro_getNVAR(rproblemLevel)
+    ndim  = rproblemLevel%rtriangulation%ndim
+
+    ! Create auxiliary memory
+    call lsyssc_createVector(rvector, isize, .false.)
+    call lsyssc_getbase_double(rvector, p_DdataVariable)
+
+    ! Increase filenumber by one
+    ifilenumber = ifilenumber+1
+
+    ! Open file for writing
+    iunit=sys_getFreeUnit()
+    open (UNIT=iunit,FILE=trim(adjustl(sfesolution))//&
+          '.'//trim(sys_si0(ifilenumber,5))//'.raw')
+
+    select case(isystemFormat)
+    case(SYSTEM_INTERLEAVEFORMAT)
+
+      select case(ndim)
+      case (NDIM1D)
+        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat1d(rvector%NEQ,  NVAR1D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      case (NDIM2D)
+        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
+            'velocity_y', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat2d(rvector%NEQ,  NVAR2D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      case (NDIM3D)
+        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_y', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_z', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarInterleaveFormat3d(rvector%NEQ,  NVAR3D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      end select
+      
+    case (SYSTEM_BLOCKFORMAT)
+
+      select case(ndim)
+      case (NDIM1D)
+        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat1d(rvector%NEQ,  NVAR1D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      case (NDIM2D)
+        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
+            'velocity_y', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat2d(rvector%NEQ,  NVAR2D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      case (NDIM3D)
+        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+            'density', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_x', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_y', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+            'velocity_z', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+        call hydro_getVarBlockFormat3d(rvector%NEQ,  NVAR3D,&
+            'total_energy', p_Ddata, p_DdataVariable)
+        call vecio_writeArray(p_DdataVariable, iunit, '')
+      end select
+
+    case default
+      call output_line('Invalid system format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputFeSolution')
+      call sys_halt()
+    end select
+    
+  end subroutine hydro_outputFeSolution
 
 end module hydro_postprocessing
