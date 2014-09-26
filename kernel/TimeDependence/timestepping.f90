@@ -1734,7 +1734,7 @@ contains
           ! if first stage of time stepping scheme is explicit,
           ! reduce number of stages by 1
           real(rtstepScheme%nsubsteps - &
-                   merge(1,0,rtstepScheme%bexplicitFirstStage .eq. .TRUE.),DP) * &
+                   merge(1,0,rtstepScheme%bexplicitFirstStage .eqv. .TRUE.),DP) * &
           rtstepScheme%dtstepFixed
       rtstepScheme%dcurrentTime = rtstepScheme%dtimeMacrostep
     end if

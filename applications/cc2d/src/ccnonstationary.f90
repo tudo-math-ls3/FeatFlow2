@@ -418,7 +418,7 @@ contains
       ! explicit first stage: use rtimestepping%isubstep - 1
       ! implicit first stage: use rtimestepping%isubstep
       select case (rtimestepping%isubstep - &
-                   merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.))
+                   merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.))
       case (1)
         ! Store (velocity) solution from macro time step t_n for later use in subsequent
         ! stages of DIRK scheme where it is needed to assembly the right hand side
@@ -889,7 +889,7 @@ contains
         call lsysbl_releaseVector (rsolutionFromLastMacroTimeStep)
         do i = 5, 1, -1
           if (i .le. rtimestepping%nsubsteps - &
-                     merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.)) then
+                     merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.)) then
             call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(i))
           end if
         end do
@@ -1033,7 +1033,7 @@ contains
         ! explicit first stage: rtimestepping%isubstep == 2,3 or 4?
         ! implicit first stage: rtimestepping%isubstep == 1,2 or 3?
         select case (mod(rtimestepping%isubstep + 1 - &
-                     merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.), &
+                     merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.), &
                      rtimestepping%nsubsteps)+1)
           ! (Note: substep gets incremented *before* postprocessing starts. Even though we
           !        are still in the 3rd substep, the counter points already to the first
@@ -1242,7 +1242,7 @@ contains
               ! (Note that for DIRK schemes with an explicit first stage the first stage
               ! really performed is stage 2.)
               (rtimestepping%isubstep .gt. &
-               1 + merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.)))
+               1 + merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.)))
 
       if (rproblem%rtimedependence%itimeStep .eq. 3) then
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
@@ -1871,7 +1871,7 @@ contains
             ! implicit first stage: rtimestepping%isubstep > 1?
             bisIntermediateStage=&
                (rtimestepping%isubstep - &
-                merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .gt. 1))
+                merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .gt. 1))
 
         call lsysbl_releaseVector (rvectorInt)
 
@@ -1887,7 +1887,7 @@ contains
         ! explicit first stage: rtimestepping%isubstep == 2?
         ! implicit first stage: rtimestepping%isubstep == 1?
         if (rtimestepping%isubstep - &
-            merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .eq. 1) then
+            merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .eq. 1) then
           call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           call output_line ("Analysing time derivative...",&
                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
@@ -2022,7 +2022,7 @@ contains
         ! explicit first stage: rtimestepping%isubstep == 2?
         ! implicit first stage: rtimestepping%isubstep == 1?
         if (rtimestepping%isubstep - &
-            merge(1,0,rtimestepping%bexplicitFirstStage .eq. .TRUE.) .eq. 1) then
+            merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .eq. 1) then
           call lsysbl_copyVector (rvector, rprevMacroTimeStepSolution)
           dprevMacroTimeStepTime = rproblem%rtimedependence%dtime
         end if
