@@ -69,6 +69,11 @@ CFLAGSF77     := $(CFLAGSF77) \
 		 -qalign=struct=natural -qarch=auto -qcache=auto \
 		 -qtune=auto -qunroll=auto -qsclk=micro -qhot \
 		 -qipa=partition=small -Q -O5
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -qextname
+else
+CFLAGSF77     := $(CFLAGSF77) -qnoextname
+endif
 CFLAGSF90     := -DUSE_COMPILER_XLF $(CFLAGSF90) $(CFLAGSF77) -O5 -qfree=f90 \
 		 -qsuffix=f=f90 -qmaxmem=-1
 CFLAGSC       := $(CFLAGSC) -qcache=auto -qtune=auto -O3 -qstrict \

@@ -62,11 +62,17 @@ endif
 # Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_DEC $(CFLAGSF77) -fast -O5
+ifeq ($(strip $(UNDERSCORE)), NO)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+endif
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_DEC $(CFLAGSC) -fast -O5
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := -DUSE_COMPILER_DEC $(CFLAGSF77) -DDEBUG -O0 -recursive
+ifeq ($(strip $(UNDERSCORE)), NO)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+endif
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_DEC $(CFLAGSC) -DDEBUG -O0 -recursive
 LDFLAGS       := $(LDFLAGS)

@@ -450,6 +450,7 @@ my %defaults = (
     SRCEXTRA             => [],
     SRCEXTRA_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
+    UNDERSCORE           => "YES",
     WARN                 => [],
 );
 
@@ -566,6 +567,8 @@ GetOptions (
             "srcextra_app=s"                => \@{ $cl{'SRCEXTRA_APP'} },
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "suppressflags=s"               => \@{ $cl{'suppressflags'} },
+            "no-underscore"                 => sub { $cl{'UNDERSCORE'} = 0 },
+            "underscore:s"                  => \$cl{'UNDERSCORE'},
             "version"                       => \$cl{'version'},
             "warn=s{0,}"                    => \@{ $cl{'WARN'} },
             ) || ($unknownoption=1);
@@ -754,6 +757,8 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --shared=\""         . $cl{'SHARED'}                     . "\"" if (defined($cl{'SHARED'}) && $cl{'SHARED'});
     $options .= " --srcextra=\"" . join(',', @{$cl{'SRCEXTRA'}}) . "\"" if ($#{$cl{'SRCEXTRA'}} >= 0);
     $options .= " --suppressflags=\""  . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
+    $options .= " --underscore=\""     . $cl{'UNDERSCORE'}                 . "\"" if (defined($cl{'UNDERSCORE'}) && $cl{'UNDERSCORE'});
+
     $options .= " --warn=\""           . join(',', @{$cl{'WARN'}})          . "\"" if ($#{$cl{'WARN'}} >= 0);
 
     foreach my $feat2appdir (sort @srcdirs) {
@@ -1054,7 +1059,7 @@ sub check_options {
     # * $cl{'OPT'} has an empty value when --opt has been specified
     # * $cl{'OPT'} has value 0 when --no-opt has been specified
     # * $cl{'OPT'} has value "string" when --opt="string" has been specified
-    foreach my $entry ('AGMG', 'EXECUTABLE', 'MPI', 'OPT', 'OPENMP', 'SHARED') {
+    foreach my $entry ('AGMG', 'EXECUTABLE', 'MPI', 'OPT', 'OPENMP', 'SHARED', 'UNDERSCORE') {
 	if (defined($cl{$entry})) {
 	    $cl{$entry} = 1 if ($cl{$entry} eq "");
 	}
@@ -1078,7 +1083,7 @@ sub check_options {
     # * 0/1 values are mapped to NO/YES for the Makefile
     foreach my $entry ('AGMG', 'BINARY', 'EXECUTABLE', 'FORCE_ID', 'INTSIZE',
 		       'MODE','MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
-		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED') {
+		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED', 'UNDERSCORE') {
 	# Check environment variable MAKEFLAGS and give a warning if
 	# options given via environment *and* command line collide.
 	if ($ENV{'MAKEFLAGS'}) {
@@ -1150,6 +1155,7 @@ sub check_options {
 	"OPT"                 => [ "yes", "no", "expensive", "native", "native-expensive" ],
 	"RELINK_ALWAYS"       => [ "yes", "no" ],
 	"SHARED"              => [ "yes", "no" ],
+	"UNDERSCORE"          => [ "yes", "no" ],
 	"WARN"                => [ "debug", "deprecated", "off", "unsupported", "unusual" ],
     );
 
@@ -1444,8 +1450,13 @@ sub create_feat2AppMakefile {
 	
     $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
     print MAKEFILE_HDL
-	"# Create shared application?\n" .
-	"SHARED              = $entry\n\n";
+        "# Create shared application?\n" .
+        "SHARED              = $entry\n\n";
+
+    $entry = (defined($cl{'UNDERSCORE'})) ? $cl{'UNDERSCORE'} : $defaults{'UNDERSCORE'};
+    print MAKEFILE_HDL
+        "# Add trailing underscore?\n" .
+        "UNDERSCORE          = $entry\n\n";
 
     $entry = (defined($cl{'FORCE_ID'})) ? $cl{'FORCE_ID'} : $defaults{'FORCE_ID'};
     print MAKEFILE_HDL
@@ -2129,6 +2140,29 @@ sub create_feat2AppMakefile {
         "endif\n" .
         "\n\n" .
 
+    "# Makefile variable UNDERSCORE must have exactly one out of two possible values:\n" .
+        "# YES or NO\n" .
+        "# In case neither YES nor NO are given as mode, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(UNDERSCORE)), YES)\n" .
+        "ifneq (\$(strip \$(UNDERSCORE)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type UNDERSCORE=\$(UNDERSCORE) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
 
 	"# Makefile variable SHARED must have exactly one out of two possible values:\n" .
 	"# YES or NO.\n" .
@@ -3968,6 +4002,11 @@ sub create_feat2BenchmarkMakefile {
     print MAKEFILE_HDL
 	"# Build executable?\n" .
 	"EXECUTABLE = $entry\n\n";
+
+    $entry = (defined($cl{'UNDERSCORE'})) ? $cl{'UNDERSCORE'} : $defaults{'UNDERSCORE'};
+    print MAKEFILE_HDL
+	"# Add trailing underscore?\n" .
+	"UNDERSCORE = $entry\n\n";
 	
     $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
     print MAKEFILE_HDL
@@ -4483,7 +4522,7 @@ sub debug_command_line_options {
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP', 'WARN') {
+		       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
 	$colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
@@ -4495,7 +4534,7 @@ sub debug_command_line_options {
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP', 'WARN') {
+		       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
 	# Determine type of variable: scalar or array
 	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
@@ -5373,6 +5412,10 @@ sub print_statistics_about_feat2AppMakefile {
 			   join(' ', @{$cl{'COPROCLIST'}}), "", "") . "\n";
     }
 
+    $string = (defined($cl{'UNDERSCORE'})) ? $cl{'UNDERSCORE'} : $defaults{'UNDERSCORE'};
+    print "  Trailing underscore              : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
     print "\n\n";
 
 }
@@ -5551,6 +5594,8 @@ sub show_help {
         "                    because of a specific compiler option that ought not\n" .
         "                    be removed globally, you can inhibit its usage for\n" .
         "                    your application by adding the exact string to <string>.\n" .
+        "--[no]-underscore   Add/do not add trailing underscore to routines as it\n" .
+        "                    is the default behaviour of most Fortran compilers.\n" .
 	"--warn=<string>     Compile code with warnings <string> enabled.\n" .
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .

@@ -133,12 +133,22 @@ FAST := -fast
 endif
 
 CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) $(FAST) -xtypemap=integer:32
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -ext_names=underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -ext_names=plain
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) $(FAST)
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) $(FAST)
 else
 CFLAGSF77     := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77) -DDEBUG -xtypemap=integer:32 -g -nolibmil
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -ext_names=underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -ext_names=plain
+endif
 CFLAGSF90     :=  $(CFLAGSF90) $(CFLAGSF77)
 		 #-C -xdebugformat=stabs
 CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) -DDEBUG -g #-xdebugformat=stabs

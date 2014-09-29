@@ -144,6 +144,8 @@ ifeq ($(call optimise), YES)
 #  -align records        : aligns derived-type components and record structure fields on default natural boundaries
 #  -assume buffered_io   : data is buffered before written to disk
 #  -assume underscore    : append an underscore character to external user-defined names
+# or
+#  -assume nounderscore  : do not append an underscore character to external user-defined names
 #  -fp-model precise     : strictly adhere to value-safe  optimizations  when implementing floaing-point calculations
 #  -funroll-loops        : enables loop unrolling
 #  -ip                   : enables interprocedural optimizations for single-file compilation
@@ -153,7 +155,12 @@ ifeq ($(call optimise), YES)
 #  -unroll               : enables aggressive loop unrolling
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
 		 -unroll-aggressive -ip -fp-model precise \
-		 -assume underscore -no-prec-div -pad -opt-malloc-options=3
+		 -no-prec-div -pad -opt-malloc-options=3
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+else
+CFLAGSF77     := $(CFLAGSF77) -assume underscore
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
@@ -164,7 +171,12 @@ LDFLAGS       := $(LDFLAGS)
 #
 else
 #
-CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -DDEBUG -O0 -g -fpe0 -assume underscore
+CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -DDEBUG -O0 -g -fpe0
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -assume underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+endif
 # the following (additional) flags make ifort super-strict and allow e.g.
 # the detection of out-of-bounds accesses. Unfortunately, they already complain
 # about such errors deep inside the numerical factorisation in UMFPACK (at

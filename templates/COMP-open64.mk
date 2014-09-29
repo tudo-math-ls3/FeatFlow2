@@ -117,7 +117,12 @@ endif
 ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O2 -LNO -mso \
 	          -ffast-math -ffast-stdlib -CG:compute_to=on \
-		  -finline-functions -inline -fno-second-underscore
+		  -finline-functions -inline
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
 		 -ffast-math -ffast-stdlib -CG:compute_to=on \
@@ -125,8 +130,12 @@ CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -DDEBUG -O0 -g3 \
-	         -fno-second-underscore
+CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -DDEBUG -O0 -g3
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -ffortran-bounds-check -fullwarn
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -DDEBUG -O0 -g3 -trapuv
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)

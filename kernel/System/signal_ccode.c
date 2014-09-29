@@ -29,10 +29,10 @@ register_handler(int sig, sighandler_t func, sighandler_t catch) {
     sigemptyset (&new_sig.sa_mask);
     new_sig.sa_flags = SA_RESTART;
     if (sigaction (sig, &new_sig, &old_sig) < 0)
-	return SIG_ERR;
+    return SIG_ERR;
 
     if (sig > NSIGS)
-	return SIG_ERR;
+    return SIG_ERR;
     actions[sig].sa_handler = func;
     return old_sig.sa_handler;
 }
@@ -45,12 +45,12 @@ deregister_handler (int sig) {
     struct sigaction del_sig;
 
     if (sigaction (sig, NULL, &del_sig) < 0)
-	return SIG_ERR;
+    return SIG_ERR;
     del_sig.sa_handler = SIG_DFL;
     sigdelset (&del_sig.sa_mask, sig);
     del_sig.sa_flags = SA_RESTART;
     if (sigaction (sig, &del_sig, NULL) < 0)
-	return SIG_ERR;
+    return SIG_ERR;
 
     actions[sig].sa_handler = SIG_DFL;
     return del_sig.sa_handler;
@@ -59,10 +59,10 @@ deregister_handler (int sig) {
 /**
  * Registers a signal handler with a given signal
  */
-/* void signal_register(int *sig, void func(int)) { */
-/*     register_handler(*sig, func, signal_raised); */
-/* } */
-
+void signal_register(int *sig, void func(int)) {
+    register_handler(*sig, func, signal_raised);
+}
+    
 /**
  * Registers a signal handler with a given signal
  */
@@ -80,9 +80,9 @@ void signal_register__(int *sig, void func(int)) {
 /**
  * Deregisters a signal handler for a given signal
  */
-/* void signal_deregister(int *sig) { */
-/*     deregister_handler(*sig); */
-/* } */
+void signal_deregister(int *sig) {
+    deregister_handler(*sig);
+}
 
 /**
  * Deregisters a signal handler for a given signal

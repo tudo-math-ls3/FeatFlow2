@@ -138,8 +138,12 @@ endif
 ifeq ($(call optimise), YES)
 # Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
-		 -funroll-loops -ip -assume underscore \
-		 -fp-model precise -pad
+		 -funroll-loops -ip -fp-model precise -pad
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+else
+CFLAGSF77     := $(CFLAGSF77) -assume underscore
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model precise
@@ -147,7 +151,12 @@ CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := $(CFLAGSF77) -DUSE_COMPILER_INTEL -DDEBUG -O0 \
-		 -g -fpe0 -assume underscore
+		 -g -fpe0 -assume
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+else
+CFLAGSF77     := $(CFLAGSF77) -assume underscore
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -C -check bounds -traceback
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -DDEBUG -O0 -g
