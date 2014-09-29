@@ -183,6 +183,7 @@ contains
 
     ! Initialise standard mesh
     if(associated(rmeshAdapt%rboundary)) then
+      call output_line("Generating standard mesh from raw triangulation...")
       call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
           rmeshAdapt%rboundary)
     else
@@ -195,6 +196,7 @@ contains
                                                     HADAPT_HAS_PARAMETERS)
 
     ! Initialise adaptation structure from triangulation
+    call output_line("Initialising adaptation data structure...")
     call hadapt_initFromTriangulation(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
     
   end subroutine madapt_init
@@ -384,7 +386,7 @@ contains
     ! local variables
     type(t_vectorScalar) :: rindicator
     real(DP), dimension(:), pointer :: p_Dindicator
-        
+
     ! Create scalar indicator vector
     call lsyssc_createVector(rindicator, size(Dindicator), .true., ST_DOUBLE)
     call lsyssc_getbase_double(rindicator, p_Dindicator)

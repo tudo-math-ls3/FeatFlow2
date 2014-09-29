@@ -7,7 +7,7 @@ ival={cell(1,0)}; % change 0 to the actual number of functions to preallocate th
 structs=[];enuminfo=[];fcnNum=1;
 fcns=struct('name',ival,'calltype',ival,'LHS',ival,'RHS',ival,'alias',ival,'thunkname', ival);
 MfilePath=fileparts(mfilename('fullpath'));
-ThunkLibName=fullfile(MfilePath,'meshadapt_thunk_glnxa64');
+ThunkLibName=fullfile(MfilePath,['meshadapt_thunk_' lower(computer)]);
 % void __fsystem_MOD_sys_init_simple (); 
 fcns.thunkname{fcnNum}='voidThunk';fcns.name{fcnNum}='__fsystem_MOD_sys_init_simple'; fcns.alias{fcnNum}='sys_init_simple'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}=[]; fcns.RHS{fcnNum}=[];fcnNum=fcnNum+1;
 % void __genoutput_MOD_output_init_simple (); 
@@ -40,7 +40,7 @@ fcns.thunkname{fcnNum}='voidvoidPtrvoidPtrThunk';fcns.name{fcnNum}='__meshadaptb
 fcns.thunkname{fcnNum}='voidvoidPtrvoidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getverticesatelement'; fcns.alias{fcnNum}='madapt_getverticesatelement'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}=[]; fcns.RHS{fcnNum}={'t_meshAdaptPtr', 'int32Ptr'};fcnNum=fcnNum+1;
 % void __meshadaptbase_MOD_madapt_getneighboursatelement ( struct t_meshAdapt *, int *); 
 fcns.thunkname{fcnNum}='voidvoidPtrvoidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getneighboursatelement'; fcns.alias{fcnNum}='madapt_getneighboursatelement'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}=[]; fcns.RHS{fcnNum}={'t_meshAdaptPtr', 'int32Ptr'};fcnNum=fcnNum+1;
-structs.t_fparserComponent.members=struct('ibytecodeSize', 'int32', 'iimmedSize', 'int32', 'istackSize', 'int32', 'istackPtr', 'int32', 'buseDegreeConversion', 'bool', 'bisVectorizable', 'bool', 'IbyteCode', 'int16Ptr', 'Dimmed', 'doublePtr');
+structs.t_fparserComponent.members=struct('ibytecodeSize', 'int32', 'iimmedSize', 'int32', 'istackSize', 'int32', 'istackPtr', 'int32', 'buseDegreeConversion', 'int', 'bisVectorizable', 'int', 'IbyteCode', 'int16Ptr', 'Dimmed', 'doublePtr');
 structs.t_fparser.members=struct('Rcomp', 't_fparserComponentPtr', 'ScompName', 'cstring', 'ncomp', 'int32', 'nncomp', 'int32');
 structs.t_boundary.members=struct('iboundarycount_g', 'int32', 'iboundarycount', 'int32', 'h_DmaxPar', 'int32', 'h_IsegCount', 'int32', 'h_Idbldatavec_handles', 'int32', 'h_Iintdatavec_handles', 'int32', 'h_Iintdatavec_fparser', 'int32', 'p_rfparser', 't_fparserPtr');
 structs.t_quadtreeDP.members=struct('NFREE', 'int32', 'NDATA', 'int32', 'NVT', 'int32', 'NNVT', 'int32', 'NNODE', 'int32', 'NNNODE', 'int32', 'NRESIZE', 'int32', 'dfactor', 'double', 'h_Data', 'int32', 'h_BdBox', 'int32', 'p_Data', 'doublePtr', 'p_BdBox', 'doublePtr', 'h_Knode', 'int32', 'p_Knode', 'int32Ptr');

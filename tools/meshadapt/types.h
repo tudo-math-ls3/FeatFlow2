@@ -10,8 +10,8 @@ struct t_fparserComponent {
   int iimmedSize;
   int istackSize;
   int istackPtr;
-  bool buseDegreeConversion;
-  bool bisVectorizable;
+  int buseDegreeConversion;
+  int bisVectorizable;
   short*  IbyteCode;
   double* Dimmed;
 };
