@@ -58,17 +58,17 @@ dminTimeUCD = -1.0E100
 dmaxTimeUCD = 1.0E100
 
 # Time difference for UCD output.
-# =0.0: generate UCD output for every timestep in the range 
+# =0.0: generate UCD output for every timestep in the range
 #       dminTimeUCD..dmaxTimeUCD
 
 dtimeDifferenceUCD = 0.0
 
-# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the
 # solution of subsequent timesteps to match the time scale defined by
 # dtimeDifferenceUCD.
 # =0: Postprocess the solution at the current time. (May lead to
 #     non-equidistant timesteps in the UCD export)
-# =1: Standard. Interpolate the solution linearly to get an equidistant 
+# =1: Standard. Interpolate the solution linearly to get an equidistant
 #     timestepping for the UCD export. (May lead to slight time interpolation
 #     errors due to linear time interpolation.)
 # If dtimeDifferenceUCD=0, the solutions are written out as they come.
@@ -83,7 +83,7 @@ istartSuffixUCD = 0
 
 # ------------------------------------------------------------------------
 # Film output.
-# In a nonstationary simulation, this writes the raw solution vectors 
+# In a nonstationary simulation, this writes the raw solution vectors
 # to a sequence of files. For stationary simulations, this has no effect.
 
 # Type of output file to generate from solutions.
@@ -115,12 +115,12 @@ dminTimeFilm = -1.0E100
 dmaxTimeFilm = 1.0E100
 
 # Time difference for Film output.
-# =0.0: generate Film output for every timestep in the range 
+# =0.0: generate Film output for every timestep in the range
 #       dminTimeFilm..dmaxTimeFilm
 
 dtimeDifferenceFilm = 0.0
 
-# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the
 # solution of subsequent timesteps to match the time scale defined by
 # dtimeDifferenceFilm.
 # =0: Standard. Postprocess the solution at the current time. (May lead to
@@ -141,21 +141,71 @@ istartSuffixFilm = 0
 
 # Calculate L2-error to reference solution.
 # =0: Don't calculate
-# =1: Calculate the error
+# =1: Calculate the error using the reference functions in callback.f90
+# =2: Calculate the error based on the expressions below
 
 ierrorAnalysisL2 = 0
 
+# Reference functions to use for the computation of the L2-error
+# in case of ierrorAnalysisL2 = 2
+
+srefL2ExpressionU1 = "0"
+srefL2ExpressionU2 = "0"
+srefL2ExpressionP = "0"
+
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
-# =1: Calculate the error
+# =1: Calculate the error using the reference functions in callback.f90
+# =2: Calculate the error based on the expressions below
 
 ierrorAnalysisH1 = 0
+
+# Reference functions to use for the computation of the H1-error
+# in case of ierrorAnalysisH1 = 2
+
+srefH1ExpressionU1X = "0"
+srefH1ExpressionU1Y = "0"
+srefH1ExpressionU2X = "0"
+srefH1ExpressionU2Y = "0"
+srefH1ExpressionPX = "0"
+srefH1ExpressionPY = "0"
+
+# Calculate accumulated time plus space discretisation error (L2 and/or H1
+# error, depending on setting of ierrorAnalysisL2 and ierrorAnalysisH1,
+# respectively) against reference solution.
+
+ierrorAnalysisTimeSpace = 0
+
+# Method to measure time plus space discretisation error
+# =0: l2 norm in time; calculate
+#        || sol(t) - sol_ref(t) ||_l2(0,T;\Omega)
+#        = sqrt( 1/(number of time steps + 1) *
+#                sum_{all time steps t incl. T=0}
+#                              || sol(t) - sol_ref(t) ||^2_L2(\Omega) )
+# =1: L2 norm in time,
+#        || sol(t) - sol_ref(t) ||_L2(0,T;\Omega)
+#        = sqrt( \int_{dtimeInit}^{dtimeMax} || sol(t) - sol_ref(t) ||^2_L2 dt )
+#     numerically integrated using trapezoidal rule
+# =2: L2 norm in time, numerically integrated using 2-Point Gauss quadrature
+#     rule to evaluate quadratic Lagrange polynomial (time-)interpolation of solution
+# =3: L2 norm in time, numerically integrated using 3-Point Gauss quadrature
+#     rule to evaluate quadratic Lagrange polynomial (time-)interpolation of solution
+# =4: L2 norm in time, numerically integrated using 2-Point Gauss quadrature
+#     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
+# =5: L2 norm in time, numerically integrated using 3-Point Gauss quadrature
+#     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
+ierrorAnalysisTimeSpaceMethod = 1
 
 # Calculate the kinetic energy.
 # =0: Don't calculate
 # =1: Calculate the energy
 
 icalcKineticEnergy = 1
+
+# Cubature formula for error analysis. E.g. "AUTO_G3" for 3-point Gauss.
+# ="": use default cubature formula.
+
+scubError          =
 
 # Whether to write the L2/H1-error and/or kinetic energy to a file
 
@@ -177,7 +227,7 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 # =1: Calculate with standard FEAT-1 method. Constant viscosity.
 # =2: Calculate with extended method, supporting mixed meshes,
 #     general elements and nonlinear viscosity (standard)
-# =3: Calculate using volume forces, standard FEAT-1 method. 
+# =3: Calculate using volume forces, standard FEAT-1 method.
 #     Constant viscosity.
 # =4: Calculate using volume forces with extended method, supporting mixed
 #     meshes, general elements and nonlinear viscosity.
@@ -203,7 +253,7 @@ ibodyForcesBdComponent = 2
 # dbdForcesCoeff1 = 0.001
 
 # 2nd coefficient in the boundary integral of the drag coefficient.
-# If this is commented out, 0.004 is assumed (corresonds to flow 
+# If this is commented out, 0.004 is assumed (corresonds to flow
 # around cylinder with RE=1000: Umean=0.2, len=0.1
 # -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
 

@@ -49,7 +49,7 @@ spredirectory = %{sappdirectory}/data/apps_cc2d
 # are searched for in the same subdirectory as the master.dat.
 # By default, we specify the sdatadirectory variable here as path specifier.
 
-simportdatafiles(8) = 
+simportdatafiles(8) =
   "%{sdatadirectory}/discretisation.dat"
   "%{sdatadirectory}/linsol_cc2d.dat"
   "%{sdatadirectory}/nonlinsol_cc2d.dat"
@@ -111,10 +111,10 @@ bdExpressions(2) =
 
 [BDCONDITIONS]
 bdComponent1(4)=
-   1.0  3  1  'Dirichlet0'  'Dirichlet0'   
-   2.0  3  1  'Dirichlet0'  'Dirichlet0'   
-   3.0  3  1  'Dirichlet0'  'Dirichlet0'   
-   4.0  3  1  'Dirichlet1'  'Dirichlet0'   
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'
+   2.0  3  1  'Dirichlet0'  'Dirichlet0'
+   3.0  3  1  'Dirichlet0'  'Dirichlet0'
+   4.0  3  1  'Dirichlet1'  'Dirichlet0'
 
 [CC2D-NONLINEAR]
 itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING

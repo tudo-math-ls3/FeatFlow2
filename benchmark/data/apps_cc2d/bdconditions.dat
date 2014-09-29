@@ -12,7 +12,7 @@
 #   type   : -2=name of a hardcoded expression realised by callback routines
 #               in the code
 #            -1=general text expression to be evaluated
-#             0=double precision constant, 
+#             0=double precision constant,
 #             1=integer constant
 #             2=parabolic profile with given maximum value
 #   value  : the value associated to the name
@@ -25,13 +25,15 @@
 #    S = parameter value on the boundary, length parametrisation,
 #        relative to the segment (i.e. starts with 0.0 and ends
 #        with the segment length)
-#    x = x-coordinate of the point on the boundary
-#    y = y-coordinate of the point on the boundary
+#    X = x-coordinate of the point on the boundary
+#    Y = y-coordinate of the point on the boundary
 #    TIME = time in a nonstationary simulation
 #    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
 #    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
 #    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
 #    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
+#    NX     = x-component of the normal vector on the boundary.
+#    NY     = Y-component of the normal vector on the boundary.
 #
 # The following constants are defined:
 #
@@ -55,7 +57,7 @@ bdExpressions(6) =
   'Dirichlet1'     0    1.0
   'ParProfile'     2    0.3 # 'Umax * 4.0*r*(1-r)'
   'ParProfExpr'   -1    '4.0*0.3*L*(1.0-L)'
-  
+
 
 ##############
 [BDCONDITIONS]
@@ -77,9 +79,9 @@ ineumannBoundary = -1
 # Definition of boundary segments always start at parameter value 0.0.
 # Each specified sub-segment allows to specify the end parameter
 # value of the segment:
-# "    0  4.0  3  [bdcid] ..."
-#   Creates a boundary condition segment starting from the 'current' 
-#   parameter value, ending at parameter value '4.0'. '3' specifies 
+# "    4.0  3  [bdcid] ..."
+#   Creates a boundary condition segment starting from the 'current'
+#   parameter value, ending at parameter value '4.0'. '3' specifies
 #   that both, starting and ending point should belong to the segment.
 #   '1' is the number X of the boundary condition 'bdExpressionX'
 #   defined above.
@@ -87,7 +89,7 @@ ineumannBoundary = -1
 #   value will result in a 'wrap around', of the boundary condition
 #   segment, letting it start at the beginning of the boundary component
 #   again.
-# The last values in the list "x y a [bdcid] ..." have the following 
+# The last values in the list "x a [bdcid] ..." have the following
 # meaning:
 #  a = 0: Start- and endpoint don't belong to the interval
 #    = 1: Include startpoint of the interval
@@ -106,15 +108,17 @@ ineumannBoundary = -1
 #          = 2 : Pressure-drop / Normal-stress boundary condition.
 #                "..." specifies the name of the expression that is
 #                evaluated to give the normal stress.
-#                Example:  1.0  3  3  'PressValue1'
+#                Example:  1.0  3  2  'PressValue1'
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
+#          = 4 : Inhomogeneous Neumann boundary.
+#                Example:  1.0  0  4  'NeumannBdValueX' 'NeumannBdValueY'
 #
 # Note: In the default configuration, the expression name 'AnalyticBC'
-#  (as defined above with expression type -2) serves as a trigger for 
-#  analytic Dirichlet boundary conditions that use the callback routione 
-#  'getBoundaryValues'. Therefore, when the term 'AnalyticBC' is used as 
-#  X- or Y-velocity, the routine 'getBoundaryValues' in cccallback.f90 is 
+#  (as defined above with expression type -2) serves as a trigger for
+#  analytic Dirichlet boundary conditions that use the callback routione
+#  'getBoundaryValues'. Therefore, when the term 'AnalyticBC' is used as
+#  X- or Y-velocity, the routine 'getBoundaryValues' in cccallback.f90 is
 #  called for that segment to return the analytic boundary value!
 
 # Benchmark configuration:
@@ -126,10 +130,10 @@ bdComponent1(4)=
 
 # Driven cavity would be (for grid cavity.{prm,tri}):
 #bdComponent1(4)=
-#   1.0  2  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-#   2.0  2  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
-#   3.0  0  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
-#   4.0  3  1  'Dirichlet1'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
+#   1.0  1  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  1  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
+#   3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
+#   4.0  0  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boundary

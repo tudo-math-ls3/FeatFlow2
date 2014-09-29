@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------
 # Time discretization
-# 
+#
 # This file contains parameters configuring the time discretization
 # of the problem.
 # ------------------------------------------------------------------------
@@ -24,7 +24,7 @@ niterations = 10000                       # NITNS
 
 dtimeInit = 0.0                           # TIMENS
 
-# Max. absolute time of the simulation (TIMEMX); simulation stops if 
+# Max. absolute time of the simulation (TIMEMX); simulation stops if
 # time > dtimemax or #iterations > niterations
 
 dtimeMax = 1.0                           # TIMEMX
@@ -131,26 +131,26 @@ dtimeStepMin = 0.000001                   # DTMIN
 dtimeStepMax = 1.000000001                # DTMAX
 
 # max. changes for time step (DTFACT) for |cadaptiveTimeStepping|<>0.
-# When decreasing the time step size, the new time step size is 
+# When decreasing the time step size, the new time step size is
 # estimated in the range
 #  (old time step)/dtimeStepFactor .. (old time step)/SQRT(dtimeStepFactor).
 # When increasing the time step size, the new time step size is
 # estimated in the range
 #  (old time step size) .. (old time step size) * dtimeStepFactor**(1/#performed repetitions)
 
-dtimeStepFactor = 9.000000001             # DTFACT  
+dtimeStepFactor = 9.000000001             # DTFACT
 
 # max. rel. change of time step such that the step is not repeated
 # (EPSADU). Applies only for |cadaptiveTimeStepping|=3.
-# If 
-#  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep, 
+# If
+#  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep,
 # the time step is repeated.
 
 depsAdaptiveRelTimeStep = 0.5             # EPSADU
 
 # ----------------------------------------------------------------------
 
-# Type of start procedure (IADIN) when starting a nonstationary 
+# Type of start procedure (IADIN) when starting a nonstationary
 # simulation if cadaptiveTimeStepping<>0 (to prevent time step
 # to be reduced to 0.0)
 # 0=constant start
@@ -171,7 +171,7 @@ dadTimeStepInitDuration = 0.5             # TIMEIN
 # adaptive time stepping;
 # 1=u(L2),2=u(MX),3=p(L2),4=p(MX),5-8=mix
 
-cadTimeStepErrorControl = 1               # IEPSAD 
+cadTimeStepErrorControl = 1               # IEPSAD
 
 # low accuracy for acceptance during start procedure (EPSADI);
 # if time error is larger, the step is repeated

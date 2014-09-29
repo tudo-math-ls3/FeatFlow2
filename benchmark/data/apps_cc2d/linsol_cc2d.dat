@@ -16,8 +16,13 @@
 # Type of the solver that is used for preconditioning.
 # =0: Gauss elimination (UMFPACK)
 # =1: Multigrid solver
+# =2: Deflated GMRES multilevel solver.
 
 isolverType = 1
+
+# ---------------------------------------------------------------------
+# Multigrid parameters
+# ---------------------------------------------------------------------
 
 # Name of the section in this file which configures the solver.
 
@@ -42,14 +47,14 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #     (-> specialised variant of 4, but faster)
 # =6: BiCGStab smoother with diagonal VANKA preconditioner
 # =7: BiCGStab smoother with full VANKA preconditioner
+# =8: BiCGStab smoother with general VANKA preconditioner
 #
 # The following smoothers are some new Vanka implementations.
 # = 101: diagonal Vanka (a new implementation of 3)
 # = 102: full Vanka (a new implementation of 5)
 #
 # The following smoothers are experimental. Use them at your own risk.
-# = 201: SP-SOR, full version
-# = 202: SP-SOR, diagonal version
+# = 201: SP-SOR
 
 ismootherType = 3
 
@@ -63,6 +68,8 @@ ssmootherSection = 'CC-SMOOTHER'
 # =2: BiCGStab with diagonal VANKA preconditioning
 # =3: BiCGStab with full VANKA preconditioning
 # =4: BiCGStab with general VANKA preconditioning
+# =5: unpreconditioned CG
+# =6: unpreconditioned BiCGStab
 
 icoarseGridSolverType = 2
 
@@ -70,6 +77,22 @@ icoarseGridSolverType = 2
 
 scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
+# ---------------------------------------------------------------------
+# Multilevel Krylow method parameters
+# ---------------------------------------------------------------------
+
+# Type of preconditioner to be used for multilevel Krylow methods
+# (deflated GMRES).
+# =0: no preconditioner
+# =1: General VANKA
+# =2: Diagonal VANKA
+
+cpreconditionerMK = 2
+
+# Section defining the parameters for the preconditioner to be used
+# in multilevel Krylow methods.
+
+ssectionPreconditionerMK = 'CC-PRECONDMK'
 
 # ========================================================================
 # The following section specifies the parameters for the solver.
@@ -86,14 +109,14 @@ nminIterations     = 2
 
 nmaxIterations     = 10
 
-# Damping of residuals, i.e. reduction of relative error 
+# Damping of residuals, i.e. reduction of relative error
 # on finest grid; smaller -> more iterations
 # Not used if the inexact Newton is active.
 
 depsRel            = 1E-2
 
-# Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if both, absolute error < depsAbs and 
+# Limit for residuals, i.e. absolute error on finest grid;
+# The linear solver stops if both, absolute error < depsAbs and
 # rel. error < depsRel
 # Not used if the inexact Newton is active.
 
@@ -106,7 +129,7 @@ depsAbs            = 1E-5
 
 istoppingCriterion = 0
 
-# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
+# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...);
 # not used if MG is the linear solver.
 
 domega             = 1.0
@@ -114,7 +137,7 @@ domega             = 1.0
 # Output level of the solver
 # = 2:extended output
 # = 1:minimal output
-# = 0:no output except for warning messages 
+# = 0:no output except for warning messages
 # =-1:no output (standard)
 
 ioutputLevel       = -1
@@ -124,7 +147,9 @@ ioutputLevel       = -1
 
 iresNorm = 0
 
-# ------General multigrid parameters, coarse grid correction--------------
+# ---------------------------------------------------------------------
+# General multigrid parameters, coarse grid correction
+# ---------------------------------------------------------------------
 #
 # The following parameters are multigrid specific
 #
@@ -132,7 +157,7 @@ iresNorm = 0
 
 icycle             = 0
 
-# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
+# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping
 # parameter for the coarse grid correction.
 # =0: use constant 1.0 = standard for conforming elements.
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
@@ -140,16 +165,37 @@ icycle             = 0
 
 ccorrectionTypeAlpha = 0
 
-# lower limit for optimal MG-ALPHA; 
+# lower limit for optimal MG-ALPHA;
 # controls damping of coarse grid correction; Standard=-10.0
 
 dalphaMin          = -10.0
 
-# upper limit for optimal MG-ALPHA; 
+# upper limit for optimal MG-ALPHA;
 # controls damping of coarse grid correction; Standard=10.0
 
 dalphaMax          = 10.0
 
+# ---------------------------------------------------------------------
+# General multilevel Krylow parameters (deflated GMRES method)
+# ---------------------------------------------------------------------
+
+# Krylow space dimension to be used on the different levels. The syntax is
+#   NkrylowDimension = a b c
+# with
+#   a = Dimension of the Krylow space on level NLMIN
+#   b = Dimension of the Krylow space on level NLMIN+1
+#   c = Dimension of the Krylow space on level NLMIN+2..NLMAX
+
+NkrylowDimension = 4 2 2
+
+# Deflated GMRES: Method how to guess the maximum eigenvalue.
+# =0: Maximum eigenvalue assumed to be = 1.
+
+cmaxEigenvalMethod = 0
+
+# Relaxation parameter. Standard = 1.0
+
+dkrylowRelax = 1.0
 
 # ========================================================================
 # The following section specifies the parameters for the smoother.
@@ -166,6 +212,10 @@ nsmoothingSteps    = 4
 
 domega             = 1.0
 
+# Relaxation parameters for SP-SOR smoother
+domegaA            = 0.5
+domegaS            = 0.5
+
 # Output level of the solver
 # = 2:extended output
 # = 1:minimal output
@@ -175,7 +225,7 @@ domega             = 1.0
 ioutputLevel       = 0
 
 # ========================================================================
-# The following section specifies the parameters for the 
+# The following section specifies the parameters for the
 # coarse grid solver.
 
 #####################
@@ -190,14 +240,14 @@ nminIterations     = 1
 
 nmaxIterations     = 1000
 
-# Damping of residuals, i.e. reduction of relative error 
+# Damping of residuals, i.e. reduction of relative error
 # on finest grid; smaller -> more iterations
 # Not used if the inexact Newton is active.
 
 depsRel            = 1E-2
 
-# Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if both, absolute error < depsAbs and 
+# Limit for residuals, i.e. absolute error on finest grid;
+# The linear solver stops if both, absolute error < depsAbs and
 # rel. error < depsRel
 # Not used if the inexact Newton is active.
 
@@ -229,6 +279,15 @@ spreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
 ##############################
 [CC-COARSEGRID-PRECONDITIONER]
 ##############################
+
+# Relaxation parameter
+
+domega             = 1.0
+
+
+##############
+[CC-PRECONDMK]
+##############
 
 # Relaxation parameter
 
