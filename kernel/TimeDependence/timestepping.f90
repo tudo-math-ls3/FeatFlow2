@@ -138,11 +138,11 @@ module timestepping
   ! Identifier for (E)DIRK54L
   integer, parameter, public :: TSCHM_DIRK54L        = 8
 
-  ! Identifier for SDIRK3PR
-  integer, parameter, public :: TSCHM_SDIRK3PR       = 9
-
   ! Identifier for SDIRK2
-  integer, parameter, public :: TSCHM_SDIRK2         = 10
+  integer, parameter, public :: TSCHM_SDIRK2         = 9
+
+  ! Identifier for SDIRK3PR
+  integer, parameter, public :: TSCHM_SDIRK3PR       = 10
 
 !</constantblock>
 
