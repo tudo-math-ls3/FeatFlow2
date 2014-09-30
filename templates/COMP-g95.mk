@@ -128,12 +128,21 @@ endif
 
 
 
+# Treatment of trailing underscores
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -fno-underscoring
+CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
+endif
+
+
+
 # Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move \
-		 -fprefetch-loop-arrays -funroll-loops -static \
-		 -fno-second-underscore
+		 -fprefetch-loop-arrays -funroll-loops -static
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
@@ -141,7 +150,7 @@ CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -DDEBUG -g -fno-second-underscore #-pg
+CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -DDEBUG -g #-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
 # are peppered with out-of-bounds accesses (i[0] and i[n]). That's
 # Turek-style code and nobody volunteered so far to fix it.

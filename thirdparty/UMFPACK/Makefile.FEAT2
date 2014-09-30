@@ -527,9 +527,10 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
 # Fortunately, sed on NEC's gateway is a sed that supports in place editing.
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.6 sources for NEC..."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.7 sources for NEC..."
 else
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = cat ../UMFPACK_underscore.treatment.patch | patch -p0
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK sources to enable flexibel treatment of trailing underscores."
 endif
 $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)

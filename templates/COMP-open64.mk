@@ -112,17 +112,22 @@ MODOPTION = -module
 endif
 
 
+# Treatment of trailing underscores
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -fno-underscoring
+CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
+endif
+
+
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -O2 -LNO -mso \
 	          -ffast-math -ffast-stdlib -CG:compute_to=on \
 		  -finline-functions -inline
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
-else
-CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
-endif
+
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
 		 -ffast-math -ffast-stdlib -CG:compute_to=on \
@@ -131,11 +136,6 @@ CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := -DUSE_COMPILER_OPEN64 $(CFLAGSF77) -DDEBUG -O0 -g3
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
-else
-CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
-endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -ffortran-bounds-check -fullwarn
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -DDEBUG -O0 -g3 -trapuv
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)

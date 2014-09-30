@@ -53,35 +53,36 @@ CFLAGSC       := -DUSE_OPENMP +Oopenmp $(CFLAGSC)
 LDFLAGS       := -DUSE_OPENMP +Oopenmp $(LDFLAGS)
 endif
 
+
+
 # Specify +pic=short for shared builds
 ifneq ($(strip $(SHARED)), NO)
 CFLAGSF77     := $(CFLAGSF77) +pic=short
 LDFLAGS_LIB   := -b
 endif
 
+
+
+# Treatment of trailing underscores
+ifeq ($(strip $(UNDERSCORE)), NO)
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -assume nounderscore
+CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
+endif
+
+
+
 # Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_DEC $(CFLAGSF77) -fast -O5
-ifeq ($(strip $(UNDERSCORE)), NO)
-CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
-endif
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_DEC $(CFLAGSC) -fast -O5
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := -DUSE_COMPILER_DEC $(CFLAGSF77) -DDEBUG -O0 -recursive
-ifeq ($(strip $(UNDERSCORE)), NO)
-CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
-endif
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_DEC $(CFLAGSC) -DDEBUG -O0 -recursive
 LDFLAGS       := $(LDFLAGS)
 endif
-
-# FEAT2 compilations with Compaq Compiler crash at run time in comm_exchange
-# when using immediate mpi send/receive functions.
-# IDENTIFIED_BUG test if the switch below is still necessary [dom June 09 2008]
-#CFLAGSF90 := -DENABLE_BUFFERED_EDGE_COMM $(CFLAGSF90)
 
 
 

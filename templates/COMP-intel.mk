@@ -136,6 +136,17 @@ endif
 
 
 
+# Treatment of trailing underscores
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+else
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -assume underscore
+CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
+endif
+
+
+
+
 # Set default compile flags
 ifeq ($(call optimise), YES)
 # Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
@@ -156,11 +167,6 @@ ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
 		 -unroll-aggressive -ip -fp-model precise \
 		 -no-prec-div -pad -opt-malloc-options=3
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
-else
-CFLAGSF77     := $(CFLAGSF77) -assume underscore
-endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
@@ -172,11 +178,6 @@ LDFLAGS       := $(LDFLAGS)
 else
 #
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -DDEBUG -O0 -g -fpe0
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -assume underscore
-else
-CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
-endif
 # the following (additional) flags make ifort super-strict and allow e.g.
 # the detection of out-of-bounds accesses. Unfortunately, they already complain
 # about such errors deep inside the numerical factorisation in UMFPACK (at

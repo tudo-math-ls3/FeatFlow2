@@ -164,6 +164,16 @@ endif
 
 
 
+# Treatment of trailing underscores
+ifeq ($(strip $(UNDERSCORE)), YES)
+CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
+else
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -fno-underscoring
+CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
+endif
+
+
+
 # Set default compile flags
 ifeq ($(call optimise), YES)
 # Don't specify -flto here. LTO optimisation is enabled by the flag opt=expensive.
@@ -188,11 +198,6 @@ ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
-else
-CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
-endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -Wuninitialized
 ifeq ($(call gfortranminversion,4,7),yes)
 # Reduce number of false positives with GCC 4.7 and 4.8
@@ -206,11 +211,6 @@ LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77     := -DUSE_COMPILER_GCC $(CFLAGSF77) -DDEBUG -O0 -g \
 		 -fbacktrace -fexternal-blas #-pg
-ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -fno-second-underscore
-else
-CFLAGSF77     := $(CFLAGSF77) -fno-underscoring
-endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
 		 -Wline-truncation -Wsurprising  \

@@ -1,0 +1,11 @@
+--- Source/cholmod_blas.h	2014-03-21 20:16:01.000000000 +0100
++++ Source/cholmod_blas.h.underscoretreatment	2014-09-29 17:31:25.000000000 +0200
+@@ -95,7 +95,7 @@
+ #define BLAS_ZSCAL zscal_64_
+ #define LAPACK_ZPOTRF zpotrf_64_
+ 
+-#elif defined (BLAS_NO_UNDERSCORE)
++#elif defined (USE_NO_UNDERSCORE) || defined (BLAS_NO_UNDERSCORE)
+ 
+ #define BLAS_DTRSV dtrsv
+ #define BLAS_DGEMV dgemv
