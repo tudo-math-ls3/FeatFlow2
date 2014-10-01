@@ -1535,8 +1535,17 @@ contains
 
         ! Snapshot the current solution for the later calculation of an interpolated
         ! solution vector where the time of pressure and velocity matches.
-        call lsysbl_copyVector (rvector,rprevTimeStepSolution)
-        dprevTimeStepTime = rproblem%rtimedependence%dtime
+        ! Given that the results in intermediate stages of most DIRK schemes have no
+        ! physical meaning, avoid to use a snapshot of these when trying to determine
+        ! (later on) whether a transient solution has reached a steady state.
+        !
+        ! explicit first stage: rtimestepping%isubstep == 2?
+        ! implicit first stage: rtimestepping%isubstep == 1?
+        if (rtimestepping%isubstep - &
+            merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .eq. 1) then
+          call lsysbl_copyVector (rvector,rprevTimeStepSolution)
+          dprevTimeStepTime = rproblem%rtimedependence%dtime
+        end if
 
         ! Proceed to next time step -- if we are allowed to.
         call cc_performTimestep (rproblem,rvector,rrhs,&
