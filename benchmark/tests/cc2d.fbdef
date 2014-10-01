@@ -303,7 +303,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 ##########
 
 testid   = CC2D_109
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 3 initial CN steps, then (ES)DIRK34La
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then (ES)DIRK34La
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 DISCRETISATION_IELEMENTTYPE = 17
