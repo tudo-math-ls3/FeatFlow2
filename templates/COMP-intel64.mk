@@ -136,9 +136,9 @@ endif
 
 # Treatment of trailing underscores
 ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -assume nounderscore
+CFLAGSF77     := $(CFLAGSF77) -assume underscore
 else
-CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -assume underscore
+CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -assume nounderscore
 CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
 endif
 
