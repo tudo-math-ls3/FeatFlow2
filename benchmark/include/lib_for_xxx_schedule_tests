@@ -355,11 +355,11 @@ fb_createRuntestsScript() {
     #  such a file already exists. If so, remove the temporary file created
     #  by mktemp (the one without the suffix), create a new one and repeat 
     #  the test.)
-    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+    tmpfile="`mktemp feat2.benchmark.schedulefile.XXXXX`";
     trap "rm -f ${tmpfile}; exit 1" 2 3 9
     while test -e ${tmpfile}.fbconf; do
 	rm -f ${tmpfile}
-	tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+	tmpfile="`mktemp feat2.benchmark.schedulefile.XXXXX`";
     done
     rm -f ${tmpfile}
     tmpfile="${tmpfile}.fbconf";

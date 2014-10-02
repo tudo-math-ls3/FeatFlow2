@@ -20,14 +20,14 @@
 #
 # Example for keyword/value settings inheritance: The following block
 #
-#	grid = grids/foo/bar1.feast
+#	datfile = data/master_app1.dat
 #	mglevels = 1,2,3,4
 #
 #	testid   = FOO1
 #	appl = baz
 #
 #	testid   = FOO2
-#	grid = grids/foo/bar2.feast
+#	datfile = data/master_app2.dat
 #
 #	testid   = FOO3
 #	appl = foobar
@@ -37,17 +37,17 @@
 #
 #	testid   = FOO1
 #	appl = baz
-#	grid = grids/foo/bar1.feast
+#	datfile = data/master_app1.dat
 #	mglevels = 1,2,3,4
 #
 #	testid   = FOO2
 #	appl = baz
-#	grid = grids/foo/bar2.feast
+#	datfile = data/master_app2.dat
 #	mglevels = 1,2,3,4
 #
 #	testid   = FOO3
 #	appl = foobar
-#	grid = grids/foo/bar2.feast
+#	datfile = data/master_app2.dat
 #	mglevels = 5,6
 #
 

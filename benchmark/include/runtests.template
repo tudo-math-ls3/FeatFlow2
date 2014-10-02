@@ -907,7 +907,6 @@ fb_runAndEvalBenchmarkTest() {
 		MGLEVEL=${currentmglevel}
 		export MGLEVEL
 
-#		\rm ${LOGDIR}/slaveresult.* ${LOGDIR}/feastlog.* ${EXECUTIONLOG} 1> /dev/null 2>&1
 		\rm ${EXECUTIONLOG} 1>/dev/null 2>&1
 
 		# #########################
@@ -1339,7 +1338,6 @@ WARNING! For this application / test class there are no instructions
 			;;
 
 		    FEASTmatmod)
-			grep "FBMARK" ${LOGDIR}/feastlog.001
 			;;
 
 		    FEASTnavsto|FEASTstokes)
@@ -1355,7 +1353,7 @@ WARNING! For this application / test class there are no instructions
 	    fi
 
 	    # Clean up
-#	    /bin/rm feastlog.* ${EXECUTIONLOG} diffresult 1> /dev/null 2>&1
+#	    /bin/rm ${EXECUTIONLOG} diffresult 1> /dev/null 2>&1
 	fi # binary compatible/incompatible
     else
 	# No binary found
@@ -1441,7 +1439,7 @@ WARNING! For this application / test class there are no instructions
 # ===================================================================
 
 # Clean up any temporary files from previous benchmark runs
-#\rm feastlog.* *.gmv *.gmv.[0-9]* slaveresult.* 1> /dev/null 2>&1
+#\rm *.gmv *.gmv.[0-9]* 1> /dev/null 2>&1
 
 fb_initialiseEnv
 
