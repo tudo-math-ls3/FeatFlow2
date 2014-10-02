@@ -3,9 +3,9 @@
 # The script generates a FBDEF file and a couple of FBCONF files with all test 
 # IDs. The tests are created in such a way, that every test calculates
 # a small amount of the time scale and saves the final solution. A consecutive
-# test can then conntinue based on the previously calculated solution.
+# test can then continue based on the previously calculated solution.
 # Therefore, all tests in one FBCONF file have to be consecutively executed!
-# Afterwards, the drag/lift values have to be cut together (except the first
+# Afterwards, the drag/lift values have to be concatenated (except the first
 # two lines which contain old data).
 #
 # Execute this script in the benchmark directory!
