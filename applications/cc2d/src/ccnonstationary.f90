@@ -1016,7 +1016,7 @@ contains
         !   substep 2:  t^{n} + theta k + beta theta' k          = t^{n} + (5 theta - 1) k
         !   substep 3:  t^{n} + (theta+theta') k + alpha theta k = t^{n} + 3 theta k
         ! So, again pressure and velocity do definitely not live in the same point in
-        ! time.  Moreover, the same paper proves that the fractional-step theta scheme
+        ! time. Moreover, the same paper proves that the fractional-step theta scheme
         ! suffers from order reduction for stiff ODEs (Lemma 5.2) and due to that the
         ! pressure is only approximated with first (!) order accuracy along with second
         ! order approximation of the velocity variable. That can also be easily determined
@@ -1542,7 +1542,14 @@ contains
         ! explicit first stage: rtimestepping%isubstep == 2?
         ! implicit first stage: rtimestepping%isubstep == 1?
         if (rtimestepping%isubstep - &
-            merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .eq. 1) then
+            merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.) .eq. 1 .or. &
+            ! The fractional-step theta scheme is a DIRK scheme where the intermediate
+            ! stages do have a physical meaning and the solution from the previous stage
+            ! is needed to correctly interpolate the velocity and pressure solution to a
+            ! common point in time.
+            (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP .or. &
+             rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK) .and. &
+             ipressureFullyImplicit .eq. 1) then
           call lsysbl_copyVector (rvector,rprevTimeStepSolution)
           dprevTimeStepTime = rproblem%rtimedependence%dtime
         end if
