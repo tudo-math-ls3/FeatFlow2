@@ -26,7 +26,7 @@ class = DEFAULT
 # An optional description of the test set.
 # May optionally contain references to the variables below.
 
-descr = cc2d_bench3_reference, Q2, Level $(LV), Substep $(%DTMIN)
+descr = cc2d_bench3_reference, Q2, Crank-Nicolson, Level $(LV), Substep $(%DTMIN)
 
 # Data file that is used by the application to provide parameters.
 # May optionally contain references to the variables below.
@@ -51,6 +51,7 @@ TIMEDISCRETISATION_DTIMESTEP. = 0.000625
 
 # Crank-Nicolson, time dependent.
 TIMEDISCRETISATION_ITIMEDEPENDENCE. = 1
+TIMEDISCRETISATION_ITIMESTEPSCHEME. = 0
 TIMEDISCRETISATION_DTIMESTEPTHETA. = 0.5
 
 POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.025

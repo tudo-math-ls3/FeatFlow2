@@ -26,7 +26,7 @@ class = DEFAULT
 # An optional description of the test set.
 # May optionally contain references to the variables below.
 
-descr = cc2d_bench2_reference, Q2, Level $(LV), Step 1, Substep $(%DTMIN)
+descr = cc2d_bench2_reference, Q2, Crank-Nicolson, Level $(LV), Step 1, Substep $(%DTMIN)
 
 # Data file that is used by the application to provide parameters.
 # May optionally contain references to the variables below.
