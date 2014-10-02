@@ -1,3 +1,4 @@
+#!/bin/sh
 # Script to generate the reference tests for the bench1 test.
 #
 # The script generates a FBDEF file and a couple of FBCONF files with all test 
@@ -10,34 +11,39 @@
 #
 # Execute this script in the benchmark directory!
 
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step1.fbgen     >  tests/cc2d_bench1_reference123.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step2.fbgen     >> tests/cc2d_bench1_reference123.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step3.fbgen     >> tests/cc2d_bench1_reference123.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv2.fbgen >> tests/cc2d_bench1_reference4.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv3.fbgen >> tests/cc2d_bench1_reference4.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv4.fbgen >> tests/cc2d_bench1_reference4.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv5.fbgen >> tests/cc2d_bench1_reference4.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv6.fbgen >> tests/cc2d_bench1_reference4.fbdef
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step5.fbgen     >> tests/cc2d_bench1_reference5.fbdef
-
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step1.fbgen list     >  tests/cc2d_bench1_reference123.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step2.fbgen list     >> tests/cc2d_bench1_reference123.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step3.fbgen list     >> tests/cc2d_bench1_reference123.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv2.fbgen list >  tests/cc2d_bench1_reference4_lv2.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv3.fbgen list >  tests/cc2d_bench1_reference4_lv3.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv4.fbgen list >  tests/cc2d_bench1_reference4_lv4.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv5.fbgen list >  tests/cc2d_bench1_reference4_lv5.fbconf
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv6.fbgen list >  tests/cc2d_bench1_reference4_lv6.fbconf
+tmpfile="`mktemp tests/cc2d_bench1_reference_q2_step12345_XXXXX`"
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step1.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >  tests/cc2d_bench1_reference123.fbconf
+cat ${tmpfile}.fbdef  >  tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step2.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference123.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step3.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference123.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv2.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >  tests/cc2d_bench1_reference4.fbconf
+cat ${tmpfile}.fbdef  >  tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv3.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference4.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv4.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference4.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv5.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference4.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step4_lv6.fbgen ${tmpfile}.fbconf ${tmpfile}.fbdef
+cat ${tmpfile}.fbconf >> tests/cc2d_bench1_reference4.fbconf
+cat ${tmpfile}.fbdef  >> tests/cc2d_bench1_reference4.fbdef
+rm -f ${tmpfile} ${tmpfile}.fbconf ${tmpfile}.fbdef
 
 # Warning! The "final" tests must not be started before the sequence on the
 # corresponding level is finished! Use appropriate --afterjob modifiers
 # in the scheduling!
-./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step5.fbgen list     >  tests/cc2d_bench1_reference_final.fbconf
+./bin/generate_tests.pl tests/cc2d_bench1_reference_q2_step5.fbgen tests/cc2d_bench1_reference_final.fbconf tests/cc2d_bench1_reference_final.fbdef
 
 # Schedule, except "final" scripts:
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference123.fbconf    
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4_lv2.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4_lv3.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4_lv4.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4_lv5.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference4.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 tests/cc2d_bench1_reference_final.fbconf
