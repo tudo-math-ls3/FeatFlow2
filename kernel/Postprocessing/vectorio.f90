@@ -419,6 +419,7 @@ contains
       ! Unsort the vector on the fly if necessary.
       if (present(Ipermutation)) then
         do i=1, size(Ddata)
+          read (cf) dval
           Ddata(Ipermutation(i)) = dval
         end do
       else
@@ -509,6 +510,7 @@ contains
       ! Unsort the vector on the fly if necessary.
       if (present(Ipermutation)) then
         do i=1, size(Idata)
+          read (cf) ival
           Idata(Ipermutation(i)) = ival
         end do
       else
@@ -599,6 +601,7 @@ contains
       ! Unsort the vector on the fly if necessary.
       if (present(Ipermutation)) then
         do i=1, size(Fdata)
+          read (cf) fval
           Fdata(Ipermutation(i)) = fval
         end do
       else
