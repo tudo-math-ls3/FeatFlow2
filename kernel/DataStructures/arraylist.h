@@ -578,6 +578,11 @@
     FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
 #endif
 
+#ifdef T_THREAD_SAFE
+    ! OpenMP: Write-lock
+    !$ integer(omp_nest_lock_kind) :: ilock
+#endif
+
   end type
 
 !</typeblock>
@@ -652,6 +657,11 @@ contains
     ! local variables
     integer, dimension(2) :: Isize
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_init_nest_lock(rarraylist%ilock)
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Set factor
     if (present(dfactor)) then
       if (dfactor > 1.0_DP) rarraylist%dfactor=dfactor
@@ -707,6 +717,10 @@ contains
     ! Clear arraylist
     call alst_clear(rarraylist)
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -733,6 +747,10 @@ contains
     ! local variable
     integer :: i
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Check if table number is valid
     if (itable < 1) then
       call output_line('Invalid table number',&
@@ -754,6 +772,10 @@ contains
     ! Set new table size
     rarraylist%ntable = max(rarraylist%ntable, itable)
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -770,6 +792,10 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Release memory
     if (rarraylist%h_Ktable .ne. ST_NOHANDLE) call storage_free(rarraylist%h_Ktable)
@@ -810,6 +836,10 @@ contains
     rarraylist%dfactor     = 1.5_DP
     rarraylist%nresize     = 0
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -833,6 +863,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Check if table exists
     if (itable < 1 .or. itable > rarraylist%ntable) then
       call output_line('Invalid table number!',&
@@ -852,6 +886,10 @@ contains
     ! Decrease number of tables if the last table has been deleted
     if (itable .eq. rarraylist%ntable)&
         rarraylist%ntable = rarraylist%ntable-1
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -887,6 +925,10 @@ contains
 #ifndef D_STORAGE
     FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
 #endif
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
 #endif
 
     ! Save old size
@@ -936,6 +978,10 @@ contains
     end if
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -959,6 +1005,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Set new size
     rarraylist%nntable = nntable
     rarraylist%nresize = rarraylist%nresize+1
@@ -966,6 +1016,10 @@ contains
     call storage_realloc('alst_resizeTbl', rarraylist%nntable,&
         rarraylist%h_Ktable, ST_NEWBLOCK_NOINIT, .true.)
     call storage_getbase_int2D(rarraylist%h_Ktable, rarraylist%p_Ktable)
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -988,6 +1042,10 @@ contains
     ! local variable
     integer :: itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     do itable = 1, rarraylist%nntable
       call alst_clearTbl(rarraylist, itable)
     end do
@@ -998,6 +1056,10 @@ contains
     rarraylist%nresize  = 0
 
     rarraylist%p_Knext(ALST_FREE) = 1
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -1022,6 +1084,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Decrease number of entries by the number of entries present
     ! in the table which is released
     rarraylist%NA = rarraylist%NA - rarraylist%p_Ktable(ALST_NA,itable)
@@ -1030,6 +1096,10 @@ contains
     rarraylist%p_Ktable(ALST_HEAD,itable) = ALST_NULL
     rarraylist%p_Ktable(ALST_HEAD,itable) = ALST_NULL
     rarraylist%p_Ktable(ALST_NA,itable)   = 0
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -1076,6 +1146,10 @@ contains
 #ifdef D_STORAGE
     D_TYPE, dimension(:,:), pointer :: p_DataSrc
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Get pointers and copy the key,value pairs to the arraylist
     call storage_getbase_int(h_TableSrc, p_TableSrc)
     call storage_getbase(h_KeySrc, p_KeySrc)
@@ -1098,6 +1172,10 @@ contains
     call output_line('Arraylist does not support storage handles!',&
         OU_CLASS_ERROR,OU_MODE_STD,'list_cpy1')
     call sys_halt()
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -1138,6 +1216,10 @@ contains
     ! local variables
     integer :: ipos,itable   
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
 #ifdef D
     if (present(DataSrc)) then
       do itable = 1, size(TableSrc)-1
@@ -1158,6 +1240,10 @@ contains
         call alst_push_back(rarraylist, itable, KeySrc(ipos))
       end do
     end do
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -1206,6 +1292,10 @@ contains
     integer, dimension(2) :: Isize2
 #ifdef D_STORAGE
     D_TYPE, dimension(:,:), pointer :: p_DataDest
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Check table handle
     if (h_TableDest .eq. ST_NOHANDLE) then
@@ -1322,6 +1412,10 @@ contains
     call sys_halt()
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -1359,6 +1453,10 @@ contains
 
     ! local variables
     integer :: icount,itable,ntable,ipos
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Check if table array is valid
     ntable = size(TableDest)-1
@@ -1423,6 +1521,10 @@ contains
 
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -1467,6 +1569,10 @@ contains
 #ifdef D_STORAGE
     D_TYPE, dimension(:,:), pointer :: p_DataSrc
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Get pointers and copy the key and data values to the arraylist
     call storage_getbase(h_KeySrc, p_KeySrc)
 
@@ -1492,6 +1598,10 @@ contains
     call output_line('List does not support storage handles!',&
         OU_CLASS_ERROR,OU_MODE_STD,'alst_cpy1Tbl')
     call sys_halt()
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -1533,6 +1643,10 @@ contains
     ! local variables
     integer :: ipos
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
 #ifdef D
     if (present(DataSrc)) then
       do ipos = 1, size(KeySrc)
@@ -1547,6 +1661,10 @@ contains
     do ipos = 1, size(KeySrc)
       call alst_push_back(rarraylist, itable, KeySrc(ipos))
     end do
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -1600,6 +1718,10 @@ contains
     integer, dimension(2) :: Isize2
 #ifdef D_STORAGE
     D_TYPE, dimension(:,:), pointer :: p_DataDest
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     if (present(h_DataDest)) then
 
@@ -1701,6 +1823,10 @@ contains
     call sys_halt()
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -1744,6 +1870,10 @@ contains
 
     ! local variables
     integer :: ipos,icount
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Check if table is valid
     if (itable < 1 .or. itable > rarraylist%ntable) then
@@ -1791,6 +1921,10 @@ contains
 
     if (present(ncount)) ncount = icount
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -1814,6 +1948,10 @@ contains
 
     ! local variables
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)) :: rarraylist
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Swap lists
     rarraylist  = rarraylist1
@@ -1840,6 +1978,10 @@ contains
         call storage_getbase(rarraylist1%h_Data, rarraylist1%p_Data)
     if (rarraylist2%h_Data .ne. ST_NOHANDLE) &
         call storage_getbase(rarraylist2%h_Data, rarraylist2%p_Data)
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -1869,6 +2011,10 @@ contains
     ! local variables
     integer :: ihead,itail,ina
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Check if table exists
     if (itable < 1 .or. itable > rarraylist%ntable) then
       call output_line('Invalid table number!',&
@@ -1888,6 +2034,10 @@ contains
     rarraylist%p_Ktable(ALST_HEAD,jtable) = ihead
     rarraylist%p_Ktable(ALST_TAIL,jtable) = itail
     rarraylist%p_Ktable(ALST_NA,  jtable) = ina
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -2270,6 +2420,10 @@ contains
     ! local variable
     integer :: i
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Clear table in arraylist
     call alst_clearTbl(rarraylist, itable)
 
@@ -2281,6 +2435,10 @@ contains
       call alst_push_back(rarraylist, itable, key)
 #endif
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -2321,6 +2479,10 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Clear list
     call alst_clearTbl(rarraylist, itable)
 
@@ -2339,6 +2501,10 @@ contains
       call alst_next(riterator)
 
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -2377,6 +2543,10 @@ contains
 
     ! local variable
     integer :: ipos,ihead
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Check if tables need to be created
     if (itable < 1) then
@@ -2428,6 +2598,10 @@ contains
     end if
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -2465,6 +2639,10 @@ contains
 
     ! local variable
     integer :: ipos,itail
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Check if tables need to be created
     if (itable < 1) then
@@ -2516,6 +2694,10 @@ contains
     end if
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -2546,8 +2728,16 @@ contains
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     riterator = alst_begin(rarraylist, itable)
     riterator = alst_erase(rarraylist, riterator)
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -2579,8 +2769,16 @@ contains
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     riterator = alst_rbegin(rarraylist, itable)
     riterator = alst_erase(rarraylist, riterator)
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -2821,6 +3019,10 @@ contains
     ! local variable
     integer :: ipred,ipos,itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Get table number
     itable = rposition%itable
 
@@ -2902,6 +3104,10 @@ contains
     riterator%iSpec = iand(riterator%iSpec,&
                            not(ALST_LSPEC_REVERSE))
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end function
 
   !************************************************************************
@@ -2951,6 +3157,10 @@ contains
     ! local variable
     integer :: i
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     do i = 1, n
 #ifdef D
       riterator = alst_insert(rarraylist, rposition, key, data)
@@ -2958,6 +3168,10 @@ contains
       riterator = alst_insert(rarraylist, rposition, key)
 #endif
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end function
 
@@ -3003,6 +3217,10 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Push content to the list
     riter = rfirst
     do while(riter /= rlast)
@@ -3017,6 +3235,10 @@ contains
 #endif
       call alst_next(riter)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end function
 
@@ -3050,6 +3272,10 @@ contains
 
     ! local variables
     integer :: inext,ipos,ipred,itable
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
 
     ! Get position data
     ipos   = rposition%ipos
@@ -3088,6 +3314,10 @@ contains
     riterator%iSpec = iand(riterator%iSpec,&
                            not(ALST_LSPEC_REVERSE))
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
+
   end function
 
   !************************************************************************
@@ -3121,11 +3351,19 @@ contains
 !</result>
 !</function>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Remove elements
     riterator = rfirst
     do while(riterator /= rlast)
       riterator = alst_erase(rarraylist, riterator)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end function
 
@@ -3447,6 +3685,10 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistBackup%ilock)
+#endif
+
     ! Release backup arraylist
     call alst_release(rarraylistBackup)
 
@@ -3512,6 +3754,10 @@ contains
 #endif
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistBackup%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -3535,11 +3781,19 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Release arraylist
     call alst_release(rarraylist)
 
     ! Duplicate the backup
     call alst_duplicate(rarraylistBackup, rarraylist)
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -3697,6 +3951,9 @@ contains
 !</output>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
 
     ! Create empty arraylist
 #ifdef D
@@ -3721,6 +3978,10 @@ contains
     rarraylistDest%p_Data   = rarraylistSrc%p_Data
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -3742,10 +4003,18 @@ contains
     ! local variable
     integer :: itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Loop over all tables
     do itable = 1, rarraylist%ntable
       call alst_reverseTbl(rarraylist, itable)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -3778,6 +4047,10 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     riterator = alst_begin(rarraylist, itable)
     call alst_next(riterator)
     do while (riterator /= alst_end(rarraylist, itable))
@@ -3792,6 +4065,10 @@ contains
 #endif
       riterator = alst_erase(rarraylist, riterator)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -3814,10 +4091,20 @@ contains
     ! local variable
     integer :: itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Loop over all tables
+    !$omp parallel do
     do itable = 1, rarraylist%ntable
       call alst_sortTbl(rarraylist, itable)
     end do
+    !$omp end parallel do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -3851,7 +4138,13 @@ contains
 #ifdef D
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data1,p_data2
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), allocatable :: data
+#endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
+#ifdef D
     ! Allocate temporal memory
     if (rarraylist%isizeData > 0) allocate(data(rarraylist%isizeData))
 #endif
@@ -3914,6 +4207,10 @@ contains
 
 #ifdef D
     if (rarraylist%isizeData > 0) deallocate(data)
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
 #endif
 
   end subroutine
@@ -4231,6 +4528,11 @@ contains
     ! local variables
     integer itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
+
     ! Loop over al tables from source arraylist
     do itable = 1, alst_ntable(rarraylistSrc)
       ! Merge lists from current table
@@ -4239,6 +4541,11 @@ contains
       ! Release table from source arraylist
       call alst_releaseTbl(rarraylistSrc, itable)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
 
   end subroutine
 
@@ -4279,6 +4586,11 @@ contains
     FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
 #ifdef D
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
 #endif
 
     ! Set iterator to the beginning of the destination list
@@ -4325,6 +4637,11 @@ contains
       call alst_pop_front(rarraylistSrc,itableSrc)
     end do
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
+
   end subroutine
 
   !************************************************************************
@@ -4357,6 +4674,11 @@ contains
     ! local variable
     integer :: itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
+
     ! Loop over al tables from source arraylist
     do itable = 1, alst_ntable(rarraylistSrc)
       ! Merge lists from current table
@@ -4365,6 +4687,11 @@ contains
       ! Release table from source arraylist
       call alst_releaseTbl(rarraylistSrc, itable)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
 
   end subroutine
 
@@ -4405,6 +4732,11 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
+
     ! Transfer each item from the source list before position
     ! rpositionDest in the destination list
     do while (.not.alst_empty(rarraylistSrc,itableSrc))
@@ -4425,6 +4757,11 @@ contains
       ! Remove first item from source list
       call alst_pop_front(rarraylistSrc,itableSrc)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
 
   end subroutine
 
@@ -4465,6 +4802,11 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
+
     ! Set pointer to key of first item in source list
     call alst_getbase_key(rarraylistSrc, rpositionSrc, p_keySrc)
 #ifdef D
@@ -4480,6 +4822,11 @@ contains
     
     ! Remove item at position rpositionSrc from source list
     rposition = alst_erase(rarraylistSrc, rpositionSrc)
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
 
   end subroutine
 
@@ -4523,6 +4870,11 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
 #endif
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_set_nest_lock(rarraylistDest%ilock)
+#endif
+
     ! Transfer each item between positions rbegin and rend from the
     ! source list before position rpositionDest in the destination
     ! list
@@ -4545,6 +4897,11 @@ contains
       ! Remove item at position riterator from source list
       riterator = alst_erase(rarraylistSrc, riterator)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylistSrc%ilock)
+    !$ call omp_unset_nest_lock(rarraylistDest%ilock)
+#endif
 
   end subroutine
 
@@ -4575,6 +4932,10 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator,rposition
     FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key1,p_key2
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Initialise iterator
     riterator = alst_begin(rarraylist,itable)
     rposition = riterator
@@ -4594,6 +4955,10 @@ contains
         call alst_next(rposition)
       end if
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 
@@ -4618,10 +4983,18 @@ contains
     ! local variables
     integer :: itable
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_set_nest_lock(rarraylist%ilock)
+#endif
+
     ! Loop over al tables from arraylist
     do itable = 1, alst_ntable(rarraylist)
       call alst_uniqueTbl(rarraylist, itable)
     end do
+
+#ifdef T_THREAD_SAFE
+    !$ call omp_unset_nest_lock(rarraylist%ilock)
+#endif
 
   end subroutine
 

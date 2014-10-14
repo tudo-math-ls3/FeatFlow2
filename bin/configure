@@ -173,12 +173,18 @@ use constant SRCLIST_KERNEL =>
     "ContinuousFormulation/boundarycondition.f90 ContinuousFormulation/scalarpde.f90 " .
 
     "DataStructures/arraylistbase.f90 " .
-    "DataStructures/arraylistInt.f90 DataStructures/arraylistInt_Int.f90 " .
-    "DataStructures/arraylistInt_DP.f90 DataStructures/arraylistInt_SP.f90 " .
-    "DataStructures/arraylistDP.f90 DataStructures/arraylistDP_Int.f90 ".
-    "DataStructures/arraylistDP_DP.f90 DataStructures/arraylistDP_SP.f90 ".
-    "DataStructures/arraylistSP.f90 DataStructures/arraylistSP_Int.f90 " .
-    "DataStructures/arraylistSP_DP.f90 DataStructures/arraylistSP_SP.f90 " .
+    "DataStructures/arraylistInt.f90 DataStructures/arraylistInt_threaded.f90 " .
+    "DataStructures/arraylistInt_Int.f90 DataStructures/arraylistInt_Int_threaded.f90 " .
+    "DataStructures/arraylistInt_DP.f90 DataStructures/arraylistInt_DP_threaded.f90 " .
+    "DataStructures/arraylistInt_SP.f90 DataStructures/arraylistInt_SP_threaded.f90 " .
+    "DataStructures/arraylistDP.f90 DataStructures/arraylistDP_threaded.f90 " .
+    "DataStructures/arraylistDP_Int.f90 DataStructures/arraylistDP_Int_threaded.f90 ".
+    "DataStructures/arraylistDP_DP.f90 DataStructures/arraylistDP_DP_threaded.f90 " .
+    "DataStructures/arraylistDP_SP.f90 DataStructures/arraylistDP_SP_threaded.f90 ".
+    "DataStructures/arraylistSP.f90 DataStructures/arraylistSP_threaded.f90 " .
+    "DataStructures/arraylistSP_Int.f90 DataStructures/arraylistSP_Int_threaded.f90 " .
+    "DataStructures/arraylistSP_DP.f90 DataStructures/arraylistSP_DP_threaded.f90 " .
+    "DataStructures/arraylistSP_SP.f90 DataStructures/arraylistSP_SP_threaded.f90 " .
 
     "DataStructures/listbase.f90 " .
     "DataStructures/listInt.f90 DataStructures/listInt_Int.f90 " .
