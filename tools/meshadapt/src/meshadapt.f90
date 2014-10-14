@@ -42,10 +42,6 @@ program meshadapt
   ! Initialise the FEAT 2.0 storage management
   call storage_init(100, 100)
   
-  call meshadaptQuick(2,'mesh/TRIA',4,4,1.0_DP,0.5_DP)
-
-  goto 1
-
   if (madapt_signalhandler(SIGUSR1) .eq. 0) then
     
     ! We are in daemon mode, hence, register signal handler
