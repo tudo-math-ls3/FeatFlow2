@@ -4107,6 +4107,10 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "libs:\tcompile-libs\n" .
         "compile-libs:\n" .
+	"ifeq (\$(SRCDIR),)\n" .
+	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+	"\t\@exit 1\n" .
+	"endif\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) libs\n" .
         "\n" .
         "# Generic rule to build a specific library only\n" .
@@ -4114,6 +4118,10 @@ sub create_feat2BenchmarkMakefile {
         "\tliblapack.a libsplib.a libumfpack.a splib umfpack\n" .
         "agmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "liblapack.a libsplib.a libumfpack.a splib umfpack:\n" .
+	"ifeq (\$(SRCDIR),)\n" .
+	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+	"\t\@exit 1\n" .
+	"endif\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "\n" .
         "compile-apps:\t\$(foreach APP, \$(APPS), \$(APP) )\n" .
@@ -4133,6 +4141,10 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "# Compile a FEAT2 benchmark application\n" .
         "compile-META:\n" .
+	"ifeq (\$(SRCDIR),)\n" .
+	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+	"\t\@exit 1\n" .
+	"endif\n" .
         "\t\@echo \"# Compiling FEAT2 benchmark application \$(APP)...\"\n" .
         "\t\@( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) APPNAME=../\$(APPNAME) )\n" .
         "\t\@echo \"# FEAT2 benchmark application \$(APPNAME) successfully compiled.\"\n" .
