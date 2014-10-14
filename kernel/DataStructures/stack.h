@@ -234,6 +234,11 @@ contains
 !</output>
 !</subroutine>
 
+#ifdef T_THREAD_SAFE
+    !$ call omp_init_lock(rstack%ilock)
+    !$ call omp_set_lock(rstack%ilock)
+#endif
+
     ! Set stack size
     rstack%istackSize = isize
 
@@ -246,7 +251,7 @@ contains
 #endif
 
 #ifdef T_THREAD_SAFE
-    !$ call omp_init_lock(rstack%ilock)
+    !$ call omp_unset_lock(rstack%ilock)
 #endif
 
   end subroutine
@@ -557,12 +562,12 @@ contains
     ! local variable
     integer :: i
 
+    ! Create empty stack
+    call stack_create(rstackDest, rstackSrc%istackSize)
+
 #ifdef T_THREAD_SAFE
     !$ call omp_set_lock(rstackDest%ilock)
 #endif
-
-    ! Create empty stack
-    call stack_create(rstackDest, rstackSrc%istackSize)
 
     do i = 1, rstackSrc%istackSize
       rstackDest%p_StackData(i) = rstackSrc%p_StackData(i)
