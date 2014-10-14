@@ -11,10 +11,10 @@
 
 # Type of the initial solution.
 # =0: Use zero solution.
-# =1: Read from file. isolutionStart specifies the level of the initial
+# =1: Read from file. iinitialSolutionlevel specifies the level of the initial
 #     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as formatted text file.
-# =2: Read from file. isolutionStart specifies the level of the initial
+# =2: Read from file. iinitialSolutionlevel specifies the level of the initial
 #     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as unformatted binary file.
 #     (smaller, but processor dependent and not human readable!)
