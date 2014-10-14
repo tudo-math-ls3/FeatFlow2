@@ -51,7 +51,8 @@ module sse_main
   use vectorio
 
   use sse_base
-  use sse_callback
+  use sse_callback_poisson
+  use sse_callback_sse
 
   implicit none
 
