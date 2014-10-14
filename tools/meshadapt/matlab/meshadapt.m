@@ -42,24 +42,85 @@ end
 % Initialisation
 meshadapt_init(ndim,smesh,compiler);
 
-% Perform mesh adaptation
+% Get data from adaptation structure
+[nel,nvt] = meshadapt_data();
+
+% Get mesh from adaptation structure
+[coords,vertices] = meshadapt_mesh();
+
+% Visualise the original mesh
+X = coords(1,:)';
+Y = coords(2,:)';
+edges = [vertices(1:2,:) vertices(2:3,:) vertices([3,1],:)];
+L = sqrt(diff(X(edges),1,1).^2+diff(Y(edges),1,1).^2);
+W = mean(L);
+
+% Plot the original mesh
+figure(1); clf
+subplot(1,3,1)
+triplot(vertices',coords(1,:),coords(2,:),'k');
+axis equal tight
+title('original mesh')
+
+% Perform mesh refinement
 for iref=1:nref
+    
+    % Create circular indicator function
+    Xc = mean(X(vertices),1);
+    Yc = mean(Y(vertices),1);
+    phi = 0.2-sqrt((Xc-0.5).^2+(Yc-0.5).^2); % circle
+    
+    % Define indicator array
+    ind = ones(nel,1);
+    ind(abs(phi)<=W) = 2;
+        
+    % Perform one step of mesh adaptation
+    meshadapt_step(ind,refmax,reftol,crstol);
     
     % Get data from adaptation structure
     [nel,nvt] = meshadapt_data();
     
-    % Define indicator array
-    ind = zeros(nel,1); ind(1) = 2;
+    % Get mesh from adaptation structure
+    [coords,vertices] = meshadapt_mesh();
     
-    % Perform one step of mesh adaptation
-    meshadapt_step(ind,refmax,reftol,crstol);
+    X = coords(1,:)';
+    Y = coords(2,:)';
+    
+    W = W/2;
 end
 
 % Get data from adaptation structure
 [nel,nvt] = meshadapt_data();
 
 % Get mesh from adaptation structure
-[coords,vertices,neighbours] = meshadapt_mesh();
+[coords,vertices] = meshadapt_mesh();
+
+% Plot refined mesh
+figure(1)
+subplot(1,3,2)
+triplot(vertices',coords(1,:),coords(2,:),'k');axis equal tight
+title('refined mesh')
+
+% Perform mesh re-coarsening
+for iref=1:nref
+    % Define indicator array
+    ind = 0.1*ones(nel,1); % fully coarsen every triangle
+    
+    % Perform one step of mesh adaptation
+    meshadapt_step(ind,refmax,reftol,crstol);
+    
+    % Get data from adaptation structure
+    [nel,nvt] = meshadapt_data();
+    
+    % Get mesh from adaptation structure
+    [coords,vertices] = meshadapt_mesh();
+end
+
+% plot coarsened mesh
+figure(1)
+subplot(1,3,3)
+triplot(vertices',coords(1,:),coords(2,:),'k');axis equal tight
+title('coarsened mesh')
 
 % Finalisation
 meshadapt_done();

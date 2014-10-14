@@ -48,6 +48,7 @@ extern "C" {
   int  __meshadaptbase_MOD_madapt_getnel(struct t_meshAdapt*);
   int  __meshadaptbase_MOD_madapt_getnvt(struct t_meshAdapt*);
   int  __meshadaptbase_MOD_madapt_getndim(struct t_meshAdapt*);
+  int  __meshadaptbase_MOD_madapt_getnnve(struct t_meshAdapt*);
   void __meshadaptbase_MOD_madapt_getvertexcoords(struct t_meshAdapt*, double*);
   void __meshadaptbase_MOD_madapt_getverticesatelement(struct t_meshAdapt*, int*);
   void __meshadaptbase_MOD_madapt_getneighboursatelement(struct t_meshAdapt*, int*);

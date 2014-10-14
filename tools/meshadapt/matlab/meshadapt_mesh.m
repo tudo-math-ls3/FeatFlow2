@@ -12,7 +12,7 @@ function [coords,vertices,neighbours] = meshadapt_mesh()
 
 global lp_meshadapt
 
-[nel,nvt,ndim] = meshadapt_data();
+[nel,nvt,ndim,nnve] = meshadapt_data();
 
 if nargout==0, return, end
 
@@ -25,7 +25,7 @@ coords = p_coords.Value;
 if nargout==1, return, end
 
 % Get vertices
-p_vertices = libpointer('int32Ptr', zeros(4,nel));
+p_vertices = libpointer('int32Ptr', zeros(nnve,nel));
 calllib('meshadapt', 'madapt_getverticesatelement', ...
     lp_meshadapt, p_vertices);
 vertices = p_vertices.Value;
@@ -33,7 +33,7 @@ vertices = p_vertices.Value;
 if nargout==2, return, end
 
 % Get adjacencies
-p_neighbours = libpointer('int32Ptr', zeros(4,nel));
+p_neighbours = libpointer('int32Ptr', zeros(nnve,nel));
 calllib('meshadapt', 'madapt_getneighboursatelement', ...
     lp_meshadapt, p_neighbours);
 neighbours = p_neighbours.Value;

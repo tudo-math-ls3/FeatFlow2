@@ -42,6 +42,10 @@ program meshadapt
   ! Initialise the FEAT 2.0 storage management
   call storage_init(100, 100)
   
+  call meshadaptQuick(2,'mesh/TRIA',4,4,1.0_DP,0.5_DP)
+
+  goto 1
+
   if (madapt_signalhandler(SIGUSR1) .eq. 0) then
     
     ! We are in daemon mode, hence, register signal handler
@@ -88,6 +92,123 @@ program meshadapt
   end if
   
   ! Clean up the storage management, finish
-  call storage_done()
+1 call storage_done()
+
+contains
+
+  subroutine meshadaptQuick(ndim,smesh,nref,nrefmax,dreftol,dcrstol)
+
+    integer, intent(in) :: ndim,nref,nrefmax
+    character(len=*), intent(in) :: smesh
+    real(DP), intent(in) :: dreftol,dcrstol
+
+    ! local variables
+    type(t_meshAdapt) :: rmeshAdapt
+    real(DP), dimension(:,:), allocatable :: Dcoords
+    real(DP), dimension(:), allocatable :: Dind
+    integer, dimension(:,:), allocatable :: IverticesAtElement
+    real(DP) :: xc,yc,phi,W
+    integer :: nel,nvt,nnve,iref,iel,ive
+    
+    ! Initialisation
+    call madapt_init(rmeshAdapt,ndim,smesh)
+
+    ! Get data from adaptation structure
+    nel = madapt_getnel(rmeshAdapt)
+    nvt = madapt_getnvt(rmeshAdapt)
+    nnve = madapt_getnnve(rmeshAdapt)
+
+    ! Get mesh from adaptation structure
+    allocate(Dcoords(ndim,nvt), IverticesAtElement(nnve,nel))
+    call madapt_getVertexCoords(rmeshAdapt, Dcoords)
+    call madapt_getVerticesAtElement(rmeshAdapt, IverticesAtElement)
+    
+    W = 0.0_DP
+    do iel=1,nel
+      do ive=1,nnve
+        W = W + sqrt((Dcoords(1,IverticesAtElement(ive,iel))-&
+                      Dcoords(1,IverticesAtElement(mod(ive,nnve)+1,iel)))**2&
+              +      (Dcoords(2,IverticesAtElement(ive,iel))-&
+                      Dcoords(2,IverticesAtElement(mod(ive,nnve)+1,iel)))**2)       
+      end do
+    end do
+    W = W/real(nel*nnve)
+
+    ! Deallocate local data
+    deallocate(Dcoords,IverticesAtElement)
+
+    ! Perform mesh refinement
+    do iref=1,nref
+      
+      ! Get mesh from adaptation structure
+      allocate(Dcoords(ndim,nvt), IverticesAtElement(nnve,nel),Dind(nel))
+      call madapt_getVertexCoords(rmeshAdapt, Dcoords)
+      call madapt_getVerticesAtElement(rmeshAdapt, IverticesAtElement)
+    
+      do iel=1,nel
+        ! Create circular indicator function
+        xc = sum(Dcoords(1,IverticesAtElement(:,iel)))/real(nnve,DP)
+        yc = sum(Dcoords(2,IverticesAtElement(:,iel)))/real(nnve,DP)
+        phi = 0.2_DP - sqrt( (xc-0.5_DP)**2 + (yc-0.5_DP)**2 )
+
+        ! Define indicator array
+        if (abs(phi) .le. W) then
+          Dind(iel) = 2.0_DP
+        else
+          Dind(iel) = 1.0_DP
+        end if
+      end do
+
+      ! Perform one step of mesh adaptation
+      call madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
+
+      ! Deallocate local data
+      deallocate(Dcoords,IverticesAtElement,Dind)
+
+      ! Get data from adaptation structure
+      nel = madapt_getnel(rmeshAdapt)
+      nvt = madapt_getnvt(rmeshAdapt)
+      nnve = madapt_getnnve(rmeshAdapt)
+
+      print *, "REFINE:",nel,nvt
+
+      W = W/2.0_DP
+    end do
+    
+    ! Perform mesh re-coarsening
+    do iref=1,nref
+
+      ! Define indicator array
+      allocate(Dind(nel)); Dind = 0.1
+      
+      ! Perform one step of mesh adaptation
+      call madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
+      
+      ! Deallocate local data
+      deallocate(Dind)
+
+      ! Get data from adaptation structure
+      nel = madapt_getnel(rmeshAdapt)
+      nvt = madapt_getnvt(rmeshAdapt)
+
+      print *, "COARSEN:",nel,nvt
+
+      ! Get mesh from adaptation structure
+      allocate(Dcoords(ndim,nvt), IverticesAtElement(nnve,nel))
+
+      call madapt_getVertexCoords(rmeshAdapt, Dcoords)
+      call madapt_getVerticesAtElement(rmeshAdapt, IverticesAtElement)
+
+
+      ! Deallocate local data
+      deallocate(Dcoords,IverticesAtElement)
+    end do
+
+    
+    
+    ! Finalisation
+    call madapt_done(rmeshAdapt)
+
+  end subroutine meshadaptQuick
 
 end program meshadapt

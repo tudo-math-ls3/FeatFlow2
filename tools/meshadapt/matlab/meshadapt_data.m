@@ -1,4 +1,4 @@
-function [nel,nvt,ndim] = meshadapt_data()
+function [nel,nvt,ndim,nnve] = meshadapt_data()
 %MESHADAPT_DATA Mesh data
 %
 %   [NEL,NVT,NDIM] = MESHADAPT_DATA()
@@ -16,3 +16,4 @@ global lp_meshadapt
 nel = calllib('meshadapt', 'madapt_getnel', lp_meshadapt);
 nvt = calllib('meshadapt', 'madapt_getnvt', lp_meshadapt);
 ndim = calllib('meshadapt', 'madapt_getndim', lp_meshadapt);
+nnve = calllib('meshadapt', 'madapt_getnnve', lp_meshadapt);

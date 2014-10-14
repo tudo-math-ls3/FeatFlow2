@@ -58,6 +58,7 @@ module meshadaptbase
   public :: madapt_getNEL
   public :: madapt_getNVT
   public :: madapt_getNDIM
+  public :: madapt_getNNVE
   public :: madapt_getVertexCoords
   public :: madapt_getNeighboursAtElement
   public :: madapt_getVerticesAtElement
@@ -218,6 +219,8 @@ contains
 
 !</subroutine>
 
+    ! Finalise adaptation structure
+    call output_line("Finalising adaptation data structure...")
     call hadapt_releaseAdaptation(rmeshAdapt%rhadapt)
     call tria_done(rmeshAdapt%rtriangulation)
     if(associated(rmeshAdapt%rboundary)) call boundary_release(rmeshAdapt%rboundary)
@@ -277,13 +280,16 @@ contains
     rmeshAdapt%rhadapt%dcoarseningTolerance = dcrstol
 
     ! Perform mesh adaptation
+    call output_line("Performing single adaptation step...")
     call hadapt_refreshAdaptation(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
     call hadapt_performAdaptation(rmeshAdapt%rhadapt, rindicator)
     
     ! Update triangulation structure
+    call output_line("Generating raw triangulation...")
     call hadapt_generateRawMesh(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
     
     ! Initialise standard mesh
+    call output_line("Generating standard mesh from raw triangulation...")
     if(associated(rmeshAdapt%rboundary)) then
       call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
           rmeshAdapt%rboundary)
@@ -615,8 +621,8 @@ contains
     integer, save :: nrefmax=1
 
     ! local variables
-    character(len=SYS_STRLEN) :: sarg,sname
-    integer :: iarg,istep,ndim
+    character(len=SYS_STRLEN) :: sarg
+    integer :: iarg,ndim
     logical :: bdaemon=.false.
     
     select case(isignum)
@@ -809,6 +815,32 @@ contains
 
   ! ***************************************************************************
 
+!<function>
+
+  function madapt_getNNVE(rmeshAdapt) result(NNVE)
+
+!<description>
+    ! Returns the maximum number of vertices per element
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<result>
+    ! Maximum number of vertices per element
+    integer :: NNVE
+!</result>
+
+!</function>
+
+    NNVE = rmeshAdapt%rtriangulation%NNVE
+
+  end function madapt_getNNVE
+
+  ! ***************************************************************************
+
 !<subroutine>
 
   subroutine madapt_getVertexCoords(rmeshAdapt,DvertexCoords)
@@ -836,8 +868,8 @@ contains
     call storage_getbase_double2d(&
         rmeshAdapt%rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
-    n = size(p_DvertexCoords,1)
-    m = size(p_DvertexCoords,2)
+    n = rmeshAdapt%rtriangulation%NDIM
+    m = rmeshAdapt%rtriangulation%NVT
 
     do j=1,m
       do i=1,n
@@ -878,8 +910,8 @@ contains
     call storage_getbase_int2d(&
         rmeshAdapt%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
 
-    n = size(p_IneighboursAtElement,1)
-    m = size(p_IneighboursAtElement,2)
+    n = rmeshAdapt%rtriangulation%NNVE
+    m = rmeshAdapt%rtriangulation%NEL
 
     do j=1,m
       do i=1,n
@@ -920,8 +952,8 @@ contains
     call storage_getbase_int2d(&
         rmeshAdapt%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-    n = size(p_IverticesAtElement,1)
-    m = size(p_IverticesAtElement,2)
+    n = rmeshAdapt%rtriangulation%NNVE
+    m = rmeshAdapt%rtriangulation%NEL
 
     do j=1,m
       do i=1,n

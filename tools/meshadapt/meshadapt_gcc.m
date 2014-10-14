@@ -34,6 +34,8 @@ fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MO
 fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getnvt'; fcns.alias{fcnNum}='madapt_getnvt'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'t_meshAdaptPtr'};fcnNum=fcnNum+1;
 % int __meshadaptbase_MOD_madapt_getndim ( struct t_meshAdapt *); 
 fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getndim'; fcns.alias{fcnNum}='madapt_getndim'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'t_meshAdaptPtr'};fcnNum=fcnNum+1;
+% int __meshadaptbase_MOD_madapt_getnnve ( struct t_meshAdapt *); 
+fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getnnve'; fcns.alias{fcnNum}='madapt_getnnve'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'t_meshAdaptPtr'};fcnNum=fcnNum+1;
 % void __meshadaptbase_MOD_madapt_getvertexcoords ( struct t_meshAdapt *, double *); 
 fcns.thunkname{fcnNum}='voidvoidPtrvoidPtrThunk';fcns.name{fcnNum}='__meshadaptbase_MOD_madapt_getvertexcoords'; fcns.alias{fcnNum}='madapt_getvertexcoords'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}=[]; fcns.RHS{fcnNum}={'t_meshAdaptPtr', 'doublePtr'};fcnNum=fcnNum+1;
 % void __meshadaptbase_MOD_madapt_getverticesatelement ( struct t_meshAdapt *, int *); 
