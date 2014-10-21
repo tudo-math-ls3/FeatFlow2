@@ -1,24 +1,17 @@
 #############
-[POSTPROCESSING]
+[ExtFE-POSTPROCESSING]
 #############
 # In this file, we decide if we write something in a 
 # text file and where we store it.
 
 # Write the results in a file? 1=yes, 0=no
 
-writeOutL2Norm = 1
+writeOutL2Calc = 1
 # Path of the file where to write it out
-# Format of the file: First line: ||u1 - u2||_L2, second line: ||u1||_L2, third line: ||u2||_L2
-# fourth line: ||p1 - p2||_L2, fifth line: ||p1||_L2; sixth line: ||p2||_L2
-# Note: If you did not calculate an integral, the program writes out 0 as its value
-sfilenameL2Norm = '%{soutputdir}/L2Norms.dat'
-
-# Important notes:
-# If you set writeOutPointValues to one and calculated only
-#  e.g u1(x) the output file will still contain lines for u2(x) and the difference
-# all values that were not calculated are written out as 0
+sL2FilePath = '%{soutputdir}/L2Norms.dat'
 
 
 writeOutPointValues = 1
 #Path of the file where to write it out
-sfilenamePointValues = '%{soutputdir}/pointvalues.dat'
+sPointValuesFilePath = '%{soutputdir}/pointvalues.dat'
+

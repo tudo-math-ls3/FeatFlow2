@@ -12,72 +12,165 @@ module ExtFEcomparer_discretisation
   use basicgeometry
 
   use element
-  use cubature
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
-  use bilinearformevaluation
 
-  use feevaluation2
-  use blockmatassemblybase
-  use blockmatassembly
-  use blockmatassemblystdop
-
-  use vectorio
   use ExtFEcomparer_typedefs
 
   implicit none
 
+  private
+
+  public :: ExtFEcomparer_init_discretisation
+  public :: ExtFEcomparer_doneDiscretisation
+
 contains
 
-!<subroutine>
 
-  subroutine ExtFEcomparer_initDynamicLevelInfo (rdynamicLevelInfo)
 
+subroutine ExtFEcomparer_init_discretisation(rproblem)
 !<description>
-  ! Initialises a dynamic level information structure with basic information.
-!</description>
-
-!<output>
-  ! A dynamic level information structure to be initialised.
-  type(t_dynamicLevelInfo), intent(out), target :: rdynamicLevelInfo
-!</output>
-
-!</subroutine>
-
-    ! Initialise the BC/FBC structures.
-    call bcasm_initDiscreteBC(rdynamicLevelInfo%rdiscreteBC)
-    call bcasm_initDiscreteFBC(rdynamicLevelInfo%rdiscreteFBC)
-
-    rdynamicLevelInfo%bhasNeumannBoundary = .false.
-    rdynamicLevelInfo%hedgesDirichletBC = ST_NOHANDLE
-    rdynamicLevelInfo%nedgesDirichletBC = 0
-
-  end subroutine
-
-  ! ***************************************************************************
-
-
- subroutine reinitDiscretisation_2D(rproblem)
-
-!<description>
-  ! This routine initialises the discretisation structure of the underlying
-  ! problem and saves it to the problem structure.
+    ! This routine is the one to be called from outside,
+    ! it will branch it way to the right subroutine.
+    ! It is going to be a bit tricky since we have to cover
+    ! all cases here: Dimension and type of vector, that is
+    ! if it is a solution of a system (ie a (u,v,p) - vector
+    ! from cc2d) or if it is just the written out x-velocity
+    ! of flagship. To make life easier, we do only 1 branching in here
+    ! and call subroutines which branch again. It can be done
+    ! better in terms of performance, but we want to have an
+    ! easy-to-read-code
+    ! In this routine we branch with respect to the dimension
 !</description>
 
 !<inputoutput>
-  ! A problem structure saving problem-dependent information.
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    select case(rproblem%iDimension)
+        case(ExtFE_NDIM1)
+            call ExtFEcomparer_init_discretisation_1D(rproblem)
+        case(ExtFE_NDIM2)
+            call ExtFEcomparer_init_discretisation_2D(rproblem)
+        case default
+            call output_line(&
+            "The dimension of you problem is not yet implemented, dimension = " &
+                //sys_siL(rproblem%iDimension,10), &
+                OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation")
+            call sys_halt()
+        end select
+
+end subroutine
+
+subroutine ExtFEcomparer_init_discretisation_1D(rproblem)
+!<description>
+    ! This routine is containing calls to all 1D-inits
+    ! at the moment there is only support for a discretisation
+    ! using one elementtype, so this is for future purpose only
+!</description>
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+    select case(rproblem%elementSetting)
+        case(ExtFE_OneElement)
+
+            call ExtFEcomparer_init_discretisation_1D_OneElementType(rproblem)
+
+        case default
+            call output_line(&
+            "Your element setting is not supported, setting = " &
+                //sys_siL(rproblem%elementSetting,10), &
+                OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation_1D")
+            call sys_halt()
+        end select
+
+end subroutine
+
+
+subroutine ExtFEcomparer_init_discretisation_1D_OneElementType(rproblem)
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    integer :: NLMAX, NVAR,i
+    type (t_triangulation), pointer :: p_triangulation
+    type (t_blockDiscretisation), pointer :: p_discretisation
+! We need to create a block-discretisation-structure
+! so that we can store one variable in each block
+    NLMAX = rproblem%NLMAX
+    NVAR = rproblem%NVAR
+    p_triangulation => rproblem%rtriangulation
+    p_discretisation => rproblem%rdiscretisation
+
+    ! Init a block discretisation
+    call spdiscr_initBlockDiscr(rproblem%rdiscretisation, &
+                NVAR, p_triangulation)
+
+    ! Now init a discretisation for each block
+    do i=1,NVAR
+        call spdiscr_initDiscr_simple(p_discretisation%RspatialDiscr(i), &
+              rproblem%ielemtype,p_triangulation)
+    end do
+
+
+
+end subroutine
+
+subroutine ExtFEcomparer_init_discretisation_2D(rproblem)
+!<description>
+    ! This routine is containing calls to all 2D-inits, that is
+    ! in particular if it is a (u,v,p) solution (i.e. from cc2d)
+    ! or if it is containing a "postprocessed" vector,
+    ! that is i.e. an output of flagship that solves a system
+    ! in the conservative variables (momentum, ...) but writes out
+    ! the speed
+!</description>
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    select case (rproblem%vectorType)
+
+        case(ExtFE_ElementPair)
+            ! Element pair - i.e. one element type for the speed,
+            ! one for the pressure
+            call ExtFEcomparer_init_Discretisation_2D_elementPair(rproblem)
+
+        case default
+            call output_line(&
+            "This combination of dimension and vector type is not &
+            &yet implemented, your input was " &
+                //sys_siL(rproblem%vectorType,10), &
+                OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation_2D")
+            call sys_halt()
+    end select
+end subroutine
+
+
+ subroutine ExtFEcomparer_init_Discretisation_2D_elementPair(rproblem)
+
+!<description>
+  ! This routine initialises a discretisation structure for a vector
+  ! that contains a 2D-Speed-Pressure-Pair with different elements
+  ! for speed and pressure. The order of the components is
+  ! 1. X-Velocity, 2. Y-Velocity, 3. Pressure
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving all information.
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,ielementType,icubA,icubB,icubM
-  integer :: iElementTypeStabil
-  character(LEN=SYS_NAMELEN) :: sstr
-
+    ! local variables
+    integer :: ielementType, NLMAX
     ! An object for saving the domain:
     type(t_boundary), pointer :: p_rboundary
 
@@ -92,34 +185,30 @@ contains
 
     ! Now set up discrezisation structures on all levels:
 
-    do i=rproblem%NLMIN,rproblem%NLMAX
+      NLMAX = rproblem%NLMAX
 
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%rboundary
-      p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
-      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
+      p_rtriangulation => rproblem%rtriangulation
+      p_rdiscretisation => rproblem%rdiscretisation
 
       ! -----------------------------------------------------------------------
       ! Initialise discretisation structures for the spatial discretisation
       ! -----------------------------------------------------------------------
 
       ! Initialise the block discretisation according to the element specifier.
-      call ExtFEcomparer_getDiscretisation_2D(ielementType,p_rdiscretisation,&
-          rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-
-      ! Initialise the dynamic level information structure with basic information.
-      call ExtFEcomparer_initDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
-
-    end do
+      call ExtFEcomparer_getDiscretisation_2D_elementPair(ielementType, &
+               p_rdiscretisation,rproblem%rtriangulation, &
+               rproblem%rboundary)
 
   end subroutine
 
   ! ***************************************************************************
 
 
-  subroutine ExtFEcomparer_getDiscretisation_2D (ielementType,rdiscretisation,&
-      rtriangulation,rboundary,rsourceDiscretisation)
+  subroutine ExtFEcomparer_getDiscretisation_2D_elementPair(ielementType, &
+      rdiscretisation, rtriangulation,rboundary,rsourceDiscretisation)
 
 !<description>
   ! Initialises a discretisation structure according to an element combination
@@ -256,7 +345,7 @@ contains
     case default
       call output_line (&
           "Unknown discretisation: iElementType = "//sys_siL(ielementType,10), &
-          OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_getDiscretisation_2D")
+          OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_getDiscretisation_2D_speedPressure")
       call sys_halt()
     end select
 
@@ -342,6 +431,10 @@ contains
 
   end subroutine
 
+!<subroutine>
+
+  ! ***************************************************************************
+
 
   subroutine ExtFEcomparer_doneDiscretisation (rproblem)
 
@@ -359,47 +452,14 @@ contains
     ! local variables
     integer :: i
 
-    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+      i = rproblem%NLMAX
 
       ! Remove the block discretisation structure and all substructures.
-      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
-      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisationStabil)
-      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationStabil)
+      call spdiscr_releaseBlockDiscr(rproblem%rdiscretisation)
 
-      ! Release dynamic level information
-      call ExtFEcomparer_doneDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
-
-    end do
 
 end subroutine
 
 
-
-  subroutine ExtFEcomparer_doneDynamicLevelInfo (rdynamicLevelInfo)
-
-!<description>
-  ! Releases a dynamic level information structure.
-!</description>
-
-!<inputoutput>
-  ! A dynamic level information structure to be initialised.
-  type(t_dynamicLevelInfo), intent(inout), target :: rdynamicLevelInfo
-!</inputoutput>
-
-!</subroutine>
-
-    ! Release our discrete version of the boundary conditions
-    call bcasm_releaseDiscreteBC (rdynamicLevelInfo%rdiscreteBC)
-
-    ! as well as the discrete version of the BC`s for fictitious boundaries
-    call bcasm_releaseDiscreteFBC (rdynamicLevelInfo%rdiscreteFBC)
-
-    ! Release the Dirichlet edges.
-    if (rdynamicLevelInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then
-      call storage_free (rdynamicLevelInfo%hedgesDirichletBC)
-    end if
-    rdynamicLevelInfo%nedgesDirichletBC = 0
-
-end subroutine
 
 end module

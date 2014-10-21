@@ -20,6 +20,7 @@ module ExtFEcomparer_core
   use collection
   use feevaluation2
   use feevaluation
+  use triasearch
 
   use blockmatassembly
   use blockmatassemblybase
@@ -35,798 +36,442 @@ module ExtFEcomparer_core
 
 implicit none
 
+    private
+
+    public :: ExtFEcomparer_calculate
+
 contains
 
-  ! This routine shall prepare everything for the calculation
-  ! It is the one that is called from outside. The other routines
-  ! (that do the actual calculation) are called by this routine.
 
-  subroutine calculate_difference_2D(rproblem_1,rproblem_2)
-
+! This routine is the one that is called from outside
+! In it, we prepare everything for the calculations
+! that we want to do and then execute them
+subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
+!<input>
+! 2 Problem structures that contain everything
   type(t_problem), intent(inout), target :: rproblem_1, rproblem_2
+! </input>
 
-  ! Level where we want to evaluate
-  integer :: lvl1,lvl2
+!<output>
+  type(t_postprocessing), intent(inout) :: rpostprocessing
+!</output>
 
-  ! We also need to create 2 block vectors so we can attatch
-  ! the discretisation to it
-  type(t_vectorBlock), pointer :: rx1, rx2
-
-  ! We want to calculate integrals, so we need the cubature info
-  type(t_scalarCubatureInfo), target:: rcubatureInfoVelocityFirst, rcubatureInfoVelocitySecond
-  type(t_scalarCubatureInfo), target:: rcubatureInfoPressureFirst, rcubatureInfoPressureSecond
-
-
-  ! We need to evaluate our FEM-function in the cubature points
-  ! for that purpose we need a vector
-  type(t_fev2Vectors) :: rcoeffVectors
-
- ! We need the collection to pass the second vector to the
- ! actual computation
- type(t_collection) :: rcollection
+  ! For the integral calculation we need a collection structure
+  type(t_collection) :: collection
 
   ! Local variables
-  real(DP) :: dintvalue
-  integer :: calcL2DifferenceVelocity, calcL2NormVelocityFirst, calcL2NormVelocitySecond
-  integer :: calcL2DifferencePressure, calcL2NormPressureFirst, calcL2NormPressureSecond
-  integer :: calcPointDifference, calcPointFirst, calcPointSecond
 
-  ! For the output
-  real(DP), dimension(6) :: L2NormResults
-  integer :: writeOutL2Norm, writeOutPointValues
-  character(LEN=SYS_STRLEN):: outFileNameL2Norm, outFileNamePointValues
+  ! We need to know how many calculations we want to do
+  integer :: nL2Calculations
 
-  ! for the point values we need an array of points
-  real(DP), dimension(:,:), allocatable :: evaluationCoords
-  integer, dimension(:), allocatable :: Cder
-  integer, dimension(:), allocatable :: IType
-  integer :: nPoints,i
-  real(DP), dimension(:), allocatable :: pointvaluesFirst, pointvaluesSecond, pointValueDifference
-  character(LEN=SYS_STRLEN):: sparam
+  ! For the calculations we need to know the cubature rule
+  integer(I32), dimension(:), allocatable :: L2CubRule
 
-  ! To write out the point values
-  integer :: iunit
-  logical :: bfileexists
-  character(LEN=SYS_STRLEN):: outputString
-  character(LEN=10), dimension(3,3), parameter :: Sfctnames = reshape (&
-      (/ "       u1 ","     u1_x ","     u1_y " , &
-         "       u2 ","     u2_x ","     u2_y " , &
-         "        p ","      p_x ","      p_y " /) ,&
-       (/ 3,3 /) )
+  ! pointer to the storage of the postprocessing structure
+  real(DP), dimension(:),  pointer :: p_L2results =>NULL()
+  integer, dimension (:,:), pointer :: p_L2Comp => NULL()
+  character, dimension(:), pointer :: p_L2ChiOmega => NULL()
+  character, dimension(:), pointer :: p_L2TriFile => NULL()
 
-  !=============================================================!
-  ! First of all, we read in what the user wants to calculate.  !
-  !=============================================================!
+  ! For the collection we need to convert the scalar
+  ! vectors to block vectors
+  type(t_vectorBlock), target :: blockSecond
 
-  ! Which L2-Norms?
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2DifferenceVelocity",calcL2DifferenceVelocity,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2NormVelocityFirst",calcL2NormVelocityFirst,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2NormVelocitySecond",calcL2NormVelocitySecond,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2DifferencePressure",calcL2DifferencePressure,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2NormPressureFirst",calcL2NormPressureFirst,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcL2NormPressureSecond",calcL2NormPressureSecond,0)
+  ! We need cubature information
+  type(t_scalarCubatureInfo) :: RcubatureInformation
 
-  ! Which type of point values?
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcPointDifference",calcPointDifference,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcPointFirst",calcPointFirst,0)
-  call parlst_getvalue_int(rproblem_1%rparamlist,"GENERALSETTINGS","calcPointSecond",calcPointSecond,0)
+  ! For the L2-Calculations we need the characteristic
+  ! functions of the domain where we want to calculate
+  character(LEN=ExtFE_STRLEN), dimension(:), allocatable :: L2ChiOmega
 
-  ! Postprocessing settings
-  ! L2-Norms
-  call parlst_getvalue_int(rproblem_1%rparamlist,"POSTPROCESSING","writeOutL2Norm",writeOutL2Norm,0)
-  call parlst_getvalue_string(rproblem_1%rparamList,"POSTPROCESSING", "sfilenameL2Norm",outFileNameL2Norm,bdequote=.true.)
+  ! We need a FE-Vector
+  type(t_fev2Vectors) :: fefunction
 
   ! Pointvalues
-  call parlst_getvalue_int(rproblem_1%rparamlist,"POSTPROCESSING","writeOutPointValues",writeOutPointValues,0)
-  call parlst_getvalue_string(rproblem_1%rparamList,"POSTPROCESSING", "sfilenamePointValues",outFileNamePointValues,bdequote=.true.)
-
-  !====================!
-  ! Final preparations !
-  !====================!
-
-  lvl1 = rproblem_1%NLMAX
-  lvl2 = rproblem_2%NLMAX
-
-
-  ! This part is actually neccesary because we want to have the
-  ! situation that each block vector has its blockdiscretisation
-  ! attatched to it.
-
-  rx1 => rproblem_1%coeffVector
-  rx2 => rproblem_2%coeffVector
-
-  ! Attatch the Block-Discritisation to rx1 and rx2
-  rx1%p_rblockDiscr => rproblem_1%RlevelInfo(lvl1)%rdiscretisation
-  rx2%p_rblockDiscr => rproblem_2%RlevelInfo(lvl2)%rdiscretisation
-
-  ! Now we attatch the spatial discretisations to rx1 and rx2
-  rx1%RvectorBlock(1)%p_rspatialDiscr => rproblem_1%RlevelInfo(lvl1)%rdiscretisation%RspatialDiscr(1)
-  rx1%RvectorBlock(2)%p_rspatialDiscr => rproblem_1%RlevelInfo(lvl1)%rdiscretisation%RspatialDiscr(2)
-  rx1%RvectorBlock(3)%p_rspatialDiscr => rproblem_1%RlevelInfo(lvl1)%rdiscretisation%RspatialDiscr(3)
-
-  rx2%RvectorBlock(1)%p_rspatialDiscr => rproblem_2%RlevelInfo(lvl2)%rdiscretisation%RspatialDiscr(1)
-  rx2%RvectorBlock(2)%p_rspatialDiscr => rproblem_2%RlevelInfo(lvl2)%rdiscretisation%RspatialDiscr(2)
-  rx2%RvectorBlock(3)%p_rspatialDiscr => rproblem_2%RlevelInfo(lvl2)%rdiscretisation%RspatialDiscr(3)
-
-  ! In the subroutines we need the parameter list
-  ! The lists in both problem structures are the same, so
-  ! we can pick any
-  rcollection%p_rparlistQuickAccess1 => rproblem_1%rparamlist
-
-
-  !======================================!
-  ! We might have everything, so we start!
-  !======================================!
-
-  !--------------------------------------!
-  ! We start with the velocity integrals !
-  !--------------------------------------!
-
-  ! ##################################
-  ! # FIRST Integral: ||u1 - u2||_L2 #
-  ! ##################################
-  ! Init the result with 0
-  L2NormResults(1) = 0.0_DP
-
-  ! Check if the user wants to calculate this:
-    if (abs(calcL2DifferenceVelocity - 1.0_DP) .le. 0.1_DP) then
-
-        ! We need the cubature informations
-        ! First step: only for Integral ||u1-u2|| on common part, we can
-        ! actually use the cubature info from any discretisation
-        ! So we use the discrectisation from vector 1
-
-        call spdiscr_createDefCubStructure(rx1%RvectorBlock(1)%p_rspatialDiscr, &
-               rcubatureInfoVelocityFirst,rproblem_1%I_Cubature_Formula)
-
-        ! first the u component
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(1),0)
-        ! then the v component
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(2),0)
-
-        ! we cannot pass the second vector via this way because it lives
-        ! on a different mesh. Therefore we pass it via the collection
-        ! The evaluation of this one will be expensive
-        rcollection%p_rvectorQuickAccess1=> rx2
-
-
-        ! We need space in the vector for the second function
-        call fev2_addDummyVectorToEvalList(rcoeffVectors)
-        call fev2_addDummyVectorToEvalList(rcoeffVectors)
-
-        ! Calculate the L2 difference
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2error_velocity_2D_common, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoVelocityFirst)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-difference of the velocity on the common part= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Store it in the result array
-        L2NormResults(1) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoVelocityFirst)
-        rcollection%p_rvectorQuickAccess1 => NULL()
-        dintvalue = 0.0_DP
-
-    end if
-
-
-
-    !##############################!
-    !# Second integral: ||u1||_L2 #!
-    !##############################!
-    ! init the result with 0
-    L2NormResults(2) = 0.0_DP
-
-    ! We need the name of the variable in the dat-file in the
-    ! callback routine
-    rcollection%SquickAccess(1) = 'onlyFirst'
-
-    ! Check if the user wants to calculate this
-
-    if (abs(calcL2NormVelocityFirst - 1.0_DP) .le. 0.1_DP) then
-        ! Pass function 1 to bma_integral
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(1),0)
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(2),0)
-
-        ! Create the according cubature structure
-        call spdiscr_createDefCubStructure(rx1%RvectorBlock(1)%p_rspatialDiscr, &
-               rcubatureInfoVelocityFirst,rproblem_1%I_Cubature_Formula)
-
-        ! Calculate the L2 error
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2norm_velocity_2D, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoVelocityFirst)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-norm of the velocity of the first function= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Store it in the result array
-        L2NormResults(2) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoVelocityFirst)
-        dintvalue = 0.0_DP
-
-    end if
-
-    !#############################!
-    !# Third integral: ||u2||_L2 #!
-    !#############################!
-    ! init the result with 0
-    L2NormResults(3) = 0.0_DP
-
-    ! We need the name of the variable in the dat-file in the
-    ! callback routine
-    rcollection%SquickAccess(1) = 'onlySecond'
-
-    ! Check if the user wants to calculate this
-
-    if (abs( calcL2NormVelocitySecond- 1.0_DP) .le. 0.1_DP) then
-        ! Pass function 2 to bma_build_integral
-        call fev2_addVectorToEvalList(rcoeffVectors,rx2%RvectorBlock(1),0)
-        call fev2_addVectorToEvalList(rcoeffVectors,rx2%RvectorBlock(2),0)
-
-        ! Create the according cubature structure
-        call spdiscr_createDefCubStructure(rx2%RvectorBlock(1)%p_rspatialDiscr, &
-                rcubatureInfoVelocitySecond,rproblem_2%I_Cubature_Formula)
-
-        ! Calculate the L2 error
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2norm_velocity_2D, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoVelocitySecond)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-norm of the velocity of the second function= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Write it out in the results array
-        L2NormResults(3) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoVelocitySecond)
-        dintvalue = 0.0_DP
-
-    end if
-
-    !----------------------------------!
-    ! Now we do the pressure integrals !
-    !----------------------------------!
-
-    !###################################!
-    !# Fourth integral: ||p1 - p2||_L2 #!
-    !###################################!
-
-      ! Check if the user wants to calculate this:
-    if (abs(calcL2DifferencePressure - 1.0_DP) .le. 0.1_DP) then
-
-        ! We need the cubature informations
-        ! First step: only for Integral ||p1-p2|| on common part, we can
-        ! actually use the cubature info from any discretisation
-        ! So we use the discrectisation from vector 1
-
-        call spdiscr_createDefCubStructure(rx1%RvectorBlock(3)%p_rspatialDiscr, &
-               rcubatureInfoPressureFirst,rproblem_1%I_Cubature_Formula)
-
-        ! Add it to the evaluation list
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(3),0)
-
-        ! we cannot pass the second vector via this way because it lives
-        ! on a different mesh. Therefore we pass it via the collection
-        ! The evaluation of this one will be expensive
-        rcollection%p_rvectorQuickAccess1=> rx2
-
-
-        ! We need space in the vector for the second function
-        call fev2_addDummyVectorToEvalList(rcoeffVectors)
-
-        ! Calculate the L2 error
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2error_pressure_2D_common, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoPressureFirst)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-difference of the pressure on the common part= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Store it in the result array
-        L2NormResults(4) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoPressureFirst)
-        rcollection%p_rvectorQuickAccess1 => NULL()
-        dintvalue = 0.0_DP
-
-    end if
-
-    !#############################!
-    !# Fifth integral: ||p1||_L2 #!
-    !#############################!
-
-    ! init the result with 0
-    L2NormResults(5) = 0.0_DP
-
-    ! We need the name of the variable in the dat-file in the
-    ! callback routine
-    rcollection%SquickAccess(1) = 'onlyFirst'
-
-    ! Check if the user wants to calculate this
-
-    if (abs(calcL2NormPressureFirst - 1.0_DP) .le. 0.1_DP) then
-        ! Pass function 1 to bma_integral
-        call fev2_addVectorToEvalList(rcoeffVectors,rx1%RvectorBlock(3),0)
-
-        ! Create the according cubature structure
-        call spdiscr_createDefCubStructure(rx1%RvectorBlock(3)%p_rspatialDiscr, &
-               rcubatureInfoPressureFirst,rproblem_1%I_Cubature_Formula)
-
-        ! Calculate the L2 error
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2norm_pressure_2D, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoPressureFirst)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-norm of the pressure of the first function= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Store it in the result array
-        L2NormResults(5) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoPressureFirst)
-        dintvalue = 0.0_DP
-
-    end if
-
-
-    !#############################!
-    !# Sixth integral: ||p2||_L2 #!
-    !#############################!
-    ! init the result with 0
-    L2NormResults(6) = 0.0_DP
-
-    ! We need the name of the variable in the dat-file in the
-    ! callback routine
-    rcollection%SquickAccess(1) = 'onlySecond'
-
-    ! Check if the user wants to calculate this
-
-    if (abs( calcL2NormPressureSecond- 1.0_DP) .le. 0.1_DP) then
-        ! Pass function 2 to bma_build_integral
-        call fev2_addVectorToEvalList(rcoeffVectors,rx2%RvectorBlock(3),0)
-
-        ! Create the according cubature structure
-        call spdiscr_createDefCubStructure(rx2%RvectorBlock(3)%p_rspatialDiscr, &
-                rcubatureInfoPressureSecond,rproblem_2%I_Cubature_Formula)
-
-        ! Calculate the L2 error
-        call bma_buildIntegral(dintvalue,BMA_CALC_STANDARD,calc_L2norm_pressure_2D, &
-            rcollection=rcollection,revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfoPressureSecond)
-
-        dintvalue = sqrt(dintvalue)
-        call output_line ("L2-norm of the pressure of the second function= "//trim(sys_sdEL(dintvalue,10)))
-
-        ! Write it out in the results array
-        L2NormResults(6) = dintvalue
-
-        ! Release everything
-        call fev2_releaseVectorList(rcoeffVectors)
-        call spdiscr_releaseCubStructure(rcubatureInfoPressureSecond)
-        dintvalue = 0.0_DP
-
-    end if
-
-    ! Make some space on the Terminal
-    call output_line("")
-
-    !--------------------------------------!
-    ! Now we take care of the point values !
-    !--------------------------------------!
-
-    ! Read the list of points
-    ! First: find out how many points
-    npoints = parlst_querysubstrings(rproblem_1%rparamlist,"POINTVALUESETTING", &
-       "evaluationpoints")
-
-    if (npoints .ge. 0) then
-        ! Allocate everything we need
-        allocate(pointValueDifference(npoints))
-        allocate(pointvaluesFirst(npoints))
-        allocate(pointvaluesSecond(npoints))
-        allocate(Cder(npoints))
-        allocate(IType(npoints))
-        allocate(evaluationCoords(2,nPoints))
-
-        ! and now read in the data
-        do i=1,npoints
-            call parlst_getvalue_string(rproblem_1%rparamlist,"POINTVALUESETTING","evaluationpoints", sparam,"",i)
-            read (sparam,*) evaluationCoords(1,i), evaluationCoords(2,i), IType(i), Cder(i)
-        end do
-
-        ! If we want to calculate the difference we need
-        ! to calculate both values.
-        if (calcPointDifference .eq. 1) then
-            calcPointFirst = 1
-            calcPointSecond = 1
-        end if
-
-        ! We have everything, so lets go
-        if (abs(calcPointFirst - 1.0_DP) .le. 0.1_DP) then
-
-            ! Evaluate the function. This is done in another routine
-            call extComparer_evaluate_function(rx1, evaluationCoords, Cder, IType, pointvaluesFirst)
-
-            ! Print the results to the terminal
-            call output_line("The point values of the first function are")
-            call output_line("------------------------------------------")
-            do i=1,npoints
-                write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                        "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesFirst(i)
-                call output_line(trim(outputString),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-            end do
-
-            !make some space on the terminal
-            call output_line("")
-
+  real(DP), dimension(:), pointer :: p_PointResults => NULL()
+  real(DP), dimension(:,:), pointer :: p_PointCoords => NULL()
+  integer, dimension(:,:), pointer :: p_PointFuncComp => NULL()
+
+  integer :: nPointEvaluations,iDeriv
+  real(DP), dimension(:), allocatable :: DEvalPoint
+
+
+  ! We might need it as a temporary storage
+  real(DP) :: Dresult
+
+  ! To figure out if we jump somewhere or not
+  logical :: lOneFunction, lBothFunctions
+  type(t_vectorScalar), pointer :: rCalcThis, rFirst,rSecond
+
+
+  ! We also need loop-variables
+  integer :: i,k
+  character(LEN=ExtFE_STRLEN) :: sparam
+  character(LEN=ExtFE_STRLEN) :: soutput, stmp, stmp2
+
+  ! For the output we need some string
+  character(LEN=6), dimension(ExtFE_NumDerivs) :: sderivnames
+  ! We start to count the derivatives from 0, so
+  ! we need to shift by 1
+  sderivnames(ExtFE_DER_FUNC_3D+1) = '      '
+  sderivnames(ExtFE_DER_DERIV_3D_X+1) = '(d/dx)'
+  sderivnames(ExtFE_DER_DERIV_3D_Y+1) = '(d/dy)'
+  sderivnames(ExtFE_DER_DERIV_3D_Z+1) = '(d/dz)'
+
+ call output_lbrk()
+ call output_separator(OU_SEP_MINUS)
+
+  ! Find out how many L2-compuations to do
+  nL2Calculations = parlst_querysubstrings(rproblem_1%rparamlist, &
+                    "ExtFE-CALCULATIONS","L2calculations")
+
+  ! Read in what we want to calculate
+  if (nL2Calculations .gt. 0) then
+
+    call output_lbrk()
+
+    ! Allocate - it is more handy to have it like this
+    allocate(L2ChiOmega(nL2Calculations))
+    allocate(L2CubRule(nL2Calculations))
+
+    ! To store the data in the postprocessing structure
+    call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
+    call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
+    call storage_getbase_char(rpostprocessing%h_L2ChiOmega,p_L2ChiOmega)
+    call storage_getbase_char(rpostprocessing%h_L2TriFile,p_L2TriFile)
+
+    ! Now read in the data
+    do i=1,nL2Calculations
+        ! fetch the whole line
+        call parlst_getvalue_string(rproblem_1%rparamlist, &
+                        "ExtFE-CALCULATIONS", "L2calculations", &
+                        sparam,sdefault="",isubstring=i)
+        ! Now read the parameters from the string
+        read(sparam,*) p_L2Comp(1,i), p_L2Comp(2,i)
+
+        call parlst_getvalue_string(rproblem_1%rparamlist, &
+                        "ExtFE-CALCULATIONS", "L2RegionOfInterest", &
+                        sparam,sdefault="",isubstring=i)
+        read(sparam,'(A)') L2ChiOmega(i)
+        ! Copy it to the postprocessing structure for
+        ! some output. It is nasty but i have not find
+        ! any other way
+         do k=1,ExtFE_STRLEN
+            p_L2ChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
+         end do
+
+        call parlst_getvalue_string(rproblem_1%rparamlist, &
+                        "ExtFE-CALCULATIONS", "L2CubatureRule", &
+                        sparam,sdefault="",isubstring=i)
+        L2CubRule(i) = cub_igetID(sparam)
+    end do ! Read in of the data
+
+    ! That was easy - now we have all data so we can calculate
+    ! We calculate the L2-Difference between L2comp(1,i) and L2comp(2,i)
+    ! on L2ChiOmega(i) and use cubature rule L2CubRule(i)
+    ! If one of the components is set to -1, we calculate the L2-Norm of
+    ! the other one
+
+    do i=1,nL2Calculations
+
+        lOneFunction = .FALSE.
+        lBothFunctions = .FALSE.
+        stmp = ''
+        ! Find out what to calculate and set the pointers
+        ! First option: both are > 0 - so we want
+        ! to calculate the difference
+        if( (p_L2Comp(1,i) .gt. 0) .and. &
+            (p_L2comp(2,i) .gt. 0)) then
+          lOneFunction = .FALSE.
+          lBothFunctions = .TRUE.
+          rFirst => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
+          rSecond=> rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
+          write(stmp,'(A7,I2,A8,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,') - f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
+          ! For the postprocessing we store which tri-file
+          ! we actually used - the first one
+          do k=1,ExtFE_STRLEN
+            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_1%sTRIFile(k:k)
+          end do
+        ! Second option: id1 >0, id2 <=0
+        ! => calculate ||id1||
+        else if((p_L2Comp(1,i) .gt. 0) .and. &
+                (p_L2Comp(2,i) .le. 0)) then
+          lOneFunction = .TRUE.
+          lBothFunctions = .FALSE.
+          rCalcThis => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
+          write(stmp,'(A7,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,')||_L2(Omega_', i, ') = '
+          ! For the postprocessing we store which tri-file
+          ! we actually used - the first one
+          do k=1,ExtFE_STRLEN
+            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_1%sTRIFile(k:k)
+          end do
+
+        ! Third option: id1<=0, id2 >0
+        ! => calculate ||id2||
+        else if((p_L2Comp(1,i) .le. 0) .and. &
+                (p_L2Comp(2,i) .gt. 0)) then
+          lOneFunction = .TRUE.
+          lBothFunctions = .FALSE.
+          rCalcThis => rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
+          write(stmp,'(A7,I2,A13,I2,A4)') '||f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
+          ! For the postprocessing we store which tri-file
+          ! we actually used - the first one
+          do k=1,ExtFE_STRLEN
+            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_2%sTRIFile(k:k)
+          end do
         else
-            ! If we did not calculate anything, we need a 0 in the array.
-            ! This is necessary to have a know value in the array.
-            ! If we leave this empty, the write-out routine will produce unpredictable
-            ! results in the file, if we write a 0 we know what we end up with
-            do i=1,nPoints
-                pointvaluesFirst(i) = 0.0_DP
-            end do
-        end if
+            call output_line('You need always one component id that &
+                    &is greater than 0', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_L2")
+            call sys_halt()
+        end if ! Which component
 
-        if (abs(calcPointSecond - 1.0_DP) .le. 0.1_DP) then
+        ! Here we trigger the real computation
+        if((lOneFunction .eqv. .TRUE.) .AND. &
+            (lBothFunctions .eqv. .FALSE.)) then
+            ! Create the cubature information
+            call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
+                    RcubatureInformation, L2CubRule(i))
+            ! mark the function to be evaluated
+            call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
+            ! Pass the Region of interest to the collection
+            ! so we can grab it in the integral routine
+            collection%SquickAccess(1) = L2ChiOmega(i)
 
-            ! Evaluate the function. This is done in another routine.
-            call extComparer_evaluate_function(rx2, evaluationCoords, Cder, IType, pointvaluesSecond)
+            ! We need different computation
+            ! routines for each dimension due to the evaluation
+            ! of L2ChiOmega - thats the only difference.
+            ! Therefore we have to branch here again
+            select case (rproblem_1%iDimension)
+              case(ExtFE_NDIM1)
+                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2norm_onefunc_1D, &
+                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+              case(ExtFE_NDIM2)
+                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2norm_onefunc_2D, &
+                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+              case(ExtFE_NDIM3)
+                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2norm_onefunc_3D, &
+                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+              case default
+                call output_line('Dimension of your problem is &
+                      &not supported', &
+                      OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
+                call sys_halt()
+            end select
 
-            ! Print the results to the terminal
-            call output_line("The point values of the second function are")
-            call output_line("-------------------------------------------")
-            do i=1,npoints
-                write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                        "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesSecond(i)
-                call output_line(trim(outputString),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-            end do
+            ! The routine always returns the squared value, so
+            ! take the square-root and store it
+            p_L2results(i) = sqrt(Dresult)
+            ! Release everything
+            call fev2_releaseVectorList(fefunction)
+            call spdiscr_releaseCubStructure(RcubatureInformation)
+            collection%SquickAccess(1) = ''
+            Dresult = -1.0_DP
+        else if ( (lOneFunction .eqv. .FALSE.) .AND. &
+                 (lBothFunctions .eqv. .TRUE.)) then
+            ! Create a cubature information
+            call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
+                    RcubatureInformation, L2CubRule(i))
 
-            ! make some space on the terminal
-            call output_line("")
+            ! mark the function to be evaluated
+            call fev2_addVectorToEvalList(fefunction,rFirst,0)
+            ! Pass the Region of interest to the collection
+            ! so we can grab it in the integral routine
+            collection%SquickAccess(1) = L2ChiOmega(i)
 
+            ! Now the tricky part: We cannot pass the second
+            ! function directly since it lives on another mesh
+            ! so we pass it via the collection
+            ! The collection supports only block-vector as quick-access
+            call lsysbl_createVecFromScalar(rSecond,blockSecond)
+            collection%p_rvectorQuickAccess1 => blockSecond
+
+            ! We need to make it dimension specific because of
+            ! the evaluation of the second function + the evaluation
+            ! of the region of interest
+            select case (rproblem_1%iDimension)
+              case(ExtFE_NDIM1)
+                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_1D, &
+                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+              case(ExtFE_NDIM2)
+                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_2D, &
+                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+              case default
+                call output_line('Dimension of your problem is &
+                      &not supported', &
+                      OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
+                call sys_halt()
+            end select
+
+
+            ! The routine always returns the squared value, so
+            ! take the square-root and store it
+            p_L2results(i) = sqrt(Dresult)
+            ! Release everything
+            call fev2_releaseVectorList(fefunction)
+            call spdiscr_releaseCubStructure(RcubatureInformation)
+            collection%SquickAccess(1) = ''
+            Dresult = -1.0_DP
+            collection%p_rvectorQuickAccess1 => NULL()
+            call lsysbl_releaseVector(blockSecond)
+        end if ! triggering L2 calculations
+
+    ! Now generate some output on the terminal so that the user
+    ! sees something is happening and can read the result
+    ! Here, we do not write out any output in a file!
+    ! That is done in the postprocessing!
+    write(soutput,'(A1,E16.10)') ' ', p_L2results(i)
+
+    call output_line(trim(trim(stmp) // soutput))
+
+    end do ! Loop over all L2-Calculations
+
+  end if !nL2calculations > 0
+
+
+ ! Find out how many point-evaluations we
+ ! have to do
+ nPointEvaluations = parlst_querysubstrings(rproblem_1%rparamlist, &
+                    "ExtFE-CALCULATIONS","evaluationpoints")
+
+ if(nPointEvaluations .gt. 0) then
+    call output_lbrk()
+
+    ! get the arrays
+    call storage_getbase_double2D(rpostprocessing%h_PointCoordinates,p_PointCoords)
+    call storage_getbase_double(rpostprocessing%h_PointResults,p_PointResults)
+    call storage_getbase_int2D(rpostprocessing%h_PointFuncComponents,p_PointFuncComp)
+
+    ! Allocate the evaluationpoint
+    allocate(DEvalPoint(rproblem_1%iDimension))
+
+    ! First step: read in where we want to evaluate
+    do i=1,nPointEvaluations
+        ! fetch the whole line
+        call parlst_getvalue_string(rproblem_1%rparamlist, &
+                        "ExtFE-CALCULATIONS", "evaluationpoints", &
+                        sparam,sdefault="",isubstring=i)
+        !and read it in. Which function comp and deriv?
+        select case(rproblem_1%iDimension)
+
+          case(ExtFE_NDIM1)
+            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
+                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
+                           p_PointCoords(1,i)
+          case(ExtFE_NDIM2)
+            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
+                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
+                           p_PointCoords(1,i)  , p_PointCoords(2,i)
+          case(ExtFE_NDIM3)
+            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
+                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
+                           p_PointCoords(1,i)  , p_PointCoords(2,i), &
+                           p_PointCoords(3,i)
+          case default
+            call output_line('Dimension not implemented', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
+            call sys_halt()
+        end select
+
+
+    end do ! Read in the Data
+
+    ! Now prepare and then trigger the
+    ! evaluations
+    do i=1,nPointEvaluations
+        lOneFunction = .false.
+        lBothFunctions = .false.
+
+        if( (p_PointFuncComp(1,i) .gt. 0) .and. &
+            (p_PointFuncComp(3,i) .gt. 0)) then
+          lOneFunction = .FALSE.
+          lBothFunctions = .TRUE.
+          rFirst => rproblem_1%coeffVector%RvectorBlock(p_PointFuncComp(1,i))
+          rSecond=> rproblem_2%coeffVector%RvectorBlock(p_PointFuncComp(3,i))
+          write(stmp,'(A3,I2,A3)') 'f1_', p_PointFuncComp(1,i), ' - '
+          write(stmp2,'(A3,I2)') 'f2_', p_PointFuncComp(3,i)
+          stmp = trim(sderivnames(p_PointFuncComp(2,i)+1)) // trim(stmp)
+          stmp = '(' // trim(stmp)
+          stmp2 = trim(sderivnames(p_PointFuncComp(4,i)+1)) // trim(stmp2)
+          stmp2 = trim(stmp2) // ')'
+          stmp = trim(stmp) // trim(stmp2)
+
+        else if((p_PointFuncComp(1,i) .gt. 0) .and. &
+                (p_PointFuncComp(3,i) .le. 0)) then
+          lOneFunction = .TRUE.
+          lBothFunctions = .FALSE.
+          rCalcThis => rproblem_1%coeffVector%RvectorBlock(p_PointFuncComp(1,i))
+          iDeriv = p_PointFuncComp(2,i)
+          write(stmp,'(A3,I2)') 'f1_', p_PointFuncComp(1,i)
+          stmp = (sderivnames(p_PointFuncComp(2,i)+1)) // trim(stmp)
+          stmp = '(' // trim(stmp)
+          stmp = trim(stmp) // ')'
+        else if((p_PointFuncComp(1,i) .le. 0) .and. &
+                (p_PointFuncComp(3,i) .gt. 0)) then
+          lOneFunction = .TRUE.
+          lBothFunctions = .FALSE.
+          rCalcThis => rproblem_2%coeffVector%RvectorBlock(p_PointFuncComp(3,i))
+          iDeriv = p_PointFuncComp(4,i)
+          write(stmp,'(A3,I2)') 'f2_', p_PointFuncComp(3,i)
+          stmp = (sderivnames(p_PointFuncComp(4,i)+1)) // trim(stmp)
+          stmp = '(' // trim(stmp)
+          stmp = trim(stmp) // ')'
         else
-            ! If we did not calculate anything, we need a 0 in the array.
-            ! This is necessary to have a know value in the array.
-            ! If we leave this empty, the write-out routine will produce unpredictable
-            ! results in the file, if we write a 0 we know what we end up with
-            do i=1,nPoints
-                pointvaluesSecond(i) = 0.0_DP
-            end do
-        end if
+            call output_line('You need always one component id that &
+                    &is greater than 0', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_pointvalues")
+            call sys_halt()
+        end if ! Which component
 
-        ! and calc the difference
-        if ( abs(calcPointDifference - 1.0_DP) .le. 0.1_DP ) then
+    ! Now we can do the calculations
+    ! Put the point in the right shape
+    do k=1,rproblem_1%iDimension
+        DEvalPoint(k) = p_PointCoords(k,i)
+    end do
 
-            ! We have everything what we need - we just need to calculate the difference
-            do i=1,nPoints
-                pointValueDifference(i) = abs(pointvaluesFirst(i) - pointvaluesSecond(i))
-            end do
+    if((lOneFunction .eqv. .true.) .AND. &
+        (lBothFunctions .eqv. .false.)) then
+        call ExtFEcompare_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
+        p_PointResults(i) = Dresult
 
-            ! and print it out to the terminal
-            call output_line("The absolute of the difference in the point values is")
-            call output_line("-----------------------------------------------------")
-            do i=1,npoints
-                write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                        "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointValueDifference(i)
-                call output_line(trim(outputString),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-            end do
+    else if((lOneFunction .eqv. .false.) .AND. &
+            (lBothFunctions .eqv. .true.)) then
+        iDeriv = p_PointFuncComp(2,i)
+        call ExtFEcompare_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
+        p_PointResults(i) = Dresult
+        iDeriv = p_PointFuncComp(4,i)
+        call ExtFEcompare_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
+        p_PointResults(i) = p_PointResults(i) - Dresult
 
-            ! make some space on the terminal
-            call output_line("")
-
-        else
-            do i=1,nPoints
-                pointValueDifference(i) = 0.0_DP
-            end do
-        end if
-
-    end if !npoints
-
-    !##################################################
-    !# Postprocessing: write the results out in a file#
-    !##################################################
-
-    ! Write out the L2-Norm
-    if( abs(writeOutL2Norm - 1.0_DP) .le. 0.1_DP ) then
-        call vecio_writeArray(L2NormResults,0,outFileNameL2Norm,'(E20.10)')
     end if
 
-    ! Write out point values
-
-    if (npoints .ge. 0) then
-
-        if (abs(writeOutPointValues - 1.0_DP) .le. 0.1_DP) then
-            ! Write it out
-           call io_openFileForWriting(outFileNamePointValues, iunit, &
-           SYS_REPLACE, bfileExists,.true.)
-           ! Write a Headline
-           write (iunit,"(A)") "The point values of the first function are:"
-           do i=1,nPoints
-            write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                 "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesFirst(i)
-            write(iunit,*) outputString
-           end do
-
-           write(iunit,*) ""
-           write (iunit,"(A)") "The point values of the second function are:"
-           do i=1,nPoints
-            write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                 "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointvaluesSecond(i)
-            write(iunit,*) outputString
-           end do
-
-           write(iunit,*) ""
-           write (iunit,"(A)") "The absolute of the difference of the point values is"
-           do i=1,nPoints
-            write (outputString,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+CDer(i),IType(i)),&
-                 "(",evaluationCoords(1,i),",",evaluationCoords(2,i),") = ",pointValueDifference(i)
-            write(iunit,*) outputString
-           end do
-
-          close(iunit)
-
-        end if
-
-        ! Point values written out, clean up
-        deallocate(pointValueDifference)
-        deallocate(pointvaluesFirst)
-        deallocate(pointvaluesSecond)
-        deallocate(Cder)
-        deallocate(IType)
-        deallocate(evaluationCoords)
-    end if
-
-  end subroutine
-
-
-
-subroutine calc_L2error_velocity_2D_common(Dintvalue,rassemblyData,rintAssembly,&
-      npointsPerElement,nelements,revalVectors,rcollection)
-    !<input>
-    ! Data necessary for the assembly. Contains determinants and
-    ! cubature weights for the cubature,...
-    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
-
-    ! Structure with all data about the assembly
-    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
-
-    ! Number of points per element
-    integer, intent(in) :: npointsPerElement
-
-    ! Number of elements
-    integer, intent(in) :: nelements
-
-    ! Values of FEM functions automatically evaluated in the
-    ! cubature points.
-    type(t_fev2Vectors), intent(in) :: revalVectors
-
-    ! User defined collection structure
-    type(t_collection), intent(inout), target, optional :: rcollection
-  !</input>
-
-!<output>
-    ! Returns the value of the integral(s)
-    real(DP), dimension(:), intent(out) :: Dintvalue
-!</output>
-
-    ! Local variables
-    real(DP) :: dx,dy,dval1,dval2, work
-    real(DP), dimension(1) :: dval_u21, dval_u22
-    real(DP), dimension(2,1) :: evaluationPoint
-
-    integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc11, p_Dfunc12
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    type(t_vectorBlock), pointer :: p_rx
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to read in the values
-    type(t_fparser) :: rparser
-    ! storage for the parser
-    character(LEN=SYS_STRLEN) :: domainDescription
-    ! And we need the parameter list
-    type(t_parlist) :: rparamlist
-
-
-    ! Read out the area description in the string
-    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1, 'DOMAININFO','common',domainDescription)
-
-    call fparser_create(rparser,1)
-    call fparser_parseFunction(rparser,1,domainDescription,(/'x','y'/))
-
-    ! Now we can evaluate the area description with the parser-tools
-
-    ! Get cubature weights
-    p_DcubWeight => rassemblyData%p_DcubWeight
-
-    ! Element numbers of the elements in process
-    p_Ielements => rassemblyData%p_IelementList
-
-    ! Get the coordinates of the cubature points
-    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-
-    ! Get a pointer to the values we already have
-    p_Dfunc11 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC)
-    p_Dfunc12 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_FUNC)
-
-    ! and a pointer to the second function
-    p_rx => rcollection%p_rvectorQuickAccess1
-
-    ! We should have everything prepared, so let us start
-    ! Initial value of the integral
-    Dintvalue(1) = 0.0_DP
-
-    ! Loop over all elements
-    do iel = 1,nelements
-
-        ! Loop over all cubature points
-        do icubp = 1,npointsPerElement
-
-          ! Get the coordinates of the cubature point
-          dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(2,icubp,iel)
-
-          ! Now we check if we need to work or not
-          ! If we need to work, the domainDescription
-          ! will return a 1, if not it will return a 0
-
-           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
-
-           ! Check if we need to work.
-           ! If "work" is 1, we need to work. Since "work"
-           ! can only be 0 or 1, this should run. However, you could
-           ! hack this by defining functions that do not return 0 or 1
-           ! as a function value, but. i.e. 0.5.
-           if (abs(work - 1.0_DP) .le. 0.01_DP) then
-                ! We need to work
-                evaluationPoint(1,1) = dx
-                evaluationPoint(2,1) = dy
-
-                ! Evaluate the functions and store results in dval_u21 and dval_u22
-                ! This will throw out an error if the domain-description is bad,
-                ! to be precise if the domain description would force us to evaluate u2
-                ! at non-mesh points!
-                call fevl_evaluate(DER_FUNC, dval_u21, p_rx%RvectorBlock(1), evaluationPoint)
-                call fevl_evaluate(DER_FUNC, dval_u22, p_rx%RvectorBlock(2), evaluationPoint)
-
-                ! We did all evaluation
-                dval1 = (p_Dfunc11(icubp,iel) - dval_u21(1) )**2
-                dval2 = (p_Dfunc12(icubp,iel) - dval_u22(1) )**2
-
-                Dintvalue(1) = Dintvalue(1) + (dval1 + dval2)*p_DcubWeight(icubp,iel)
-
-          end if
-
-
-        end do ! icubp
-
-    end do ! iel
-
-
-end subroutine
-
-subroutine calc_L2norm_velocity_2D(Dintvalue,rassemblyData,rintAssembly,&
-      npointsPerElement,nelements,revalVectors,rcollection)
-    !<input>
-    ! Data necessary for the assembly. Contains determinants and
-    ! cubature weights for the cubature,...
-    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
-
-    ! Structure with all data about the assembly
-    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
-
-    ! Number of points per element
-    integer, intent(in) :: npointsPerElement
-
-    ! Number of elements
-    integer, intent(in) :: nelements
-
-    ! Values of FEM functions automatically evaluated in the
-    ! cubature points.
-    type(t_fev2Vectors), intent(in) :: revalVectors
-
-    ! User defined collection structure
-    type(t_collection), intent(inout), target, optional :: rcollection
-  !</input>
-
-!<output>
-    ! Returns the value of the integral(s)
-    real(DP), dimension(:), intent(out) :: Dintvalue
-!</output>
-
-    ! Local variables
-    real(DP) :: dx,dy,dval1,dval2, work
-
-
-    integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1, p_Dfunc2
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to read in the values
-    type(t_fparser) :: rparser
-    ! storage for the parser
-    character(LEN=SYS_STRLEN) :: domainDescription
-    ! And we need the parameter list
-    type(t_parlist) :: rparamlist
-
-
-    ! Read out the area description in the string
-    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1, 'DOMAININFO', &
-            rcollection%SquickAccess(1), domainDescription)
-
-    call fparser_create(rparser,1)
-    call fparser_parseFunction(rparser,1,domainDescription,(/'x','y'/))
-
-    ! Now we can evaluate the area description with the parser-tools
-
-    ! Get cubature weights
-    p_DcubWeight => rassemblyData%p_DcubWeight
-
-    ! Element numbers of the elements in process
-    p_Ielements => rassemblyData%p_IelementList
-
-    ! Get the coordinates of the cubature points
-    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-
-    ! Get a pointer to the values
-    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC)
-    p_Dfunc2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_FUNC)
-
-    ! We should have everything prepared, so let us start
-    ! Initial value of the integral
-    Dintvalue(1) = 0.0_DP
-
-    ! Loop over all elements
-    do iel = 1,nelements
-
-        ! Loop over all cubature points
-        do icubp = 1,npointsPerElement
-
-          ! Get the coordinates of the cubature point
-          dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(2,icubp,iel)
-
-          ! Now we check if we need to work or not
-          ! If we need to work, the domainDescription
-          ! will return a 1, if not it will return a 0
-
-           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
-
-           ! Check if we need to work.
-           ! If "work" is 1, we need to work. Since "work"
-           ! can only be 0 or 1, this should run. However, you could
-           ! hack this by defining functions that do not return 0 or 1
-           ! as a function value, but. i.e. 0.5.
-           if (abs(work - 1.0_DP) .le. 0.01_DP) then
-                ! We need to work
-                dval1 = p_Dfunc1(icubp,iel)**2
-                dval2 = p_Dfunc2(icubp,iel)**2
-                Dintvalue(1) = Dintvalue(1) + (dval1 + dval2)*p_DcubWeight(icubp,iel)
-          end if
-
-
-        end do ! icubp
-
-    end do ! iel
-
+    stmp = trim(stmp) // '('
+    write(stmp2,'(F8.4)') p_PointCoords(1,i)
+    stmp = trim(stmp) // trim(stmp2)
+    do k=2,rproblem_1%iDimension
+        write(stmp2,'(A1,F8.4)') ',', p_PointCoords(k,i)
+        stmp = trim(stmp) // trim(stmp2)
+        stmp = stmp // ' '
+    end do
+    stmp = trim(stmp) // ' ) '
+    write(stmp2,'(F8.5)') p_PointResults(i)
+    soutput = trim(stmp) // ' = ' // trim(stmp2)
+    call output_line(soutput)
+    end do ! all point calculations
+
+    ! clean up
+    deallocate(DEvalPoint)
+
+ end if !nPointEvaluations > 0
 
 end subroutine
 
 
-subroutine calc_L2error_pressure_2D_common(Dintvalue,rassemblyData,rintAssembly,&
+! Here, the real working routines follow:
+
+! Calculates the L2-Norm of a 1D function
+! on a Domain specified in the *.dat-files
+subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
     !<input>
     ! Data necessary for the assembly. Contains determinants and
@@ -856,130 +501,7 @@ subroutine calc_L2error_pressure_2D_common(Dintvalue,rassemblyData,rintAssembly,
 !</output>
 
     ! Local variables
-    real(DP) :: dx,dy,dval1,dval2, work
-    real(DP), dimension(1) :: dval_p21
-    real(DP), dimension(2,1) :: evaluationPoint
-
-    integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc11
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    type(t_vectorBlock), pointer :: p_rx
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to read in the values
-    type(t_fparser) :: rparser
-    ! storage for the parser
-    character(LEN=SYS_STRLEN) :: domainDescription
-    ! And we need the parameter list
-    type(t_parlist) :: rparamlist
-
-
-    ! Read out the area description in the string
-    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1, 'DOMAININFO','common',domainDescription)
-
-    call fparser_create(rparser,1)
-    call fparser_parseFunction(rparser,1,domainDescription,(/'x','y'/))
-
-    ! Now we can evaluate the area description with the parser-tools
-
-    ! Get cubature weights
-    p_DcubWeight => rassemblyData%p_DcubWeight
-
-    ! Element numbers of the elements in process
-    p_Ielements => rassemblyData%p_IelementList
-
-    ! Get the coordinates of the cubature points
-    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-
-    ! Get a pointer to the values we already have
-    p_Dfunc11 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC)
-
-    ! and a pointer to the second function
-    p_rx => rcollection%p_rvectorQuickAccess1
-
-    ! We should have everything prepared, so let us start
-    ! Initial value of the integral
-    Dintvalue(1) = 0.0_DP
-
-    ! Loop over all elements
-    do iel = 1,nelements
-
-        ! Loop over all cubature points
-        do icubp = 1,npointsPerElement
-
-          ! Get the coordinates of the cubature point
-          dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(2,icubp,iel)
-
-          ! Now we check if we need to work or not
-          ! If we need to work, the domainDescription
-          ! will return a 1, if not it will return a 0
-
-           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
-
-           ! Check if we need to work.
-           ! If "work" is 1, we need to work. Since "work"
-           ! can only be 0 or 1, this should run. However, you could
-           ! hack this by defining functions that do not return 0 or 1
-           ! as a function value, but. i.e. 0.5.
-           if (abs(work - 1.0_DP) .le. 0.01_DP) then
-                ! We need to work
-                evaluationPoint(1,1) = dx
-                evaluationPoint(2,1) = dy
-
-                ! Evaluate the functions and store results in dval_u21 and dval_u22
-                ! This will throw out an error if the domain-description is bad,
-                ! to be precise if the domain description would force us to evaluate u2
-                ! at non-mesh points!
-                call fevl_evaluate(DER_FUNC, dval_p21, p_rx%RvectorBlock(3), evaluationPoint)
-
-                ! We did all evaluation
-                dval1 = (p_Dfunc11(icubp,iel) - dval_p21(1) )**2
-
-                Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
-
-          end if
-
-
-        end do ! icubp
-
-    end do ! iel
-
-
-end subroutine
-
-subroutine calc_L2norm_pressure_2D(Dintvalue,rassemblyData,rintAssembly,&
-      npointsPerElement,nelements,revalVectors,rcollection)
-    !<input>
-    ! Data necessary for the assembly. Contains determinants and
-    ! cubature weights for the cubature,...
-    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
-
-    ! Structure with all data about the assembly
-    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
-
-    ! Number of points per element
-    integer, intent(in) :: npointsPerElement
-
-    ! Number of elements
-    integer, intent(in) :: nelements
-
-    ! Values of FEM functions automatically evaluated in the
-    ! cubature points.
-    type(t_fev2Vectors), intent(in) :: revalVectors
-
-    ! User defined collection structure
-    type(t_collection), intent(inout), target, optional :: rcollection
-  !</input>
-
-!<output>
-    ! Returns the value of the integral(s)
-    real(DP), dimension(:), intent(out) :: Dintvalue
-!</output>
-
-    ! Local variables
-    real(DP) :: dx,dy,dval1,dval2, work
+    real(DP) :: dx,dval1, work
 
 
     integer :: iel, icubp
@@ -988,20 +510,254 @@ subroutine calc_L2norm_pressure_2D(Dintvalue,rassemblyData,rintAssembly,&
     real(DP), dimension(:,:,:), pointer :: p_Dpoints
     integer, dimension(:), pointer :: p_Ielements
 
-    ! We need a parser to read in the values
+    ! We need a parser to evaluate the region of interest
     type(t_fparser) :: rparser
-    ! storage for the parser
-    character(LEN=SYS_STRLEN) :: domainDescription
-    ! And we need the parameter list
-    type(t_parlist) :: rparamlist
-
-
-    ! Read out the area description in the string
-    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1, 'DOMAININFO', &
-            rcollection%SquickAccess(1), domainDescription)
-
     call fparser_create(rparser,1)
-    call fparser_parseFunction(rparser,1,domainDescription,(/'x','y'/))
+
+    ! grab the region of interest from the collection
+    ! and parse it in the parser
+    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x'/))
+
+    ! Now we can evaluate the area description with the parser-tools
+
+    ! Get cubature weights
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Element numbers of the elements in process
+    p_Ielements => rassemblyData%p_IelementList
+
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get a pointer to the values
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC)
+
+    ! We should have everything prepared, so let us start
+    ! Initial value of the integral
+    Dintvalue(1) = 0.0_DP
+
+    ! Loop over all elements
+    do iel = 1,nelements
+
+        ! Loop over all cubature points
+        do icubp = 1,npointsPerElement
+
+          ! Get the coordinates of the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+
+          ! Now we check if we need to work or not
+          ! If we need to work, the domainDescription
+          ! will return a 1, if not it will return a 0
+
+           call fparser_evalFunction(rparser,1,(/dx/),work)
+
+           ! Check if we need to work.
+           ! If "work" is 1, we need to work. Since "work"
+           ! can only be 0 or 1, this should run. However, you could
+           ! hack this by defining functions that do not return 0 or 1
+           ! as a function value, but. i.e. 0.5.
+           if (abs(work - 1.0_DP) .le. 0.01_DP) then
+                ! We need to work
+                dval1 = p_Dfunc1(icubp,iel)**2
+                Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
+          end if
+
+
+        end do ! icubp
+
+    end do ! iel
+
+
+    ! Release the parser
+    call fparser_release(rparser)
+
+end subroutine
+
+
+! Calculates the L2-distance of 2 1D functions
+! on a Domain specified in the *.dat-files
+
+subroutine calc_L2error_twofunc_1D(Dintvalue,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+    !<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalue
+!</output>
+
+    ! Local variables
+    real(DP) :: dx,dval1, work
+
+
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc1
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    integer, dimension(:), pointer :: p_Ielements
+
+    type(t_vectorScalar), pointer :: secondFunction
+    real(DP), dimension(ExtFE_NDIM1,1) :: evaluationPoint
+    real(DP), dimension(1) :: dFuncValue
+    integer :: ielEval
+    integer, dimension(1) :: iElement
+    real(DP) , dimension (1) :: dpoint
+
+    ! We need a parser evaluate the region of interest
+    type(t_fparser) :: rparser
+    call fparser_create(rparser,1)
+
+    ! grab the region of interest from the collection
+    ! and parse it in the parser
+    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x'/))
+
+    ! Now we can evaluate the area description with the parser-tools
+
+    ! Get cubature weights
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Element numbers of the elements in process
+    p_Ielements => rassemblyData%p_IelementList
+
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get a pointer to the values
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC1D)
+
+    ! Get the second function
+    secondFunction => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
+
+    ! We should have everything prepared, so let us start
+    ! Initial value of the integral
+    Dintvalue(1) = 0.0_DP
+
+    ! Loop over all elements
+    do iel = 1,nelements
+
+        ! Loop over all cubature points
+        do icubp = 1,npointsPerElement
+
+          ! Get the coordinates of the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+
+          ! Now we check if we need to work or not
+          ! If we need to work, the domainDescription
+          ! will return a 1, if not it will return a 0
+
+           call fparser_evalFunction(rparser,1,(/dx/),work)
+
+           ! Check if we need to work.
+           ! If "work" is 1, we need to work. Since "work"
+           ! can only be 0 or 1, this should run. However, you could
+           ! hack this by defining functions that do not return 0 or 1
+           ! as a function value, but. i.e. 0.5.
+           if (abs(work - 1.0_DP) .le. 0.01_DP) then
+                ! We need to work
+                ! This one is getting really ugly
+                ! Make the evaluation point as an array
+                evaluationPoint(1,1) = dx
+                ! Find the element nr.
+                ! Usually the evaluation routines do this on their
+                ! own - but they support only 2D-search algorithms
+                ! So we search the element nr. on our own - because
+                ! if we support the element nr. by ourselves, the
+                ! evaluation routine does not branch into the searching part
+                ! Therefore we need some preparation
+                dpoint(1) = dx
+                call tsrch_getElem_BruteForce(dpoint,&
+                    secondFunction%p_rspatialDiscr%p_rtriangulation,ielEval)
+                iElement(1) = ielEval
+
+                ! Now we have the element number so we can call the
+                ! evaluation routine
+                call fevl_evaluate(DER_FUNC1D,dFuncValue,secondFunction, &
+                    evaluationPoint,Ielements=iElement)
+                dval1 = (p_Dfunc1(icubp,iel) - dFuncValue(1))**2
+                Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
+          end if
+
+
+        end do ! icubp
+
+    end do ! iel
+
+
+    ! Release the parser
+    call fparser_release(rparser)
+
+end subroutine
+
+
+! Calculates the L2-Norm of a 2D function
+! on a Domain specified in the *.dat-files
+
+subroutine calc_L2norm_onefunc_2D(Dintvalue,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+    !<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalue
+!</output>
+
+    ! Local variables
+    real(DP) :: dx,dy,dval1, work
+
+
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc1
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    integer, dimension(:), pointer :: p_Ielements
+
+    ! We need a parser to evaluate the region of interest
+    type(t_fparser) :: rparser
+    call fparser_create(rparser,1)
+
+    ! grab the region of interest from the collection
+    ! and parse it in the parser
+    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y'/))
 
     ! Now we can evaluate the area description with the parser-tools
 
@@ -1054,68 +810,361 @@ subroutine calc_L2norm_pressure_2D(Dintvalue,rassemblyData,rintAssembly,&
     end do ! iel
 
 
-end subroutine
-
-subroutine extComparer_evaluate_function(fefunction,Dpoints,Cder,IType,Dvalues )
-        ! This is just a wrapper for the evaluation tools provided in the kernel.
-        ! We need special settings for them, and it is more handy to do this
-        ! with a wrapper like this.
-        !<input>
-        ! The function we want to evaluate
-        type(t_vectorBlock), intent(in) :: fefunction
-
-        ! List of points where we want to evaluate the function
-        ! Dimension: (2,Number of Points)
-        real(DP), dimension(:,:), intent(in) :: Dpoints
-
-        ! For each point we specify if we want to evaluate
-        ! the function or a derivative
-        ! Size: Number of points
-        integer, dimension(:), intent(in) :: Cder
-        integer :: iderType
-
-        ! We need to specify if we want to evaluate
-        ! u or v or p
-        integer, dimension(:), intent(in) :: IType
-
-        !</input>
-
-        !<output>
-        ! The according function values
-        real(DP), dimension(:), intent(out) :: Dvalues
-        !</output>
-
-        ! Local variables
-        integer :: npoints
-        integer :: i
-
-        ! We somehow need the number of points
-        npoints = ubound(Dpoints,2)
-
-        ! Now we find out which derivative we want to evaluate
-        do i=1,npoints
-            select case (Cder(i))
-                case (0)
-                    iderType = DER_FUNC2D
-                case (1)
-                    iderType = DER_DERIV2D_X
-                case (2)
-                    iderType = DER_DERIV2D_Y
-                case default
-                    call output_line (&
-                        "Unknown function derivative = "//sys_siL(Cder(i),10), &
-                        OU_CLASS_ERROR,OU_MODE_STD,"extComparer_evaluate_function")
-                        call sys_halt()
-            end select
-
-            ! And now we evaluate the function.
-            ! since we evaluate both functions at the same points, it might happen that
-            ! this leads the the case that we need a function value at a point where the
-            ! function has no value or the code will crash. Therefore we assume 0 in that case.
-            call fevl_evaluate(iderType,Dvalues(i:i),fefunction%RvectorBlock(IType(i)), &
-                Dpoints(:,i:i), cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
-        end do
+    ! Release the parser
+    call fparser_release(rparser)
 
 end subroutine
+
+
+! Calculates the L2-Distance between 2 2D functions
+! on a Domain specified in the *.dat-files
+
+subroutine calc_L2error_twofunc_2D(Dintvalue,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+    !<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalue
+!</output>
+
+    ! Local variables
+    real(DP) :: dx,dy,dval1, work
+
+
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc1
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    integer, dimension(:), pointer :: p_Ielements
+
+    type(t_vectorScalar), pointer :: secondFunction
+    real(DP), dimension(1) :: dfuncValue
+    real(DP), dimension(ExtFE_NDIM2,1) :: evaluationPoint
+
+    ! We need a parser to evaluate the region of interest
+    type(t_fparser) :: rparser
+    call fparser_create(rparser,1)
+
+    ! grab the region of interest from the collection
+    ! and parse it in the parser
+    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y'/))
+
+    ! Now we can evaluate the area description with the parser-tools
+
+    ! Get cubature weights
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Element numbers of the elements in process
+    p_Ielements => rassemblyData%p_IelementList
+
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get a pointer to the values
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+    ! Get the second function
+    secondFunction => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
+
+    ! We should have everything prepared, so let us start
+    ! Initial value of the integral
+    Dintvalue(1) = 0.0_DP
+
+    ! Loop over all elements
+    do iel = 1,nelements
+
+        ! Loop over all cubature points
+        do icubp = 1,npointsPerElement
+
+          ! Get the coordinates of the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+
+          ! Now we check if we need to work or not
+          ! If we need to work, the domainDescription
+          ! will return a 1, if not it will return a 0
+
+           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
+
+           ! Check if we need to work.
+           ! If "work" is 1, we need to work. Since "work"
+           ! can only be 0 or 1, this should run. However, you could
+           ! hack this by defining functions that do not return 0 or 1
+           ! as a function value, but. i.e. 0.5.
+           if (abs(work - 1.0_DP) .le. 0.01_DP) then
+                ! We need to work
+                ! Evaluate the second function
+                evaluationPoint(1,1) = dx
+                evaluationPoint(2,1) = dy
+                call fevl_evaluate(DER_FUNC2D,dFuncValue,secondFunction, &
+                    evaluationPoint)
+                dval1 = (p_Dfunc1(icubp,iel) -  dfuncValue(1))**2
+                Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
+          end if
+
+
+        end do ! icubp
+
+    end do ! iel
+
+
+    ! Release the parser
+    call fparser_release(rparser)
+
+end subroutine
+
+
+! Calculates the L2-Norm of a 3D function
+! on a Domain specified in the *.dat-files
+
+subroutine calc_L2norm_onefunc_3D(Dintvalue,rassemblyData,rintAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+    !<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+
+!<output>
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalue
+!</output>
+
+    ! Local variables
+    real(DP) :: dx,dy,dz,dval1, work
+
+
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc1
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    integer, dimension(:), pointer :: p_Ielements
+
+    ! We need a parser to evaluate the region of interest
+    type(t_fparser) :: rparser
+    call fparser_create(rparser,1)
+    ! grab the region of interest from the collection
+    ! and parse it in the parser
+    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y','z'/))
+
+    ! Now we can evaluate the area description with the parser-tools
+
+    ! Get cubature weights
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Element numbers of the elements in process
+    p_Ielements => rassemblyData%p_IelementList
+
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get a pointer to the values
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC)
+
+    ! We should have everything prepared, so let us start
+    ! Initial value of the integral
+    Dintvalue(1) = 0.0_DP
+
+    ! Loop over all elements
+    do iel = 1,nelements
+
+        ! Loop over all cubature points
+        do icubp = 1,npointsPerElement
+
+          ! Get the coordinates of the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          dz = p_Dpoints(3,icubp,iel)
+
+          ! Now we check if we need to work or not
+          ! If we need to work, the domainDescription
+          ! will return a 1, if not it will return a 0
+
+           call fparser_evalFunction(rparser,1,(/dx,dy,dz/),work)
+
+           ! Check if we need to work.
+           ! If "work" is 1, we need to work. Since "work"
+           ! can only be 0 or 1, this should run. However, you could
+           ! hack this by defining functions that do not return 0 or 1
+           ! as a function value, but. i.e. 0.5.
+           if (abs(work - 1.0_DP) .le. 0.01_DP) then
+                ! We need to work
+                dval1 = p_Dfunc1(icubp,iel)**2
+                Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
+          end if
+
+
+        end do ! icubp
+
+    end do ! iel
+
+
+    ! Release the parser
+    call fparser_release(rparser)
+
+end subroutine
+
+
+
+! This function is just a wrapper for the functions provided
+! by the kernel. We need to branch for dimension etc,so it is
+! easier to do it like this
+
+subroutine ExtFEcompare_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
+    !<intput>
+    ! The function that we want to evaluate
+    type(t_vectorScalar), intent(in) :: fefunction
+    ! The point where we want to evaluate
+    real(DP), dimension(:), intent(in)  :: Dpoint
+    ! Which derivative
+    integer, intent(in)  :: CDeriv_ExtFE
+    !</input>
+
+    !<output>
+    real(DP), intent(out) :: Dvalue
+    !</output>
+
+
+    ! local variables
+    ! We have to convert the coordinates
+    real(DP), dimension(:,:),allocatable :: evalPoint
+    integer, dimension(1) :: evalElement
+    integer :: nDim, iElement
+    integer :: CDeriv
+    real(DP), dimension(1) :: locValue
+    nDim = fefunction%p_rspatialDiscr%ndimension
+
+    ! We have to do several branches here:
+    ! We need to find out the element number
+    ! and set if we want to evaluate the function
+    ! or derivative
+    iElement = 0
+
+    select case (nDim)
+
+      ! 1D
+      case(ExtFE_NDIM1)
+        ! We have to find out the element Nr.
+        call tsrch_getElem_BruteForce(Dpoint, &
+           fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+        select case(CDeriv_ExtFE)
+            case(ExtFE_DER_FUNC_1D)
+                CDeriv = DER_FUNC1D
+            case(ExtFE_DER_DERIV_1D_X)
+                CDeriv = DER_DERIV1D_X
+            case default
+                 call output_line('Derivative not supported', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_eval_function")
+                    call sys_halt()
+        end select
+        allocate(evalPoint(ExtFE_NDIM1,1))
+        evalPoint(1,1) = Dpoint(1)
+
+      case(ExtFE_NDIM2)
+        call tsrch_getElem_raytrace2D(Dpoint, &
+            fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+        ! if we did not find it, go to bruteforce
+        if (iElement .eq. 0) then
+            call tsrch_getElem_BruteForce(Dpoint, &
+                fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+        end if
+
+        select case(CDeriv_ExtFE)
+            case(ExtFE_DER_FUNC_2D)
+                CDeriv = DER_FUNC2D
+            case(ExtFE_DER_DERIV_2D_X)
+                CDeriv = DER_DERIV2D_X
+            case(ExtFE_DER_DERIV_2D_Y)
+                CDeriv = DER_DERIV2D_Y
+            case default
+                 call output_line('Derivative not supported', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_eval_function")
+                    call sys_halt()
+        end select
+
+        allocate(evalPoint(ExtFE_NDIM2,1))
+        evalPoint(1,1) = Dpoint(1)
+        evalPoint(2,1) = Dpoint(2)
+
+        case(ExtFE_NDIM3)
+          call tsrch_getElem_raytrace3D(Dpoint, &
+                fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+          if (iElement .eq. 0 ) then
+              call tsrch_getElem_BruteForce(Dpoint, &
+                  fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+          end if
+
+        select case(CDeriv_ExtFE)
+            case(ExtFE_DER_FUNC_3D)
+                CDeriv = DER_FUNC3D
+            case(ExtFE_DER_DERIV_3D_X)
+                CDeriv = DER_DERIV3D_X
+            case(ExtFE_DER_DERIV_3D_Y)
+                CDeriv = DER_DERIV3D_Y
+            case(ExtFE_DER_DERIV_3D_Z)
+                CDeriv = DER_DERIV3D_Z
+            case default
+                 call output_line('Derivative not supported', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_eval_function")
+                    call sys_halt()
+        end select
+
+        allocate(evalPoint(ExtFE_NDIM3,1))
+        evalPoint(1,1) = Dpoint(1)
+        evalPoint(2,1) = Dpoint(2)
+        evalPoint(3,1) = Dpoint(3)
+
+    end select
+
+    ! Okay, we have all we need: The global constants
+    ! and the element number. So now we can call the real evaluation
+    ! routine provided by the kernel
+    evalElement(1) = iElement
+    call fevl_evaluate(CDeriv,locValue,fefunction,evalPoint,Ielements=evalElement)
+
+    ! Set the output
+    Dvalue = locValue(1)
+
+    ! Clean up
+    deallocate(evalPoint)
+
+end subroutine
+
 
 end module

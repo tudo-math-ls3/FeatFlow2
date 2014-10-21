@@ -35,7 +35,7 @@ program ExtFEcomparer
   implicit none
 
   ! For the logfiles
-  character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sbenchlogfile
+  character(LEN=ExtFE_STRLEN) :: slogfile,serrorfile,sbenchlogfile
 
   ! The very first thing in every application:
   ! Initialise system-wide settings:
@@ -54,7 +54,7 @@ program ExtFEcomparer
   call output_init (slogfile,serrorfile,sbenchlogfile)
 
   ! Initialise the storage management:
-  call storage_init(999, 100)
+  call storage_init(150, 50)
 
   ! Initialise the parser
   call fparser_init ()

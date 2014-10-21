@@ -1,10 +1,21 @@
 # -----------------------------------------------------------#
-# In this file we specify the functions and the
-# quadrature rule that we want to use for it
-
-# This applies to section "FIRST" and "SECOND"
+# In this file we specify what kind of vector 
+# we have and which discretisation was used etc.
 #
-# ielementType:  Type of element pair that was used for the discretisation:
+# This applies to section "ExtFE-FIRST" and "ExtFE-SECOND"
+#
+#
+# iElementSetting:  
+#    if we have only 1 element for the whole discretisation and *all* variables: 1
+#    if it is an element pair (i.e. 1 for the speed and one for the pressure): 2
+#
+# ElementName: Name of the Element, see the Featflow kernel which names are supported
+#          only neccesary if iElementSetting = 1
+#
+# ielementType:  Type of element pair that was used for the discretisation, only neccesary
+# if iElementSetting = 2
+# Currently supported 2D element-pairs:
+#
 #  0 = Q1~(E031) / Q1~(E031) / Q0
 #  1 = Q1~(E030) / Q1~(E030) / Q0
 #  2 = Q1~(EM31) / Q1~(EM31) / Q0
@@ -30,59 +41,60 @@
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 #
-# If not specified, the code assumes ielementType=3
+# NLMAX: Level where the solution was calculated and written out
 #
-# NLMIN: Level where the mesh was generated
-# NLMAX: Level where the solution was calculated
-# If they are not specified, the code assumes that NLMIN=2 and NLMAX=4
-#
-#
-# sParametrisation: The prm-file for the mesh
+# sParametrisation: The prm-file for the mesh - only needed in 2D 
 # sMesh: The tri-file for the mesh
-# sVector: The solution-vector of the system you solved!
-#          Important: It has to be formatted! (not-formatted will come at some time)
-#          Important: We assume that the first unknowns are the velocity and the last one
-#                     is the pressure (which is standart in Featflow2).
-# sCubFormula: Specifies, which cubature formula is used to calculate the norm.
-#  the one set in the section  "FIRST" is used to calculate ||u1|| and ||u1 - u2||
-#  the one set in the section "SECOND" is used to calculate ||u2||
-# If not specified, the code assumes sCubFormula='Auto_G3'
+# sVector: The file of the vector you want to read in.
 # 
-# Important: For the calculation of ||u1 - u2||_L2 the program needs to evaluate
-# u2 at the cubature points of the geometry that belongs to u1 since
-# it uses the geometry belonging to u1 to perform the integration
-# Keep in mind that this can take some time because we need to find the points in the
-# mesh first. 
-# You also need to keep in mind that this has an effect on the value of the integral,
-# it will lead to different results if you exchange u1 and u2, so in general
-# we have that ||u1 - u2|| != ||u2 - u1||
+# sVectorType:  1 if it has the format int N, char svarname followed by N doubles
+#          2 if it written out by write_BlockVectorHR (like cc2d)
+#
+# sFileFormat: 1: Formatted + unsorted
+#        2: unformatted + unsorted
+#        3: formatted + sorted
+#        4: unformatted + sorted
+#        5: formatted
+#        6: unformatted
+# If sVectorType=1 sFileFormat = 5 or 6
+# if sVectorType = 2 sFileFormat = 1,2,3,4
+# Note that formatted/unformatted means 'human-readable' or
+# 'non-human-readable'
+#
+# iNVAR:  How many variables are in the vector?
+# i.e. 1 Variable = speed in x direction, ...
 
-#####
-[FIRST]
-#####
+##########
+[ExtFE-FIRST]
+##########
 
-NLMIN=1
-NLMAX=4
-ielementType=3
+iElementSetting = 2
+ielementType = 3
+ElementName = ''
 
+NLMAX = 3
 sParametrisation = '%{spredirectory}/bench1.prm'
 sMesh = '%{spredirectory}/bench1.tri'
 
-sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
+sVector='%{ssolutiondirectory}/grid_bench1_elementType3_NLMAX3.dat'
+sVectorType = 2
+sFileFormat = 1
 
-sCubFormula = AUTO_G1
+iNVAR = 3
 
 #######
-[SECOND]
+[ExtFE-SECOND]
 #######
+iElementSetting = 2
+ielementType = 3
+ElementName = ''
 
-NLMIN=1
-NLMAX=4
-ielementType=3
-
+NLMAX = 3
 sParametrisation = '%{spredirectory}/bench1.prm'
 sMesh = '%{spredirectory}/bench1.tri'
 
-sVector='%{ssolutiondirectory}/solution_bench1_elementtype3_NLMIN1_NLMAX4.dat'
+sVector='%{ssolutiondirectory}/grid_bench1_elementType3_NLMAX3.dat'
+sVectorType = 2
+sFileFormat = 1
 
-sCubFormula =  AUTO_G1
+iNVAR = 3

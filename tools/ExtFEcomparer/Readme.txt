@@ -1,3 +1,36 @@
+Version 2.0 - 21.10.2014
+
+This is complete rewrite of the Version 1.0. Many things changed only under the hood, 
+some change for the user
+
+Changes for the user:
+1) Added new vector types that can be read in:  Unformatted (i.e. non-human-readable), with the file-format:  
+int N, char svarname, followed by N values - and this one for every variable
+Previously only every vector that was written out by the subroutine
+write_BlockVectorHR(...) could be read in
+2) Added Support for discretisations with only 1 element type
+3) Added 1D
+4) Added more calculation options. The cost of this is that
+ now you have to know which variable in which vector is what - which should not be too hard,
+ i.e. for cc2d variable 1 is the velocity in x direction, variable 2 the velocity in y direction and 
+  variable 3 the pressure.
+5) Added the possibility to set up every calculation by itself: Own mask function and own cubature rule
+
+Changes under the hood:
+- Added functions that allow a 1D,2D and 3D support to be realised very easy
+- deleted all not-neccesary data-types
+- restructured the read-in of the vectors
+- restructured the creation of the discretisation 
+-restructured the creation of the parametrisation
+
+Still necessary: If you want to analyze only 1 function, you still
+have to enter 2 vectors - but you can set the calculations in a way
+that the second one is totally ignored. 
+
+Hint: If you get results you do not trust, switch of OpenMP
+
+
+
 Version 1.0 - 16.6.2014
 
 This is an Extended Finite Elemente Comparer and some sort of postprocessing tool.

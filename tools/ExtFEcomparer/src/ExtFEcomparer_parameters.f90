@@ -4,27 +4,15 @@ module ExtFEcomparer_parameters
   use fsystem
   use storage
   use genoutput
-  use fparser
   use paramlist
-  use collection
-
-  use triangulation
-  use meshgeneration
 
   use element
-  use cubature
-  use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
-  use bilinearformevaluation
 
-  use feevaluation2
-  use blockmatassemblybase
-  use blockmatassembly
-  use blockmatassemblystdop
-
-  use vectorio
   use ExtFEcomparer_typedefs
+
+  implicit none
+
+
 contains
 
 
@@ -45,7 +33,7 @@ subroutine ExtFEcomparer_get_parameters(rparamList)
 !</subroutine>
 
     logical :: bexists
-    character(LEN=SYS_STRLEN) :: smaster
+    character(LEN=ExtFE_STRLEN) :: smaster
 
     ! Check if a command line parameter specifies the master.dat file.
     call sys_getcommandLineArg(1,smaster,sdefault="./data/master.dat")
@@ -100,81 +88,89 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
 
 !</subroutine>
 
-    integer :: i,ilvmin,ilvmax, ielemtype
+    integer :: i,ilvmin,ilvmax, ielemtype, tmpvalue
 
     ! Variable for a filename:
-    character(LEN=SYS_STRLEN) :: sString
-    character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
-    character(LEN=SYS_STRLEN) :: sVectorFile
+    character(LEN=ExtFE_STRLEN) :: sString
+    character(LEN=ExtFE_STRLEN) :: sPRMFile, sTRIFile
+    character(LEN=ExtFE_STRLEN) :: sVectorFile
+    character(LEN=ExtFE_STRLEN) :: smessage
 
-    ! Local variable
-    character(LEN=SYS_STRLEN) :: sVectorName
-
-
-    ! Get min/max level from the parameter file.
-    !
-    ! ilvmin receives the minimal level - the level of the
-    ! mesh we created.
     ! ilvmax receives the level where our solution lives on
 
     call parlst_getvalue_int (rproblem%rparamlist,section,&
-                              "NLMIN",ilvmin,2)
-    call parlst_getvalue_int (rproblem%rparamlist,section,&
-                              "NLMAX",ilvmax,4)
-
-    call parlst_getvalue_int(rproblem%rparamlist,section,"ielementType",ielemtype,3)
-
+                              "NLMAX",ilvmax)
     rproblem%NLMAX=ilvmax
-    rproblem%NLMIN=ilvmin
+
+
+    call parlst_getvalue_int(rproblem%rparamlist,section, &
+                            "iElementSetting",tmpvalue)
+    rproblem%elementSetting = tmpvalue
+
+    ! get the element type. Standard is -1 so that it will crash when
+    ! we try to recreate the discretisation and nothing is specified.
+    ! however, there is one more option to specify the element - a string!
+
+
+    if (rproblem%elementSetting .eq. ExtFE_ElementPair) then
+        call output_line("Searching for a numerical identifier of the element pair")
+        call parlst_getvalue_int(rproblem%rparamlist,section,"ielementType",&
+                    ielemtype)
+        call output_line("Found a numerical identifier of the element pair")
+    else if (rproblem%elementSetting .eq. ExtFE_OneElement) then
+        call output_line("Searching for the name of an element")
+        call parlst_getvalue_string(rproblem%rparamlist,section, &
+                "ElementName",sString,bdequote=.true.)
+        ielemtype = elem_igetID(sString)
+        call output_line("Found a name of an element")
+    else
+        write(smessage,*) 'Input error: choice not allowed for &
+        &the selection of iElementSetting for function ', section
+        call output_line(smessage , &
+        OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_parameters")
+        call sys_halt()
+    end if
+
     rproblem%ielemtype=ielemtype
 
 
-    ! Get the .prm and the .tri file from the parameter list.
-    call parlst_getvalue_string (rproblem%rparamList,section,&
-                                 "sParametrisation",sPRMFile,bdequote=.true.)
+    ! find out the dimension of the problem
+    call parlst_getvalue_int(rproblem%rparamlist, "ExtFE-DOMAININFO", &
+                            "dim", tmpvalue)
+    rproblem%iDimension = tmpvalue
+
+    ! Get the path of the .prm and the .tri file from the parameter list.
+    ! .prm is not there in the 1D-Case
+    if (rproblem%iDimension .ne. ExtFE_NDIM1) then
+        call parlst_getvalue_string (rproblem%rparamList,section,&
+                                    "sParametrisation",sPRMFile,bdequote=.true.)
+        rproblem%sPRMFile = sPRMFile
+    end if
 
     call parlst_getvalue_string (rproblem%rparamList,section,&
                                  "sMesh",sTRIFile,bdequote=.true.)
+    rproblem%sTRIFile = sTRIFile
 
+    ! Get the path of the vector file
     call parlst_getvalue_string (rproblem%rparamList,section,&
                                  "sVector",sVectorFile,bdequote=.true.)
-
-
-    !Save these information in the problem structure
     rproblem%sVectorFile = sVectorFile
-    rproblem%sTRIFile = sTRIFile
-    rproblem%sPRMFile = sPRMFile
 
+    call parlst_getvalue_int(rproblem%rparamlist,section, &
+                            "sFileFormat",tmpvalue)
+    rproblem%vectorFileFormat = tmpvalue
 
-    ! read out which cubature rule to use
-    call parlst_getvalue_string (rproblem%rparamList,section,&
-                                 "sCubFormula",sString,"AUTO_G3")
-    rproblem%I_Cubature_Formula = cub_igetID(sString)
+    call parlst_getvalue_int(rproblem%rparamlist,section, &
+                            "sVectorType", tmpvalue)
+    rproblem%vectorType = tmpvalue
 
-     ! Load the vector:
-    call vecio_readBlockVectorHR(rproblem%coeffVector,sVectorName,.FALSE.,0,sVectorFile,.TRUE.)
+    call parlst_getvalue_int(rproblem%rparamlist,section, &
+                            "iNVAR", tmpvalue)
+    rproblem%NVAR = tmpvalue
+
 
 end subroutine
 
-subroutine ExtFEcomparer_doneParameters (rproblem)
-
-!<description>
-  ! Cleans up parameters read from the DAT files. Removes all references to
-  ! parameters from the collection rproblem\%rcollection that were
-  ! set up in cc_initParameters.
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout) :: rproblem
-!</inputoutput>
-
-!</subroutine>
-
-    ! Deallocate memory
-    deallocate(rproblem%RlevelInfo)
-
-end subroutine
 
 !<subroutine>
 
@@ -199,7 +195,7 @@ subroutine ExtFEcomparer_getLogFiles (slogfile,serrorfile,sbenchlogfile)
     !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: smaster
+    character(LEN=ExtFE_STRLEN) :: smaster
     logical :: bexists
 
     ! Init parameter list that accepts parameters for output files
@@ -220,13 +216,13 @@ subroutine ExtFEcomparer_getLogFiles (slogfile,serrorfile,sbenchlogfile)
     end if
 
     ! Now the real initialisation of the output including log file stuff!
-    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+    call parlst_getvalue_string (rparlist,"ExtFE-LOGFILESETTINGS",&
         "smsgLog",slogfile,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+    call parlst_getvalue_string (rparlist,"ExtFE-LOGFILESETTINGS",&
         "serrorLog",serrorfile,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,"LOGFILESETTINGS",&
+    call parlst_getvalue_string (rparlist,"ExtFE-LOGFILESETTINGS",&
         "sbenchLog",sbenchlogfile,"",bdequote=.true.)
 
     ! That temporary parameter list is not needed anymore.
