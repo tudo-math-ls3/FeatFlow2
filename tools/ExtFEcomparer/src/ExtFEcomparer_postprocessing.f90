@@ -164,15 +164,31 @@ subroutine ExtFEcomparer_done_postprocessing(rpostprocessing)
 !</input>
 
     ! L2-Calculations
-    call storage_free(rpostprocessing%h_L2CompFunc)
-    call storage_free(rpostprocessing%h_L2ChiOmega)
-    call storage_free(rpostprocessing%h_L2Results)
-    call storage_free(rpostprocessing%h_L2TriFile)
+    if (rpostprocessing%h_L2CompFunc .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L2CompFunc)
+    end if
+    if (rpostprocessing%h_L2ChiOmega .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L2ChiOmega)
+    end if
+    if (rpostprocessing%h_L2Results .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L2Results)
+    end if
+    if (rpostprocessing%h_L2TriFile .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L2TriFile)
+    end if
+
+
 
     ! Pointvalue-Calculations
-    call storage_free(rpostprocessing%h_PointCoordinates)
-    call storage_free(rpostprocessing%h_PointFuncComponents)
-    call storage_free(rpostprocessing%h_PointResults)
+    if (rpostprocessing%h_PointCoordinates .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_PointCoordinates)
+    end if
+    if (rpostprocessing%h_PointFuncComponents .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_PointFuncComponents)
+    end if
+    if (rpostprocessing%h_PointResults .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_PointResults)
+    end if
 
 end subroutine
 
