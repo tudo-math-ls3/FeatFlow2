@@ -42,16 +42,19 @@ extern "C" {
   void __meshadaptbase_MOD_madapt_alloc(struct t_meshAdapt**);
   void __meshadaptbase_MOD_madapt_dealloc(struct t_meshAdapt**);
   void __meshadaptbase_MOD_madapt_init(struct t_meshAdapt*, int*, char*, int);
-  void __meshadaptbase_MOD_madapt_step_fromfile(struct t_meshAdapt*, char*, int*, double*, double*, int);
-  void __meshadaptbase_MOD_madapt_step_dble2(struct t_meshAdapt*, int*, double*, int*, double*, double*);
+  void __meshadaptbase_MOD_madapt_step_fromfile(struct t_meshAdapt*, char*, int*, double*, double*, int*, int);
+  void __meshadaptbase_MOD_madapt_step_sngl2(struct t_meshAdapt*, int*, float*, int*, float*, float*, int*);
+  void __meshadaptbase_MOD_madapt_step_dble2(struct t_meshAdapt*, int*, double*, int*, double*, double*, int*);
   void __meshadaptbase_MOD_madapt_done(struct t_meshAdapt*);
-  int  __meshadaptbase_MOD_madapt_getnel(struct t_meshAdapt*);
-  int  __meshadaptbase_MOD_madapt_getnvt(struct t_meshAdapt*);
-  int  __meshadaptbase_MOD_madapt_getndim(struct t_meshAdapt*);
-  int  __meshadaptbase_MOD_madapt_getnnve(struct t_meshAdapt*);
-  void __meshadaptbase_MOD_madapt_getvertexcoords(struct t_meshAdapt*, double*);
-  void __meshadaptbase_MOD_madapt_getverticesatelement(struct t_meshAdapt*, int*);
-  void __meshadaptbase_MOD_madapt_getneighboursatelement(struct t_meshAdapt*, int*);
+  int  __meshadaptbase_MOD_madapt_getnel(struct t_meshAdapt*, int*);
+  int  __meshadaptbase_MOD_madapt_getnvt(struct t_meshAdapt*, int*);
+  int  __meshadaptbase_MOD_madapt_getndim(struct t_meshAdapt*, int*);
+  int  __meshadaptbase_MOD_madapt_getnnve(struct t_meshAdapt*, int*);
+  void __meshadaptbase_MOD_madapt_getvertexcoords(struct t_meshAdapt*, double*, int*);
+  void __meshadaptbase_MOD_madapt_getverticesatelement(struct t_meshAdapt*, int*, int*);
+  void __meshadaptbase_MOD_madapt_getneighboursatelement(struct t_meshAdapt*, int*, int*);
+  void __meshadaptbase_MOD_madapt_getvertexage(struct t_meshAdapt*, int*);
+  void __meshadaptbase_MOD_madapt_getelementage(struct t_meshAdapt*, int*, int*);
 
 #ifdef __cplusplus
 } /* end extern "C" */

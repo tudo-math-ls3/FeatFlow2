@@ -1,5 +1,69 @@
+!##############################################################################
+!# ****************************************************************************
+!# <name> meshadaptbas </name>
+!# ****************************************************************************
+!#
+!# <purpose>
+!#
+!# This module contains all routines which are required to perform
+!# local mesh adaptation based on a given indicator function and
+!# prescribed refinement/recoarsening tolerances. Moreover, it
+!# provides additional wrapper routines which allow to call the local
+!# mesh adaptation from within MATLAB.
+!#
+!# The following routines are available:
+!#
+!#  1.) madapt_alloc (only required for MATLAB)
+!#      -> Allocates memory for mesh adaptation structure
+!#
+!#  2.) madapt_dealloc (only required for MATLAB)
+!#      -> Deallocates memory for mesh adaptation structure
+!#
+!#  3.) madapt_init
+!#      -> Initialises the mesh adaptation structure
+!#
+!#  4.) madapt_done
+!#      -> Finalises the mesh adaptation structure
+!#
+!#  5.) madapt_step
+!#      -> Performs a single mesh adaptation step
+!#
+!#  6.) madapt_signalhandler
+!#      -> Performs mesh adaption based on signals
+!#
+!#  7.) madapt_getNEL
+!#      -> Returns the total number of elements
+!#
+!#  8.) madapt_getNVT
+!#      -> Returns the total number of vertices
+!#
+!#  9.) madapt_getNDIM
+!#      -> Returns the dimension of the triangulation
+!#
+!# 10.) madapt_getNNVE
+!#     -> Returns the maximum number of vertices per element
+!#
+!# 11.) madapt_getVertexCoords
+!#     -> Returns array of vertex coordinates
+!#
+!# 12.) madapt_getNeighboursAtElement
+!#     -> Returns the element-adjacency list
+!#
+!# 13.) madapt_getVerticesAtElement
+!#     -> Returns the vertices-at-element list
+!#
+!# 14.) madapt_getVertexAge
+!#      -> Returns the vertex age array
+!#
+!# 15.) madapt_getElementAge
+!#      -> Returns the element age array
+!#
+!# </purpose>
+!##############################################################################
+
 module meshadaptbase
 
+  use basicgeometry
   use boundary
   use fsystem
   use genoutput
@@ -62,6 +126,8 @@ module meshadaptbase
   public :: madapt_getVertexCoords
   public :: madapt_getNeighboursAtElement
   public :: madapt_getVerticesAtElement
+  public :: madapt_getVertexAge
+  public :: madapt_getElementAge
 
   interface madapt_step
     module procedure madapt_step_direct
@@ -231,7 +297,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_direct(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_direct(rmeshAdapt,rindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -253,6 +320,10 @@ contains
 
     ! Re-coarsening tolerance
     real(DP), intent(in) :: dcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -261,6 +332,12 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables
+    logical :: bgenTria
+
+    bgenTria = .false.
+    if (present(bgenTriangulation)) bgenTria=bgenTriangulation
 
     if (nrefmax .lt. rmeshAdapt%rhadapt%nsubdividemax) then
       if (hadapt_getSubdivisonLevel(rmeshAdapt%rhadapt) .le. nrefmax) then
@@ -287,14 +364,16 @@ contains
     ! Update triangulation structure
     call output_line("Generating raw triangulation...")
     call hadapt_generateRawMesh(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
-    
-    ! Initialise standard mesh
-    call output_line("Generating standard mesh from raw triangulation...")
-    if(associated(rmeshAdapt%rboundary)) then
-      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
-          rmeshAdapt%rboundary)
-    else
-      call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation)
+
+    ! Initialise standard mesh    
+    if (bgenTria) then
+      call output_line("Generating standard mesh from raw triangulation...")
+      if(associated(rmeshAdapt%rboundary)) then
+        call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation,&
+            rmeshAdapt%rboundary)
+      else
+        call tria_initStandardMeshFromRaw(rmeshAdapt%rtriangulation)
+      end if
     end if
 
   end subroutine madapt_step_direct
@@ -303,7 +382,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_dble1(rmeshAdapt,Dindicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_dble1(rmeshAdapt,Dindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -325,6 +405,10 @@ contains
 
     ! Re-coarsening tolerance
     real(DP), intent(in) :: dcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -344,7 +428,7 @@ contains
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -355,7 +439,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_dble2(rmeshAdapt,nel,Dindicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_dble2(rmeshAdapt,nel,Dindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -380,6 +465,10 @@ contains
 
     ! Re-coarsening tolerance
     real(DP), intent(in) :: dcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -399,7 +488,7 @@ contains
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -410,7 +499,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_sngl1(rmeshAdapt,Findicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_sngl1(rmeshAdapt,Findicator,nrefmax,&
+      freftol,fcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -428,10 +518,14 @@ contains
     integer, intent(in) :: nrefmax
 
     ! Refinement tolerance
-    real(DP), intent(in) :: dreftol
+    real(SP), intent(in) :: freftol
 
     ! Re-coarsening tolerance
-    real(DP), intent(in) :: dcrstol
+    real(SP), intent(in) :: fcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -451,7 +545,8 @@ contains
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,&
+        real(freftol,DP),real(fcrstol,DP),bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -462,7 +557,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_sngl2(rmeshAdapt,nel,Findicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_sngl2(rmeshAdapt,nel,Findicator,nrefmax,&
+      freftol,fcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -483,10 +579,14 @@ contains
     integer, intent(in) :: nrefmax
 
     ! Refinement tolerance
-    real(DP), intent(in) :: dreftol
+    real(SP), intent(in) :: freftol
 
     ! Re-coarsening tolerance
-    real(DP), intent(in) :: dcrstol
+    real(SP), intent(in) :: fcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -506,7 +606,8 @@ contains
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,&
+        real(freftol,DP),real(fcrstol,DP),bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -517,7 +618,8 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_step_fromfile(rmeshAdapt,sindicator,nrefmax,dreftol,dcrstol)
+  subroutine madapt_step_fromfile(rmeshAdapt,sindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation)
 
 !<description>
   ! This subroutine performs a single mesh adaptation step based on
@@ -537,6 +639,10 @@ contains
 
     ! Re-coarsening tolerance
     real(DP), intent(in) :: dcrstol
+
+    ! OPTIONAL: Defines whether the triangulation is generated.
+    ! If not present, then no triangulation is generated
+    logical, intent(in), optional :: bgenTriangulation
 !</input>
 
 !<inputoutput>
@@ -577,7 +683,7 @@ contains
     close(iunit)
     
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol)
+    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
     
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
@@ -739,7 +845,7 @@ contains
 
 !<function>
 
-  function madapt_getNEL(rmeshAdapt) result(NEL)
+  function madapt_getNEL(rmeshAdapt,buseTriangulation) result(NEL)
 
 !<description>
     ! Returns the number of elements
@@ -748,6 +854,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<result>
@@ -757,7 +869,17 @@ contains
 
 !</function>
 
-    NEL = rmeshAdapt%rtriangulation%NEL
+    ! local variables
+    logical :: buseTria
+
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
+
+    if (buseTria) then
+      NEL = rmeshAdapt%rtriangulation%NEL
+    else
+      NEL = rmeshAdapt%rhadapt%NEL
+    end if
 
   end function madapt_getNEL
 
@@ -765,7 +887,7 @@ contains
 
 !<function>
 
-  function madapt_getNVT(rmeshAdapt) result(NVT)
+  function madapt_getNVT(rmeshAdapt,buseTriangulation) result(NVT)
 
 !<description>
     ! Returns the number of vertices
@@ -774,6 +896,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<result>
@@ -783,7 +911,17 @@ contains
 
 !</function>
 
-    NVT = rmeshAdapt%rtriangulation%NVT
+    ! local variables
+    logical :: buseTria
+
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
+
+    if (buseTria) then
+      NVT = rmeshAdapt%rtriangulation%NVT
+    else
+      NVT = rmeshAdapt%rhadapt%NVT
+    end if
 
   end function madapt_getNVT
 
@@ -791,7 +929,7 @@ contains
 
 !<function>
 
-  function madapt_getNDIM(rmeshAdapt) result(NDIM)
+  function madapt_getNDIM(rmeshAdapt,buseTriangulation) result(NDIM)
 
 !<description>
     ! Returns the number of spatial dimensions
@@ -800,6 +938,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<result>
@@ -809,7 +953,17 @@ contains
 
 !</function>
 
-    NDIM = rmeshAdapt%rtriangulation%NDIM
+    ! local variables
+    logical :: buseTria
+
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
+
+    if (buseTria) then
+      NDIM = rmeshAdapt%rtriangulation%NDIM
+    else
+      NDIM = rmeshAdapt%rhadapt%NDIM
+    end if
 
   end function madapt_getNDIM
 
@@ -817,7 +971,7 @@ contains
 
 !<function>
 
-  function madapt_getNNVE(rmeshAdapt) result(NNVE)
+  function madapt_getNNVE(rmeshAdapt,buseTriangulation) result(NNVE)
 
 !<description>
     ! Returns the maximum number of vertices per element
@@ -826,6 +980,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<result>
@@ -835,7 +995,17 @@ contains
 
 !</function>
 
-    NNVE = rmeshAdapt%rtriangulation%NNVE
+    ! local variables
+    logical :: buseTria
+
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
+
+    if (buseTria) then
+      NNVE = rmeshAdapt%rtriangulation%NNVE
+    else
+      NNVE = hadapt_getNNVE(rmeshAdapt%rhadapt)
+    end if
 
   end function madapt_getNNVE
 
@@ -843,15 +1013,21 @@ contains
 
 !<subroutine>
 
-  subroutine madapt_getVertexCoords(rmeshAdapt,DvertexCoords)
+  subroutine madapt_getVertexCoords(rmeshAdapt,DvertexCoords,buseTriangulation)
 
 !<description>
-    ! Returns the vertex coordinates
+    ! Returns the array of vertex coordinates
 !</description>
 
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<output>
@@ -862,28 +1038,63 @@ contains
 !</subroutine>
 
     ! local variable
+    logical :: buseTria
     integer :: i,j,n,m
+    integer :: h_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     
-    call storage_getbase_double2d(&
-        rmeshAdapt%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
 
-    n = rmeshAdapt%rtriangulation%NDIM
-    m = rmeshAdapt%rtriangulation%NVT
-
-    do j=1,m
-      do i=1,n
-        DvertexCoords(n*(j-1)+i) = p_DvertexCoords(i,j)
+    if (buseTria) then
+      call storage_getbase_double2d(&
+          rmeshAdapt%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+      
+      n = rmeshAdapt%rtriangulation%NDIM
+      m = rmeshAdapt%rtriangulation%NVT
+      
+      do j=1,m
+        do i=1,n
+          DvertexCoords(n*(j-1)+i) = p_DvertexCoords(i,j)
+        end do
       end do
-    end do
 
+    else
+
+      h_DvertexCoords = ST_NOHANDLE
+      select case (madapt_getNDIM(rmeshAdapt,buseTria))
+      case (NDIM1D)
+        call hadapt_getVertexCoords1D(rmeshAdapt%rhadapt, h_DVertexCoords, m, n)
+      case (NDIM2D)
+        call hadapt_getVertexCoords2D(rmeshAdapt%rhadapt, h_DVertexCoords, m, n)
+      case (NDIM3D)
+        call hadapt_getVertexCoords3D(rmeshAdapt%rhadapt, h_DVertexCoords, m, n)
+      case default
+        call output_line("Invalid spatial dimension!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"madapt_getVertexCoords")
+        call sys_halt()          
+      end select
+
+      call storage_getbase_double2d(h_DvertexCoords, p_DvertexCoords)
+
+      do j=1,m
+        do i=1,n
+          DvertexCoords(n*(j-1)+i) = p_DvertexCoords(i,j)
+        end do
+      end do
+      
+      call storage_free(h_DvertexCoords)
+
+    end if
+    
   end subroutine madapt_getVertexCoords
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine madapt_getNeighboursAtElement(rmeshAdapt,IneighboursAtElement)
+  subroutine madapt_getNeighboursAtElement(rmeshAdapt,&
+      IneighboursAtElement,buseTriangulation)
 
 !<description>
     ! Returns the element-adjacency list
@@ -892,6 +1103,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<output>
@@ -901,31 +1118,54 @@ contains
 
 !</subroutine>
 
-!</subroutine>
-
     ! local variable
+    logical :: buseTria
     integer :: i,j,n,m
+    integer :: h_IneighboursAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     
-    call storage_getbase_int2d(&
-        rmeshAdapt%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-
-    n = rmeshAdapt%rtriangulation%NNVE
-    m = rmeshAdapt%rtriangulation%NEL
-
-    do j=1,m
-      do i=1,n
-        IneighboursAtElement(n*(j-1)+i) = p_IneighboursAtElement(i,j)
-      end do
-    end do
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
     
+    if (buseTria) then
+      call storage_getbase_int2d(&
+          rmeshAdapt%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+      
+      n = rmeshAdapt%rtriangulation%NNVE
+      m = rmeshAdapt%rtriangulation%NEL
+      
+      do j=1,m
+        do i=1,n
+          IneighboursAtElement(n*(j-1)+i) = p_IneighboursAtElement(i,j)
+        end do
+      end do
+    
+    else
+
+      h_IneighboursAtElement = ST_NOHANDLE
+      call hadapt_getNeighboursAtElement(rmeshAdapt%rhadapt, h_IneighboursAtElement, m)
+      call storage_getbase_int2d(h_IneighboursAtElement, p_IneighboursAtElement)
+
+      n = hadapt_getNNVE(rmeshAdapt%rhadapt)
+
+      do j=1,m
+        do i=1,n
+          IneighboursAtElement(n*(j-1)+i) = p_IneighboursAtElement(i,j)
+        end do
+      end do
+
+      call storage_free(h_IneighboursAtElement)
+      
+    end if
+
   end subroutine madapt_getNeighboursAtElement
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine madapt_getVerticesAtElement(rmeshAdapt,IverticesAtElement)
+  subroutine madapt_getVerticesAtElement(rmeshAdapt,&
+      IverticesAtElement,buseTriangulation)
 
 !<description>
     ! Returns the vertices-at-element list
@@ -934,6 +1174,12 @@ contains
 !<input>
     ! Mesh adaptation structure
     type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
 !</input>
 
 !<output>
@@ -943,24 +1189,172 @@ contains
 
 !</subroutine>
 
-!</subroutine>
-
     ! local variable
+    logical :: buseTria
     integer :: i,j,n,m
+    integer :: h_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     
-    call storage_getbase_int2d(&
-        rmeshAdapt%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-
-    n = rmeshAdapt%rtriangulation%NNVE
-    m = rmeshAdapt%rtriangulation%NEL
-
-    do j=1,m
-      do i=1,n
-        IverticesAtElement(n*(j-1)+i) = p_IverticesAtElement(i,j)
-      end do
-    end do
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
     
+    if (buseTria) then
+      call storage_getbase_int2d(&
+          rmeshAdapt%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      
+      n = rmeshAdapt%rtriangulation%NNVE
+      m = rmeshAdapt%rtriangulation%NEL
+      
+      do j=1,m
+        do i=1,n
+          IverticesAtElement(n*(j-1)+i) = p_IverticesAtElement(i,j)
+        end do
+      end do
+      
+    else
+      
+      h_IverticesAtElement = ST_NOHANDLE
+      call hadapt_getVerticesAtElement(rmeshAdapt%rhadapt, h_IverticesAtElement, m)
+      call storage_getbase_int2d(h_IverticesAtElement, p_IverticesAtElement)
+      
+      n = hadapt_getNNVE(rmeshAdapt%rhadapt)
+      
+      do j=1,m
+        do i=1,n
+          IverticesAtElement(n*(j-1)+i) = p_IverticesAtElement(i,j)
+        end do
+      end do
+
+    end if
+
   end subroutine madapt_getVerticesAtElement
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine madapt_getVertexAge(rmeshAdapt,IvertexAge)
+
+!<description>
+    ! Returns the vertex age array
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+!</input>
+
+!<output>
+    ! Vertex age array
+    integer, dimension(*), intent(out) :: IvertexAge
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IvertexAge
+    integer :: i,n
+
+    if (rmeshAdapt%rhadapt%h_IvertexAge .eq. ST_NOHANDLE) then
+      call output_line("Vertex age array is not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"madapt_getVertexAge")
+      call sys_halt()
+    end if
+    
+    call storage_getbase_int(rmeshAdapt%rhadapt%h_IvertexAge, p_IvertexAge)
+    
+    do i=1,rmeshAdapt%rhadapt%NVT
+      IvertexAge(i) = p_IvertexAge(i)
+    end do
+    
+  end subroutine madapt_getVertexAge
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine madapt_getElementAge(rmeshAdapt,IelementAge,buseTriangulation)
+
+!<description>
+    ! Returns the element age array
+!</description>
+
+!<input>
+    ! Mesh adaptation structure
+    type(t_meshAdapt), intent(in) :: rmeshAdapt
+
+    ! OPTIONAL: Defines whether the data is taken from the
+    ! triangulation (which has to be generated externally) or directly
+    ! from the adaptation structure
+    ! If not present, then the adaptation structure is used
+    logical, intent(in), optional :: buseTriangulation
+!</input>
+
+!<output>
+    ! Element age array
+    integer, dimension(*), intent(out) :: IelementAge
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    logical :: buseTria
+    integer :: i,j,n,m
+    integer :: h_IverticesAtElement
+    integer, dimension(:), pointer :: p_IvertexAge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    
+    buseTria = .false.
+    if (present(buseTriangulation)) buseTria = buseTriangulation
+
+    if (rmeshAdapt%rhadapt%h_IvertexAge .eq. ST_NOHANDLE) then
+      call output_line("Vertex age array is not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"madapt_getElementAge")
+      call sys_halt()
+    end if
+    
+    call storage_getbase_int(rmeshAdapt%rhadapt%h_IvertexAge, p_IvertexAge)
+    
+    if (buseTria) then
+      call storage_getbase_int2d(&
+          rmeshAdapt%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      
+      n = rmeshAdapt%rtriangulation%NNVE
+      m = rmeshAdapt%rtriangulation%NEL
+      
+      iel1: do j=1,m
+        IelementAge(j) = 0
+        do i=1,n
+          if (p_IverticesAtElement(i,j) .gt. 0) then
+            IelementAge(j) = max(IelementAge(j),&
+                p_IvertexAge(p_IverticesAtElement(i,j)))
+          else
+            cycle iel1
+          end if
+        end do
+      end do iel1
+      
+    else
+      
+      h_IverticesAtElement = ST_NOHANDLE
+      call hadapt_getVerticesAtElement(rmeshAdapt%rhadapt, h_IverticesAtElement, m)
+      call storage_getbase_int2d(h_IverticesAtElement, p_IverticesAtElement)
+      
+      n = hadapt_getNNVE(rmeshAdapt%rhadapt)
+      
+      iel2: do j=1,m
+        IelementAge(j) = 0
+        do i=1,n
+          if (p_IverticesAtElement(i,j) .gt. 0) then
+            IelementAge(j) = max(IelementAge(j),&
+                p_IvertexAge(p_IverticesAtElement(i,j)))
+          else
+            cycle iel2
+          end if
+        end do
+      end do iel2
+    end if
+    
+  end subroutine madapt_getElementAge
+ 
 end module meshadaptbase

@@ -42,16 +42,19 @@ extern "C" {
   void meshadaptbase_mp_madapt_alloc_(struct t_meshAdapt**);
   void meshadaptbase_mp_madapt_dealloc_(struct t_meshAdapt**);
   void meshadaptbase_mp_madapt_init_(struct t_meshAdapt*, int*, char*, int);
-  void meshadaptbase_mp_madapt_step_fromfile_(struct t_meshAdapt*, char*, int*, double*, double*, int);
-  void meshadaptbase_mp_madapt_step_dble2_(struct t_meshAdapt*, int*, double*, int*, double*, double*);
+  void meshadaptbase_mp_madapt_step_fromfile_(struct t_meshAdapt*, char*, int*, double*, double*, int*, int);
+  void meshadaptbase_mp_madapt_step_sngl2_(struct t_meshAdapt*, int*, float*, int*, float*, float*, int*);
+  void meshadaptbase_mp_madapt_step_dble2_(struct t_meshAdapt*, int*, double*, int*, double*, double*, int*);
   void meshadaptbase_mp_madapt_done_(struct t_meshAdapt*);
-  int  meshadaptbase_mp_madapt_getnel_(struct t_meshAdapt*);
-  int  meshadaptbase_mp_madapt_getnvt_(struct t_meshAdapt*);
-  int  meshadaptbase_mp_madapt_getndim_(struct t_meshAdapt*);
-  int  meshadaptbase_mp_madapt_getnnve_(struct t_meshAdapt*);
-  void meshadaptbase_mp_madapt_getvertexcoords_(struct t_meshAdapt*, double*);
-  void meshadaptbase_mp_madapt_getverticesatelement_(struct t_meshAdapt*, int*);
-  void meshadaptbase_mp_madapt_getneighboursatelement_(struct t_meshAdapt*, int*);
+  int  meshadaptbase_mp_madapt_getnel_(struct t_meshAdapt*, int*);
+  int  meshadaptbase_mp_madapt_getnvt_(struct t_meshAdapt*, int*);
+  int  meshadaptbase_mp_madapt_getndim_(struct t_meshAdapt*, int*);
+  int  meshadaptbase_mp_madapt_getnnve_(struct t_meshAdapt*, int*);
+  void meshadaptbase_mp_madapt_getvertexcoords_(struct t_meshAdapt*, double*, int*);
+  void meshadaptbase_mp_madapt_getverticesatelement_(struct t_meshAdapt*, int*, int*);
+  void meshadaptbase_mp_madapt_getneighboursatelement_(struct t_meshAdapt*, int*, int*);
+  void meshadaptbase_mp_madapt_getvertexage(struct t_meshAdapt*, int*);
+  void meshadaptbase_mp_madapt_getelementage(struct t_meshAdapt*, int*, int*);
 
 #ifdef __cplusplus
 } /* end extern "C" */
