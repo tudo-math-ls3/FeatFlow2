@@ -1,4 +1,4 @@
-function meshadapt_step(indicator,refmax,reftol,crstol)
+function meshadapt_step(indicator,refmax,reftol,crstol,genTria)
 %MESHADAPT_STEP Single mesh adaptation step
 %
 %   MESHADAPT_STEP(INDICATOR,REFMAX,REFTOL,CRSTOL)
@@ -13,6 +13,7 @@ function meshadapt_step(indicator,refmax,reftol,crstol)
 %    REFMAX        maximum admissible refinement level of the initial mesh
 %    REFTOL        refinement tolerance
 %    CRSTOL        coarsening tolerance
+%    GENTRIA       generate triangulation structure
 %
 % Author: M. Moller, TU Delft, 2014.
 
@@ -20,4 +21,4 @@ global lp_meshadapt
 
 % Perform one step of mesh adaptation
 calllib('meshadapt', 'madapt_step_dble2', lp_meshadapt, ...
-    length(indicator), indicator(:), refmax, reftol, crstol);
+    length(indicator), indicator(:), refmax, reftol, crstol, genTria);

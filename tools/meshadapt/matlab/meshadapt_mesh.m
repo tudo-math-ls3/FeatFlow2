@@ -1,7 +1,10 @@
-function [coords,vertices,neighbours] = meshadapt_mesh()
+function [coords,vertices,neighbours] = meshadapt_mesh(useTria)
 %MESHADAPT_MESH Mesh
 %
 %   [COORDS,VERTICES,NEIGHBOURS] = MESHADAPT_DATA()
+%
+%   Input arguments:
+%   USETRIA retrieve data from triangulation structure
 %
 %   Returns mesh data:
 %   COORDS     vertex coordinates
@@ -12,14 +15,14 @@ function [coords,vertices,neighbours] = meshadapt_mesh()
 
 global lp_meshadapt
 
-[nel,nvt,ndim,nnve] = meshadapt_data();
+[nel,nvt,ndim,nnve] = meshadapt_data(useTria);
 
 if nargout==0, return, end
 
 % Get coordinates
 p_coords = libpointer('doublePtr', zeros(ndim,nvt));
 calllib('meshadapt', 'madapt_getvertexcoords', ...
-    lp_meshadapt, p_coords);
+    lp_meshadapt, p_coords, useTria);
 coords = p_coords.Value;
 
 if nargout==1, return, end
@@ -27,7 +30,7 @@ if nargout==1, return, end
 % Get vertices
 p_vertices = libpointer('int32Ptr', zeros(nnve,nel));
 calllib('meshadapt', 'madapt_getverticesatelement', ...
-    lp_meshadapt, p_vertices);
+    lp_meshadapt, p_vertices, useTria);
 vertices = p_vertices.Value;
 
 if nargout==2, return, end
@@ -35,5 +38,5 @@ if nargout==2, return, end
 % Get adjacencies
 p_neighbours = libpointer('int32Ptr', zeros(nnve,nel));
 calllib('meshadapt', 'madapt_getneighboursatelement', ...
-    lp_meshadapt, p_neighbours);
+    lp_meshadapt, p_neighbours, useTria);
 neighbours = p_neighbours.Value;

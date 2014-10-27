@@ -26,6 +26,7 @@ values = vargin(2:2:nargin);
 
 % Set default parameters
 compiler = 'gcc';
+genTria = 0;
 
 % Overwrite default parameters by user-defined data
 if nargin > 0
@@ -33,6 +34,8 @@ if nargin > 0
         switch names{iargin}
             case {'compiler'}
                 compiler=values{iargin};
+            case {'genTria'}
+                genTria=values{iargin};
             otherwise
                 error(['Unsupported parameter: ' names{iargin}])
         end
@@ -43,10 +46,10 @@ end
 meshadapt_init(ndim,smesh,compiler);
 
 % Get data from adaptation structure
-[nel,nvt] = meshadapt_data();
+[nel,nvt] = meshadapt_data(genTria);
 
 % Get mesh from adaptation structure
-[coords,vertices] = meshadapt_mesh();
+[coords,vertices] = meshadapt_mesh(genTria);
 
 % Visualise the original mesh
 X = coords(1,:)';
@@ -75,13 +78,13 @@ for iref=1:nref
     ind(abs(phi)<=W) = 2;
         
     % Perform one step of mesh adaptation
-    meshadapt_step(ind,refmax,reftol,crstol);
+    meshadapt_step(ind,refmax,reftol,crstol,genTria);
     
     % Get data from adaptation structure
-    [nel,nvt] = meshadapt_data();
+    [nel,nvt] = meshadapt_data(genTria);
     
     % Get mesh from adaptation structure
-    [coords,vertices] = meshadapt_mesh();
+    [coords,vertices] = meshadapt_mesh(genTria);
     
     X = coords(1,:)';
     Y = coords(2,:)';
@@ -90,10 +93,10 @@ for iref=1:nref
 end
 
 % Get data from adaptation structure
-[nel,nvt] = meshadapt_data();
+[nel,nvt] = meshadapt_data(genTria);
 
 % Get mesh from adaptation structure
-[coords,vertices] = meshadapt_mesh();
+[coords,vertices] = meshadapt_mesh(genTria);
 
 % Plot refined mesh
 figure(1)
@@ -107,13 +110,13 @@ for iref=1:nref
     ind = 0.1*ones(nel,1); % fully coarsen every triangle
     
     % Perform one step of mesh adaptation
-    meshadapt_step(ind,refmax,reftol,crstol);
+    meshadapt_step(ind,refmax,reftol,crstol,genTria);
     
     % Get data from adaptation structure
-    [nel,nvt] = meshadapt_data();
+    [nel,nvt] = meshadapt_data(genTria);
     
     % Get mesh from adaptation structure
-    [coords,vertices] = meshadapt_mesh();
+    [coords,vertices] = meshadapt_mesh(genTria);
 end
 
 % plot coarsened mesh

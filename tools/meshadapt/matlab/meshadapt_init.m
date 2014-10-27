@@ -19,8 +19,8 @@ function meshadapt_init(ndim,smesh,compiler)
 global lp_meshadapt
 
 % Set default parameters
-headerfile = ['matlab/meshadapt_' compiler];
-protofile  = ['matlab/meshadapt_' compiler];
+headerfile = ['meshadapt_' compiler];
+protofile  = ['meshadapt_' compiler];
 if ispc,
     libfile = 'libmeshadapt.dll';
 elseif ismac,
