@@ -13,8 +13,8 @@
 !#
 !# The following routines are available:
 !#
-!#  1.) hadapt_getNVE
-!#      -> return the number of vertices per element
+!#  1.) hadapt_getNVE / hadapt_getNNVE
+!#      -> return the (maximum ) number of vertices per element
 !#
 !#  2.) hadapt_setVertexCoords1D
 !#      -> Set the coordinates of vertices to the adaptivity structure in 1D
@@ -93,6 +93,7 @@ module hadaptaux
   public :: hadapt_getSubdivisonLevel
   public :: hadapt_getBoundary
   public :: hadapt_getNVE
+  public :: hadapt_getNNVE
   public :: hadapt_getNeighboursAtElement
   public :: hadapt_getNelOfType
   public :: hadapt_getNodalProperty
@@ -549,43 +550,41 @@ contains
 !</input>
 
 !<result>
-    ! number of vertices per element
+    ! Number of vertices per element
     integer :: nve
 !</result>
 !</function>
 
-    ! Which spatial dimension do we have?
-    select case(rhadapt%ndim)
-    case (NDIM1D)
-      nve = TRIA_NVELINE1D
-
-    case (NDIM2D)
-
-      ! Do we have quadrilaterals in the triangulation?
-      if (rhadapt%InelOfType(TRIA_NVEQUAD2D) .eq. 0) then
-
-        ! There are no quadrilaterals in the current triangulation.
-        ! Hence, return TRIA_NVETRI2D by default.
-        nve = TRIA_NVETRI2D
-
-      else
-
-        ! There are quadrilaterals and possible also triangles in
-        ! the current triangulatin. If the last entry of the
-        ! vertices-at-element list is nonzero then TRIA_NVEQUAD2D vertices
-        ! are present in the current element. Otherwise return TRIA_NVETRI2D.
-        if (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D, iel) .eq. 0) then
-          nve = TRIA_NVETRI2D
-        else
-          nve = TRIA_NVEQUAD2D
-        end if
-
-      end if
-
-    case default
-      nve = 0
-    end select
+    do nve = ubound(rhadapt%p_IverticesAtElement,1), 1, -1
+      if (rhadapt%p_IverticesAtElement(nve,iel) .ne. 0) return
+    end do
   end function hadapt_getNVE
+
+  ! ***************************************************************************
+
+!<function>
+
+  pure function hadapt_getNNVE(rhadapt) result(nnve)
+
+!<description>
+    ! This function returns the maximum number of vertices
+!</description>
+
+!<input>
+    ! Adaptivity structure
+    type(t_hadapt), intent(in) :: rhadapt
+!</input>
+
+!<result>
+    ! Maximum number of vertices per element
+    integer :: nnve
+!</result>
+!</function>
+
+    do nnve = ubound(rhadapt%InelOfType,1), 1, -1
+      if (rhadapt%InelOfType(nnve) .ne. 0) return
+    end do
+  end function hadapt_getNNVE
 
   ! ***************************************************************************
 
