@@ -42,9 +42,9 @@ extern "C" {
   void __meshadaptbase_MOD_madapt_alloc(struct t_meshAdapt**);
   void __meshadaptbase_MOD_madapt_dealloc(struct t_meshAdapt**);
   void __meshadaptbase_MOD_madapt_init(struct t_meshAdapt*, int*, char*, int);
-  void __meshadaptbase_MOD_madapt_step_fromfile(struct t_meshAdapt*, char*, int*, double*, double*, int*, int);
-  void __meshadaptbase_MOD_madapt_step_sngl2(struct t_meshAdapt*, int*, float*, int*, float*, float*, int*);
-  void __meshadaptbase_MOD_madapt_step_dble2(struct t_meshAdapt*, int*, double*, int*, double*, double*, int*);
+  int  __meshadaptbase_MOD_madapt_step_fromfile(struct t_meshAdapt*, char*, int*, double*, double*, int*, int);
+  int  __meshadaptbase_MOD_madapt_step_sngl2(struct t_meshAdapt*, int*, float*, int*, float*, float*, int*);
+  int  __meshadaptbase_MOD_madapt_step_dble2(struct t_meshAdapt*, int*, double*, int*, double*, double*, int*);
   void __meshadaptbase_MOD_madapt_done(struct t_meshAdapt*);
   int  __meshadaptbase_MOD_madapt_getnel(struct t_meshAdapt*, int*);
   int  __meshadaptbase_MOD_madapt_getnvt(struct t_meshAdapt*, int*);

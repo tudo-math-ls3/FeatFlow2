@@ -104,7 +104,7 @@ contains
     real(DP), dimension(:), allocatable :: Dind
     integer, dimension(:,:), allocatable :: IverticesAtElement
     real(DP) :: xc,yc,phi,W
-    integer :: nel,nvt,nnve,iref,iel,ive
+    integer :: nel,nvt,nnve,iref,iel,ive,istatus
     
     ! Initialisation
     call madapt_init(rmeshAdapt,ndim,smesh)
@@ -156,7 +156,7 @@ contains
       end do
 
       ! Perform one step of mesh adaptation
-      call madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
+      istatus = madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
 
       ! Deallocate local data
       deallocate(Dcoords,IverticesAtElement,Dind)
@@ -178,7 +178,7 @@ contains
       allocate(Dind(nel)); Dind = 0.1
       
       ! Perform one step of mesh adaptation
-      call madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
+      istatus = madapt_step(rmeshAdapt,nel,Dind,nrefmax,dreftol,dcrstol)
       
       ! Deallocate local data
       deallocate(Dind)

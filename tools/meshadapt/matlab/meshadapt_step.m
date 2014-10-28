@@ -1,4 +1,4 @@
-function meshadapt_step(indicator,refmax,reftol,crstol,genTria)
+function istatus = meshadapt_step(indicator,refmax,reftol,crstol,genTria)
 %MESHADAPT_STEP Single mesh adaptation step
 %
 %   MESHADAPT_STEP(INDICATOR,REFMAX,REFTOL,CRSTOL)
@@ -20,5 +20,5 @@ function meshadapt_step(indicator,refmax,reftol,crstol,genTria)
 global lp_meshadapt
 
 % Perform one step of mesh adaptation
-calllib('meshadapt', 'madapt_step_dble2', lp_meshadapt, ...
+istatus = calllib('meshadapt', 'madapt_step_dble2', lp_meshadapt, ...
     length(indicator), indicator(:), refmax, reftol, crstol, genTria);

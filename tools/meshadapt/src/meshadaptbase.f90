@@ -295,13 +295,13 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_direct(rmeshAdapt,rindicator,nrefmax,&
-      dreftol,dcrstol,bgenTriangulation)
+  function madapt_step_direct(rmeshAdapt,rindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
   !
@@ -331,7 +331,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     logical :: bgenTria
@@ -359,7 +364,7 @@ contains
     ! Perform mesh adaptation
     call output_line("Performing single adaptation step...")
     call hadapt_refreshAdaptation(rmeshAdapt%rhadapt, rmeshAdapt%rtriangulation)
-    call hadapt_performAdaptation(rmeshAdapt%rhadapt, rindicator)
+    call hadapt_performAdaptation(rmeshAdapt%rhadapt, rindicator, istatus=istatus)
     
     ! Update triangulation structure
     call output_line("Generating raw triangulation...")
@@ -376,17 +381,17 @@ contains
       end if
     end if
 
-  end subroutine madapt_step_direct
+  end function madapt_step_direct
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_dble1(rmeshAdapt,Dindicator,nrefmax,&
-      dreftol,dcrstol,bgenTriangulation)
+  function madapt_step_dble1(rmeshAdapt,Dindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
   !
@@ -416,7 +421,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     type(t_vectorScalar) :: rindicator
@@ -428,22 +438,22 @@ contains
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
+    istatus = madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
 
-  end subroutine madapt_step_dble1
+  end function madapt_step_dble1
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_dble2(rmeshAdapt,nel,Dindicator,nrefmax,&
-      dreftol,dcrstol,bgenTriangulation)
+  function madapt_step_dble2(rmeshAdapt,nel,Dindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
   !
@@ -476,7 +486,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     type(t_vectorScalar) :: rindicator
@@ -488,22 +503,22 @@ contains
     call lalg_copyVector(Dindicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
+    istatus = madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
 
-  end subroutine madapt_step_dble2
+  end function  madapt_step_dble2
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_sngl1(rmeshAdapt,Findicator,nrefmax,&
-      freftol,fcrstol,bgenTriangulation)
+  function madapt_step_sngl1(rmeshAdapt,Findicator,nrefmax,&
+      freftol,fcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
   !
@@ -533,7 +548,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     type(t_vectorScalar) :: rindicator
@@ -545,23 +565,23 @@ contains
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,&
+    istatus = madapt_step(rmeshAdapt,rindicator,nrefmax,&
         real(freftol,DP),real(fcrstol,DP),bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
 
-  end subroutine madapt_step_sngl1
+  end function madapt_step_sngl1
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_sngl2(rmeshAdapt,nel,Findicator,nrefmax,&
-      freftol,fcrstol,bgenTriangulation)
+  function madapt_step_sngl2(rmeshAdapt,nel,Findicator,nrefmax,&
+      freftol,fcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
   !
@@ -594,7 +614,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     type(t_vectorScalar) :: rindicator
@@ -606,23 +631,23 @@ contains
     call lalg_copyVector(Findicator, p_Dindicator)
 
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,&
+    istatus = madapt_step(rmeshAdapt,rindicator,nrefmax,&
         real(freftol,DP),real(fcrstol,DP),bgenTriangulation)
 
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
 
-  end subroutine madapt_step_sngl2
+  end function madapt_step_sngl2
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine madapt_step_fromfile(rmeshAdapt,sindicator,nrefmax,&
-      dreftol,dcrstol,bgenTriangulation)
+  function madapt_step_fromfile(rmeshAdapt,sindicator,nrefmax,&
+      dreftol,dcrstol,bgenTriangulation) result(istatus)
 
 !<description>
-  ! This subroutine performs a single mesh adaptation step based on
+  ! This function performs a single mesh adaptation step based on
   ! the refinement and re-coarsening tolerances, the maximum
   ! refinement level and the element-wise error indicator given.
 !</description>
@@ -650,7 +675,12 @@ contains
     type(t_meshAdapt), intent(inout) :: rmeshAdapt
 !</inputoutput>
 
-!</subroutine>
+!<result>
+    ! Status of the adaptation
+    integer :: istatus
+!</result>
+
+!</function>
 
     ! local variables
     type(t_vectorScalar) :: rindicator
@@ -683,12 +713,12 @@ contains
     close(iunit)
     
     ! Perform mesh adaptation step
-    call madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
+    istatus = madapt_step(rmeshAdapt,rindicator,nrefmax,dreftol,dcrstol,bgenTriangulation)
     
     ! Release scalar indicator vector
     call lsyssc_releaseVector(rindicator)
     
-  end subroutine madapt_step_fromfile
+  end function madapt_step_fromfile
 
   ! ***************************************************************************
 
@@ -728,7 +758,7 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: sarg
-    integer :: iarg,ndim
+    integer :: iarg,istatus,ndim
     logical :: bdaemon=.false.
     
     select case(isignum)
@@ -817,7 +847,7 @@ contains
 
     case (SIGINT) !----- Perform mesh adaptation step --------------------------
 
-      call madapt_step(rmeshAdapt,sindicator,nrefmax,dreftol,dcrstol)
+      istatus = madapt_step(rmeshAdapt,sindicator,nrefmax,dreftol,dcrstol)
             
       iresult = 0
 
