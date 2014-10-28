@@ -102,6 +102,23 @@ module hadaptivity
   public :: hadapt_writeGridGMV
   public :: hadapt_checkConsistency
 
+!<constants>
+
+!<constantblock description="Constants for adaptation status">
+
+  ! No change of triangulation
+  integer(I32), parameter, public :: HADAPT_STATUS_NONE = 0_I32
+
+  ! Triangulation is refined
+  integer(I32), parameter, public :: HADAPT_STATUS_REF  = 2_I32**0
+
+  ! Triangulation is coarsened
+  integer(I32), parameter, public :: HADAPT_STATUS_CRS  = 2_I32**1
+  
+!</constantblock>
+
+!</constants>
+
 contains
 
   ! ***************************************************************************
@@ -909,7 +926,7 @@ contains
 !<subroutine>
 
   subroutine hadapt_performAdaptation(rhadapt, rindicator, rcollection,&
-                                      fcb_hadaptCallback)
+                                      fcb_hadaptCallback, istatus)
 
 !<description>
     ! This subroutine performs the complete adaptation process.
@@ -938,11 +955,18 @@ contains
     ! OPTIONAL: Collection
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
+
+!<output>
+    ! OPTIONAL: status of the adaptation
+    ! Combination of the HADAPT_STATUS_xxx constants
+    integer, intent(out), optional :: istatus
+!</output>
 !</subroutine>
 
     ! local variables
     integer, dimension(2) :: Isize
     integer :: nvt,nel
+    integer, dimension(:), pointer :: p_Imarker
 
     ! Check if dynamic data structures are available
     select case(rhadapt%ndim)
@@ -994,6 +1018,7 @@ contains
 
     ! No grid refinement
     case (HADAPT_NOADAPTATION)
+      if (present(istatus)) istatus = HADAPT_STATUS_NONE
 
     ! Red-green grid refinement
     case (HADAPT_REDGREEN)
@@ -1007,6 +1032,14 @@ contains
         ! Mark element for recoarsening based on indicator function
         call hadapt_markCoarsening1D(rhadapt, rindicator)
 
+        ! Determine status indicator
+        if (present(istatus)) then
+          istatus = HADAPT_STATUS_NONE
+          call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+          if (any(p_Imarker .gt. 0)) istatus = ior(istatus,HADAPT_STATUS_REF)
+          if (any(p_Imarker .lt. 0)) istatus = ior(istatus,HADAPT_STATUS_CRS)
+        end if
+        
         ! Compute new dimensions
         nvt = rhadapt%NVT+rhadapt%increaseNVT
         nel = hadapt_CalcNumberOfElements1D(rhadapt)
@@ -1026,6 +1059,14 @@ contains
 
         ! Mark element for recoarsening based on indicator function
         call hadapt_markRedgreenCoarsening2D(rhadapt, rindicator)
+
+        ! Determine status indicator
+        if (present(istatus)) then
+          istatus = HADAPT_STATUS_NONE
+          call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
+          if (any(p_Imarker .gt. 0)) istatus = ior(istatus,HADAPT_STATUS_REF)
+          if (any(p_Imarker .lt. 0)) istatus = ior(istatus,HADAPT_STATUS_CRS)
+        end if
 
         ! Compute new dimensions
         nvt = rhadapt%NVT+rhadapt%increaseNVT
