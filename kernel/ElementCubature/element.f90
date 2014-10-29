@@ -362,13 +362,13 @@ module element
   ! ID of H1-conforming line FE, Pn, 1 <= n <= 256
   integer(I32), parameter, public :: EL_PN_1D   = EL_1D + 128_I32
 
-  ! Discontinuous Galerkin taylor basis element - constant.
+  ! Discontinuous Galerkin Taylor basis element - constant.
   integer(I32), parameter, public :: EL_DG_T0_1D   = EL_1D + 30_I32
 
-  ! Discontinuous Galerkin taylor basis element - linear.
+  ! Discontinuous Galerkin Taylor basis element - linear.
   integer(I32), parameter, public :: EL_DG_T1_1D   = EL_1D + 31_I32
 
-  ! Discontinuous Galerkin taylor basis element - quadratic.
+  ! Discontinuous Galerkin Taylor basis element - quadratic.
   integer(I32), parameter, public :: EL_DG_T2_1D   = EL_1D + 32_I32
 
 !</constantblock>
@@ -2261,10 +2261,10 @@ contains
   type(t_evalElementSet) :: reval
   type(t_perfconfig), target :: rperfconfig
 
-!#if WARN_DEPREC
-!    call output_line ("Using deprecated feature. Please update your code.", &
-!        OU_CLASS_WARNING,OU_MODE_STD,"elem_generic1")
-!#endif
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"elem_generic1")
+#endif
 
     ! Take care of the 1D PN element
     if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
@@ -2278,19 +2278,23 @@ contains
       select case (celement)
       ! 1D elements
       case (EL_P0_1D)
-        call elem_P0_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_P1_1D)
-        call elem_P1_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_P2_1D)
-        call elem_P2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
       case (EL_S31_1D)
-        call elem_S31_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
+        !call elem_S31_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T0_1D)
-        call elem_DG_T0_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
+        !call elem_DG_T0_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T1_1D)
-        call elem_DG_T1_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
+        !call elem_DG_T1_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T2_1D)
-        call elem_DG_T2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+        bwrapSim2 = .true.
+        !call elem_DG_T2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
 
       ! 2D elements
       case (EL_P0)
@@ -2597,20 +2601,14 @@ contains
 
     ! Choose the right element subroutine to call.
     select case (celement)
-    case (EL_P0_1D)
-      call elem_P0_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P1_1D)
-      call elem_P1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P2_1D)
-      call elem_P2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_S31_1D)
-      call elem_S31_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_DG_T0_1D)
-      call elem_DG_T0_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_DG_T1_1D)
-      call elem_DG_T1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_DG_T2_1D)
-      call elem_DG_T2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+!    case (EL_S31_1D)
+!      call elem_S31_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+!    case (EL_DG_T0_1D)
+!      call elem_DG_T0_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+!    case (EL_DG_T1_1D)
+!      call elem_DG_T1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+!    case (EL_DG_T2_1D)
+!      call elem_DG_T2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
 
     ! 2D elements
     case (EL_Q0)
@@ -2790,26 +2788,18 @@ contains
     select case (celement)
     ! 1D elements
     case (EL_P0_1D)
-      call elem_P0_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                           Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_P1_1D)
-      call elem_P1_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                           Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_P2_1D)
-      call elem_P2_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                           Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_S31_1D)
-      call elem_S31_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                            Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_DG_T0_1D)
-      call elem_DG_T0_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_DG_T1_1D)
-      call elem_DG_T1_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
-    case (EL_DG_T2_1D)
-      call elem_DG_T2_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
+!    case (EL_S31_1D)
+!      call elem_S31_1D_sim (celement, Dcoords, Djac, Ddetj, &
+!                            Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
+!    case (EL_DG_T0_1D)
+!      call elem_DG_T0_1D_sim (celement, Dcoords, Djac, Ddetj, &
+!                              Bder, Dbas, npoints, nelements, Dpoints)
+!    case (EL_DG_T1_1D)
+!      call elem_DG_T1_1D_sim (celement, Dcoords, Djac, Ddetj, &
+!                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
+!    case (EL_DG_T2_1D)
+!      call elem_DG_T2_1D_sim (celement, Dcoords, Djac, Ddetj, &
+!                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     ! 2D elements
     case (EL_Q0)
@@ -2967,46 +2957,41 @@ contains
     ! *****************************************************
     ! 1D line elements
     case (EL_P0_1D)
-      call elem_P0_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+      call elem_eval_P0_1D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_P1_1D)
-      call elem_P1_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+      call elem_eval_P1_1D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_P2_1D)
-      call elem_P2_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+      call elem_eval_P2_1D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_S31_1D)
-      call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+      call elem_eval_S31_1D(celement, revalElementSet, Bder, Dbas)
+!!$      call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
+!!$        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+!!$        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+!!$        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
     case (EL_DG_T0_1D)
-      call elem_DG_T0_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+      call elem_eval_DG_T0_1D(celement, revalElementSet, Bder, Dbas)
+!!$      call elem_DG_T0_1D_sim (celement, revalElementSet%p_Dcoords, &
+!!$        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+!!$        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+!!$        revalElementSet%p_DpointsRef)
 
     case (EL_DG_T1_1D)
-      call elem_DG_T1_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+      call elem_eval_DG_T1_1D(celement, revalElementSet, Bder, Dbas)
+!!$      call elem_DG_T1_1D_sim (celement, revalElementSet%p_Dcoords, &
+!!$        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+!!$        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+!!$        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
     case (EL_DG_T2_1D)
-      call elem_DG_T2_1D_sim (celement, revalElementSet%p_Dcoords, &
-        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+      call elem_eval_DG_T2_1D(celement, revalElementSet, Bder, Dbas)
+!!$      call elem_DG_T2_1D_sim (celement, revalElementSet%p_Dcoords, &
+!!$        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+!!$        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+!!$        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
     ! *****************************************************
     ! 2D triangle elements
@@ -3104,7 +3089,7 @@ contains
       call elem_eval_QPW4P2_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EN30_2D)
-      ! new implementation of 2D EM30
+      ! New implementation of 2D EM30
       call elem_eval_EN30_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_E030)
