@@ -46,10 +46,7 @@ end
 meshadapt_init(ndim,smesh,compiler);
 
 % Get data from adaptation structure
-[nel,nvt] = meshadapt_data(genTria);
-
-% Get mesh from adaptation structure
-[coords,vertices] = meshadapt_mesh(genTria);
+[nel,nvt,coords,vertices] = meshadapt_data(genTria,'nel','nvt','coords','vertices');
 
 % Visualise the original mesh
 X = coords(1,:)';
@@ -81,10 +78,7 @@ for iref=1:nref
     meshadapt_step(ind,refmax,reftol,crstol,genTria);
     
     % Get data from adaptation structure
-    [nel,nvt] = meshadapt_data(genTria);
-    
-    % Get mesh from adaptation structure
-    [coords,vertices] = meshadapt_mesh(genTria);
+    [nel,nvt,coords,vertices] = meshadapt_data(genTria,'nel','nvt','coords','vertices');
     
     X = coords(1,:)';
     Y = coords(2,:)';
@@ -93,10 +87,7 @@ for iref=1:nref
 end
 
 % Get data from adaptation structure
-[nel,nvt] = meshadapt_data(genTria);
-
-% Get mesh from adaptation structure
-[coords,vertices] = meshadapt_mesh(genTria);
+[nel,nvt,coords,vertices] = meshadapt_data(genTria,'nel','nvt','coords','vertices');
 
 % Plot refined mesh
 figure(1)
@@ -113,10 +104,7 @@ for iref=1:nref
     meshadapt_step(ind,refmax,reftol,crstol,genTria);
     
     % Get data from adaptation structure
-    [nel,nvt] = meshadapt_data(genTria);
-    
-    % Get mesh from adaptation structure
-    [coords,vertices] = meshadapt_mesh(genTria);
+    [nel,nvt,coords,vertices] = meshadapt_data(genTria,'nel','nvt','coords','vertices');
 end
 
 % plot coarsened mesh

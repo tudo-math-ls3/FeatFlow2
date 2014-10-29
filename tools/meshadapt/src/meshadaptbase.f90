@@ -1294,7 +1294,7 @@ contains
     call storage_getbase_int(rmeshAdapt%rhadapt%h_IvertexAge, p_IvertexAge)
     
     do i=1,rmeshAdapt%rhadapt%NVT
-      IvertexAge(i) = p_IvertexAge(i)
+      IvertexAge(i) = abs(p_IvertexAge(i))
     end do
     
   end subroutine madapt_getVertexAge
@@ -1357,7 +1357,7 @@ contains
         do i=1,n
           if (p_IverticesAtElement(i,j) .gt. 0) then
             IelementAge(j) = max(IelementAge(j),&
-                p_IvertexAge(p_IverticesAtElement(i,j)))
+                abs(p_IvertexAge(p_IverticesAtElement(i,j))))
           else
             cycle iel1
           end if
