@@ -2212,7 +2212,7 @@ contains
       case default
 
         call output_line("Unsupported element!",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBC")
+            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBConRealBd")
         call sys_halt()
 
       end select
