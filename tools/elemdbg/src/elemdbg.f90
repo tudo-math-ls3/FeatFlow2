@@ -19,7 +19,7 @@ program elemdbg
   
   type(t_parlist) :: rparam
   character(LEN=64) :: sConfigSection
-  character(LEN=256) :: sLogFile
+  character(LEN=256) :: sLogFile,sDatFile
   integer :: itest
   
   ! The very first thing in every application:
@@ -32,7 +32,11 @@ program elemdbg
 
   ! Read in parameter list
   call parlst_init(rparam)
-  call parlst_readfromfile(rparam, './data/elemdbg.dat')
+  if (sys_getenv_string("DATFILE",sDatFile)) then
+    call parlst_readfromfile(rparam, trim(sDatFile))
+  else
+    call parlst_readfromfile(rparam, './data/elemdbg.dat')
+  end if
 
   ! Get log file name
   call parlst_getvalue_string(rparam, '', 'SLOGFILE', sLogFile, '')

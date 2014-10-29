@@ -1,0 +1,147 @@
+
+# Path of the log-file (optional)
+SLOGFILE = $LOGDIR/output.txt
+
+# Name of the configuration section that is to be loaded
+SCONFIGSECTION = EXAMPLE
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Example Section
+[EXAMPLE]
+
+# Test that is to be loaded (mandatory)
+# 101 -> 1D Element-Debugger #1: L2-projection
+# 102 -> 1D Element-Debugger #1: Poisson system
+# 103 -> 1D Element-Debugger #1: Convection-Diffusion system
+# 201 -> 2D Element-Debugger #1: L2-projection
+# 202 -> 2D Element-Debugger #1: Poisson system
+# 203 -> 2D Element-Debugger #1: Convection-Diffusion system
+# 301 -> 3D Element-Debugger #1: L2-projection
+# 302 -> 3D Element-Debugger #1: Poisson system
+# 303 -> 3D Element-Debugger #1: Convection-Diffusion system
+ITEST = $TEST
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# General Parameters
+
+# Minimum and maximum levels (mandatory)
+NLMIN = 2
+NLMAX = $MGLEVELS
+
+# Element identifier (mandatory)
+SELEMENT = $ELEMENT
+
+# Cubature rule identifier (mandatory)
+SCUBATURE = $CUBATURE
+
+# Desired solution u of the system (default: 0)
+# 1D:
+#   0 -> u(x) = sin(pi*x)
+#   1 -> u(x) = x
+#   2 -> u(x) = (exp(1/nu) - exp(x/nu)) / (exp(1/nu) - 1)
+#        This solution is only valid for ITEST = 103.
+#        In this case DBETA1 is always set to 1.
+# 2D:
+#   0 -> u(x,y) = sin(pi*x) * sin(pi*y)
+#   1 -> u(x,y) = x
+#   2 -> u(x,y) = y
+#   3 -> u(x,y) = 16 * x * (1-x) * y * (1-y)
+# 3D:
+#   0 -> u(x,y,z) = sin(pi*x) * sin(pi*y) * sin(pi*z)
+#   1 -> u(x,y,z) = x
+#   2 -> u(x,y,z) = y
+#   3 -> u(x,y,z) = z
+ISOLUTION = $SOLUTION
+
+# Export solution on each level to GMV/VTK file (default: 0)
+# 0 -> no output
+# 1 -> write GMV
+# 2 -> write VTK
+IUCD = 0
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Mesh Distortion Parameters
+
+# Mesh distortion type (default: 0)
+# 1D / 2D / 3D:
+#   0 -> no distortion
+#   1 -> index-based distortion (as in meshmodification module)
+# 2D:
+#   2 -> X-line-wise index-based distortion
+#   3 -> Y-line-wise index-based distortion
+# 3D:
+#   2 -> XY-plane-wise index-based distortion
+#   3 -> XZ-plane-wise index-based distortion
+#   4 -> YZ-plane-wise index-based distortion
+IDISTTYPE = 0
+
+# Level on which the mesh is to be distorted (default: 0)
+# <= 0 -> distort mesh on level max(1, ILEVEL - |IDISTLEVEL|)
+# >= 1 -> distort mesh on level IDISTLEVEL
+IDISTLEVEL = 0
+
+# Primary mesh distortion parameter (default: 0.1)
+DMESHDISTORT = 0.1
+
+# Secondary mesh distortion parameter, used by line- and plane-wise
+# distortion in 2D and 3D (default: 0.0)
+DMESHDISTORT2 = 0.0
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Parameters for Convection-Diffusion tests
+
+# Coefficient of stiffness matrix (default: 1E-5)
+DNU = 1E-5
+
+# Convection vector (default: (2,3,4))
+# 1D: (DBETA1)
+# 2D: (DBETA1, DBETA2)
+# 3D: (DBETA1, DBETA2, DBETA3)
+DBETA1 = 2
+DBETA2 = 3
+DBETA3 = 4
+
+# Stabilisation (default: 0)
+# 0 -> no stabilisation
+# 1 -> Streamline-Diffusion (2D only)
+# 2 -> Jump-Stabilisation (2D / 3D only)
+# 3 -> Streamline-Diffusion (kernel implementation, 2D only)
+ISTABIL = 0
+
+# Stabilisation parameter for Streamline-Diffusion (default: 1.0)
+DUPSAM = 1.0
+
+# For Streamline diffusion: Method to determine the local h.
+# =0: sqrt(cell size)
+# =1: raytracing
+CLOCALH = 1
+
+# Stabilisation parameter for Jump-Stabilisation (default: 0.01)
+DGAMMA = 0.01
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Solver Parameters
+
+# Solver that is to be used (default: 0)
+# 0 -> UMFPACK4 solver
+# 1 -> CG-SSOR solver
+# 2 -> BiCGStab-ILU(k) solver with reverse Cuthill-McKee ordering
+ISOLVER = 0
+
+# Relaxation parameter for CG-SSOR (default: 1.2)
+DRELAX = 1.2
+
+# Maximum allowed level of fill-in for ILU(k) preconditioner (default: 0)
+IFILLIN = 0
+
+# Output Level of solver (default: 0)
+IOUTPUT = 0
+
+# Maximum number of iterations for iterative solvers (default: 1000)
+NMAXITER = 1000
+
+# Relative tolerance for iterative solvers (default: 1E-8)
+DEPSREL = 1E-8
+
+# Absolute tolerance for iterative solvers (default: 1E-11)
+DEPSABS = 1E-11
