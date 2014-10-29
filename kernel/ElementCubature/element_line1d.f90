@@ -2540,7 +2540,7 @@ contains
       do j = 1, reval%nelements
 
         ! Calculate length of element
-        dlen = 0.125_DP / (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
+        dlen = 0.125_DP * (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
@@ -2573,7 +2573,7 @@ contains
       do j = 1, reval%nelements
 
         ! Calculate length of element
-        dlen = 0.5_DP / (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
+        dlen = 0.5_DP * (reval%p_Dcoords(1,2,j) - reval%p_Dcoords(1,1,j))
 
         ! Loop through all points on the current element
         do i = 1, reval%npointsPerElement
