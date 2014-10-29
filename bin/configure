@@ -4337,7 +4337,7 @@ sub create_feat2BenchmarkMakefile {
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(dir) purge-app ); )\n" .
         "\t\@-\$(foreach dir, \$(SRCDIRS), rm \$(dir)/$MAKEFILE \$(dir)/$MAKEFILE.bak; )\n" .
         "endif\n" .
-        "\trm -f $MAKEFILE $MAKEFILE.bak $(MAKEFILE_NAME)\n" .
+        "\trm -f $MAKEFILE $MAKEFILE.bak \$(MAKEFILE_NAME)\n" .
         "\n\n\n" .
 
 
