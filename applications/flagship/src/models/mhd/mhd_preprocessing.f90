@@ -1875,7 +1875,7 @@ contains
     end do
 
     call output_line('Total energy:     '//trim(sys_sdEL(dnorm,5)))
-    call output_line('min/max density:  '//trim(sys_sdEL(dmin,5))//' / '&
+    call output_line('min/max energy:   '//trim(sys_sdEL(dmin,5))//' / '&
                                          //trim(sys_sdEL(dmax,5)))
     
     ! Pressure
