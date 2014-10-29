@@ -69,7 +69,7 @@ for i=1:length(varargin)
       case 'elementage'
         p_elementage = libpointer('int32Ptr', zeros(1,nel));
         calllib('meshadapt', 'madapt_getelementage', ...
-                lp_meshadapt, p_elementage);
+                lp_meshadapt, p_elementage, useTria);
         varargout{i} = p_elementage.Value;
       otherwise
         error(['Invalid keyword' upper(varargin{i})])
