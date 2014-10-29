@@ -70,13 +70,13 @@ predir   = ../tools/elemdbg/pre
 # test of L2-projection in 1D
 #============================================================
 
-descr    = Element debugger L2-projection benchmark
-test     = 101
-
 # Test 101_P0
 testid   = ELEMDBG_101_P0
 element  = EL_P0_1D
 cubature = G2_1D
+
+descr    = Element debugger L2-projection 1D benchmark
+test     = 101
 
 # Test 101_P1
 testid   = ELEMDBG_101_P1
@@ -91,7 +91,7 @@ cubature = G4_1D
 # Test 101_S31
 testid   = ELEMDBG_101_S31
 element  = EL_S31_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 101 for PN, DG_T0, DG_T1, DG_T2 not available
 
@@ -99,15 +99,15 @@ cubature = G4_1D
 # test of Poisson system in 1D
 #============================================================
 
-descr    = Element debugger Poisson benchmark
-test     = 102
-
 # Test 102 for P0 not available
 
 # Test 102_P1
 testid   = ELEMDBG_102_P1
 element  = EL_P1_1D
 cubature = G3_1D
+
+descr    = Element debugger Poisson 1D benchmark
+test     = 102
 
 # Test 102_P2
 testid   = ELEMDBG_102_P2
@@ -117,7 +117,7 @@ cubature = G4_1D
 # Test 102_S31
 testid   = ELEMDBG_102_S31
 element  = EL_S31_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 102 for PN, DG_T0, DG_T1, DG_T2 not available
 
@@ -125,15 +125,15 @@ cubature = G4_1D
 # test of Convection-Diffusion system in 1D
 #============================================================
 
-descr    = Element debugger Convection-Diffusion benchmark
-test     = 103
-
 # Test 103 for P0 not available
 
 # Test 103_P1
 testid   = ELEMDBG_103_P1
 element  = EL_P1_1D
 cubature = G3_1D
+
+descr    = Element debugger Convection-Diffusion 1D benchmark
+test     = 103
 
 # Test 103_P2
 testid   = ELEMDBG_103_P2
@@ -143,6 +143,132 @@ cubature = G4_1D
 # Test 103_S31
 testid   = ELEMDBG_103_S31
 element  = EL_S31_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 103 for PN, DG_T0, DG_T1, DG_T2 not available
+
+#============================================================
+# test of L2-projection in 2D
+#============================================================
+
+# Test 201_P0
+testid   = ELEMDBG_201_P0
+element  = EL_P0_2D
+cubature = VMC
+
+descr    = Element debugger L2-projection 2D benchmark
+test     = 201
+
+# Test 201_P1
+testid   = ELEMDBG_201_P1
+element  = EL_P1_2D
+cubature = VMC
+
+# Test 201_P1T
+testid   = ELEMDBG_201_P1T
+element  = EL_P1T_2D
+cubature = QG5_T
+
+# Test 201_DCP1
+testid   = ELEMDBG_201_DCP1
+element  = EL_DCP1_2D
+cubature = QG5_T
+
+# Test 201_P2
+testid   = ELEMDBG_201_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 201_P2E
+testid   = ELEMDBG_201_P2E
+element  = EL_P2E_2D
+cubature = QG5_T
+
+# Test 201_P3
+testid   = ELEMDBG_201_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 201 for RT1 not available
+
+#============================================================
+# test of Poisson system in 2D
+#============================================================
+
+# Test 202 for P0 not available
+
+# Test 202_P1
+testid   = ELEMDBG_202_P1
+element  = EL_P1_2D
+cubature = VMC
+
+descr    = Element debugger Poisson 2D benchmark
+test     = 202
+
+# Test 202_P1T
+testid   = ELEMDBG_202_P1T
+element  = EL_P1T_2D
+cubature = QG5_T
+
+# Test 202_DCP1
+testid   = ELEMDBG_202_DCP1
+element  = EL_DCP1_2D
+cubature = QG5_T
+
+# Test 202_P2
+testid   = ELEMDBG_202_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 202_P2E
+testid   = ELEMDBG_202_P2E
+element  = EL_P2E_2D
+cubature = QG5_T
+
+# Test 202_P3
+testid   = ELEMDBG_202_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 202 for RT1 not available
+
+#============================================================
+# test of Convection-Diffusion system in 2D
+#============================================================
+
+# Test 203 for P0 not available
+
+# Test 203_P1
+testid   = ELEMDBG_203_P1
+element  = EL_P1_2D
+cubature = VMC
+
+descr    = Element debugger Convection-Diffusion 2D benchmark
+test     = 203
+
+# Test 203_P1T
+testid   = ELEMDBG_203_P1T
+element  = EL_P1T_2D
+cubature = QG5_T
+
+# Test 203_DCP1
+testid   = ELEMDBG_203_DCP1
+element  = EL_DCP1_2D
+cubature = QG5_T
+
+# Test 203_P2
+testid   = ELEMDBG_203_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 203_P2E
+testid   = ELEMDBG_203_P2E
+element  = EL_P2E_2D
+cubature = QG5_T
+
+# Test 203_P3
+testid   = ELEMDBG_203_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 203 for RT1 not available
