@@ -93,12 +93,16 @@ testid   = ELEMDBG_101_S31
 element  = EL_S31_1D
 cubature = G4_1D
 
+# Test 101 for PN, DG_T0, DG_T1, DG_T2 not available
+
 #============================================================
 # test of Poisson system in 1D
 #============================================================
 
 descr    = Element debugger Poisson benchmark
 test     = 102
+
+# Test 102 for P0 not available
 
 # Test 102_P1
 testid   = ELEMDBG_102_P1
@@ -115,12 +119,16 @@ testid   = ELEMDBG_102_S31
 element  = EL_S31_1D
 cubature = G4_1D
 
+# Test 102 for PN, DG_T0, DG_T1, DG_T2 not available
+
 #============================================================
 # test of Convection-Diffusion system in 1D
 #============================================================
 
 descr    = Element debugger Convection-Diffusion benchmark
 test     = 103
+
+# Test 103 for P0 not available
 
 # Test 103_P1
 testid   = ELEMDBG_103_P1
@@ -136,3 +144,5 @@ cubature = G4_1D
 testid   = ELEMDBG_103_S31
 element  = EL_S31_1D
 cubature = G4_1D
+
+# Test 103 for PN, DG_T0, DG_T1, DG_T2 not available

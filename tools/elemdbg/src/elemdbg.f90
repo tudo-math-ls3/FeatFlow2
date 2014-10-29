@@ -19,7 +19,7 @@ program elemdbg
   
   type(t_parlist) :: rparam
   character(LEN=64) :: sConfigSection
-  character(LEN=256) :: sLogFile,sDatFile
+  character(LEN=256) :: sLogDir,sLogFile,sDatFile
   integer :: itest
   
   ! The very first thing in every application:
@@ -38,11 +38,22 @@ program elemdbg
     call parlst_readfromfile(rparam, './data/elemdbg.dat')
   end if
 
-  ! Get log file name
-  call parlst_getvalue_string(rparam, '', 'SLOGFILE', sLogFile, '')
-
   ! Initialise the output system.
-  call output_init (sLogFile)
+  !
+  ! Normally, we write all the output to the screen and to a file.
+  ! In the case that environment variables "$logdir"/"$resultsfile" exists,
+  ! we write all the output to that file. This can be used e.g. in
+  ! regression tests to compare results to reference results.
+  if (sys_getenv_string("LOGDIR",slogdir) .and. &
+      sys_getenv_string("RESULTFILE",slogfile)) then
+    call output_init (trim(slogdir)//"/"//trim(slogfile))
+  else
+    ! Get log file name
+    call parlst_getvalue_string(rparam, '', 'SLOGFILE', sLogFile, '')
+    
+    ! Initialise the output system.
+    call output_init (sLogFile)
+  end if
   
   ! Get config section name
   call parlst_getvalue_string(rparam, '', 'SCONFIGSECTION', sConfigSection, '')
