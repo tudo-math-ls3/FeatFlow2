@@ -2967,10 +2967,6 @@ contains
 
     case (EL_S31_1D)
       call elem_eval_S31_1D(celement, revalElementSet, Bder, Dbas)
-!!$      call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
-!!$        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
-!!$        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-!!$        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
     case (EL_DG_T0_1D)
       call elem_eval_DG_T0_1D(celement, revalElementSet, Bder, Dbas)
