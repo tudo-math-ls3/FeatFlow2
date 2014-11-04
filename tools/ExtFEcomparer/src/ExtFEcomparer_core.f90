@@ -1,7 +1,6 @@
 ! This module contains the core of the compare-application
 ! It starts at the point where you have 2 FEM Solutions,
 ! created the according discretisations and parametrisations
-! and now want to calculate the differences.
 
 module ExtFEcomparer_core
 
@@ -11,11 +10,9 @@ module ExtFEcomparer_core
 
   use element
   use cubature
-  use spatialdiscretisation
   use linearsystemblock
   use linearsystemscalar
 
-  use bilinearformevaluation
   use derivatives
   use collection
   use feevaluation2
@@ -31,8 +28,6 @@ module ExtFEcomparer_core
   use fparser
   use paramlist
 
-  use vectorio
-  use io
 
 implicit none
 
@@ -52,7 +47,46 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
   type(t_problem), intent(inout), target :: rproblem_1, rproblem_2
 ! </input>
 
-!<output>
+!<inputoutput>
+  type(t_postprocessing), intent(inout) :: rpostprocessing
+!</inputoutput>
+
+
+  ! Do the L2-Calculations if we want to do some
+  if (rpostprocessing%nL2Calculations .gt. 0 ) then
+    call ExtFE_calc_L2(rproblem_1,rproblem_2,rpostprocessing)
+  end if
+
+  ! Do the point-evaluations and calculations
+  if (rpostprocessing%nPointCalculations .gt. 0) then
+    call ExtFE_calc_pointvalues(rproblem_1,rproblem_2,rpostprocessing)
+  end if
+
+
+  ! Do the computations neccesary for the UCD-Output
+  ! Sounds weird, but the plan is atm to have the
+  ! option to write out f - g directly
+
+  call ExtFE_calc_UCD(rproblem_1,rproblem_2,rpostprocessing)
+
+
+  ! Do the neccesary stuff for the vector output
+  call ExtFE_calc_OutOrigVec(rproblem_1,rproblem_2,rpostprocessing)
+
+
+end subroutine
+
+
+
+
+subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
+
+!<input>
+! 2 Problem structures that contain everything
+  type(t_problem), intent(inout), target :: rproblem_1, rproblem_2
+! </input>
+
+!<inputoutput>
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</output>
 
@@ -64,15 +98,12 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
   ! We need to know how many calculations we want to do
   integer :: nL2Calculations
 
-  ! For the calculations we need to know the cubature rule
-  integer(I32), dimension(:), allocatable :: L2CubRule
-
   ! pointer to the storage of the postprocessing structure
   real(DP), dimension(:),  pointer :: p_L2results =>NULL()
   integer, dimension (:,:), pointer :: p_L2Comp => NULL()
   character, dimension(:), pointer :: p_L2ChiOmega => NULL()
   character, dimension(:), pointer :: p_L2TriFile => NULL()
-
+  integer(I32), dimension(:), pointer :: p_L2CubRule => NULL()
   ! For the collection we need to convert the scalar
   ! vectors to block vectors
   type(t_vectorBlock), target :: blockSecond
@@ -82,21 +113,12 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
 
   ! For the L2-Calculations we need the characteristic
   ! functions of the domain where we want to calculate
-  character(LEN=ExtFE_STRLEN), dimension(:), allocatable :: L2ChiOmega
+  character(LEN=ExtFE_STRLEN) :: L2ChiOmega
 
   ! We need a FE-Vector
   type(t_fev2Vectors) :: fefunction
 
-  ! Pointvalues
-  real(DP), dimension(:), pointer :: p_PointResults => NULL()
-  real(DP), dimension(:,:), pointer :: p_PointCoords => NULL()
-  integer, dimension(:,:), pointer :: p_PointFuncComp => NULL()
-
-  integer :: nPointEvaluations,iDeriv
-  real(DP), dimension(:), allocatable :: DEvalPoint
-
-
-  ! We might need it as a temporary storage
+    ! We might need it as a temporary storage
   real(DP) :: Dresult
 
   ! To figure out if we jump somewhere or not
@@ -106,67 +128,26 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
 
   ! We also need loop-variables
   integer :: i,k
-  character(LEN=ExtFE_STRLEN) :: sparam
-  character(LEN=ExtFE_STRLEN) :: soutput, stmp, stmp2
+  character(LEN=ExtFE_STRLEN) :: soutput, stmp
 
-  ! For the output we need some string
-  character(LEN=6), dimension(ExtFE_NumDerivs) :: sderivnames
-  ! We start to count the derivatives from 0, so
-  ! we need to shift by 1
-  sderivnames(ExtFE_DER_FUNC_3D+1) = '      '
-  sderivnames(ExtFE_DER_DERIV_3D_X+1) = '(d/dx)'
-  sderivnames(ExtFE_DER_DERIV_3D_Y+1) = '(d/dy)'
-  sderivnames(ExtFE_DER_DERIV_3D_Z+1) = '(d/dz)'
 
- call output_lbrk()
- call output_separator(OU_SEP_MINUS)
 
   ! Find out how many L2-compuations to do
-  nL2Calculations = parlst_querysubstrings(rproblem_1%rparamlist, &
-                    "ExtFE-CALCULATIONS","L2calculations")
+  nL2Calculations = rpostprocessing%nL2Calculations
 
-  ! Read in what we want to calculate
-  if (nL2Calculations .gt. 0) then
 
     call output_lbrk()
+    call output_line('Calculate the requested L2-norms ...')
+    call output_lbrk()
 
-    ! Allocate - it is more handy to have it like this
-    allocate(L2ChiOmega(nL2Calculations))
-    allocate(L2CubRule(nL2Calculations))
-
-    ! To store the data in the postprocessing structure
+    ! Get the arrays
     call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
     call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
     call storage_getbase_char(rpostprocessing%h_L2ChiOmega,p_L2ChiOmega)
     call storage_getbase_char(rpostprocessing%h_L2TriFile,p_L2TriFile)
+    call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
 
-    ! Now read in the data
-    do i=1,nL2Calculations
-        ! fetch the whole line
-        call parlst_getvalue_string(rproblem_1%rparamlist, &
-                        "ExtFE-CALCULATIONS", "L2calculations", &
-                        sparam,sdefault="",isubstring=i)
-        ! Now read the parameters from the string
-        read(sparam,*) p_L2Comp(1,i), p_L2Comp(2,i)
 
-        call parlst_getvalue_string(rproblem_1%rparamlist, &
-                        "ExtFE-CALCULATIONS", "L2RegionOfInterest", &
-                        sparam,sdefault="",isubstring=i)
-        read(sparam,'(A)') L2ChiOmega(i)
-        ! Copy it to the postprocessing structure for
-        ! some output. It is nasty but i have not find
-        ! any other way
-         do k=1,ExtFE_STRLEN
-            p_L2ChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
-         end do
-
-        call parlst_getvalue_string(rproblem_1%rparamlist, &
-                        "ExtFE-CALCULATIONS", "L2CubatureRule", &
-                        sparam,sdefault="",isubstring=i)
-        L2CubRule(i) = cub_igetID(sparam)
-    end do ! Read in of the data
-
-    ! That was easy - now we have all data so we can calculate
     ! We calculate the L2-Difference between L2comp(1,i) and L2comp(2,i)
     ! on L2ChiOmega(i) and use cubature rule L2CubRule(i)
     ! If one of the components is set to -1, we calculate the L2-Norm of
@@ -177,6 +158,7 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
         lOneFunction = .FALSE.
         lBothFunctions = .FALSE.
         stmp = ''
+        L2ChiOmega = ''
         ! Find out what to calculate and set the pointers
         ! First option: both are > 0 - so we want
         ! to calculate the difference
@@ -187,11 +169,7 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
           rFirst => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
           rSecond=> rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
           write(stmp,'(A7,I2,A8,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,') - f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
-          ! For the postprocessing we store which tri-file
-          ! we actually used - the first one
-          do k=1,ExtFE_STRLEN
-            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_1%sTRIFile(k:k)
-          end do
+
         ! Second option: id1 >0, id2 <=0
         ! => calculate ||id1||
         else if((p_L2Comp(1,i) .gt. 0) .and. &
@@ -200,11 +178,7 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
           write(stmp,'(A7,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,')||_L2(Omega_', i, ') = '
-          ! For the postprocessing we store which tri-file
-          ! we actually used - the first one
-          do k=1,ExtFE_STRLEN
-            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_1%sTRIFile(k:k)
-          end do
+
 
         ! Third option: id1<=0, id2 >0
         ! => calculate ||id2||
@@ -214,11 +188,7 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
           write(stmp,'(A7,I2,A13,I2,A4)') '||f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
-          ! For the postprocessing we store which tri-file
-          ! we actually used - the first one
-          do k=1,ExtFE_STRLEN
-            p_L2TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=rproblem_2%sTRIFile(k:k)
-          end do
+
         else
             call output_line('You need always one component id that &
                     &is greater than 0', &
@@ -226,17 +196,23 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
             call sys_halt()
         end if ! Which component
 
+        ! Now pick up which region of interest
+        ! We know where we stored this information...
+        do k=1,ExtFE_STRLEN
+            L2ChiOmega(k:k) = p_L2ChiOmega((i-1)*ExtFE_STRLEN+k)
+        end do
+
         ! Here we trigger the real computation
         if((lOneFunction .eqv. .TRUE.) .AND. &
             (lBothFunctions .eqv. .FALSE.)) then
             ! Create the cubature information
             call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
-                    RcubatureInformation, L2CubRule(i))
+                    RcubatureInformation, p_L2CubRule(i))
             ! mark the function to be evaluated
             call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
             ! Pass the Region of interest to the collection
             ! so we can grab it in the integral routine
-            collection%SquickAccess(1) = L2ChiOmega(i)
+            collection%SquickAccess(1) = L2ChiOmega
 
             ! We need different computation
             ! routines for each dimension due to the evaluation
@@ -271,13 +247,13 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
                  (lBothFunctions .eqv. .TRUE.)) then
             ! Create a cubature information
             call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
-                    RcubatureInformation, L2CubRule(i))
+                    RcubatureInformation, p_L2CubRule(i))
 
             ! mark the function to be evaluated
             call fev2_addVectorToEvalList(fefunction,rFirst,0)
             ! Pass the Region of interest to the collection
             ! so we can grab it in the integral routine
-            collection%SquickAccess(1) = L2ChiOmega(i)
+            collection%SquickAccess(1) = L2ChiOmega
 
             ! Now the tricky part: We cannot pass the second
             ! function directly since it lives on another mesh
@@ -314,6 +290,9 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
             Dresult = -1.0_DP
             collection%p_rvectorQuickAccess1 => NULL()
             call lsysbl_releaseVector(blockSecond)
+            rFirst => NULL()
+            rSecond=>NULL()
+            rCalcThis=>NULL()
         end if ! triggering L2 calculations
 
     ! Now generate some output on the terminal so that the user
@@ -326,15 +305,55 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
 
     end do ! Loop over all L2-Calculations
 
-  end if !nL2calculations > 0
 
 
- ! Find out how many point-evaluations we
- ! have to do
- nPointEvaluations = parlst_querysubstrings(rproblem_1%rparamlist, &
-                    "ExtFE-CALCULATIONS","evaluationpoints")
 
- if(nPointEvaluations .gt. 0) then
+end subroutine
+
+
+subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
+
+!<input>
+! 2 Problem structures that contain everything
+  type(t_problem), intent(inout) :: rproblem_1, rproblem_2
+! </input>
+
+!<inputoutput>
+  type(t_postprocessing), intent(inout) :: rpostprocessing
+!</output>
+
+! Local variables
+
+  real(DP), dimension(:), pointer :: p_PointResults => NULL()
+  real(DP), dimension(:,:), pointer :: p_PointCoords => NULL()
+  integer, dimension(:,:), pointer :: p_PointFuncComp => NULL()
+
+  integer :: nPointEvaluations,iDeriv
+  real(DP), dimension(:), allocatable :: DEvalPoint
+
+  ! To figure out if we jump somewhere or not
+  logical :: lOneFunction, lBothFunctions
+  type(t_vectorScalar), pointer :: rCalcThis, rFirst,rSecond
+
+  real(DP) :: Dresult
+  ! We also need loop-variables
+  integer :: i,k
+  character(LEN=ExtFE_STRLEN) :: sparam
+  character(LEN=ExtFE_STRLEN) :: soutput, stmp, stmp2
+
+  ! For the output we need some string
+  character(LEN=6), dimension(ExtFE_NumDerivs) :: sderivnames
+  ! We start to count the derivatives from 0, so
+  ! we need to shift by 1
+  sderivnames(ExtFE_DER_FUNC_3D+1) = '      '
+  sderivnames(ExtFE_DER_DERIV_3D_X+1) = '(d/dx)'
+  sderivnames(ExtFE_DER_DERIV_3D_Y+1) = '(d/dy)'
+  sderivnames(ExtFE_DER_DERIV_3D_Z+1) = '(d/dz)'
+
+  nPointEvaluations = rpostprocessing%nPointCalculations
+
+    call output_lbrk()
+    call output_line('Calculate the requested pointvalues ...')
     call output_lbrk()
 
     ! get the arrays
@@ -345,42 +364,12 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
     ! Allocate the evaluationpoint
     allocate(DEvalPoint(rproblem_1%iDimension))
 
-    ! First step: read in where we want to evaluate
-    do i=1,nPointEvaluations
-        ! fetch the whole line
-        call parlst_getvalue_string(rproblem_1%rparamlist, &
-                        "ExtFE-CALCULATIONS", "evaluationpoints", &
-                        sparam,sdefault="",isubstring=i)
-        !and read it in. Which function comp and deriv?
-        select case(rproblem_1%iDimension)
-
-          case(ExtFE_NDIM1)
-            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
-                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
-                           p_PointCoords(1,i)
-          case(ExtFE_NDIM2)
-            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
-                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
-                           p_PointCoords(1,i)  , p_PointCoords(2,i)
-          case(ExtFE_NDIM3)
-            read(sparam,*) p_PointFuncComp(1,i), p_PointFuncComp(2,i), &
-                           p_PointFuncComp(3,i), p_PointFuncComp(4,i), &
-                           p_PointCoords(1,i)  , p_PointCoords(2,i), &
-                           p_PointCoords(3,i)
-          case default
-            call output_line('Dimension not implemented', &
-                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
-            call sys_halt()
-        end select
-
-
-    end do ! Read in the Data
-
     ! Now prepare and then trigger the
     ! evaluations
     do i=1,nPointEvaluations
         lOneFunction = .false.
         lBothFunctions = .false.
+        iDeriv = -1
 
         if( (p_PointFuncComp(1,i) .gt. 0) .and. &
             (p_PointFuncComp(3,i) .gt. 0)) then
@@ -431,16 +420,16 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
 
     if((lOneFunction .eqv. .true.) .AND. &
         (lBothFunctions .eqv. .false.)) then
-        call ExtFEcompare_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
+        call ExtFE_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
         p_PointResults(i) = Dresult
 
     else if((lOneFunction .eqv. .false.) .AND. &
             (lBothFunctions .eqv. .true.)) then
         iDeriv = p_PointFuncComp(2,i)
-        call ExtFEcompare_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
+        call ExtFE_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
         p_PointResults(i) = Dresult
         iDeriv = p_PointFuncComp(4,i)
-        call ExtFEcompare_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
+        call ExtFE_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
         p_PointResults(i) = p_PointResults(i) - Dresult
 
     end if
@@ -457,16 +446,79 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
     write(stmp2,'(F8.5)') p_PointResults(i)
     soutput = trim(stmp) // ' = ' // trim(stmp2)
     call output_line(soutput)
+
+
     end do ! all point calculations
 
     ! clean up
     deallocate(DEvalPoint)
 
- end if !nPointEvaluations > 0
 
 end subroutine
 
 
+
+! Do the computations/preparations neccesary for the UCD-Output
+! Sounds weird, but the plan is atm to have the
+! option to write out f - g directly
+! This routine holds the place for it
+! Other thing is: We need to set the pointers
+subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
+
+!<input>
+! 2 Problem structures that contain everything
+  type(t_problem), intent(inout), target :: rproblem_1, rproblem_2
+! </input>
+
+!<inputoutput>
+  type(t_postprocessing), intent(inout) :: rpostprocessing
+!</output>
+
+  !----------------------------------------------!
+  ! Prepare the UCD-Output: Calculate everything !
+  ! and store it in the postprocessing structure !
+  !----------------------------------------------!
+
+  if ((rpostprocessing%ucd_OUT_meshes .eqv. .true.) .or. &
+      (rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true.) .or. &
+      (rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true.)) then
+        rpostprocessing%UCD_feFunction_first_orig => rproblem_1%coeffVector
+        rpostprocessing%UCD_feFunction_second_orig => rproblem_2%coeffVector
+  end if
+
+end subroutine
+
+
+! Do the preparations neccesary for the Vector-Output
+! Sounds weird,  but thats the structure of the code.
+! Here we set up everything and store it in the postprocessing structure
+! option to write out f - g directly
+! This routine holds the place for it
+subroutine ExtFE_calc_OutOrigVec(rproblem_1,rproblem_2, rpostprocessing)
+
+!<input>
+! 2 Problem structures that contain everything
+  type(t_problem), intent(inout), target :: rproblem_1, rproblem_2
+! </input>
+
+!<inputoutput>
+  type(t_postprocessing), intent(inout) :: rpostprocessing
+!</output>
+
+  ! All we need to do is set some pointers if we want to write them out
+
+  if(rpostprocessing%writeOutOrigVector1 .eqv. .true.) then
+    rpostprocessing%OrigVecFirst => rproblem_1%coeffVector
+  end if
+
+  if(rpostprocessing%writeOutOrigVector2 .eqv. .true.) then
+    rpostprocessing%OrigVecSecond => rproblem_2%coeffVector
+  end if
+
+
+end subroutine
+
+!--------------------------------------------------------------------------!
 ! Here, the real working routines follow:
 
 ! Calculates the L2-Norm of a 1D function
@@ -1046,7 +1098,7 @@ end subroutine
 ! by the kernel. We need to branch for dimension etc,so it is
 ! easier to do it like this
 
-subroutine ExtFEcompare_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
+subroutine ExtFE_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
     !<intput>
     ! The function that we want to evaluate
     type(t_vectorScalar), intent(in) :: fefunction

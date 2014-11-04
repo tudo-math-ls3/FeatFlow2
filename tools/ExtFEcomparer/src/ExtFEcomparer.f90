@@ -1,27 +1,34 @@
 !<description>
-! This program is able to calculate
-! ||u1 - u2||_\Omega - but u1 and u2 are allowed to live
-! on different meshes. In fact, all we need is that \Omega1
-! and \Omega2 need to have some overlap. To be more precise,
-! u1 can be calculated with elementtype 1
-! and u2 can be calculated with elementtype 2
-! and u1 can live on mesh 1 and u2 on mesh 2 - all that
-! needs to be fulfilled is that mesh 1 and mesh 2 need to
-! have an overlap - but if this would not be the case,
-! this calculation would be pretty much useless.
-! This means that this program is able to cover the most
-! general case.
-! However, we only compare the velocities, so if you
-! need to compare the pressure this does not work at the moment.
+! Version 2.1 - 3.11.2014
 !
-! If you are familiar with cc2d you will notice that
-! many routines look somehow similar - this is because
-! I started from a cc2d-based problem, so I copied and
-! slightly modified some parts from this application
-! (e.g. grid-generation, init of discretisation, ...)
+! To sum up the features and present the changelog, we need a notation:
+! f_k = Component k of function f, for example if we solve 2D-Navier-Stokes,
+! f_1 = Velocity in x direction, f_2 = Velocity in y direction, f_3 = pressure
+! f is created by a representing vector of coefficents (i.e. the solution vector
+! of the Navier-Stokes-Equations from cc2d), the domain (represented by
+! *.tri and *.prm files) and the finite elements that were used, represented
+! by a name or (in case of Navier-Stokes) an identifier for the element pair.
+! All this has to be present to actually use the tool (for 2 functions).
+! Hint: If you want to analyze only 1 function, enter it 2 times as input:
+! One time as f, one time as g
+!
+! Summary of features:
+!
+! 1) Calculations for 1D and 2D
+! 1.1) Calculate ||f_k||_L2(\Omega)
+! 1.2) Calculate ||g_k||_L2(\Omega)
+! 1.3) Calculate ||f_k - g_l||_L2(\Omega)
+! 1.4) Calculate (d^i/dx^i) f_k(x) |i|=0,1 i: multiindex
+! 1.5) Calculate (d^j/dx^j) g_k(x) |j|=0,1 j: multiindex
+! 1.6) Calculate (d^i/dx^i)f_k(x) - (d^j/dx^j)g_l(x), |i|=0,1; |j| = 0,1 i,j: multiindex
+!
+! 2) Output
+! 2.1) Export the vector of coefficents in an other format
+! 2.2) UCD-Output of the mesh
+! 2.3) UCD-Output of the input functions
 !
 ! I would like to thank M. Koester and P. Zajac for their
-! support when I wrote this program.
+! support when I started writing this program.
 !
 ! M. Schuh (mschuh@mathematik.tu-dortmund.de)
 !

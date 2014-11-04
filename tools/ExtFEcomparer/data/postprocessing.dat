@@ -4,7 +4,22 @@
 # In this file, we decide if we write something in a 
 # text file and where we store it.
 
-# Write the results in a file? 1=yes, 0=no
+# Write something in a file? 1=yes, 0=no
+
+# Write out the input vectors?
+# Trick is: The output is formatted with the
+# Fortran format specifier sFMT. If not present,
+# sVecFMT = '(E22.15)' is assumed.
+# It will be written out with the routine
+# vecio_writeBlockVectorHR with unsorted=.FALSE.,
+# so if you want to read this one in the ExtFEcomparer
+# you use sVectorType=2, sFileFormat=1
+writeOutOrigVector1 = 1
+writeOutOrigVector2 = 0
+sOutPathFirstOrigVec = '%{soutputdir}/firstVector.dat'
+sOutPathSecondOrigVec = '%{soutputdir}/secondVector.dat'
+sOutVec1OrigFMT = '(E22.15)'
+sOutVec2OrigFMT = '(E22.15)'
 
 writeOutL2Calc = 1
 # Path of the file where to write it out
@@ -15,3 +30,17 @@ writeOutPointValues = 1
 #Path of the file where to write it out
 sPointValuesFilePath = '%{soutputdir}/pointvalues.dat'
 
+# General setting for the UCD-Output
+# 1: VTK/Paraview
+ucdType = 1
+
+# write out the meshes?
+writeOutMeshesUCD = 1
+sUCDFirstMeshOutput = '%{soutputdir}/firstMesh.vtk'
+sUCDSecondMeshOutput = '%{soutputdir}/secondMesh.vtk'
+
+# UCD-Output of the Input FE-Functions?
+writeOutFirstFunctionUCD = 1
+sUCDFirstFunctionOutput = '%{soutputdir}/firstFunction.vtk'
+writeOutSecondFunctionUCD = 1
+sUCDSecondFunctionOutput = '%{soutputdir}/SecondFunction.vtk'

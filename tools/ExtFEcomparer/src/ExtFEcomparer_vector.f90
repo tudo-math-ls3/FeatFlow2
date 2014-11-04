@@ -21,7 +21,7 @@ module ExtFEcomparer_vector
   private
 
   public :: ExtFEcomparer_load_vector
-  public :: ExtFE_output_vector
+
 
 contains
 
@@ -112,7 +112,7 @@ subroutine ExtFEcomparer_load_vector(rproblem)
                 call io_openFileForReading(rproblem%sVectorFile,iunit,lFormatted)
                 ! Loop over all variables
                 do i=1,NVAR
-                    ! We don't really need N and the name of the variable
+                    ! We don't really need the name of the variable
                     read(iunit) N, sVarname
                     call lsyssc_getbase_double(rproblem%coeffVector%RvectorBlock(i),p_Ddata)
                        do j=1,N
@@ -139,16 +139,6 @@ subroutine ExtFEcomparer_load_vector(rproblem)
 end subroutine
 
 
-subroutine ExtFE_output_vector(rproblem,spath)
-  !<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout) :: rproblem
-!</inputoutput>
- character (len=ExtFE_STRLEN):: spath
-
-    call vecio_writeBlockVectorHR(rproblem%coeffVector,'solution',.FALSE.,0,spath,sformat='(E20.10)')
-
-end subroutine
 
 
 end module

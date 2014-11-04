@@ -20,7 +20,6 @@ subroutine ExtFEcomparer_get_parameters(rparamList)
 
 !<description>
   ! Reads in all DAT files into the parameter list rparamlist
-  ! This is based on the cc2d-code
 !</description>
 
 !<inputoutput>
@@ -67,12 +66,6 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
 !<description>
   ! Initialises the structure rproblem with data from the initialisation
   ! files.
-  !
-  ! The parameters in rproblem\%rparameters are evaluated.
-  ! Important parameters are written to the problem structure
-  ! rproblem. The parametrisation is read in, generated and
-  ! stored in rproblem.
-  ! The code is based on the cc2d-code
 !</description>
 
 
@@ -88,7 +81,7 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
 
 !</subroutine>
 
-    integer :: i,ilvmin,ilvmax, ielemtype, tmpvalue
+    integer :: i,ilvmax, ielemtype, tmpvalue
 
     ! Variable for a filename:
     character(LEN=ExtFE_STRLEN) :: sString

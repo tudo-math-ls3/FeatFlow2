@@ -84,6 +84,8 @@ module ExtFEcomparer_typedefs
   ! routines at first
   integer, parameter, public :: ExtFE_STRLEN = SYS_STRLEN
 
+  integer, parameter, public :: UCD_VTK = 1
+
   !</constant Block>
 
 
@@ -93,7 +95,7 @@ module ExtFEcomparer_typedefs
     ! We need a parameterlist for sure
    type(t_parlist) :: rparamlist
 
-   integer:: NLMIN, NLMAX
+   integer:: NLMAX
 
    ! We need the triangulation
    type(t_triangulation) :: rtriangulation
@@ -109,11 +111,6 @@ module ExtFEcomparer_typedefs
 
    !We also save the vector in here
    type(t_vectorBlock) :: coeffVector
-
-    ! A collection object that saves structural data and some
-    ! problem-dependent information which is e.g. passed to
-    ! callback routines.
-    type(t_collection) :: rcollection
 
     ! We need the path of the vector and the parametrisation
     character(LEN=ExtFE_STRLEN) :: sPRMFile, sTRIFile
@@ -148,7 +145,19 @@ module ExtFEcomparer_typedefs
     ! but it gives more structure to the code
     ! and allows to easily extend the code
 
+    ! Everything regarding vector output
+    logical :: writeOutOrigVector1 = .false.
+    logical :: writeOutOrigVector2 = .false.
+    character(LEN=ExtFE_STRLEN) :: sOrigVecPathOutFirst
+    character(LEN=ExtFE_STRLEN) :: sOrigVecPathOutSecond
+    character(LEN=ExtFE_STRLEN) :: sOrigVec1OutFMT
+    character(LEN=ExtFE_STRLEN) :: sOrigVec2OutFMT
+    type(t_vectorBlock), pointer :: OrigVecFirst => NULL()
+    type(t_vectorBlock), pointer :: OrigVecSecond => NULL()
+
+
     ! Everything regarding L2-Output
+    integer :: nL2Calculations = -1
     logical :: writeOutL2results = .false.
     character(LEN=ExtFE_STRLEN) :: L2filepath
 
@@ -160,9 +169,12 @@ module ExtFEcomparer_typedefs
     ! What domain was used?
     integer :: h_L2ChiOmega = ST_NOHANDLE
     integer :: h_L2TriFile = ST_NOHANDLE
+    ! Cubature rule?
+    integer :: h_L2CubRule = ST_NOHANDLE
 
 
     ! Everything regarding the pointvalues
+    integer :: nPointCalculations = -1
     logical :: writeOutPointCalucations = .false.
     character(LEN=ExtFE_STRLEN) :: PointFilepath
     ! PointResults will become a 1D-array (DP)
@@ -173,6 +185,18 @@ module ExtFEcomparer_typedefs
     integer :: h_PointCoordinates = ST_NOHANDLE
     integer :: h_PointFuncComponents = ST_NOHANDLE
 
+    ! We want to be able to do UCD-Output of the mesh
+    ! and of the functions itself. So we set some pointers here
+    integer :: UCD_Type
+    logical :: ucd_OUT_meshes = .false.
+    logical :: ucd_OUT_orig_functions_one = .false.
+    logical :: ucd_OUT_orig_functions_two = .false.
+    character(LEN=ExtFE_STRLEN) :: UCD_meshOneOutPath
+    character(LEN=ExtFE_STRLEN) :: UCD_meshTwoOutPath
+    character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionOneOrigOutPath
+    character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionTwoOrigOutPath
+    type(t_vectorBlock), pointer :: UCD_feFunction_first_orig => NULL()
+    type(t_vectorBlock), pointer :: UCD_feFunction_second_orig => NULL()
 
 
   end type

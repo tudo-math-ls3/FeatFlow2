@@ -57,4 +57,3 @@ simportdatafiles(4) =
 # parameter settings that overwrite settings in the DAT files. The
 # parameters here must be introduced by the corresponding section
 # to be overwritten.
-
