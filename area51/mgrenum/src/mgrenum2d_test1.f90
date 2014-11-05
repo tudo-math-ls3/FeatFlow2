@@ -353,7 +353,7 @@ contains
 
       ! dump system matrix to text file?
       if(iand(cdumpSysMat,1) .ne. 0) then
-        call matio_writeMatrixHR (Rlvl(i)%rmatSys%RmatrixBlock(1,1), 'System Matrix', &
+        call matio_writeMatrixHR (Rlvl(i)%rmatSys%RmatrixBlock(1,1), 'SystemMatrix', &
             .true., 0, 'A_s' // trim(sys_siL(isort,2)) // '_l' // trim(sys_siL(i,2)) // &
             '.txt', '(E20.12)', 1E-12_DP)
       end if
@@ -361,22 +361,22 @@ contains
       ! dump system matrix to matlab file?
       if(iand(cdumpSysMat,2) .ne. 0) then
         call matio_spyMatrix('A_s' // trim(sys_siL(isort,2)) // '_l' // trim(sys_siL(i,2)), &
-            'System Matrix',Rlvl(i)%rmatSys%RmatrixBlock(1,1),.true.)
+            'SystemMatrix',Rlvl(i)%rmatSys%RmatrixBlock(1,1),.true.,saccuracy="E20.12")
       end if
 
       if(i .gt. NLMIN) then
 
         ! dump prolongation matrix to text file?
         if(iand(cdumpPrjMat,1) .ne. 0) then
-          call matio_writeMatrixHR (Rlvl(i)%rmatProl, 'Prolongation Matrix', &
+          call matio_writeMatrixHR (Rlvl(i)%rmatProl, 'ProlongationMatrix', &
               .true., 0, 'P_s' // trim(sys_siL(isort,2)) // '_l' // trim(sys_siL(i,2)) // &
               '.txt', '(E20.12)', 1E-12_DP)
         end if
 
         ! dump prolongation matrix to matlab file?
-        if(iand(cdumpSysMat,2) .ne. 0) then
+        if(iand(cdumpPrjMat,2) .ne. 0) then
           call matio_spyMatrix('P_s' // trim(sys_siL(isort,2)) // '_l' // trim(sys_siL(i,2)), &
-              'Prolongation Matrix',Rlvl(i)%rmatProl,.true.)
+              'ProlongationMatrix',Rlvl(i)%rmatProl,.true.,saccuracy="E20.12")
         end if
 
       end if
