@@ -93,5 +93,4 @@ sUCDSecondFunctionOutput = '%{soutputdir}/SecondFunction.vtk'
 sUCDVecCompSecondFunction(1)=
 1 2
 sUCDaddTypeSecondFunction = 1 1 2
-sUCDElemProjectSecondFunction = 1 1 1
-sUCDaddTypeSecondFunction = 1 1 1
+sUCDElemProjectSecondFunction = 1 1 0
