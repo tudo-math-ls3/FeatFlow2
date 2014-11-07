@@ -39,8 +39,8 @@ subroutine ExtFEcomparer_load_vector(rproblem)
 
 !<local variables>
   integer :: NLMAX
-  integer :: N, iunit,NVAR,i,j
-  real(DP), dimension(:), pointer :: p_Ddata
+  integer :: N, iunit,NVAR,i,j, NEst
+  real(DP), dimension(:), pointer :: p_Ddata => NULL()
   character(LEN=ExtFE_STRLEN) :: sVectorName
   character :: sVarname
   real(DP) :: dval
@@ -112,10 +112,34 @@ subroutine ExtFEcomparer_load_vector(rproblem)
                 call io_openFileForReading(rproblem%sVectorFile,iunit,lFormatted)
                 ! Loop over all variables
                 do i=1,NVAR
+                    NEst = rproblem%coeffVector%RvectorBlock(i)%NEQ
                     ! We don't really need the name of the variable
                     read(iunit) N, sVarname
+                    if(NEst .lt. N) then
+                        call output_line("According to the discretisation your vector should have length "&
+                         //trim(sys_siL(NEst,20)) ,OU_CLASS_WARNING,OU_MODE_STD)
+                        call output_line(" but according to you file it has length "//trim(sys_siL(N,20)),&
+                            OU_CLASS_WARNING,OU_MODE_STD)
+                        call output_line("To avoid a segmentation fault we are just going to read in the first "&
+                            //trim(sys_siL(NEst,20)), OU_CLASS_WARNING,OU_MODE_STD)
+                        call output_line("values of this vector. However we continue since this is left open as small",&
+                            OU_CLASS_WARNING,OU_MODE_STD)
+                        call output_line("hack if you want to analyze only one function",OU_CLASS_WARNING,OU_MODE_STD)
+                        call output_line("Pay attention to your results as now some strings are interpreted as doubles",&
+                            OU_CLASS_WARNING,OU_MODE_STD)
+                    elseif(NEst .gt. N) then
+                        call output_line("According to the discretisation you vector should have length "&
+                         //trim(sys_siL(NEst,20)) ,OU_CLASS_ERROR,OU_MODE_STD)
+                        call output_line(" but according to you file it has length "//trim(sys_siL(N,20)),&
+                            OU_CLASS_ERROR,OU_MODE_STD)
+                        call output_line(" Since we cannot manipulate to avoid segmentation faults we quit here", &
+                            OU_CLASS_ERROR,OU_MODE_STD)
+                        !Close the file
+                        close(iunit)
+                        call sys_halt()
+                    end if
                     call lsyssc_getbase_double(rproblem%coeffVector%RvectorBlock(i),p_Ddata)
-                       do j=1,N
+                       do j=1,NEst
                           read(iunit) dval
                           p_Ddata(j) = dval
                        end do

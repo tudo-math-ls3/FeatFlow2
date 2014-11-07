@@ -81,7 +81,8 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
 
 !</subroutine>
 
-    integer :: i,ilvmax, ielemtype, tmpvalue
+    integer :: i,ilvmax, tmpvalue, ielemPairId
+    integer(I32) :: ielemtype
 
     ! Variable for a filename:
     character(LEN=ExtFE_STRLEN) :: sString
@@ -108,14 +109,16 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
     if (rproblem%elementSetting .eq. ExtFE_ElementPair) then
         call output_line("Searching for a numerical identifier of the element pair")
         call parlst_getvalue_int(rproblem%rparamlist,section,"ielementType",&
-                    ielemtype)
+                    ielemPairId)
         call output_line("Found a numerical identifier of the element pair")
+        rproblem%iElemPairID = ielemPairId
     else if (rproblem%elementSetting .eq. ExtFE_OneElement) then
         call output_line("Searching for the name of an element")
         call parlst_getvalue_string(rproblem%rparamlist,section, &
                 "ElementName",sString,bdequote=.true.)
         ielemtype = elem_igetID(sString)
         call output_line("Found a name of an element")
+        rproblem%ielemType = ielemtype
     else
         write(smessage,*) 'Input error: choice not allowed for &
         &the selection of iElementSetting for function ', section
@@ -124,7 +127,6 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
         call sys_halt()
     end if
 
-    rproblem%ielemtype=ielemtype
 
 
     ! find out the dimension of the problem

@@ -22,6 +22,7 @@ module ExtFEcomparer_core
   use blockmatassembly
   use blockmatassemblybase
   use blockmatassemblystdop
+  use spdiscprojection
 
   use ExtFEcomparer_typedefs
 
@@ -87,7 +88,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
 ! </input>
 
 !<inputoutput>
-  type(t_postprocessing), intent(inout) :: rpostprocessing
+  type(t_postprocessing), intent(inout), target :: rpostprocessing
 !</output>
 
   ! For the integral calculation we need a collection structure
@@ -123,7 +124,9 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
 
   ! To figure out if we jump somewhere or not
   logical :: lOneFunction, lBothFunctions
-  type(t_vectorScalar), pointer :: rCalcThis, rFirst,rSecond
+  type(t_vectorScalar), pointer :: rCalcThis => NULL()
+  type(t_vectorScalar), pointer :: rFirst => NULL()
+  type(t_vectorScalar), pointer :: rSecond => NULL()
 
 
   ! We also need loop-variables
@@ -147,6 +150,8 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
     call storage_getbase_char(rpostprocessing%h_L2TriFile,p_L2TriFile)
     call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
 
+    ! Attatch the parser to the collection
+    collection%p_rfparserQuickAccess1=>rpostprocessing%pL2ChiOmegaParser
 
     ! We calculate the L2-Difference between L2comp(1,i) and L2comp(2,i)
     ! on L2ChiOmega(i) and use cubature rule L2CubRule(i)
@@ -158,7 +163,6 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
         lOneFunction = .FALSE.
         lBothFunctions = .FALSE.
         stmp = ''
-        L2ChiOmega = ''
         ! Find out what to calculate and set the pointers
         ! First option: both are > 0 - so we want
         ! to calculate the difference
@@ -197,10 +201,13 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
         end if ! Which component
 
         ! Now pick up which region of interest
-        ! We know where we stored this information...
-        do k=1,ExtFE_STRLEN
-            L2ChiOmega(k:k) = p_L2ChiOmega((i-1)*ExtFE_STRLEN+k)
-        end do
+        ! We know where we stored this information:
+        ! It is in the parser of the postprocessing structure
+        ! We attatched that one to the collection already, we just
+        ! need to tell it which component to use.
+        ! In component i we have parsed the region of interest for
+        ! calculation i
+        collection%IquickAccess(1) = i
 
         ! Here we trigger the real computation
         if((lOneFunction .eqv. .TRUE.) .AND. &
@@ -210,9 +217,6 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
                     RcubatureInformation, p_L2CubRule(i))
             ! mark the function to be evaluated
             call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
-            ! Pass the Region of interest to the collection
-            ! so we can grab it in the integral routine
-            collection%SquickAccess(1) = L2ChiOmega
 
             ! We need different computation
             ! routines for each dimension due to the evaluation
@@ -243,6 +247,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
             call spdiscr_releaseCubStructure(RcubatureInformation)
             collection%SquickAccess(1) = ''
             Dresult = -1.0_DP
+            rCalcThis  => NULL()
         else if ( (lOneFunction .eqv. .FALSE.) .AND. &
                  (lBothFunctions .eqv. .TRUE.)) then
             ! Create a cubature information
@@ -251,9 +256,6 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
 
             ! mark the function to be evaluated
             call fev2_addVectorToEvalList(fefunction,rFirst,0)
-            ! Pass the Region of interest to the collection
-            ! so we can grab it in the integral routine
-            collection%SquickAccess(1) = L2ChiOmega
 
             ! Now the tricky part: We cannot pass the second
             ! function directly since it lives on another mesh
@@ -301,7 +303,8 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
     ! That is done in the postprocessing!
     write(soutput,'(A1,E16.10)') ' ', p_L2results(i)
 
-    call output_line(trim(trim(stmp) // soutput))
+    call output_line(trim(trim(stmp) // soutput), &
+                    OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 
     end do ! Loop over all L2-Calculations
 
@@ -316,6 +319,7 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
 !<input>
 ! 2 Problem structures that contain everything
   type(t_problem), intent(inout) :: rproblem_1, rproblem_2
+! </input>
 ! </input>
 
 !<inputoutput>
@@ -333,7 +337,9 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
 
   ! To figure out if we jump somewhere or not
   logical :: lOneFunction, lBothFunctions
-  type(t_vectorScalar), pointer :: rCalcThis, rFirst,rSecond
+  type(t_vectorScalar), pointer :: rCalcThis => NULL()
+  type(t_vectorScalar), pointer :: rFirst => NULL()
+  type(t_vectorScalar), pointer :: rSecond => NULL()
 
   real(DP) :: Dresult
   ! We also need loop-variables
@@ -412,40 +418,40 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
             call sys_halt()
         end if ! Which component
 
-    ! Now we can do the calculations
-    ! Put the point in the right shape
-    do k=1,rproblem_1%iDimension
-        DEvalPoint(k) = p_PointCoords(k,i)
-    end do
+        ! Now we can do the calculations
+        ! Put the point in the right shape
+        do k=1,rproblem_1%iDimension
+            DEvalPoint(k) = p_PointCoords(k,i)
+        end do
 
-    if((lOneFunction .eqv. .true.) .AND. &
-        (lBothFunctions .eqv. .false.)) then
-        call ExtFE_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
-        p_PointResults(i) = Dresult
+        if((lOneFunction .eqv. .true.) .AND. &
+            (lBothFunctions .eqv. .false.)) then
+            call ExtFE_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
+            p_PointResults(i) = Dresult
 
-    else if((lOneFunction .eqv. .false.) .AND. &
-            (lBothFunctions .eqv. .true.)) then
-        iDeriv = p_PointFuncComp(2,i)
-        call ExtFE_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
-        p_PointResults(i) = Dresult
-        iDeriv = p_PointFuncComp(4,i)
-        call ExtFE_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
-        p_PointResults(i) = p_PointResults(i) - Dresult
+        else if((lOneFunction .eqv. .false.) .AND. &
+                (lBothFunctions .eqv. .true.)) then
+            iDeriv = p_PointFuncComp(2,i)
+            call ExtFE_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
+            p_PointResults(i) = Dresult
+            iDeriv = p_PointFuncComp(4,i)
+            call ExtFE_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
+            p_PointResults(i) = p_PointResults(i) - Dresult
 
-    end if
+        end if
 
-    stmp = trim(stmp) // '('
-    write(stmp2,'(F8.4)') p_PointCoords(1,i)
-    stmp = trim(stmp) // trim(stmp2)
-    do k=2,rproblem_1%iDimension
-        write(stmp2,'(A1,F8.4)') ',', p_PointCoords(k,i)
+        stmp = trim(stmp) // '('
+        write(stmp2,'(F8.4)') p_PointCoords(1,i)
         stmp = trim(stmp) // trim(stmp2)
-        stmp = stmp // ' '
-    end do
-    stmp = trim(stmp) // ' ) '
-    write(stmp2,'(F8.5)') p_PointResults(i)
-    soutput = trim(stmp) // ' = ' // trim(stmp2)
-    call output_line(soutput)
+        do k=2,rproblem_1%iDimension
+            write(stmp2,'(A1,F8.4)') ',', p_PointCoords(k,i)
+            stmp = trim(stmp) // trim(stmp2)
+            stmp = stmp // ' '
+        end do
+        stmp = trim(stmp) // ' ) '
+        write(stmp2,'(F8.5)') p_PointResults(i)
+        soutput = trim(stmp) // ' = ' // trim(stmp2)
+        call output_line(soutput,OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 
 
     end do ! all point calculations
@@ -474,17 +480,101 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</output>
 
+  ! Local variables
+  integer :: nDim, nVar,i
+  integer, dimension(:), pointer :: p_IntPointerElemProject
+  integer(I32) :: ID_ProjectConst, ID_ProjectLin
+
+
   !----------------------------------------------!
   ! Prepare the UCD-Output: Calculate everything !
   ! and store it in the postprocessing structure !
   !----------------------------------------------!
+  nDim = rproblem_1%rdiscretisation%ndimension
 
-  if ((rpostprocessing%ucd_OUT_meshes .eqv. .true.) .or. &
-      (rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true.) .or. &
-      (rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true.)) then
-        rpostprocessing%UCD_feFunction_first_orig => rproblem_1%coeffVector
-        rpostprocessing%UCD_feFunction_second_orig => rproblem_2%coeffVector
+  select case(nDim)
+    case(ExtFE_NDIM1)
+        ID_ProjectConst = EL_P0_1D
+        ID_ProjectLin = EL_P1_1D
+    case(ExtFE_NDIM2)
+        ID_ProjectConst = EL_Q0_2D
+        ID_ProjectLin = EL_Q1_2D
+    case(ExtFE_NDIM3)
+        ID_ProjectConst = EL_Q0_3D
+        ID_ProjectLin = EL_Q1_3D
+    end select
+
+  if(rpostprocessing%ucd_OUT_meshes .eqv. .true.) then
+    rpostprocessing%UCD_MeshOnePointer => rproblem_1%coeffVector%p_rblockDiscr%p_rtriangulation
+    rpostprocessing%UCD_MeshTwoPointer => rproblem_2%coeffVector%p_rblockDiscr%p_rtriangulation
   end if
+
+  if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true. ) then
+    nVar = rproblem_1%coeffVector%nblocks
+    allocate(rpostprocessing%UCDBlockDiscrFirst)
+    call spdiscr_duplicateBlockDiscr(rproblem_1%coeffVector%p_rblockDiscr,&
+                    rpostprocessing%UCDBlockDiscrFirst,bshare=.FALSE.)
+
+    call storage_getbase_int(rpostprocessing%h_UCD_AddElemProjectFirst,p_IntPointerElemProject)
+
+    do i=1,nVar
+        select case(p_IntPointerElemProject(i))
+
+        case(ExtFE_UCD_POLY_CONST)
+            call spdiscr_initDiscr_simple(rpostprocessing%UCDBlockDiscrFirst%RspatialDiscr(i),&
+                                    ID_ProjectConst,&
+                                    rpostprocessing%UCDBlockDiscrFirst%p_rtriangulation)
+        case(ExtFE_UCD_POLY_LINEAR)
+            call spdiscr_initDiscr_simple(rpostprocessing%UCDBlockDiscrFirst%RspatialDiscr(i),&
+                                    ID_ProjectLin,&
+                                    rpostprocessing%UCDBlockDiscrFirst%p_rtriangulation)
+        end select
+    end do
+
+    ! Now init the projection vector
+    allocate(rpostprocessing%UCD_feFunction_first_orig)
+    call lsysbl_createVector(rpostprocessing%UCDBlockDiscrFirst,rpostprocessing%UCD_feFunction_first_orig)
+
+    ! Project the solution to the UCD_OUT_Vector
+    do i=1,nVar
+        call spdp_projectSolutionScalar(rproblem_1%coeffVector%RvectorBlock(i),&
+                rpostprocessing%UCD_feFunction_first_orig%RvectorBlock(i) )
+    end do
+  end if ! UCD_OUT_First_Function = TRUE
+
+  if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true. ) then
+    nVar = rproblem_2%coeffVector%nblocks
+    allocate(rpostprocessing%UCDBlockDiscrSecond)
+    call spdiscr_duplicateBlockDiscr(rproblem_2%coeffVector%p_rblockDiscr,&
+                    rpostprocessing%UCDBlockDiscrSecond,bshare=.FALSE.)
+
+    call storage_getbase_int(rpostprocessing%h_UCD_AddElemProjectSecond,p_IntPointerElemProject)
+
+    do i=1,nVar
+        select case(p_IntPointerElemProject(i))
+
+        case(ExtFE_UCD_POLY_CONST)
+            call spdiscr_initDiscr_simple(rpostprocessing%UCDBlockDiscrSecond%RspatialDiscr(i),&
+                                    ID_ProjectConst,&
+                                    rpostprocessing%UCDBlockDiscrSecond%p_rtriangulation)
+        case(ExtFE_UCD_POLY_LINEAR)
+            call spdiscr_initDiscr_simple(rpostprocessing%UCDBlockDiscrSecond%RspatialDiscr(i),&
+                                    ID_ProjectLin,&
+                                    rpostprocessing%UCDBlockDiscrSecond%p_rtriangulation)
+        end select
+    end do
+
+    ! Now init the projection vector
+    allocate(rpostprocessing%UCD_feFunction_second_orig)
+    call lsysbl_createVector(rpostprocessing%UCDBlockDiscrSecond,rpostprocessing%UCD_feFunction_second_orig)
+
+    ! Project the solution to the UCD_OUT_Vector
+    do i=1,nVar
+        call spdp_projectSolutionScalar(rproblem_2%coeffVector%RvectorBlock(i),&
+                rpostprocessing%UCD_feFunction_second_orig%RvectorBlock(i) )
+    end do
+  end if ! UCD_OUT_Second_Function = TRUE
+
 
 end subroutine
 
@@ -557,18 +647,10 @@ subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
 
 
     integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to evaluate the region of interest
-    type(t_fparser) :: rparser
-    call fparser_create(rparser,1)
-
-    ! grab the region of interest from the collection
-    ! and parse it in the parser
-    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x'/))
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dfunc1 => NULL()
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
+    integer, dimension(:), pointer :: p_Ielements => NULL()
 
     ! Now we can evaluate the area description with the parser-tools
 
@@ -600,8 +682,10 @@ subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
           ! Now we check if we need to work or not
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
+          ! We saved this one in the collection structure already
 
-           call fparser_evalFunction(rparser,1,(/dx/),work)
+           call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
+                        rcollection%IquickAccess(1),(/dx/),work)
 
            ! Check if we need to work.
            ! If "work" is 1, we need to work. Since "work"
@@ -618,10 +702,6 @@ subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
         end do ! icubp
 
     end do ! iel
-
-
-    ! Release the parser
-    call fparser_release(rparser)
 
 end subroutine
 
@@ -663,27 +743,17 @@ subroutine calc_L2error_twofunc_1D(Dintvalue,rassemblyData,rintAssembly,&
 
 
     integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dfunc1 => NULL()
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
+    integer, dimension(:), pointer :: p_Ielements => NULL()
 
-    type(t_vectorScalar), pointer :: secondFunction
+    type(t_vectorScalar), pointer :: secondFunction => NULL()
     real(DP), dimension(ExtFE_NDIM1,1) :: evaluationPoint
     real(DP), dimension(1) :: dFuncValue
     integer :: ielEval
     integer, dimension(1) :: iElement
     real(DP) , dimension (1) :: dpoint
-
-    ! We need a parser evaluate the region of interest
-    type(t_fparser) :: rparser
-    call fparser_create(rparser,1)
-
-    ! grab the region of interest from the collection
-    ! and parse it in the parser
-    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x'/))
-
-    ! Now we can evaluate the area description with the parser-tools
 
     ! Get cubature weights
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -717,7 +787,8 @@ subroutine calc_L2error_twofunc_1D(Dintvalue,rassemblyData,rintAssembly,&
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
 
-           call fparser_evalFunction(rparser,1,(/dx/),work)
+           call fparser_evalFunction(rcollection%p_rfparserQuickAccess1, &
+                    rcollection%IquickAccess(1),(/dx/),work)
 
            ! Check if we need to work.
            ! If "work" is 1, we need to work. Since "work"
@@ -754,9 +825,6 @@ subroutine calc_L2error_twofunc_1D(Dintvalue,rassemblyData,rintAssembly,&
 
     end do ! iel
 
-
-    ! Release the parser
-    call fparser_release(rparser)
 
 end subroutine
 
@@ -798,20 +866,10 @@ subroutine calc_L2norm_onefunc_2D(Dintvalue,rassemblyData,rintAssembly,&
 
 
     integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to evaluate the region of interest
-    type(t_fparser) :: rparser
-    call fparser_create(rparser,1)
-
-    ! grab the region of interest from the collection
-    ! and parse it in the parser
-    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y'/))
-
-    ! Now we can evaluate the area description with the parser-tools
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dfunc1 => NULL()
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
+    integer, dimension(:), pointer :: p_Ielements => NULL()
 
     ! Get cubature weights
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -843,7 +901,8 @@ subroutine calc_L2norm_onefunc_2D(Dintvalue,rassemblyData,rintAssembly,&
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
 
-           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
+           call fparser_evalFunction(rcollection%p_rfparserQuickAccess1, &
+                    rcollection%IquickAccess(1),(/dx,dy/),work)
 
            ! Check if we need to work.
            ! If "work" is 1, we need to work. Since "work"
@@ -861,9 +920,6 @@ subroutine calc_L2norm_onefunc_2D(Dintvalue,rassemblyData,rintAssembly,&
 
     end do ! iel
 
-
-    ! Release the parser
-    call fparser_release(rparser)
 
 end subroutine
 
@@ -905,24 +961,15 @@ subroutine calc_L2error_twofunc_2D(Dintvalue,rassemblyData,rintAssembly,&
 
 
     integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dfunc1 => NULL()
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
+    integer, dimension(:), pointer :: p_Ielements => NULL()
 
-    type(t_vectorScalar), pointer :: secondFunction
+    type(t_vectorScalar), pointer :: secondFunction => NULL()
     real(DP), dimension(1) :: dfuncValue
     real(DP), dimension(ExtFE_NDIM2,1) :: evaluationPoint
 
-    ! We need a parser to evaluate the region of interest
-    type(t_fparser) :: rparser
-    call fparser_create(rparser,1)
-
-    ! grab the region of interest from the collection
-    ! and parse it in the parser
-    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y'/))
-
-    ! Now we can evaluate the area description with the parser-tools
 
     ! Get cubature weights
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -956,7 +1003,8 @@ subroutine calc_L2error_twofunc_2D(Dintvalue,rassemblyData,rintAssembly,&
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
 
-           call fparser_evalFunction(rparser,1,(/dx,dy/),work)
+           call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
+                    rcollection%IquickAccess(1),(/dx,dy/),work)
 
            ! Check if we need to work.
            ! If "work" is 1, we need to work. Since "work"
@@ -978,10 +1026,6 @@ subroutine calc_L2error_twofunc_2D(Dintvalue,rassemblyData,rintAssembly,&
         end do ! icubp
 
     end do ! iel
-
-
-    ! Release the parser
-    call fparser_release(rparser)
 
 end subroutine
 
@@ -1023,19 +1067,10 @@ subroutine calc_L2norm_onefunc_3D(Dintvalue,rassemblyData,rintAssembly,&
 
 
     integer :: iel, icubp
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    real(DP), dimension(:,:), pointer :: p_Dfunc1
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    integer, dimension(:), pointer :: p_Ielements
-
-    ! We need a parser to evaluate the region of interest
-    type(t_fparser) :: rparser
-    call fparser_create(rparser,1)
-    ! grab the region of interest from the collection
-    ! and parse it in the parser
-    call fparser_parseFunction(rparser,1,rcollection%SquickAccess(1),(/'x','y','z'/))
-
-    ! Now we can evaluate the area description with the parser-tools
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => NULL()
+    real(DP), dimension(:,:), pointer :: p_Dfunc1 => NULL()
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
+    integer, dimension(:), pointer :: p_Ielements => NULL()
 
     ! Get cubature weights
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -1068,7 +1103,8 @@ subroutine calc_L2norm_onefunc_3D(Dintvalue,rassemblyData,rintAssembly,&
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
 
-           call fparser_evalFunction(rparser,1,(/dx,dy,dz/),work)
+           call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
+                        rcollection%IquickAccess(1),(/dx,dy,dz/),work)
 
            ! Check if we need to work.
            ! If "work" is 1, we need to work. Since "work"
@@ -1086,9 +1122,6 @@ subroutine calc_L2norm_onefunc_3D(Dintvalue,rassemblyData,rintAssembly,&
 
     end do ! iel
 
-
-    ! Release the parser
-    call fparser_release(rparser)
 
 end subroutine
 

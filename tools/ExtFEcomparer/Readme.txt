@@ -1,3 +1,46 @@
+Version 2.1.1   7.11.2014
+
+To sum up the features and present the changelog, we need a notation:
+f_k = Component k of function f, for example if we solve 2D-Navier-Stokes,
+f_1 = Velocity in x direction, f_2 = Velocity in y direction, f_3 = pressure
+f is created by a representing vector of coefficents (i.e. the solution vector
+of the Navier-Stokes-Equations from cc2d), the domain (represented by 
+*.tri and *.prm files) and the finite elements that were used, represented
+by a name or (in case of Navier-Stokes) an identifier for the element pair.
+All this has to be present to actually use the tool (for 2 functions).
+Hint: If you want to analyze only 1 function, enter it 2 times as input:
+One time as f, one time as g
+
+Summary of features:
+
+1) Calculations for 1D and 2D 
+1.1) Calculate ||f_k||_L2(\Omega)
+1.2) Calculate ||g_k||_L2(\Omega)
+1.3) Calculate ||f_k - g_l||_L2(\Omega)
+1.4) Calculate (d^i/dx^i) f_k(x) |i|=0,1 i: multiindex
+1.5) Calculate (d^j/dx^j) g_k(x) |j|=0,1 j: multiindex
+1.6) Calculate (d^i/dx^i)f_k(x) - (d^j/dx^j)g_l(x), |i|=0,1; |j| = 0,1 i,j: multiindex
+
+2) Output
+2.1) Export the vector of coefficents in an other format
+2.2) UCD-Output of the mesh
+2.3) UCD-Output of the input functions
+
+Changelog:
+-Bugfixes in the UCD-Output + fine-tuning the UCD-Output
+-Added a warning if the vector does not match the discretisation (only for the format
+ int N, char sVarname, ...)
+Fixed typos in the logfile_settings.dat - the logfiles were deactivated because of the typo
+
+
+On request I will add more features, if someone is willing to test I will add
+1) More formats for UCD-Output
+2) Discretisation with 1 element in 2D (results from poisson app for example)
+3) H1-Norm-Calculations
+4) Calculating the L2-Norm of the divergence of the input functions
+
+Malte Schuh
+
 Version 2.1   4.11.2014
 
 To sum up the features and present the changelog, we need a notation:

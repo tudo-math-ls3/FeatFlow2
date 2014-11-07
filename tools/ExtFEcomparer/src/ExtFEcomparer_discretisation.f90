@@ -49,9 +49,9 @@ subroutine ExtFEcomparer_init_discretisation(rproblem)
 
     select case(rproblem%iDimension)
         case(ExtFE_NDIM1)
-            call ExtFEcomparer_init_discretisation_1D(rproblem)
+            call ExtFE_init_discretisation_1D(rproblem)
         case(ExtFE_NDIM2)
-            call ExtFEcomparer_init_discretisation_2D(rproblem)
+            call ExtFE_init_discretisation_2D(rproblem)
         case default
             call output_line(&
             "The dimension of you problem is not yet implemented, dimension = " &
@@ -62,7 +62,7 @@ subroutine ExtFEcomparer_init_discretisation(rproblem)
 
 end subroutine
 
-subroutine ExtFEcomparer_init_discretisation_1D(rproblem)
+subroutine ExtFE_init_discretisation_1D(rproblem)
 !<description>
     ! This routine is containing calls to all 1D-inits
     ! at the moment there is only support for a discretisation
@@ -76,7 +76,7 @@ subroutine ExtFEcomparer_init_discretisation_1D(rproblem)
     select case(rproblem%elementSetting)
         case(ExtFE_OneElement)
 
-            call ExtFEcomparer_init_discretisation_1D_OneElementType(rproblem)
+            call ExtFE_init_discretisation_1D_OneElementType(rproblem)
 
         case default
             call output_line(&
@@ -89,15 +89,15 @@ subroutine ExtFEcomparer_init_discretisation_1D(rproblem)
 end subroutine
 
 
-subroutine ExtFEcomparer_init_discretisation_1D_OneElementType(rproblem)
+subroutine ExtFE_init_discretisation_1D_OneElementType(rproblem)
 !<inputoutput>
     ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
     integer :: NLMAX, NVAR,i
-    type (t_triangulation), pointer :: p_triangulation
-    type (t_blockDiscretisation), pointer :: p_discretisation
+    type (t_triangulation), pointer :: p_triangulation => NULL()
+    type (t_blockDiscretisation), pointer :: p_discretisation => NULL()
 ! We need to create a block-discretisation-structure
 ! so that we can store one variable in each block
     NLMAX = rproblem%NLMAX
@@ -119,7 +119,7 @@ subroutine ExtFEcomparer_init_discretisation_1D_OneElementType(rproblem)
 
 end subroutine
 
-subroutine ExtFEcomparer_init_discretisation_2D(rproblem)
+subroutine ExtFE_init_discretisation_2D(rproblem)
 !<description>
     ! This routine is containing calls to all 2D-inits, that is
     ! in particular if it is a (u,v,p) solution (i.e. from cc2d)
@@ -139,7 +139,7 @@ subroutine ExtFEcomparer_init_discretisation_2D(rproblem)
         case(ExtFE_ElementPair)
             ! Element pair - i.e. one element type for the speed,
             ! one for the pressure
-            call ExtFEcomparer_init_Discretisation_2D_elementPair(rproblem)
+            call ExtFE_init_Discretisation_2D_elementPair(rproblem)
 
         case default
             call output_line(&
@@ -152,7 +152,7 @@ subroutine ExtFEcomparer_init_discretisation_2D(rproblem)
 end subroutine
 
 
- subroutine ExtFEcomparer_init_Discretisation_2D_elementPair(rproblem)
+ subroutine ExtFE_init_Discretisation_2D_elementPair(rproblem)
 
 !<description>
   ! This routine initialises a discretisation structure for a vector
@@ -170,18 +170,18 @@ end subroutine
 !</subroutine>
 
     ! local variables
-    integer :: ielementType, NLMAX
+    integer :: iElemPairID, NLMAX
     ! An object for saving the domain:
-    type(t_boundary), pointer :: p_rboundary
+    type(t_boundary), pointer :: p_rboundary => NULL()
 
     ! An object for saving the triangulation on the domain
-    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation => NULL()
 
     ! An object for the block discretisation on one level
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation => NULL()
 
     ! Which discretisation is to use?
-    ielementType = rproblem%ielemtype
+    iElemPairID = rproblem%iElemPairID
 
     ! Now set up discrezisation structures on all levels:
 
@@ -198,7 +198,7 @@ end subroutine
       ! -----------------------------------------------------------------------
 
       ! Initialise the block discretisation according to the element specifier.
-      call ExtFEcomparer_getDiscretisation_2D_elementPair(ielementType, &
+      call ExtFEcomparer_getDiscretisation_2D_elementPair(iElemPairID, &
                p_rdiscretisation,rproblem%rtriangulation, &
                rproblem%rboundary)
 
@@ -446,13 +446,6 @@ end subroutine
     ! A problem structure saving problem-dependent information.
     type(t_problem), intent(inout), target :: rproblem
     !</inputoutput>
-
-    !</subroutine>
-
-    ! local variables
-    integer :: i
-
-      i = rproblem%NLMAX
 
       ! Remove the block discretisation structure and all substructures.
       call spdiscr_releaseBlockDiscr(rproblem%rdiscretisation)

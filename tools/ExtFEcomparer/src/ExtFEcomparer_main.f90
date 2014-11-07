@@ -14,6 +14,8 @@ module ExtFEcomparer_main
   use ExtFEcomparer_vector
   use ExtFEcomparer_postprocessing
 
+  use triangulation
+
   implicit none
 
 contains
@@ -92,6 +94,7 @@ contains
                         p_rpostprocessing)
 
     ! Do the postprocessing
+    call output_lbrk()
     call output_line("Do the file i/o: create requested files")
     call ExtFEcomparer_postprocess(p_rpostprocessing)
 

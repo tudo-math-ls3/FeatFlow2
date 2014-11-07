@@ -11,7 +11,7 @@ module ExtFEcomparer_typedefs
   use paramlist
   use linearsystemblock
 
-  use collection
+  use fparser
 
   implicit none
 
@@ -84,8 +84,21 @@ module ExtFEcomparer_typedefs
   ! routines at first
   integer, parameter, public :: ExtFE_STRLEN = SYS_STRLEN
 
-  integer, parameter, public :: UCD_VTK = 1
+  ! Constants for the UCD-Output
+  ! UCD-Types supported
+  integer, parameter, public :: ExtFE_UCD_VTK = 1
 
+  ! which way to add a component?
+  ! Vertex-Based?
+  integer, parameter, public :: ExtFE_UCD_VERT_BASED = 1
+  ! Element based?
+  integer, parameter, public :: ExtFE_UCD_ELEM_BASED = 2
+  ! Translation of the input of ucd-flags
+  integer, parameter, public :: ExtFE_UCD_OUT_STANDARD = 1
+  integer, parameter, public :: ExtFE_UCD_OUT_DISCONTINUOUS = 2
+
+  integer, parameter, public :: ExtFE_UCD_POLY_CONST = 0
+  integer, parameter, public :: ExtFE_UCD_POLY_LINEAR = 1
   !</constant Block>
 
 
@@ -104,7 +117,8 @@ module ExtFEcomparer_typedefs
    type(t_blockDiscretisation) :: rdiscretisation
 
    ! The Type of elements
-   integer:: ielemtype
+   integer:: iElemPairID
+   integer(I32) :: ielemType
 
    ! An object for saving the domain:
    type(t_boundary) :: rboundary
@@ -144,6 +158,11 @@ module ExtFEcomparer_typedefs
     ! it might be overkill at the moment,
     ! but it gives more structure to the code
     ! and allows to easily extend the code
+    ! General information:
+    ! Dimension
+    integer :: nDim = -1
+    integer :: nVarFirst = -1
+    integer :: nVarSecond = -1
 
     ! Everything regarding vector output
     logical :: writeOutOrigVector1 = .false.
@@ -156,12 +175,12 @@ module ExtFEcomparer_typedefs
     type(t_vectorBlock), pointer :: OrigVecSecond => NULL()
 
 
-    ! Everything regarding L2-Output
+    ! Everything regarding L2-Output and calculations
     integer :: nL2Calculations = -1
     logical :: writeOutL2results = .false.
     character(LEN=ExtFE_STRLEN) :: L2filepath
 
-    ! Results + Which components where involved
+    ! Results + Which components are involved
     ! All handles shall become arrays:
     ! The result array in double, the other in integer
     integer :: h_L2Results = ST_NOHANDLE
@@ -171,7 +190,9 @@ module ExtFEcomparer_typedefs
     integer :: h_L2TriFile = ST_NOHANDLE
     ! Cubature rule?
     integer :: h_L2CubRule = ST_NOHANDLE
-
+    ! And at last : a parser for the Region
+    ! of interest
+    type(t_fparser) :: pL2ChiOmegaParser
 
     ! Everything regarding the pointvalues
     integer :: nPointCalculations = -1
@@ -187,17 +208,30 @@ module ExtFEcomparer_typedefs
 
     ! We want to be able to do UCD-Output of the mesh
     ! and of the functions itself. So we set some pointers here
-    integer :: UCD_Type
+    integer :: UCD_Format !VTK/GMV/...
     logical :: ucd_OUT_meshes = .false.
     logical :: ucd_OUT_orig_functions_one = .false.
     logical :: ucd_OUT_orig_functions_two = .false.
     character(LEN=ExtFE_STRLEN) :: UCD_meshOneOutPath
     character(LEN=ExtFE_STRLEN) :: UCD_meshTwoOutPath
+    type(t_triangulation), pointer :: UCD_MeshOnePointer => NULL()
+    type(t_triangulation), pointer :: UCD_MeshTwoPointer => NULL()
     character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionOneOrigOutPath
     character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionTwoOrigOutPath
-    type(t_vectorBlock), pointer :: UCD_feFunction_first_orig => NULL()
-    type(t_vectorBlock), pointer :: UCD_feFunction_second_orig => NULL()
+    type(t_vectorBlock), allocatable :: UCD_feFunction_first_orig
+    type(t_vectorBlock), allocatable :: UCD_feFunction_second_orig
+    type(t_blockDiscretisation), allocatable :: UCDBlockDiscrFirst
+    type(t_blockDiscretisation), allocatable :: UCDBlockDiscrSecond
+    integer :: h_UCD_VecsFirstOrig = ST_NOHANDLE
+    integer :: h_UCD_ScalarFirstOrig = ST_NOHANDLE
+    integer :: h_UCD_VecsSecondOrig = ST_NOHANDLE
+    integer :: h_UCD_ScalarSecondOrig = ST_NOHANDLE
+    integer :: h_UCD_AddTypeOrigFirst = ST_NOHANDLE
+    integer :: h_UCD_AddTypeOrigSecond = ST_NOHANDLE
+    integer :: h_UCD_AddElemProjectFirst = ST_NOHANDLE
+    integer :: h_UCD_AddElemProjectSecond = ST_NOHANDLE
 
+    integer(I32) ::UCD_Style
 
   end type
 

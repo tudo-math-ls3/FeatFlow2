@@ -27,6 +27,9 @@ module ExtFEcomparer_postprocessing
   use io
   use ucd
   use cubature
+  use fparser
+  use linearsystemblock
+  use linearsystemscalar
 
   use ExtFEcomparer_typedefs
 
@@ -50,6 +53,14 @@ subroutine ExtFEcomparer_init_postprocessing(rpostprocessing,rparlist)
     !<inputoutput>
     type(t_postprocessing) , intent(inout):: rpostprocessing
     !</inputoutput>
+
+    ! General parameters
+    call parlst_getvalue_int(rparlist,"ExtFE-DOMAININFO", &
+                    "dim",rpostprocessing%nDim)
+    call parlst_getvalue_int(rparlist,"ExtFE-FIRST", &
+                    "iNVAR",rpostprocessing%nVarFirst)
+    call parlst_getvalue_int(rparlist,"ExtFE-SECOND", &
+                    "iNVAR",rpostprocessing%nVarSecond)
 
     ! L2 - Postprocessing
     call ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
@@ -123,7 +134,7 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
 
     integer :: nL2Calculations, nL2ChiOmega, nL2CubRule
     character(LEN=ExtFE_STRLEN) :: L2filepath
-    integer :: writeOutL2,i,k
+    integer :: writeOutL2,i,k,nDIM
 
     ! pointer to the storage of the postprocessing structure
     real(DP), dimension(:),  pointer :: p_L2results =>NULL()
@@ -158,6 +169,9 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
      OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
      call sys_halt()
   end if
+
+  ! Get the dimension
+  nDIM = rpostprocessing%nDim
 
   ! Easy one: Init arrays for results and which component
   ! and store the filepath
@@ -197,6 +211,8 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
         rpostprocessing%L2filepath = L2filepath
     end if
 
+    ! We will actually parse the L2RegionOfInterest here in a parser
+    call fparser_create(rpostprocessing%pL2ChiOmegaParser,nL2Calculations)
 
     ! Now get the arrays and fill them with data
     call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
@@ -229,6 +245,19 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
          do k=1,ExtFE_STRLEN
             p_L2ChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
          end do
+
+         ! Parse the string in the parser. Unfortunately we have to branch here :(
+        select case (nDIM)
+             case(ExtFE_NDIM1)
+               call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,i,sparam,(/'x'/))
+             case(ExtFE_NDIM2)
+               call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,i,sparam,(/'x','y'/))
+             case default
+               call output_line('Dimension of your problem is &
+                     &not supported', &
+                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+               call sys_halt()
+        end select
 
         call parlst_getvalue_string(rparlist, &
                         "ExtFE-CALCULATIONS", "L2CubatureRule", &
@@ -394,6 +423,7 @@ subroutine ExtFE_done_postprocessing_L2(rpostprocessing)
         call storage_free(rpostprocessing%h_L2CubRule)
     end if
 
+    call fparser_release(rpostprocessing%pL2ChiOmegaParser)
 end subroutine
 
 
@@ -419,7 +449,7 @@ subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
 
 
     ! Find out the dimension of the problem
-    call parlst_getvalue_int(rparlist,"ExtFE-DOMAININFO","dim",nDim)
+    nDim = rpostprocessing%nDim
 
         nPointEvaluations = parlst_querysubstrings(rparlist, &
                     "ExtFE-CALCULATIONS","evaluationPoints")
@@ -478,7 +508,7 @@ subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
         do i=1,nPointEvaluations
             ! fetch the whole line
             call parlst_getvalue_string(rparlist, &
-                        "   ExtFE-CALCULATIONS", "evaluationpoints", &
+                          "ExtFE-CALCULATIONS", "evaluationpoints", &
                             sparam,sdefault="",isubstring=i)
             !and read it in. Which function comp and deriv?
             select case(nDim)
@@ -642,11 +672,21 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
     type(t_postprocessing) , intent(inout):: rpostprocessing
     !</inputoutput>
 
-    integer :: ucdType
+    integer :: ucdType,ucdFormat
+    integer :: nDim, nVars
     integer :: writeOutMeshes, writeOutFirstFunction, writeOutSecondFunction
     character(LEN=ExtFE_STRLEN) :: sMeshPathFirst, sMeshPathSecond
     character(LEN=ExtFE_STRLEN) :: sFirstFunctionOutput, sSecondFunctionOutput
+    character(LEN=ExtFE_STRLEN) :: sUCD_AddElemProjection
+    character(LEN=ExtFE_STRLEN) :: sUCD_AddTypeOrig
+    character(LEN=ExtFE_STRLEN) :: sUCD_VecComp
+    character(LEN=ExtFE_STRLEN) :: sUCD_ScalarComp
+    integer :: h_UCD_AddTypeOrig
+    integer :: h_UCD_AddElemProject
+    integer :: h_UCD_VecVars
+    integer :: h_UCD_ScalarVars
 
+    nDim = rpostprocessing%nDim
 
     !--------------------------------------!
     ! Set up the UCD-Postprocessing        !
@@ -694,6 +734,26 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
         rpostprocessing%UCD_FEfunctionOneOrigOutPath = sFirstFunctionOutput
         rpostprocessing%ucd_OUT_orig_functions_one = .TRUE.
 
+        sUCD_AddElemProjection = "sUCDElemProjectFirstFunction"
+        sUCD_AddTypeOrig = "sUCDaddTypeFirstFunction"
+        sUCD_VecComp = "sUCDVecCompFirstFunction"
+        sUCD_ScalarComp = "UCD_ScalarFirstOrig"
+        nVars = rpostprocessing%nVarFirst
+
+        call ExtFE_init_pp_UCD_fefuncout(h_UCD_AddElemProject,h_UCD_AddTypeOrig,&
+                                    h_UCD_VecVars,h_UCD_ScalarVars,&
+                            sUCD_AddElemProjection,sUCD_AddTypeOrig,&
+                                        sUCD_VecComp,sUCD_ScalarComp,&
+                                        nDim,&
+                                        nVars,&
+                                        rparlist)
+
+        rpostprocessing%h_UCD_AddTypeOrigFirst = h_UCD_AddTypeOrig
+        rpostprocessing%h_UCD_AddElemProjectFirst = h_UCD_AddElemProject
+        rpostprocessing%h_UCD_VecsFirstOrig = h_UCD_VecVars
+        rpostprocessing%h_UCD_ScalarFirstOrig = h_UCD_ScalarVars
+
+
     end if
 
     ! Write out second original FE-Function?
@@ -713,21 +773,208 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
         ! Save it in the structure
         rpostprocessing%UCD_FEfunctionTwoOrigOutPath = sSecondFunctionOutput
         rpostprocessing%ucd_OUT_orig_functions_two = .TRUE.
+        sUCD_AddElemProjection = "sUCDElemProjectSecondFunction"
+        sUCD_AddTypeOrig = "sUCDaddTypeSecondFunction"
+        sUCD_VecComp = "sUCDVecCompSecondFunction"
+        sUCD_ScalarComp = "UCD_ScalarSecondOrig"
+        nVars = rpostprocessing%nVarSecond
+
+        call ExtFE_init_pp_UCD_fefuncout(h_UCD_AddElemProject,h_UCD_AddTypeOrig,&
+                                    h_UCD_VecVars,h_UCD_ScalarVars,&
+                            sUCD_AddElemProjection,sUCD_AddTypeOrig,&
+                                        sUCD_VecComp,sUCD_ScalarComp,&
+                                        nDim,&
+                                        nVars,&
+                                        rparlist)
+
+        rpostprocessing%h_UCD_AddTypeOrigSecond = h_UCD_AddTypeOrig
+        rpostprocessing%h_UCD_AddElemProjectSecond = h_UCD_AddElemProject
+        rpostprocessing%h_UCD_VecsSecondOrig = h_UCD_VecVars
+        rpostprocessing%h_UCD_ScalarSecondOrig = h_UCD_ScalarVars
+
 
     end if
+
 
 
     if((rpostprocessing%ucd_OUT_meshes .eqv. .TRUE.) .or. &
         (rpostprocessing%ucd_OUT_orig_functions_one .eqv. .TRUE.) .or. &
         (rpostprocessing%ucd_OUT_orig_functions_two .eqv. .TRUE.))then
         call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
+                        "ucdFormat",ucdFormat)
+        rpostprocessing%UCD_Format = ucdFormat
+
+        call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                         "ucdType",ucdType)
-        rpostprocessing%UCD_Type = ucdType
+        select case(ucdType)
+            case(ExtFE_UCD_OUT_STANDARD)
+                rpostprocessing%UCD_Style = UCD_FLAG_STANDARD
+            case default
+                call output_line('Wrong Input for the UCD-type',&
+                   OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+                call sys_halt()
+            end select
     end if
 
 
-end subroutine
+contains
 
+ !This one serves as a wrapper as we do 2 times the same
+ subroutine ExtFE_init_pp_UCD_fefuncout(h_UCD_AddElemProject,h_UCD_AddTypeOrig,&
+                                    h_UCD_VecVars,h_UCD_ScalarVars,&
+                            sUCD_AddElemProjection,sUCD_AddTypeOrig,&
+                                        sUCD_VecComp,sUCD_ScalarComp,&
+                                        nDimension, nVarsFunc,rparlist)
+
+    ! Input
+    type(t_parlist), intent(inout) :: rparlist
+    ! Strings for where to search
+    character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_AddTypeOrig
+    character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_AddElemProjection
+    character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_VecComp
+    character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_ScalarComp
+    integer, intent(in) :: nDimension
+    integer, intent(in) :: nVarsFunc
+
+    ! InOut: Handles to the storage of the arrays
+    integer, intent(inout) :: h_UCD_AddTypeOrig
+    integer, intent(inout) :: h_UCD_AddElemProject
+    integer, intent(inout) :: h_UCD_VecVars
+    integer, intent(inout) :: h_UCD_ScalarVars
+
+    ! Local variables
+    integer :: i,k, iVarsScalar, nVecs
+    integer, dimension (:,:), pointer :: p_IntPointerVecs => NULL()
+    integer, dimension(:), pointer :: p_IntPointerScalars => NULL()
+    integer, dimension(:), pointer :: p_IntPointerAddElemProject => NULL()
+    integer, dimension(:), pointer :: p_IntPointerAddType => NULL()
+    integer, dimension(:), allocatable :: VarsNotVector
+
+    character(LEN=ExtFE_STRLEN) :: sparam
+
+    ! Allocate the arrays for the UCD-Output
+    ! Therefore we need the number of variables in the function
+    ! and how many vectors are in there
+
+    call storage_new("ExtFE_init_postprocessing",sUCD_AddTypeOrig,&
+                      nVarsFunc,ST_INT,h_UCD_AddTypeOrig,&
+                      ST_NEWBLOCK_ZERO)
+    call storage_new("ExtFE_init_postprocessing",sUCD_AddElemProjection,&
+                      nVarsFunc,ST_INT,h_UCD_AddElemProject,&
+                      ST_NEWBLOCK_ZERO)
+
+    nVecs = parlst_querysubstrings(rparlist, &
+                  "ExtFE-POSTPROCESSING",sUCD_VecComp)
+    if(nVecs .gt. 0) then
+        call storage_new("ExtFE_init_postprocessing",sUCD_VecComp,&
+                        (/nVecs,nDimension/),ST_INT,h_UCD_VecVars,&
+                        ST_NEWBLOCK_ZERO)
+
+        ! Fetch the whole line with the flags and then translate them
+        ! Type of variable
+        call storage_getbase_int2D(h_UCD_VecVars,p_IntPointerVecs)
+        do i=1,nVecs
+            ! fetch the whole line
+            call parlst_getvalue_string(rparlist, &
+                          "ExtFE-Postprocessing", sUCD_VecComp, &
+                            sparam,sdefault="",isubstring=i)
+            read(sparam,*) p_IntPointerVecs(i,:)
+
+        end do ! Read in the Data
+        ! Done with that one
+
+        ! Assumtion: Every variable not in a vector shall be written out as scalar variable
+        ! We know we have maximum nVar variables
+        allocate(VarsNotVector(nVarsFunc))
+        VarsNotVector(:) = 1
+        do i=1,nVecs
+            do k=1,nDimension
+                VarsNotVector(p_IntPointerVecs(i,k)) = 0
+            end do
+        end do
+        ! Now all remaining 1 tell us which variable are scalar ones, count them
+        iVarsScalar = 0
+        do i=1,nVarsFunc
+            iVarsScalar = iVarsScalar + VarsNotVector(i)
+        end do
+
+
+        if(iVarsScalar .gt. 0) then
+            call storage_new("ExtFE_init_postprocessing",sUCD_ScalarComp,&
+                   iVarsScalar,ST_INT,h_UCD_ScalarVars,&
+                    ST_NEWBLOCK_ZERO)
+            call storage_getbase_int(h_UCD_ScalarVars,p_IntPointerScalars)
+            k = 0
+            do i=1,nVarsFunc
+                if (VarsNotVector(i) .eq. 1) then
+                    k = k+1
+                    p_IntPointerScalars(k) = i
+                end if
+            end do
+        end if
+        deallocate(VarsNotVector)
+        ! Another case is not possible: if nVecs = 0 and also no variable is a scalar one there is no
+        ! component in the function
+    else
+        iVarsScalar = nVarsFunc
+        call storage_new("ExtFE_init_postprocessing",sUCD_ScalarComp,&
+                  iVarsScalar,ST_INT,h_UCD_ScalarVars,&
+                  ST_NEWBLOCK_ZERO)
+        call storage_getbase_int(h_UCD_ScalarVars,p_IntPointerScalars)
+        do i=1,nVarsFunc
+            p_IntPointerScalars(i) = i
+        end do
+
+    end if ! nVecs > 0
+
+    ! Now how to add them
+    call storage_getbase_int(h_UCD_AddTypeOrig,p_IntPointerAddType)
+    call parlst_getvalue_string(rparlist,"ExtFE-Postprocessing",sUCD_AddTypeOrig,sparam)
+
+    read(sparam,*) p_IntPointerAddType(:)
+    ! Done with that
+    ! Sanity check
+    do i=1,nVarsFunc
+        select case(p_IntPointerAddType(i))
+
+        case(ExtFE_UCD_ELEM_BASED,ExtFE_UCD_VERT_BASED)
+!            write(sparam,*) p_IntPointerAddType(i)
+!            call output_line('Function one: add Type= ' //trim(adjustl(sparam)))
+        case default
+             write(sparam,*) i
+             call output_line('wrong add type for a function, variable '//trim(adjustl(sparam)), &
+                      OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+             call sys_halt()
+         end select
+    end do
+
+    ! Poly degree?
+    call storage_getbase_int(h_UCD_AddElemProject,p_IntPointerAddElemProject)
+    call parlst_getvalue_string(rparlist,"ExtFE-Postprocessing",sUCD_AddElemProjection,sparam)
+
+    read(sparam,*) p_IntPointerAddElemProject(:)
+    ! Done with that
+    ! Sanity check
+    do i=1,nVarsFunc
+         select case(p_IntPointerAddElemProject(i))
+
+         case(ExtFE_UCD_POLY_CONST,ExtFE_UCD_POLY_LINEAR)
+           case default
+             write(sparam,*) i
+             call output_line('not supported poly degree for variable '//trim(adjustl(sparam)), &
+                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+              call sys_halt()
+         end select
+    end do
+
+    ! Clean up
+    p_IntPointerAddElemProject => NULL()
+    p_IntPointerAddType => NULL()
+    p_IntPointerScalars => NULL()
+    p_IntPointerVecs => NULL()
+ end subroutine ! ExtFE_init_pp_UCD_fefuncout
+
+end subroutine ! ExtFE_init_UCD
 
 ! Make the desired UCD-Output
 subroutine ExtFE_postprocess_UCD(rpostprocessing)
@@ -737,21 +984,18 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
     type(t_postprocessing), intent(inout) :: rpostprocessing
     !</inputoutput>
 
-    integer :: i
-    character(LEN=ExtFE_STRLEN) :: soutString, stmpString
-
-    type(t_ucdExport) :: rexport_first,rexport_second, rexport
+    type(t_ucdExport) :: rexport_first_mesh,rexport_second_mesh
 
     ! Write out the meshes with UCD-Output?
     if(rpostprocessing%ucd_OUT_meshes .eqv. .TRUE.) then
-        select case(rpostprocessing%UCD_Type)
-            case(UCD_VTK)
+        select case(rpostprocessing%UCD_Format)
+            case(ExtFE_UCD_VTK)
                 ! Open / write / close
-                call ucd_startVTK (rexport_first,UCD_FLAG_STANDARD,&
-                        rpostprocessing%UCD_feFunction_first_orig%p_rblockDiscr%p_rtriangulation,&
+                call ucd_startVTK (rexport_first_mesh,UCD_FLAG_STANDARD,&
+                        rpostprocessing%UCD_MeshOnePointer,&
                         rpostprocessing%UCD_meshOneOutPath)
-                call ucd_startVTK (rexport_second,UCD_FLAG_STANDARD,&
-                        rpostprocessing%UCD_feFunction_second_orig%p_rblockDiscr%p_rtriangulation,&
+                call ucd_startVTK (rexport_second_mesh,UCD_FLAG_STANDARD,&
+                        rpostprocessing%UCD_MeshTwoPointer,&
                         rpostprocessing%UCD_meshTwoOutPath)
 
             case default
@@ -761,99 +1005,226 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
                 call sys_halt()
         end select
 
-        call ucd_write (rexport_first)
-        call ucd_write (rexport_second)
-        call ucd_release (rexport_first)
-        call ucd_release (rexport_second)
+        call ucd_write (rexport_first_mesh)
+        call ucd_write (rexport_second_mesh)
+        call ucd_release (rexport_first_mesh)
+        call ucd_release (rexport_second_mesh)
 
     end if
 
     ! Write out the first function?
     if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .TRUE. ) then
-        select case(rpostprocessing%UCD_Type)
-            case(UCD_VTK)
-                ! Open
-                call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
-                        rpostprocessing%UCD_feFunction_first_orig%p_rblockDiscr%p_rtriangulation,&
-                        rpostprocessing%UCD_FEfunctionOneOrigOutPath)
 
-            case default
-                call output_line('Type of UCD-output &
-                     &not supported', &
-                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_postprocessing")
-                call sys_halt()
-        end select
-
-        ! Now add the variables, one after the other
-        do i=1,rpostprocessing%UCD_feFunction_first_orig%nblocks
-            write(stmpString,'(I6)') i
-            soutString = "Component_"
-            soutString = trim(soutString) // trim(adjustl(stmpString))
-            ! Since we do not know anything about the function, we cannot
-            ! say what is better: Adding it vertex-based or element-based
-            ! or midpoint-based. So the decision goes for vertex-based.
-            ! We also do not know if something is part of
-            ! a "bigger" variable, ie. if component 1 is velocity in x-direction
-            ! and component 2 is velocity in y-direction, so we cannot group them!
-            call ucd_addVectorByVertex(rexport,soutString,UCD_VAR_STANDARD, &
-                rpostprocessing%UCD_feFunction_first_orig%RvectorBlock(i))
-        end do
-        ! Write/Close
-        call ucd_write(rexport)
-        call ucd_release(rexport)
-        stmpString = ''
-        soutString = ''
+        call ExtFE_write_UCD(rpostprocessing%UCD_feFunction_first_orig,&
+                            rpostprocessing%UCD_Format,&
+                            rpostprocessing%UCD_Style,&
+                            rpostprocessing%UCD_FEfunctionOneOrigOutPath,&
+                            rpostprocessing%h_UCD_AddTypeOrigFirst,&
+                            rpostprocessing%h_UCD_ScalarFirstOrig,&
+                            rpostprocessing%h_UCD_VecsFirstOrig)
     end if
 
-    ! Write out the second function?
     if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .TRUE. ) then
-        select case(rpostprocessing%UCD_Type)
-            case(UCD_VTK)
-                ! Open
-                call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
-                        rpostprocessing%UCD_feFunction_second_orig%p_rblockDiscr%p_rtriangulation,&
-                        rpostprocessing%UCD_FEfunctionTwoOrigOutPath)
 
-            case default
-                call output_line('Type of UCD-output &
-                     &not supported', &
-                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_postprocessing")
-                call sys_halt()
-        end select
-
-        ! Now add the variables, one after the other
-        do i=1,rpostprocessing%UCD_feFunction_second_orig%nblocks
-            write(stmpString,'(I6)') i
-            soutString = "Component_"
-            soutString = trim(soutString) // trim(adjustl(stmpString))
-            ! Since we do not know anything about the function, we cannot
-            ! say what is better: Adding it vertex-based or element-based
-            ! or midpoint-based. So the decision goes for vertex-based.
-            ! We also do not know if something is part of
-            ! a "bigger" variable, ie. if component 1 is velocity in x-direction
-            ! and component 2 is velocity in y-direction, so we cannot group them!
-            call ucd_addVectorByVertex(rexport,soutString,UCD_VAR_STANDARD, &
-                rpostprocessing%UCD_feFunction_second_orig%RvectorBlock(i))
-        end do
-        ! Write/Close
-        call ucd_write(rexport)
-        call ucd_release(rexport)
-        stmpString = ''
-        soutString = ''
-
+        call ExtFE_write_UCD(rpostprocessing%UCD_feFunction_second_orig,&
+                            rpostprocessing%UCD_Format,&
+                            rpostprocessing%UCD_Style,&
+                            rpostprocessing%UCD_FEfunctionTwoOrigOutPath,&
+                            rpostprocessing%h_UCD_AddTypeOrigSecond,&
+                            rpostprocessing%h_UCD_ScalarSecondOrig,&
+                            rpostprocessing%h_UCD_VecsSecondOrig)
     end if
 
-end subroutine
+
+    ! We create a wrapper here since we basically do every time the same,
+    ! just some different input, ie another function/other flags
+
+  contains
+
+  subroutine ExtFE_write_UCD(fefunction,ucd_fmt,ucd_initType,outpath,h_addType,h_scalarValues,h_VectorValues)
+  ! Input
+  type(t_vectorBlock), intent(inout) :: fefunction
+  integer, intent(in) :: ucd_fmt
+  integer(I32), intent(in) :: ucd_initType
+  ! outpath
+  character(LEN=ExtFE_STRLEN), intent(in) :: outpath
+  ! add them vertex-based, midpoint-based,...
+  integer, intent(in) :: h_addType
+  ! scalar values
+  integer, intent(in) :: h_scalarValues
+  integer, intent(in) :: h_VectorValues
+
+  ! Local variables
+  integer :: i, nVecs, nScalars, nDim
+  type(t_ucdExport) :: rexportFunction
+  character(LEN=ExtFE_STRLEN) :: svarname
+  integer, dimension(:), pointer :: p_addType => NULL()
+  integer, dimension(:), pointer :: p_scalarValues => NULL()
+  integer, dimension(:,:), pointer :: p_VectorValues => NULL()
+  real(DP), dimension(:), pointer :: p_DataX => NULL()
+  real(DP), dimension(:), pointer :: p_DataY => NULL()
+  real(DP), dimension(:), pointer :: p_DataZ => NULL()
+
+
+ ! Select ucd-type
+ select case(ucd_fmt)
+
+   case(ExtFE_UCD_VTK)
+   ! Open
+     call ucd_startVTK (rexportFunction,ucd_initType,&
+                    fefunction%p_rblockDiscr%p_rtriangulation,&
+                    outpath)
+
+   case default
+
+     call output_line('Type of UCD-output &
+                    &not supported', &
+           OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_postprocessing")
+     call sys_halt()
+   end select
+
+   ! How to add?
+   call storage_getbase_int(h_addType,p_addType)
+
+   ! First we go through the scalar ones
+   if (h_scalarValues .gt. ST_NOHANDLE) then
+     call storage_getbase_int(h_scalarValues,p_scalarValues)
+     nScalars = ubound(p_scalarValues,1)
+     do i=1,nScalars
+       write(svarname,*) i
+        call lsyssc_getbase_double(fefunction%RvectorBlock(p_scalarValues(i)),p_DataX)
+         select case(p_addType(p_scalarValues(i)))
+
+          case(ExtFE_UCD_VERT_BASED)
+             !call ucd_addVarVertBasedVec(rexportFunction,"SclarVar_"//trim(adjustl(svarname)),p_DataX)
+             call ucd_addVariableVertexBased(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
+          case(ExtFE_UCD_ELEM_BASED)
+             !call ucd_addVarElemBasedVec(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
+             call ucd_addVariableElementBased(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
+        end select
+
+     end do
+   end if
+
+   ! Now the vector valued
+   ! Assumtion: All Variables in the vector are added the same way!
+   ! first on vertex-based => All vertex based etc
+   ! We don't need sanity checks as we did them during the init
+   if(h_VectorValues .gt. ST_NOHANDLE) then
+        call storage_getbase_INT2D(h_VectorValues,p_VectorValues)
+        nVecs = ubound(p_VectorValues,1)
+        nDim = fefunction%p_rblockDiscr%ndimension
+        svarname = ''
+        do i=1,nVecs
+            write(svarname,*) i
+            svarname = "VectorVar_" //trim(adjustl(svarname))
+            select case(nDim)
+            case(ExtFE_NDIM1)
+
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,1)),p_DataX)
+
+                select case(p_addType(p_VectorValues(i,1)))
+                case(ExtFE_UCD_VERT_BASED)
+                    call ucd_addVarVertBasedVec(rexportFunction,svarname,p_DataX)
+                case (ExtFE_UCD_ELEM_BASED)
+                    call ucd_addVarElemBasedVec(rexportFunction,svarname,p_DataX)
+                end select
+
+            case(ExtFE_NDIM2)
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,1)),p_DataX)
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,2)),p_DataY)
+
+                select case(p_addType(p_VectorValues(i,1)))
+                case(ExtFE_UCD_VERT_BASED)
+                    call ucd_addVarVertBasedVec(rexportFunction,svarname,p_DataX,p_DataY)
+                case (ExtFE_UCD_ELEM_BASED)
+                    call ucd_addVarElemBasedVec(rexportFunction,svarname,p_DataX,p_DataY)
+                end select
+
+            case(ExtFE_NDIM3)
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,1)),p_DataX)
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,2)),p_DataY)
+                call lsyssc_getbase_double(fefunction%RvectorBlock(p_VectorValues(i,3)),p_DataZ)
+
+                select case(p_addType(p_VectorValues(i,1)))
+                case(ExtFE_UCD_VERT_BASED)
+                    call ucd_addVarVertBasedVec(rexportFunction,svarname,p_DataX,p_DataY,p_DataZ)
+                case (ExtFE_UCD_ELEM_BASED)
+                    call ucd_addVarElemBasedVec(rexportFunction,svarname,p_DataX,p_DataY,p_DataZ)
+                end select
+
+            end select
+
+      end do
+
+
+   end if
+
+
+  ! Write and release
+  call ucd_write(rexportFunction)
+  call ucd_release(rexportFunction)
+
+ end subroutine !ExtFE_write_UCD
+
+end subroutine !postprocess_UCD
 
 ! Release of UCD-Postprocessing
 subroutine ExtFE_done_postprocessing_UCD(rpostprocessing)
 !<input>
    type(t_postprocessing) , intent(inout):: rpostprocessing
 !</input>
+    ! Meshes
+    if(rpostprocessing%ucd_OUT_meshes .eqv. .true. ) then
+        rpostprocessing%UCD_MeshOnePointer => NULL()
+        rpostprocessing%UCD_MeshTwoPointer => NULL()
+    end if
 
-    ! UCD-Stuff
-    rpostprocessing%UCD_feFunction_first_orig => NULL()
-    rpostprocessing%UCD_feFunction_second_orig => NULL()
+    ! UCD Out of first function
+    if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true.) then
+        call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_first_orig)
+        deallocate(rpostprocessing%UCD_feFunction_first_orig)
+        call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrFirst)
+        deallocate(rpostprocessing%UCDBlockDiscrFirst)
+    end if
+    if(rpostprocessing%h_UCD_AddElemProjectFirst .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_AddElemProjectFirst)
+    end if
+
+    if(rpostprocessing%h_UCD_VecsFirstOrig .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_VecsFirstOrig)
+    end if
+
+    if(rpostprocessing%h_UCD_AddTypeOrigFirst .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_AddTypeOrigFirst)
+    end if
+    if(rpostprocessing%h_UCD_ScalarFirstOrig .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_ScalarFirstOrig)
+    end if
+
+    ! UCD-Out of second function
+    if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true.) then
+        call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_second_orig)
+        deallocate(rpostprocessing%UCD_feFunction_second_orig)
+        call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrSecond)
+        deallocate(rpostprocessing%UCDBlockDiscrSecond)
+    end if
+    if(rpostprocessing%h_UCD_AddElemProjectSecond .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_AddElemProjectSecond)
+    end if
+
+    if(rpostprocessing%h_UCD_VecsSecondOrig .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_VecsSecondOrig)
+    end if
+
+    if(rpostprocessing%h_UCD_AddTypeOrigSecond .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_AddTypeOrigSecond)
+    end if
+    if(rpostprocessing%h_UCD_ScalarSecondOrig .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_UCD_ScalarSecondOrig)
+    end if
+
+
 
 end subroutine
 

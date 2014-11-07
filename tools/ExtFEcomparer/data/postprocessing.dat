@@ -15,32 +15,83 @@
 # so if you want to read this one in the ExtFEcomparer
 # you use sVectorType=2, sFileFormat=1
 writeOutOrigVector1 = 1
-writeOutOrigVector2 = 0
+writeOutOrigVector2 = 1
 sOutPathFirstOrigVec = '%{soutputdir}/firstVector.dat'
 sOutPathSecondOrigVec = '%{soutputdir}/secondVector.dat'
 sOutVec1OrigFMT = '(E22.15)'
 sOutVec2OrigFMT = '(E22.15)'
 
+
+# Write the results from the L2-Calculations in a file?
 writeOutL2Calc = 1
 # Path of the file where to write it out
 sL2FilePath = '%{soutputdir}/L2Norms.dat'
 
 
+# Write the results from the point-calculation
+# in a file?
 writeOutPointValues = 1
 #Path of the file where to write it out
 sPointValuesFilePath = '%{soutputdir}/pointvalues.dat'
 
-# General setting for the UCD-Output
+####################################
+## Everything in this part belongs to the UCD-Output
+
+# General setting for the UCD-Output: Which format?
 # 1: VTK/Paraview
+ucdFormat = 1
+
+# UCD-Type:
+# 1: Standard/Continuous
 ucdType = 1
 
 # write out the meshes?
 writeOutMeshesUCD = 1
+# Path where to write them out
 sUCDFirstMeshOutput = '%{soutputdir}/firstMesh.vtk'
 sUCDSecondMeshOutput = '%{soutputdir}/secondMesh.vtk'
 
 # UCD-Output of the Input FE-Functions?
+# First function:
 writeOutFirstFunctionUCD = 1
 sUCDFirstFunctionOutput = '%{soutputdir}/firstFunction.vtk'
+# You can group variables in vectors. Best example is if
+# you have the velocity_x and _y they are different components (ie 1 and 2)
+# Here you can regroup it as 1 vector by entering
+# sUCDVecCompFirstFunction(1)=
+# 1 2
+# In the 2D-Dim you have to enter 2 values!
+# Note that you can add more vectors, just adjust the number in the ()
+# Note: Everything not in a vector is written out as scalar variable
+sUCDVecCompFirstFunction(1)=
+1 2
+
+# To write them as UCD, they need to be projected since most
+# viewer only support linear and constant variables.
+# Here you set on which space to project them: 
+# 0: on a Q0 space
+# 1: on a Q1 space
+# Note: Because of this, we can only ucd-output functions
+# which live on a mesh supporting Q0/Q1-Elements!
+# ith entry in this row belongs to variable i
+sUCDElemProjectFirstFunction = 1 1 0
+
+# How to add the variables in the first function?
+# 1: Vertex-Based
+# 2: Element-Based
+# ith entry for variable i. Assumtion: All variables in one
+# vector are added the same way!
+# Note that not all combinations of add-type and projection work
+# or give right results, ie setting a variable for Q0 and adding it vertex-based
+# does not work! (Think how a result could look like, what are the values in the corners?)
+sUCDaddTypeFirstFunction = 1 1 2
+
+# Now the same for the second function. We do not put any explaination here
+# since the variables are exactly the same as for the first function.
 writeOutSecondFunctionUCD = 1
 sUCDSecondFunctionOutput = '%{soutputdir}/SecondFunction.vtk'
+sUCDVecCompSecondFunction(1)=
+1 2
+sUCDaddTypeSecondFunction = 1 1 2
+sUCDElemProjectSecondFunction = 1 1 1
+sUCDaddTypeSecondFunction = 1 1 1
