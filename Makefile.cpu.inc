@@ -315,6 +315,11 @@ TOKEN6 := 0
 #
 ##############################################################################
 
+# ARM architecture
+ifeq ($(call match,$(ID),arm*-.*-.*-.*-.*),yes)
+include $(TEMPLATESDIR)/ARCH_CPU-arm.mk
+endif
+
 # Intel Itanium IA-64 architecture
 ifeq ($(call match,$(ID),ia64-.*-.*-.*-.*),yes)
 include $(TEMPLATESDIR)/ARCH_CPU-ia64.mk
@@ -430,6 +435,10 @@ endif
 # Enable optimization flags for sun4u / sun4v
 ifeq ($(call match,$(ID),(sun4u|sun4v)-*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-sun4u-gcc.mk
+endif
+# Enable optimization flags for ARM
+ifeq ($(call match,$(ID),(arm|arm64)-*-.*-gcc-.*),yes)
+include $(TEMPLATESDIR)/CFLAGSOPT-arm-gcc.mk
 endif
 # Optimization flags for further architectures go here
 # ...

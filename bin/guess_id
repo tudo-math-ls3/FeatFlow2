@@ -101,7 +101,8 @@ case ${id} in
 	    ;;
 	*)
 	    # x86-compatible without x86-64 support
-	    arch="pc";;
+	    arch="pc"
+            ;;
     esac
     
     # generic version
@@ -109,7 +110,7 @@ case ${id} in
     
     # try to guess the cpu specs in more detail; the mechanisms to
     # collect information about the cpu it differs from one OS to the
-    # other so that we have to use different commands    
+    # other so that we have to use different commands
     case ${os} in
 	linux|cygwin*)
 	    # Linux/Cygwin OS
@@ -727,11 +728,156 @@ case ${id} in
 	return
 	;;
 
-    armv7l-*-linux)
-	# ARM more specific version
-        cpu="cortexa9"
-        os="linux" 
-        ;;
+
+    # All ARM-compatible architectures with Linux, Darwin, etc.
+    arm*-*-linux|arm*-*-darwin)
+
+    # Detect architecture more precisely
+    case ${arch} in
+	armv5*|armv6*|armv7*)
+	    # 32 bit ARM
+	    arch="arm"
+	    ;; 
+        armv8*)
+	    # 64 bit ARM (not tested yet)
+	    arch="arm64"
+	    ;;
+	*)
+	    # 32 bit ARM
+	    arch="arm"
+	    ;;
+    esac
+
+    # try to guess the cpu specs in more detail; the mechanisms to
+    # collect information about the cpu it differs from one OS to the
+    # other so that we have to use different commands
+    case ${os} in
+    	linux)
+            # Linux
+	    implementer=`awk '/^CPU implementer/ { print $NF; exit;}' /proc/cpuinfo`
+	    architecture=`awk '/^CPU architecture/ { print $NF; exit;}' /proc/cpuinfo`
+	    variant=`awk '/^CPU variant/ { print $NF; exit;}' /proc/cpuinfo`
+	    part=`awk '/^CPU part/ { print $NF; exit;}' /proc/cpuinfo`
+
+            # The following syntax
+            #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
+            # is nicer, but only available in bash. For maximum portability use a syntax
+            # only using POSIX compliant Unix shell commands.
+            nproc=`awk '/^processor/ { print $NF; }' /proc/cpuinfo | tail -n 1`
+            nproc=`expr $nproc + 1`
+	    ;;
+
+        darwin)
+            # Darwin, aka, Mac OS X kernel
+            # Apple introduced a special tag strategy to identify Intel-based CPUs
+            cpufamily=`sysctl hw.cpufamily | awk '{print $2 ; exit;}'`
+            case "${cpufamily}" in
+    	        -416119890)
+	            # ARM 9
+		    cpu="arm9"
+		    ;;
+   	        -1879695144)
+	            # ARM 11	
+	            cpu="arm11"
+	            ;;
+	        -1122301207)
+	            # ARM 12
+	            cpu="arm12"
+	            ;;
+	        214503012)
+	            # ARM 13
+	            cpu="arm13"
+		    ;;
+	        -1777893647)
+	            # ARM 14
+	            cpu="arm14"
+	            ;;
+		506291073)
+		    # ARM SWIFT
+		    cpu="armswift"
+		    ;;
+  	        *)
+	            # If run on a hackingtosh or on a new CPU which
+	            # has not been included in the above list yet let
+	            # us try to identify the CPU by the traditional way
+	            vendor=`sysctl machdep.cpu.vendor | awk '{print $2 ; exit;}'`
+	            family=`sysctl machdep.cpu.family | awk '{print $2 ; exit;}'`
+	            model=`sysctl machdep.cpu.model | awk '{print $2 ; exit;}'`
+	            nproc=`sysctl machdep.cpu.core_count | awk '{print $2 ; exit;}'`
+	           ;;
+	    esac
+	    ;;
+	*)
+	    ;;
+    esac
+
+    # try to identify the cpu specs in more detail
+    case "$implementer" in
+	# ARM
+	0x41)
+	    case "$part" in
+		0xc05)
+		    # Cortex A5
+		    cpu="cortexa5"
+		    ;;
+		0xc07)
+		    # Cortex A7
+		    cpu="cortexa7"
+		    ;;
+		0xc08)
+		    # Cortex A8
+		    cpu="cortexa8"
+		    ;;
+		0xc09)
+		    # Cortex A9
+		    cpu="cortexa9"
+		    ;;
+		0xc0b)
+		    # Cortex A11
+		    cpu="cortexa11"
+		    ;;
+		0xc0f)
+		    # Cortex A15
+		    cpu="cortexa15"
+		    ;;
+		0xc11)
+		    # Cortex A17
+		    cpu="cortexa17"
+		    ;;
+		0xc35)
+		    # Cortex A53
+		    cpu="cortexa53"
+		    ;;
+		0xc39)
+		    # Cortex A57
+		    cpu="cortexa57"
+		    ;;
+		0xc14)
+		    # Cortex R4
+	            cpu="cortexr4"
+		    ;;
+		0xc15)
+		    # Cortex R5
+		    cpu="cortexr5"
+		    ;;
+		0xc17)
+		    # Cortex R7
+		    cpu="cortexr7"
+		    ;;
+		*)
+		    # ARM-compatible as fallback
+		    cpu="arm"
+		    core=cpu;
+	    esac
+	    ;;
+
+	*)
+	    # Generic CPU-type
+	    if [ ! -n "$cpu" ]; then
+		cpu="generic"
+	    fi
+    esac
+    ;;
 
     sun*-*-sunos*|sun*-*-solaris*)
         # SPARC more specific version
