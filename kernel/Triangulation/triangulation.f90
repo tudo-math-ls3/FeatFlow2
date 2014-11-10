@@ -8690,13 +8690,13 @@ contains
     ! Pyramid
     integer, dimension(TRIA_NNEPYR3D), parameter :: Iyev = (/1,2,3,4,1,2,3,4/)
     integer, dimension(TRIA_NAEPYR3D), parameter :: Iyfv = (/1,1,2,3,4/)
-    integer, dimension(TRIA_NAEPYR3D), parameter :: Iyfn = (/2,4,5,6,6/)
+    integer, dimension(TRIA_NAEPYR3D), parameter :: Irfn = (/2,5,5,5,5/)
     integer, dimension(TRIA_NAEPYR3D), parameter :: Iyav = (/4,3,3,3,3/)
 
     ! Prism
     integer, dimension(TRIA_NNEPRIS3D), parameter :: Irev = (/1,2,3,1,2,3,4,5,6/)
     integer, dimension(TRIA_NAEPRIS3D), parameter :: Irfv = (/1,1,2,3,4/)
-    integer, dimension(TRIA_NAEPRIS3D), parameter :: Irfn = (/2,5,5,5,5/)
+    integer, dimension(TRIA_NAEPRIS3D), parameter :: Iyfn = (/2,4,5,6,6/)
     integer, dimension(TRIA_NAEPRIS3D), parameter :: Irav = (/3,4,4,4,3/)
 
     ! Hexahedron
