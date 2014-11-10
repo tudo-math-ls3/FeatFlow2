@@ -5609,7 +5609,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
@@ -5735,7 +5735,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
@@ -5861,7 +5861,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
@@ -5990,7 +5990,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
@@ -6122,7 +6122,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
@@ -6254,7 +6254,7 @@ contains
     integer :: iedge
 
     ! Pointer to the performance configuration
-    type(t_perfconfig), pointer :: p_rperfconfig
+    !$ type(t_perfconfig), pointer :: p_rperfconfig
 
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
