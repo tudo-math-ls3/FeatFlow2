@@ -1087,9 +1087,9 @@ sub check_options {
     #   command line options
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
-    foreach my $entry ('AGMG', 'BINARY', 'EXECUTABLE', 'FORCE_ID', 'INTSIZE',
-		       'MODE','MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
-		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED', 'UNDERSCORE') {
+    foreach my $entry ('AGMG', 'BINARY', 'EXECUTABLE', 'COPROCLIST', 'FORCE_ID', 'INTSIZE',
+		       'MODE', 'MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
+		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED', 'UNDERSCORE', 'WARN') {
 	# Check environment variable MAKEFLAGS and give a warning if
 	# options given via environment *and* command line collide.
 	if ($ENV{'MAKEFLAGS'}) {
@@ -1136,11 +1136,24 @@ sub check_options {
         # as that would have triggered the unknown option error, we can now
         # proceed with capitalising and normalising values
 	elsif (defined($cl{$entry})) {
-	    # Capitalise value
-	    $cl{$entry} =~ tr/a-z/A-Z/;
-	    # Map 0/1 values to NO/YES
-	    $cl{$entry} = "NO"  if ($cl{$entry} eq "0");
-	    $cl{$entry} = "YES" if ($cl{$entry} eq "1");
+	    if (ref($cl{$entry}) eq "") {
+		# Dealing with a scalar value
+
+		# Capitalise value
+		$cl{$entry} =~ tr/a-z/A-Z/;
+		# Map 0/1 values to NO/YES
+		$cl{$entry} = "NO"  if ($cl{$entry} eq "0");
+		$cl{$entry} = "YES" if ($cl{$entry} eq "1");
+	    } elsif (ref($cl{$entry}) eq "ARRAY") {
+		# Dealing with an array
+		foreach my $tmp (@{$cl{$entry}}) {
+		    # Capitalise value
+		    $tmp =~ tr/a-z/A-Z/;
+		    # Map 0/1 values to NO/YES
+		    $tmp = "NO"  if ($tmp eq "0");
+		    $tmp = "YES" if ($tmp eq "1");
+		}
+	    } # end case command line option takes multiple values
 	}
     }
 
@@ -1190,7 +1203,7 @@ sub check_options {
 
 		# convert array of valid keywords into hash for easier lookups
 		my %isvalid = ();
-		map { $isvalid{$_} = $_; } @{ $validkeywords{$entry} };
+		map { $isvalid{uc($_)} = $_; } @{ $validkeywords{$entry} };
 
                 # Check whether every keyword is a valid one.
 		foreach my $key ( @{ $cl{$entry} } ) {
@@ -1526,8 +1539,12 @@ sub create_feat2AppMakefile {
 	my %coprocs = ();
 	map { $coprocs{$_} = $_; } @{ $entry };
 
-	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda50') {
+	# Remember to check for keywords in uppercase (as any lowercase letter
+	# got uppercased in check_options(), look out for "Values are
+	# converted to upper case for the Makefile" and "capitalising and
+	# normalising values" comment)
+	foreach $entry ('CUDA10', 'CUDA11', 'CUDA12', 'CUDA13',
+			'CUDA20', 'CUDA21', 'CUDA30', 'CUDA35', 'CUDA50') {
 	    print MAKEFILE_HDL
 		"HAS_" . uc($entry) . "          = ";
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
@@ -1555,7 +1572,11 @@ sub create_feat2AppMakefile {
 	my %warns = ();
 	map { $warns{$_} = $_; } @{ $entry };
 
-	foreach $entry ('debug', 'deprecated', 'off', 'unsupported', 'unusual') {
+	# Remember to check for keywords in uppercase (as any lowercase letter
+	# got uppercased in check_options(), look out for "Values are
+	# converted to upper case for the Makefile" and "capitalising and
+	# normalising values" comment)
+	foreach $entry ('DEBUG', 'DEPRECATED', 'OFF', 'UNSUPPORTED', 'UNUSUAL') {
 	    print MAKEFILE_HDL
 		"WARN_" . uc($entry) . (" " x (12-length($entry))) . "= ";
 	    print MAKEFILE_HDL "YES\n" if (defined($warns{$entry}));
