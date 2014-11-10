@@ -1538,7 +1538,7 @@ sub create_feat2AppMakefile {
 
     $entry = (defined($cl{'WARN'})) ? $cl{'WARN'} : $defaults{'WARN'};
     print MAKEFILE_HDL
-        "# Create binary with Warnings enabled?\n";
+        "# Create binary with warnings enabled?\n";
 
     if ($#{$entry} >= 0) {
 
@@ -1548,7 +1548,7 @@ sub create_feat2AppMakefile {
 
 	foreach $entry ('debug', 'deprecated', 'off', 'unsupported', 'unusual') {
 	    print MAKEFILE_HDL
-		"WARN_" . uc($entry) . "          = ";
+		"WARN_" . uc($entry) . (" " x (12-length($entry))) . "= ";
 	    print MAKEFILE_HDL "YES\n" if (defined($warns{$entry}));
 	    print MAKEFILE_HDL "NO\n" unless (defined($warns{$entry}));
 	}
