@@ -7374,6 +7374,8 @@ contains
   ! interfaces of bilf_buildMatrixScalar1 and bilf_buildMatrixScalar2
   ! are different and unique. However, bilf_buildMatrixScalar1
   ! is a deprecated interface! In the future, if bilf_buildMatrixScalar1
+  ! is removed, rcubatureInfo may be made optional by uncommenting
+  ! the following and adding "optional" to the declaration.
 !</description>
 
 !<input>
