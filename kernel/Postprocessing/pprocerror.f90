@@ -746,7 +746,7 @@ contains
             ! otherwise simply format DvalFunc to zero.
             if(present(frefFunction)) then
               call frefFunction(icomp,DER_FUNC,p_rdiscr,IELmax-IELset+1,ncubp,&
-                  revalElementSet%p_DpointsReal,rintSubset,&
+                  revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),rintSubset,&
                   DvalFunc(:,1:IELmax-IELset+1),rcollection)
             else
               DvalFunc = 0.0_DP
@@ -773,7 +773,7 @@ contains
             if(present(frefFunction)) then
               do ider = ifirstDer, ilastDer
                 call frefFunction(icomp,ider,p_rdiscr,IELmax-IELset+1,ncubp, &
-                    revalElementSet%p_DpointsReal,rintSubset,&
+                    revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),rintSubset,&
                     DvalDer(:,1:IELmax-IELset+1,ider),rcollection)
               end do
             else
@@ -3358,7 +3358,7 @@ contains
 
           ! solution vector
           call fevl_evaluate_sim3 (rvector%RvectorBlock(iblock), revalElementSet,&
-              celement, IdofsTrial, DER_FUNC,Dcoefficients(:,1:IELmax-IELset+1,iblock))
+              celement, IdofsTrial, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1,iblock))
 
         end do
 
