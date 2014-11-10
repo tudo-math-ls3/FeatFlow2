@@ -126,7 +126,7 @@ DGAMMA = 0.01
 # 0 -> UMFPACK4 solver
 # 1 -> CG-SSOR solver
 # 2 -> BiCGStab-ILU(k) solver with reverse Cuthill-McKee ordering
-ISOLVER = 0
+ISOLVER = 2
 
 # Relaxation parameter for CG-SSOR (default: 1.2)
 DRELAX = 1.2

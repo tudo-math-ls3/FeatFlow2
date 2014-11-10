@@ -60,7 +60,7 @@ include 'defaults.inc'
 appl     = elemdbg
 class    = DEFAULT
 
-mglevels = 7
+mglevels = 6
 solution = 0
 datfile  = ./data/tools_elemdbg/elemdbg.dat
 ucddir   = $LOGDIR
@@ -73,7 +73,7 @@ predir   = ../tools/elemdbg/pre
 # Test 101_P0
 testid   = ELEMDBG_101_P0
 element  = EL_P0_1D
-cubature = G2_1D
+cubature = G3_1D
 
 descr    = Element debugger L2-projection 1D benchmark
 test     = 101
@@ -81,30 +81,30 @@ test     = 101
 # Test 101_P1
 testid   = ELEMDBG_101_P1
 element  = EL_P1_1D
-cubature = G3_1D
+cubature = G4_1D
 
 # Test 101_P2
 testid   = ELEMDBG_101_P2
 element  = EL_P2_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 101_S31
 testid   = ELEMDBG_101_S31
 element  = EL_S31_1D
 cubature = G5_1D
 
-# Test 101 for PN, DG_T0, DG_T1, DG_T2 not available
+# Test 101 for EL_PN_1D, EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D not available
 
 #============================================================
 # test of Poisson system in 1D
 #============================================================
 
-# Test 102 for P0 not available
+# Test 102 for EL_P0_1D not available
 
 # Test 102_P1
 testid   = ELEMDBG_102_P1
 element  = EL_P1_1D
-cubature = G3_1D
+cubature = G4_1D
 
 descr    = Element debugger Poisson 1D benchmark
 test     = 102
@@ -112,25 +112,25 @@ test     = 102
 # Test 102_P2
 testid   = ELEMDBG_102_P2
 element  = EL_P2_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 102_S31
 testid   = ELEMDBG_102_S31
 element  = EL_S31_1D
 cubature = G5_1D
 
-# Test 102 for PN, DG_T0, DG_T1, DG_T2 not available
+# Test 102 for EL_PN_1D, EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D not available
 
 #============================================================
 # test of Convection-Diffusion system in 1D
 #============================================================
 
-# Test 103 for P0 not available
+# Test 103 for EL_P0_1D not available
 
 # Test 103_P1
 testid   = ELEMDBG_103_P1
 element  = EL_P1_1D
-cubature = G3_1D
+cubature = G4_1D
 
 descr    = Element debugger Convection-Diffusion 1D benchmark
 test     = 103
@@ -138,20 +138,22 @@ test     = 103
 # Test 103_P2
 testid   = ELEMDBG_103_P2
 element  = EL_P2_1D
-cubature = G4_1D
+cubature = G5_1D
 
 # Test 103_S31
 testid   = ELEMDBG_103_S31
 element  = EL_S31_1D
 cubature = G5_1D
 
-# Test 103 for PN, DG_T0, DG_T1, DG_T2 not available
+# Test 103 for EL_PN, EL_DG_T0, EL_DG_T1, EL_DG_T2 not available
 
 #============================================================
 # test of L2-projection in 2D
 #============================================================
 
-# Test 201_P0
+#~~~ triangular elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 201_P0 (=E000)
 testid   = ELEMDBG_201_P0
 element  = EL_P0_2D
 cubature = VMC
@@ -159,24 +161,26 @@ cubature = VMC
 descr    = Element debugger L2-projection 2D benchmark
 test     = 201
 
-# Test 201_P1
+# Test 201_P1 (=E001)
 testid   = ELEMDBG_201_P1
 element  = EL_P1_2D
 cubature = VMC
 
+# Test 201_P2 (=E002)
+testid   = ELEMDBG_201_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 201_P3 (=E003)
+testid   = ELEMDBG_201_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 201 for EL_RT1_2D not available
+
 # Test 201_P1T
 testid   = ELEMDBG_201_P1T
 element  = EL_P1T_2D
-cubature = QG5_T
-
-# Test 201_DCP1
-testid   = ELEMDBG_201_DCP1
-element  = EL_DCP1_2D
-cubature = QG5_T
-
-# Test 201_P2
-testid   = ELEMDBG_201_P2
-element  = EL_P2_2D
 cubature = QG5_T
 
 # Test 201_P2E
@@ -184,20 +188,182 @@ testid   = ELEMDBG_201_P2E
 element  = EL_P2E_2D
 cubature = QG5_T
 
-# Test 201_P3
-testid   = ELEMDBG_201_P3
-element  = EL_P3_2D
-cubature = QG5_T
+# Test 201 for EL_DCP0_2D, EL_DCP1_2D, EL_DCP2_2D not available
 
-# Test 201 for RT1 not available
+#~~~ quadrilateral elements~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 201_Q0 (=E010)
+testid   = ELEMDBG_201_Q0
+element  = EL_Q0_2D
+cubature = G4_2D
+
+# Test 201_Q1 (=E011)
+testid   = ELEMDBG_201_Q1
+element  = EL_Q1_2D
+cubature = G5_2D
+
+# Test 201_Q1NP (=EM11)
+testid   = ELEMDBG_201_Q1NP
+element  = EL_Q1NP_2D
+cubature = G5_2D
+
+# Test 201_Q2 (=E013)
+testid   = ELEMDBG_201_Q2
+element  = EL_Q2_2D
+cubature = G6_2D
+
+# Test 201_Q3 (=E014)
+testid   = ELEMDBG_201_Q3
+element  = EL_Q3_2D
+cubature = G6_2D
+
+# Test 201_QPW4P0
+testid   = ELEMDBG_201_QPW4P0
+element  = EL_QPW4P0_2D
+cubature = G6_2D
+
+# Test 201_QPW4P1
+testid   = ELEMDBG_201_QPW4P1
+element  = EL_QPW4P1_2D
+cubature = G6_2D
+
+# Test 201_QPW4P2
+testid   = ELEMDBG_201_QPW4P2
+element  = EL_QPW4P2_2D
+cubature = G6_2D
+
+# Test 201_QPW4DCP1
+testid   = ELEMDBG_201_QPW4DCP1
+element  = EL_QPW4DCP1_2D
+cubature = G6_2D
+
+# Test 201_QPW4PT1
+testid   = ELEMDBG_201_QPW4P1T
+element  = EL_QPW4P1T_2D
+cubature = G6_2D
+
+# Test 201_Q1B
+testid   = ELEMDBG_201_Q1B
+element  = EL_Q1B_2D
+cubature = G6_2D
+
+# Test 201 for QPW4P1TVDF not available
+
+# Test 201_QP1
+testid   = ELEMDBG_201_QP1
+element  = EL_QP1_2D
+cubature = G6_2D
+
+# Test 201_QP1NP
+testid   = ELEMDBG_201_QP1NP
+element  = EL_QP1NP_2D
+cubature = G6_2D
+
+# Test 201_QP1NPD
+testid   = ELEMDBG_201_QP1NPD
+element  = EL_QP1NPD_2D
+cubature = G6_2D
+
+# Test 201_E030 (=Q1T)
+testid   = ELEMDBG_201_E030
+element  = EL_E030_2D
+cubature = G6_2D
+
+# Test 201_EB30 (=Q1TB)
+testid   = ELEMDBG_201_EB30
+element  = EL_EB30_2D
+cubature = G6_2D
+
+# Test 201_EM30 (=Q1TNP)
+testid   = ELEMDBG_201_EM30
+element  = EL_EM30_2D
+cubature = G6_2D
+
+# Test 201_EM30_UNPIVOTED (=Q1TNP)
+testid   = ELEMDBG_201_EM30_UNPIVOTED
+element  = EL_EM30_UNPIVOTED_2D
+cubature = G6_2D
+
+# Test 201_EM30_UNSCALED (=Q1TNP)
+testid   = ELEMDBG_201_EM30_UNSCALED
+element  = EL_EM30_UNSCALED_2D
+cubature = G6_2D
+
+# Test 201_EN30 (=Q1TNP)
+testid   = ELEMDBG_201_EN30
+element  = EL_EN30_2D
+cubature = G6_2D
+
+# Test 201_Q1TBNP
+testid   = ELEMDBG_201_Q1TBNP
+element  = EL_Q1TBNP_2D
+cubature = G6_2D
+
+# Test 201_E031 (=Q1T)
+testid   = ELEMDBG_201_E031
+element  = EL_E031_2D
+cubature = G6_2D
+
+# Test 201_EM31 (=Q1TNP)
+testid   = ELEMDBG_201_EM31
+element  = EL_EM31_2D
+cubature = G6_2D
+
+# Test 201_EN31 (=Q1TNP)
+testid   = ELEMDBG_201_EN31
+element  = EL_EN31_2D
+cubature = G6_2D
+
+# Test 201_E032 (=Q1TH)
+testid   = ELEMDBG_201_E032
+element  = EL_E032_2D
+cubature = G6_2D
+
+# Test 201_E050 (=Q2T)
+testid   = ELEMDBG_201_E050
+element  = EL_E050_2D
+cubature = G6_2D
+
+# Test 201_EB50 (=Q2TB)
+testid   = ELEMDBG_201_EB50
+element  = EL_EB50_2D
+cubature = G6_2D
+
+# Test 201_EM50 (=Q2TNP)
+testid   = ELEMDBG_201_EM50
+element  = EL_EM50_2D
+cubature = G6_2D
+
+# Test 201_E051 (=Q3T)
+testid   = ELEMDBG_201_E051
+element  = EL_E051_2D
+cubature = G6_2D
+
+# Test 201_EN51 (=Q3TNP)
+testid   = ELEMDBG_201_EN51
+element  = EL_EN51_2D
+cubature = G6_2D
+
+# Test 201_Q2H
+testid   = ELEMDBG_201_Q2H
+element  = EL_Q2H_2D
+cubature = G6_2D
+
+# Test 201 for EL_Q1HN1, EL_Q2ISO not available
+
+# Test 201 for EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2, EL_DG_T3 not available
+
+# Test 201 for EL_DCQP0_2D, EL_DCQP1_2D, EL_DCQP2_2D not available
 
 #============================================================
 # test of Poisson system in 2D
 #============================================================
 
-# Test 202 for P0 not available
+#~~~ triangular elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Test 202_P1
+# Test 202 for EL_P0_2D not available
+
+# Test 202_P1 (=E001)
 testid   = ELEMDBG_202_P1
 element  = EL_P1_2D
 cubature = VMC
@@ -205,19 +371,21 @@ cubature = VMC
 descr    = Element debugger Poisson 2D benchmark
 test     = 202
 
+# Test 202_P2 (=E002)
+testid   = ELEMDBG_202_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 202_P3 (=E003)
+testid   = ELEMDBG_202_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 202 for EL_RT1_2D not available
+
 # Test 202_P1T
 testid   = ELEMDBG_202_P1T
 element  = EL_P1T_2D
-cubature = QG5_T
-
-# Test 202_DCP1
-testid   = ELEMDBG_202_DCP1
-element  = EL_DCP1_2D
-cubature = QG5_T
-
-# Test 202_P2
-testid   = ELEMDBG_202_P2
-element  = EL_P2_2D
 cubature = QG5_T
 
 # Test 202_P2E
@@ -225,20 +393,179 @@ testid   = ELEMDBG_202_P2E
 element  = EL_P2E_2D
 cubature = QG5_T
 
-# Test 202_P3
-testid   = ELEMDBG_202_P3
-element  = EL_P3_2D
-cubature = QG5_T
+# Test 202 for EL_DCP0_2D, EL_DCP1_2D, EL_DCP2_2D not available
 
-# Test 202 for RT1 not available
+#~~~ quadrilateral elements~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 202 for EL_Q0_2D not available
+
+# Test 202_Q1 (=E011)
+testid   = ELEMDBG_202_Q1
+element  = EL_Q1_2D
+cubature = G5_2D
+
+# Test 202_Q1NP (=EM11)
+testid   = ELEMDBG_202_Q1NP
+element  = EL_Q1NP_2D
+cubature = G5_2D
+
+# Test 202_Q2 (=E013)
+testid   = ELEMDBG_202_Q2
+element  = EL_Q2_2D
+cubature = G6_2D
+
+# Test 202_Q3 (=E014)
+testid   = ELEMDBG_202_Q3
+element  = EL_Q3_2D
+cubature = G6_2D
+
+# Test 202 for EL_QPW4P0_2D not available
+testid   = ELEMDBG_202_QPW4P0
+element  = EL_QPW4P0_2D
+cubature = G6_2D
+
+# Test 202_QPW4P1
+testid   = ELEMDBG_202_QPW4P1
+element  = EL_QPW4P1_2D
+cubature = G6_2D
+
+# Test 202_QPW4P2
+testid   = ELEMDBG_202_QPW4P2
+element  = EL_QPW4P2_2D
+cubature = G6_2D
+
+# Test 202_QPW4DCP1
+testid   = ELEMDBG_202_QPW4DCP1
+element  = EL_QPW4DCP1_2D
+cubature = G6_2D
+
+# Test 202_QPW4PT1
+testid   = ELEMDBG_202_QPW4P1T
+element  = EL_QPW4P1T_2D
+cubature = G6_2D
+
+# Test 202_Q1B
+testid   = ELEMDBG_202_Q1B
+element  = EL_Q1B_2D
+cubature = G6_2D
+
+# Test 202 for QPW4P1TVDF not available
+
+# Test 202_QP1
+testid   = ELEMDBG_202_QP1
+element  = EL_QP1_2D
+cubature = G6_2D
+
+# Test 202_QP1NP
+testid   = ELEMDBG_202_QP1NP
+element  = EL_QP1NP_2D
+cubature = G6_2D
+
+# Test 202_QP1NPD
+testid   = ELEMDBG_202_QP1NPD
+element  = EL_QP1NPD_2D
+cubature = G6_2D
+
+# Test 202_E030 (=Q1T)
+testid   = ELEMDBG_202_E030
+element  = EL_E030_2D
+cubature = G6_2D
+
+# Test 202_EB30 (=Q1TB)
+testid   = ELEMDBG_202_EB30
+element  = EL_EB30_2D
+cubature = G6_2D
+
+# Test 202_EM30 (=Q1TNP)
+testid   = ELEMDBG_202_EM30
+element  = EL_EM30_2D
+cubature = G6_2D
+
+# Test 202_EM30_UNPIVOTED (=Q1TNP)
+testid   = ELEMDBG_202_EM30_UNPIVOTED
+element  = EL_EM30_UNPIVOTED_2D
+cubature = G6_2D
+
+# Test 202_EM30_UNSCALED (=Q1TNP)
+testid   = ELEMDBG_202_EM30_UNSCALED
+element  = EL_EM30_UNSCALED_2D
+cubature = G6_2D
+
+# Test 202_EN30 (=Q1TNP)
+testid   = ELEMDBG_202_EN30
+element  = EL_EN30_2D
+cubature = G6_2D
+
+# Test 202_Q1TBNP
+testid   = ELEMDBG_202_Q1TBNP
+element  = EL_Q1TBNP_2D
+cubature = G6_2D
+
+# Test 202_E031 (=Q1T)
+testid   = ELEMDBG_202_E031
+element  = EL_E031_2D
+cubature = G6_2D
+
+# Test 202_EM31 (=Q1TNP)
+testid   = ELEMDBG_202_EM31
+element  = EL_EM31_2D
+cubature = G6_2D
+
+# Test 202_EN31 (=Q1TNP)
+testid   = ELEMDBG_202_EN31
+element  = EL_EN31_2D
+cubature = G6_2D
+
+# Test 202_E032 (=Q1TH)
+testid   = ELEMDBG_202_E032
+element  = EL_E032_2D
+cubature = G6_2D
+
+# Test 202_E050 (=Q2T)
+testid   = ELEMDBG_202_E050
+element  = EL_E050_2D
+cubature = G6_2D
+
+# Test 202_EB50 (=Q2TB)
+testid   = ELEMDBG_202_EB50
+element  = EL_EB50_2D
+cubature = G6_2D
+
+# Test 202_EM50 (=Q2TNP)
+testid   = ELEMDBG_202_EM50
+element  = EL_EM50_2D
+cubature = G6_2D
+
+# Test 202_E051 (=Q3T)
+testid   = ELEMDBG_202_E051
+element  = EL_E051_2D
+cubature = G6_2D
+
+# Test 202_EN51 (=Q3TNP)
+testid   = ELEMDBG_202_EN51
+element  = EL_EN51_2D
+cubature = G6_2D
+
+# Test 202_Q2H
+testid   = ELEMDBG_202_Q2H
+element  = EL_Q2H_2D
+cubature = G6_2D
+
+# Test 202 for EL_Q1HN1, EL_Q2ISO not available
+
+# Test 202 for EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2, EL_DG_T3 not available
+
+# Test 202 for EL_DCQP0_2D, EL_DCQP1_2D, EL_DCQP2_2D not available
 
 #============================================================
 # test of Convection-Diffusion system in 2D
 #============================================================
 
-# Test 203 for P0 not available
+#~~~ triangular elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Test 203_P1
+# Test 203 for EL_P0_2D not available
+
+# Test 203_P1 (=E001)
 testid   = ELEMDBG_203_P1
 element  = EL_P1_2D
 cubature = VMC
@@ -246,19 +573,21 @@ cubature = VMC
 descr    = Element debugger Convection-Diffusion 2D benchmark
 test     = 203
 
+# Test 203_P2 (=E002)
+testid   = ELEMDBG_203_P2
+element  = EL_P2_2D
+cubature = QG5_T
+
+# Test 203_P3 (=E003)
+testid   = ELEMDBG_203_P3
+element  = EL_P3_2D
+cubature = QG5_T
+
+# Test 203 for EL_RT1_2D not available
+
 # Test 203_P1T
 testid   = ELEMDBG_203_P1T
 element  = EL_P1T_2D
-cubature = QG5_T
-
-# Test 203_DCP1
-testid   = ELEMDBG_203_DCP1
-element  = EL_DCP1_2D
-cubature = QG5_T
-
-# Test 203_P2
-testid   = ELEMDBG_203_P2
-element  = EL_P2_2D
 cubature = QG5_T
 
 # Test 203_P2E
@@ -266,9 +595,461 @@ testid   = ELEMDBG_203_P2E
 element  = EL_P2E_2D
 cubature = QG5_T
 
-# Test 203_P3
-testid   = ELEMDBG_203_P3
-element  = EL_P3_2D
-cubature = QG5_T
+# Test 203 for EL_DCP0_2D, EL_DCP1_2D, EL_DCP2_2D not available
 
-# Test 203 for RT1 not available
+#~~~ quadrilateral elements~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 203 for EL_Q0_2D not available
+
+# Test 203_Q1 (=E011)
+testid   = ELEMDBG_203_Q1
+element  = EL_Q1_2D
+cubature = G5_2D
+
+# Test 203_Q1NP (=EM11)
+testid   = ELEMDBG_203_Q1NP
+element  = EL_Q1NP_2D
+cubature = G5_2D
+
+# Test 203_Q2 (=E013)
+testid   = ELEMDBG_203_Q2
+element  = EL_Q2_2D
+cubature = G6_2D
+
+# Test 203_Q3 (=E014)
+testid   = ELEMDBG_203_Q3
+element  = EL_Q3_2D
+cubature = G6_2D
+
+# Test 203 for EL_QPW4P0_2D not available
+
+# Test 203_QPW4P1
+testid   = ELEMDBG_203_QPW4P1
+element  = EL_QPW4P1_2D
+cubature = G6_2D
+
+# Test 203_QPW4P2
+testid   = ELEMDBG_203_QPW4P2
+element  = EL_QPW4P2_2D
+cubature = G6_2D
+
+# Test 203_QPW4DCP1
+testid   = ELEMDBG_203_QPW4DCP1
+element  = EL_QPW4DCP1_2D
+cubature = G6_2D
+
+# Test 203_QPW4PT1
+testid   = ELEMDBG_203_QPW4P1T
+element  = EL_QPW4P1T_2D
+cubature = G6_2D
+
+# Test 203_Q1B
+testid   = ELEMDBG_203_Q1B
+element  = EL_Q1B_2D
+cubature = G6_2D
+
+# Test 203 for QPW4P1TVDF not available
+
+# Test 203_QP1
+testid   = ELEMDBG_203_QP1
+element  = EL_QP1_2D
+cubature = G6_2D
+
+# Test 203_QP1NP
+testid   = ELEMDBG_203_QP1NP
+element  = EL_QP1NP_2D
+cubature = G6_2D
+
+# Test 203_QP1NPD
+testid   = ELEMDBG_203_QP1NPD
+element  = EL_QP1NPD_2D
+cubature = G6_2D
+
+# Test 203_E030 (=Q1T)
+testid   = ELEMDBG_203_E030
+element  = EL_E030_2D
+cubature = G6_2D
+
+# Test 203_EB30 (=Q1TB)
+testid   = ELEMDBG_203_EB30
+element  = EL_EB30_2D
+cubature = G6_2D
+
+# Test 203_EM30 (=Q1TNP)
+testid   = ELEMDBG_203_EM30
+element  = EL_EM30_2D
+cubature = G6_2D
+
+# Test 203_EM30_UNPIVOTED (=Q1TNP)
+testid   = ELEMDBG_203_EM30_UNPIVOTED
+element  = EL_EM30_UNPIVOTED_2D
+cubature = G6_2D
+
+# Test 203_EM30_UNSCALED (=Q1TNP)
+testid   = ELEMDBG_203_EM30_UNSCALED
+element  = EL_EM30_UNSCALED_2D
+cubature = G6_2D
+
+# Test 203_EN30 (=Q1TNP)
+testid   = ELEMDBG_203_EN30
+element  = EL_EN30_2D
+cubature = G6_2D
+
+# Test 203_Q1TBNP
+testid   = ELEMDBG_203_Q1TBNP
+element  = EL_Q1TBNP_2D
+cubature = G6_2D
+
+# Test 203_E031 (=Q1T)
+testid   = ELEMDBG_203_E031
+element  = EL_E031_2D
+cubature = G6_2D
+
+# Test 203_EM31 (=Q1TNP)
+testid   = ELEMDBG_203_EM31
+element  = EL_EM31_2D
+cubature = G6_2D
+
+# Test 203_EN31 (=Q1TNP)
+testid   = ELEMDBG_203_EN31
+element  = EL_EN31_2D
+cubature = G6_2D
+
+# Test 203_E032 (=Q1TH)
+testid   = ELEMDBG_203_E032
+element  = EL_E032_2D
+cubature = G6_2D
+
+# Test 203_E050 (=Q2T)
+testid   = ELEMDBG_203_E050
+element  = EL_E050_2D
+cubature = G6_2D
+
+# Test 203_EB50 (=Q2TB)
+testid   = ELEMDBG_203_EB50
+element  = EL_EB50_2D
+cubature = G6_2D
+
+# Test 203_EM50 (=Q2TNP)
+testid   = ELEMDBG_203_EM50
+element  = EL_EM50_2D
+cubature = G6_2D
+
+# Test 203_E051 (=Q3T)
+testid   = ELEMDBG_203_E051
+element  = EL_E051_2D
+cubature = G6_2D
+
+# Test 203_EN51 (=Q3TNP)
+testid   = ELEMDBG_203_EN51
+element  = EL_EN51_2D
+cubature = G6_2D
+
+# Test 203_Q2H
+testid   = ELEMDBG_203_Q2H
+element  = EL_Q2H_2D
+cubature = G6_2D
+
+# Test 203 for EL_Q1HN1, EL_Q2ISO not available
+
+# Test 203 for EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2, EL_DG_T3 not available
+
+# Test 203 for EL_DCQP0_2D, EL_DCQP1_2D, EL_DCQP2_2D not available
+
+#============================================================
+# test of L2-projection in 3D
+#============================================================
+
+#~~~ tetrahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 301_P0 (=E000)
+testid   = ELEMDBG_301_P0
+element  = EL_P0_3D
+cubature = S3_3D_T
+
+descr    = Element debugger L2-projection 3D benchmark
+test     = 301
+mglevels = 4
+
+# Test 301_P1 (=E001)
+testid   = ELEMDBG_301_P1
+element  = EL_P1_3D
+cubature = S5_3D_T
+
+# Test 301_P2 (=E002)
+testid   = ELEMDBG_301_P2
+element  = EL_P2_3D
+cubature = S5_3D_T
+
+#~~~ hexahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 301_Q0 (=E010)
+testid   = ELEMDBG_301_Q0
+element  = EL_Q0_3D
+cubature = G4_3D
+
+# Test 301_Q1 (=E011)
+testid   = ELEMDBG_301_Q1
+element  = EL_Q1_3D
+cubature = G5_3D
+
+# Test 301_Q2 (=E011)
+testid   = ELEMDBG_301_Q2
+element  = EL_Q2_3D
+cubature = G6_3D
+
+# Test 301_E031 (=Q1T)
+testid   = ELEMDBG_301_E031
+element  = EL_E031_3D
+cubature = G6_3D
+
+# Test 301_E030 (=Q1T)
+testid   = ELEMDBG_301_E030
+element  = EL_E030_3D
+cubature = G6_3D
+
+# Test 301_EM30 (=Q1TNP)
+testid   = ELEMDBG_301_EM30
+element  = EL_EM30_3D
+cubature = G6_3D
+
+# Test 301_EN30 (=Q1TNP)
+testid   = ELEMDBG_301_EN30
+element  = EL_EN30_3D
+cubature = G6_3D
+
+# Test 301_EB30 (=Q1TB)
+testid   = ELEMDBG_301_EB30
+element  = EL_EB30_3D
+cubature = G6_3D
+
+# Test 301_E050 (=Q2T)
+testid   = ELEMDBG_301_E050
+element  = EL_E050_3D
+cubature = G6_3D
+
+# Test 301_EM50 (=Q2TNP)
+testid   = ELEMDBG_301_EM50
+element  = EL_EM50_3D
+cubature = G6_3D
+
+# Test 301 for EL_QP1_3D, EL_QP1NP_3D, EL_MSL2_3D not available
+
+# Test 301_MSL2NP
+testid   = ELEMDBG_301_MSL2NP
+element  = EL_MSL2NP_3D
+cubature = G6_3D
+
+#~~~ pyramidalral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 301_Y0
+testid   = ELEMDBG_301_Y0
+element  = EL_Y0_3D
+cubature = TRZ_3D_Y
+
+# Test 301_Y1
+testid   = ELEMDBG_301_Y1
+element  = EL_Y1_3D
+cubature = TRZ_3D_Y
+
+#~~~ prismatic elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 301_R0
+testid   = ELEMDBG_301_R0
+element  = EL_R0_3D
+cubature = TRZ_3D_R
+
+# Test 301_R1
+testid   = ELEMDBG_301_R1
+element  = EL_R1_3D
+cubature = TRZ_3D_R
+
+#============================================================
+# test of Poisson system in 3D
+#============================================================
+
+#~~~ tetrahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 302 for EL_P0 (=E000) not available
+
+# Test 302_P1 (=E001)
+testid   = ELEMDBG_302_P1
+element  = EL_P1_3D
+cubature = S5_3D_T
+
+descr    = Element debugger Poisson 3D benchmark
+test     = 302
+
+# Test 302_P2 (=E002)
+testid   = ELEMDBG_302_P2
+element  = EL_P2_3D
+cubature = S5_3D_T
+
+#~~~ hexahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 302 for EL_Q0 (=E010) not available
+
+# Test 302_Q1 (=E011)
+testid   = ELEMDBG_302_Q1
+element  = EL_Q1_3D
+cubature = G5_3D
+
+# Test 302_Q2 (=E011)
+testid   = ELEMDBG_302_Q2
+element  = EL_Q2_3D
+cubature = G6_3D
+
+# Test 302_E031 (=Q1T)
+testid   = ELEMDBG_302_E031
+element  = EL_E031_3D
+cubature = G6_3D
+
+# Test 302_E030 (=Q1T)
+testid   = ELEMDBG_302_E030
+element  = EL_E030_3D
+cubature = G6_3D
+
+# Test 302_EM30 (=Q1TNP)
+testid   = ELEMDBG_302_EM30
+element  = EL_EM30_3D
+cubature = G6_3D
+
+# Test 302_EN30 (=Q1TNP)
+testid   = ELEMDBG_302_EN30
+element  = EL_EN30_3D
+cubature = G6_3D
+
+# Test 302_EB30 (=Q1TB)
+testid   = ELEMDBG_302_EB30
+element  = EL_EB30_3D
+cubature = G6_3D
+
+# Test 302_E050 (=Q2T)
+testid   = ELEMDBG_302_E050
+element  = EL_E050_3D
+cubature = G6_3D
+
+# Test 302_EM50 (=Q2TNP)
+testid   = ELEMDBG_302_EM50
+element  = EL_EM50_3D
+cubature = G6_3D
+
+# Test 302 for EL_QP1_3D, EL_QP1NP_3D, EL_MSL2_3D not available
+
+# Test 302_MSL2NP
+testid   = ELEMDBG_302_MSL2NP
+element  = EL_MSL2NP_3D
+cubature = G6_3D
+
+#~~~ pyramidalral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 302 for EL_Y0 not availabl
+
+# Test 302_Y1
+testid   = ELEMDBG_302_Y1
+element  = EL_Y1_3D
+cubature = TRZ_3D_Y
+
+#~~~ prismatic elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 302 for EL_R0 not available
+
+# Test 302_R1
+testid   = ELEMDBG_302_R1
+element  = EL_R1_3D
+cubature = TRZ_3D_R
+
+#============================================================
+# test of Convection-Diffusion system in 3D
+#============================================================
+
+#~~~ tetrahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 303 for EL_P0 (=E000) not available
+
+# Test 303_P1 (=E001)
+testid   = ELEMDBG_303_P1
+element  = EL_P1_3D
+cubature = S5_3D_T
+
+descr    = Element debugger Convection-Diffusion 3D benchmark
+test     = 303
+
+# Test 303_P2 (=E002)
+testid   = ELEMDBG_303_P2
+element  = EL_P2_3D
+cubature = S5_3D_T
+
+#~~~ hexahedral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 303 for EL_Q0 (=E010) not available
+
+# Test 303_Q1 (=E011)
+testid   = ELEMDBG_303_Q1
+element  = EL_Q1_3D
+cubature = G5_3D
+
+# Test 303_Q2 (=E011)
+testid   = ELEMDBG_303_Q2
+element  = EL_Q2_3D
+cubature = G6_3D
+
+# Test 303_E031 (=Q1T)
+testid   = ELEMDBG_303_E031
+element  = EL_E031_3D
+cubature = G6_3D
+
+# Test 303_E030 (=Q1T)
+testid   = ELEMDBG_303_E030
+element  = EL_E030_3D
+cubature = G6_3D
+
+# Test 303_EM30 (=Q1TNP)
+testid   = ELEMDBG_303_EM30
+element  = EL_EM30_3D
+cubature = G6_3D
+
+# Test 303_EN30 (=Q1TNP)
+testid   = ELEMDBG_303_EN30
+element  = EL_EN30_3D
+cubature = G6_3D
+
+# Test 303_EB30 (=Q1TB)
+testid   = ELEMDBG_303_EB30
+element  = EL_EB30_3D
+cubature = G6_3D
+
+# Test 303_E050 (=Q2T)
+testid   = ELEMDBG_303_E050
+element  = EL_E050_3D
+cubature = G6_3D
+
+# Test 303_EM50 (=Q2TNP)
+testid   = ELEMDBG_303_EM50
+element  = EL_EM50_3D
+cubature = G6_3D
+
+# Test 303 for EL_QP1_3D, EL_QP1NP_3D, EL_MSL2_3D not available
+
+# Test 303_MSL2NP
+testid   = ELEMDBG_303_MSL2NP
+element  = EL_MSL2NP_3D
+cubature = G6_3D
+
+#~~~ pyramidalral elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 303 for EL_Y0 not available
+
+# Test 303_Y1
+testid   = ELEMDBG_303_Y1
+element  = EL_Y1_3D
+cubature = TRZ_3D_Y
+
+#~~~ prismatic elements ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Test 303 for EL_R0 not available
+
+# Test 303_R1
+testid   = ELEMDBG_303_R1
+element  = EL_R1_3D
+cubature = TRZ_3D_R

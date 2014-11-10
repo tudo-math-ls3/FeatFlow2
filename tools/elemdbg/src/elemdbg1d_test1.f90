@@ -72,11 +72,11 @@ contains
   type(t_errorScVec) :: rerror
   integer :: NLMIN,NLMAX,ierror,ilvl,ccubature
   integer :: isolver, ioutput, nmaxiter,idistType,idistLevel,idistLvl
-  integer(I32) :: celement, cshape
+  integer(I32) :: celement, cprimaryelement, cshape
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
-  character(LEN=64) :: selement,scubature
+  character(LEN=32) :: selement,sprimaryelement,scubature
   type(t_bilinearForm) :: rform
   integer :: iucd
   type(t_ucdexport) :: rexport
@@ -152,6 +152,10 @@ contains
     ! Parse element and cubature
     celement = elem_igetID(selement)
     ccubature = cub_igetID(scubature)
+
+    ! Get primary element
+    cprimaryelement = elem_getPrimaryElement(celement)
+    sprimaryelement = elem_getName(cprimaryelement)
     
     ! Get the shape of the element
     cshape = elem_igetShape(celement)
@@ -240,8 +244,12 @@ contains
       call output_line('Distortion Level...: ' // trim(sys_siL(idistLevel,4)))
       call output_line('Mesh Distortion....: ' // trim(sys_sdL(ddist,8)))
     end if
-    call output_line('Element............: ' // trim(selement))
-    call output_line('Cubature rule......: ' // trim(scubature))
+    call output_line('Element............: ' // trim(selement) // &
+                     ' (ID=' // trim(sys_siL(celement,12)) // ')')
+    call output_line('Primary element....: ' // trim(sprimaryelement) // &
+                     ' (ID=' // trim(sys_siL(cprimaryelement,12)) // ')')
+    call output_line('Cubature rule......: ' // trim(scubature) // &
+                     ' (ID=' // trim(sys_siL(ccubature,12)) // ')')
     select case(isolver)
     case(0)
       call output_line('Solver.............: UMFPACK4')

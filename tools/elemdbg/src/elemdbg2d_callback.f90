@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson2d_callback </name>
+!# <name> elemdbg2d_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -57,22 +57,22 @@ contains
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    type(t_linearForm), intent(IN) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer(PREC_ELEMENTIDX), intent(IN) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(IN) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
@@ -81,11 +81,11 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
   
@@ -94,7 +94,7 @@ contains
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
   !</output>
     
   !</subroutine>
@@ -196,33 +196,33 @@ contains
   
 !<input>
   ! Specifies which component of the vector field is to be evaluated
-  integer, intent(IN)                          :: icomponent
+  integer, intent(IN) :: icomponent
 
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
+  integer, intent(IN) :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(IN) :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(IN) :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional
   ! information to the coefficient routine.
@@ -235,7 +235,7 @@ contains
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(OUT) :: Dvalues
 !</output>
   
 !</subroutine>
@@ -316,23 +316,23 @@ contains
   !   Icomponents(1) defines the number of the boundary component, the value
   !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
-  integer, dimension(:), intent(IN)                           :: Icomponents
+  integer, dimension(:), intent(IN) :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
   
   ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  integer(I32), intent(IN)                                    :: ielement
+  integer(I32), intent(IN) :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  integer, intent(IN)                                         :: cinfoNeeded
+  integer, intent(IN) :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC :
@@ -346,7 +346,7 @@ contains
   ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  integer(I32), intent(IN)                                     :: iwhere
+  integer(I32), intent(IN) :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC :
@@ -355,11 +355,11 @@ contains
   !   dwhere = parameter value of the point where the value should be computed,
   ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
-  real(DP), intent(IN)                                        :: dwhere
+  real(DP), intent(IN) :: dwhere
     
   ! Optional: A collection structure to provide additional
   ! information to the coefficient routine.
-  type(t_collection), intent(INOUT), optional                 :: rcollection
+  type(t_collection), intent(INOUT), optional :: rcollection
 
 !</input>
 
@@ -368,7 +368,7 @@ contains
   ! only needs one value, the computed quantity is put into Dvalues(1).
   ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  real(DP), dimension(:), intent(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT) :: Dvalues
 !</output>
   
 !</subroutine>

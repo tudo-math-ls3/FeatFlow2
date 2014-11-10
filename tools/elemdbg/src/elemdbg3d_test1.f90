@@ -76,9 +76,9 @@ contains
   real(DP), dimension(:,:), allocatable, target :: Derror
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature,idistType,idistLevel,idistLvl
-  integer(I32) :: celement, cshape
+  integer(I32) :: celement, cprimaryelement, cshape
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, ddist2
-  character(LEN=64) :: selement,scubature
+  character(LEN=32) :: selement,sprimaryelement,scubature
   type(t_bilinearForm) :: rform
   integer :: iucd
   type(t_ucdexport) :: rexport
@@ -159,6 +159,10 @@ contains
     celement = elem_igetID(selement)
     ccubature = cub_igetID(scubature)
     
+    ! Get primary element
+    cprimaryelement = elem_getPrimaryElement(celement)
+    sprimaryelement = elem_getName(cprimaryelement)
+
     ! Get the shape of the element
     cshape = elem_igetShape(celement)
        
@@ -220,13 +224,9 @@ contains
     case(BGEOM_SHAPE_PRISM)
       call output_line('Coarse Mesh........: PRISM.tri')
     case(BGEOM_SHAPE_TETRA)
-      call output_line('Tetrahedron elements are not yet supported!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
-      call sys_halt()
+      call output_line('Coarse Mesh........: TETRA.tri')
     case(BGEOM_SHAPE_PYRA)
-      call output_line('Pyramid elements are not yet supported!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
-      call sys_halt()
+      call output_line('Coarse Mesh........: PYRA.tri')
     case default
       call output_line('Element is not a valid 3D element!', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg3d_1')
@@ -257,8 +257,12 @@ contains
     if((idistType .ge. 2) .and. (idistType .le. 4)) then
       call output_line('Mesh Distortion 2..: ' // trim(sys_sdL(ddist2,8)))
     end if
-    call output_line('Element............: ' // trim(selement))
-    call output_line('Cubature rule......: ' // trim(scubature))
+    call output_line('Element............: ' // trim(selement) // &
+                     ' (ID=' // trim(sys_siL(celement,12)) // ')')
+    call output_line('Primary element....: ' // trim(sprimaryelement) // &
+                     ' (ID=' // trim(sys_siL(cprimaryelement,12)) // ')')
+    call output_line('Cubature rule......: ' // trim(scubature) // &
+                     ' (ID=' // trim(sys_siL(ccubature,12)) // ')')
     select case(isolver)
     case(0)
       call output_line('Solver.............: UMFPACK4')
@@ -304,6 +308,10 @@ contains
         call tria_readTriFile3D (rtriangulation, trim(spredir) // '/CUBE.tri')
       case(BGEOM_SHAPE_PRISM)
         call tria_readTriFile3D (rtriangulation, trim(spredir) // '/PRISM.tri')
+      case(BGEOM_SHAPE_TETRA)
+        call tria_readTriFile3D (rtriangulation, trim(spredir) // '/TETRA.tri')
+      case(BGEOM_SHAPE_PYRA)
+        call tria_readTriFile3D (rtriangulation, trim(spredir) // '/PYRA.tri')
       end select
 
       if(idistLevel .le. 0) then
