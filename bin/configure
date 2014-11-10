@@ -1507,7 +1507,12 @@ sub create_feat2AppMakefile {
         "# Create binary with or without MPI wrappers\n" .
         "MPIWRAPPERS         = $entry\n\n";
 
-    $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    # $cl{'COPROCLIST'} has been passed as an array (!) to GetOptions() (as opposed
+    # to a mere string) and as such is always defined. But is does not
+    # necessarily have entries:
+    #  if unset  =>  #entries=-1; if set, but empty => #entries=0
+    # So, don't only test with perl function defined(). Test whether set.
+    $entry = (defined($cl{'COPROCLIST'}) && $#{$cl{'COPROCLIST'}} > -1) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     print MAKEFILE_HDL
         "# Create binary with Coprocessor support?\n";
 
@@ -1536,12 +1541,16 @@ sub create_feat2AppMakefile {
     print MAKEFILE_HDL
 	"\n";
 
-    $entry = (defined($cl{'WARN'})) ? $cl{'WARN'} : $defaults{'WARN'};
+    # $cl{'WARN'} has been passed as an array (!) to GetOptions() (as opposed
+    # to a mere string) and as such is always defined. But is does not
+    # necessarily have entries:
+    #  if unset  =>  #entries=-1; if set, but empty => #entries=0
+    # So, don't only test with perl function defined(). Test whether set.
+    $entry = (defined($cl{'WARN'}) && $#{$cl{'WARN'}} > -1) ? $cl{'WARN'} : $defaults{'WARN'};
     print MAKEFILE_HDL
         "# Create binary with warnings enabled?\n";
 
     if ($#{$entry} >= 0) {
-
 	# convert array with warnings into hash for easier lookups
 	my %warns = ();
 	map { $warns{$_} = $_; } @{ $entry };
