@@ -458,7 +458,7 @@ contains
     case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
       ! DOF`s in the vertices
       NDFG_uniform3D = rtriangulation%NVT
-    case (EL_Q2_3D)
+    case (EL_P2_3D, EL_Q2_3D)
       ! DOF`s in everything
       NDFG_uniform3D = rtriangulation%NVT + rtriangulation%NMT + &
                        rtriangulation%NAT + rtriangulation%NEL
