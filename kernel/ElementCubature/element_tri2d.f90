@@ -33,106 +33,106 @@ module element_tri2d
 
 contains
 
-! ----------------------------------------------------------------------------
-! General information: Function values and derivatives of
-!                      triangular elements
-!                      with linear transformation from the reference
-!                      to the real element.
-!
-! The element subroutines return
-! - the function value and
-! - the X- and Y-derivatives
-! of the basis function in a (cubature) point (x,y) on the real mesh!
-! The coordinates of a (cubature) point is given
-! - as coordinate triple (xi1, xi2, xi3) on the reference element, if the
-!   the element is parametric; the actual cubature point is then at
-!   (x,y) = s(t(xi1,xi2,xi3))
-! - as coordinate pair (x,y) on the real element, if the element is
-!   nonparametric.
-! The mapping  s=(s1,s2):R^2->R^2  is the bilinear mapping "sigma" from
-! transformation.f90, that maps the reference element T^ to the real
-! element T; its shape is of no importance here.
-! The transformation t:R^3->R^2 maps the coordinates from the barycenric
-! coordinate system on the reference element to the standard space
-! (to get the (X,Y) coordinate on the reference element), so
-!
-!    t(xi1,xi2,xi3) = xi2 * [1,0]  +  xi3 * [0,1]
-!
-! The linear transformation s(.) from the reference to the real element
-! has the form
-!
-!    s(X,Y) = c1  +  c2 X  +  c3 Y  =:  (x,y)
-!
-! Let u be an arbitrary FE (basis) function on an element T and
-! p be the associated polynomial on the reference element T^. Then,
-! we can obtain the function value of u at (x,y) easily:
-!
-!   u(x,y) = u(s(t(xi1,xi2,xi3)) = p(t^-1(s^-1(x,y))) = p(xi1,xi2,xi3)
-!
-!   [0,1]
-!   | \               s(t(.))                C
-!   |   \           --------->              / \
-!   |  T^ \                               /     \
-!   |       \                           /    T    \
-!   [0,0]----[1,0]                     A-----------B
-!
-! The derivative is a little bit harder to calculate because of the
-! mapping. We have:
-!
-!    grad(u)(x,y) = grad( p(t^-1(s^-1(x,y))) )
-!
-! Let us use the notation
-!
-!    P(X,Y)  :=  p( t^-1 (X,Y) )  =  p (xi1,xi2,xi3)
-!
-! which is the 'standard' form of the polynomials on the
-! reference element without barycentric coordinates involved (i.e.
-! for the P1-element it is of the form P(x,y) = c1 x + c2 y + c3).
-!
-! Because of the chain rule, we have:
-!
-!    grad( p( t^-1 (s^-1) ) ) = (DP)( (s^-1) * D(s^-1) )
-!
-!       = ( P_X(s^-1)  P_Y(s^-1)) * ( (s1^-1)_x   (s1^-1)_y )
-!                                   ( (s2^-1)_x   (s2^-1)_y )
-!
-!      =: ( P_X(s^-1)  P_Y(s^-1)) * ( e f )
-!                                   ( g h )
-!
-! With s^-1(x,y)=(X,Y), we therefore have:
-!
-!    grad(u)(x,y) = ( P_X(X,Y) * e  +  P_Y(X,Y) * g )
-!                   ( P_X(X,Y) * f  +  P_Y(X,Y) * h )
-!
-! Now, from e.g. http://mathworld.wolfram.com/MatrixInverse.html we know,
-! that:
-!
-!     A = ( a b )    =>   A^-1  =  1/det(A) (  d -b )
-!         ( c d )                           ( -c  a )
-!
-! Therefore:
-!
-!    ( e f )  =  D(s^-1)  =  (Ds)^-1  =  1/(ad-bc) (  d -b )
-!    ( g h )                                       ( -c  a )
-!
-! with
-!
-!    A = ( a b )  =  ( s1_X   s1_Y )  =  ( B-A  C-A )
-!        ( c d )     ( s2_X   s2_Y )
-!
-! being the matrix from the transformation (according to
-! http://mathworld.wolfram.com/BarycentricCoordinates.html).
-!
-! -----------------------------------------------------------------------------
-
+  ! ----------------------------------------------------------------------------
+  ! General information: Function values and derivatives of
+  !                      triangular elements
+  !                      with linear transformation from the reference
+  !                      to the real element.
+  !
+  ! The element subroutines return
+  ! - the function value and
+  ! - the X- and Y-derivatives
+  ! of the basis function in a (cubature) point (x,y) on the real mesh!
+  ! The coordinates of a (cubature) point is given
+  ! - as coordinate triple (xi1, xi2, xi3) on the reference element, if the
+  !   the element is parametric; the actual cubature point is then at
+  !   (x,y) = s(t(xi1,xi2,xi3))
+  ! - as coordinate pair (x,y) on the real element, if the element is
+  !   nonparametric.
+  ! The mapping  s=(s1,s2):R^2->R^2  is the bilinear mapping "sigma" from
+  ! transformation.f90, that maps the reference element T^ to the real
+  ! element T; its shape is of no importance here.
+  ! The transformation t:R^3->R^2 maps the coordinates from the barycenric
+  ! coordinate system on the reference element to the standard space
+  ! (to get the (X,Y) coordinate on the reference element), so
+  !
+  !    t(xi1,xi2,xi3) = xi2 * [1,0]  +  xi3 * [0,1]
+  !
+  ! The linear transformation s(.) from the reference to the real element
+  ! has the form
+  !
+  !    s(X,Y) = c1  +  c2 X  +  c3 Y  =:  (x,y)
+  !
+  ! Let u be an arbitrary FE (basis) function on an element T and
+  ! p be the associated polynomial on the reference element T^. Then,
+  ! we can obtain the function value of u at (x,y) easily:
+  !
+  !   u(x,y) = u(s(t(xi1,xi2,xi3)) = p(t^-1(s^-1(x,y))) = p(xi1,xi2,xi3)
+  !
+  !   [0,1]
+  !   | \               s(t(.))                C
+  !   |   \           --------->              / \
+  !   |  T^ \                               /     \
+  !   |       \                           /    T    \
+  !   [0,0]----[1,0]                     A-----------B
+  !
+  ! The derivative is a little bit harder to calculate because of the
+  ! mapping. We have:
+  !
+  !    grad(u)(x,y) = grad( p(t^-1(s^-1(x,y))) )
+  !
+  ! Let us use the notation
+  !
+  !    P(X,Y)  :=  p( t^-1 (X,Y) )  =  p (xi1,xi2,xi3)
+  !
+  ! which is the 'standard' form of the polynomials on the
+  ! reference element without barycentric coordinates involved (i.e.
+  ! for the P1-element it is of the form P(x,y) = c1 x + c2 y + c3).
+  !
+  ! Because of the chain rule, we have:
+  !
+  !    grad( p( t^-1 (s^-1) ) ) = (DP)( (s^-1) * D(s^-1) )
+  !
+  !       = ( P_X(s^-1)  P_Y(s^-1)) * ( (s1^-1)_x   (s1^-1)_y )
+  !                                   ( (s2^-1)_x   (s2^-1)_y )
+  !
+  !      =: ( P_X(s^-1)  P_Y(s^-1)) * ( e f )
+  !                                   ( g h )
+  !
+  ! With s^-1(x,y)=(X,Y), we therefore have:
+  !
+  !    grad(u)(x,y) = ( P_X(X,Y) * e  +  P_Y(X,Y) * g )
+  !                   ( P_X(X,Y) * f  +  P_Y(X,Y) * h )
+  !
+  ! Now, from e.g. http://mathworld.wolfram.com/MatrixInverse.html we know,
+  ! that:
+  !
+  !     A = ( a b )    =>   A^-1  =  1/det(A) (  d -b )
+  !         ( c d )                           ( -c  a )
+  !
+  ! Therefore:
+  !
+  !    ( e f )  =  D(s^-1)  =  (Ds)^-1  =  1/(ad-bc) (  d -b )
+  !    ( g h )                                       ( -c  a )
+  !
+  ! with
+  !
+  !    A = ( a b )  =  ( s1_X   s1_Y )  =  ( B-A  C-A )
+  !        ( c d )     ( s2_X   s2_Y )
+  !
+  ! being the matrix from the transformation (according to
+  ! http://mathworld.wolfram.com/BarycentricCoordinates.html).
+  !
+  ! -----------------------------------------------------------------------------
+  
   !****************************************************************************
   !****************************************************************************
-
+  
   ! -------------- NEW ELEMENT INTERFACE IMPLEMENTATIONS FOLLOW --------------
-
+  
   !****************************************************************************
   !****************************************************************************
-
+  
   !************************************************************************
   ! Parametric P0 element
   !************************************************************************
