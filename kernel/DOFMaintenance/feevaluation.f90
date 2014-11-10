@@ -120,12 +120,12 @@ module feevaluation
   ! with different calling conventions and different complexities.
   interface fevl_evaluate_mult
     module procedure fevl_evaluate_mult1
-    module procedure fevl_evaluate_mult2
+    module procedure fevl_evaluate_mult2 ! DEPRECATED
   end interface
 
   public :: fevl_evaluate_mult
   public :: fevl_evaluate_mult1
-  public :: fevl_evaluate_mult2
+  public :: fevl_evaluate_mult2 ! DEPRECATED
 
   ! There are multiple functions fevl_evaluate_sim which do the same --
   ! with different calling conventions and different complexities.
