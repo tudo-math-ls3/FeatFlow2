@@ -61,7 +61,7 @@ program ExtFEcomparer
   call output_init (slogfile,serrorfile,sbenchlogfile)
 
   ! Initialise the storage management:
-  call storage_init(150, 50)
+  call storage_init(200, 100)
 
   ! Initialise the parser
   call fparser_init ()

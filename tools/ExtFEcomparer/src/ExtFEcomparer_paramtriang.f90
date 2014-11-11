@@ -1,3 +1,10 @@
+!<description>
+! Purpose of all these functions is:
+! We come here with the problem structure
+! and can then recrate the parametrisation and
+! the discretisation
+!</description>
+
 module ExtFEcomparer_paramtriang
 
   ! Include basic Feat-2 modules
@@ -35,9 +42,11 @@ subroutine ExtFEcomparer_recreate_ParamTriang(rproblem)
     select case (rproblem%iDimension)
 
     case (ExtFE_NDIM1)
-        call ExtFEcomparer_recreate_ParamTriang_1D(rproblem)
+        call ExtFE_recreate_ParamTriang_1D(rproblem)
     case (ExtFE_NDIM2)
-        call ExtFEcomparer_recreate_ParamTriang_2D(rproblem)
+        call ExtFE_recreate_ParamTriang_2D(rproblem)
+    case(ExtFE_NDIM3)
+        call ExtFE_recreate_ParamTriang_3D(rproblem)
     case default
         call output_line("At the moment the dimension of your problem is not implemented",&
             OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_recreate_parametrisation: dimension")
@@ -46,7 +55,13 @@ subroutine ExtFEcomparer_recreate_ParamTriang(rproblem)
 
 end subroutine
 
-subroutine ExtFEcomparer_recreate_ParamTriang_1D(rproblem)
+! In 1D, we have a TriFile and refine it.
+! After that, we still have to init a Standard mesh from that.
+! With this, we are done and have recreated the paramTriang for a
+! 1D-mesh
+! 1D-specific: The call to tria_readTriFile1D
+
+subroutine ExtFE_recreate_ParamTriang_1D(rproblem)
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout) :: rproblem
@@ -69,8 +84,16 @@ subroutine ExtFEcomparer_recreate_ParamTriang_1D(rproblem)
 
 end subroutine
 
+! In 2D, we have a TriFile and a PRM-File
+! With the prm we create the boundary-structure.
+! Then we read in a TRI-File that we can refine as much
+! as we have to.
+! After that, we still have to init a Standard mesh from that.
+! With this, we are done and have recreated the paramTriang for a
+! 2D-mesh
+! 2D-specific: The call to tria_readTriFile2D
 
-subroutine ExtFEcomparer_recreate_ParamTriang_2D(rproblem)
+subroutine ExtFE_recreate_ParamTriang_2D(rproblem)
 
   !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -97,6 +120,19 @@ subroutine ExtFEcomparer_recreate_ParamTriang_2D(rproblem)
       call tria_initStandardMeshFromRaw(rproblem%rtriangulation,&
           rproblem%rboundary)
 
+end subroutine
+
+
+! This routine just holds space for the 3D-specific routines
+subroutine ExtFE_recreate_ParamTriang_3D(rproblem)
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout) :: rproblem
+!</inputoutput>
+
+        call output_line("At the moment 3D is not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_recreate_parametrisation: dimension")
+        call sys_halt()
 end subroutine
 
 

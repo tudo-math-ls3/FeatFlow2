@@ -1,9 +1,10 @@
 module ExtFEcomparer_vector
 
-  !Purpose:
+  !<description>
   ! In this module we take care of loading the vector
   ! in the problem structure and combine it with the
   ! discretisation so that it becomes a FE-function
+  !</description>
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -50,7 +51,13 @@ subroutine ExtFEcomparer_load_vector(rproblem)
 
   NLMAX = rproblem%NLMAX
 
-  ! Create the vector in the right size.
+  ! Create the vector according to the discretisation
+  ! The benefit of this approach is that all flags in the
+  ! vectors are set correct. (especially attaching the
+  ! discretisation to the vector can sometimes become tricky).
+  ! Another big plus is that for the second input format we
+  ! just can read the coefficents in the data array
+  ! and are fine then
   call lsysbl_createVecBlockByDiscr(rproblem%rdiscretisation,&
             rproblem%coeffVector,bclear=.TRUE.,cdataType=ST_DOUBLE )
 
@@ -166,4 +173,3 @@ end subroutine
 
 
 end module
-

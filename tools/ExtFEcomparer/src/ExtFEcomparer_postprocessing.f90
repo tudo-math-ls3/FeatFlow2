@@ -10,6 +10,10 @@
 ! need to know what we did calculate.
 ! Instead of having to syncronise 2 structures, we just
 ! use one.
+! In this program, we only know 2 types of operations
+! with a FE-Function: calculations and postprocessing.
+! Everything regarding file i/o is considered to be
+! postprocessing.
 !</description>
 
 module ExtFEcomparer_postprocessing
@@ -155,8 +159,10 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
     ! Find out how many L2-compuations to do
     nL2Calculations = parlst_querysubstrings(rparlist, &
                     "ExtFE-CALCULATIONS","L2calculations")
+    ! How many Regions of interest are there?
     nL2ChiOmega = parlst_querysubstrings(rparlist, &
                     "ExtFE-CALCULATIONS","L2RegionOfInterest")
+    ! How many cubature rules are there?
     nL2CubRule = parlst_querysubstrings(rparlist, &
                     "ExtFE-CALCULATIONS","L2CubatureRule")
 
@@ -173,32 +179,53 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
   ! Get the dimension
   nDIM = rpostprocessing%nDim
 
-  ! Easy one: Init arrays for results and which component
+  ! Init arrays for results and which component is used
   ! and store the filepath
   if (nL2Calculations .gt. 0) then
 
+    ! Store the number in the structure
     rpostprocessing%nL2Calculations = nL2Calculations
+
+    ! Array for components
     call storage_new("ExtFEcomparer_init_postprocessing", &
             "L2CompFunc", (/2,nL2Calculations/),ST_INT, &
              rpostprocessing%h_L2CompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
     call storage_new("ExtFEcomparer_init_postprocessing", &
             "L2Results", nL2Calculations,ST_DOUBLE, &
              rpostprocessing%h_L2Results,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
     call storage_new("ExtFEcomparer_init_postprocessing", &
             "L2CubRule",nL2Calculations,ST_INT32, &
             rpostprocessing%h_L2CubRule, ST_NEWBLOCK_ZERO)
+
+    ! Array to store the region of interest for some
+    ! postprocessing
+    ! Only of interest if we write out the results in a file,
+    ! but else we have some branches during the init and I
+    ! don't want to do them right now.
     call storage_new("ExtFEcomparer_init_postprocessing", &
             "L2ChiOmega",ExtFE_STRLEN*nL2Calculations,ST_CHAR, &
             rpostprocessing%h_L2ChiOmega,ST_NEWBLOCK_ZERO)
 
+    ! We want to write in the file which mesh was used
+    ! Get an array for that
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+          "L2TriFile",ExtFE_STRLEN*nL2Calculations,ST_CHAR, &
+           rpostprocessing%h_L2TriFile,ST_NEWBLOCK_ZERO)
+
+    ! Do we want to save the results in a file?
     call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                     "writeOutL2Calc",writeOutL2)
+
     if(writeOutL2 .eq. ExtFE_DO) then
 
-        call storage_new("ExtFEcomparer_init_postprocessing", &
-            "L2TriFile",ExtFE_STRLEN*nL2Calculations,ST_CHAR, &
-            rpostprocessing%h_L2TriFile,ST_NEWBLOCK_ZERO)
+        ! Tell the postprocessing that we want to write a file
         rpostprocessing%writeOutL2results = .true.
+
+        ! We need a filepath
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sL2FilePath",L2filepath,bdequote=.TRUE.)
         if (L2filepath .eq. '' ) then
@@ -208,10 +235,13 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
                     call sys_halt()
         end if
 
+        ! Store the filepath
         rpostprocessing%L2filepath = L2filepath
+
     end if
 
     ! We will actually parse the L2RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
     call fparser_create(rpostprocessing%pL2ChiOmegaParser,nL2Calculations)
 
     ! Now get the arrays and fill them with data
@@ -229,13 +259,16 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
 
     ! Now read in the data
     do i=1,nL2Calculations
+
+        ! Which components?
         ! fetch the whole line
         call parlst_getvalue_string(rparlist, &
                         "ExtFE-CALCULATIONS", "L2calculations", &
                         sparam,sdefault="",isubstring=i)
-        ! Now read the parameters from the string
+        ! Now read the components from the string
         read(sparam,*) p_L2Comp(1,i), p_L2Comp(2,i)
 
+        ! Which region of interest?
         call parlst_getvalue_string(rparlist, &
                         "ExtFE-CALCULATIONS", "L2RegionOfInterest", &
                         sparam,sdefault="",isubstring=i)
@@ -246,7 +279,10 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
             p_L2ChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
          end do
 
-         ! Parse the string in the parser. Unfortunately we have to branch here :(
+         ! Parse the string in the parser. Unfortunately we have to branch here
+         ! due to the evaluation
+         ! could be solved with a branch somewhere else but the code is easier
+         ! to understand like this
         select case (nDIM)
              case(ExtFE_NDIM1)
                call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,i,sparam,(/'x'/))
@@ -259,9 +295,11 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
                call sys_halt()
         end select
 
+        ! Now we need a cubature rule. Fetch the string...
         call parlst_getvalue_string(rparlist, &
                         "ExtFE-CALCULATIONS", "L2CubatureRule", &
                         sparam,sdefault="",isubstring=i)
+        ! and convert it to an ID
         p_L2CubRule(i) = cub_igetID(sparam)
 
         ! Store which mesh is to be used
@@ -324,6 +362,7 @@ subroutine ExtFE_postprocess_L2(rpostprocessing)
     character(LEN=ExtFE_STRLEN) :: soutString, stmpString, stmpString2
 
     ! Write out L2-Calculation-Results?
+    ! If not we are already done
     if (rpostprocessing%writeOutL2results .eqv. .TRUE.) then
         !get pointer do the data arrays
         call storage_getbase_double(rpostprocessing%h_L2Results,dL2Results)
@@ -332,7 +371,7 @@ subroutine ExtFE_postprocess_L2(rpostprocessing)
         call storage_getbase_char(rpostprocessing%h_L2TriFile,cL2TriFile)
 
         ! How many calculations?
-        nL2calc = ubound(dL2Results,1)
+        nL2calc = rpostprocessing%nL2Calculations
 
         ! Open a file for writing out the results
         call io_openFileForWriting(rpostprocessing%L2filepath, &
@@ -340,30 +379,41 @@ subroutine ExtFE_postprocess_L2(rpostprocessing)
 
         ! Ok, file is open, so we write
         do i=1,nL2calc
-            ! Empty the string
+            ! Empty the string - better save than sorry
             soutString = ''
             stmpString = ''
+            ! Both components were used - so we need to
+            ! write ||f_1(comp1) - f_2(comp2)||_L2(Omega_i) =
+            ! into a string
             if((iL2FuncComp(1,i) .gt. 0) .AND. &
                 (iL2FuncComp(2,i) .gt. 0)) then
                  write(stmpString,'(A7,I2,A8,I2,A13,I2,A4)') '||f_1(', iL2FuncComp(1,i) , &
                                 ') - f_2(', iL2FuncComp(2,i) ,')||_L2(Omega_', i, ') = '
+            ! Only first component was used - write
+            ! ||f_1(comp1)||_L2(Omega_i) =  in the string
             else if((iL2FuncComp(1,i) .gt. 0 ) .AND. &
                   (iL2FuncComp(2,i) .le. 0) ) then
                  write(stmpString,'(A7,I2,A13,I2,A4)') '||f_1(', iL2FuncComp(1,i) , &
                                 ')||_L2(Omega_', i, ') = '
+            ! Only second component was used - write
+            ! ||f_2(comp1)||_L2(Omega_i) =  in the string
+            ! No sanity checks needed - done already during the init
+            ! it can only be this case
             else
-                ! No sanity checks needed - done already during the calculations
                  write(stmpString,'(A7,I2,A13,I2,A4)') '||f_2(', iL2FuncComp(2,i) , &
                                 ')||_L2(Omega_', i, ') = '
             end if
 
-            ! Add the result
+            ! Add the result to the string
             write(soutString,'(A1,E16.10)') ' ', dL2Results(i)
 
+            ! and write it in the file
             write(ifile,*) trim( trim(stmpString) // trim(soutString) )
         end do
 
         ! Now we write out what Omega_i actually is
+        ! At the moment it should work  like this - if something is
+        ! cut off I will rewrite this one.
         ! first a linebreak
         write(ifile,*) ''
         do i=1,nL2calc
@@ -406,7 +456,10 @@ subroutine ExtFE_done_postprocessing_L2(rpostprocessing)
    type(t_postprocessing) , intent(inout):: rpostprocessing
 !</input>
 
-    ! L2-Calculations
+    ! Release all arrays from the storage that were allocated
+    ! during the init. Without the If-condition it leads to an
+    ! error since then the storage wants to deallocate handles
+    ! that were not allocated
     if (rpostprocessing%h_L2CompFunc .gt. ST_NOHANDLE) then
         call storage_free(rpostprocessing%h_L2CompFunc)
     end if
@@ -461,31 +514,39 @@ subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
     if(nPointEvaluations .gt. 0) then
         rpostprocessing%nPointCalculations = nPointEvaluations
 
-        iSizeArray = (/4,nPointEvaluations/)
         ! Create the storage for the information
         ! Result(i) = Result of calculation i
         call storage_new("ExtFEcomparer_init_postprocessing", &
             "PointvalueResults",nPointEvaluations,ST_DOUBLE,&
                 rpostprocessing%h_PointResults,ST_NEWBLOCK_ZERO)
+
+        ! To make the next allocation easier - write up in the array
+        ! how much space we need
+        iSizeArray = (/4,nPointEvaluations/)
+
         ! PointComponent(1,i) = component of function 1 in calculation i
         ! PointComponent(2,i) = derivative of component of function 1 in calculation i
         ! PointComponent(3,i) = component of function 2 in calculation i
         ! PointComponent(4,i) = derivative of component of function 2 in calculation i
-
         call storage_new("ExtFEcomparer_init_postprocessing", &
                 "PointFuncComponents",iSizeArray,ST_INT, &
                  rpostprocessing%h_PointFuncComponents,ST_NEWBLOCK_ZERO)
+
         ! PointCoordinates(:,i) = coordinates in calculation i
         call storage_new("ExtFEcomparer_init_postprocessing", &
                 "PointCoordinates",(/nDim,nPointEvaluations/),&
                 ST_DOUBLE,rpostprocessing%h_PointCoordinates, &
                 ST_NEWBLOCK_ZERO)
 
+        ! Do we save the results in a file?
         call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                     "writeOutPointValues",writeOutPoint)
 
         if(writeOutPoint .eq. ExtFE_DO) then
+            ! tell the postprocessing structure that we want to save
             rpostprocessing%writeOutPointCalucations = .true.
+
+            ! get the filepath for the file
             call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sPointValuesFilePath",PointFilepath,bdequote=.TRUE.)
             if (PointFilepath .eq. '' ) then
@@ -497,7 +558,7 @@ subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
 
         rpostprocessing%PointFilepath = PointFilepath
 
-        end if ! writeOUtPoint
+        end if ! writeOutPoint
 
         ! Write in the structure what we want to calculate
         ! First step: get the arrays
@@ -510,7 +571,8 @@ subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
             call parlst_getvalue_string(rparlist, &
                           "ExtFE-CALCULATIONS", "evaluationpoints", &
                             sparam,sdefault="",isubstring=i)
-            !and read it in. Which function comp and deriv?
+            !and read it in. Which function comp and deriv and which point?
+            ! We have to branch since in ie 1D there is no y-component
             select case(nDim)
 
             case(ExtFE_NDIM1)
@@ -558,6 +620,8 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
     integer :: ifile,i,k
     character(LEN=ExtFE_STRLEN) :: soutString, stmpString, stmpString2
 
+    ! We want to make the output good-looking so we write what
+    ! derivative was evaluated
     ! We start to count the derivatives from 0, so
     ! we need to shift by 1
     sderivnames(ExtFE_DER_FUNC_3D+1) = '      '
@@ -567,6 +631,7 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
 
 
     ! Write out Pointvalue-Calculation-Results?
+    ! If not we are done here
     if(rpostprocessing%writeOutPointCalucations .eqv. .TRUE.) then
         ! Get the arrays
         call storage_getbase_double2D(rpostprocessing%h_PointCoordinates,dPointCoordinates)
@@ -574,7 +639,7 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
         call storage_getbase_int2D(rpostprocessing%h_PointFuncComponents,iPointFuncComp)
 
         ! find out how many calculations we have
-        nPointEvals = ubound(dPointValues,1)
+        nPointEvals = rpostprocessing%nPointCalculations
 
         ! Open a file for writing out the results
         call io_openFileForWriting(rpostprocessing%PointFilepath, &
@@ -588,7 +653,8 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
             soutString = ''
 
             ! Find out what we have
-            ! Both functions
+            ! Both functions => write (deriv f_1(comp1) - deriv f_2(comp2))
+            ! in the string
             if((iPointFuncComp(1,i) .gt. 0) .AND. &
                (iPointFuncComp(3,i) .gt. 0)) then
                   write(stmpString,'(A3,I2,A3)') 'f1_', iPointFuncComp(1,i), ' - '
@@ -598,7 +664,7 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
                   stmpString2 = trim(sderivnames(iPointFuncComp(4,i)+1)) // trim(stmpString2)
                   stmpString2 = trim(stmpString2) // ')'
                   stmpString = trim(stmpString) // trim(stmpString2)
-            ! Only first
+            ! Only first => write (deriv f_1(comp1)) in the string
             else if ((iPointFuncComp(1,i) .gt. 0) .AND. &
                     (iPointFuncComp(3,i) .le. 0)) then
                   write(stmpString,'(A3,I2)') 'f1_', iPointFuncComp(1,i)
@@ -607,6 +673,7 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
                   stmpString = trim(stmpString) // ')'
             ! No sanity check needed - already done during the calculation
             ! it can only be the case: only the second
+            ! => write (deriv f_2(comp2)) in the string
             else
                   write(stmpString,'(A3,I2)') 'f2_', iPointFuncComp(3,i)
                   stmpString = (sderivnames(iPointFuncComp(4,i)+1)) // trim(stmpString)
@@ -614,7 +681,9 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
                   stmpString = trim(stmpString) // ')'
             end if
 
-            ! Now we are still not done, we have to add the function value
+            ! Now we are still not done, we have to add the
+            ! evaluation point and the value. The evaluation point
+            ! depends on the dimension
             stmpString = trim(stmpString) // '('
             write(stmpString2,'(F8.4)') dPointCoordinates(1,i)
             stmpString = trim(stmpString) // trim(stmpString2)
@@ -627,7 +696,7 @@ subroutine ExtFE_postprocess_PointValues(rpostprocessing)
             write(stmpString2 ,'(F8.5)') dPointValues(i)
             soutString = trim(stmpString) // ' = ' // trim(stmpString2)
 
-            ! Now we have everything - write it out in a file
+            ! Now we have everything - write it out in the file
             write(ifile,*) trim(soutString)
         end do
 
@@ -648,7 +717,9 @@ subroutine ExtFE_done_postprocessing_PointValues(rpostprocessing)
    type(t_postprocessing) , intent(inout):: rpostprocessing
 !</input>
 
-    ! Pointvalue-Calculations
+    ! deallocate all arrays that we allocated during the init.
+    ! Without if we get an error because the storage then tries
+    ! to deallocate arrays that were not allocated
     if (rpostprocessing%h_PointCoordinates .gt. ST_NOHANDLE) then
         call storage_free(rpostprocessing%h_PointCoordinates)
     end if
@@ -681,11 +752,13 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
     character(LEN=ExtFE_STRLEN) :: sUCD_AddTypeOrig
     character(LEN=ExtFE_STRLEN) :: sUCD_VecComp
     character(LEN=ExtFE_STRLEN) :: sUCD_ScalarComp
-    integer :: h_UCD_AddTypeOrig
-    integer :: h_UCD_AddElemProject
-    integer :: h_UCD_VecVars
-    integer :: h_UCD_ScalarVars
+    integer :: handle_UCD_AddTypeOrig
+    integer :: handle_UCD_AddElemProject
+    integer :: handle_UCD_VecVars
+    integer :: handle_UCD_ScalarVars
 
+
+    ! We need the dim everywhere - save it
     nDim = rpostprocessing%nDim
 
     !--------------------------------------!
@@ -696,6 +769,7 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
     call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                     "writeOutMeshesUCD",writeOutMeshes)
     if(writeOutMeshes .eq. ExtFE_DO) then
+        ! We need a filepath
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sUCDFirstMeshOutput",sMeshPathFirst,bdequote=.TRUE.)
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
@@ -720,6 +794,7 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
     call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                     "writeOutFirstFunctionUCD",writeOutFirstFunction)
     if(writeOutFirstFunction .eq. ExtFE_DO) then
+        ! We need a filepath
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sUCDFirstFunctionOutput",sFirstFunctionOutput,bdequote=.TRUE.)
 
@@ -734,24 +809,39 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
         rpostprocessing%UCD_FEfunctionOneOrigOutPath = sFirstFunctionOutput
         rpostprocessing%ucd_OUT_orig_functions_one = .TRUE.
 
+        ! Now we set these temporary values. What do they do/mean?
+        ! We have wrapper for the init.
+        ! With the strings we tell where in the parlist we have to search.
+        ! The handles are set to NOHANDLE, the wrapper will return us the handle
+        ! If this is not done and we i.e. have no scalars, we will not do anything
+        ! with the variable handle_UCD_ScalarVars. After the wrapper we just save
+        ! everything in the structure. So it might happen that if the compiler initially
+        ! sets the handle_UCD_ScalarVars to 2, we save in the structure that in handle
+        ! 2 all scalar variables are. this will lead to unpredictable behaviour
+        ! For the init, the wrapper needs to know how many variables are in the vector
+
         sUCD_AddElemProjection = "sUCDElemProjectFirstFunction"
         sUCD_AddTypeOrig = "sUCDaddTypeFirstFunction"
         sUCD_VecComp = "sUCDVecCompFirstFunction"
         sUCD_ScalarComp = "UCD_ScalarFirstOrig"
         nVars = rpostprocessing%nVarFirst
+        handle_UCD_AddElemProject = ST_NOHANDLE
+        handle_UCD_AddTypeOrig = ST_NOHANDLE
+        handle_UCD_VecVars = ST_NOHANDLE
+        handle_UCD_ScalarVars = ST_NOHANDLE
 
-        call ExtFE_init_pp_UCD_fefuncout(h_UCD_AddElemProject,h_UCD_AddTypeOrig,&
-                                    h_UCD_VecVars,h_UCD_ScalarVars,&
+        call ExtFE_init_pp_UCD_fefuncout(handle_UCD_AddElemProject,handle_UCD_AddTypeOrig,&
+                                    handle_UCD_VecVars,handle_UCD_ScalarVars,&
                             sUCD_AddElemProjection,sUCD_AddTypeOrig,&
                                         sUCD_VecComp,sUCD_ScalarComp,&
                                         nDim,&
                                         nVars,&
                                         rparlist)
-
-        rpostprocessing%h_UCD_AddTypeOrigFirst = h_UCD_AddTypeOrig
-        rpostprocessing%h_UCD_AddElemProjectFirst = h_UCD_AddElemProject
-        rpostprocessing%h_UCD_VecsFirstOrig = h_UCD_VecVars
-        rpostprocessing%h_UCD_ScalarFirstOrig = h_UCD_ScalarVars
+        ! Now save the handles in the structure.
+        rpostprocessing%h_UCD_AddTypeOrigFirst = handle_UCD_AddTypeOrig
+        rpostprocessing%h_UCD_AddElemProjectFirst = handle_UCD_AddElemProject
+        rpostprocessing%h_UCD_VecsFirstOrig = handle_UCD_VecVars
+        rpostprocessing%h_UCD_ScalarFirstOrig = handle_UCD_ScalarVars
 
 
     end if
@@ -760,6 +850,7 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
     call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
                     "writeOutSecondFunctionUCD",writeOutSecondFunction)
     if(writeOutSecondFunction .eq. ExtFE_DO) then
+        ! If yes, we need a filepath
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sUCDSecondFunctionOutput",sSecondFunctionOutput,bdequote=.TRUE.)
 
@@ -773,30 +864,47 @@ subroutine ExtFE_init_postprocessing_UCD(rpostprocessing,rparlist)
         ! Save it in the structure
         rpostprocessing%UCD_FEfunctionTwoOrigOutPath = sSecondFunctionOutput
         rpostprocessing%ucd_OUT_orig_functions_two = .TRUE.
+
+        ! Now we set these temporary values. What do they do/mean?
+        ! We have wrapper for the init.
+        ! With the strings we tell where in the parlist we have to search.
+        ! The handles are set to NOHANDLE, the wrapper will return us the handle
+        ! If this is not done and we i.e. have no scalars, we will not do anything
+        ! with the variable handle_UCD_ScalarVars. After the wrapper we just save
+        ! everything in the structure. So it might happen that if the compiler initially
+        ! sets the handle_UCD_ScalarVars to 2, we save in the structure that in handle
+        ! 2 all scalar variables are. this will lead to unpredictable behaviour
+        ! For the init, the wrapper needs to know how many variables are in the vector
         sUCD_AddElemProjection = "sUCDElemProjectSecondFunction"
         sUCD_AddTypeOrig = "sUCDaddTypeSecondFunction"
         sUCD_VecComp = "sUCDVecCompSecondFunction"
         sUCD_ScalarComp = "UCD_ScalarSecondOrig"
         nVars = rpostprocessing%nVarSecond
+        handle_UCD_AddElemProject = ST_NOHANDLE
+        handle_UCD_AddTypeOrig = ST_NOHANDLE
+        handle_UCD_VecVars = ST_NOHANDLE
+        handle_UCD_ScalarVars = ST_NOHANDLE
 
-        call ExtFE_init_pp_UCD_fefuncout(h_UCD_AddElemProject,h_UCD_AddTypeOrig,&
-                                    h_UCD_VecVars,h_UCD_ScalarVars,&
+        call ExtFE_init_pp_UCD_fefuncout(handle_UCD_AddElemProject,handle_UCD_AddTypeOrig,&
+                                    handle_UCD_VecVars,handle_UCD_ScalarVars,&
                             sUCD_AddElemProjection,sUCD_AddTypeOrig,&
                                         sUCD_VecComp,sUCD_ScalarComp,&
                                         nDim,&
                                         nVars,&
                                         rparlist)
 
-        rpostprocessing%h_UCD_AddTypeOrigSecond = h_UCD_AddTypeOrig
-        rpostprocessing%h_UCD_AddElemProjectSecond = h_UCD_AddElemProject
-        rpostprocessing%h_UCD_VecsSecondOrig = h_UCD_VecVars
-        rpostprocessing%h_UCD_ScalarSecondOrig = h_UCD_ScalarVars
+        ! Save the handles in the structure
+        rpostprocessing%h_UCD_AddTypeOrigSecond = handle_UCD_AddTypeOrig
+        rpostprocessing%h_UCD_AddElemProjectSecond = handle_UCD_AddElemProject
+        rpostprocessing%h_UCD_VecsSecondOrig = handle_UCD_VecVars
+        rpostprocessing%h_UCD_ScalarSecondOrig = handle_UCD_ScalarVars
 
 
     end if
 
 
-
+    ! IF we want to do some ucd output, we read in which format (VTK,...)
+    ! and which type (Standard, ...)
     if((rpostprocessing%ucd_OUT_meshes .eqv. .TRUE.) .or. &
         (rpostprocessing%ucd_OUT_orig_functions_one .eqv. .TRUE.) .or. &
         (rpostprocessing%ucd_OUT_orig_functions_two .eqv. .TRUE.))then
@@ -833,7 +941,9 @@ contains
     character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_AddElemProjection
     character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_VecComp
     character(LEN=ExtFE_STRLEN), intent(in) :: sUCD_ScalarComp
+    ! Which Dimension do we have
     integer, intent(in) :: nDimension
+    ! How many variables/components are in the function?
     integer, intent(in) :: nVarsFunc
 
     ! InOut: Handles to the storage of the arrays
@@ -844,6 +954,8 @@ contains
 
     ! Local variables
     integer :: i,k, iVarsScalar, nVecs
+    ! After the init, we want to do something with the arrays, so we
+    ! need some pointers for them
     integer, dimension (:,:), pointer :: p_IntPointerVecs => NULL()
     integer, dimension(:), pointer :: p_IntPointerScalars => NULL()
     integer, dimension(:), pointer :: p_IntPointerAddElemProject => NULL()
@@ -856,25 +968,29 @@ contains
     ! Therefore we need the number of variables in the function
     ! and how many vectors are in there
 
+    ! The add-type (element-based or vertex-based)?
     call storage_new("ExtFE_init_postprocessing",sUCD_AddTypeOrig,&
                       nVarsFunc,ST_INT,h_UCD_AddTypeOrig,&
                       ST_NEWBLOCK_ZERO)
+    ! Project them linear or constant?
     call storage_new("ExtFE_init_postprocessing",sUCD_AddElemProjection,&
                       nVarsFunc,ST_INT,h_UCD_AddElemProject,&
                       ST_NEWBLOCK_ZERO)
-
+    ! How many vectors do we have?
     nVecs = parlst_querysubstrings(rparlist, &
                   "ExtFE-POSTPROCESSING",sUCD_VecComp)
+
+    ! If we have vectors we have to take care of them
     if(nVecs .gt. 0) then
+        ! An array to store which components are in which vector
         call storage_new("ExtFE_init_postprocessing",sUCD_VecComp,&
                         (/nVecs,nDimension/),ST_INT,h_UCD_VecVars,&
                         ST_NEWBLOCK_ZERO)
 
-        ! Fetch the whole line with the flags and then translate them
-        ! Type of variable
+        ! Get a pointer to the array
         call storage_getbase_int2D(h_UCD_VecVars,p_IntPointerVecs)
         do i=1,nVecs
-            ! fetch the whole line
+            ! fetch the whole line and then read it in
             call parlst_getvalue_string(rparlist, &
                           "ExtFE-Postprocessing", sUCD_VecComp, &
                             sparam,sdefault="",isubstring=i)
@@ -883,8 +999,11 @@ contains
         end do ! Read in the Data
         ! Done with that one
 
+        ! Now figure out which scalar variables are left
         ! Assumtion: Every variable not in a vector shall be written out as scalar variable
         ! We know we have maximum nVar variables
+        ! Idea: Init an array with 1, then set each entry to 0 where we have a vector component
+        ! Then count what is left
         allocate(VarsNotVector(nVarsFunc))
         VarsNotVector(:) = 1
         do i=1,nVecs
@@ -898,12 +1017,16 @@ contains
             iVarsScalar = iVarsScalar + VarsNotVector(i)
         end do
 
-
+        ! Do we have scalar variables?
         if(iVarsScalar .gt. 0) then
+            ! We need an array for them
             call storage_new("ExtFE_init_postprocessing",sUCD_ScalarComp,&
                    iVarsScalar,ST_INT,h_UCD_ScalarVars,&
                     ST_NEWBLOCK_ZERO)
             call storage_getbase_int(h_UCD_ScalarVars,p_IntPointerScalars)
+            ! Now we want to write in the array. Problem: We have to do
+            ! some indexing. Easy solution: loop over all components and count with
+            ! another variable
             k = 0
             do i=1,nVarsFunc
                 if (VarsNotVector(i) .eq. 1) then
@@ -911,10 +1034,13 @@ contains
                     p_IntPointerScalars(k) = i
                 end if
             end do
+
         end if
         deallocate(VarsNotVector)
-        ! Another case is not possible: if nVecs = 0 and also no variable is a scalar one there is no
-        ! component in the function
+
+    ! Else we have only scalar variables
+    ! Another case is not possible: if nVecs = 0 and also no variable is a scalar one there is no
+    ! component in the function
     else
         iVarsScalar = nVarsFunc
         call storage_new("ExtFE_init_postprocessing",sUCD_ScalarComp,&
@@ -924,10 +1050,9 @@ contains
         do i=1,nVarsFunc
             p_IntPointerScalars(i) = i
         end do
-
     end if ! nVecs > 0
 
-    ! Now how to add them
+    ! Now how to add them (element/vertex-based)
     call storage_getbase_int(h_UCD_AddTypeOrig,p_IntPointerAddType)
     call parlst_getvalue_string(rparlist,"ExtFE-Postprocessing",sUCD_AddTypeOrig,sparam)
 
@@ -948,7 +1073,7 @@ contains
          end select
     end do
 
-    ! Poly degree?
+    ! Which projection?
     call storage_getbase_int(h_UCD_AddElemProject,p_IntPointerAddElemProject)
     call parlst_getvalue_string(rparlist,"ExtFE-Postprocessing",sUCD_AddElemProjection,sparam)
 
@@ -1015,6 +1140,8 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
     ! Write out the first function?
     if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .TRUE. ) then
 
+        ! We made a wrapper. give all handles to the arrays + the filepath
+        ! + the UCD-Format + the UCD-Style to the wrapper - thats it
         call ExtFE_write_UCD(rpostprocessing%UCD_feFunction_first_orig,&
                             rpostprocessing%UCD_Format,&
                             rpostprocessing%UCD_Style,&
@@ -1026,6 +1153,8 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
 
     if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .TRUE. ) then
 
+        ! We made a wrapper. give all handles to the arrays + the filepath
+        ! + the UCD-Format + the UCD-Style to the wrapper - thats it
         call ExtFE_write_UCD(rpostprocessing%UCD_feFunction_second_orig,&
                             rpostprocessing%UCD_Format,&
                             rpostprocessing%UCD_Style,&
@@ -1088,19 +1217,19 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
 
    ! First we go through the scalar ones
    if (h_scalarValues .gt. ST_NOHANDLE) then
+    ! Get the array
      call storage_getbase_int(h_scalarValues,p_scalarValues)
      nScalars = ubound(p_scalarValues,1)
      do i=1,nScalars
-       write(svarname,*) i
         call lsyssc_getbase_double(fefunction%RvectorBlock(p_scalarValues(i)),p_DataX)
          select case(p_addType(p_scalarValues(i)))
 
           case(ExtFE_UCD_VERT_BASED)
              !call ucd_addVarVertBasedVec(rexportFunction,"SclarVar_"//trim(adjustl(svarname)),p_DataX)
-             call ucd_addVariableVertexBased(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
+             call ucd_addVariableVertexBased(rexportFunction,"ScalarVar_"//trim(adjustl(sys_siL(i,3))),p_DataX)
           case(ExtFE_UCD_ELEM_BASED)
              !call ucd_addVarElemBasedVec(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
-             call ucd_addVariableElementBased(rexportFunction,"ScalarVar_"//trim(adjustl(svarname)),p_DataX)
+             call ucd_addVariableElementBased(rexportFunction,"ScalarVar_"//trim(adjustl(sys_siL(i,3))),p_DataX)
         end select
 
      end do
@@ -1110,14 +1239,15 @@ subroutine ExtFE_postprocess_UCD(rpostprocessing)
    ! Assumtion: All Variables in the vector are added the same way!
    ! first on vertex-based => All vertex based etc
    ! We don't need sanity checks as we did them during the init
+   ! Everytime the same: Get how to add them, then call the ucd_addVarxyz with
+   ! the structure and variable name and data_x,data_y, data_z (depending on the dimension)
    if(h_VectorValues .gt. ST_NOHANDLE) then
         call storage_getbase_INT2D(h_VectorValues,p_VectorValues)
         nVecs = ubound(p_VectorValues,1)
         nDim = fefunction%p_rblockDiscr%ndimension
         svarname = ''
         do i=1,nVecs
-            write(svarname,*) i
-            svarname = "VectorVar_" //trim(adjustl(svarname))
+            svarname = "VectorVar_" //trim(adjustl(sys_siL(i,3)))
             select case(nDim)
             case(ExtFE_NDIM1)
 
@@ -1247,6 +1377,7 @@ subroutine ExtFE_init_postprocessing_OutOrigVec(rpostprocessing,rparlist)
                     "writeOutOrigVector1",writeOutOrigVector1)
 
     if(writeOutOrigVector1 .eq. ExtFE_DO) then
+        ! If we want to do that, we need a path where to save
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sOutPathFirstOrigVec",sPathFirst,bdequote=.TRUE.)
         if (sPathFirst .eq. '') then
@@ -1256,6 +1387,7 @@ subroutine ExtFE_init_postprocessing_OutOrigVec(rpostprocessing,rparlist)
                     call sys_halt()
         end if
 
+        ! and we need a format for writing.
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sOutVec1OrigFMT",sFMT1,bdequote=.TRUE.)
         if(sFMT1 .eq. '') then
@@ -1273,6 +1405,7 @@ subroutine ExtFE_init_postprocessing_OutOrigVec(rpostprocessing,rparlist)
                     "writeOutOrigVector2",writeOutOrigVector2)
 
     if(writeOutOrigVector2 .eq. ExtFE_DO) then
+        ! IF we want to do that we need a path
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sOutPathSecondOrigVec", sPathSecond ,bdequote=.TRUE.)
 
@@ -1283,6 +1416,7 @@ subroutine ExtFE_init_postprocessing_OutOrigVec(rpostprocessing,rparlist)
                     call sys_halt()
         end if
 
+        ! And a format for writing
         call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
                         "sOutVec2OrigFMT",sFMT2,bdequote=.TRUE.)
         if(sFMT2 .eq. '') then
@@ -1310,6 +1444,7 @@ subroutine ExtFE_postprocess_OutOrigVec(rpostprocessing)
     comment = 'Converted with the ExtFEcomparer'
 
     if(rpostprocessing%writeOutOrigVector1 .eqv. .TRUE.) then
+        ! Call vecio_writeBlockVectorHR with the according arguments
         call vecio_writeBlockVectorHR(rpostprocessing%OrigVecFirst,'SOLUTION', &
                 bunsorted,0,rpostprocessing%sOrigVecPathOutFirst,&
                 sformat=trim(rpostprocessing%sOrigVec1OutFMT),&
@@ -1332,7 +1467,7 @@ subroutine ExtFE_done_postprocessing_OutOrigVec(rpostprocessing)
 !<input>
    type(t_postprocessing) , intent(inout):: rpostprocessing
 !</input>
-
+    ! Just some pointers to set to NULL()
     rpostprocessing%OrigVecFirst => NULL()
     rpostprocessing%OrigVecSecond => NULL()
 

@@ -40,6 +40,8 @@ subroutine ExtFEcomparer_init_discretisation(rproblem)
     ! better in terms of performance, but we want to have an
     ! easy-to-read-code
     ! In this routine we branch with respect to the dimension
+    ! in the routines ExtFE_init_discretisationxD we branch
+    ! w.r.t. the element-setting
 !</description>
 
 !<inputoutput>
@@ -52,9 +54,11 @@ subroutine ExtFEcomparer_init_discretisation(rproblem)
             call ExtFE_init_discretisation_1D(rproblem)
         case(ExtFE_NDIM2)
             call ExtFE_init_discretisation_2D(rproblem)
+        case(ExtFE_NDIM3)
+            call ExtFE_init_discretisation_3D(rproblem)
         case default
             call output_line(&
-            "The dimension of you problem is not yet implemented, dimension = " &
+            "The dimension of you problem is not implemented, dimension = " &
                 //sys_siL(rproblem%iDimension,10), &
                 OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation")
             call sys_halt()
@@ -90,22 +94,30 @@ end subroutine
 
 
 subroutine ExtFE_init_discretisation_1D_OneElementType(rproblem)
+!<description>
+  ! This routine initialises a discretisation structure for a vector
+  ! that contains 1D-Variables, and all of them use the same element
+  ! type
+!</description>
+
 !<inputoutput>
     ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
+    ! local variables
     integer :: NLMAX, NVAR,i
     type (t_triangulation), pointer :: p_triangulation => NULL()
     type (t_blockDiscretisation), pointer :: p_discretisation => NULL()
-! We need to create a block-discretisation-structure
-! so that we can store one variable in each block
+
+    ! We need to create a block-discretisation-structure
+    ! so that we can store one variable in each block
     NLMAX = rproblem%NLMAX
     NVAR = rproblem%NVAR
     p_triangulation => rproblem%rtriangulation
     p_discretisation => rproblem%rdiscretisation
 
-    ! Init a block discretisation
+    ! Init a block discretisation - 1 block per variable
     call spdiscr_initBlockDiscr(rproblem%rdiscretisation, &
                 NVAR, p_triangulation)
 
@@ -193,10 +205,6 @@ end subroutine
       p_rtriangulation => rproblem%rtriangulation
       p_rdiscretisation => rproblem%rdiscretisation
 
-      ! -----------------------------------------------------------------------
-      ! Initialise discretisation structures for the spatial discretisation
-      ! -----------------------------------------------------------------------
-
       ! Initialise the block discretisation according to the element specifier.
       call ExtFEcomparer_getDiscretisation_2D_elementPair(iElemPairID, &
                p_rdiscretisation,rproblem%rtriangulation, &
@@ -204,7 +212,26 @@ end subroutine
 
   end subroutine
 
-  ! ***************************************************************************
+
+subroutine ExtFE_init_discretisation_3D(rproblem)
+!<description>
+! This is just a spaceholder for the 3D-part that is not implemented
+! yet.
+!</description>
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    call output_line(&
+            "3D is not yet implemented", &
+                OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation_3D")
+            call sys_halt()
+
+end subroutine
+
+! ***************************************************************************
 
 
   subroutine ExtFEcomparer_getDiscretisation_2D_elementPair(ielementType, &

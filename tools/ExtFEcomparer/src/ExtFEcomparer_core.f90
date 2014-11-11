@@ -49,29 +49,33 @@ subroutine ExtFEcomparer_calculate(rproblem_1,rproblem_2, rpostprocessing)
 ! </input>
 
 !<inputoutput>
+  ! The postprocessing structure that gets all results
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 
   ! Do the L2-Calculations if we want to do some
+  ! I prefer the if here instead of an if-statement in
+  ! the routine
   if (rpostprocessing%nL2Calculations .gt. 0 ) then
     call ExtFE_calc_L2(rproblem_1,rproblem_2,rpostprocessing)
   end if
 
   ! Do the point-evaluations and calculations
+  ! I prefer the if here instead of an if-statement in
+  ! the routine
   if (rpostprocessing%nPointCalculations .gt. 0) then
     call ExtFE_calc_pointvalues(rproblem_1,rproblem_2,rpostprocessing)
   end if
 
 
   ! Do the computations neccesary for the UCD-Output
-  ! Sounds weird, but the plan is atm to have the
-  ! option to write out f - g directly
 
   call ExtFE_calc_UCD(rproblem_1,rproblem_2,rpostprocessing)
 
 
   ! Do the neccesary stuff for the vector output
+  ! Is basically just setting some pointers
   call ExtFE_calc_OutOrigVec(rproblem_1,rproblem_2,rpostprocessing)
 
 
@@ -88,6 +92,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
 ! </input>
 
 !<inputoutput>
+! The postprocessing structure that receives all results
   type(t_postprocessing), intent(inout), target :: rpostprocessing
 !</output>
 
@@ -100,10 +105,9 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
   integer :: nL2Calculations
 
   ! pointer to the storage of the postprocessing structure
+  ! where we will find what we want to calculate
   real(DP), dimension(:),  pointer :: p_L2results =>NULL()
   integer, dimension (:,:), pointer :: p_L2Comp => NULL()
-  character, dimension(:), pointer :: p_L2ChiOmega => NULL()
-  character, dimension(:), pointer :: p_L2TriFile => NULL()
   integer(I32), dimension(:), pointer :: p_L2CubRule => NULL()
   ! For the collection we need to convert the scalar
   ! vectors to block vectors
@@ -112,18 +116,17 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
   ! We need cubature information
   type(t_scalarCubatureInfo) :: RcubatureInformation
 
-  ! For the L2-Calculations we need the characteristic
-  ! functions of the domain where we want to calculate
-  character(LEN=ExtFE_STRLEN) :: L2ChiOmega
-
-  ! We need a FE-Vector
+  ! We need a FE-Vector that is evaluated automatically
+  ! during the integral calls
   type(t_fev2Vectors) :: fefunction
 
-    ! We might need it as a temporary storage
+  ! We use this as a storage for the results
   real(DP) :: Dresult
 
   ! To figure out if we jump somewhere or not
   logical :: lOneFunction, lBothFunctions
+  ! and pointers that we set so that we calculate the
+  ! right things
   type(t_vectorScalar), pointer :: rCalcThis => NULL()
   type(t_vectorScalar), pointer :: rFirst => NULL()
   type(t_vectorScalar), pointer :: rSecond => NULL()
@@ -131,98 +134,108 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
 
   ! We also need loop-variables
   integer :: i,k
+  ! and strings for some local output so the user sees that
+  ! calculations are going on
   character(LEN=ExtFE_STRLEN) :: soutput, stmp
-
-
 
   ! Find out how many L2-compuations to do
   nL2Calculations = rpostprocessing%nL2Calculations
 
 
-    call output_lbrk()
-    call output_line('Calculate the requested L2-norms ...')
-    call output_lbrk()
+  call output_lbrk()
+  call output_line('Calculate the requested L2-norms ...')
+  call output_lbrk()
 
-    ! Get the arrays
-    call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
-    call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
-    call storage_getbase_char(rpostprocessing%h_L2ChiOmega,p_L2ChiOmega)
-    call storage_getbase_char(rpostprocessing%h_L2TriFile,p_L2TriFile)
-    call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
+  ! Get the arrays
+  call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
+  call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
+  call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
 
-    ! Attatch the parser to the collection
-    collection%p_rfparserQuickAccess1=>rpostprocessing%pL2ChiOmegaParser
+  ! Attatch the parser to the collection
+  ! It has already parsed the region of interest
+  collection%p_rfparserQuickAccess1=>rpostprocessing%pL2ChiOmegaParser
 
-    ! We calculate the L2-Difference between L2comp(1,i) and L2comp(2,i)
-    ! on L2ChiOmega(i) and use cubature rule L2CubRule(i)
-    ! If one of the components is set to -1, we calculate the L2-Norm of
-    ! the other one
+  ! We calculate the L2-Difference between L2comp(1,i) and L2comp(2,i)
+  ! on L2ChiOmega(i) and use cubature rule L2CubRule(i)
+  ! If one of the components is set to -1, we calculate the L2-Norm of
+  ! the other one
 
-    do i=1,nL2Calculations
+   do i=1,nL2Calculations
 
-        lOneFunction = .FALSE.
-        lBothFunctions = .FALSE.
-        stmp = ''
-        ! Find out what to calculate and set the pointers
-        ! First option: both are > 0 - so we want
-        ! to calculate the difference
-        if( (p_L2Comp(1,i) .gt. 0) .and. &
-            (p_L2comp(2,i) .gt. 0)) then
+      ! Init everything with false and empty in every loop
+      ! so that the branching works
+      lOneFunction = .FALSE.
+      lBothFunctions = .FALSE.
+      stmp = ''
+
+      ! Find out what to calculate and set the pointers
+      ! Pointers rFirst/rSecond points directly to the right component
+      ! of the blockvectors if we calculate a difference
+      ! rCalcThis points directly to the component of the first
+      ! or second function if we want to calculate only a norm and not a difference
+      ! First option: both are > 0 - so we want
+      ! to calculate the difference
+      if( (p_L2Comp(1,i) .gt. 0) .and. &
+          (p_L2comp(2,i) .gt. 0)) then
           lOneFunction = .FALSE.
           lBothFunctions = .TRUE.
           rFirst => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
           rSecond=> rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
           write(stmp,'(A7,I2,A8,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,') - f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
 
-        ! Second option: id1 >0, id2 <=0
-        ! => calculate ||id1||
-        else if((p_L2Comp(1,i) .gt. 0) .and. &
-                (p_L2Comp(2,i) .le. 0)) then
+      ! Second option: id1 >0, id2 <=0
+      ! => calculate ||id1||
+      else if((p_L2Comp(1,i) .gt. 0) .and. &
+              (p_L2Comp(2,i) .le. 0)) then
           lOneFunction = .TRUE.
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_1%coeffVector%RvectorBlock(p_L2Comp(1,i))
           write(stmp,'(A7,I2,A13,I2,A4)') '||f_1(', p_L2comp(1,i) ,')||_L2(Omega_', i, ') = '
 
 
-        ! Third option: id1<=0, id2 >0
-        ! => calculate ||id2||
-        else if((p_L2Comp(1,i) .le. 0) .and. &
-                (p_L2Comp(2,i) .gt. 0)) then
+      ! Third option: id1<=0, id2 >0
+      ! => calculate ||id2||
+      else if((p_L2Comp(1,i) .le. 0) .and. &
+              (p_L2Comp(2,i) .gt. 0)) then
           lOneFunction = .TRUE.
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_2%coeffVector%RvectorBlock(p_L2Comp(2,i))
           write(stmp,'(A7,I2,A13,I2,A4)') '||f_2(', p_L2comp(2,i) ,')||_L2(Omega_', i, ') = '
 
-        else
-            call output_line('You need always one component id that &
-                    &is greater than 0', &
-                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_L2")
-            call sys_halt()
-        end if ! Which component
+      else
+          call output_line('You need always one component id that &
+                   &is greater than 0', &
+                   OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_L2")
+          call sys_halt()
+      end if ! Which component
 
-        ! Now pick up which region of interest
-        ! We know where we stored this information:
-        ! It is in the parser of the postprocessing structure
-        ! We attatched that one to the collection already, we just
-        ! need to tell it which component to use.
-        ! In component i we have parsed the region of interest for
-        ! calculation i
-        collection%IquickAccess(1) = i
+      ! Now pick up which region of interest
+      ! We know where we stored this information:
+      ! It is in the parser of the postprocessing structure
+      ! We attatched that one to the collection already, we just
+      ! need to tell it which component to use.
+      ! In component i we have parsed the region of interest for
+      ! calculation i
+      collection%IquickAccess(1) = i
 
-        ! Here we trigger the real computation
-        if((lOneFunction .eqv. .TRUE.) .AND. &
-            (lBothFunctions .eqv. .FALSE.)) then
-            ! Create the cubature information
-            call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
+      ! Here we trigger the real computation
+      ! Do we calculate a norm or a difference?
+      ! Norm:
+      if((lOneFunction .eqv. .TRUE.) .AND. &
+         (lBothFunctions .eqv. .FALSE.)) then
+         ! Create the cubature information
+          call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
                     RcubatureInformation, p_L2CubRule(i))
-            ! mark the function to be evaluated
-            call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
+          ! mark the function to be evaluated - only function values
+          call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
 
-            ! We need different computation
-            ! routines for each dimension due to the evaluation
-            ! of L2ChiOmega - thats the only difference.
-            ! Therefore we have to branch here again
-            select case (rproblem_1%iDimension)
+          ! We need different computation
+          ! routines for each dimension due to the evaluation
+          ! of L2ChiOmega - thats the only difference.
+          ! The difference is hidden in the parser but still is there
+          ! Therefore we have to branch here again
+          ! Store the result in dresult
+          select case (rproblem_1%iDimension)
               case(ExtFE_NDIM1)
                 call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2norm_onefunc_1D, &
                     rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
@@ -237,64 +250,67 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
                       &not supported', &
                       OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
                 call sys_halt()
-            end select
+          end select
 
-            ! The routine always returns the squared value, so
-            ! take the square-root and store it
-            p_L2results(i) = sqrt(Dresult)
-            ! Release everything
-            call fev2_releaseVectorList(fefunction)
-            call spdiscr_releaseCubStructure(RcubatureInformation)
-            collection%SquickAccess(1) = ''
-            Dresult = -1.0_DP
-            rCalcThis  => NULL()
+          ! The routine always returns the squared value, so
+          ! take the square-root and store it
+          p_L2results(i) = sqrt(Dresult)
+
+          ! Release everything
+          call fev2_releaseVectorList(fefunction)
+          call spdiscr_releaseCubStructure(RcubatureInformation)
+          Dresult = -1.0_DP
+          rCalcThis  => NULL()
+          rFirst => NULL()
+          rSecond => NULL()
+        ! Difference:
         else if ( (lOneFunction .eqv. .FALSE.) .AND. &
                  (lBothFunctions .eqv. .TRUE.)) then
-            ! Create a cubature information
-            call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
-                    RcubatureInformation, p_L2CubRule(i))
+          ! Create a cubature information
+          call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
+                  RcubatureInformation, p_L2CubRule(i))
 
-            ! mark the function to be evaluated
-            call fev2_addVectorToEvalList(fefunction,rFirst,0)
+          ! mark the function to be evaluated
+          call fev2_addVectorToEvalList(fefunction,rFirst,0)
 
-            ! Now the tricky part: We cannot pass the second
-            ! function directly since it lives on another mesh
-            ! so we pass it via the collection
-            ! The collection supports only block-vector as quick-access
-            call lsysbl_createVecFromScalar(rSecond,blockSecond)
-            collection%p_rvectorQuickAccess1 => blockSecond
+          ! Now the tricky part: We cannot pass the second
+          ! function directly since it lives on another mesh
+          ! so we pass it via the collection
+          ! The collection supports only block-vector as quick-access,
+          ! so we have to convert it
+          call lsysbl_createVecFromScalar(rSecond,blockSecond)
+           collection%p_rvectorQuickAccess1 => blockSecond
 
-            ! We need to make it dimension specific because of
-            ! the evaluation of the second function + the evaluation
-            ! of the region of interest
-            select case (rproblem_1%iDimension)
-              case(ExtFE_NDIM1)
-                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_1D, &
-                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
-              case(ExtFE_NDIM2)
-                call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_2D, &
-                    rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
-              case default
-                call output_line('Dimension of your problem is &
-                      &not supported', &
-                      OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
-                call sys_halt()
-            end select
+          ! We need to make it dimension specific because of
+          ! the evaluation of the second function + the evaluation
+          ! of the region of interest
+          select case (rproblem_1%iDimension)
+             case(ExtFE_NDIM1)
+               call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_1D, &
+                   rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+             case(ExtFE_NDIM2)
+               call bma_buildIntegral(Dresult,BMA_CALC_STANDARD,calc_L2error_twofunc_2D, &
+                   rcollection=collection,revalVectors=fefunction,rcubatureInfo=RcubatureInformation)
+             case default
+               call output_line('Dimension of your problem is &
+                     &not supported', &
+                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate")
+               call sys_halt()
+          end select
 
 
-            ! The routine always returns the squared value, so
-            ! take the square-root and store it
-            p_L2results(i) = sqrt(Dresult)
-            ! Release everything
-            call fev2_releaseVectorList(fefunction)
-            call spdiscr_releaseCubStructure(RcubatureInformation)
-            collection%SquickAccess(1) = ''
-            Dresult = -1.0_DP
-            collection%p_rvectorQuickAccess1 => NULL()
-            call lsysbl_releaseVector(blockSecond)
-            rFirst => NULL()
-            rSecond=>NULL()
-            rCalcThis=>NULL()
+          ! The routine always returns the squared value, so
+          ! take the square-root and store it
+          p_L2results(i) = sqrt(Dresult)
+          ! Release everything
+          call fev2_releaseVectorList(fefunction)
+          call spdiscr_releaseCubStructure(RcubatureInformation)
+          Dresult = -1.0_DP
+          collection%p_rvectorQuickAccess1 => NULL()
+          call lsysbl_releaseVector(blockSecond)
+          rFirst => NULL()
+          rSecond=>NULL()
+          rCalcThis=>NULL()
         end if ! triggering L2 calculations
 
     ! Now generate some output on the terminal so that the user
@@ -306,10 +322,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
     call output_line(trim(trim(stmp) // soutput), &
                     OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 
-    end do ! Loop over all L2-Calculations
-
-
-
+  end do ! Loop over all L2-Calculations
 
 end subroutine
 
@@ -320,14 +333,16 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
 ! 2 Problem structures that contain everything
   type(t_problem), intent(inout) :: rproblem_1, rproblem_2
 ! </input>
-! </input>
+
 
 !<inputoutput>
+! The postprocessing structure that receives all results
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</output>
 
 ! Local variables
 
+  ! Pointer to the arrays
   real(DP), dimension(:), pointer :: p_PointResults => NULL()
   real(DP), dimension(:,:), pointer :: p_PointCoords => NULL()
   integer, dimension(:,:), pointer :: p_PointFuncComp => NULL()
@@ -337,6 +352,7 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
 
   ! To figure out if we jump somewhere or not
   logical :: lOneFunction, lBothFunctions
+  ! Pointers to point to the function + comp. we want to calc
   type(t_vectorScalar), pointer :: rCalcThis => NULL()
   type(t_vectorScalar), pointer :: rFirst => NULL()
   type(t_vectorScalar), pointer :: rSecond => NULL()
@@ -344,10 +360,12 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
   real(DP) :: Dresult
   ! We also need loop-variables
   integer :: i,k
+
+  ! and strings for local output
   character(LEN=ExtFE_STRLEN) :: sparam
   character(LEN=ExtFE_STRLEN) :: soutput, stmp, stmp2
 
-  ! For the output we need some string
+  ! For the output we need the names of the derivatives
   character(LEN=6), dimension(ExtFE_NumDerivs) :: sderivnames
   ! We start to count the derivatives from 0, so
   ! we need to shift by 1
@@ -358,27 +376,33 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
 
   nPointEvaluations = rpostprocessing%nPointCalculations
 
-    call output_lbrk()
-    call output_line('Calculate the requested pointvalues ...')
-    call output_lbrk()
+  call output_lbrk()
+  call output_line('Calculate the requested pointvalues ...')
+  call output_lbrk()
 
-    ! get the arrays
-    call storage_getbase_double2D(rpostprocessing%h_PointCoordinates,p_PointCoords)
-    call storage_getbase_double(rpostprocessing%h_PointResults,p_PointResults)
-    call storage_getbase_int2D(rpostprocessing%h_PointFuncComponents,p_PointFuncComp)
+  ! get the arrays with the coordinates, the results and the components
+  ! as we set it up in the init of the postprocessing
+  call storage_getbase_double2D(rpostprocessing%h_PointCoordinates,p_PointCoords)
+  call storage_getbase_double(rpostprocessing%h_PointResults,p_PointResults)
+  call storage_getbase_int2D(rpostprocessing%h_PointFuncComponents,p_PointFuncComp)
 
-    ! Allocate the evaluationpoint
-    allocate(DEvalPoint(rproblem_1%iDimension))
+  ! Allocate the evaluationpoint
+  ! Needs to be done as we do some wrapping and call several
+  ! routines. This way it is easier to read
+  allocate(DEvalPoint(rproblem_1%iDimension))
 
-    ! Now prepare and then trigger the
-    ! evaluations
-    do i=1,nPointEvaluations
-        lOneFunction = .false.
-        lBothFunctions = .false.
-        iDeriv = -1
+  ! Now prepare and then trigger the
+  ! evaluations
+  do i=1,nPointEvaluations
+      lOneFunction = .false.
+      lBothFunctions = .false.
+      iDeriv = -1
 
-        if( (p_PointFuncComp(1,i) .gt. 0) .and. &
-            (p_PointFuncComp(3,i) .gt. 0)) then
+      ! We calculate a difference, so set both pointers
+      ! and prepare local output string: (deriv (f_1(comp1) - deriv f_2(comp2))
+      ! We cannot store the derivative ID in this case since we would need 2
+      if( (p_PointFuncComp(1,i) .gt. 0) .and. &
+          (p_PointFuncComp(3,i) .gt. 0)) then
           lOneFunction = .FALSE.
           lBothFunctions = .TRUE.
           rFirst => rproblem_1%coeffVector%RvectorBlock(p_PointFuncComp(1,i))
@@ -391,8 +415,11 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
           stmp2 = trim(stmp2) // ')'
           stmp = trim(stmp) // trim(stmp2)
 
-        else if((p_PointFuncComp(1,i) .gt. 0) .and. &
-                (p_PointFuncComp(3,i) .le. 0)) then
+      ! We evaluate only 1 function. Set the rCalcThis pointer
+      ! and prepare local output string: (deriv (f_1(comp1)))
+      ! Store the local derivative Identifier in iDeriv
+      else if((p_PointFuncComp(1,i) .gt. 0) .and. &
+              (p_PointFuncComp(3,i) .le. 0)) then
           lOneFunction = .TRUE.
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_1%coeffVector%RvectorBlock(p_PointFuncComp(1,i))
@@ -401,8 +428,11 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
           stmp = (sderivnames(p_PointFuncComp(2,i)+1)) // trim(stmp)
           stmp = '(' // trim(stmp)
           stmp = trim(stmp) // ')'
-        else if((p_PointFuncComp(1,i) .le. 0) .and. &
-                (p_PointFuncComp(3,i) .gt. 0)) then
+      ! We evaluate only 1 function. Set the rCalcThis pointer
+      ! and prepare local output string: (deriv (f_2(comp2)))
+      ! Store the local derivative ID in iDeriv
+      else if((p_PointFuncComp(1,i) .le. 0) .and. &
+              (p_PointFuncComp(3,i) .gt. 0)) then
           lOneFunction = .TRUE.
           lBothFunctions = .FALSE.
           rCalcThis => rproblem_2%coeffVector%RvectorBlock(p_PointFuncComp(3,i))
@@ -411,47 +441,68 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
           stmp = (sderivnames(p_PointFuncComp(4,i)+1)) // trim(stmp)
           stmp = '(' // trim(stmp)
           stmp = trim(stmp) // ')'
-        else
-            call output_line('You need always one component id that &
-                    &is greater than 0', &
-                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_pointvalues")
-            call sys_halt()
-        end if ! Which component
+      else
+          call output_line('You need always one component id that &
+                  &is greater than 0', &
+                  OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_calculate_pointvalues")
+          call sys_halt()
+      end if ! Which component
 
-        ! Now we can do the calculations
-        ! Put the point in the right shape
-        do k=1,rproblem_1%iDimension
-            DEvalPoint(k) = p_PointCoords(k,i)
-        end do
 
-        if((lOneFunction .eqv. .true.) .AND. &
-            (lBothFunctions .eqv. .false.)) then
-            call ExtFE_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
-            p_PointResults(i) = Dresult
+      ! Now we can do the calculations
+      ! Put the point in the right shape
+      do k=1,rproblem_1%iDimension
+           DEvalPoint(k) = p_PointCoords(k,i)
+      end do
 
-        else if((lOneFunction .eqv. .false.) .AND. &
-                (lBothFunctions .eqv. .true.)) then
-            iDeriv = p_PointFuncComp(2,i)
-            call ExtFE_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
-            p_PointResults(i) = Dresult
-            iDeriv = p_PointFuncComp(4,i)
-            call ExtFE_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
-            p_PointResults(i) = p_PointResults(i) - Dresult
+      ! and trigger the computation
+      ! Only 1 function:
+      if((lOneFunction .eqv. .true.) .AND. &
+         (lBothFunctions .eqv. .false.)) then
 
-        end if
+         ! Call the wrapper that translates the ExtFE-Variables to
+         ! global featvariables and then triggers the real computation
+         ! We are in the evaluation case, so we have the derivative we want
+         ! in iDeriv
+         call ExtFE_eval_function(rCalcThis,DEvalPoint,iDeriv,Dresult)
 
-        stmp = trim(stmp) // '('
-        write(stmp2,'(F8.4)') p_PointCoords(1,i)
-        stmp = trim(stmp) // trim(stmp2)
-        do k=2,rproblem_1%iDimension
-            write(stmp2,'(A1,F8.4)') ',', p_PointCoords(k,i)
-            stmp = trim(stmp) // trim(stmp2)
-            stmp = stmp // ' '
-        end do
-        stmp = trim(stmp) // ' ) '
-        write(stmp2,'(F8.5)') p_PointResults(i)
-        soutput = trim(stmp) // ' = ' // trim(stmp2)
-        call output_line(soutput,OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
+         ! Save the result in the array
+         p_PointResults(i) = Dresult
+
+      ! Both functions -> calc f1 - f2
+      else if((lOneFunction .eqv. .false.) .AND. &
+              (lBothFunctions .eqv. .true.)) then
+          ! Store the derivative ID of the first function in iDeriv
+          iDeriv = p_PointFuncComp(2,i)
+          ! Call the wrapper with the first function
+          call ExtFE_eval_function(rFirst,DEvalPoint,iDeriv,Dresult)
+          ! And save it in the array
+          p_PointResults(i) = Dresult
+
+          ! Store the derivative ID of the second function in iDeriv
+          iDeriv = p_PointFuncComp(4,i)
+          ! call the wrapper with the second function
+          call ExtFE_eval_function(rSecond,DEvalPoint,iDeriv,Dresult)
+          ! and subtract the result from p_PointResults(i)
+          p_PointResults(i) = p_PointResults(i) - Dresult
+
+      end if
+
+      ! We still have to add the point coordinates and the result
+      ! to our local output string:
+      stmp = trim(stmp) // '('
+      write(stmp2,'(F8.4)') p_PointCoords(1,i)
+      stmp = trim(stmp) // trim(stmp2)
+      do k=2,rproblem_1%iDimension
+          write(stmp2,'(A1,F8.4)') ',', p_PointCoords(k,i)
+          stmp = trim(stmp) // trim(stmp2)
+          stmp = stmp // ' '
+      end do
+      stmp = trim(stmp) // ' ) '
+      write(stmp2,'(F8.5)') p_PointResults(i)
+      soutput = trim(stmp) // ' = ' // trim(stmp2)
+      ! Make the output
+      call output_line(soutput,OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 
 
     end do ! all point calculations
@@ -459,16 +510,14 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
     ! clean up
     deallocate(DEvalPoint)
 
-
 end subroutine
 
 
 
-! Do the computations/preparations neccesary for the UCD-Output
-! Sounds weird, but the plan is atm to have the
-! option to write out f - g directly
-! This routine holds the place for it
-! Other thing is: We need to set the pointers
+! Do the computations/preparations necessary for the UCD-Output
+! This includes: All projections that are necessary and setting
+! of pointers
+
 subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
 
 !<input>
@@ -477,6 +526,7 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
 ! </input>
 
 !<inputoutput>
+! The Postprocessing structure that receives all results
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</output>
 
@@ -492,6 +542,8 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
   !----------------------------------------------!
   nDim = rproblem_1%rdiscretisation%ndimension
 
+  ! The element on that we want to project.
+  ! The id depends on the dimension
   select case(nDim)
     case(ExtFE_NDIM1)
         ID_ProjectConst = EL_P0_1D
@@ -504,17 +556,24 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
         ID_ProjectLin = EL_Q1_3D
     end select
 
+  ! If we want to write out the meshes, we need to set the pointers in the postprocessing
+  ! structure to the triangulations of the functions
   if(rpostprocessing%ucd_OUT_meshes .eqv. .true.) then
     rpostprocessing%UCD_MeshOnePointer => rproblem_1%coeffVector%p_rblockDiscr%p_rtriangulation
     rpostprocessing%UCD_MeshTwoPointer => rproblem_2%coeffVector%p_rblockDiscr%p_rtriangulation
   end if
 
+  ! Write out first function?
   if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true. ) then
+
     nVar = rproblem_1%coeffVector%nblocks
+    ! We need a block-discretisation so that we can do the projection
     allocate(rpostprocessing%UCDBlockDiscrFirst)
     call spdiscr_duplicateBlockDiscr(rproblem_1%coeffVector%p_rblockDiscr,&
                     rpostprocessing%UCDBlockDiscrFirst,bshare=.FALSE.)
 
+    ! Now lets see how which variable we want to project in which way and
+    ! create an according discretisation in the according block
     call storage_getbase_int(rpostprocessing%h_UCD_AddElemProjectFirst,p_IntPointerElemProject)
 
     do i=1,nVar
@@ -531,7 +590,7 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
         end select
     end do
 
-    ! Now init the projection vector
+    ! Now init the projection vector by the discretisation
     allocate(rpostprocessing%UCD_feFunction_first_orig)
     call lsysbl_createVector(rpostprocessing%UCDBlockDiscrFirst,rpostprocessing%UCD_feFunction_first_orig)
 
@@ -542,11 +601,17 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
     end do
   end if ! UCD_OUT_First_Function = TRUE
 
+
+  ! Write out second function?
   if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true. ) then
     nVar = rproblem_2%coeffVector%nblocks
+    ! We need a block-discretisation so that we can do the projection
     allocate(rpostprocessing%UCDBlockDiscrSecond)
     call spdiscr_duplicateBlockDiscr(rproblem_2%coeffVector%p_rblockDiscr,&
                     rpostprocessing%UCDBlockDiscrSecond,bshare=.FALSE.)
+
+    ! Now lets see how which variable we want to project in which way and
+    ! create an according discretisation in the according block
 
     call storage_getbase_int(rpostprocessing%h_UCD_AddElemProjectSecond,p_IntPointerElemProject)
 
@@ -564,7 +629,7 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
         end select
     end do
 
-    ! Now init the projection vector
+    ! Now init the projection vector by the discretisation
     allocate(rpostprocessing%UCD_feFunction_second_orig)
     call lsysbl_createVector(rpostprocessing%UCDBlockDiscrSecond,rpostprocessing%UCD_feFunction_second_orig)
 
@@ -582,8 +647,7 @@ end subroutine
 ! Do the preparations neccesary for the Vector-Output
 ! Sounds weird,  but thats the structure of the code.
 ! Here we set up everything and store it in the postprocessing structure
-! option to write out f - g directly
-! This routine holds the place for it
+
 subroutine ExtFE_calc_OutOrigVec(rproblem_1,rproblem_2, rpostprocessing)
 
 !<input>
@@ -592,6 +656,7 @@ subroutine ExtFE_calc_OutOrigVec(rproblem_1,rproblem_2, rpostprocessing)
 ! </input>
 
 !<inputoutput>
+! The postprocessing structure that receives everything we do
   type(t_postprocessing), intent(inout) :: rpostprocessing
 !</output>
 
@@ -652,8 +717,6 @@ subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
     real(DP), dimension(:,:,:), pointer :: p_Dpoints => NULL()
     integer, dimension(:), pointer :: p_Ielements => NULL()
 
-    ! Now we can evaluate the area description with the parser-tools
-
     ! Get cubature weights
     p_DcubWeight => rassemblyData%p_DcubWeight
 
@@ -683,6 +746,7 @@ subroutine calc_L2norm_onefunc_1D(Dintvalue,rassemblyData,rintAssembly,&
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
           ! We saved this one in the collection structure already
+          ! and parsed it
 
            call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
                         rcollection%IquickAccess(1),(/dx/),work)
@@ -816,6 +880,7 @@ subroutine calc_L2error_twofunc_1D(Dintvalue,rassemblyData,rintAssembly,&
                 ! evaluation routine
                 call fevl_evaluate(DER_FUNC1D,dFuncValue,secondFunction, &
                     evaluationPoint,Ielements=iElement)
+                ! Calculate the integral value
                 dval1 = (p_Dfunc1(icubp,iel) - dFuncValue(1))**2
                 Dintvalue(1) = Dintvalue(1) + dval1*p_DcubWeight(icubp,iel)
           end if
@@ -900,6 +965,7 @@ subroutine calc_L2norm_onefunc_2D(Dintvalue,rassemblyData,rintAssembly,&
           ! Now we check if we need to work or not
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
+          ! We already parsed everything
 
            call fparser_evalFunction(rcollection%p_rfparserQuickAccess1, &
                     rcollection%IquickAccess(1),(/dx,dy/),work)
@@ -1002,6 +1068,7 @@ subroutine calc_L2error_twofunc_2D(Dintvalue,rassemblyData,rintAssembly,&
           ! Now we check if we need to work or not
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
+          ! We already parsed everything
 
            call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
                     rcollection%IquickAccess(1),(/dx,dy/),work)
@@ -1102,6 +1169,7 @@ subroutine calc_L2norm_onefunc_3D(Dintvalue,rassemblyData,rintAssembly,&
           ! Now we check if we need to work or not
           ! If we need to work, the domainDescription
           ! will return a 1, if not it will return a 0
+          ! We already parsed everything
 
            call fparser_evalFunction(rcollection%p_rfparserQuickAccess1,&
                         rcollection%IquickAccess(1),(/dx,dy,dz/),work)
@@ -1168,6 +1236,7 @@ subroutine ExtFE_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
         ! We have to find out the element Nr.
         call tsrch_getElem_BruteForce(Dpoint, &
            fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
+        ! Now translate the ExtFE_derivative names to global Feat2
         select case(CDeriv_ExtFE)
             case(ExtFE_DER_FUNC_1D)
                 CDeriv = DER_FUNC1D
@@ -1178,10 +1247,12 @@ subroutine ExtFE_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_eval_function")
                     call sys_halt()
         end select
+        ! Save the evaluation point
         allocate(evalPoint(ExtFE_NDIM1,1))
         evalPoint(1,1) = Dpoint(1)
 
       case(ExtFE_NDIM2)
+        ! Find the element
         call tsrch_getElem_raytrace2D(Dpoint, &
             fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
         ! if we did not find it, go to bruteforce
@@ -1190,6 +1261,7 @@ subroutine ExtFE_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
                 fefunction%p_rspatialDiscr%p_rtriangulation,iElement)
         end if
 
+        ! Translate the local ExtFE-Names to global Feat2
         select case(CDeriv_ExtFE)
             case(ExtFE_DER_FUNC_2D)
                 CDeriv = DER_FUNC2D

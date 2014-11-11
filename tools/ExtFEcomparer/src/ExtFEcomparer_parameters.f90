@@ -71,6 +71,8 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
 
 !<input>
   ! A string to define the section
+  ! Must be "ExtFE-FIRST" or "ExtFE-SECOND" to specify
+  ! which function we init.
   character(LEN=*), intent(in) :: section
 !<input>
 
@@ -96,7 +98,7 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
                               "NLMAX",ilvmax)
     rproblem%NLMAX=ilvmax
 
-
+    ! Get the element setting: One element or an ID of a pair?
     call parlst_getvalue_int(rproblem%rparamlist,section, &
                             "iElementSetting",tmpvalue)
     rproblem%elementSetting = tmpvalue
@@ -142,6 +144,7 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
         rproblem%sPRMFile = sPRMFile
     end if
 
+    ! Get the path of the mesh
     call parlst_getvalue_string (rproblem%rparamList,section,&
                                  "sMesh",sTRIFile,bdequote=.true.)
     rproblem%sTRIFile = sTRIFile
@@ -151,14 +154,16 @@ subroutine ExtFEcomparer_init_parameters(rproblem, section)
                                  "sVector",sVectorFile,bdequote=.true.)
     rproblem%sVectorFile = sVectorFile
 
+    ! Get the format identifier telling us what we have
+    ! in the vector file
     call parlst_getvalue_int(rproblem%rparamlist,section, &
                             "sFileFormat",tmpvalue)
     rproblem%vectorFileFormat = tmpvalue
-
+    ! Written out by write_blockVectorHR or something else?
     call parlst_getvalue_int(rproblem%rparamlist,section, &
                             "sVectorType", tmpvalue)
     rproblem%vectorType = tmpvalue
-
+    ! How many variables are in the vector?
     call parlst_getvalue_int(rproblem%rparamlist,section, &
                             "iNVAR", tmpvalue)
     rproblem%NVAR = tmpvalue

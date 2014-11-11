@@ -80,7 +80,8 @@ sUCDElemProjectFirstFunction = 1 1 0
 # 1: Vertex-Based
 # 2: Element-Based
 # ith entry for variable i. Assumtion: All variables in one
-# vector are added the same way!
+# vector are added the same way! However, if we have n
+# components in the vector, you have to enter n values!
 # Note that not all combinations of add-type and projection work
 # or give right results, ie setting a variable for Q0 and adding it vertex-based
 # does not work! (Think how a result could look like, what are the values in the corners?)
