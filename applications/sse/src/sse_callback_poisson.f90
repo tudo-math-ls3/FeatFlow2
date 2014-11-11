@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> sse_callback </name>
+!# <name> sse_callback_poisson </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -75,7 +75,7 @@
 !# </purpose>
 !##############################################################################
 
-module sse_callback
+module sse_callback_poisson
 
   use fsystem
   use storage
@@ -1356,4 +1356,4 @@ contains
 
   end subroutine getAnalyticValues_Poisson
 
-end module sse_callback
+end module sse_callback_poisson

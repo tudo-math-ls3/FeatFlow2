@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> sse_callback </name>
+!# <name> sse_callback_sse </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -112,7 +112,7 @@
 !# </purpose>
 !##############################################################################
 
-module sse_callback
+module sse_callback_sse
 
   use fsystem
   use storage
@@ -5237,5 +5237,5 @@ contains
 #endif
 
   end subroutine getAnalyticVelocities_SSE
-
-end module sse_callback
+  
+end module sse_callback_sse
