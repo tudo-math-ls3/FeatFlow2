@@ -171,8 +171,8 @@ module ExtFEcomparer_typedefs
     character(LEN=ExtFE_STRLEN) :: sOrigVecPathOutSecond
     character(LEN=ExtFE_STRLEN) :: sOrigVec1OutFMT
     character(LEN=ExtFE_STRLEN) :: sOrigVec2OutFMT
-    type(t_vectorBlock), pointer :: OrigVecFirst => NULL()
-    type(t_vectorBlock), pointer :: OrigVecSecond => NULL()
+    type(t_vectorBlock), pointer :: OrigVecFirst => null()
+    type(t_vectorBlock), pointer :: OrigVecSecond => null()
 
 
     ! Everything regarding L2-Output and calculations
@@ -214,14 +214,14 @@ module ExtFEcomparer_typedefs
     logical :: ucd_OUT_orig_functions_two = .false.
     character(LEN=ExtFE_STRLEN) :: UCD_meshOneOutPath
     character(LEN=ExtFE_STRLEN) :: UCD_meshTwoOutPath
-    type(t_triangulation), pointer :: UCD_MeshOnePointer => NULL()
-    type(t_triangulation), pointer :: UCD_MeshTwoPointer => NULL()
+    type(t_triangulation), pointer :: UCD_MeshOnePointer => null()
+    type(t_triangulation), pointer :: UCD_MeshTwoPointer => null()
     character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionOneOrigOutPath
     character(LEN=ExtFE_STRLEN) :: UCD_FEfunctionTwoOrigOutPath
-    type(t_vectorBlock), allocatable :: UCD_feFunction_first_orig
-    type(t_vectorBlock), allocatable :: UCD_feFunction_second_orig
-    type(t_blockDiscretisation), allocatable :: UCDBlockDiscrFirst
-    type(t_blockDiscretisation), allocatable :: UCDBlockDiscrSecond
+    type(t_vectorBlock), pointer :: UCD_feFunction_first_orig => null()
+    type(t_vectorBlock), pointer :: UCD_feFunction_second_orig => null()
+    type(t_blockDiscretisation), pointer :: UCDBlockDiscrFirst => null()
+    type(t_blockDiscretisation), pointer :: UCDBlockDiscrSecond => null()
     integer :: h_UCD_VecsFirstOrig = ST_NOHANDLE
     integer :: h_UCD_ScalarFirstOrig = ST_NOHANDLE
     integer :: h_UCD_VecsSecondOrig = ST_NOHANDLE
