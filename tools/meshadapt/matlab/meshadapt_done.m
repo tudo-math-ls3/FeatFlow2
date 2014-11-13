@@ -17,9 +17,3 @@ clear global lp_meshadapt
 
 % Clean up the storage management, finish
 calllib('meshadapt', 'storage_done', [])
-
-% Unload shared library
-% WARNING: Newer Matlab versions allow unloading of a shared library
-%          only once. That is, loading the library, unloading it and
-%          loading it again will cause a segmentation fault.
-unloadlibrary meshadapt

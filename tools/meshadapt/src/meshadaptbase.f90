@@ -221,27 +221,27 @@ contains
     ! Read TRI and PRM file (if it exists)
     select case(ndim)
     case (1)
-      call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+      call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
       call tria_readTriFile1D(rmeshAdapt%rtriangulation,&
-          './'//trim(smesh)//'.tri')
+          trim(smesh)//'.tri')
     case (2)
-      inquire(file='./'//trim(smesh)//'.prm', exist=bhasPRMfile)
+      inquire(file=trim(smesh)//'.prm', exist=bhasPRMfile)
       if (bhasPRMfile) then
         allocate(rmeshAdapt%rboundary)
-        call output_line("Reading boundary from './"//trim(smesh)//".prm'...")
-        call boundary_read_prm(rmeshAdapt%rboundary, './'//trim(smesh)//'.prm')
-        call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+        call output_line("Reading boundary from '"//trim(smesh)//".prm'...")
+        call boundary_read_prm(rmeshAdapt%rboundary, trim(smesh)//'.prm')
+        call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
         call tria_readTriFile2D(rmeshAdapt%rtriangulation,&
-            './'//trim(smesh)//'.tri', rmeshAdapt%rboundary)
+            trim(smesh)//'.tri', rmeshAdapt%rboundary)
       else
-        call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+        call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
         call tria_readTriFile2D(rmeshAdapt%rtriangulation,&
-            './'//trim(smesh)//'.tri')
+            trim(smesh)//'.tri')
       end if
     case (3)
-      call output_line("Reading mesh from './"//trim(smesh)//".tri'...")
+      call output_line("Reading mesh from '"//trim(smesh)//".tri'...")
       call tria_readTriFile3D (rmeshAdapt%rtriangulation,&
-          './'//trim(smesh)//'.tri')
+          trim(smesh)//'.tri')
     case default
       call output_line("Invalid spatial dimension!",&
           OU_CLASS_ERROR,OU_MODE_STD,"madapt_init")
@@ -696,8 +696,8 @@ contains
     end if
 
     ! Read indicator vector
-    call output_line("Reading indicator field from './"//trim(sindicator)//"'...")
-    call io_openFileForReading('./'//trim(sindicator), iunit, .true.)
+    call output_line("Reading indicator field from '"//trim(sindicator)//"'...")
+    call io_openFileForReading(trim(sindicator), iunit, .true.)
 
     ! Read first line from file
     read(iunit, fmt=*) nel
@@ -833,13 +833,13 @@ contains
 
     case (SIGUSR2) !----- Export mesh to file ----------------------------------
 
-      call output_line("Exporting triangulation to './"//&
+      call output_line("Exporting triangulation to '"//&
           trim(smesh)//"_ref.tri'...")
       if (associated(rmeshAdapt%rboundary)) then
-        call tria_exportTriFile(rmeshAdapt%rtriangulation, './'//&
+        call tria_exportTriFile(rmeshAdapt%rtriangulation,&
             trim(smesh)//'_ref.tri', TRI_FMT_STANDARD)
       else
-        call tria_exportTriFile(rmeshAdapt%rtriangulation, './'//&
+        call tria_exportTriFile(rmeshAdapt%rtriangulation,&
             trim(smesh)//'_ref.tri', TRI_FMT_NOPARAMETRISATION)
       end if
 

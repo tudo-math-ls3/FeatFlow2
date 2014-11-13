@@ -42,8 +42,11 @@ if nargin > 0
     end
 end
 
+% Load mesh adaptation library
+meshadapt_load(compiler);
+
 % Initialisation
-meshadapt_init(ndim,smesh,compiler);
+meshadapt_init(ndim,smesh);
 
 % Get data from adaptation structure
 [nel,nvt,coords,vertices] = meshadapt_data(genTria,'nel','nvt','coords','vertices');
@@ -115,4 +118,5 @@ title('coarsened mesh')
 
 % Finalisation
 meshadapt_done();
+meshadapt_unload();
 end
