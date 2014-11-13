@@ -1912,8 +1912,9 @@ contains
           ! above to check if the solution got stationary.
           dtimeDerivative = cc_timeDerivative (&
                rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl, &
-               rvector, rprevTimeStepSolution, rtimestepping%dtstep, rtempBlock1, &
-               rtimeDerivative)
+               rvector, rprevMacroTimeStepSolution, &
+               rproblem%rtimedependence%dtime - dprevMacroTimeStepTime, &
+               rtempBlock1, rtimeDerivative)
 
           ! Print the results of the time analysis.
 
