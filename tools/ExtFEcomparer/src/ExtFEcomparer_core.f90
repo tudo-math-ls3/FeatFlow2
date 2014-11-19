@@ -499,8 +499,8 @@ subroutine ExtFE_calc_pointvalues(rproblem_1,rproblem_2, rpostprocessing)
           stmp = stmp // ' '
       end do
       stmp = trim(stmp) // ' ) '
-      write(stmp2,'(F8.5)') p_PointResults(i)
-      soutput = trim(stmp) // ' = ' // trim(stmp2)
+      write(stmp2,'(F20.10)') p_PointResults(i)
+      soutput = trim(stmp) // ' = ' // trim(adjustl(stmp2))
       ! Make the output
       call output_line(soutput,OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 
@@ -534,6 +534,7 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
   integer :: nDim, nVar,i
   integer, dimension(:), pointer :: p_IntPointerElemProject
   integer(I32) :: ID_ProjectConst, ID_ProjectLin
+  real(DP), dimension(:), pointer :: p_VecEntries
 
 
   !----------------------------------------------!
@@ -569,8 +570,8 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
     nVar = rproblem_1%coeffVector%nblocks
     ! We need a block-discretisation so that we can do the projection
     allocate(rpostprocessing%UCDBlockDiscrFirst)
-    call spdiscr_duplicateBlockDiscr(rproblem_1%coeffVector%p_rblockDiscr,&
-                    rpostprocessing%UCDBlockDiscrFirst,bshare=.FALSE.)
+    call spdiscr_initBlockDiscr(rpostprocessing%UCDBlockDiscrFirst,nVar,&
+                    rproblem_1%coeffVector%p_rblockDiscr%p_rtriangulation)
 
     ! Now lets see how which variable we want to project in which way and
     ! create an according discretisation in the according block
@@ -596,9 +597,18 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
 
     ! Project the solution to the UCD_OUT_Vector
     do i=1,nVar
-        call spdp_projectSolutionScalar(rproblem_1%coeffVector%RvectorBlock(i),&
-                rpostprocessing%UCD_feFunction_first_orig%RvectorBlock(i) )
+        call lsyssc_getbase_double(rpostprocessing%UCD_feFunction_first_orig%RvectorBlock(i),p_VecEntries)
+
+        select case(p_IntPointerElemProject(i))
+
+        case(ExtFE_UCD_POLY_CONST)
+            call spdp_projectToCells(rproblem_1%coeffVector%RvectorBlock(i),p_VecEntries)
+        case(ExtFE_UCD_POLY_LINEAR)
+            call spdp_projectToVertices(rproblem_1%coeffVector%RvectorBlock(i),p_VecEntries)
+        end select
+        p_VecEntries => NULL()
     end do
+    p_IntPointerElemProject => NULL()
   end if ! UCD_OUT_First_Function = TRUE
 
 
@@ -607,8 +617,8 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
     nVar = rproblem_2%coeffVector%nblocks
     ! We need a block-discretisation so that we can do the projection
     allocate(rpostprocessing%UCDBlockDiscrSecond)
-    call spdiscr_duplicateBlockDiscr(rproblem_2%coeffVector%p_rblockDiscr,&
-                    rpostprocessing%UCDBlockDiscrSecond,bshare=.FALSE.)
+    call spdiscr_initBlockDiscr(rpostprocessing%UCDBlockDiscrSecond,nVar,&
+                    rproblem_2%coeffVector%p_rblockDiscr%p_rtriangulation)
 
     ! Now lets see how which variable we want to project in which way and
     ! create an according discretisation in the according block
@@ -633,11 +643,23 @@ subroutine ExtFE_calc_UCD(rproblem_1,rproblem_2, rpostprocessing)
     allocate(rpostprocessing%UCD_feFunction_second_orig)
     call lsysbl_createVector(rpostprocessing%UCDBlockDiscrSecond,rpostprocessing%UCD_feFunction_second_orig)
 
+
     ! Project the solution to the UCD_OUT_Vector
     do i=1,nVar
-        call spdp_projectSolutionScalar(rproblem_2%coeffVector%RvectorBlock(i),&
-                rpostprocessing%UCD_feFunction_second_orig%RvectorBlock(i) )
+        call lsyssc_getbase_double(rpostprocessing%UCD_feFunction_second_orig%RvectorBlock(i),p_VecEntries)
+
+        select case(p_IntPointerElemProject(i))
+
+        case(ExtFE_UCD_POLY_CONST)
+            call spdp_projectToCells(rproblem_2%coeffVector%RvectorBlock(i),p_VecEntries)
+        case(ExtFE_UCD_POLY_LINEAR)
+            call spdp_projectToVertices(rproblem_2%coeffVector%RvectorBlock(i),p_VecEntries)
+        end select
+        p_VecEntries => NULL()
     end do
+
+    p_IntPointerElemProject => NULL()
+
   end if ! UCD_OUT_Second_Function = TRUE
 
 
@@ -1202,9 +1224,9 @@ end subroutine
 subroutine ExtFE_eval_function(fefunction,Dpoint,CDeriv_ExtFE,Dvalue)
     !<intput>
     ! The function that we want to evaluate
-    type(t_vectorScalar), intent(in) :: fefunction
+    type(t_vectorScalar), intent(inout) :: fefunction
     ! The point where we want to evaluate
-    real(DP), dimension(:), intent(in)  :: Dpoint
+    real(DP), dimension(:), intent(inout)  :: Dpoint
     ! Which derivative
     integer, intent(in)  :: CDeriv_ExtFE
     !</input>

@@ -37,6 +37,11 @@
 program ExtFEcomparer
 
   use ExtFEcomparer_main
+  use ExtFEcomparer_parameters
+
+  use fsystem
+  use genoutput
+  use storage
   use fparser
 
   implicit none
@@ -67,8 +72,7 @@ program ExtFEcomparer
   call fparser_init ()
 
   call output_lbrk ()
-  call output_line ("Start to compare the solutions")
-  call output_separator (OU_SEP_MINUS)
+  call output_line ("Starting the Extended Finite Element comparer")
 
   ! Now we can start
   call start_ExtFEcomparer_main()

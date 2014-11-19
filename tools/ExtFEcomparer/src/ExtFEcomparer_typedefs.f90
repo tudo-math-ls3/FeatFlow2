@@ -52,9 +52,10 @@ module ExtFEcomparer_typedefs
   ! where you have one element for the speed
   ! and a different one for the pressure
   ! or did you use one element for everything?
+  ! Or is the input a list?
   integer, parameter, public :: ExtFE_OneElement = 1
   integer, parameter, public :: ExtFE_ElementPair = 2
-
+  integer, parameter, public :: ExtFE_ElementList = 3
 
   ! For the sake of readability
   integer, parameter, public :: ExtFE_DO = 1
@@ -144,6 +145,9 @@ module ExtFEcomparer_typedefs
    ! Or the ID of an element that was used for all variables
    ! of the FEM-Function
    integer(I32) :: ielemType
+   ! Or we have a list of elements.
+   ! Entry i belongs to variable i
+   integer(I32), dimension(:), pointer :: iElemList => NULL()
 
    ! An object for saving the domain:
    type(t_boundary) :: rboundary

@@ -255,7 +255,7 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
     call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
                                  "sMesh",sTriFileFirst,bdequote=.true.)
     call parlst_getvalue_string (rparlist,"ExtFE-SECOND",&
-                                 "sMesh",sTriFileFirst,bdequote=.true.)
+                                 "sMesh",sTriFileSecond,bdequote=.true.)
 
     ! Now read in the data
     do i=1,nL2Calculations
@@ -1311,12 +1311,22 @@ subroutine ExtFE_done_postprocessing_UCD(rpostprocessing)
     end if
 
     ! UCD Out of first function
-    if(rpostprocessing%ucd_OUT_orig_functions_one .eqv. .true.) then
-        call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_first_orig)
-        deallocate(rpostprocessing%UCD_feFunction_first_orig)
-        call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrFirst)
+    if(associated(rpostprocessing%UCDBlockDiscrFirst)) then
+        if(rpostprocessing%UCDBlockDiscrFirst%ndimension .gt. 0) then
+           call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrFirst)
+        end if
         deallocate(rpostprocessing%UCDBlockDiscrFirst)
     end if
+
+
+
+    if(associated(rpostprocessing%UCD_feFunction_first_orig)) then
+        if(rpostprocessing%UCD_feFunction_first_orig%h_Ddata .gt. ST_NOHANDLE) then
+            call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_first_orig)
+        end if
+        deallocate(rpostprocessing%UCD_feFunction_first_orig)
+    end if
+
     if(rpostprocessing%h_UCD_AddElemProjectFirst .gt. ST_NOHANDLE) then
         call storage_free(rpostprocessing%h_UCD_AddElemProjectFirst)
     end if
@@ -1333,12 +1343,20 @@ subroutine ExtFE_done_postprocessing_UCD(rpostprocessing)
     end if
 
     ! UCD-Out of second function
-    if(rpostprocessing%ucd_OUT_orig_functions_two .eqv. .true.) then
-        call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_second_orig)
-        deallocate(rpostprocessing%UCD_feFunction_second_orig)
-        call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrSecond)
+    if(associated(rpostprocessing%UCDBlockDiscrSecond)) then
+        if(rpostprocessing%UCDBlockDiscrSecond%ndimension .gt. 0) then
+            call spdiscr_releaseBlockDiscr(rpostprocessing%UCDBlockDiscrSecond)
+        end if
         deallocate(rpostprocessing%UCDBlockDiscrSecond)
+     end if
+
+    if(associated(rpostprocessing%UCD_feFunction_second_orig)) then
+        if(rpostprocessing%UCD_feFunction_second_orig%h_Ddata .gt. ST_NOHANDLE) then
+            call lsysbl_releaseVector(rpostprocessing%UCD_feFunction_second_orig)
+        end if
+        deallocate(rpostprocessing%UCD_feFunction_second_orig)
     end if
+
     if(rpostprocessing%h_UCD_AddElemProjectSecond .gt. ST_NOHANDLE) then
         call storage_free(rpostprocessing%h_UCD_AddElemProjectSecond)
     end if
@@ -1353,8 +1371,6 @@ subroutine ExtFE_done_postprocessing_UCD(rpostprocessing)
     if(rpostprocessing%h_UCD_ScalarSecondOrig .gt. ST_NOHANDLE) then
         call storage_free(rpostprocessing%h_UCD_ScalarSecondOrig)
     end if
-
-
 
 end subroutine
 
@@ -1455,7 +1471,7 @@ subroutine ExtFE_postprocess_OutOrigVec(rpostprocessing)
         call vecio_writeBlockVectorHR(rpostprocessing%OrigVecSecond,'SOLUTION', &
                 bunsorted,0,rpostprocessing%sOrigVecPathOutSecond,&
                 sformat=trim(rpostprocessing%sOrigVec2OutFMT),&
-                scomment=comment)
+                scomment=trim(adjustl(comment)))
     end if
 
 

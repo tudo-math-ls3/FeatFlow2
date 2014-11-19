@@ -1,3 +1,22 @@
+Version 2.1.2   19.11.2014
+
+Added: Now it is also possible to specify an element-list. This means:
+i.e. if your element-pair is not provided you specify a list with element identifiers.
+Identifier i is used for component i.
+
+Added: it is possible to overwrite the parameters with the command line
+and specifiying a master-dat with the command-line.
+For a master.dat type ./ExtFEcomparer --smaster=./path/to/my/master.dat
+To overwrite a parameter use --D<section>.variable:<entry>=value
+
+Added: A Benchmark-Modus which does not need any read-in-data - good for
+testing new features/checking they still give right results.
+
+Modified: Use another projection for the UCD-Output which is more general and also
+supports 1D and (for future purpose) 3D
+
+Fixed: Output of L2-Norms to a file had a wrong comment (but did the right work)
+
 Version 2.1.1   7.11.2014
 
 To sum up the features and present the changelog, we need a notation:

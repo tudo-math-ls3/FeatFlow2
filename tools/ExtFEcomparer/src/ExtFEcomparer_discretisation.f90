@@ -78,9 +78,13 @@ subroutine ExtFE_init_discretisation_1D(rproblem)
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
     select case(rproblem%elementSetting)
+
         case(ExtFE_OneElement)
 
             call ExtFE_init_discretisation_1D_OneElementType(rproblem)
+
+        case(ExtFE_ElementList)
+            call ExtFE_init_discretisation_1D_ElementList(rproblem)
 
         case default
             call output_line(&
@@ -131,6 +135,42 @@ subroutine ExtFE_init_discretisation_1D_OneElementType(rproblem)
 
 end subroutine
 
+subroutine ExtFE_init_discretisation_1D_ElementList(rproblem)
+!<description>
+  ! This routine initialises a discretisation structure for a vector
+  ! that contains 1D-Variables, and all of them use the same element
+  ! type
+!</description>
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    ! local variables
+    integer :: NLMAX, NVAR,i
+    type (t_triangulation), pointer :: p_triangulation => NULL()
+    type (t_blockDiscretisation), pointer :: p_discretisation => NULL()
+
+    ! We need to create a block-discretisation-structure
+    ! so that we can store one variable in each block
+    NLMAX = rproblem%NLMAX
+    NVAR = rproblem%NVAR
+    p_triangulation => rproblem%rtriangulation
+    p_discretisation => rproblem%rdiscretisation
+
+    ! Init a block discretisation - 1 block per variable
+    call spdiscr_initBlockDiscr(rproblem%rdiscretisation, &
+                NVAR, p_triangulation)
+
+    ! Now init a discretisation for each block
+    do i=1,NVAR
+        call spdiscr_initDiscr_simple(p_discretisation%RspatialDiscr(i), &
+              rproblem%iElemList(i),p_triangulation)
+    end do
+
+end subroutine
+
 subroutine ExtFE_init_discretisation_2D(rproblem)
 !<description>
     ! This routine is containing calls to all 2D-inits, that is
@@ -146,21 +186,61 @@ subroutine ExtFE_init_discretisation_2D(rproblem)
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
-    select case (rproblem%vectorType)
+    select case (rproblem%elementSetting)
+
+        case(ExtFE_OneElement)
+            call ExtFE_init_Discretisation_2D_OneELementType(rproblem)
 
         case(ExtFE_ElementPair)
             ! Element pair - i.e. one element type for the speed,
             ! one for the pressure
             call ExtFE_init_Discretisation_2D_elementPair(rproblem)
 
+        case(ExtFE_ElementList)
+            call ExtFE_init_Discretisation_2D_ElementList(rproblem)
+
         case default
             call output_line(&
-            "This combination of dimension and vector type is not &
+            "This combination of dimension and element setting is not &
             &yet implemented, your input was " &
-                //sys_siL(rproblem%vectorType,10), &
+                //sys_siL(rproblem%elementSetting,10), &
                 OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_discretisation_2D")
             call sys_halt()
     end select
+end subroutine
+
+
+subroutine ExtFE_init_Discretisation_2D_OneELementType(rproblem)
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    ! local variables
+    integer :: NLMAX, NVAR,i
+    type (t_triangulation), pointer :: p_triangulation => NULL()
+    type (t_blockDiscretisation), pointer :: p_discretisation => NULL()
+    type(t_boundary), pointer :: p_boundary => NULL()
+
+    ! We need to create a block-discretisation-structure
+    ! so that we can store one variable in each block
+    NLMAX = rproblem%NLMAX
+    NVAR = rproblem%NVAR
+    p_triangulation => rproblem%rtriangulation
+    p_discretisation => rproblem%rdiscretisation
+    p_boundary => rproblem%rboundary
+
+    ! Init a block discretisation - 1 block per variable
+    call spdiscr_initBlockDiscr(rproblem%rdiscretisation, &
+                NVAR, p_triangulation)
+
+    ! Now init a discretisation for each block
+    do i=1,NVAR
+        call spdiscr_initDiscr_simple(p_discretisation%RspatialDiscr(i), &
+                rproblem%ielemType,p_triangulation,p_boundary)
+    end do
+
 end subroutine
 
 
@@ -213,6 +293,39 @@ end subroutine
   end subroutine
 
 
+subroutine ExtFE_init_Discretisation_2D_ElementList(rproblem)
+
+!<inputoutput>
+    ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+    ! local variables
+    integer :: NLMAX, NVAR,i
+    type (t_triangulation), pointer :: p_triangulation => NULL()
+    type (t_blockDiscretisation), pointer :: p_discretisation => NULL()
+    type(t_boundary), pointer :: p_boundary => NULL()
+
+    ! We need to create a block-discretisation-structure
+    ! so that we can store one variable in each block
+    NLMAX = rproblem%NLMAX
+    NVAR = rproblem%NVAR
+    p_triangulation => rproblem%rtriangulation
+    p_discretisation => rproblem%rdiscretisation
+    p_boundary => rproblem%rboundary
+
+    ! Init a block discretisation - 1 block per variable
+    call spdiscr_initBlockDiscr(rproblem%rdiscretisation, &
+                NVAR, p_triangulation)
+
+    ! Now init a discretisation for each block
+    do i=1,NVAR
+        call spdiscr_initDiscr_simple(p_discretisation%RspatialDiscr(i), &
+                rproblem%iElemList(i),p_triangulation,p_boundary)
+    end do
+
+end subroutine
+
 subroutine ExtFE_init_discretisation_3D(rproblem)
 !<description>
 ! This is just a spaceholder for the 3D-part that is not implemented
@@ -244,20 +357,20 @@ end subroutine
 
 !<input>
   ! Element combination identifier to use. The following identifiers are supported:
-  !  0 = Q1~(E031) / Q1~(E031) / Q0
-  !  1 = Q1~(E030) / Q1~(E030) / Q0
-  !  2 = Q1~(EM31) / Q1~(EM31) / Q0
-  !  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+  !  0 = Q1(E031) / Q1~(E031) / Q0
+  !  1 = Q1(E030) / Q1~(E030) / Q0
+  !  2 = Q1(EM31) / Q1~(EM31) / Q0
+  !  3 = Q1(EM30) / Q1~(EM30) / Q0 = standard
   !  4 = Q2 (E013) / Q2 (E013) / QP1
-  !  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
-  !  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-  !  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
-  !  8 = Q1~(EB30) / Q1~(EB30) / Q0
-  ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
-  ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
+  !  5 = Q1(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+  !  6 = Q1(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  !  7 = Q1(EM30) / Q1~(EM30) / Q0 new interface implementation
+  !  8 = Q1(EB30) / Q1~(EB30) / Q0
+  ! 10 = Q2(EB50) / Q2~(EB50) / QP1
+  ! 11 = Q2(EM50) / Q2~(EM50) / QP1
   ! 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
   ! 20 = Q1        / Q1        / Q1
-  ! 30 = P1~(E020) / P1~(E020) / P0
+  ! 30 = P1(E020) / P1~(E020) / P0
   integer, intent(in) :: ielementType
 
   ! Boundary structure for the discretisation

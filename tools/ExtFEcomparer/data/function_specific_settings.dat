@@ -8,9 +8,15 @@
 # iElementSetting:  
 #    if we have only 1 element for the whole discretisation and *all* variables: 1
 #    if it is an element pair (i.e. 1 for the speed and one for the pressure): 2
+#    if we specify an element List: 3 (so 2 is a special case of 3)
 #
 # ElementName: Name of the Element, see the Featflow kernel which names are supported
 #          only neccesary if iElementSetting = 1
+#
+# ElementList(n)= : if iElementSetting=3 then n must be set to the number of variables in the
+#                                 vector, and in the following n lines we write the element names. The name
+#                                 in line i is used for variable i.
+#                                 if iElementSetting is unequal 3, then n must be set to 0!
 #
 # ielementType:  Type of element pair that was used for the discretisation, only neccesary
 # if iElementSetting = 2
@@ -24,7 +30,7 @@
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 #  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
 #  7 = Q1~(EN30) / Q1~(EN30) / Q0 (nonparametric, new interface implementation of 3)
-#  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
+#  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
@@ -71,6 +77,7 @@
 iElementSetting = 2
 ielementType = 3
 ElementName = ''
+ElementList(0)=
 
 NLMAX = 3
 sParametrisation = '%{spredirectory}/bench1.prm'
@@ -88,6 +95,7 @@ iNVAR = 3
 iElementSetting = 2
 ielementType = 3
 ElementName = ''
+ElementList(0)=
 
 NLMAX = 3
 sParametrisation = '%{spredirectory}/bench1.prm'
