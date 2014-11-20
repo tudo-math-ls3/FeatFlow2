@@ -1,0 +1,72 @@
+# -*- mode: sh -*-
+#
+# Description of the file format:
+# This file is supposed to be a simple ASCII text file. Settings are
+# defined per line via
+#   keyword  = value
+# The scope of a keyword/value setting is from its definition till
+# being overwritten or till the end of file.
+# A test definition starts with
+#   testid       = ARBITRARY_TESTNAME
+# All keyword/value settings defined earlier - as well as those defined in
+# the file defaults.fbdef - are automatically assigned to this test definition.
+# The value of any keyword can, of course, be subsequently overwritten
+# via a line "keyword = value". This updated keyword/value setting will then
+# be the default for any subsequently defined test.
+# Anything behind a hash sign (#) is regarded as comment.
+#
+# Every keyword found is exported as environment variable (in uppercase).
+# The case of the corresponding values is left untouched.
+#
+# Example for keyword/value settings inheritance: The following block
+#
+#	datfile = data/master_app1.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO1
+#	appl = baz
+#
+#	testid   = FOO2
+#	datfile = data/master_app2.dat
+#
+#	testid   = FOO3
+#	appl = foobar
+#	mglevels = 5,6
+#
+# is equivalent to
+#
+#	testid   = FOO1
+#	appl = baz
+#	datfile = data/master_app1.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO2
+#	appl = baz
+#	datfile = data/master_app2.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO3
+#	appl = foobar
+#	datfile = data/master_app2.dat
+#	mglevels = 5,6
+#
+
+include 'defaults.inc'
+
+#============================================================
+# global settings for all tutorial01 tests defined in this file
+#============================================================
+
+appl = tutorial01
+class = DEFAULT
+
+# Test 1
+
+testid   = TUTORIAL01_001
+descr    = Tutorial01 standard benchmark
+mglevels = 1
+datfile  = -
+datdir   = ./data/tutorials_tutorial01
+ucddir   = $LOGDIR
+predir   = ../tutorials/tutorial01/pre
+postdir  = $LOGDIR
