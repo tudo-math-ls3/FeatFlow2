@@ -32,6 +32,7 @@ contains
     type(t_triangulation) :: rtriangulation
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_vectorScalar) :: rx
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -71,17 +72,31 @@ contains
     ! =================================
     call output_line ("Writing vector to text files...")
 
-    ! Write the vector to a text file.
-    call vecio_writeVectorHR (rx, "vector", .true., 0, &
-        "post/tutorial006f_vector.txt", "(E11.2)")
-
-    ! Write the vector to a MATLAB file.
-    call vecio_spyVector(&
-        "post/tutorial006f_vector","vector",rx,.true.)
-    
-    ! Write the vector to a MAPLE file
-    call vecio_writeVectorMaple (rx, "vector", .true., 0, &
-        "post/tutorial006f_vector.maple", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the vector to a text file.
+      call vecio_writeVectorHR (rx, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial006f_vector.txt", "(E11.2)")
+      
+      ! Write the vector to a MATLAB file.
+      call vecio_spyVector(&
+          trim(spostdir)//"/tutorial006f_vector","vector",rx,.true.)
+      
+      ! Write the vector to a MAPLE file
+      call vecio_writeVectorMaple (rx, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial006f_vector.maple", "(E11.2)")
+    else
+      ! Write the vector to a text file.
+      call vecio_writeVectorHR (rx, "vector", .true., 0, &
+          "./post/tutorial006f_vector.txt", "(E11.2)")
+      
+      ! Write the vector to a MATLAB file.
+      call vecio_spyVector(&
+          "./post/tutorial006f_vector","vector",rx,.true.)
+      
+      ! Write the vector to a MAPLE file
+      call vecio_writeVectorMaple (rx, "vector", .true., 0, &
+          "./post/tutorial006f_vector.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

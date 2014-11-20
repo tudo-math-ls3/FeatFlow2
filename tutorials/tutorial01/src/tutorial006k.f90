@@ -127,6 +127,7 @@ contains
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
     type(t_vectorScalar) :: rrhs
+    character(LEN=SYS_STRLEN) :: spostdir
     
     ! Print a message
     call output_lbrk()
@@ -180,8 +181,13 @@ contains
     call output_line ("Writing RHS vector to text file...")
 
     ! Write the vector to a text file.
-    call vecio_writeVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial006k_rhs.txt", "(E20.10)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call vecio_writeVectorHR (rrhs, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial006k_rhs.txt", "(E20.10)")
+    else
+      call vecio_writeVectorHR (rrhs, "vector", .true., 0, &
+          "./post/tutorial006k_rhs.txt", "(E20.10)")
+    end if
 
     ! =================================
     ! Cleanup

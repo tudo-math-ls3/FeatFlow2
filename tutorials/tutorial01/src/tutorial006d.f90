@@ -35,6 +35,7 @@ contains
     type(t_triangulation) :: rtriangulation
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_matrixScalar) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -84,8 +85,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006d_laplace.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006d_laplace.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006d_laplace.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Discretise the Mass matrix.
@@ -102,8 +108,13 @@ contains
     call stdop_assembleSimpleMatrix (rmatrix,DER_FUNC2D,DER_FUNC2D)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006d_mass.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006d_mass.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006d_mass.txt", "(E15.5)")
+    end if
 
     ! =================================
     ! Cleanup

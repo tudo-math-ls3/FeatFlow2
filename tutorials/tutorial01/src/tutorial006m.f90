@@ -39,6 +39,7 @@ contains
     type(t_ucdExport) :: rexport
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Dx
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
     
     ! Number of points in x- and y-direction
     integer, parameter :: npointsX = 64
@@ -79,7 +80,11 @@ contains
     ! Read the picture from the file.
     ! =================================
     
-    call ppsol_readPGM(0, "./pre/cfdlogo.pgm", rpgm)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call ppsol_readPGM(0, trim(spredir)//"/cfdlogo.pgm", rpgm)
+    else
+      call ppsol_readPGM(0, "./pre/cfdlogo.pgm", rpgm)
+    end if
 
     ! =================================
     ! Translate into 2D array. As points,
@@ -105,11 +110,19 @@ contains
     ! =================================
     ! Output to files. 
     ! =================================
-    
-    call output_line ("Writing file 'post/tutorial006m.vtk'")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file '"//trim(spostdir)//"/tutorial006m.vtk'")
+      
+      ! Open / write / close; write the solution to a VTK file.
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial006m.vtk")
+    else
+      call output_line ("Writing file './post/tutorial006m.vtk'")
 
-    ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,"post/tutorial006m.vtk")
+      ! Open / write / close; write the solution to a VTK file.
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial006m.vtk")
+    end if
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rx)
     call ucd_write (rexport)

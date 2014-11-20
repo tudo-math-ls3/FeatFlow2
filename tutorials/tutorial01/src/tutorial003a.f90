@@ -24,6 +24,7 @@ contains
     ! Declare some variables
     integer :: iunit,ios,ilength
     character(LEN=SYS_STRLEN) :: sdata
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -34,8 +35,13 @@ contains
     ! =================================
     ! Open a file, write, close.
     ! =================================
-    call io_openFileForWriting("post/tutorial003a.txt", &
-        iunit, SYS_REPLACE, bformatted=.true.)
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call io_openFileForWriting(trim(spostdir)//"/tutorial003a.txt", &
+          iunit, SYS_REPLACE, bformatted=.true.)
+    else
+      call io_openFileForWriting("./post/tutorial003a.txt", &
+          iunit, SYS_REPLACE, bformatted=.true.)
+    end if
     
     write (iunit,"(A)") "This is a"
     write (iunit,"(A)") "text file for"
@@ -46,7 +52,11 @@ contains
     ! =================================
     ! Open the file, print, close.
     ! =================================
-    call io_openFileForReading("post/tutorial003a.txt", iunit, .true.)
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call io_openFileForReading(trim(spostdir)//"/tutorial003a.txt", iunit, .true.)
+    else
+      call io_openFileForReading("./post/tutorial003a.txt", iunit, .true.)
+    end if
     
     ! With io_readlinefromfile, we can read line by line
     call io_readlinefromfile (iunit, sdata, ilength, ios)

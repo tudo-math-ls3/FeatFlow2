@@ -184,6 +184,7 @@ contains
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_matrixScalar) :: rtemplateMatrix
     type(t_matrixBlock) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
     
     ! Print a message
     call output_lbrk()
@@ -258,17 +259,31 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial010d_matrix.txt", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial010d_matrix.txt", "(E11.2)")
 
-    ! Write the matrix to a MATLAB file.
-    call matio_spyBlockMatrix(&
-        "post/tutorial010d_matrix.m","matrix",rmatrix,.true.)
-    
-    ! Write the matrix to a MAPLE file
-    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial010d_matrix.maple", "(E11.2)")
+      ! Write the matrix to a MATLAB file.
+      call matio_spyBlockMatrix(&
+          trim(spostdir)//"/tutorial010d_matrix.m","matrix",rmatrix,.true.)
+
+      ! Write the matrix to a MAPLE file
+      call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+          trim(spostdir)//"/tutorial010d_matrix.maple", "(E11.2)")
+    else
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial010d_matrix.txt", "(E11.2)")
+
+      ! Write the matrix to a MATLAB file.
+      call matio_spyBlockMatrix(&
+          "./post/tutorial010d_matrix.m","matrix",rmatrix,.true.)
+
+      ! Write the matrix to a MAPLE file
+      call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+          "./post/tutorial010d_matrix.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

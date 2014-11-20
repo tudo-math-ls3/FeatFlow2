@@ -191,6 +191,7 @@ contains
     type(t_fev2Vectors) :: rcoeffVectors
     type(t_vectorScalar) :: rcoeffVector
     type(t_vectorBlock) :: rrhs
+    character(LEN=SYS_STRLEN) :: spostdir
     
     integer :: i, ideriv
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -284,17 +285,31 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial011d_vector.txt", "(E11.2)")
-
-    ! Write the vector to a MATLAB file.
-    call vecio_spyBlockVector(&
-        "post/tutorial011d_vector","vector",rrhs,.true.)
-    
-    ! Write the vector to a MAPLE file
-    call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
-        "post/tutorial011d_vector.maple", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial011d_vector.txt", "(E11.2)")
+      
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          trim(spostdir)//"/tutorial011d_vector","vector",rrhs,.true.)
+      
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+          trim(spostdir)//"/tutorial011d_vector.maple", "(E11.2)")
+    else
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+          "./post/tutorial011d_vector.txt", "(E11.2)")
+      
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          "./post/tutorial011d_vector","vector",rrhs,.true.)
+      
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+          "./post/tutorial011d_vector.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

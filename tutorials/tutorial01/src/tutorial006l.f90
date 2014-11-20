@@ -132,6 +132,7 @@ contains
     type(t_vectorScalar) :: rrhs, rdefect, rcorrection, rx
     type(t_matrixScalar) :: rmatrix
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
+    character(LEN=SYS_STRLEN) :: spostdir
     
     real(DP) :: dnorm
     integer :: ite
@@ -245,11 +246,19 @@ contains
     ! Write a VTK file with the mesh
     ! and this solution vector.
     ! =================================
-    call output_line ("Writing file 'post/tutorial006h.vtk'.")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file "//trim(spostdir)//"'/tutorial006h.vtk'.")
 
-    ! Open
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial006l.vtk")
+      ! Open
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial006l.vtk")
+    else
+      call output_line ("Writing file './post/tutorial006h.vtk'.")
+
+      ! Open
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial006l.vtk")
+    end if
                        
     ! Pass rx as solution.
     call ucd_addVectorByVertex (rexport, "x", UCD_VAR_STANDARD, rx)

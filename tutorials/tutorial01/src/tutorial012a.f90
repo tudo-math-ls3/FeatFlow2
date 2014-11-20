@@ -26,6 +26,7 @@ contains
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -45,11 +46,20 @@ contains
     ! =================================
     ! Write a VTK file with the mesh
     ! =================================
-    call output_line ("Writing file 'post/tutorial012a_level1.vtk'.")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file '"//trim(spostdir)//"/tutorial012a_level1.vtk'.")
+    else
+      call output_line ("Writing file './post/tutorial012a_level1.vtk'.")
+    end if
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012a_level1.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"tutorial012a_level1.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial012a_level1.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
 
@@ -63,11 +73,20 @@ contains
     ! =================================
     ! Write a VTK file with the mesh
     ! =================================
-    call output_line ("Writing file 'post/tutorial012a_level2.vtk'.")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file '"//trim(spostdir)//"/tutorial012a_level2.vtk'.")
+    else
+      call output_line ("Writing file './post/tutorial012a_level2.vtk'.")
+    end if
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012a_level2.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial012a_level2.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial012a_level2.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -81,11 +100,20 @@ contains
     ! =================================
     ! Write a VTK file with the mesh
     ! =================================
-    call output_line ("Writing file 'post/tutorial012a_level3.vtk'.")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file '"//trim(spostdir)//"/tutorial012a_level3.vtk'.")
+    else
+      call output_line ("Writing file './post/tutorial012a_level3.vtk'.")
+    end if
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012a_level3.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial012a_level3.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial012a_level3.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
 

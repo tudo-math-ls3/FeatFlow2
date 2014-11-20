@@ -33,6 +33,7 @@ contains
     type(t_triangulation) :: rtriangulation
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_matrixScalar) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -87,17 +88,31 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006c_matrix.txt", "(E11.2)")
-
-    ! Write the matrix to a MATLAB file.
-    call matio_spyMatrix(&
-        "post/tutorial006c_matrix.m","matrix",rmatrix,.true.)
-    
-    ! Write the matrix to a MAPLE file
-    call matio_writeMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial006c_matrix.maple", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006c_matrix.txt", "(E11.2)")
+      
+      ! Write the matrix to a MATLAB file.
+      call matio_spyMatrix(&
+          trim(spostdir)//"/tutorial006c_matrix.m","matrix",rmatrix,.true.)
+      
+      ! Write the matrix to a MAPLE file
+      call matio_writeMatrixMaple (rmatrix, "matrix", 0, &
+          trim(spostdir)//"/tutorial006c_matrix.maple", "(E11.2)")
+    else
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006c_matrix.txt", "(E11.2)")
+      
+      ! Write the matrix to a MATLAB file.
+      call matio_spyMatrix(&
+          "./post/tutorial006c_matrix.m","matrix",rmatrix,.true.)
+      
+      ! Write the matrix to a MAPLE file
+      call matio_writeMatrixMaple (rmatrix, "matrix", 0, &
+          "./post/tutorial006c_matrix.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

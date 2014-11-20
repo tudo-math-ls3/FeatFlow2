@@ -153,6 +153,7 @@ contains
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_vectorBlock) :: rrhs
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -229,17 +230,31 @@ contains
     ! =================================
     call output_line ("Writing vectors to text files...")
     
-    ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial009b_rhs.txt", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial009b_rhs.txt", "(E11.2)")
 
-    ! Write the vector to a MATLAB file.
-    call vecio_spyBlockVector(&
-        "post/tutorial009b_vector","vector",rrhs,.true.)
-    
-    ! Write the vector to a MAPLE file
-    call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
-        "post/tutorial009b_vector.maple", "(E11.2)")
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          trim(spostdir)//"/tutorial009b_vector","vector",rrhs,.true.)
+
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+          trim(spostdir)//"/tutorial009b_vector.maple", "(E11.2)")
+    else
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+          "./post/tutorial009b_rhs.txt", "(E11.2)")
+
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          "./post/tutorial009b_vector","vector",rrhs,.true.)
+
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+          "./post/tutorial009b_vector.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

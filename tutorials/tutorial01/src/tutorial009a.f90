@@ -35,6 +35,7 @@ contains
     type(t_triangulation) :: rtriangulation
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
+    character(LEN=SYS_STRLEN) :: spostdir
     
     type(t_vectorBlock) :: rx
     real(DP), dimension(:), pointer :: p_Ddata
@@ -109,17 +110,31 @@ contains
     ! =================================
     call output_line ("Writing vectors to texts file...")
     
-    ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rx, "vector", .true., 0, &
-        "post/tutorial009a_vector.txt", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rx, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial009a_vector.txt", "(E11.2)")
 
-    ! Write the vector to a MATLAB file.
-    call vecio_spyBlockVector(&
-        "post/tutorial009a_vector","vector",rx,.true.)
-    
-    ! Write the vector to a MAPLE file
-    call vecio_writeBlockVectorMaple (rx, "vector", .true., 0,&
-        "post/tutorial009a_vector.maple", "(E11.2)")
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          trim(spostdir)//"/tutorial009a_vector","vector",rx,.true.)
+
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rx, "vector", .true., 0,&
+          trim(spostdir)//"/tutorial009a_vector.maple", "(E11.2)")
+    else
+      ! Write the vector to a text file.
+      call vecio_writeBlockVectorHR (rx, "vector", .true., 0, &
+          "./post/tutorial009a_vector.txt", "(E11.2)")
+
+      ! Write the vector to a MATLAB file.
+      call vecio_spyBlockVector(&
+          "./post/tutorial009a_vector","vector",rx,.true.)
+
+      ! Write the vector to a MAPLE file
+      call vecio_writeBlockVectorMaple (rx, "vector", .true., 0,&
+          "./post/tutorial009a_vector.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

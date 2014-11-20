@@ -148,6 +148,9 @@ program tutorial
 
   implicit none
   
+  ! local variables
+  character(len=SYS_STRLEN) :: slogdir,slogfile
+
   ! =================================================================
   ! Main program
   ! =================================================================
@@ -157,7 +160,21 @@ program tutorial
   ! memory management
   ! -----------------------------------------------------------------
   call sys_init()
-  call output_init ("")
+
+  ! Initialise the output system.
+  !
+  ! Normally, we write all the output to the screen and to a file
+  ! "./log/output.txt".
+  ! In the case that environment variables "$logdir"/"$resultsfile" exists,
+  ! we write all the output to that file. This can be used e.g. in
+  ! regression tests to compare results to reference results.
+  if (sys_getenv_string("LOGDIR",slogdir) .and. &
+      sys_getenv_string("RESULTFILE",slogfile)) then
+    call output_init (trim(slogdir)//"/"//trim(slogfile))
+  else
+    call output_init ("./log/output.txt")
+  end if
+  
   call storage_init(999, 100)
 
   ! -----------------------------------------------------------------

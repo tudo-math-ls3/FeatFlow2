@@ -29,6 +29,7 @@ contains
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
     integer :: i
     
     type(t_meshHierarchy) :: rmeshHierarchy
@@ -44,11 +45,19 @@ contains
     ! and the mesh
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/QUAD.prm")
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/QUAD.prm")
+    end if
     
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard.
-    call tria_readTriFile2D (rtriangulation, "pre/QUAD.tri", rboundary)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
+    else
+      call tria_readTriFile2D (rtriangulation, "pre/QUAD.tri", rboundary)
+    end if
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! =================================
@@ -68,11 +77,20 @@ contains
     ! =================================
     
     do i=1,rmeshHierarchy%nlevels
-      call output_line ("Writing file 'post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk'.")
+      if (sys_getenv_string("POSTDIR",spostdir)) then
+        call output_line ("Writing file '"//trim(spostdir)//"/tutorial012d_level"//trim(sys_siL(i,10))//".vtk'.")
+      else
+        call output_line ("Writing file './post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk'.")
+      end if
 
       ! Open / write / close
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rmeshHierarchy%p_Rtriangulations(i),&
-          "post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk")
+      if (sys_getenv_string("POSTDIR",spostdir)) then
+        call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rmeshHierarchy%p_Rtriangulations(i),&
+            trim(spostdir)//"/tutorial012d_level"//trim(sys_siL(i,10))//".vtk")
+      else
+        call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rmeshHierarchy%p_Rtriangulations(i),&
+            "post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk")
+      end if
       call ucd_write (rexport)
       call ucd_release (rexport)
     end do

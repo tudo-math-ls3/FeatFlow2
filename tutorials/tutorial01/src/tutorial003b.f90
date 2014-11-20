@@ -25,7 +25,7 @@ contains
     type(t_parlist) :: rparlist
     integer :: idata, i,n
     real(DP) :: ddata
-    character(LEN=SYS_STRLEN) :: sdata
+    character(LEN=SYS_STRLEN) :: sdata,sdatdir
 
     ! Print a message
     call output_lbrk()
@@ -37,7 +37,11 @@ contains
     ! Read the data file.
     ! =================================
     call parlst_init(rparlist)
-    call parlst_readfromfile (rparlist, "data/tutorial003b_data.dat")
+    if (sys_getenv_string("DATDIR",sdatdir)) then
+      call parlst_readfromfile (rparlist, trim(sdatdir)//"/tutorial003b_data.dat")
+    else
+      call parlst_readfromfile (rparlist, "./data/tutorial003b_data.dat")
+    end if
 
     ! =================================
     ! Print the unnamed section

@@ -40,6 +40,7 @@ contains
     type(t_matrixScalar) :: rmatrixTemplate
     type(t_matrixScalar) :: rmatrixMass, rmatrixLaplace
     type(t_matrixScalar) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
     
     ! Print a message
     call output_lbrk()
@@ -136,8 +137,13 @@ contains
     call output_line ("Writing matrix to a text file...")
 
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006j_matrix.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006j_matrix.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006j_matrix.txt", "(E15.5)")
+    end if
 
     ! =================================
     ! Cleanup

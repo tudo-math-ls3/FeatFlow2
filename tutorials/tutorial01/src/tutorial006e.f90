@@ -42,6 +42,7 @@ contains
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G4
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G5
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -104,8 +105,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_TRZ)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_trz.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_trz.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_trz.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Gauss 1x1.
@@ -113,8 +119,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G1)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_g1.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_g1.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_g1.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Gauss 2x2
@@ -122,8 +133,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G2)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_g2.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_g2.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_g2.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Gauss 3x3.
@@ -131,8 +147,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G3)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_g3.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_g3.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_g3.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Gauss 4x4.
@@ -140,8 +161,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G4)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_g4.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_g4.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_g4.txt", "(E15.5)")
+    end if
 
     ! -------------------------------------------
     ! Gauss 5x5.
@@ -149,8 +175,13 @@ contains
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G5)
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006e_g5.txt", "(E15.5)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006e_g5.txt", "(E15.5)")
+    else
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006e_g5.txt", "(E15.5)")
+    end if
 
     ! =================================
     ! Cleanup

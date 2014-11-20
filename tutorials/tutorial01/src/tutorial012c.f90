@@ -27,6 +27,7 @@ contains
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
 
     ! Print a message
     call output_lbrk()
@@ -39,11 +40,19 @@ contains
     ! and the mesh
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/bench1.prm")
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/bench1.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/bench1.prm")
+    end if
     
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard.
-    call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/bench1.tri", rboundary)
+    else
+      call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    end if
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! =================================
@@ -52,8 +61,13 @@ contains
     call output_line ("Writing file 'post/tutorial012c_level1.vtk'.")
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012c_level1.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial012c_level1.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "post/tutorial012c_level1.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -72,8 +86,13 @@ contains
     call output_line ("Writing file 'post/tutorial012c_level5.vtk'.")
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        "post/tutorial012c_level5.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial012c_level5.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "post/tutorial012c_level5.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
     

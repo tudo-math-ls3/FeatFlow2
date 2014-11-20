@@ -25,6 +25,7 @@ contains
     ! Declare some variables
     type(t_graph) :: rgraph
     type(t_matrixScalar) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
     integer :: i
 
     ! Print a message
@@ -102,8 +103,13 @@ contains
     ! Write matrix to textfile
     ! =================================
 
-    call matio_spyMatrix(&
-        "post/tutorial004g_matrix.m","matrix",rmatrix,.false.)
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_spyMatrix(&
+          trim(spostdir)//"/tutorial004g_matrix.m","matrix",rmatrix,.false.)
+    else
+      call matio_spyMatrix(&
+          "./post/tutorial004g_matrix.m","matrix",rmatrix,.false.)
+    end if
 
     ! =================================
     ! Release graph

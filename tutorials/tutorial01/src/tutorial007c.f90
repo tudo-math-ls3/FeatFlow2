@@ -41,6 +41,7 @@ contains
     integer, dimension(:), pointer :: p_Idata
     real(DP), dimension(:), pointer :: p_Ddata
     character(len=SYS_STRLEN) :: scondition
+    character(LEN=SYS_STRLEN) :: spostdir
     
     ! Print a message
     call output_lbrk()
@@ -104,11 +105,19 @@ contains
     ! Write a VTK file with the mesh
     ! and this solution vector.
     ! =================================
-    call output_line ("Writing file 'post/tutorial007c.vtk'.")
-
-    ! Open
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial007c.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file '"//trim(spostdir)//"/tutorial007c.vtk'.")
+      
+      ! Open
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial007c.vtk")
+    else
+      call output_line ("Writing file './post/tutorial007c.vtk'.")
+      
+      ! Open
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial007c.vtk")
+    end if
                        
     ! Pass rx as solution.
     call ucd_addVectorByVertex (rexport, "circle", UCD_VAR_STANDARD, rx)

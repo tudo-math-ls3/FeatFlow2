@@ -26,6 +26,7 @@ contains
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -33,7 +34,11 @@ contains
     call output_line ("This is FEAT-2. Tutorial 006a")
     call output_separator (OU_SEP_MINUS)
     
-    call output_line ("Writing file 'post/tutorial006a.vtk'.")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call output_line ("Writing file "//trim(spostdir)//"'tutorial006a.vtk'.")
+    else
+      call output_line ("Writing file './post/tutorial006a.vtk'.")
+    end if
 
     ! =================================
     ! Create a brick mesh
@@ -49,8 +54,13 @@ contains
     ! =================================
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial006a.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial006a.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "./post/tutorial006a.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
 

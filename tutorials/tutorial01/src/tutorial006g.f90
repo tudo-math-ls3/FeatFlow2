@@ -35,6 +35,7 @@ contains
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_vectorScalar) :: rx
     type(t_matrixScalar) :: rmatrix
+    character(LEN=SYS_STRLEN) :: spostdir
     
     integer :: i
     real(DP), dimension(:), pointer :: p_Ddata
@@ -121,13 +122,23 @@ contains
     ! =================================
     call output_line ("Writing to text files...")
 
-    ! Write the vector to a text file.
-    call vecio_writeVectorHR (rx, "vector", .true., 0, &
-        "post/tutorial006g_vector.txt", "(E11.2)")
-
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial006g_matrix.txt", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the vector to a text file.
+      call vecio_writeVectorHR (rx, "vector", .true., 0, &
+          trim(spostdir)//"/tutorial006g_vector.txt", "(E11.2)")
+      
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial006g_matrix.txt", "(E11.2)")
+    else
+      ! Write the vector to a text file.
+      call vecio_writeVectorHR (rx, "vector", .true., 0, &
+          "./post/tutorial006g_vector.txt", "(E11.2)")
+      
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial006g_matrix.txt", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

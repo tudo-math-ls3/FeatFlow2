@@ -157,7 +157,7 @@ contains
           dy = Dpoints(2,ivt,iel)
         
           ! Initialise the coefficients. Both the same.
-          Dcoefficients(1,ivt,iel) = 1.0_DP + SIN( SYS_PI * dx ) * SIN( SYS_PI * dy )
+          Dcoefficients(1,ivt,iel) = 1.0_DP + sin( SYS_PI * dx ) * sin( SYS_PI * dy )
           Dcoefficients(2,ivt,iel) = Dcoefficients(1,ivt,iel)
 
         end do
@@ -182,6 +182,7 @@ contains
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_bilinearForm) :: rform
     type(t_collection) :: rcollection
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
@@ -293,17 +294,31 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial008d_matrix.txt", "(E11.2)")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+          trim(spostdir)//"/tutorial008d_matrix.txt", "(E11.2)")
 
-    ! Write the matrix to a MATLAB file.
-    call matio_spyBlockMatrix(&
-        "post/tutorial008d_matrix.m","matrix",rmatrix,.true.)
-    
-    ! Write the matrix to a MAPLE file
-    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial008d_matrix.maple", "(E11.2)")
+      ! Write the matrix to a MATLAB file.
+      call matio_spyBlockMatrix(&
+          trim(spostdir)//"/tutorial008d_matrix.m","matrix",rmatrix,.true.)
+
+      ! Write the matrix to a MAPLE file
+      call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+          trim(spostdir)//"/tutorial008d_matrix.maple", "(E11.2)")
+    else
+      ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+          "./post/tutorial008d_matrix.txt", "(E11.2)")
+
+      ! Write the matrix to a MATLAB file.
+      call matio_spyBlockMatrix(&
+          "./post/tutorial008d_matrix.m","matrix",rmatrix,.true.)
+
+      ! Write the matrix to a MAPLE file
+      call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+          "./post/tutorial008d_matrix.maple", "(E11.2)")
+    end if
 
     ! =================================
     ! Cleanup

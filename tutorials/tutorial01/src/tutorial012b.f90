@@ -27,6 +27,7 @@ contains
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation, rtria1, rtria2
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
 
     ! Print a message
     call output_lbrk()
@@ -39,11 +40,19 @@ contains
     ! and the mesh
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/bench1.prm")
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/bench1.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/bench1.prm")
+    end if
     
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard, based on rboundary.
-    call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/bench1.tri", rboundary)
+    else
+      call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    end if
     call tria_initStandardMeshFromRaw (rtriangulation, rboundary)
 
     ! =================================
@@ -52,8 +61,13 @@ contains
     call output_line ("Writing file 'post/tutorial012b_level1.vtk'.")
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012b_level1.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         trim(spostdir)//"/tutorial012b_level1.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                         "post/tutorial012b_level1.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -95,8 +109,13 @@ contains
     call output_line ("Writing file 'post/tutorial012b_level3a.vtk'.")
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria1,&
-                       "post/tutorial012b_level3a.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria1,&
+                         trim(spostdir)//"/tutorial012b_level3a.vtk")
+    else 
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria1,&
+                         "post/tutorial012b_level3a.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -104,8 +123,13 @@ contains
     call output_line ("Writing file 'post/tutorial012b_level3b.vtk'.")
 
     ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria2,&
-                       "post/tutorial012b_level3b.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria2,&
+                         trim(spostdir)//"/tutorial012b_level3b.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria2,&
+                         "post/tutorial012b_level3b.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
 
