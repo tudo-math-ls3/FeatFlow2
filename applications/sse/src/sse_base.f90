@@ -11,7 +11,13 @@
 
 module sse_base
 
+  use basicgeometry
   use fsystem
+  use lineariser
+  use linearsystemblock
+  use linearsystemscalar
+  use spatialdiscretisation
+!  use storage
 
   implicit none
 
@@ -19,6 +25,7 @@ module sse_base
   public :: sse_bottomProfile
   public :: sse_bottomStress
   public :: sse_eddyViscosity
+  public :: sse_calcVelocity
 
 #ifdef USE_COMPILER_INTEL
   public :: sinh
@@ -503,4 +510,135 @@ contains
 
   end function
 #endif
+
+    ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sse_calcVelocity(rvelocity,dz,rvector,rvectorGrad_SSEre,&
+      rvectorGrad_SSEim,rvectorHessX_SSEre,rvectorHessX_SSEim,&
+      rvectorHessY_SSEre,rvectorHessY_SSEim)
+
+!<description>
+  ! Calculates the vertical and horizontal velocities (u,v,w) from the
+  ! first and (if present) second derivatives of the sea surface
+  ! elevation N provided via rvector. The discretisation structure is
+  ! provided via the problem structure rproblem.
+!</description>
+
+!<input>
+  ! Sea surface elevation
+  type(t_vectorBlock), intent(in) :: rvector
+
+  ! Z-coordinate, where the velocity should be calculated
+  real(DP), intent(in) :: dz
+
+  ! Gradients of the sea surface elevation
+  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEre
+  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEim
+
+  ! OPTIONAL: second derivatives of the sea surface elevation
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEre
+  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEim
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEre
+  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEim
+!</input>
+
+!<output>
+  ! Velocity vector
+  type(t_vectorBlock), intent(out) :: rvelocity
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_blockDiscretisation) :: rblockDiscr
+    type(t_vectorBlock) :: rcoordsDOF
+    real(DP), dimension(:), pointer :: p_DcoordsX,p_DcoordsY
+    real(DP), dimension(:), pointer :: p_DsseX_SSEre,p_DsseX_SSEim
+    real(DP), dimension(:), pointer :: p_DsseY_SSEre,p_DsseY_SSEim
+    real(DP), dimension(:), pointer :: p_DvelU_SSEre,p_DvelU_SSEim
+    real(DP), dimension(:), pointer :: p_DvelV_SSEre,p_DvelV_SSEim
+    complex(DP) :: calpha1,calpha2,cr1,cr2,cSSEx,cSSEY,cvelU,cvelV
+    real(DP) :: dAv,dh,ds
+    integer, dimension(NDIM2D) :: Isize
+    integer :: ipoint,i
+
+    ! Compute coordinates of DOFs
+    Isize = rvector%RvectorBlock(1)%NEQ
+    call lsysbl_createVector(rcoordsDOF, Isize, .false.)
+    call lin_calcDofCoords(rvector%RvectorBlock(1)%p_rspatialDiscr, rcoordsDOF)
+    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(1), p_DcoordsX)
+    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(2), p_DcoordsY)
+
+    ! Create block discretisation structure
+    call spdiscr_initBlockDiscr(rblockDiscr,6,&
+        rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
+        rvector%p_rblockDiscr%p_rboundary)
+    do i=1,6
+      call spdiscr_duplicateDiscrSc(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+          rblockDiscr%RspatialDiscr(i), .true.)
+    end do
+    
+    ! Set pointer to horizontal velocity values
+    call lsysbl_createVector(rblockDiscr, rvelocity, .true.)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(1), p_DvelU_SSEre)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(2), p_DvelU_SSEim)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(3), p_DvelV_SSEre)
+    call lsyssc_getbase_double(rvelocity%RvectorBlock(4), p_DvelV_SSEim)
+
+    ! Set pointers to gradient values
+    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(1), p_DsseX_SSEre)
+    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(2), p_DsseY_SSEre)
+    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(1), p_DsseX_SSEim)
+    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(2), p_DsseY_SSEim)
+
+    ! Compute horizontal velocities (U,V) from analytical expressions
+    do ipoint = 1, size(p_DcoordsX)
+
+      ! Compute bottom profile
+      dh = sse_bottomProfile(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+      
+      ! Compute bottom stress
+      ds = sse_bottomStress(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+      
+      ! Compute vertical eddy viscosity
+      dAv = sse_eddyViscosity(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
+
+      ! Compute coefficients calpha1 and calpha2
+      calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
+      calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
+      
+      ! Compute complex sea surface elevation
+      cSSEx = cmplx(p_DsseX_SSEre(ipoint),p_DsseX_SSEim(ipoint))
+      cSSEy = cmplx(p_DsseY_SSEre(ipoint),p_DsseY_SSEim(ipoint))
+
+      ! Compute coefficient cr1
+      cr1 = dgravaccel/(dAv*(calpha1**2))*&
+          ((ds*cosh(calpha1*dz))/(calpha1*dAv*sinh(calpha1*dh)+&
+                                           ds*cosh(calpha1*dh))-1.0_DP)*&
+                                           (cSSEx+cimg*cSSEy)
+
+      ! Compute coefficient cr2
+      cr2 = dgravaccel/(dAv*(calpha2**2))*&
+          ((ds*cosh(calpha2*dz))/(calpha2*dAv*sinh(calpha2*dh)+&
+                                           ds*cosh(calpha2*dh))-1.0_DP)*&
+                                           (cSSEx-cimg*cSSEy)
+
+      ! Compute complex velocities
+      cvelU = 0.5_DP*(cr1+cr2)
+      cvelV = 0.5_DP*(cr1-cr2)/cimg
+      
+      ! And separate them into real and imaginary parts
+      p_DvelU_SSEre(ipoint) = real(cvelU)
+      p_DvelV_SSEre(ipoint) = real(cvelV)
+      p_DvelU_SSEim(ipoint) = aimag(cvelU)
+      p_DvelV_SSEim(ipoint) = aimag(cvelV)
+    end do
+
+    ! Release DOF coordinates
+    call lsysbl_releaseVector(rcoordsDOF)
+    
+  end subroutine
+
 end module sse_base

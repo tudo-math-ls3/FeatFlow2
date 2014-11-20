@@ -6,6 +6,46 @@
 !# <purpose>
 !# This module provides the main routines for solving the elliptic
 !# equation for sea surface elevation.
+!#
+!#  1.) sse_initParamTriang
+!#      -> Initialises the triangulation structure
+!#
+!#  2.) sse_initDiscretisation
+!#      -> Initialises the discretisation structure
+!#
+!#  3.) sse_initMatVec
+!#      -> Initialises the matrices and vectors
+!#
+!#  4.) sse_initDiscreteBC
+!#      -> Initialises the discretised boundary conditions
+!#
+!#  5.) sse_implementBC
+!#      -> Implements the discretised boundary conditions into the
+!#         matrices and vectors
+!#
+!#  6.) sse_solve
+!#      -> Solves the linear system
+!#
+!#  7.) sse_postprocessing
+!#      -> Post-processes the solution
+!#
+!#  8.) sse_doneMatVec
+!#      -> Releases matrices and vectors
+!#
+!#  9.) sse_doneBC
+!#      -> Releases the discretised boundary conditions
+!#
+!# 10.) sse_doneDiscretisation
+!#      -> Releases the discretisation structure
+!#
+!# 11.) sse_doneParamTriang
+!#      -> Releases the triangulation structure
+!#
+!# 12.) sse_outputTable
+!#      -> Output the convergence table
+!#
+!# 13.) sse_getNVAR
+!#      -> Returns the number of variables
 !# </purpose>
 !##############################################################################
 
@@ -69,7 +109,7 @@ module sse_main
   public :: sse_doneDiscretisation
   public :: sse_doneParamTriang
   public :: sse_outputTable
-  public :: sse_calcVelocity
+  public :: sse_getNVAR
 
   private
 
@@ -304,7 +344,7 @@ contains
   ! local variables
   character(len=SYS_STRLEN) :: sconfig,sparameter
   integer, dimension(3) :: Ccubaturetypes,Celementtypes
-  integer :: i,j,ccubaturetype,celementtype
+  integer :: i,j,ccubaturetype,celementtype,nvar
 
   ! Get the section for the configuration
   call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
@@ -320,20 +360,22 @@ contains
     call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter)
     ccubaturetype = cub_igetID(sparameter)
 
+    ! Get number of variables
+    nvar = sse_getNVAR(rproblem)
+
     do i=rproblem%ilvmin,rproblem%ilvmax
 
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this simple problem, we only have one block.
       call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
-          merge(1,2,rproblem%cproblemtype .eq. POISSON_SCALAR),&
-          rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-
+          nvar, rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
+      
       ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
       ! list of scalar discretisation structures for every component
       ! of the solution vector. Initialise the first element of the
       ! list to specify the element for this solution component:
-      do j=1,merge(1,2,rproblem%cproblemtype .eq. POISSON_SCALAR)
+      do j=1,nvar
         call spdiscr_initDiscr_simple(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j), celementtype,&
             rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
@@ -343,7 +385,7 @@ contains
       ! formula to use
       ! Create an assembly information structure which tells the code
       ! the cubature formula to use. Standard: Gauss 3x3.
-      do j=1,merge(1,2,rproblem%cproblemtype .eq. POISSON_SCALAR)
+      do j=1,nvar
         call spdiscr_createDefCubStructure(&
             rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
             rproblem%RlevelInfo(i)%RcubatureInfo(1),&
@@ -2176,19 +2218,13 @@ contains
       call mlprj_initProjectionMat(rproblem%RlevelInfo(i)%rprojectionS,&
           rmatTmp)
 
-      call lsysbl_infoMatrix(rmatTmp)
-
-pause
-      ! Release temporal matrix
-      call lsysbl_releaseMatrix(rmatTmp)
-pause
       ! Initialise the matrix-based projection
       call mlprj_initMatrixProjection(&
           rproblem%RlevelInfo(i)%rprojectionS%RscalarProjection(1,1),&
           rproblem%RlevelInfo(i)%rmatProl(1),&
           rmatrixRest=rproblem%RlevelInfo(i)%rmatRest(1))
     end do
-stop
+
     ! Set up an interlevel projecton structure for the coarse-most level.
     call lsysbl_deriveSubmatrix(rproblem%RlevelInfo(ilvmin)%rmatrix,&
         rmatTmp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,2,3,2,3)
@@ -3917,132 +3953,37 @@ stop
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine sse_calcVelocity(rvelocity,dz,rvector,rvectorGrad_SSEre,&
-      rvectorGrad_SSEim,rvectorHessX_SSEre,rvectorHessX_SSEim,&
-      rvectorHessY_SSEre,rvectorHessY_SSEim)
+  pure function sse_getNVAR(rproblem) result(nvar)
 
 !<description>
-  ! Calculates the vertical and horizontal velocities (u,v,w) from the
-  ! first and (if present) second derivatives of the sea surface
-  ! elevation N provided via rvector. The discretisation structure is
-  ! provided via the problem structure rproblem.
+  ! Return the number of variables for the problem rproblem
 !</description>
 
 !<input>
-  ! Sea surface elevation
-  type(t_vectorBlock), intent(in) :: rvector
-
-  ! Z-coordinate, where the velocity should be calculated
-  real(DP), intent(in) :: dz
-
-  ! Gradients of the sea surface elevation
-  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEre
-  type(t_vectorBlock), intent(in) :: rvectorGrad_SSEim
-
-  ! OPTIONAL: second derivatives of the sea surface elevation
-  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEre
-  type(t_vectorBlock), intent(in), optional :: rvectorHessX_SSEim
-  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEre
-  type(t_vectorBlock), intent(in), optional :: rvectorHessY_SSEim
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(in) :: rproblem
 !</input>
 
-!<output>
-  ! Velocity vector
-  type(t_vectorBlock), intent(out) :: rvelocity
-!</inputoutput>
+!<result>
+  ! Number of variables of the problem
+  integer :: nvar
+!</result>
 
-!</subroutine>
+    select case(rproblem%cproblemtype)
+    case (POISSON_SCALAR)
+      nvar = 1
+    case (POISSON_SYSTEM)
+      nvar = 2
+    case (SSE_SCALAR)
+      nvar = 2
+    case (SSE_SYSTEM1,SSE_SYSTEM2)
+      nvar = 6
+    case default
+      nvar = 0
+    end select
 
-    ! local variables
-    type(t_blockDiscretisation) :: rblockDiscr
-    type(t_vectorBlock) :: rcoordsDOF
-    real(DP), dimension(:), pointer :: p_DcoordsX,p_DcoordsY
-    real(DP), dimension(:), pointer :: p_DsseX_SSEre,p_DsseX_SSEim
-    real(DP), dimension(:), pointer :: p_DsseY_SSEre,p_DsseY_SSEim
-    real(DP), dimension(:), pointer :: p_DvelU_SSEre,p_DvelU_SSEim
-    real(DP), dimension(:), pointer :: p_DvelV_SSEre,p_DvelV_SSEim
-    complex(DP) :: calpha1,calpha2,cr1,cr2,cSSEx,cSSEY,cvelU,cvelV
-    real(DP) :: dAv,dh,ds
-    integer, dimension(NDIM2D) :: Isize
-    integer :: ipoint,i
-
-    ! Compute coordinates of DOFs
-    Isize = rvector%RvectorBlock(1)%NEQ
-    call lsysbl_createVector(rcoordsDOF, Isize, .false.)
-    call lin_calcDofCoords(rvector%RvectorBlock(1)%p_rspatialDiscr, rcoordsDOF)
-    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(1), p_DcoordsX)
-    call lsyssc_getbase_double(rcoordsDOF%RvectorBlock(2), p_DcoordsY)
-
-    ! Create block discretisation structure
-    call spdiscr_initBlockDiscr(rblockDiscr,6,&
-        rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation,&
-        rvector%p_rblockDiscr%p_rboundary)
-    do i=1,6
-      call spdiscr_duplicateDiscrSc(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-          rblockDiscr%RspatialDiscr(i), .true.)
-    end do
-    
-    ! Set pointer to horizontal velocity values
-    call lsysbl_createVector(rblockDiscr, rvelocity, .true.)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(1), p_DvelU_SSEre)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(2), p_DvelU_SSEim)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(3), p_DvelV_SSEre)
-    call lsyssc_getbase_double(rvelocity%RvectorBlock(4), p_DvelV_SSEim)
-
-    ! Set pointers to gradient values
-    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(1), p_DsseX_SSEre)
-    call lsyssc_getbase_double(rvectorGrad_SSEre%RvectorBlock(2), p_DsseY_SSEre)
-    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(1), p_DsseX_SSEim)
-    call lsyssc_getbase_double(rvectorGrad_SSEim%RvectorBlock(2), p_DsseY_SSEim)
-
-    ! Compute horizontal velocities (U,V) from analytical expressions
-    do ipoint = 1, size(p_DcoordsX)
-
-      ! Compute bottom profile
-      dh = sse_bottomProfile(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
-      
-      ! Compute bottom stress
-      ds = sse_bottomStress(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
-      
-      ! Compute vertical eddy viscosity
-      dAv = sse_eddyViscosity(p_DcoordsX(ipoint),p_DcoordsY(ipoint))
-
-      ! Compute coefficients calpha1 and calpha2
-      calpha1 = sqrt(cimg*(dtidalfreq+dcoraccel)/dAv)
-      calpha2 = sqrt(cimg*(dtidalfreq-dcoraccel)/dAv)
-      
-      ! Compute complex sea surface elevation
-      cSSEx = cmplx(p_DsseX_SSEre(ipoint),p_DsseX_SSEim(ipoint))
-      cSSEy = cmplx(p_DsseY_SSEre(ipoint),p_DsseY_SSEim(ipoint))
-
-      ! Compute coefficient cr1
-      cr1 = dgravaccel/(dAv*(calpha1**2))*&
-          ((ds*cosh(calpha1*dz))/(calpha1*dAv*sinh(calpha1*dh)+&
-                                           ds*cosh(calpha1*dh))-1.0_DP)*&
-                                           (cSSEx+cimg*cSSEy)
-
-      ! Compute coefficient cr2
-      cr2 = dgravaccel/(dAv*(calpha2**2))*&
-          ((ds*cosh(calpha2*dz))/(calpha2*dAv*sinh(calpha2*dh)+&
-                                           ds*cosh(calpha2*dh))-1.0_DP)*&
-                                           (cSSEx-cimg*cSSEy)
-
-      ! Compute complex velocities
-      cvelU = 0.5_DP*(cr1+cr2)
-      cvelV = 0.5_DP*(cr1-cr2)/cimg
-      
-      ! And separate them into real and imaginary parts
-      p_DvelU_SSEre(ipoint) = real(cvelU)
-      p_DvelV_SSEre(ipoint) = real(cvelV)
-      p_DvelU_SSEim(ipoint) = aimag(cvelU)
-      p_DvelV_SSEim(ipoint) = aimag(cvelV)
-    end do
-
-    ! Release DOF coordinates
-    call lsysbl_releaseVector(rcoordsDOF)
-    
-  end subroutine
+  end function sse_getNVAR
 
 end module sse_main
