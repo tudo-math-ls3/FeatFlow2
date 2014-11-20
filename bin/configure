@@ -1162,7 +1162,7 @@ sub check_options {
     my %validkeywords = (
         "AGMG"                => [ "yes", "no" ],
 	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "cuda50", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "cuda37", "cuda50", "cuda52" ],  # List of valid coprocessor backends
 	"EXECUTABLE"          => [ "yes", "no" ],
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
@@ -1544,7 +1544,7 @@ sub create_feat2AppMakefile {
 	# converted to upper case for the Makefile" and "capitalising and
 	# normalising values" comment)
 	foreach $entry ('CUDA10', 'CUDA11', 'CUDA12', 'CUDA13',
-			'CUDA20', 'CUDA21', 'CUDA30', 'CUDA35', 'CUDA50') {
+			'CUDA20', 'CUDA21', 'CUDA30', 'CUDA35', 'CUDA37', 'CUDA50', 'CUDA52') {
 	    print MAKEFILE_HDL
 		"HAS_" . uc($entry) . "          = ";
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
@@ -1880,7 +1880,7 @@ sub create_feat2AppMakefile {
 
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda50') {
+			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda37', 'cuda50', 'cuda52') {
 	    if (defined($coprocs{$entry})) {
 		print MAKEFILE_HDL
 		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
@@ -1901,29 +1901,6 @@ sub create_feat2AppMakefile {
 		    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
 		    "endif\n";
 	    }
-	}
-
-	# if OPENGL is listed as coprocessor, X11, GL and GLEW need to be linked linked against the binary
-	if (defined($coprocs{'opengl'})) {
-	    print MAKEFILE_HDL
-		"# OPENGL is among the list of coprocessors, so link against X11, GL and GLEW and add appropriate includes.\n" .
-		"ifeq (\$(strip \$(GLEW_INC_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: GLEW_INC_PATH unset. Only standard include paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the file <GL/glew.h>.';\n" .
-		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS)\n" .
-		"else\n" .
-		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH)\n" .
-		"endif\n" .
-		"ifeq (\$(strip \$(GLEW_LIB_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
-		"LIBS         := -lGLEW -lGL -lGLU -lX11\n" .
-		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS)\n" .
-		"LIBS         := -lGLEW -lGL -lGLU -lX11\n" .
-		"endif\n";
 	}
 
 	# write out general coproc-specific variable additions
@@ -5514,8 +5491,8 @@ sub show_help {
 	"                    Set Fortran 90 compiler flags to <string>\n" .
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
-	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
-	"                    cuda13, cuda20, cuda21, cuda30, cuda35, cuda50.\n" .
+	"                    Valid IDs are: cpu, cuda10, cuda11, cuda12, cuda13,\n" .
+	"                    cuda20, cuda21, cuda30, cuda35, cuda37, cuda50, cuda52.\n" .
     "                    Note that the identifier must always be set if coprocessor\n" .
 	"                    support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
