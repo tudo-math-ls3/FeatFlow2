@@ -2984,7 +2984,8 @@ contains
       call elem_eval_R1_3D(celement, revalElementSet, Bder, Dbas)
 
     case default
-      call output_line ('Unsupported element.', &
+      call output_line ('Unsupported element: '//&
+                        trim(adjustl(sys_si(celement,16)))//'.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'elem_generic_sim2')
       call sys_halt()
     end select
