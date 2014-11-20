@@ -1204,7 +1204,7 @@ contains
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
           call lsyssc_getbase_double(rx, p_Dx)
 
-          ! Assemble upwind-biased raw antidiffusive fluxes
+          ! Assemble symetric raw antidiffusive fluxes
           call doFluxesSymmetricDP(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
 
