@@ -457,7 +457,7 @@ my %defaults = (
     SRCEXTRA_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     UNDERSCORE           => "YES",
-    WARN                 => [],
+    WARN                 => [ "DEPRECATED" ],
 );
 
 
