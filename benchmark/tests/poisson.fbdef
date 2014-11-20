@@ -65,6 +65,6 @@ class = DEFAULT
 testid   = POISSON_001
 descr    = Poisson standard benchmark
 mglevels = 1
-datfile  = -
+datfile  = ./data/apps_poisson/master.dat
 ucddir   = $LOGDIR
 predir   = ../applications/poisson/pre

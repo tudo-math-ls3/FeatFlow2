@@ -30,35 +30,42 @@ program poisson
 
   use fsystem
   use genoutput
+  use paramlist
 
   use poisson1d_method0_simple
   use poisson1d_method1_mg
-  use poisson2d_method0_simple
-  use poisson2d_method0_neumann
+  use poisson2d_method0_agmg
   use poisson2d_method0_block
-  use poisson2d_method0_ravthomas
-  use poisson2d_method0_smart
   use poisson2d_method0_cmsort
-  use poisson2d_method1_mg
+  use poisson2d_method0_neumann
+  use poisson2d_method0_ravthomas
+  use poisson2d_method0_simple
+  use poisson2d_method0_smart
   use poisson2d_method1_em30
-  use poisson2d_method1_robin
   use poisson2d_method1_fbc
   use poisson2d_method1_hadapt
   use poisson2d_method1_l2prj
-  use poisson2d_method1_prolmat
-  use poisson2d_method2
-  use poisson2d_method2_collect
-  use poisson2d_method2_cmsort
-  use poisson2d_method2_mg
-  use poisson3d_method0_simple
-  use poisson3d_method1_mg
-  use poisson3d_method1_em30
+  use poisson2d_method1_mg
   use poisson2d_method1_ncc
+  use poisson2d_method1_prolmat
+  use poisson2d_method1_robin
+  use poisson2d_method2
+  use poisson2d_method2_cmsort
+  use poisson2d_method2_collect
+  use poisson2d_method2_mg
+  use poisson3d_method0_agmg
+  use poisson3d_method0_simple
+  use poisson3d_method1_em30
+  use poisson3d_method1_mg
 
   implicit none
 
+  ! local parameter list
+  type(t_parlist) :: rparamlist
+
   ! local variables
-  character(len=SYS_STRLEN) :: slogdir,slogfile
+  character(len=SYS_STRLEN) :: slogdir,slogfile,smaster
+  integer :: i
 
   ! The very first thing in every application:
   ! Initialise system-wide settings:
@@ -83,143 +90,240 @@ program poisson
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
+  ! Initialise the parameter list
+  call parlst_init(rparamlist)
+  
+  ! Read the master file
+  call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+  call parlst_readfromfile(rparamlist, smaster)
+
   ! Call the problem to solve. Poisson 1D method 1 - simple:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-1D-Problem with method 0 - simple")
-  call output_line ("-----------------------------------------------------")
-  call poisson1d_0_simple
+  call parlst_getvalue_int(rparamlist, "", "POISSON1D_METHOD0_SIMPLE", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-1D-Problem with method 0 - simple")
+    call output_line ("-----------------------------------------------------")
+    call poisson1d_0_simple
+  end if
 
   ! Call the problem to solve. Poisson 1D method 1 - multigrid:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-1D-Problem with method 1 - multigrid")
-  call output_line ("--------------------------------------------------------")
-  call poisson1d_1_mg
+  call parlst_getvalue_int(rparamlist, "", "POISSON1D_METHOD1_MG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-1D-Problem with method 1 - multigrid")
+    call output_line ("--------------------------------------------------------")
+    call poisson1d_1_mg
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - simple:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - simple")
-  call output_line ("-----------------------------------------------------")
-  call poisson2d_0_simple
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_SIMPLE", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - simple")
+    call output_line ("-----------------------------------------------------")
+    call poisson2d_0_simple
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - smart:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - smart")
-  call output_line ("----------------------------------------------------")
-  call poisson2d_0_smart
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_SMART", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - smart")
+    call output_line ("----------------------------------------------------")
+    call poisson2d_0_smart
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - pure Neumann problem:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - Neumann")
-  call output_line ("------------------------------------------------------")
-  call poisson2d_0_neumann
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_NEUMANN", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - Neumann")
+    call output_line ("------------------------------------------------------")
+    call poisson2d_0_neumann
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - CM-sorting:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - CM-sorting")
-  call output_line ("---------------------------------------------------------")
-  call poisson2d_0_cmsort
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_CMSORT", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - CM-sorting")
+    call output_line ("---------------------------------------------------------")
+    call poisson2d_0_cmsort
+  end if
 
   ! Call the problem to solve. Poisson 2D method 0 - block variant:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - block")
-  call output_line ("-----------------------------------------------------")
-  call poisson2d_0_block
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_BLOCK", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - block")
+    call output_line ("-----------------------------------------------------")
+    call poisson2d_0_block
+  end if
 
   ! Call the problem to solve. Poisson 2D method 0 - Raviart-Thomas variant:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 0 - RavThomas")
-  call output_line ("--------------------------------------------------------")
-  call poisson2d_0_ravthomas
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_RAVTHOMAS", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - RavThomas")
+    call output_line ("--------------------------------------------------------")
+    call poisson2d_0_ravthomas
+  end if
+
+  ! Call the problem to solve. Poisson 2D method 1 - algebraic multigrid:
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD0_AGMG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 0 - AGMG")
+    call output_line ("---------------------------------------------------")
+    call poisson2d_0_agmg
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - nonconstant coefficients:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - ncc")
-  call output_line ("--------------------------------------------------")
-  call poisson2d_1_ncc
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_NCC", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - ncc")
+    call output_line ("--------------------------------------------------")
+    call poisson2d_1_ncc
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - multigrid:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - multigrid")
-  call output_line ("--------------------------------------------------------")
-  call poisson2d_1_mg
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_MG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - multigrid")
+    call output_line ("--------------------------------------------------------")
+    call poisson2d_1_mg
+  end if
 
   ! Call the problem to solve. Poisson 1: Support for nonconforming elements
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - EM30")
-  call output_line ("---------------------------------------------------")
-  call poisson2d_1_em30
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_EM30", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - EM30")
+    call output_line ("---------------------------------------------------")
+    call poisson2d_1_em30
+  end if
 
   ! Call the problem to solve. Poisson 1: Support for nonconforming elements
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - Robin BC")
-  call output_line ("-------------------------------------------------------")
-  call poisson2d_1_robin
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_ROBIN", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - Robin BC")
+    call output_line ("-------------------------------------------------------")
+    call poisson2d_1_robin
+  end if
 
   ! Call the problem to solve. Poisson 1: Fictitious boundary support
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - FBC")
-  call output_line ("--------------------------------------------------")
-  call poisson2d_1_fbc
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_FBC", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - FBC")
+    call output_line ("--------------------------------------------------")
+    call poisson2d_1_fbc
+  end if
 
   ! Call the problem to solve. Poisson 1: h-adaptivity
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - hadapt")
-  call output_line ("-----------------------------------------------------")
-  call poisson2d_1_hadapt
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_HADAPT", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - hadapt")
+    call output_line ("-----------------------------------------------------")
+    call poisson2d_1_hadapt
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - L2-projection:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - L2-projection")
-  call output_line ("------------------------------------------------------------")
-  call poisson2d_1_l2prj
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_L2PRJ", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - L2-projection")
+    call output_line ("------------------------------------------------------------")
+    call poisson2d_1_l2prj
+  end if
 
   ! Call the problem to solve. Poisson 2D method 1 - Prolongation matrix:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix")
-  call output_line ("-----------------------------------------------------------")
-  call poisson2d_1_prolmat
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD1_PROLMAT", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix")
+    call output_line ("-----------------------------------------------------------")
+    call poisson2d_1_prolmat
+  end if
 
   ! Call the problem to solve. Poisson 2D method 2:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 2")
-  call output_line ("--------------------------------------------")
-  call poisson2d_2
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD2", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 2")
+    call output_line ("--------------------------------------------")
+    call poisson2d_2
+  end if
 
   ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 2 - CM-sorting")
-  call output_line ("---------------------------------------------------------")
-  call poisson2d_2_cmsort
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD2_CMSORT", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 2 - CM-sorting")
+    call output_line ("---------------------------------------------------------")
+    call poisson2d_2_cmsort
+  end if
 
   ! Call the problem to solve. Poisson 5:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 2 - multigrid")
-  call output_line ("--------------------------------------------------------")
-  call poisson2d_2_mg
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD2_MG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 2 - multigrid")
+    call output_line ("--------------------------------------------------------")
+    call poisson2d_2_mg
+  end if
 
   ! Call the problem to solve. Poisson 3: Collection support
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-2D-Problem with method 2 - collection")
-  call output_line ("---------------------------------------------------------")
-  call poisson2d_2_collect
+  call parlst_getvalue_int(rparamlist, "", "POISSON2D_METHOD2_COLLECT", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-2D-Problem with method 2 - collection")
+    call output_line ("---------------------------------------------------------")
+    call poisson2d_2_collect
+  end if
 
   ! Call the problem to solve. Poisson3D-1:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-3D-Problem with method 0 - simple")
-  call output_line ("-----------------------------------------------------")
-  call poisson3d_0_simple
+  call parlst_getvalue_int(rparamlist, "", "POISSON3D_METHOD0_SIMPLE", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-3D-Problem with method 0 - simple")
+    call output_line ("-----------------------------------------------------")
+    call poisson3d_0_simple
+  end if
 
   ! Call the problem to solve. Poisson3D-1:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-3D-Problem with method 1 - multigrid")
-  call output_line ("--------------------------------------------------------")
-  call poisson3d_1_mg
+  call parlst_getvalue_int(rparamlist, "", "POISSON3D_METHOD0_AGMG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-3D-Problem with method 0 - AGMG")
+    call output_line ("---------------------------------------------------")
+    call poisson3d_0_agmg
+  end if
+
+  ! Call the problem to solve. Poisson3D-1:
+  call parlst_getvalue_int(rparamlist, "", "POISSON3D_METHOD1_MG", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-3D-Problem with method 1 - multigrid")
+    call output_line ("--------------------------------------------------------")
+    call poisson3d_1_mg
+  end if
 
   ! Call the problem to solve. Poisson3D-7:
-  call output_lbrk ()
-  call output_line ("Calculating Poisson-3D-Problem with method 1 - EM30")
-  call output_line ("---------------------------------------------------")
-  call poisson3d_1_em30
+  call parlst_getvalue_int(rparamlist, "", "POISSON3D_METHOD1_EM30", i, 0)
+  if (i.ne. 0) then
+    call output_lbrk ()
+    call output_line ("Calculating Poisson-3D-Problem with method 1 - EM30")
+    call output_line ("---------------------------------------------------")
+    call poisson3d_1_em30
+  end if
+
+  ! Release parameter list
+  call parlst_done(rparamlist)
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
