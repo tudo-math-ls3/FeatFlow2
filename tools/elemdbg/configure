@@ -14,4 +14,5 @@ export LC_ALL
 
 ../../bin/configure \
 	--appname=elemdbg \
+        --apponlyflags=-DUSE_TIMER \
 	"$@"

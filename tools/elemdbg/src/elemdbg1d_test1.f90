@@ -614,6 +614,7 @@ contains
       end do ! ilvl
     end if
 
+#ifdef USE_TIMER
     ! Print out the time measurements for each level
     call output_separator(OU_SEP_MINUS)
     call output_line('Level    CPU_Tria   CPU_Discr   CPU_Assem' // &
@@ -662,6 +663,7 @@ contains
             trim(sys_sdEP(daux5,12,4)))
       end do ! ilvl
     end if
+#endif
 
     ! Deallocate arrays
     deallocate(Istat)
