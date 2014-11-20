@@ -40,6 +40,7 @@ module elemdbg3d_test1
   use linearformevaluation
   use linearsolver
   use convection
+  use statistics
   
   use elemdbg3d_callback
   use disto3d_aux
@@ -74,10 +75,11 @@ contains
   type(t_errorScVec) :: rerror
   integer :: NLMIN,NLMAX,ierror,ilvl
   real(DP), dimension(:,:), allocatable, target :: Derror
+  real(DP), dimension(:,:), allocatable, target :: Dtimer
   integer, dimension(:,:), allocatable :: Istat
   integer :: isolver, ioutput, nmaxiter,ccubature,idistType,idistLevel,idistLvl
   integer(I32) :: celement, cprimaryelement, cshape
-  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, ddist2
+  real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, daux3, daux4, daux5, ddist2
   character(LEN=32) :: selement,sprimaryelement,scubature
   type(t_bilinearForm) :: rform
   integer :: iucd
@@ -90,6 +92,7 @@ contains
   character(len=SYS_STRLEN) :: spredir, sucddir
   type(t_blockSortStrategy) :: rsortStrategy
   type(t_scalarCubatureInfo) :: rcubatureInfo
+  type(t_timer) :: rtimer
   
     ! Fetch sytem variables
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
@@ -168,6 +171,7 @@ contains
        
     ! Allocate arrays
     allocate(Derror(6,NLMIN:NLMAX))
+    allocate(Dtimer(5,NLMIN:NLMAX))
     allocate(Istat(6,NLMIN:NLMAX))
     
     call output_separator(OU_SEP_STAR)
@@ -302,6 +306,9 @@ contains
     
       call output_line('Processing Level ' // trim(sys_siL(ilvl,4)) // '...')
 
+      ! Start time measurement
+      call stat_startTimer(rtimer,STAT_TIMERSHORT)
+
       ! Now read in the basic triangulation.
       select case(cshape)
       case(BGEOM_SHAPE_HEXA)
@@ -361,6 +368,14 @@ contains
       ! a triangulation.
       call tria_initStandardMeshFromRaw (rtriangulation)
 
+      ! Stop time measurement
+      call stat_stopTimer(rtimer)
+      Dtimer(1,ilvl) = rtimer%delapsedReal
+
+      ! Start time measurement
+      call stat_clearTimer(rtimer)
+      call stat_startTimer(rtimer,STAT_TIMERSHORT)
+
       ! Set up discretisation
       call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
       call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
@@ -413,6 +428,14 @@ contains
       Istat(4,ilvl) = rtriangulation%NMT
       Istat(5,ilvl) = rtriangulation%NAT
       Istat(6,ilvl) = rtriangulation%NEL
+
+      ! Stop time measurement
+      call stat_stopTimer(rtimer)
+      Dtimer(2,ilvl) = rtimer%delapsedReal
+
+      ! Start time measurement
+      call stat_clearTimer(rtimer)
+      call stat_startTimer(rtimer,STAT_TIMERSHORT)
 
       ! Assemble system matrix
       select case(itest)
@@ -476,7 +499,15 @@ contains
         call vecfil_discreteBCsol (rvecsol)
         call matfil_discreteBC (rmatrix)
       end if
+
+      ! Stop time measurement
+      call stat_stopTimer(rtimer)
+      Dtimer(3,ilvl) = rtimer%delapsedReal
       
+      ! Start time measurement
+      call stat_clearTimer(rtimer)
+      call stat_startTimer(rtimer,STAT_TIMERSHORT)
+
       ! Set up the solver
       select case(isolver)
       case (0)
@@ -529,6 +560,14 @@ contains
       ! If necessary, unsort the solution vector
       call lsyssc_sortVector (rvecSol%RvectorBlock(1),.false.,rvecTmp%RvectorBlock(1))
       
+      ! Stop time measurement
+      call stat_stopTimer(rtimer)
+      Dtimer(4,ilvl) = rtimer%delapsedReal
+
+      ! Start time measurement
+      call stat_clearTimer(rtimer)
+      call stat_startTimer(rtimer,STAT_TIMERSHORT)
+
       ! Calculate the errors to the reference function
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
       rerror%p_DerrorL2 => Derror(1:1,ilvl)
@@ -563,6 +602,10 @@ contains
         call ucd_release (rexport)
 
       end if
+
+      ! Stop time measurement
+      call stat_stopTimer(rtimer)
+      Dtimer(5,ilvl) = rtimer%delapsedReal
 
       ! Clean up this level
       call linsol_doneData (p_rsolver)
@@ -623,8 +666,58 @@ contains
       end do ! ilvl
     end if
 
+    ! Print out the time measurements for each level
+    call output_separator(OU_SEP_MINUS)
+    call output_line('Level    CPU_Tria   CPU_Discr   CPU_Assem' // &
+                     '   CPU_Solve    CPU_Post')
+    
+    do ilvl = NLMIN, NLMAX
+      call output_line(trim(sys_si(ilvl,5)) // &
+          trim(sys_sdEP(Dtimer(1,ilvl),12,4)) // &
+          trim(sys_sdEP(Dtimer(2,ilvl),12,4)) // &
+          trim(sys_sdEP(Dtimer(3,ilvl),12,4)) // &
+          trim(sys_sdEP(Dtimer(4,ilvl),12,4)) // &
+          trim(sys_sdEP(Dtimer(5,ilvl),12,4)))
+    end do ! ilvl
+
+    ! Print out the timing factors for each level pair
+    if(NLMAX .gt. NLMIN) then
+      call output_separator(OU_SEP_MINUS)
+      call output_line('Level   Tria-fact  Discr-fact  Assem-fact' // &
+                       '  Solve-fact   Post-fact')
+      do ilvl = NLMIN+1, NLMAX
+        
+        ! avoid division by zero here
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
+        daux3 = 0.0_DP
+        daux4 = 0.0_DP
+        daux5 = 0.0_DP
+        
+        if(abs(Dtimer(1,ilvl-1)) .gt. SYS_EPSREAL_DP) &
+          daux1 = Dtimer(1,ilvl)/Dtimer(1,ilvl-1)
+        if(abs(Dtimer(2,ilvl-1)) .gt. SYS_EPSREAL_DP) &
+          daux2 = Dtimer(2,ilvl)/Dtimer(2,ilvl-1)
+        if(abs(Dtimer(3,ilvl-1)) .gt. SYS_EPSREAL_DP) &
+            daux3 = Dtimer(3,ilvl)/Dtimer(3,ilvl-1)
+        if(abs(Dtimer(4,ilvl-1)) .gt. SYS_EPSREAL_DP) &
+          daux4 = Dtimer(4,ilvl)/Dtimer(4,ilvl-1)
+        if(abs(Dtimer(5,ilvl-1)) .gt. SYS_EPSREAL_DP) &
+          daux5 = Dtimer(5,ilvl)/Dtimer(5,ilvl-1)
+
+        ! print out the factors
+        call output_line(trim(sys_si(ilvl,5)) // &
+            trim(sys_sdEP(daux1,12,4)) // &
+            trim(sys_sdEP(daux2,12,4)) // &
+            trim(sys_sdEP(daux3,12,4)) // &
+            trim(sys_sdEP(daux4,12,4)) // &
+            trim(sys_sdEP(daux5,12,4)))
+      end do ! ilvl
+    end if
+
     ! Deallocate arrays
     deallocate(Istat)
+    deallocate(Dtimer)
     deallocate(Derror)
     
   end subroutine
