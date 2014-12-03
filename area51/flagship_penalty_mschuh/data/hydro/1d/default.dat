@@ -1,0 +1,135 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#               Default parameters for hydrodynamic application in 1D          #
+#                                                                              #
+################################################################################
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory with grid files
+sgriddirectory = %{sappdirectory}/grids
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Log file for messages. ='': No log file output.
+slogfile = %{slogdirectory}/output.log
+
+# Log file for error messages; usually coincides with slogfile to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as slogfile
+serrorfile =
+
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchlogfile =
+
+# Performance configurations
+sperfconfigfile = %{sdatadirectory}/defaults/perfconfig.dat
+
+################################################################################
+[Hydro]
+################################################################################
+
+# Version identifier
+version = %{version}
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the DOF coordinates in the block vector structure
+DofCoords = 1
+
+
+# Cubature info sections
+CubatureInfo(4) =
+    CubFuncFunc
+    CubFuncDeriv
+    CubDerivDeriv
+    CubFunc
+
+#-------------------------------------------------------------------------------
+
+# Position of the group finite element block for the inviscid term
+InviscidGFEM = 1
+
+# Position of the group finite element block for the viscous term
+ViscousGFEM = 2
+
+# Position of the template group finite element block
+TemplateGFEM = 3
+
+# Position of the group finite element block for the primal boundary
+PrimalBdrGFEM = 4
+
+# Position of the group finite element block for the dual boundary
+DualBdrGFEM = 5
+
+#-------------------------------------------------------------------------------
+
+# Position of the stabilisation for the inviscid term
+InviscidAFC = 1
+
+# Position of the stabilisation for the iviscous term
+ViscousAFC = 2
+
+# Position of the stabilisation for the mass term
+MassAFC = 3
+
+#-------------------------------------------------------------------------------
+
+# Position of the system matrix in the scalar matrix structure
+SystemMatrix = 1
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 2
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix(1) = 4
+                          CubFuncFunc
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 5
+
+# Position of the constant coefficient matrix CX in the scalar matrix structure
+CoeffMatrix_CX(1) = 6
+                    CubFuncDeriv
+
+# Position of the constant coefficient matrix CXX in the scalar matrix structure
+CoeffMatrix_CXX(1) = 0 #7
+                     CubDerivDeriv
+
+#-------------------------------------------------------------------------------
+
+[CubFuncFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFuncDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubDerivDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
