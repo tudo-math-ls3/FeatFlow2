@@ -6092,7 +6092,7 @@ contains
     rcollectionTmp%p_rparlistQuickAccess1 => rparlist
 
     ! We need dscale in the assembly
-    rcollection%DquickAccess(1) = dscale
+    rcollectionTmp%DquickAccess(1) = dscale
 
     ! Assemble linear forms in 1D and 2D
     select case(rproblemLevel%rtriangulation%ndim)
