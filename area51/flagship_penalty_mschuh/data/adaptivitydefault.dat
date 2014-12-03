@@ -1,0 +1,36 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+# This file defines the default values for mesh adaptivity.                    #
+# Any value can be overwritten by the user in the application configuration.   #
+################################################################################
+
+################################################################################
+[Adaptivity]
+################################################################################
+
+# number of pre-adaptation steps
+npreadapt = 0
+
+# number of adaptation steps
+nadapt = 0
+
+# time for grid adaptivity
+dtimeadapt = 0.0
+
+# time step for grid adaptivity
+dstepadapt = 0.0
+
+# maximum number of refinement levels
+nsubdividemax = 0
+
+# adaptation strategy
+# 1 = red-green
+iadaptationStrategy = 1
+
+# refinement tolerance
+drefinementTolerance = 0.0
+
+# coarsening tolerance
+dcoarseningTolerance = 0.0
+

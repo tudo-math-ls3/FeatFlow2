@@ -1,0 +1,153 @@
+#!/bin/sh
+
+################################################################
+# Don't let the perl configure script be confused by non-english
+# messages from system information programs.
+# (LC_ALL overrides the value of the LANG environment variable
+# and the values of any other LC_* environment variables.)
+LC_ALL=C
+export LC_ALL
+
+################################################################
+# Specify the original flagship dir
+FLAGSHIPDIR="../../applications/flagship"
+
+################################################################
+# Specify header files which should be copied to the object directory
+#HEADER_FILES_TO_COPY="src/flagship.h
+# src/models/hydro/hydro.h
+# src/models/hydro/hydro_callback.h
+# src/models/mhd/mhd.h
+# src/models/mhd/mhd_callback.h
+# src/kernel/thermodynamics.h
+# src/kernel/magnetohydrodynamics.h"
+HEADER_FILES_TO_COPY="${FLAGSHIPDIR}/src/flagship.h
+ ${FLAGSHIPDIR}/src/models/hydro/hydro.h
+ ${FLAGSHIPDIR}/src/models/hydro/hydro_callback.h
+ ${FLAGSHIPDIR}/src/models/mhd/mhd.h
+ ${FLAGSHIPDIR}/src/models/mhd/mhd_callback.h
+ ${FLAGSHIPDIR}/src/kernel/thermodynamics.h
+ ${FLAGSHIPDIR}/src/kernel/magnetohydrodynamics.h"
+
+################################################################
+# Specify list of application source files
+# (disable any ls alias setting)
+#SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
+#SRCEXTRA_APP=" "
+# Add the flagship kernel + all models but hydro
+SRCLIST_APP="`\ls ${FLAGSHIPDIR}/src/*.f90 2>/dev/null`"
+SRCLIST_APP="$SRCLIST_APP `\ls ${FLAGSHIPDIR}/src/kernel/*.f90 2>/dev/null`"
+SRCLIST_APP="$SRCLIST_APP `\ls ${FLAGSHIPDIR}/src/models/mhd/*.f90 2>/dev/null`"
+SRCLIST_APP="$SRCLIST_APP  `\ls	${FLAGSHIPDIR}/src/models/transport/*.f90 2>/dev/null`"
+SRCLIST_APP="$SRCLIST_APP	`\ls ${FLAGSHIPDIR}/src/models/zpinch/*.f90  2>/dev/null` "
+SRCEXTRA_APP=" "
+# Now add the hydro model. We need everything but the hydro_callback.f90 from the original flagship
+SRCLIST_APP="$SRCLIST_APP	
+${FLAGSHIPDIR}/src/models/hydro/hydro_application.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_basic.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_basic1d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_basic2d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_basic3d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_callback1d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_callback2d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_callback3d.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_errorestimation.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_meshadaptation.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_postprocessing.f90
+${FLAGSHIPDIR}/src/models/hydro/hydro_preprocessing.f90"
+
+# Now add the hydro_callback from this folder
+SRCLIST_APP="$SRCLIST_APP	
+src/models/hydro/hydro_callback.f90"
+
+
+################################################################
+# Clear application specific flags 
+APPONLYFLAGS="-Isrc"
+
+################################################################
+# Define global memory layout and index addressing
+APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER -DIDXADDR=IDXADDR_F"
+
+################################################################
+# Enable auto-tuning using genetic algorithms.
+if ([ -n "${AUTOTUNE+x}" ] && [ "$AUTOTUNE" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+fi
+
+################################################################
+# Enable use of coprocessor support (if available)
+if ([ -n "${COPROC+x}" ]); then
+if ([ "$COPROC" = "CUDA20" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ${FLAGSHIPDIR}/src/*.c src/*.h ${FLAGSHIPDIR}/src/models/*/*.h ${FLAGSHIPDIR}/src/kernel/*.h ${FLAGSHIPDIR}/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda20"
+else
+if ([ "$COPROC" = "CUDA21" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ${FLAGSHIPDIR}/src/*.c ${FLAGSHIPDIR}/src/*.h ${FLAGSHIPDIR}/src/models/*/*.h ${FLAGSHIPDIR}/src/kernel/*.h ${FLAGSHIPDIR}/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda21"
+else
+if ([ "$COPROC" = "CUDA30" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ${FLAGSHIPDIR}/src/*.c ${FLAGSHIPDIR}/src/*.h ${FLAGSHIPDIR}/src/models/*/*.h ${FLAGSHIPDIR}/src/kernel/*.h ${FLAGSHIPDIR}/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda30"
+else
+if ([ "$COPROC" = "CUDA35" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ${FLAGSHIPDIR}/src/*.c ${FLAGSHIPDIR}/src/*.h ${FLAGSHIPDIR}/src/models/*/*.h ${FLAGSHIPDIR}/src/kernel/*.h ${FLAGSHIPDIR}/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda35"
+else
+if ([ "$COPROC" = "CUDA50" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls ${FLAGSHIPDIR}/src/*.c ${FLAGSHIPDIR}/src/*.h ${FLAGSHIPDIR}/src/models/*/*.h ${FLAGSHIPDIR}/src/kernel/*.h ${FLAGSHIPDIR}/src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda50"
+else
+COPROC=""
+fi
+fi
+fi
+fi
+fi
+else
+COPROC=""
+fi
+
+################################################################
+# Enable AGMG library.
+if ([ -n "${AGMG+x}" ] && [ "$AGMG" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AGMG"
+fi
+
+################################################################
+# Enable external coloring library library.
+if ([ -n "${COLORINGTEST+x}" ] && [ "$COLORINGTEST" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_COLORINGTEST"
+SRCEXTRA_APP="$SRCEXTRA_APP ${FLAGSHIPDIR}/src/coloring.c"
+fi
+
+################################################################
+# Use system-wide configure
+if ([ -n "${SCRATCHDIR+x}" ]); then
+    ../../bin/configure \
+	--appname=flagship-\$\(ID\) \
+	--programfile=${FLAGSHIPDIR}/src/flagship.f90 \
+	--srclist_app="${SRCLIST_APP}" \
+	--srcextra_app="${SRCEXTRA_APP}" \
+	--header-files-to-copy="${HEADER_FILES_TO_COPY}" \
+	--apponlyflags="${APPONLYFLAGS}" \
+	"${COPROC}" \
+	--objdir-lib-prefix=${SCRATCHDIR} \
+	--objdir-prefix=${SCRATCHDIR} \
+	"$@"
+else
+    ../../bin/configure \
+	--appname=flagship-\$\(ID\) \
+	--programfile=${FLAGSHIPDIR}/src/flagship.f90 \
+	--srclist_app="${SRCLIST_APP}" \
+	--srcextra_app="${SRCEXTRA_APP}" \
+	--header-files-to-copy="${HEADER_FILES_TO_COPY}" \
+	--apponlyflags="${APPONLYFLAGS}" \
+	"${COPROC}" \
+	"$@"
+fi
