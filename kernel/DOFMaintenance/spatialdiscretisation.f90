@@ -3252,7 +3252,8 @@ contains
      call output_lbrk()
      call output_line ('ElementDistribution:')
      call output_line ('--------------------')
-     call output_line ('ielement:        '//trim(sys_siL(int(relementDistr%celement),15)))
+     call output_line ('ielement:        '//trim(sys_siL(int(relementDistr%celement),15))//&
+                                      ' ('//trim(elem_getName(relementDistr%celement))//')')
      call output_line ('ccubTypeBilForm: '//trim(sys_siL(int(relementDistr%ccubTypeBilForm),15)))
      call output_line ('ccubTypeLinForm: '//trim(sys_siL(int(relementDistr%ccubTypeLinForm),15)))
      call output_line ('ccubTypeEval:    '//trim(sys_siL(int(relementDistr%ccubTypeEval),15)))
