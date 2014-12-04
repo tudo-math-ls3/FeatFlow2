@@ -313,9 +313,9 @@ contains
 
     iel = 1
 
-    !$omp parallel do default(shared) firstprivate(iel)&
-    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
-    !$omp         dval,ibas,iellast,indof,iresult,ivar,nve,revalElement)
+    !$omp parallel do default(shared)&
+    !$omp firstprivate(celement,cevaluationTag,ctrafoType,iel,indof,nve)&
+    !$omp private(Dbas,DparPoint,Idofs,dval,ibas,iellast,iresult,ivar,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! Get the element number that contains the point.
@@ -683,10 +683,10 @@ contains
 
     iel = 1
 
-    !$omp parallel do default(shared) firstprivate(iel)&
-    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
-    !$omp         dval,ibas,iblock,ider,iellast,indof,iresult,ivar,neqsc,&
-    !$omp         nvar,nve,revalElement)
+    !$omp parallel do default(shared)&
+    !$omp firstprivate(celement,cevaluationTag,ctrafoType,iel,indof,nve)&
+    !$omp private(Dbas,DparPoint,Idofs,dval,ibas,iblock,ider,iellast,&
+    !$omp         iresult,ivar,neqsc,nvar,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! get the element number that contains the point
@@ -1021,9 +1021,9 @@ contains
 
     iel = 1
 
-    !$omp parallel do default(shared) firstprivate(iel)&
-    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
-    !$omp         dval,ibas,ider,iellast,indof,iresult,ivar,nve,revalElement)
+    !$omp parallel do default(shared)&
+    !$omp firstprivate(celement,cevaluationTag,ctrafoType,iel,indof,nve)&
+    !$omp private(Dbas,DparPoint,Idofs,dval,ibas,ider,iellast,iresult,ivar,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
 
       ! get the element number that contains the point
