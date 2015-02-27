@@ -24,23 +24,29 @@ FLAGSHIPDIR="../../applications/flagship"
 HEADER_FILES_TO_COPY="${FLAGSHIPDIR}/src/flagship.h
  ${FLAGSHIPDIR}/src/models/hydro/hydro.h
  ${FLAGSHIPDIR}/src/models/hydro/hydro_callback.h
- ${FLAGSHIPDIR}/src/models/mhd/mhd.h
- ${FLAGSHIPDIR}/src/models/mhd/mhd_callback.h
- ${FLAGSHIPDIR}/src/kernel/thermodynamics.h
- ${FLAGSHIPDIR}/src/kernel/magnetohydrodynamics.h"
+ ${FLAGSHIPDIR}/src/kernel/thermodynamics.h"
 
 ################################################################
 # Specify list of application source files
 # (disable any ls alias setting)
 #SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
 #SRCEXTRA_APP=" "
-# Add the flagship kernel + all models but hydro
-SRCLIST_APP="`\ls ${FLAGSHIPDIR}/src/*.f90 2>/dev/null`"
+# Add the flagship kernel + the basic routines from ${FLAGSHIPDIR}/src
 SRCLIST_APP="$SRCLIST_APP `\ls ${FLAGSHIPDIR}/src/kernel/*.f90 2>/dev/null`"
-SRCLIST_APP="$SRCLIST_APP `\ls ${FLAGSHIPDIR}/src/models/mhd/*.f90 2>/dev/null`"
-SRCLIST_APP="$SRCLIST_APP  `\ls	${FLAGSHIPDIR}/src/models/transport/*.f90 2>/dev/null`"
-SRCLIST_APP="$SRCLIST_APP	`\ls ${FLAGSHIPDIR}/src/models/zpinch/*.f90  2>/dev/null` "
+SRCLIST_APP="$SRCLIST_APP	
+${FLAGSHIPDIR}/src/flagship_basic.f90
+${FLAGSHIPDIR}/src/flagship_callback.f90
+${FLAGSHIPDIR}/src/flagship_signals.f90"
+
+
 SRCEXTRA_APP=" "
+
+# Now add the flagship.f90 from ./src. Why? Because in this one everything
+# that does not belong to the hydrodynamic model is deleted.
+SRCLIST_APP="$SRCLIST_APP	
+src/flagship.f90"
+
+
 # Now add the hydro model. We need everything but the hydro_callback.f90 from the original flagship
 SRCLIST_APP="$SRCLIST_APP	
 ${FLAGSHIPDIR}/src/models/hydro/hydro_application.f90
@@ -131,7 +137,7 @@ fi
 if ([ -n "${SCRATCHDIR+x}" ]); then
     ../../bin/configure \
 	--appname=flagship-\$\(ID\) \
-	--programfile=${FLAGSHIPDIR}/src/flagship.f90 \
+	--programfile=./src/flagship.f90 \
 	--srclist_app="${SRCLIST_APP}" \
 	--srcextra_app="${SRCEXTRA_APP}" \
 	--header-files-to-copy="${HEADER_FILES_TO_COPY}" \
@@ -143,7 +149,7 @@ if ([ -n "${SCRATCHDIR+x}" ]); then
 else
     ../../bin/configure \
 	--appname=flagship-\$\(ID\) \
-	--programfile=${FLAGSHIPDIR}/src/flagship.f90 \
+	--programfile=./src/flagship.f90 \
 	--srclist_app="${SRCLIST_APP}" \
 	--srcextra_app="${SRCEXTRA_APP}" \
 	--header-files-to-copy="${HEADER_FILES_TO_COPY}" \

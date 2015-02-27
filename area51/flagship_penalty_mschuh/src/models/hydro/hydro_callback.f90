@@ -118,11 +118,14 @@ module hydro_callback
   use boundary
   use boundarycondaux
   use boundaryfilter
+  use blockmatassembly
+  use blockmatassemblybase
   use cubature
   use collection
   use derivatives
   use domainintegration
   use feevaluation
+  use feevaluation2
   use fparser
   use flagship_basic
   use fsystem
@@ -141,6 +144,7 @@ module hydro_callback
   use storage
   use timestepaux
   use triangulation
+  use triasearch
 
   ! Modules from hydrodynamic model
   use hydro_basic
@@ -6020,7 +6024,7 @@ contains
 
   end subroutine hydro_calcCFLnumber
 
-  !*****************************************************************************
+!*****************************************************************************
 
 !<subroutine>
 
@@ -6060,264 +6064,152 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    type(t_collection) :: rcollectionTmp
-    type(t_linearForm) :: rlinform
-    type(t_scalarCubatureInfo) :: rcubatureInfo
-    type(t_vectorBlock) :: rsolutionDensity,rsourceDensity
-    type(t_vectorBlock) :: rsolutionTotalEnergy,rsourceTotalEnergy
-    type(t_vectorBlock) :: rsolutionMomentumX,rsourceMomentumX
-    type(t_vectorBlock) :: rsolutionMomentumY,rsourceMomentumY
-    integer :: isystemFormat
+type(t_vectorBlock) :: rsolutionTotalEnergy
 
-    ! Check of source and solution vector are compatible
-    call lsysbl_isVectorCompatible(rsolution, rsource)
 
-    ! Get further parameters from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'isystemformat', isystemformat)
+    type(t_fev2Vectors) :: rvectorEval
 
-    ! Check if we are in block-format
-    if (isystemformat .ne. SYSTEM_BLOCKFORMAT) then
-      call output_line('Only block format is supported at this time!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBdrCondPenalty')
-      call sys_halt()
-    end if
+    rcollection%DquickAccess(1) = dscale
+    rcollection%p_rparlistQuickAccess1 => rparlist
 
-    ! Initialize temporal collection structure
-    call collct_init (rcollectionTmp)
-
-    ! We need the parameter list in the 1d, 2d routine
-    ! This is done via the collection structure
-    rcollectionTmp%p_rparlistQuickAccess1 => rparlist
-
-    ! We need dscale in the assembly
-    rcollectionTmp%DquickAccess(1) = dscale
-
-    ! Assemble linear forms in 1D and 2D
     select case(rproblemLevel%rtriangulation%ndim)
-    case (NDIM1D)
+      case (NDIM1D)
 
-      ! Get scalar vectors for each field of the solution
-      call lsysbl_deriveSubvector(rsolution, rsolutionDensity, 1, 1, .true.)
-      call lsysbl_deriveSubvector(rsolution, rsolutionMomentumX, 2, 2, .true.)
-      call lsysbl_deriveSubvector(rsolution, rsolutionTotalEnergy, 3, 3, .true.)
+        ! Add the components of the solution vector to the list of the vectors
+        ! that have to be evaluated during the assembly of the source term.
+        ! We need the solution + their derivatives to build the stress tensor
+        ! and the penalty term in the equation.
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(1),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(2),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(3),1)
 
-      ! Attach the components of the solution to the collection structure
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionDensity',&
-          rsolutionDensity, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionMomentumX',&
-          rsolutionMomentumX, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionTotalEnergy',&
-          rsolutionTotalEnergy, .true.)
+        ! Build the penalty term
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty1D,rcollection,revalvectors=rvectorEval)
 
-      ! Get scalar vectors for each field of the source vector
-      call lsysbl_deriveSubvector(rsource, rsourceDensity, 1, 1, .true.)
-      call lsysbl_deriveSubvector(rsource, rsourceMomentumX, 2, 2, .true.)
-      call lsysbl_deriveSubvector(rsource, rsourceTotalEnergy, 3, 3, .true.)
+        ! clean up
+        call fev2_releaseVectorList(rvectorEval)
 
-      ! Set up a linear form structure for the assembly of the right hand side.
-      rlinform%itermCount = 1
-      rlinform%Idescriptors(1) = DER_FUNC1D
+      case (NDIM2D)
 
-      ! Create an assembly information structure which tells the code
-      ! the cubature formula to use. Standard: Gauss 3x3.
-      call spdiscr_createDefCubStructure(&
-          rproblemLevel%RblockDiscretisation(1)%RspatialDiscr(1),&
-          rcubatureInfo, CUB_GEN_AUTO_G3)
+        ! Add the components of the solution vector to the list of the vectors
+        ! that have to be evaluated during the assembly of the source term.
+        ! We need the solution + their derivatives to build the stress tensor
+        ! and the penalty term in the equation.
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(1),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(2),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(3),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(4),1)
 
-      ! Assemble the discrete linear forms for the right hand sides
-      ! for each scalar component individually. The components of the
-      ! solution are provided via the collection structure.
-      rcollectionTmp%IquickAccess(1) = 1
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceDensity%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty1D, rcollectionTmp)
-      rcollectionTmp%IquickAccess(1) = 2
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceMomentumX%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty1D, rcollectionTmp)
-      rcollectionTmp%IquickAccess(1) = 3
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceTotalEnergy%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty1D, rcollectionTmp)
+        ! Build the penalty term
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty2D,rcollection,revalvectors=rvectorEval)
 
-    case (NDIM2D)
+        ! clean up
+        call fev2_releaseVectorList(rvectorEval)
 
-      ! Get scalar vectors for each field of the solution
-      call lsysbl_deriveSubvector(rsolution, rsolutionDensity, 1, 1, .true.)
-      call lsysbl_deriveSubvector(rsolution, rsolutionMomentumX, 2, 2, .true.)
-      call lsysbl_deriveSubvector(rsolution, rsolutionMomentumY, 3, 3, .true.)
-      call lsysbl_deriveSubvector(rsolution, rsolutionTotalEnergy, 4, 4, .true.)
-
-      ! Attach the components of the solution to the collection structure
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionDensity',&
-          rsolutionDensity, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionMomentumX',&
-          rsolutionMomentumX, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionMomentumY',&
-          rsolutionMomentumY, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolutionTotalEnergy',&
-          rsolutionTotalEnergy, .true.)
-
-      ! Get scalar vectors for each field of the source vector
-      call lsysbl_deriveSubvector(rsource, rsourceDensity, 1, 1, .true.)
-      call lsysbl_deriveSubvector(rsource, rsourceMomentumX, 2, 2, .true.)
-      call lsysbl_deriveSubvector(rsource, rsourceMomentumY, 3, 3, .true.)
-      call lsysbl_deriveSubvector(rsource, rsourceTotalEnergy, 4, 4, .true.)
-
-      ! Set up a linear form structure for the assembly of the right hand side.
-      rlinform%itermCount = 1
-      rlinform%Idescriptors(1) = DER_FUNC1D
-
-      ! Create an assembly information structure which tells the code
-      ! the cubature formula to use. Standard: Gauss 3x3.
-      call spdiscr_createDefCubStructure(&
-          rproblemLevel%RblockDiscretisation(1)%RspatialDiscr(1),&
-          rcubatureInfo, CUB_GEN_AUTO_G3)
-
-      ! Assemble the discrete linear forms for the right hand sides
-      ! for each scalar component individually. The components of the
-      ! solution are provided via the collection structure.
-      rcollectionTmp%IquickAccess(1) = 1
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceDensity%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty2D, rcollectionTmp)
-      rcollectionTmp%IquickAccess(1) = 2
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceMomentumX%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty2D, rcollectionTmp)
-      rcollectionTmp%IquickAccess(1) = 3
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceMomentumY%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty2D, rcollectionTmp)
-      rcollectionTmp%IquickAccess(1) = 3
-      call linf_buildVectorScalar (rlinform, bclear,&
-          rsourceTotalEnergy%Rvectorblock(1), rcubatureInfo,&
-          coeff_BdrCondPenalty2D, rcollectionTmp)
 
     case default
-      call output_line('Only 1D and 2D is supported at this time!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBdrCondPenalty')
-      call sys_halt()
+        call output_line('WRONG DIMENSION!')
+        call sys_halt()
     end select
 
-    ! Release temporal collection structure
-    call collct_done(rcollectionTmp)
 
-    end subroutine hydro_setBdrCondPenalty
 
-    ! Here, the callback routines follow
+  end subroutine hydro_setBdrCondPenalty
 
-    ! ***************************************************************************
+
+
+!***********************************************************************
 
 !<subroutine>
 
-    subroutine coeff_BdrCondPenalty1D (rdiscretisation, rform, nelements,&
-        npointsPerElement, Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients,&
-        rcollection)
+  subroutine hydro_fcalc_bdrcondPenalty1D(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>
-      ! This subroutine is called during the vector assembly. It has
-      ! to compute the coefficients in front of the terms of the
-      ! linear form.
-      !
-      ! The routine accepts a set of elements and a set of points on
-      ! these elements (cubature points) in real coordinates.
-      ! According to the terms in the linear form, the routine has to
-      ! compute simultaneously for all these points and all the terms
-      ! in the linear form the corresponding coefficients in front of
-      ! the terms.
+    ! Calculates the general right-hand side vector of any equation.
+    ! The RHS to calculate is specified via the collection.
 !</description>
 
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
 !<input>
-      ! The discretisation structure that defines the basic shape of the
-      ! triangulation with references to the underlying triangulation,
-      ! analytic boundary boundary description etc.
-      type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
 
-      ! The linear form which is currently to be evaluated:
-      type(t_linearForm), intent(in) :: rform
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
 
-      ! Number of elements, where the coefficients must be computed.
-      integer, intent(in) :: nelements
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
 
-      ! Number of points per element, where the coefficients must be computed
-      integer, intent(in) :: npointsPerElement
+    ! Number of elements
+    integer, intent(in) :: nelements
 
-      ! This is an array of all points on all the elements where coefficients
-      ! are needed.
-      ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-      ! DIMENSION(dimension,npointsPerElement,nelements)
-      real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
 
-      ! An array accepting the DOF`s on all elements trial in the trial space.
-      ! DIMENSION(#local DOF`s in test space,nelements)
-      integer, dimension(:,:), intent(in) :: IdofsTest
-
-      ! This is a t_domainIntSubset structure specifying more detailed information
-      ! about the element set that is currently being integrated.
-      ! It is usually used in more complex situations (e.g. nonlinear matrices).
-      type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-      ! Optional: A collection structure to provide additional
-      ! information to the coefficient routine.
-      type(t_collection), intent(inout), optional :: rcollection
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<output>
-      ! A list of all coefficients in front of all terms in the linear form -
-      ! for all given points on all given elements.
-      !   DIMENSION(itermCount,npointsPerElement,nelements)
-      ! with itermCount the number of terms in the linear form.
-      real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
-!<local variables>
-    ! We want to parse the function \Chi_{Omega_s} so we need
-    ! a character to parse the function and a parser
-    character(LEN=SYS_STRLEN) :: str_ChiOmegaS
-    type(t_fparser) :: parser_ChiOmegaS
+    ! local variables
+    type(t_bmaVectorData), pointer :: p_rvectorData1, p_rvectorData2, p_rvectorData3
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:), pointer :: p_Dsolution1, p_Dsolution2, p_Dsolution3
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1, p_DlocalVector2, p_DlocalVector3
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    integer :: idofe,icubp,iel
+    real(DP) :: dbasI,dbasI_x,dsol1,dsol2,dsol3,dsol1_x,dsol2_x,dsol3_x
+    real(DP) :: dscale, dPenalty, c_v, mu, Prantl, t_xx, e_x, Reynolds
 
-    ! We want to get back dscale
-    real(DP) :: dscale
+    ! Coordinates of the real points
+    real(DP), dimension(:,:,:), pointer :: p_DCoords
 
     ! We need a variable to save the result of the evaluation of \Chi_{Omega_s}
     real(DP) :: dChiOmegaS
-    ! and we need the penalty parameter
-    real(DP) :: dPenalty
+
     ! and we need the wall temperature of the obstacle
     real(DP) :: dWallTemperature
 
     ! We need the specific gas constant
     real(DP) :: dSpecificGasConstant
 
-    ! We have to calculate the energy of the solid body
-    ! and we have to evaluate the total energy
-    ! and the density
-    real(DP) :: dEnergySolidBody, dTotalEnergy, ddensity
+    character(LEN=SYS_STRLEN) :: str_ChiOmegaS
+    type(t_fparser) :: parser_ChiOmegaS
 
-    ! We will calculate the heat capacity
-    real(DP) :: c_v
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! We need some loops over elements and points so we need the loop indicies
-    integer :: ipoint, ielement
+    ! Get the data arrays of the subvector
+    p_rvectorData1 => rvectorData(1)
+    p_rvectorData2 => rvectorData(2)
+    p_rvectorData3 => rvectorData(3)
 
-    ! We have to evaluate the density, Momentum and Energy
-    real(DP), dimension(1,1) :: evaluationPoint
-    integer, dimension(1) ::ielements
-    real(DP), dimension(1) :: dfunctionValue
+    ! Get the entries of the subvector
+    p_DlocalVector1 => p_rvectorData1%p_Dentry
+    p_DlocalVector2 => p_rvectorData2%p_Dentry
+    p_DlocalVector3 => p_rvectorData3%p_Dentry
 
-    ! We need pointer to the density, Momentum and Energy
-    type(t_vectorBlock), pointer :: p_rvectorDensity, p_rvectorMomentumX, p_rvectorTotalEnergy
+    ! Get the basis functions of the test space
+    p_DbasTest => rvectorData(1)%p_DbasTest
 
-    p_rvectorDensity => collct_getvalue_vec(rcollection,'rsolutionDensity')
-    p_rvectorMomentumX => collct_getvalue_vec(rcollection,'rsolutionMomentumX')
-    p_rvectorTotalEnergy => collct_getvalue_vec(rcollection,'rsolutionTotalEnergy')
+    ! Get the entries of the solution at the points: 1 Density, 2: Momentum, 3: Total Energy
+    p_Dsolution1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+    p_Dsolution2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+    p_Dsolution3 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+
+
+    ! Get the coordinates of the points
+    p_DCoords => rassemblyData%revalElementSet%p_DpointsReal
 
     ! Get dscale
     dscale = rcollection%DquickAccess(1)
-
-!</local variables>
 
     ! Get the penalty parameter
     call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dpenalty',dPenalty,1.0_DP)
@@ -6338,172 +6230,403 @@ contains
     ! Calculate c_v
     c_v = dSpecificGasConstant / (HYDRO_GAMMA - 1)
 
+    ! This c_v would be true if everything would be in SI-Units
+    ! However, the pressure is not in SI-Units - it is in bar.
+    ! So we have to adjust c_v and scale it
+    ! 1bar = 1*10^5 Pa
+    c_v = c_v/100000.0_DP
+
     ! The whole vector needs to be scaled with dscale
     ! to make life easier, we set dpenalty = dscale*dpenalty
     ! This does the trick
     dPenalty = dscale*dPenalty
 
-!</subroutine>
 
-      ! Which component should be assembled?
-      select case(rcollection%IquickAccess(1))
+    ! We want to do compressible Navier-Stokes
+    ! So we first build the viscous fluxes.
+    ! To build them, we need some parameters:
+    ! The Prantl-Number
+    ! The Reynolds number
+    ! µ
+    mu = 3.5_DP
+    Prantl = 0.713_DP
+    Reynolds = 5e4_DP
 
-      case (1) ! Density
-        ! The density equation is not penalized and gets no extra term
-        ! Dcoefficients (1,:,:) = 0.0_DP
-        do ielement = 1, nelements
-            do ipoint=1, npointsPerElement
-                Dcoefficients(1,ipoint,ielement) = 0.0_DP
+    ! Loop over all elements
+    do iel = 1, nelements
+        ! over all points on the set
+        do icubp = 1, npointsPerElement
+
+            ! Outer loop over all DOFs i=1,...,ndof on the current element
+            do idofe=1, p_rvectorData1%ndofTest
+
+                    dbasI_x = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+                    ! Get the solution values
+                    ! Value of density and its derivative w.r.t. x
+                    dsol1 = p_Dsolution1(icubp,iel,DER_FUNC1D)
+                    dsol1_x = p_Dsolution1(icubp,iel,DER_DERIV1D_X)
+
+                    ! Value of Momentum and its derivative
+                    dsol2 = p_Dsolution2(icubp,iel,DER_FUNC1D)
+                    dsol2_x = p_Dsolution2(icubp,iel,DER_DERIV1D_X)
+
+                    ! Value of total energy and its derivative
+                    dsol3 = p_Dsolution3(icubp,iel,DER_FUNC1D)
+                    dsol3_x = p_Dsolution3(icubp,iel,DER_DERIV1D_X)
+
+                    ! Calculate some components of the stress tensor.
+                    ! We are in 1D, so the only one left over is t_xx
+                    t_xx = 4.0_DP/3.0_DP * mu*(dsol1*dsol2_x - dsol2*dsol1_x)/dsol1**2
+
+                    ! Calculate the derivative of the internal energy w.r.t. x
+                    e_x = dsol1**2 * dsol3_x - dsol3 * dsol1*dsol1_x - dsol2*dsol1*dsol2_x + dsol2**2 * dsol1_x
+                    e_x = e_x / (dsol1**3)
+
+
+                    ! Density equation stays untouched. It is left here commented as a reminder that nothing
+                    ! was forgotten, but it is commented so the code is faster
+                    ! p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+
+                    ! The equation of the X-Momentum gets this term
+                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) - (dscale/Reynolds)*dbasI_x*p_DcubWeight(idofe,iel)*t_xx
+
+
+                    ! The Energy-equation gets this term
+                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel) - (dscale/Reynolds)*dbasI_x*p_DcubWeight(idofe,iel)&
+                                                                            *(t_xx * dsol2/dsol1 + HYDRO_GAMMA/Prantl * e_x)
+
             end do
-        end do
-
-      case (2) ! x-Momentum
-        ! Dcoefficients (1,:,:) = 0.0_DP
-        do ielement = 1, nelements
-            ielements(1) = ielement
-            do ipoint = 1, npointsPerElement
-                 ! Evaluate \Chi_{\Omega_s}(x)
-                 call fparser_evalFunction(parser_ChiOmegaS,1,(/Dpoints(1,ipoint,ielement)/),dChiOmegaS)
-                 ! If dChiOmegaS = 1: We want to penalize, else we write a zero
-                 if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
-                    evaluationPoint(1,1) = Dpoints(1,ipoint,ielement)
-                    call fevl_evaluate(DER_FUNC1D,dfunctionValue, &
-                        p_rvectorMomentumX%RvectorBlock(1),evaluationPoint,Ielements=ielements)
-                    Dcoefficients(1,ipoint,ielement) = dPenalty * dfunctionValue(1) * (-1.0_DP)
-                 else
-                    Dcoefficients(1,ipoint,ielement) = 0.0_DP
-                 end if
-
-            end do !loop over points per element
-        end do ! loop over elements
 
 
-      case (3) ! Total energy
-        ! Dcoefficients (1,:,:) = 0.0_DP
-        do ielement = 1, nelements
-            ielements(1) = ielement
-            do ipoint = 1, npointsPerElement
-                 ! Evaluate \Chi_{\Omega_s}(x)
-                 call fparser_evalFunction(parser_ChiOmegaS,1,(/Dpoints(1,ipoint,ielement)/),dChiOmegaS)
-                 ! If dChiOmegaS = 1: We want to penalize, else we write a zero
-                 if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
-                    evaluationPoint(1,1) = Dpoints(1,ipoint,ielement)
-                    ! Evaluate the total energy and store it in the variable
-                    call fevl_evaluate(DER_FUNC1D,dfunctionValue, &
-                        p_rvectorTotalEnergy%RvectorBlock(1),evaluationPoint,Ielements=ielements)
-                    dTotalEnergy = dfunctionValue(1)
+        end do !icubp
+    end do !iel
 
-                    ! evaluate the density and store it in the variable
-                    call fevl_evaluate(DER_FUNC1D,dfunctionValue, &
-                        p_rvectorDensity%RvectorBlock(1),evaluationPoint,Ielements=ielements)
-                    ddensity = dfunctionValue(1)
+    !---------------------------------------------------------------!
+    ! NOW we do penalty and add the extra values to the source term !
+    !---------------------------------------------------------------!
 
-                    Dcoefficients(1,ipoint,ielement) = (-1.0_DP)*dPenalty * (dTotalEnergy - ddensity * c_v * dWallTemperature)
-                 else
-                    Dcoefficients(1,ipoint,ielement) = 0.0_DP
-                 end if
+    ! Reminder: Technically, it could be merged with the loops above.
+    ! However, to have a better overview on the code and to see what is happening
+    ! where we leave this block standalone, even if it would slow down the code
+    ! a little bit.
 
-            end do !loop over points per element
-        end do ! loop over elements
+    ! Loop over the elements in the current set
+    do iel = 1, nelements
 
-      case default
-        Dcoefficients (1,:,:) = 0.0_DP
+        ! Loop over all cubature points on the current element
+        do icubp=1,npointsPerElement
 
-      end select
+            ! Evaluate the parser: find out if we are in the obstacle or not
+            ! Format of the array:
+            !  Dpoints(1,.)=x-coordinates,
+            !  Dpoints(2,.)=y-coordinates.
+            !  Dpoints(3,.)=z-coordinates (only 3d).
+            ! furthermore:
+            !  Dpoints(:,i,.) = Coordinates of point i
+            ! furthermore:
+            !  Dpoints(:,:,j) = Coordinates of all points on element j
+            ! so we need p_Dcoords(1,icubp,iel)
+            call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
 
+            if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
+            !if (p_DCoords(1,icubp,iel) > 1.0_DP) then
 
-    ! Clean up
-    call fparser_release(parser_ChiOmegaS)
-    end subroutine coeff_BdrCondPenalty1D
+                ! Outer loop over the DOFs i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe = 1, p_rvectorData1%ndofTest
 
-    ! ***************************************************************************
+                    ! Fetch the contributions of the (test) basis functions Phi_i
+                    ! into dbasI
+                    dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
+
+                    ! Get the solution values
+                    dsol1 = p_Dsolution1(icubp,iel,DER_FUNC1D)
+                    dsol2 = p_Dsolution2(icubp,iel,DER_FUNC1D)
+                    dsol3 = p_Dsolution3(icubp,iel,DER_FUNC1D)
+
+                    ! Calculate the entries in the source vectors
+                    ! The Density equation gets no extra term. So we comment it out.
+                    ! p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+
+                    ! X-Momentum
+                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)&
+                                                - dPenalty * p_DcubWeight(icubp,iel) * dsol2 * dbasI
+
+                    ! Energy
+
+                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)&
+                                                - dPenalty * p_DcubWeight(icubp,iel) * dbasI * &
+                                                 (dsol3 - dsol1*c_v*dWallTemperature)
+
+                end do ! idofe
+
+            ! we do not have to add anything if we are not in the penalty area.
+            ! We could deleted this part of the code, but we leave it here as a comment
+            ! so that we know we thought of it and did this on purpose.
+!            else
+!
+!                do idofe = 1, p_rvectorData1%ndofTest
+!
+!                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+!
+!                    ! X-Momentum
+!                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
+!
+!                    ! Energy
+!                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)
+!
+!                end do ! idofe
+
+            end  if! if we are in penaltyareay
+
+        end do !icubp
+    end do ! iel
+
+  end subroutine hydro_fcalc_bdrcondPenalty1D
 
 !<subroutine>
 
-    subroutine coeff_BdrCondPenalty2D (rdiscretisation, rform, nelements,&
-        npointsPerElement, Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients,&
-        rcollection)
+
+!<subroutine>
+
+  subroutine hydro_fcalc_bdrcondPenalty2D(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>
-      ! This subroutine is called during the vector assembly. It has
-      ! to compute the coefficients in front of the terms of the
-      ! linear form.
-      !
-      ! The routine accepts a set of elements and a set of points on
-      ! these elements (cubature points) in real coordinates.
-      ! According to the terms in the linear form, the routine has to
-      ! compute simultaneously for all these points and all the terms
-      ! in the linear form the corresponding coefficients in front of
-      ! the terms.
+    ! Calculates the general right-hand side vector of any equation.
+    ! The RHS to calculate is specified via the collection.
 !</description>
 
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
 !<input>
-      ! The discretisation structure that defines the basic shape of the
-      ! triangulation with references to the underlying triangulation,
-      ! analytic boundary boundary description etc.
-      type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
 
-      ! The linear form which is currently to be evaluated:
-      type(t_linearForm), intent(in) :: rform
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
 
-      ! Number of elements, where the coefficients must be computed.
-      integer, intent(in) :: nelements
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
 
-      ! Number of points per element, where the coefficients must be computed
-      integer, intent(in) :: npointsPerElement
+    ! Number of elements
+    integer, intent(in) :: nelements
 
-      ! This is an array of all points on all the elements where coefficients
-      ! are needed.
-      ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-      ! DIMENSION(dimension,npointsPerElement,nelements)
-      real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
 
-      ! An array accepting the DOF`s on all elements trial in the trial space.
-      ! DIMENSION(#local DOF`s in test space,nelements)
-      integer, dimension(:,:), intent(in) :: IdofsTest
-
-      ! This is a t_domainIntSubset structure specifying more detailed information
-      ! about the element set that is currently being integrated.
-      ! It is usually used in more complex situations (e.g. nonlinear matrices).
-      type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-      ! Optional: A collection structure to provide additional
-      ! information to the coefficient routine.
-      type(t_collection), intent(inout), optional :: rcollection
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<output>
-      ! A list of all coefficients in front of all terms in the linear form -
-      ! for all given points on all given elements.
-      !   DIMENSION(itermCount,npointsPerElement,nelements)
-      ! with itermCount the number of terms in the linear form.
-      real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
+    ! local variables
+    type(t_bmaVectorData), pointer :: p_rvectorData1, p_rvectorData2, p_rvectorData3, p_rvectorData4
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:), pointer :: p_Dsolution1, p_Dsolution2, p_Dsolution3, p_Dsolution4
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1, p_DlocalVector2, p_DlocalVector3, p_DlocalVector4
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    integer :: idofe,icubp,iel
+    real(DP) :: dbasI,dbasI_x,dsol1,dsol2,dsol3,dsol1_x,dsol2_x,dsol3_x
+    real(DP) :: dscale, dPenalty, c_v, mu, Prantl, t_xx, e_x, Reynolds
 
-!</subroutine>
+    ! Coordinates of the real points
+    real(DP), dimension(:,:,:), pointer :: p_DCoords
 
-      ! Which component should be assembled?
-      select case(rcollection%IquickAccess(1))
+    ! We need a variable to save the result of the evaluation of \Chi_{Omega_s}
+    real(DP) :: dChiOmegaS
 
-      case (1) ! Density
-        Dcoefficients (1,:,:) = 0.0_DP
+    ! and we need the wall temperature of the obstacle
+    real(DP) :: dWallTemperature
 
-      case (2) ! x-Momentum
-        Dcoefficients (1,:,:) = 0.0_DP
+    ! We need the specific gas constant
+    real(DP) :: dSpecificGasConstant
 
-      case (3) ! y-Momentum
-        Dcoefficients (1,:,:) = 0.0_DP
+    character(LEN=SYS_STRLEN) :: str_ChiOmegaS
+    type(t_fparser) :: parser_ChiOmegaS
 
-      case (4) ! Total energy
-        Dcoefficients (1,:,:) = 0.0_DP
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
 
-      case default
-        Dcoefficients (1,:,:) = 0.0_DP
+    ! Get the data arrays of the subvector
+    p_rvectorData1 => rvectorData(1)
+    p_rvectorData2 => rvectorData(2)
+    p_rvectorData3 => rvectorData(3)
+    p_rvectorData4 => rvectorData(4)
 
-      end select
+    ! Get the entries of the subvector
+    p_DlocalVector1 => p_rvectorData1%p_Dentry
+    p_DlocalVector2 => p_rvectorData2%p_Dentry
+    p_DlocalVector3 => p_rvectorData3%p_Dentry
+    p_DlocalVector4 => p_rvectorData4%p_Dentry
 
-    end subroutine coeff_BdrCondPenalty2D
+    ! Get the basis functions of the test space
+    p_DbasTest => rvectorData(1)%p_DbasTest
 
+    ! Get the entries of the solution at the points: 1 Density, 2: Momentum, 3: Total Energy
+    p_Dsolution1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+    p_Dsolution2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+    p_Dsolution3 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+    p_Dsolution4 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
+
+
+    ! Get the coordinates of the points
+    p_DCoords => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get dscale
+    dscale = rcollection%DquickAccess(1)
+
+    ! Get the penalty parameter
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dpenalty',dPenalty,1.0_DP)
+
+    ! and the wall temperature
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dWallTemperature',dWallTemperature,293.15_DP)
+
+    !and the specific gas constant
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'GasProperty','dSpecificGasConstant', &
+                                dSpecificGasConstant,287.058_DP)
+
+    ! read out \Chi_{Omega_s}
+    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1,'PENALTY','ChiOmegaS',str_ChiOmegaS)
+    ! init a parser and parse the function in it
+    call fparser_create(parser_ChiOmegaS,1)
+    call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x'/))
+
+    ! Calculate c_v
+    c_v = dSpecificGasConstant / (HYDRO_GAMMA - 1)
+
+    ! This c_v would be true if everything would be in SI-Units
+    ! However, the pressure is not in SI-Units - it is in bar.
+    ! So we have to adjust c_v and scale it
+    ! 1bar = 1*10^5 Pa
+    c_v = c_v/100000.0_DP
+
+    ! The whole vector needs to be scaled with dscale
+    ! to make life easier, we set dpenalty = dscale*dpenalty
+    ! This does the trick
+    dPenalty = dscale*dPenalty
+
+
+    ! We want to do compressible Navier-Stokes
+    ! So we first build the viscous fluxes.
+    ! To build them, we need some parameters:
+    ! The Prantl-Number
+    ! The Reynolds number
+    ! µ
+    mu = 3.5_DP
+    Prantl = 0.713_DP
+    Reynolds = 5e4_DP
+
+    ! Loop over all elements
+    do iel = 1, nelements
+        ! over all points on the set
+        do icubp = 1, npointsPerElement
+
+            ! Outer loop over all DOFs i=1,...,ndof on the current element
+            do idofe=1, p_rvectorData1%ndofTest
+
+
+
+                    ! Density
+                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+
+                    ! X-Momentum
+                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
+
+                    ! Y-Momentum
+                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)
+
+                    ! Energy
+                    p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel)
+
+            end do
+
+
+        end do !icubp
+    end do !iel
+
+    !---------------------------------------------------------------!
+    ! NOW we do penalty and add the extra values to the source term !
+    !---------------------------------------------------------------!
+
+    ! Reminder: Technically, it could be merged with the loops above.
+    ! However, to have a better overview on the code and to see what is happening
+    ! where we leave this block standalone, even if it would slow down the code
+    ! a little bit.
+
+    ! Loop over the elements in the current set
+    do iel = 1, nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp=1,npointsPerElement
+
+            ! Evaluate the parser: find out if we are in the obstacle or not
+            ! Format of the array:
+            !  Dpoints(1,.)=x-coordinates,
+            !  Dpoints(2,.)=y-coordinates.
+            !  Dpoints(3,.)=z-coordinates (only 3d).
+            ! furthermore:
+            !  Dpoints(:,i,.) = Coordinates of point i
+            ! furthermore:
+            !  Dpoints(:,:,j) = Coordinates of all points on element j
+            ! so we need p_Dcoords(1,icubp,iel)
+            call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
+
+            if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
+            !if (p_DCoords(1,icubp,iel) > 1.0_DP) then
+
+                ! Outer loop over the DOFs i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe = 1, p_rvectorData1%ndofTest
+
+                    ! density
+                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+
+                    ! X-Momentum
+                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
+
+                    ! Y-Momentum
+                    p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel)
+
+                    ! Energy
+                    p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel)
+
+                end do ! idofe
+
+            ! we do not have to add anything if we are not in the penalty area.
+            ! We could deleted this part of the code, but we leave it here as a comment
+            ! so that we know we thought of it and did this on purpose.
+!            else
+!
+!                do idofe = 1, p_rvectorData1%ndofTest
+!
+!                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+!
+!                    ! X-Momentum
+!                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
+!
+!                    ! Y-Momentum
+!                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)
+!
+!                    ! Energy
+!                    p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel)
+!
+!                end do ! idofe
+
+            end  if! if we are in penaltyareay
+
+        end do !icubp
+    end do ! iel
+
+  end subroutine hydro_fcalc_bdrcondPenalty2D
+
+!<subroutine>
 
 
 end module hydro_callback
