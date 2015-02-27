@@ -6064,14 +6064,34 @@ contains
 !</inputoutput>
 !</subroutine>
 
-type(t_vectorBlock) :: rsolutionTotalEnergy
-
-
     type(t_fev2Vectors) :: rvectorEval
+    integer :: isystemformat
 
+    ! Check of source and solution vector are compatible
+    call lsysbl_isVectorCompatible(rsolution, rsource)
+
+    ! Get further parameters from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isystemformat', isystemformat)
+
+    ! Check if we are in block-format
+    if (isystemformat .ne. SYSTEM_BLOCKFORMAT) then
+      call output_line('Only block format is supported at this time!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBdrCondPenalty')
+      call sys_halt()
+    end if
+
+    ! Do we have to clear the source vector?
+    if(bclear .eqv. .TRUE.) then
+        call lsysbl_clearVector(rsource)
+    end if
+
+    ! We need the parameter dscale and the parameter list in the callback routine
+    ! We pass is via the collection
     rcollection%DquickAccess(1) = dscale
     rcollection%p_rparlistQuickAccess1 => rparlist
 
+    ! Build the term according to the dimension
     select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
 
@@ -6106,9 +6126,8 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
         ! clean up
         call fev2_releaseVectorList(rvectorEval)
 
-
     case default
-        call output_line('WRONG DIMENSION!')
+        call output_line('At the moment only 1D and 2D is supported!')
         call sys_halt()
     end select
 
@@ -6126,8 +6145,8 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>
-    ! Calculates the general right-hand side vector of any equation.
-    ! The RHS to calculate is specified via the collection.
+    ! Callback routine so that bma_buildVector builds the penalty-term for
+    ! the equation.
 !</description>
 
 !<inputoutput>
@@ -6217,7 +6236,7 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
     ! and the wall temperature
     call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dWallTemperature',dWallTemperature,293.15_DP)
 
-    !and the specific gas constant
+    ! and the specific gas constant
     call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'GasProperty','dSpecificGasConstant', &
                                 dSpecificGasConstant,287.058_DP)
 
@@ -6329,8 +6348,8 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
             ! so we need p_Dcoords(1,icubp,iel)
             call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
 
+            ! The mask function returns 0 or 1. If we are in the penalty area, it returns 1.
             if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
-            !if (p_DCoords(1,icubp,iel) > 1.0_DP) then
 
                 ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
@@ -6354,7 +6373,6 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
                                                 - dPenalty * p_DcubWeight(icubp,iel) * dsol2 * dbasI
 
                     ! Energy
-
                     p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)&
                                                 - dPenalty * p_DcubWeight(icubp,iel) * dbasI * &
                                                  (dsol3 - dsol1*c_v*dWallTemperature)
@@ -6362,12 +6380,13 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
                 end do ! idofe
 
             ! we do not have to add anything if we are not in the penalty area.
-            ! We could deleted this part of the code, but we leave it here as a comment
+            ! We could delete this part of the code, but we leave it here as a comment
             ! so that we know we thought of it and did this on purpose.
 !            else
 !
 !                do idofe = 1, p_rvectorData1%ndofTest
 !
+!                    ! Density
 !                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
 !
 !                    ! X-Momentum
@@ -6534,7 +6553,7 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
 
 
                     ! Density
-                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
 
                     ! X-Momentum
                     p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
@@ -6578,14 +6597,14 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
             ! so we need p_Dcoords(1,icubp,iel)
             call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
 
+            ! The mask function returns 0 or 1. If it is 1, we are in the penalty area
             if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
-            !if (p_DCoords(1,icubp,iel) > 1.0_DP) then
 
                 ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
                 do idofe = 1, p_rvectorData1%ndofTest
 
-                    ! density
+                    ! Density
                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
 
                     ! X-Momentum
@@ -6606,6 +6625,7 @@ type(t_vectorBlock) :: rsolutionTotalEnergy
 !
 !                do idofe = 1, p_rvectorData1%ndofTest
 !
+!                    ! Density
 !                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
 !
 !                    ! X-Momentum
