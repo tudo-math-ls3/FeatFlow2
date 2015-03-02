@@ -175,6 +175,7 @@ module hydro_callback
   public :: hydro_parseBoundaryCondition
   public :: hydro_calcCFLnumber
   public :: hydro_setBdrCondPenalty
+  public :: hydro_assembleNavStoViscous
 
   !*****************************************************************************
 
@@ -1131,6 +1132,9 @@ contains
         call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
             rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
 
+        call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+
         !-----------------------------------------------------------------------
         ! Compute the transient term
         !
@@ -1428,6 +1432,10 @@ contains
       ! Set the boundary conditions by penalty method
       call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rres, rcollection)
+
+      call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, dscale, .false., rres, rcollection)
+
     end if
 
     !-------------------------------------------------------------------------
@@ -1665,6 +1673,10 @@ contains
       ! Set the boundary conditions by penalty method
       call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+
+      call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+
     end if
 
     select case(imasstype)
@@ -6136,12 +6148,125 @@ contains
   end subroutine hydro_setBdrCondPenalty
 
 
+!***********************************************************************
+!<subroutine>
+
+  subroutine hydro_assembleNavStoViscous(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dscale, bclear, rsource, rcollection)
+
+!<description>
+    ! This subroutine adds the viscous fluxes to the source term so that
+    ! the code is calculating the full compressible Navier-Stokes equations
+    ! Attention: This is just a quick-and-dirty implementation.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in), target :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Clear source vector?
+    logical, intent(in) :: bclear
+!</input>
+
+!<inputoutput>
+    ! source vector to be assembled
+    type(t_vectorBlock), intent(inout) :: rsource
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    type(t_fev2Vectors) :: rvectorEval
+    integer :: isystemformat
+
+    ! Check of source and solution vector are compatible
+    call lsysbl_isVectorCompatible(rsolution, rsource)
+
+    ! Get further parameters from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isystemformat', isystemformat)
+
+    ! Check if we are in block-format
+    if (isystemformat .ne. SYSTEM_BLOCKFORMAT) then
+      call output_line('Only block format is supported at this time!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_assembleNavStoViscous')
+      call sys_halt()
+    end if
+
+    ! Do we have to clear the source vector?
+    if(bclear .eqv. .TRUE.) then
+        call lsysbl_clearVector(rsource)
+    end if
+
+    ! We need the parameter dscale and the parameter list in the callback routine
+    ! We pass is via the collection
+    rcollection%DquickAccess(1) = dscale
+    rcollection%p_rparlistQuickAccess1 => rparlist
+
+    ! Build the term according to the dimension
+    select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+
+        ! Add the components of the solution vector to the list of the vectors
+        ! that have to be evaluated during the assembly of the source term.
+        ! We need the solution + their derivatives to build the stress tensor
+        ! and the penalty term in the equation.
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(1),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(2),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(3),1)
+
+        ! Build the penalty term
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_NavStoVisc1D,rcollection,revalvectors=rvectorEval)
+
+        ! clean up
+        call fev2_releaseVectorList(rvectorEval)
+
+      case (NDIM2D)
+
+        ! Add the components of the solution vector to the list of the vectors
+        ! that have to be evaluated during the assembly of the source term.
+        ! We need the solution + their derivatives to build the stress tensor
+        ! and the penalty term in the equation.
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(1),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(2),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(3),1)
+        call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(4),1)
+
+        ! Build the penalty term
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_NavStoVisc2D,rcollection,revalvectors=rvectorEval)
+
+        ! clean up
+        call fev2_releaseVectorList(rvectorEval)
+
+    case default
+        call output_line('At the moment only 1D and 2D is supported!')
+        call sys_halt()
+    end select
+
+
+
+  end subroutine hydro_assembleNavStoViscous
+
+
 
 !***********************************************************************
 
 !<subroutine>
 
-  subroutine hydro_fcalc_bdrcondPenalty1D(rvectorData,rassemblyData,rvectorAssembly,&
+  subroutine hydro_fcalc_NavStoVisc1D(rvectorData,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>
@@ -6230,36 +6355,6 @@ contains
     ! Get dscale
     dscale = rcollection%DquickAccess(1)
 
-    ! Get the penalty parameter
-    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dpenalty',dPenalty,1.0_DP)
-
-    ! and the wall temperature
-    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dWallTemperature',dWallTemperature,293.15_DP)
-
-    ! and the specific gas constant
-    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'GasProperty','dSpecificGasConstant', &
-                                dSpecificGasConstant,287.058_DP)
-
-    ! read out \Chi_{Omega_s}
-    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1,'PENALTY','ChiOmegaS',str_ChiOmegaS)
-    ! init a parser and parse the function in it
-    call fparser_create(parser_ChiOmegaS,1)
-    call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x'/))
-
-    ! Calculate c_v
-    c_v = dSpecificGasConstant / (HYDRO_GAMMA - 1)
-
-    ! This c_v would be true if everything would be in SI-Units
-    ! However, the pressure is not in SI-Units - it is in bar.
-    ! So we have to adjust c_v and scale it
-    ! 1bar = 1*10^5 Pa
-    c_v = c_v/100000.0_DP
-
-    ! The whole vector needs to be scaled with dscale
-    ! to make life easier, we set dpenalty = dscale*dpenalty
-    ! This does the trick
-    dPenalty = dscale*dPenalty
-
 
     ! We want to do compressible Navier-Stokes
     ! So we first build the viscous fluxes.
@@ -6321,95 +6416,15 @@ contains
         end do !icubp
     end do !iel
 
-    !---------------------------------------------------------------!
-    ! NOW we do penalty and add the extra values to the source term !
-    !---------------------------------------------------------------!
 
-    ! Reminder: Technically, it could be merged with the loops above.
-    ! However, to have a better overview on the code and to see what is happening
-    ! where we leave this block standalone, even if it would slow down the code
-    ! a little bit.
-
-    ! Loop over the elements in the current set
-    do iel = 1, nelements
-
-        ! Loop over all cubature points on the current element
-        do icubp=1,npointsPerElement
-
-            ! Evaluate the parser: find out if we are in the obstacle or not
-            ! Format of the array:
-            !  Dpoints(1,.)=x-coordinates,
-            !  Dpoints(2,.)=y-coordinates.
-            !  Dpoints(3,.)=z-coordinates (only 3d).
-            ! furthermore:
-            !  Dpoints(:,i,.) = Coordinates of point i
-            ! furthermore:
-            !  Dpoints(:,:,j) = Coordinates of all points on element j
-            ! so we need p_Dcoords(1,icubp,iel)
-            call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
-
-            ! The mask function returns 0 or 1. If we are in the penalty area, it returns 1.
-            if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
-
-                ! Outer loop over the DOFs i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
-                do idofe = 1, p_rvectorData1%ndofTest
-
-                    ! Fetch the contributions of the (test) basis functions Phi_i
-                    ! into dbasI
-                    dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
-
-                    ! Get the solution values
-                    dsol1 = p_Dsolution1(icubp,iel,DER_FUNC1D)
-                    dsol2 = p_Dsolution2(icubp,iel,DER_FUNC1D)
-                    dsol3 = p_Dsolution3(icubp,iel,DER_FUNC1D)
-
-                    ! Calculate the entries in the source vectors
-                    ! The Density equation gets no extra term. So we comment it out.
-                    ! p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
-
-                    ! X-Momentum
-                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)&
-                                                - dPenalty * p_DcubWeight(icubp,iel) * dsol2 * dbasI
-
-                    ! Energy
-                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)&
-                                                - dPenalty * p_DcubWeight(icubp,iel) * dbasI * &
-                                                 (dsol3 - dsol1*c_v*dWallTemperature)
-
-                end do ! idofe
-
-            ! we do not have to add anything if we are not in the penalty area.
-            ! We could delete this part of the code, but we leave it here as a comment
-            ! so that we know we thought of it and did this on purpose.
-!            else
-!
-!                do idofe = 1, p_rvectorData1%ndofTest
-!
-!                    ! Density
-!                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
-!
-!                    ! X-Momentum
-!                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
-!
-!                    ! Energy
-!                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)
-!
-!                end do ! idofe
-
-            end  if! if we are in penaltyareay
-
-        end do !icubp
-    end do ! iel
-
-  end subroutine hydro_fcalc_bdrcondPenalty1D
+  end subroutine hydro_fcalc_NavStoVisc1D
 
 !<subroutine>
 
 
 !<subroutine>
 
-  subroutine hydro_fcalc_bdrcondPenalty2D(rvectorData,rassemblyData,rvectorAssembly,&
+  subroutine hydro_fcalc_NavStoVisc2D(rvectorData,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>
@@ -6550,8 +6565,6 @@ contains
             ! Outer loop over all DOFs i=1,...,ndof on the current element
             do idofe=1, p_rvectorData1%ndofTest
 
-
-
                     ! Density
                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
 
@@ -6569,6 +6582,350 @@ contains
 
         end do !icubp
     end do !iel
+
+
+  end subroutine hydro_fcalc_NavStoVisc2D
+
+!<subroutine>
+
+
+
+!***********************************************************************
+
+!<subroutine>
+
+  subroutine hydro_fcalc_bdrcondPenalty1D(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>
+    ! Callback routine so that bma_buildVector builds the penalty-term for
+    ! the equation.
+!</description>
+
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+    ! local variables
+    type(t_bmaVectorData), pointer :: p_rvectorData1, p_rvectorData2, p_rvectorData3
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:), pointer :: p_Dsolution1, p_Dsolution2, p_Dsolution3
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1, p_DlocalVector2, p_DlocalVector3
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    integer :: idofe,icubp,iel
+    real(DP) :: dbasI,dsol1,dsol2,dsol3
+    real(DP) :: dscale, dPenalty, c_v
+
+    ! Coordinates of the real points
+    real(DP), dimension(:,:,:), pointer :: p_DCoords
+
+    ! We need a variable to save the result of the evaluation of \Chi_{Omega_s}
+    real(DP) :: dChiOmegaS
+
+    ! and we need the wall temperature of the obstacle
+    real(DP) :: dWallTemperature
+
+    ! We need the specific gas constant
+    real(DP) :: dSpecificGasConstant
+
+    character(LEN=SYS_STRLEN) :: str_ChiOmegaS
+    type(t_fparser) :: parser_ChiOmegaS
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get the data arrays of the subvector
+    p_rvectorData1 => rvectorData(1)
+    p_rvectorData2 => rvectorData(2)
+    p_rvectorData3 => rvectorData(3)
+
+    ! Get the entries of the subvector
+    p_DlocalVector1 => p_rvectorData1%p_Dentry
+    p_DlocalVector2 => p_rvectorData2%p_Dentry
+    p_DlocalVector3 => p_rvectorData3%p_Dentry
+
+    ! Get the basis functions of the test space
+    p_DbasTest => rvectorData(1)%p_DbasTest
+
+    ! Get the entries of the solution at the points: 1 Density, 2: Momentum, 3: Total Energy
+    p_Dsolution1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+    p_Dsolution2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+    p_Dsolution3 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+
+
+    ! Get the coordinates of the points
+    p_DCoords => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get dscale
+    dscale = rcollection%DquickAccess(1)
+
+    ! Get the penalty parameter
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dpenalty',dPenalty,1.0_DP)
+
+    ! and the wall temperature
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dWallTemperature',dWallTemperature,293.15_DP)
+
+    ! and the specific gas constant
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'GasProperty','dSpecificGasConstant', &
+                                dSpecificGasConstant,287.058_DP)
+
+    ! read out \Chi_{Omega_s}
+    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1,'PENALTY','ChiOmegaS',str_ChiOmegaS)
+    ! init a parser and parse the function in it
+    call fparser_create(parser_ChiOmegaS,1)
+    call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x'/))
+
+    ! Calculate c_v
+    c_v = dSpecificGasConstant / (HYDRO_GAMMA - 1)
+
+    ! This c_v would be true if everything would be in SI-Units
+    ! However, the pressure is not in SI-Units - it is in bar.
+    ! So we have to adjust c_v and scale it
+    ! 1bar = 1*10^5 Pa
+    c_v = c_v/100000.0_DP
+
+    ! The whole vector needs to be scaled with dscale
+    ! to make life easier, we set dpenalty = dscale*dpenalty
+    ! This does the trick
+    dPenalty = dscale*dPenalty
+
+    !---------------------------------------------------------------!
+    ! NOW we do penalty and add the extra values to the source term !
+    !---------------------------------------------------------------!
+
+    ! Reminder: Technically, it could be merged with the loops above.
+    ! However, to have a better overview on the code and to see what is happening
+    ! where we leave this block standalone, even if it would slow down the code
+    ! a little bit.
+
+    ! Loop over the elements in the current set
+    do iel = 1, nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp=1,npointsPerElement
+
+            ! Evaluate the parser: find out if we are in the obstacle or not
+            ! Format of the array:
+            !  Dpoints(1,.)=x-coordinates,
+            !  Dpoints(2,.)=y-coordinates.
+            !  Dpoints(3,.)=z-coordinates (only 3d).
+            ! furthermore:
+            !  Dpoints(:,i,.) = Coordinates of point i
+            ! furthermore:
+            !  Dpoints(:,:,j) = Coordinates of all points on element j
+            ! so we need p_Dcoords(1,icubp,iel)
+            call fparser_evalFunction(parser_ChiOmegaS,1,(/p_DCoords(1,icubp,iel)/),dChiOmegaS)
+
+            ! The mask function returns 0 or 1. If we are in the penalty area, it returns 1.
+            if (abs(dChiOmegaS - 1.0_DP) .le. 0.1_DP) then
+
+                ! Outer loop over the DOFs i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe = 1, p_rvectorData1%ndofTest
+
+                    ! Fetch the contributions of the (test) basis functions Phi_i
+                    ! into dbasI
+                    dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
+
+                    ! Get the solution values
+                    dsol1 = p_Dsolution1(icubp,iel,DER_FUNC1D)
+                    dsol2 = p_Dsolution2(icubp,iel,DER_FUNC1D)
+                    dsol3 = p_Dsolution3(icubp,iel,DER_FUNC1D)
+
+                    ! Calculate the entries in the source vectors
+                    ! The Density equation gets no extra term. So we comment it out.
+                    ! p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+
+                    ! X-Momentum
+                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)&
+                                                - dPenalty * p_DcubWeight(icubp,iel) * dsol2 * dbasI
+
+                    ! Energy
+                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)&
+                                                - dPenalty * p_DcubWeight(icubp,iel) * dbasI * &
+                                                 (dsol3 - dsol1*c_v*dWallTemperature)
+
+                end do ! idofe
+
+            ! we do not have to add anything if we are not in the penalty area.
+            ! We could delete this part of the code, but we leave it here as a comment
+            ! so that we know we thought of it and did this on purpose.
+!            else
+!
+!                do idofe = 1, p_rvectorData1%ndofTest
+!
+!                    ! Density
+!                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel)
+!
+!                    ! X-Momentum
+!                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel)
+!
+!                    ! Energy
+!                    p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel)
+!
+!                end do ! idofe
+
+            end  if! if we are in penaltyareay
+
+        end do !icubp
+    end do ! iel
+
+    ! Release the parser
+    call fparser_release(parser_ChiOmegaS)
+  end subroutine hydro_fcalc_bdrcondPenalty1D
+
+!<subroutine>
+
+
+!<subroutine>
+
+  subroutine hydro_fcalc_bdrcondPenalty2D(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>
+    ! Calculates the general right-hand side vector of any equation.
+    ! The RHS to calculate is specified via the collection.
+!</description>
+
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+    ! local variables
+    type(t_bmaVectorData), pointer :: p_rvectorData1, p_rvectorData2, p_rvectorData3, p_rvectorData4
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:), pointer :: p_Dsolution1, p_Dsolution2, p_Dsolution3, p_Dsolution4
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1, p_DlocalVector2, p_DlocalVector3, p_DlocalVector4
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    integer :: idofe,icubp,iel
+    real(DP) :: dbasI,dbasI_x,dsol1,dsol2,dsol3,dsol1_x,dsol2_x,dsol3_x
+    real(DP) :: dscale, dPenalty, c_v, mu, Prantl, t_xx, e_x, Reynolds
+
+    ! Coordinates of the real points
+    real(DP), dimension(:,:,:), pointer :: p_DCoords
+
+    ! We need a variable to save the result of the evaluation of \Chi_{Omega_s}
+    real(DP) :: dChiOmegaS
+
+    ! and we need the wall temperature of the obstacle
+    real(DP) :: dWallTemperature
+
+    ! We need the specific gas constant
+    real(DP) :: dSpecificGasConstant
+
+    character(LEN=SYS_STRLEN) :: str_ChiOmegaS
+    type(t_fparser) :: parser_ChiOmegaS
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get the data arrays of the subvector
+    p_rvectorData1 => rvectorData(1)
+    p_rvectorData2 => rvectorData(2)
+    p_rvectorData3 => rvectorData(3)
+    p_rvectorData4 => rvectorData(4)
+
+    ! Get the entries of the subvector
+    p_DlocalVector1 => p_rvectorData1%p_Dentry
+    p_DlocalVector2 => p_rvectorData2%p_Dentry
+    p_DlocalVector3 => p_rvectorData3%p_Dentry
+    p_DlocalVector4 => p_rvectorData4%p_Dentry
+
+    ! Get the basis functions of the test space
+    p_DbasTest => rvectorData(1)%p_DbasTest
+
+    ! Get the entries of the solution at the points: 1 Density, 2: Momentum, 3: Total Energy
+    p_Dsolution1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+    p_Dsolution2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+    p_Dsolution3 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+    p_Dsolution4 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
+
+
+    ! Get the coordinates of the points
+    p_DCoords => rassemblyData%revalElementSet%p_DpointsReal
+
+    ! Get dscale
+    dscale = rcollection%DquickAccess(1)
+
+    ! Get the penalty parameter
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dpenalty',dPenalty,1.0_DP)
+
+    ! and the wall temperature
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'PENALTY','dWallTemperature',dWallTemperature,293.15_DP)
+
+    !and the specific gas constant
+    call parlst_getvalue_double(rcollection%p_rparlistQuickAccess1,'GasProperty','dSpecificGasConstant', &
+                                dSpecificGasConstant,287.058_DP)
+
+    ! read out \Chi_{Omega_s}
+    call parlst_getvalue_string(rcollection%p_rparlistQuickAccess1,'PENALTY','ChiOmegaS',str_ChiOmegaS)
+    ! init a parser and parse the function in it
+    call fparser_create(parser_ChiOmegaS,1)
+    call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x'/))
+
+    ! Calculate c_v
+    c_v = dSpecificGasConstant / (HYDRO_GAMMA - 1)
+
+    ! This c_v would be true if everything would be in SI-Units
+    ! However, the pressure is not in SI-Units - it is in bar.
+    ! So we have to adjust c_v and scale it
+    ! 1bar = 1*10^5 Pa
+    c_v = c_v/100000.0_DP
+
+    ! The whole vector needs to be scaled with dscale
+    ! to make life easier, we set dpenalty = dscale*dpenalty
+    ! This does the trick
+    dPenalty = dscale*dPenalty
+
+
 
     !---------------------------------------------------------------!
     ! NOW we do penalty and add the extra values to the source term !
