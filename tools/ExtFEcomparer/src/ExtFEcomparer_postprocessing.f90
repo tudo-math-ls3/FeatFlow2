@@ -66,6 +66,12 @@ subroutine ExtFEcomparer_init_postprocessing(rpostprocessing,rparlist)
     call parlst_getvalue_int(rparlist,"ExtFE-SECOND", &
                     "iNVAR",rpostprocessing%nVarSecond)
 
+    ! Integral - Postprocessing
+    call ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
+
+    ! L1 - Postprocessing
+    call ExtFE_init_postprocessing_L1(rpostprocessing,rparlist)
+
     ! L2 - Postprocessing
     call ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
 
@@ -89,6 +95,10 @@ subroutine ExtFEcomparer_postprocess(rpostprocessing)
     type(t_postprocessing), intent(inout) :: rpostprocessing
     !</inputoutput>
 
+    call ExtFE_postprocess_Integral(rpostprocessing)
+
+    call ExtFE_postprocess_L1(rpostprocessing)
+
     call ExtFE_postprocess_L2(rpostprocessing)
 
     call ExtFE_postprocess_PointValues(rpostprocessing)
@@ -107,6 +117,10 @@ subroutine ExtFEcomparer_done_postprocessing(rpostprocessing)
    type(t_postprocessing) , intent(inout):: rpostprocessing
 !</input>
 
+    call ExtFE_done_postprocessing_Integral(rpostprocessing)
+
+    call ExtFE_done_postprocessing_L1(rpostprocessing)
+
     call ExtFE_done_postprocessing_L2(rpostprocessing)
 
     call ExtFE_done_postprocessing_PointValues(rpostprocessing)
@@ -122,6 +136,721 @@ end subroutine
 
 
 ! Here, the real routines follow
+
+
+!-----------------------------------------------------!
+! Init of the Integral-Postprocessing
+
+subroutine ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
+
+    !<input>
+    type(t_parlist), intent(in) :: rparlist
+    !</input>
+
+    !<inputoutput>
+    type(t_postprocessing) , intent(inout):: rpostprocessing
+    !</inputoutput>
+
+    integer :: nIntCalculations, nIntChiOmega, nIntCubRule
+    character(LEN=ExtFE_STRLEN) :: Intfilepath
+    integer :: writeOutInt,i,k,nDIM
+
+    ! pointer to the storage of the postprocessing structure
+    real(DP), dimension(:),  pointer :: p_Intresults =>NULL()
+    integer, dimension (:,:), pointer :: p_IntComp => NULL()
+    character, dimension(:), pointer :: p_IntChiOmega => NULL()
+    character, dimension(:), pointer :: p_IntTriFile => NULL()
+    integer(I32), dimension (:), pointer :: p_IntCubRule => NULL()
+    character(LEN=ExtFE_STRLEN) :: sparam
+    character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
+
+
+
+
+    !------------------------------------------------!
+    ! Set up the Integral-Calculation-Postprocessing !
+    !------------------------------------------------!
+
+    ! Find out how many Integral-compuations to do
+    nIntCalculations = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","IntCalculations")
+    ! How many Regions of interest are there?
+    nIntChiOmega = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","IntRegionOfInterest")
+    ! How many cubature rules are there?
+    nIntCubRule = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","IntCubatureRule")
+
+  ! Validate that all numbers are the same
+  if((nIntCalculations .ne. nIntChiOmega ).or. &
+     (nIntCalculations .ne. nIntCubRule) .or. &
+     (nIntChiOmega .ne. nIntCubRule)) then
+     call output_line('Input Error: The number of calculations &
+     &must match the number of cubature rules and regions of interest', &
+     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+     call sys_halt()
+  end if
+
+  ! Get the dimension
+  nDIM = rpostprocessing%nDim
+
+  ! Init arrays for results and which component is used
+  ! and store the filepath
+  if (nIntCalculations .gt. 0) then
+
+    ! Store the number in the structure
+    rpostprocessing%nIntCalculations = nIntCalculations
+
+    ! Array for components
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "IntCompFunc", (/2,nIntCalculations/),ST_INT, &
+             rpostprocessing%h_IntCompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "IntResults", nIntCalculations,ST_DOUBLE, &
+             rpostprocessing%h_IntResults,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "IntCubRule",nIntCalculations,ST_INT32, &
+            rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
+
+    ! Array to store the region of interest for some
+    ! postprocessing
+    ! Only of interest if we write out the results in a file,
+    ! but else we have some branches during the init and I
+    ! don't want to do them right now.
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "IntChiOmega",ExtFE_STRLEN*nIntCalculations,ST_CHAR, &
+            rpostprocessing%h_IntChiOmega,ST_NEWBLOCK_ZERO)
+
+    ! We want to write in the file which mesh was used
+    ! Get an array for that
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+          "IntTriFile",ExtFE_STRLEN*nIntCalculations,ST_CHAR, &
+           rpostprocessing%h_IntTriFile,ST_NEWBLOCK_ZERO)
+
+    ! Do we want to save the results in a file?
+    call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
+                    "writeOutIntCalc",writeOutInt)
+
+    if(writeOutInt .eq. ExtFE_DO) then
+
+        ! Tell the postprocessing that we want to write a file
+        rpostprocessing%writeOutIntresults = .true.
+
+        ! We need a filepath
+        call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
+                        "sIntFilePath",Intfilepath,bdequote=.TRUE.)
+        if (Intfilepath .eq. '' ) then
+             call output_line('You want to write out the &
+                    &L1-results but have not specified a path', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+                    call sys_halt()
+        end if
+
+        ! Store the filepath
+        rpostprocessing%Intfilepath = Intfilepath
+
+    end if
+
+    ! We will actually parse the L1RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pIntChiOmegaParser,nIntCalculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_double(rpostprocessing%h_IntResults,p_Intresults)
+    call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,p_IntComp)
+    call storage_getbase_char(rpostprocessing%h_IntChiOmega,p_IntChiOmega)
+    call storage_getbase_char(rpostprocessing%h_IntTriFile,p_IntTriFile)
+    call storage_getbase_int(rpostprocessing%h_IntCubRule,p_IntCubRule)
+
+    ! We will store which mesh is used
+    call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
+                                 "sMesh",sTriFileFirst,bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"ExtFE-SECOND",&
+                                 "sMesh",sTriFileSecond,bdequote=.true.)
+
+    ! Now read in the data
+    do i=1,nIntCalculations
+
+        ! Which components?
+        ! fetch the whole line
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "IntCalculations", &
+                        sparam,sdefault="",isubstring=i)
+        ! Now read the components from the string
+        read(sparam,*) p_IntComp(1,i), p_IntComp(2,i)
+
+        ! Which region of interest?
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "IntRegionOfInterest", &
+                        sparam,sdefault="",isubstring=i)
+        ! Copy it to the postprocessing structure for
+        ! some output. It is nasty but i did not find
+        ! any other way
+         do k=1,ExtFE_STRLEN
+            p_IntChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
+         end do
+
+         ! Parse the string in the parser. Unfortunately we have to branch here
+         ! due to the evaluation
+         ! could be solved with a branch somewhere else but the code is easier
+         ! to understand like this
+        select case (nDIM)
+             case(ExtFE_NDIM1)
+               call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,i,sparam,(/'x'/))
+             case(ExtFE_NDIM2)
+               call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,i,sparam,(/'x','y'/))
+             case default
+               call output_line('Dimension of your problem is &
+                     &not supported', &
+                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+               call sys_halt()
+        end select
+
+        ! Now we need a cubature rule. Fetch the string...
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "IntCubatureRule", &
+                        sparam,sdefault="",isubstring=i)
+        ! and convert it to an ID
+        p_IntCubRule(i) = cub_igetID(sparam)
+
+        ! Store which mesh is to be used
+        ! ||f-g|| => take first mesh
+        if( (p_IntComp(1,i) .gt. 0) .and. &
+            (p_Intcomp(2,i) .gt. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_IntTriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileFirst(k:k)
+          end do
+
+        ! Second option: id1 >0, id2 <=0
+        ! => calculate ||id1|| => mesh of first function
+        else if((p_IntComp(1,i) .gt. 0) .and. &
+                (p_IntComp(2,i) .le. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_IntTriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileFirst(k:k)
+          end do
+
+        ! Third option: id1<=0, id2 >0
+        ! => calculate ||id2|| => mesh of second function
+        else if((p_IntComp(1,i) .le. 0) .and. &
+                (p_IntComp(2,i) .gt. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_IntTriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileSecond(k:k)
+          end do
+
+        else
+            call output_line('You need always one component id that &
+                    &is greater than 0', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+            call sys_halt()
+        end if ! Which component
+
+
+    end do ! Read in of the data
+
+  end if
+
+
+end subroutine
+
+! Postprocess the L1-Results
+
+subroutine ExtFE_postprocess_Integral(rpostprocessing)
+
+    !<inputoutput>
+    ! the postprocessing structure
+    type(t_postprocessing), intent(inout) :: rpostprocessing
+    !</inputoutput>
+
+    ! For L1-Calculations
+    integer :: nIntcalc
+    integer, dimension(:,:), pointer :: iIntFuncComp => NULL()
+    real(DP), dimension(:), pointer :: dIntResults => NULL()
+    character, dimension(:), pointer :: cIntChiOmega => NULL()
+    character, dimension(:), pointer :: cIntTriFile => NULL()
+
+    ! General variables
+    integer :: ifile,i,k
+    character(LEN=ExtFE_STRLEN) :: soutString, stmpString, stmpString2
+
+    ! Write out Integral-Calculation-Results?
+    ! If not we are already done
+    if (rpostprocessing%writeOutIntresults .eqv. .TRUE.) then
+        !get pointer do the data arrays
+        call storage_getbase_double(rpostprocessing%h_IntResults,dIntResults)
+        call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,iIntFuncComp)
+        call storage_getbase_char(rpostprocessing%h_IntChiOmega,cIntChiOmega)
+        call storage_getbase_char(rpostprocessing%h_IntTriFile,cIntTriFile)
+
+        ! How many calculations?
+        nIntcalc = rpostprocessing%nIntCalculations
+
+        ! Open a file for writing out the results
+        call io_openFileForWriting(rpostprocessing%Intfilepath, &
+                    ifile,SYS_REPLACE,bformatted=.TRUE. )
+
+        ! Ok, file is open, so we write
+        do i=1,nIntcalc
+            ! Empty the string - better save than sorry
+            soutString = ''
+            stmpString = ''
+            ! Both components were used - so we need to
+            ! write ||f_1(comp1) - f_2(comp2)||_L2(Omega_i) =
+            ! into a string
+            if((iIntFuncComp(1,i) .gt. 0) .AND. &
+                (iIntFuncComp(2,i) .gt. 0)) then
+                 write(stmpString,'(A11,I2,A8,I2,A11,I2,A3)') '\int{ f_1(', iIntFuncComp(1,i) , &
+                                ') - f_2(', iIntFuncComp(2,i) ,') }_Omega_', i, ' = '
+            ! Only first component was used - write
+            ! ||f_1(comp1)||_L2(Omega_i) =  in the string
+            else if((iIntFuncComp(1,i) .gt. 0 ) .AND. &
+                  (iIntFuncComp(2,i) .le. 0) ) then
+                 write(stmpString,'(A11,I2,A11,I2,A3)') '\int{ f_1(', iIntFuncComp(1,i) , &
+                                ') }_Omega_', i, ' = '
+            ! Only second component was used - write
+            ! ||f_2(comp1)||_L2(Omega_i) =  in the string
+            ! No sanity checks needed - done already during the init
+            ! it can only be this case
+            else
+                 write(stmpString,'(A11,I2,A11,I2,A3)') '\int{ f_2(', iIntFuncComp(2,i) , &
+                                ') }_Omega_', i, ' = '
+            end if
+
+            ! Add the result to the string
+            write(soutString,'(A1,E16.10)') ' ', dIntResults(i)
+
+            ! and write it in the file
+            write(ifile,*) trim( trim(stmpString) // trim(soutString) )
+        end do
+
+        ! Now we write out what Omega_i actually is
+        ! At the moment it should work  like this - if something is
+        ! cut off I will rewrite this one.
+        ! first a linebreak
+        write(ifile,*) ''
+        do i=1,nIntcalc
+            ! Empty the strings
+            stmpString = ''
+            stmpString2 = ''
+            write(stmpString,'(A11,I2,A14)') 'with Omega_', i ,' the subset of'
+
+            do k = 1,ExtFE_STRLEN
+                stmpString2(k:k) = cIntTriFile((i-1)*ExtFE_STRLEN+k)
+            end do !k
+
+            stmpString = trim(stmpString) // ' ' //trim(stmpString2)
+            write(stmpString2,'(A24)') ' for that the expression'
+            stmpString = trim(stmpString) // trim(stmpString2)
+
+            do k = 1,ExtFE_STRLEN
+                stmpString2(k:k) = cIntChiOmega((i-1)*ExtFE_STRLEN+k)
+            end do !k
+
+            write(ifile,'(A,A1,A,A10)') trim(stmpString), ' ', trim(stmpString2), ' returns 1'
+        end do ! all L2Calculations
+
+
+        ! Clean up
+        close(ifile)
+        dIntResults => NULL()
+        iIntFuncComp => NULL()
+        cIntChiOmega => NULL()
+    end if
+
+
+end subroutine
+
+! Release of L1-Postprocessing
+
+subroutine ExtFE_done_postprocessing_Integral(rpostprocessing)
+
+!<input>
+   type(t_postprocessing) , intent(inout):: rpostprocessing
+!</input>
+
+    ! Release all arrays from the storage that were allocated
+    ! during the init. Without the If-condition it leads to an
+    ! error since then the storage wants to deallocate handles
+    ! that were not allocated
+    if (rpostprocessing%h_IntCompFunc .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_IntCompFunc)
+    end if
+    if (rpostprocessing%h_IntChiOmega .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_IntChiOmega)
+    end if
+    if (rpostprocessing%h_IntResults .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_IntResults)
+    end if
+    if (rpostprocessing%h_IntTriFile .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_IntTriFile)
+    end if
+    if(rpostprocessing%h_IntCubRule .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_IntCubRule)
+    end if
+
+    call fparser_release(rpostprocessing%pIntChiOmegaParser)
+end subroutine
+
+
+!-----------------------------------------------------!
+! Init of the L1-Postprocessing
+
+subroutine ExtFE_init_postprocessing_L1(rpostprocessing,rparlist)
+
+    !<input>
+    type(t_parlist), intent(in) :: rparlist
+    !</input>
+
+    !<inputoutput>
+    type(t_postprocessing) , intent(inout):: rpostprocessing
+    !</inputoutput>
+
+    integer :: nL1Calculations, nL1ChiOmega, nL1CubRule
+    character(LEN=ExtFE_STRLEN) :: L1filepath
+    integer :: writeOutL1,i,k,nDIM
+
+    ! pointer to the storage of the postprocessing structure
+    real(DP), dimension(:),  pointer :: p_L1results =>NULL()
+    integer, dimension (:,:), pointer :: p_L1Comp => NULL()
+    character, dimension(:), pointer :: p_L1ChiOmega => NULL()
+    character, dimension(:), pointer :: p_L1TriFile => NULL()
+    integer(I32), dimension (:), pointer :: p_L1CubRule => NULL()
+    character(LEN=ExtFE_STRLEN) :: sparam
+    character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
+
+
+
+
+    !------------------------------------------!
+    ! Set up the L1-Calculation-Postprocessing !
+    !------------------------------------------!
+
+    ! Find out how many L1-compuations to do
+    nL1Calculations = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","L1calculations")
+    ! How many Regions of interest are there?
+    nL1ChiOmega = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","L1RegionOfInterest")
+    ! How many cubature rules are there?
+    nL1CubRule = parlst_querysubstrings(rparlist, &
+                    "ExtFE-CALCULATIONS","L1CubatureRule")
+
+  ! Validate that all numbers are the same
+  if((nL1Calculations .ne. nL1ChiOmega ).or. &
+     (nL1Calculations .ne. nL1CubRule) .or. &
+     (nL1ChiOmega .ne. nL1CubRule)) then
+     call output_line('Input Error: The number of calculations &
+     &must match the number of cubature rules and regions of interest', &
+     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+     call sys_halt()
+  end if
+
+  ! Get the dimension
+  nDIM = rpostprocessing%nDim
+
+  ! Init arrays for results and which component is used
+  ! and store the filepath
+  if (nL1Calculations .gt. 0) then
+
+    ! Store the number in the structure
+    rpostprocessing%nL1Calculations = nL1Calculations
+
+    ! Array for components
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "L1CompFunc", (/2,nL1Calculations/),ST_INT, &
+             rpostprocessing%h_L1CompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "L1Results", nL1Calculations,ST_DOUBLE, &
+             rpostprocessing%h_L1Results,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "L1CubRule",nL1Calculations,ST_INT32, &
+            rpostprocessing%h_L1CubRule, ST_NEWBLOCK_ZERO)
+
+    ! Array to store the region of interest for some
+    ! postprocessing
+    ! Only of interest if we write out the results in a file,
+    ! but else we have some branches during the init and I
+    ! don't want to do them right now.
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+            "L1ChiOmega",ExtFE_STRLEN*nL1Calculations,ST_CHAR, &
+            rpostprocessing%h_L1ChiOmega,ST_NEWBLOCK_ZERO)
+
+    ! We want to write in the file which mesh was used
+    ! Get an array for that
+    call storage_new("ExtFEcomparer_init_postprocessing", &
+          "L1TriFile",ExtFE_STRLEN*nL1Calculations,ST_CHAR, &
+           rpostprocessing%h_L1TriFile,ST_NEWBLOCK_ZERO)
+
+    ! Do we want to save the results in a file?
+    call parlst_getvalue_int(rparlist,"ExtFE-POSTPROCESSING", &
+                    "writeOutL1Calc",writeOutL1)
+
+    if(writeOutL1 .eq. ExtFE_DO) then
+
+        ! Tell the postprocessing that we want to write a file
+        rpostprocessing%writeOutL1results = .true.
+
+        ! We need a filepath
+        call parlst_getvalue_string(rparlist,"ExtFE-POSTPROCESSING", &
+                        "sL1FilePath",L1filepath,bdequote=.TRUE.)
+        if (L1filepath .eq. '' ) then
+             call output_line('You want to write out the &
+                    &L1-results but have not specified a path', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+                    call sys_halt()
+        end if
+
+        ! Store the filepath
+        rpostprocessing%L1filepath = L1filepath
+
+    end if
+
+    ! We will actually parse the L1RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pL1ChiOmegaParser,nL1Calculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_double(rpostprocessing%h_L1Results,p_L1results)
+    call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,p_L1Comp)
+    call storage_getbase_char(rpostprocessing%h_L1ChiOmega,p_L1ChiOmega)
+    call storage_getbase_char(rpostprocessing%h_L1TriFile,p_L1TriFile)
+    call storage_getbase_int(rpostprocessing%h_L1CubRule,p_L1CubRule)
+
+    ! We will store which mesh is used
+    call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
+                                 "sMesh",sTriFileFirst,bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"ExtFE-SECOND",&
+                                 "sMesh",sTriFileSecond,bdequote=.true.)
+
+    ! Now read in the data
+    do i=1,nL1Calculations
+
+        ! Which components?
+        ! fetch the whole line
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "L1calculations", &
+                        sparam,sdefault="",isubstring=i)
+        ! Now read the components from the string
+        read(sparam,*) p_L1Comp(1,i), p_L1Comp(2,i)
+
+        ! Which region of interest?
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "L1RegionOfInterest", &
+                        sparam,sdefault="",isubstring=i)
+        ! Copy it to the postprocessing structure for
+        ! some output. It is nasty but i did not find
+        ! any other way
+         do k=1,ExtFE_STRLEN
+            p_L1ChiOmega((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sparam(k:k)
+         end do
+
+         ! Parse the string in the parser. Unfortunately we have to branch here
+         ! due to the evaluation
+         ! could be solved with a branch somewhere else but the code is easier
+         ! to understand like this
+        select case (nDIM)
+             case(ExtFE_NDIM1)
+               call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,i,sparam,(/'x'/))
+             case(ExtFE_NDIM2)
+               call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,i,sparam,(/'x','y'/))
+             case default
+               call output_line('Dimension of your problem is &
+                     &not supported', &
+                     OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+               call sys_halt()
+        end select
+
+        ! Now we need a cubature rule. Fetch the string...
+        call parlst_getvalue_string(rparlist, &
+                        "ExtFE-CALCULATIONS", "L1CubatureRule", &
+                        sparam,sdefault="",isubstring=i)
+        ! and convert it to an ID
+        p_L1CubRule(i) = cub_igetID(sparam)
+
+        ! Store which mesh is to be used
+        ! ||f-g|| => take first mesh
+        if( (p_L1Comp(1,i) .gt. 0) .and. &
+            (p_L1comp(2,i) .gt. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_L1TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileFirst(k:k)
+          end do
+
+        ! Second option: id1 >0, id2 <=0
+        ! => calculate ||id1|| => mesh of first function
+        else if((p_L1Comp(1,i) .gt. 0) .and. &
+                (p_L1Comp(2,i) .le. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_L1TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileFirst(k:k)
+          end do
+
+        ! Third option: id1<=0, id2 >0
+        ! => calculate ||id2|| => mesh of second function
+        else if((p_L1Comp(1,i) .le. 0) .and. &
+                (p_L1Comp(2,i) .gt. 0)) then
+          do k=1,ExtFE_STRLEN
+            p_L1TriFile((i-1)*ExtFE_STRLEN+k:(i-1)*ExtFE_STRLEN+k)=sTriFileSecond(k:k)
+          end do
+
+        else
+            call output_line('You need always one component id that &
+                    &is greater than 0', &
+                    OU_CLASS_ERROR,OU_MODE_STD,"ExtFEcomparer_init_postprocessing")
+            call sys_halt()
+        end if ! Which component
+
+
+    end do ! Read in of the data
+
+  end if
+
+
+end subroutine
+
+! Postprocess the L1-Results
+
+subroutine ExtFE_postprocess_L1(rpostprocessing)
+
+    !<inputoutput>
+    ! the postprocessing structure
+    type(t_postprocessing), intent(inout) :: rpostprocessing
+    !</inputoutput>
+
+    ! For L1-Calculations
+    integer :: nL1calc
+    integer, dimension(:,:), pointer :: iL1FuncComp => NULL()
+    real(DP), dimension(:), pointer :: dL1Results => NULL()
+    character, dimension(:), pointer :: cL1ChiOmega => NULL()
+    character, dimension(:), pointer :: cL1TriFile => NULL()
+
+    ! General variables
+    integer :: ifile,i,k
+    character(LEN=ExtFE_STRLEN) :: soutString, stmpString, stmpString2
+
+    ! Write out L1-Calculation-Results?
+    ! If not we are already done
+    if (rpostprocessing%writeOutL1results .eqv. .TRUE.) then
+        !get pointer do the data arrays
+        call storage_getbase_double(rpostprocessing%h_L1Results,dL1Results)
+        call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,iL1FuncComp)
+        call storage_getbase_char(rpostprocessing%h_L1ChiOmega,cL1ChiOmega)
+        call storage_getbase_char(rpostprocessing%h_L1TriFile,cL1TriFile)
+
+        ! How many calculations?
+        nL1calc = rpostprocessing%nL1Calculations
+
+        ! Open a file for writing out the results
+        call io_openFileForWriting(rpostprocessing%L1filepath, &
+                    ifile,SYS_REPLACE,bformatted=.TRUE. )
+
+        ! Ok, file is open, so we write
+        do i=1,nL1calc
+            ! Empty the string - better save than sorry
+            soutString = ''
+            stmpString = ''
+            ! Both components were used - so we need to
+            ! write ||f_1(comp1) - f_2(comp2)||_L2(Omega_i) =
+            ! into a string
+            if((iL1FuncComp(1,i) .gt. 0) .AND. &
+                (iL1FuncComp(2,i) .gt. 0)) then
+                 write(stmpString,'(A7,I2,A8,I2,A13,I2,A4)') '||f_1(', iL1FuncComp(1,i) , &
+                                ') - f_2(', iL1FuncComp(2,i) ,')||_L1(Omega_', i, ') = '
+            ! Only first component was used - write
+            ! ||f_1(comp1)||_L2(Omega_i) =  in the string
+            else if((iL1FuncComp(1,i) .gt. 0 ) .AND. &
+                  (iL1FuncComp(2,i) .le. 0) ) then
+                 write(stmpString,'(A7,I2,A13,I2,A4)') '||f_1(', iL1FuncComp(1,i) , &
+                                ')||_L1(Omega_', i, ') = '
+            ! Only second component was used - write
+            ! ||f_2(comp1)||_L2(Omega_i) =  in the string
+            ! No sanity checks needed - done already during the init
+            ! it can only be this case
+            else
+                 write(stmpString,'(A7,I2,A13,I2,A4)') '||f_2(', iL1FuncComp(2,i) , &
+                                ')||_L1(Omega_', i, ') = '
+            end if
+
+            ! Add the result to the string
+            write(soutString,'(A1,E16.10)') ' ', dL1Results(i)
+
+            ! and write it in the file
+            write(ifile,*) trim( trim(stmpString) // trim(soutString) )
+        end do
+
+        ! Now we write out what Omega_i actually is
+        ! At the moment it should work  like this - if something is
+        ! cut off I will rewrite this one.
+        ! first a linebreak
+        write(ifile,*) ''
+        do i=1,nL1calc
+            ! Empty the strings
+            stmpString = ''
+            stmpString2 = ''
+            write(stmpString,'(A11,I2,A14)') 'with Omega_', i ,' the subset of'
+
+            do k = 1,ExtFE_STRLEN
+                stmpString2(k:k) = cL1TriFile((i-1)*ExtFE_STRLEN+k)
+            end do !k
+
+            stmpString = trim(stmpString) // ' ' //trim(stmpString2)
+            write(stmpString2,'(A24)') ' for that the expression'
+            stmpString = trim(stmpString) // trim(stmpString2)
+
+            do k = 1,ExtFE_STRLEN
+                stmpString2(k:k) = cL1ChiOmega((i-1)*ExtFE_STRLEN+k)
+            end do !k
+
+            write(ifile,'(A,A1,A,A10)') trim(stmpString), ' ', trim(stmpString2), ' returns 1'
+        end do ! all L2Calculations
+
+
+        ! Clean up
+        close(ifile)
+        dL1Results => NULL()
+        iL1FuncComp => NULL()
+        cL1ChiOmega => NULL()
+    end if
+
+
+end subroutine
+
+! Release of L1-Postprocessing
+
+subroutine ExtFE_done_postprocessing_L1(rpostprocessing)
+
+!<input>
+   type(t_postprocessing) , intent(inout):: rpostprocessing
+!</input>
+
+    ! Release all arrays from the storage that were allocated
+    ! during the init. Without the If-condition it leads to an
+    ! error since then the storage wants to deallocate handles
+    ! that were not allocated
+    if (rpostprocessing%h_L1CompFunc .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L1CompFunc)
+    end if
+    if (rpostprocessing%h_L1ChiOmega .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L1ChiOmega)
+    end if
+    if (rpostprocessing%h_L1Results .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L1Results)
+    end if
+    if (rpostprocessing%h_L1TriFile .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L1TriFile)
+    end if
+    if(rpostprocessing%h_L1CubRule .gt. ST_NOHANDLE) then
+        call storage_free(rpostprocessing%h_L1CubRule)
+    end if
+
+    call fparser_release(rpostprocessing%pL1ChiOmegaParser)
+end subroutine
+
 
 !-----------------------------------------------------!
 ! Init of L2-Postprocessing
@@ -479,6 +1208,7 @@ subroutine ExtFE_done_postprocessing_L2(rpostprocessing)
     call fparser_release(rpostprocessing%pL2ChiOmegaParser)
 end subroutine
 
+!-------------------------------------------------------------------------
 
 ! Init of Pointvalue-Postprocessing
 subroutine ExtFE_init_postprocessing_PointValues(rpostprocessing,rparlist)
@@ -1464,7 +2194,7 @@ subroutine ExtFE_postprocess_OutOrigVec(rpostprocessing)
         call vecio_writeBlockVectorHR(rpostprocessing%OrigVecFirst,'SOLUTION', &
                 bunsorted,0,rpostprocessing%sOrigVecPathOutFirst,&
                 sformat=trim(rpostprocessing%sOrigVec1OutFMT),&
-                scomment=comment)
+                scomment=trim(adjustl(comment)))
     end if
 
     if(rpostprocessing%writeOutOrigVector2 .eqv. .TRUE.) then

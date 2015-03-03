@@ -244,6 +244,92 @@ module ExtFEcomparer_typedefs
     type(t_vectorBlock), pointer :: OrigVecSecond => NULL()
 
 
+    ! Everything regarding integral-Output and calculations
+    ! How many integral to calculate?
+    integer :: nIntCalculations = -1
+    ! Write the results out in a file?
+    logical :: writeOutIntresults = .false.
+    ! If we write them out in a file, we need a path
+    ! where to save it
+    character(LEN=ExtFE_STRLEN) :: Intfilepath = ''
+    ! h_IntResults shall save the handle to a
+    ! an array that stores nL2Calculations doubles
+    ! - entry i: result of calculation i
+    integer :: h_IntResults = ST_NOHANDLE
+    ! h_IntCompFunc shall store the handle to an
+    ! array that saves 2*nIntCalculations INTs
+    ! entry (1,i) is the component of function
+    ! one in calculation i, (2,i) the component of
+    ! function 2 in calculation i.
+    ! if one comp. is -1 then this component is not used,
+    ! i.e we calc \int f and not \int (f-g)
+    integer :: h_IntCompFunc = ST_NOHANDLE
+    ! For the Output we want print on which domain we
+    ! calculated. h_IntChiOmega stores the handle to a
+    ! char-array with the characteristic function of
+    ! that area and h_IntTriFile stores a handle with the
+    ! tri-File (aka mesh) that was used for the calculation
+    ! Index aritmetic: entries (i-1)*ExtFE_STRLEN+1 to i*ExtFE_STRLEN
+    ! belong to calculation i.
+    integer :: h_IntChiOmega = ST_NOHANDLE
+    integer :: h_IntTriFile = ST_NOHANDLE
+    ! For each integral we need a cubature rule. h_IntCubRule
+    ! stores the handle to an INT32-array which stores in
+    ! component i the ID of the cub-rule we use
+    integer :: h_IntCubRule = ST_NOHANDLE
+    ! We need to pass the characteristic function
+    ! somehow to the callback routine that actually
+    ! calculates the Integral. We could just parse in place,
+    ! but for performance reasons we parse it in the init,
+    ! in component i of the parser is the function for
+    ! the calculation i.
+    ! It still needs some init
+    type(t_fparser) :: pIntChiOmegaParser
+
+
+    ! Everything regarding L1-Output and calculations
+    ! How many L1-Calculations?
+    integer :: nL1Calculations = -1
+    ! Write the results out in a file?
+    logical :: writeOutL1results = .false.
+    ! If we write them out in a file, we need a path
+    ! where to save it
+    character(LEN=ExtFE_STRLEN) :: L1filepath = ''
+    ! h_L2Results shall save the handle to a
+    ! an array that stores nL1Calculations doubles
+    ! - entry i: result of calculation i
+    integer :: h_L1Results = ST_NOHANDLE
+    ! h_L2CompFunc shall store the handle to an
+    ! array that saves 2*nL1Calculations INTs
+    ! entry (1,i) is the component of function
+    ! one in calculation i, (2,i) the component of
+    ! function 2 in calculation i.
+    ! if one comp. is -1 then this component is not used,
+    ! i.e we calc ||f|| and not ||f-g||
+    integer :: h_L1CompFunc = ST_NOHANDLE
+    ! For the Output we want print on which domain we
+    ! calculated. h_L1ChiOmega stores the handle to a
+    ! char-array with the characteristic function of
+    ! that area and h_L1TriFile stores a handle with the
+    ! tri-File (aka mesh) that was used for the calculation
+    ! Index aritmetic: entries (i-1)*ExtFE_STRLEN+1 to i*ExtFE_STRLEN
+    ! belong to calculation i.
+    integer :: h_L1ChiOmega = ST_NOHANDLE
+    integer :: h_L1TriFile = ST_NOHANDLE
+    ! For each integral we need a cubature rule. h_L1CubRule
+    ! stores the handle to an INT32-array which stores in
+    ! component i the ID of the cub-rule we use
+    integer :: h_L1CubRule = ST_NOHANDLE
+    ! We need to pass the characteristic function
+    ! somehow to the callback routine that actually
+    ! calculates the Integral. We could just parse in place,
+    ! but for performance reasons we parse it in the init,
+    ! in component i of the parser is the function for
+    ! the calculation i.
+    ! It still needs some init
+    type(t_fparser) :: pL1ChiOmegaParser
+
+
     ! Everything regarding L2-Output and calculations
     ! How many L2-Calculations?
     integer :: nL2Calculations = -1

@@ -167,6 +167,9 @@ subroutine ExtFE_setup_test(rproblem1,rproblem2,rpostprocessing,modus)
     call ExtFEcomparer_parseCmdlArguments(rproblem1%rparamlist)
     call ExtFEcomparer_parseCmdlArguments(rproblem2%rparamlist)
 
+    ! Print the actual parameters on the screen
+    call parlst_info(rproblem1%rparamlist)
+
     ! Figure out the testID. It is in the Section
     ! ExtFE-Benchmark
     call parlst_getvalue_int(rproblem1%rparamlist,"ExtFE-Benchmark", &
@@ -344,7 +347,8 @@ end subroutine
 ! Here, we set up the calculations for test 101:
 ! At first, we calculate ||f1 - f2|| for every component on the whole
 ! domain. Then, we calculate ||f_1|| on the subset with x<0.5
-! and ||f_1|| on the whole domain
+! and ||f_1|| on the whole domain, then ||f_2|| on x<0.5 and ||f_2|| on
+! the whole domain
 subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
     ! <input>
     type(t_problem) , intent(inout):: rproblem1
@@ -355,19 +359,191 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
     ! </inout>
 
     ! Local variables:
-    integer :: nL2calculations,nPointCalcs
+    integer :: nL2calculations,nPointCalcs,nL1calculations,nIntCalculations
     integer :: i
     character(LEN=ExtFE_STRLEN), dimension(:), allocatable :: sParseVariables
     character(LEN=ExtFE_STRLEN) :: L2RegionOfInterest1,L2RegionOfInterest2
+    character(LEN=ExtFE_STRLEN) :: L1RegionOfInterest1, L1RegionOfInterest2
+    character(LEN=ExtFE_STRLEN) :: IntRegionOfInterest1, IntRegionOfInterest2
 
     ! To get the arrays we need these pointers
-    integer, dimension(:,:), pointer :: p_L2FuncComp
-    integer(I32), dimension(:), pointer :: p_L2CubRule
+    integer, dimension(:,:), pointer :: p_L2FuncComp, p_L1FuncComp, p_IntFuncComp
+    integer(I32), dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
 
     ! a pointer to the component + derivative array
     integer, dimension(:,:), pointer :: p_FuncComp
     ! a pointer to the array for the evaluation point
     real(DP), dimension(:,:), pointer :: p_EvalPoint
+
+
+    ! We test the Integral-Calculations
+    ! How many tests do we do?
+    ! first Integral-Series: f_1(i) - f_2(i) on the entire domain
+    ! second Series: f_1(i) on half of the domain
+    ! third series: f_1(i) on the full domain
+    ! 4th Series: f_2(i) on x<0.5
+    ! 5th series: f_2(i) on the whole domain
+    ! The first test should always return something close to 0
+    ! the second and third one together verify that parsing
+    ! still works. So we have 5*NVAR tests
+    nIntcalculations = 5*rproblem1%NVAR
+    rpostprocessing%nIntCalculations = nIntcalculations
+
+    ! Init the arrays
+    ! Array for components
+    call storage_new("ExtFE_setup_tests", &
+            "IntCompFunc", (/2,nIntCalculations/),ST_INT, &
+             rpostprocessing%h_IntCompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFE_setup_tests", &
+            "IntResults", nIntCalculations,ST_DOUBLE, &
+             rpostprocessing%h_IntResults,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFE_setup_tests", &
+            "IntCubRule",nIntCalculations,ST_INT32, &
+            rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
+
+
+    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pIntChiOmegaParser,nIntCalculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,p_IntFuncComp)
+    call storage_getbase_int(rpostprocessing%h_IntCubRule,p_IntCubRule)
+
+
+    IntRegionOfInterest1 = '1'
+    IntRegionOfInterest2 = 'IF(x<=0.5,1,0)'
+    do i=1,rproblem1%NVAR
+        ! First series of test
+        ! cub rule
+        p_IntCubRule(5*i-4) = CUB_G3_1D
+        ! components
+        p_IntFuncComp(1,5*i-4) = i
+        p_IntFuncComp(2,5*i-4) = i
+        ! Parse the region of interest
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-4,&
+                    IntRegionOfInterest1,(/'x'/))
+
+        ! Second series of tests
+        p_IntCubRule(5*i -3) = CUB_G3_1D
+        p_IntFuncComp(1,5*i -3) = i
+        p_IntFuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-3,&
+                    IntRegionOfInterest2,(/'x'/))
+
+        ! Third series of tests
+        p_IntCubRule(5*i-2) = CUB_G3_1D
+        p_IntFuncComp(1,5*i-2) = i
+        p_IntFuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-2,&
+                    IntRegionOfInterest1,(/'x'/))
+
+
+        ! 4th series of tests
+        p_IntCubRule(5*i-1) = CUB_G3_1D
+        p_IntFuncComp(1,5*i-1) = -1
+        p_IntFuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-1,&
+                    IntRegionOfInterest2,(/'x'/))
+
+        ! 5th series of tests
+        p_IntCubRule(5*i) = CUB_G3_1D
+        p_IntFuncComp(1,5*i) = -1
+        p_IntFuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i,&
+                    IntRegionOfInterest1,(/'x'/))
+
+    end do
+
+
+
+
+    ! We test the L1-Calculations
+    ! How many tests do we do?
+    ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
+    ! second L2-Series: ||f_1(i)|| on half of the domain
+    ! third L2-series: ||f_1(i)|| on the full domain
+    ! 4th L2-Series: ||f_2(i)|| on x<0.5
+    ! 5th L2-series: ||f_2(i)|| on the whole domain
+    ! The first test should always return something close to 0
+    ! the second and third one together verify that parsing
+    ! still works. So we have 5*NVAR tests
+    nL1calculations = 5*rproblem1%NVAR
+    rpostprocessing%nL1Calculations = nL1calculations
+
+    ! Init the arrays
+    ! Array for components
+    call storage_new("ExtFE_setup_tests", &
+            "L1CompFunc", (/2,nL1Calculations/),ST_INT, &
+             rpostprocessing%h_L1CompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFE_setup_tests", &
+            "L1Results", nL1Calculations,ST_DOUBLE, &
+             rpostprocessing%h_L1Results,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFE_setup_tests", &
+            "L1CubRule",nL1Calculations,ST_INT32, &
+            rpostprocessing%h_L1CubRule, ST_NEWBLOCK_ZERO)
+
+
+    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pL1ChiOmegaParser,nL1Calculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,p_L1FuncComp)
+    call storage_getbase_int(rpostprocessing%h_L1CubRule,p_L1CubRule)
+
+
+    L1RegionOfInterest1 = '1'
+    L1RegionOfInterest2 = 'IF(x<=0.5,1,0)'
+    do i=1,rproblem1%NVAR
+        ! First series of test
+        ! cub rule
+        p_L1CubRule(5*i-4) = CUB_G3_1D
+        ! components
+        p_L1FuncComp(1,5*i-4) = i
+        p_L1FuncComp(2,5*i-4) = i
+        ! Parse the region of interest
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-4,&
+                    L1RegionOfInterest1,(/'x'/))
+
+        ! Second series of tests
+        p_L1CubRule(5*i -3) = CUB_G3_1D
+        p_L1FuncComp(1,5*i -3) = i
+        p_L1FuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-3,&
+                    L1RegionOfInterest2,(/'x'/))
+
+        ! Third series of tests
+        p_L1CubRule(5*i-2) = CUB_G3_1D
+        p_L1FuncComp(1,5*i-2) = i
+        p_L1FuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-2,&
+                    L1RegionOfInterest1,(/'x'/))
+
+
+        ! 4th series of tests
+        p_L1CubRule(5*i-1) = CUB_G3_1D
+        p_L1FuncComp(1,5*i-1) = -1
+        p_L1FuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-1,&
+                    L1RegionOfInterest2,(/'x'/))
+
+        ! 5th series of tests
+        p_L1CubRule(5*i) = CUB_G3_1D
+        p_L1FuncComp(1,5*i) = -1
+        p_L1FuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i,&
+                    L1RegionOfInterest1,(/'x'/))
+
+    end do
 
 
 
@@ -376,10 +552,12 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
     ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
     ! second L2-Series: ||f_1(i)|| on half of the domain
     ! third L2-series: ||f_1(i)|| on the full domain
+    ! 4th L2-Series: ||f_2(i)|| on x<0.5
+    ! 5th L2-series: ||f_2(i)|| on the whole domain
     ! The first test should always return something close to 0
     ! the second and third one together verify that parsing
-    ! still works. So we have 3*NVAR tests
-    nL2calculations = 3*rproblem1%NVAR
+    ! still works. So we have 5*NVAR tests
+    nL2calculations = 5*rproblem1%NVAR
     rpostprocessing%nL2Calculations = nL2calculations
 
     ! Init the arrays
@@ -413,27 +591,43 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
     do i=1,rproblem1%NVAR
         ! First series of test
         ! cub rule
-        p_L2CubRule(3*i-2) = CUB_G3_1D
+        p_L2CubRule(5*i-4) = CUB_G3_1D
         ! components
-        p_L2FuncComp(1,3*i-2) = i
-        p_L2FuncComp(2,3*i-2) = i
+        p_L2FuncComp(1,5*i-4) = i
+        p_L2FuncComp(2,5*i-4) = i
         ! Parse the region of interest
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i-2,&
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-4,&
                     L2RegionOfInterest1,(/'x'/))
 
         ! Second series of tests
-        p_L2CubRule(3*i -1) = CUB_G3_1D
-        p_L2FuncComp(1,3*i -1) = i
-        p_L2FuncComp(2,3*i -1) = -1
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i-1,&
+        p_L2CubRule(5*i -3) = CUB_G3_1D
+        p_L2FuncComp(1,5*i -3) = i
+        p_L2FuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-3,&
                     L2RegionOfInterest2,(/'x'/))
 
         ! Third series of tests
-        p_L2CubRule(3*i) = CUB_G3_1D
-        p_L2FuncComp(1,3*i) = i
-        p_L2FuncComp(2,3*i) = -1
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i,&
+        p_L2CubRule(5*i-2) = CUB_G3_1D
+        p_L2FuncComp(1,5*i-2) = i
+        p_L2FuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-2,&
                     L2RegionOfInterest1,(/'x'/))
+
+
+        ! 4th series of tests
+        p_L2CubRule(5*i-1) = CUB_G3_1D
+        p_L2FuncComp(1,5*i-1) = -1
+        p_L2FuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-1,&
+                    L2RegionOfInterest2,(/'x'/))
+
+        ! 5th series of tests
+        p_L2CubRule(5*i) = CUB_G3_1D
+        p_L2FuncComp(1,5*i) = -1
+        p_L2FuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i,&
+                    L2RegionOfInterest1,(/'x'/))
+
 
 
     end do
@@ -537,7 +731,7 @@ subroutine ExtFE_setup_problem_test201(rproblem)
     rproblem%elementSetting = ExtFE_ElementList
 
     ! We need to count manually how many elements we test
-    nElemTest = 13
+    nElemTest = 12
 
     ! For each element 1 component
     ! Do not change this line! Only change nElemTest!
@@ -556,10 +750,9 @@ subroutine ExtFE_setup_problem_test201(rproblem)
     rproblem%iElemList(7) = EL_QPW4P2_2D
     rproblem%iElemList(8) = EL_QPW4P1T_2D
     rproblem%iElemList(9) = EL_QP1_2D
-    rproblem%iElemList(10) = EL_QP1NP_2D
-    rproblem%iElemList(11) = EL_QP1NPD_2D
-    rproblem%iElemList(12) = EL_Q1T_2D
-    rproblem%iElemList(13) = EL_EM31_2D
+    rproblem%iElemList(10) = EL_QP1NPD_2D
+    rproblem%iElemList(11) = EL_Q1T_2D
+    rproblem%iElemList(12) = EL_EM31_2D
 
 end subroutine
 
@@ -575,14 +768,16 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
 
 
     ! Local variables:
-    integer :: nL2calculations
+    integer :: nL2calculations, nIntCalculations, nL1calculations
     integer :: i
     character(LEN=ExtFE_STRLEN), dimension(:), allocatable :: sParseVariables
-    character(LEN=ExtFE_STRLEN) :: L2RegionOfInterest1,L2RegionOfInterest2
+    character(LEN=ExtFE_STRLEN) :: L2RegionOfInterest1, L2RegionOfInterest2
+    character(LEN=ExtFE_STRLEN) :: L1RegionOfInterest1, L1RegionOfInterest2
+    character(LEN=ExtFE_STRLEN) :: IntRegionOfInterest1, IntRegionOfInterest2
 
     ! To get the arrays we need these pointers
-    integer, dimension(:,:), pointer :: p_L2FuncComp
-    integer(I32), dimension(:), pointer :: p_L2CubRule
+    integer, dimension(:,:), pointer :: p_L2FuncComp, p_L1FuncComp, p_IntFuncComp
+    integer(I32), dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
 
 
     ! Local variables:
@@ -594,15 +789,187 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
 
 
 
+    ! We test the Integral-Calculations
+    ! How many tests do we do?
+    ! first Integral-Series: f_1(i) - f_2(i) on the entire domain
+    ! second Series: f_1(i) on half of the domain
+    ! third series: f_1(i) on the full domain
+    ! 4th Series: f_2(i) on x<0.5
+    ! 5th series: f_2(i) on the whole domain
+    ! The first test should always return something close to 0
+    ! the second and third one together verify that parsing
+    ! still works. So we have 5*NVAR tests
+    nIntcalculations = 5*rproblem1%NVAR
+    rpostprocessing%nIntCalculations = nIntcalculations
+
+    ! Init the arrays
+    ! Array for components
+    call storage_new("ExtFE_setup_tests", &
+            "IntCompFunc", (/2,nIntCalculations/),ST_INT, &
+             rpostprocessing%h_IntCompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFE_setup_tests", &
+            "IntResults", nIntCalculations,ST_DOUBLE, &
+             rpostprocessing%h_IntResults,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFE_setup_tests", &
+            "IntCubRule",nIntCalculations,ST_INT32, &
+            rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
+
+
+    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pIntChiOmegaParser,nIntCalculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,p_IntFuncComp)
+    call storage_getbase_int(rpostprocessing%h_IntCubRule,p_IntCubRule)
+
+
+    IntRegionOfInterest1 = '1'
+    IntRegionOfInterest2 = 'IF(x<=0.5,1,0)'
+    do i=1,rproblem1%NVAR
+        ! First series of test
+        ! cub rule
+        p_IntCubRule(5*i-4) = CUB_G3_2D
+        ! components
+        p_IntFuncComp(1,5*i-4) = i
+        p_IntFuncComp(2,5*i-4) = i
+        ! Parse the region of interest
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-4,&
+                    IntRegionOfInterest1,(/'x','y'/))
+
+        ! Second series of tests
+        p_IntCubRule(5*i -3) = CUB_G3_2D
+        p_IntFuncComp(1,5*i -3) = i
+        p_IntFuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-3,&
+                    IntRegionOfInterest2,(/'x','y'/))
+
+        ! Third series of tests
+        p_IntCubRule(5*i-2) = CUB_G3_2D
+        p_IntFuncComp(1,5*i-2) = i
+        p_IntFuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-2,&
+                    IntRegionOfInterest1,(/'x','y'/))
+
+
+        ! 4th series of tests
+        p_IntCubRule(5*i-1) = CUB_G3_2D
+        p_IntFuncComp(1,5*i-1) = -1
+        p_IntFuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i-1,&
+                    IntRegionOfInterest2,(/'x','y'/))
+
+        ! 5th series of tests
+        p_IntCubRule(5*i) = CUB_G3_2D
+        p_IntFuncComp(1,5*i) = -1
+        p_IntFuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pIntChiOmegaParser,5*i,&
+                    IntRegionOfInterest1,(/'x','y'/))
+
+    end do
+
+
+
+
+    ! We test the L1-Calculations
+    ! How many tests do we do?
+    ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
+    ! second L2-Series: ||f_1(i)|| on half of the domain
+    ! third L2-series: ||f_1(i)|| on the full domain
+    ! 4th L2-Series: ||f_2(i)|| on x<0.5
+    ! 5th L2-series: ||f_2(i)|| on the whole domain
+    ! The first test should always return something close to 0
+    ! the second and third one together verify that parsing
+    ! still works. So we have 5*NVAR tests
+    nL1calculations = 5*rproblem1%NVAR
+    rpostprocessing%nL1Calculations = nL1calculations
+
+    ! Init the arrays
+    ! Array for components
+    call storage_new("ExtFE_setup_tests", &
+            "L1CompFunc", (/2,nL1Calculations/),ST_INT, &
+             rpostprocessing%h_L1CompFunc,ST_NEWBLOCK_ZERO)
+
+    ! Array for the results
+    call storage_new("ExtFE_setup_tests", &
+            "L1Results", nL1Calculations,ST_DOUBLE, &
+             rpostprocessing%h_L1Results,ST_NEWBLOCK_ZERO)
+
+    ! Array for the cubature rules
+    call storage_new("ExtFE_setup_tests", &
+            "L1CubRule",nL1Calculations,ST_INT32, &
+            rpostprocessing%h_L1CubRule, ST_NEWBLOCK_ZERO)
+
+
+    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! In component i is the region of interest for calculation i
+    call fparser_create(rpostprocessing%pL1ChiOmegaParser,nL1Calculations)
+
+    ! Now get the arrays and fill them with data
+    call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,p_L1FuncComp)
+    call storage_getbase_int(rpostprocessing%h_L1CubRule,p_L1CubRule)
+
+
+    L1RegionOfInterest1 = '1'
+    L1RegionOfInterest2 = 'IF(x<=0.5,1,0)'
+    do i=1,rproblem1%NVAR
+        ! First series of test
+        ! cub rule
+        p_L1CubRule(5*i-4) = CUB_G3_2D
+        ! components
+        p_L1FuncComp(1,5*i-4) = i
+        p_L1FuncComp(2,5*i-4) = i
+        ! Parse the region of interest
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-4,&
+                    L1RegionOfInterest1,(/'x','y'/))
+
+        ! Second series of tests
+        p_L1CubRule(5*i -3) = CUB_G3_2D
+        p_L1FuncComp(1,5*i -3) = i
+        p_L1FuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-3,&
+                    L1RegionOfInterest2,(/'x','y'/))
+
+        ! Third series of tests
+        p_L1CubRule(5*i-2) = CUB_G3_2D
+        p_L1FuncComp(1,5*i-2) = i
+        p_L1FuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-2,&
+                    L1RegionOfInterest1,(/'x','y'/))
+
+
+        ! 4th series of tests
+        p_L1CubRule(5*i-1) = CUB_G3_2D
+        p_L1FuncComp(1,5*i-1) = -1
+        p_L1FuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i-1,&
+                    L1RegionOfInterest2,(/'x','y'/))
+
+        ! 5th series of tests
+        p_L1CubRule(5*i) = CUB_G3_2D
+        p_L1FuncComp(1,5*i) = -1
+        p_L1FuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pL1ChiOmegaParser,5*i,&
+                    L1RegionOfInterest1,(/'x','y'/))
+
+    end do
+
+
     ! We test the L2-Calculations
     ! How many tests do we do?
     ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
     ! second L2-Series: ||f_1(i)|| on half of the domain
     ! third L2-series: ||f_1(i)|| on the full domain
+    ! 4th Series: ||f_2(i)|| on half of the domain
+    ! 5th Series: ||f_2(i)|| on the full domain
     ! The first test should always return something close to 0
     ! the second and third one together verify that parsing
-    ! still works. So we have 3*NVAR tests
-    nL2calculations = 3*rproblem1%NVAR
+    ! still works. So we have 5*NVAR tests
+    nL2calculations = 5*rproblem1%NVAR
     rpostprocessing%nL2Calculations = nL2calculations
 
 
@@ -637,29 +1004,41 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
     do i=1,rproblem1%NVAR
         ! First series of test
         ! cub rule
-        p_L2CubRule(3*i-2) = CUB_G3_2D
+        p_L2CubRule(5*i-4) = CUB_G3_2D
         ! components
-        p_L2FuncComp(1,3*i-2) = i
-        p_L2FuncComp(2,3*i-2) = i
+        p_L2FuncComp(1,5*i-4) = i
+        p_L2FuncComp(2,5*i-4) = i
         ! Parse the region of interest
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i-2,&
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-4,&
                     L2RegionOfInterest1,(/'x','y'/))
 
         ! Second series of tests
-        p_L2CubRule(3*i -1) = CUB_G3_2D
-        p_L2FuncComp(1,3*i -1) = i
-        p_L2FuncComp(2,3*i -1) = -1
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i-1,&
+        p_L2CubRule(5*i -3) = CUB_G3_2D
+        p_L2FuncComp(1,5*i -3) = i
+        p_L2FuncComp(2,5*i -3) = -1
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-3,&
                     L2RegionOfInterest2,(/'x','y'/))
 
         ! Third series of tests
-        p_L2CubRule(3*i) = CUB_G3_2D
-        p_L2FuncComp(1,3*i) = i
-        p_L2FuncComp(2,3*i) = -1
-        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,3*i,&
+        p_L2CubRule(5*i-2) = CUB_G3_2D
+        p_L2FuncComp(1,5*i-2) = i
+        p_L2FuncComp(2,5*i-2) = -1
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-2,&
                     L2RegionOfInterest1,(/'x','y'/))
 
+        ! 4th series of tests
+        p_L2CubRule(5*i-1) = CUB_G3_2D
+        p_L2FuncComp(1,5*i-1) = -1
+        p_L2FuncComp(2,5*i-1) = i
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i-1,&
+                    L2RegionOfInterest2,(/'x','y'/))
 
+        ! 5th series of tests
+        p_L2CubRule(5*i) = CUB_G3_2D
+        p_L2FuncComp(1,5*i) = -1
+        p_L2FuncComp(2,5*i) = i
+        call fparser_parseFunction(rpostprocessing%pL2ChiOmegaParser,5*i,&
+                    L2RegionOfInterest1,(/'x','y'/))
     end do
 
     ! Point calculations

@@ -4,6 +4,127 @@
 ##############
 [ExtFE-CALCULATIONS]
 ##############
+
+#----Integral only comes below this line-----------------------------------------------
+# Which integral Calculations do you want to calculate?
+# Format is: IntCalculations(n) for a total of n calculations
+# then in the next lines, you write which component of the vector shall be used
+# for the calculation
+# if you want to calculate only the L1-Norm of 1 function, set the other one to the
+# component -1.
+# Example: If you want to calculate ||f1(1) - f2(1)|| and ||f1(2)|| then take this one
+# (with fk(j) beeing component j of vector k)
+# L1Calculations(2)=
+# 1 1
+# 2 -1
+# Small note: If both components shall be used,
+# the tri-file of function 1 is used to create the
+# cubature information
+
+
+IntCalculations(4)=
+1 1
+2 2
+3 3
+1 -1
+
+# on which region do you want to calculate the L2-Norm?
+# format L1RegionOfInterest(n) for n calculations in total
+# in the next n lines you write expressions.
+# The expression has to return 1 on the area where we want 
+# to calculate. (Typicall: If-Statement)
+# Supported variables: x,y (y - obviously - only in 2D)
+# The expression in line i is used for calculation i.
+# Everything that is supported by the
+# function parser is allowed.
+#Example: First calculation only where x>0.5 holds
+# Second calculation where x<0.6 holds
+# hint: you can also set the expression to 1
+# IntRegionOfInterest(2)=
+# IF(x>0.5,1,0) 
+# IF(x<0.6,1,0)
+# Note that this must be a subdomain of the tri-file used for
+# generating the cubature information and that for every
+# point in this subdomain, both functions must(!) have valid values!
+# else it is not possible to evaluate the function
+
+IntRegionOfInterest(4)=
+IF(x>0.5,1,0) 
+IF(x>0.6,1,0)
+IF(x>0.7,1,0)
+IF(x<0.5,1,0)
+
+# Which cubature rule shall be used for calculation i?
+# format is same as above. Keep in mind that the cubature
+# rule must be defined for this dimension, ie it is obviously not
+# possible to use a 1D-rule for a 2D-integral.
+IntCubatureRule(4)=
+G4x4
+G4x4
+G4x4
+G4x4
+
+
+#----L1 comes below this line-----------------------------------------------
+# Which L1-Calculations do you want to calculate?
+# Format is: L2Calculations(n) for a total of n calculations
+# then in the next lines, you write which component of the vector shall be used
+# for the calculation
+# if you want to calculate only the L1-Norm of 1 function, set the other one to the
+# component -1.
+# Example: If you want to calculate ||f1(1) - f2(1)|| and ||f1(2)|| then take this one
+# (with fk(j) beeing component j of vector k)
+# L1Calculations(2)=
+# 1 1
+# 2 -1
+# Small note: If both components shall be used,
+# the tri-file of function 1 is used to create the
+# cubature information
+
+
+L1Calculations(4)=
+1 1
+2 2
+3 3
+1 -1
+
+# on which region do you want to calculate the L2-Norm?
+# format L1RegionOfInterest(n) for n calculations in total
+# in the next n lines you write expressions.
+# The expression has to return 1 on the area where we want 
+# to calculate. (Typicall: If-Statement)
+# Supported variables: x,y (y - obviously - only in 2D)
+# The expression in line i is used for calculation i.
+# Everything that is supported by the
+# function parser is allowed.
+#Example: First calculation only where x>0.5 holds
+# Second calculation where x<0.6 holds
+# hint: you can also set the expression to 1
+# L1RegionOfInterest(2)=
+# IF(x>0.5,1,0) 
+# IF(x<0.6,1,0)
+# Note that this must be a subdomain of the tri-file used for
+# generating the cubature information and that for every
+# point in this subdomain, both functions must(!) have valid values!
+# else it is not possible to evaluate the function
+
+L1RegionOfInterest(4)=
+IF(x>0.5,1,0) 
+IF(x>0.6,1,0)
+IF(x>0.7,1,0)
+IF(x<0.5,1,0)
+
+# Which cubature rule shall be used for calculation i?
+# format is same as above. Keep in mind that the cubature
+# rule must be defined for this dimension, ie it is obviously not
+# possible to use a 1D-rule for a 2D-integral.
+L1CubatureRule(4)=
+G4x4
+G4x4
+G4x4
+G4x4
+
+#----L2 comes below this line-----------------------------------------------
 # Which L2-Calculations do you want to calculate?
 # Format is: L2Calculations(n) for a total of n calculations
 # then in the next lines, you write which component of the vector shall be used

@@ -21,6 +21,15 @@ sOutPathSecondOrigVec = '%{soutputdir}/secondVector.dat'
 sOutVec1OrigFMT = '(E22.15)'
 sOutVec2OrigFMT = '(E22.15)'
 
+# Write the results from the integral calculations in a file?
+writeOutIntCalc = 1
+# Path of the file where to write it out
+sIntFilePath = '%{soutputdir}/Intvalues.dat'
+
+# Write the results from the L1-Calculations in a file?
+writeOutL1Calc = 1
+# Path of the file where to write it out
+sL1FilePath = '%{soutputdir}/L1Norms.dat'
 
 # Write the results from the L2-Calculations in a file?
 writeOutL2Calc = 1
