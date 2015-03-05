@@ -4434,10 +4434,6 @@ contains
     ! string; all environment variables in here are replaced
     character(len=*), intent(inout) :: sbuffer
   !</input>
-
-  !<errors>
-    ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
-  !</errors>
 !</subroutine>
 
     ! flag

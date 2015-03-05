@@ -2144,10 +2144,6 @@ contains
   !<result>
     ! exit status
   !</result>
-
-  !<errors>
-    ! none
-  !</errors>
 !</function>
 
     character(len=max(SYS_STRLEN,len(sresult))) :: svalueInEnv
