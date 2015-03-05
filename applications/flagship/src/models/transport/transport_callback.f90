@@ -510,8 +510,8 @@ contains
     ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
-
-    ! What type o mass matrix are we?
+    
+    ! What type of mass matrix are we?
     select case(imasstype)
     case (MASS_LUMPED)
       
