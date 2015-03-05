@@ -250,7 +250,6 @@ contains
     ! local variables
     character(len=SYS_STRLEN) :: ssectionName
 
-
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Copy solution vector to coprocessor device; in the first
     ! nonlinear step, the solution vector from the previous time step
@@ -376,8 +375,9 @@ contains
         ssectionName, 'systemmatrix', systemMatrix)
     
     !---------------------------------------------------------------------------
-    ! Check if fully explicit time-stepping is used
-    !---------------------------------------------------------------------------
+    ! Check if fully explicit time-stepping is used. Then the system
+    ! matrix equals the (lumped/consistent) mass matrix.
+    ! ---------------------------------------------------------------------------
     if (rtimestep%theta .eq. 0.0_DP) then
 
       call parlst_getvalue_int(p_rparlist,&
@@ -394,7 +394,7 @@ contains
 
         select case(imasstype)
         case (MASS_LUMPED)
-          call lsyssc_spreadMatrix(&
+          call lsyssc_spreadDiagMatrix(&
               rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rproblemLevel%RmatrixScalar(systemMatrix))
         case (MASS_CONSISTENT)
