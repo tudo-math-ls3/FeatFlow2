@@ -131,7 +131,7 @@ contains
 !</description>
 
 !<result>
-  ! id of the cubature formula
+  ! id of the derivative type
 !</result>
 
 !<input>
