@@ -33,7 +33,7 @@ module flagship_basic
   use io
   use perfconfig
   use problem
-  use solveraux
+  use solverbase
   use triangulation
   use ucd
 

@@ -16,21 +16,17 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) hydro_calcPrecondThetaScheme
+!# 1.) hydro_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
-!#        used in the two-level theta-scheme
 !#
-!# 2.) hydro_calcJacobianThetaScheme
+!# 2.) hydro_calcJacobian
 !#     -> Calculates the Jacobian matrix
-!#        used in the two-level theta-scheme
 !#
-!# 3.) hydro_calcResidualThetaScheme
+!# 3.) hydro_calcResidual
 !#     -> Calculates the nonlinear residual vector
-!#        used in the two-level theta-scheme
 !#
-!# 4.) hydro_calcRhsThetaScheme
+!# 4.) hydro_calcRhs
 !#     -> Calculates the explicit right-hand side vector
-!#        used in the two-level theta-scheme
 !#
 !# 5.) hydro_calcRhsRungeKuttaScheme
 !#     -> Calculates the right-hand side vector
@@ -93,7 +89,7 @@
 !#        boundary values. If you want to implement a special routine
 !#        for assembling the preconditioner, than you have to call it
 !#        from transp_nlsolverCallback instead if the standard routine
-!#        transp_calcResidualThetaScheme. Note that changing the
+!#        transp_calcResidual. Note that changing the
 !#        interface of this callback routine would require to update
 !#        ALL models. Hence, the interface should only be changed if
 !#        really necessary.
@@ -133,11 +129,11 @@ module hydro_callback
   use paramlist
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
-  use timestepaux
+  use timestepbase
   use triangulation
 
   ! Modules from hydrodynamic model
@@ -150,10 +146,10 @@ module hydro_callback
 
   private
   public :: hydro_nlsolverCallback
-  public :: hydro_calcPrecondThetaScheme
-  public :: hydro_calcJacobianThetaScheme
-  public :: hydro_calcResidualThetaScheme
-  public :: hydro_calcRhsThetaScheme
+  public :: hydro_calcPreconditioner
+  public :: hydro_calcJacobian
+  public :: hydro_calcResidual
+  public :: hydro_calcRhs
   public :: hydro_calcRhsRungeKuttaScheme
   public :: hydro_setBoundaryCondition
   public :: hydro_calcLinearisedFCT
@@ -269,7 +265,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
-      call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
     end if
 
@@ -291,13 +287,13 @@ contains
 
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
-        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+        call hydro_calcRhs(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection,&
             rsource)
       end if
 
       ! Compute the residual
-      call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcResidual(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           ssectionName, rcollection)
     end if
@@ -322,7 +318,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcPreconditioner(rproblemLevel, rtimestep,&
       rsolver, rsolution, ssectionName, rcollection)
 
 !<description>
@@ -378,7 +374,7 @@ contains
     ! Check if fully explicit time-stepping is used. Then the system
     ! matrix equals the (lumped/consistent) mass matrix.
     ! ---------------------------------------------------------------------------
-    if (rtimestep%theta .eq. 0.0_DP) then
+    if (rtimestep%p_rthetaScheme%theta .eq. 0.0_DP) then
 
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'isystemformat', isystemFormat)
@@ -403,7 +399,7 @@ contains
               rproblemLevel%RmatrixScalar(systemMatrix))
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -430,13 +426,13 @@ contains
 
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
       case default
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
         call sys_halt()
       end select
 
@@ -494,7 +490,7 @@ contains
     ! Compute scaling parameter
     select case (imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      dscale = -rtimestep%theta*rtimestep%dStep
+      dscale = -rtimestep%p_rthetaScheme%theta*rtimestep%dStep
     case default
       dscale = -1.0_DP
     end select
@@ -542,7 +538,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -616,7 +612,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -653,7 +649,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -702,7 +698,7 @@ contains
       
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -739,7 +735,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -776,7 +772,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -813,7 +809,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -826,7 +822,7 @@ contains
 
     case default
       call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -961,7 +957,7 @@ contains
 
     case default
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -982,13 +978,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcPrecondThetaScheme
+  end subroutine hydro_calcPreconditioner
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcJacobian(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, ssectionName, rcollection)
 
 !<description>
@@ -1026,13 +1022,13 @@ contains
     print *, "!!! Euler/Navier Stokes equations has yet not been implemented  !!!"
     stop
 
-  end subroutine hydro_calcJacobianThetaScheme
+  end subroutine hydro_calcJacobian
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcRhs(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, ssectionName, rcollection, rsource)
 
 !<description>
@@ -1101,10 +1097,10 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Do we have an explicit part?
-      if (rtimestep%theta .ne. 1.0_DP) then
+      if (rtimestep%p_rthetaScheme%theta .ne. 1.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+        dscale = (1.0_DP-rtimestep%p_rthetaScheme%theta) * rtimestep%dStep
 
         !-----------------------------------------------------------------------
         ! Compute the divergence operator for the right-hand side
@@ -1174,7 +1170,7 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
                 AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
                 rsolutionPredictor=p_rpredictor)
           end select
@@ -1233,7 +1229,7 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
                 AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
                 rsolutionPredictor=p_rpredictor)
           end select
@@ -1266,13 +1262,13 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcRhsThetaScheme
+  end subroutine hydro_calcRhs
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcResidualThetaScheme(rproblemLevel,&
+  subroutine hydro_calcResidual(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
       ite, ssectionName, rcollection, rsource)
 
@@ -1366,7 +1362,7 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Compute scaling parameter
-      dscale = rtimestep%theta*rtimestep%dStep
+      dscale = rtimestep%p_rthetaScheme%theta*rtimestep%dStep
       
       !-----------------------------------------------------------------------
       ! Compute the transient term
@@ -1459,7 +1455,7 @@ contains
           ioperationSpec = ioperationSpec + AFCSTAB_FCTFLUX_REJECTED
 
       ! Assemble implicit part of the raw-antidiffusive fluxes
-      call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
+      call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%p_rthetaScheme%theta,&
           rtimestep%dStep, 1.0_DP, .true., .true., ioperationSpec,&
           ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
       
@@ -1547,7 +1543,7 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcResidualThetaScheme
+  end subroutine hydro_calcResidual
 
   !*****************************************************************************
 
@@ -1627,7 +1623,7 @@ contains
     !   $ dscale = weight * \Delta t $
     !---------------------------------------------------------------------------
     
-    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
+    dscale = rtimestep%p_rRungeKuttaScheme%DmultistepWeights(istep)*rtimestep%dStep
 
     !---------------------------------------------------------------------------
     ! Compute the divergence operator for the right-hand side
@@ -1724,7 +1720,7 @@ contains
 
         ! Assemble explicit part of the raw-antidiffusive fluxes
         call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-            rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+            rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
             AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
             rsolutionPredictor=p_rpredictor)
 

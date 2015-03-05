@@ -224,7 +224,6 @@ module mhd_callback3d
   use linearsystemblock
   use linearsystemscalar
   use problem
-  use solveraux
   use storage
 
   ! Modules from MHD model
@@ -232,33 +231,33 @@ module mhd_callback3d
 
   ! The following 3D-routine coincide with their 2D-versions
   use mhd_callback2d, only : &
-      mhd_trafoFluxDensity3d_sim => mhd_trafoFluxDensity2d_sim,&
-      mhd_trafoDiffDensity3d_sim => mhd_trafoDiffDensity2d_sim,&
-      mhd_trafoFluxEnergy3d_sim => mhd_trafoFluxEnergy2d_sim,&
-      mhd_trafoDiffEnergy3d_sim => mhd_trafoDiffEnergy2d_sim,&
-      mhd_trafoFluxPressure3d_sim => mhd_trafoFluxPressure2d_sim,&
-      mhd_trafoDiffPressure3d_sim => mhd_trafoDiffPressure2d_sim,&
-      mhd_trafoFluxVelocity3d_sim => mhd_trafoFluxVelocity2d_sim,&
-      mhd_trafoDiffVelocity3d_sim => mhd_trafoDiffVelocity2d_sim,&
-      mhd_trafoFluxMomentum3d_sim => mhd_trafoFluxMomentum2d_sim,&
-      mhd_trafoDiffMomentum3d_sim => mhd_trafoDiffMomentum2d_sim,&
-      mhd_trafoFluxDenEng3d_sim => mhd_trafoFluxDenEng2d_sim,&
-      mhd_trafoDiffDenEng3d_sim => mhd_trafoDiffDenEng2d_sim,&
-      mhd_trafoFluxDenPre3d_sim => mhd_trafoFluxDenPre2d_sim,&
-      mhd_trafoDiffDenPre3d_sim => mhd_trafoDiffDenPre2d_sim,&
-      mhd_trafoFluxDenPreVel3d_sim => mhd_trafoFluxDenPreVel2d_sim,&
-      mhd_trafoDiffDenPreVel3d_sim => mhd_trafoDiffDenPreVel2d_sim,&
-      mhd_trafoDiffMagfield3d_sim => mhd_trafoDiffMagfield2d_sim,&
-      mhd_trafoFluxMagfield3d_sim => mhd_trafoFluxMagfield2d_sim,&
-      mhd_trafoNodalDensity3d_sim => mhd_trafoNodalDensity2d_sim,&
-      mhd_trafoNodalEnergy3d_sim => mhd_trafoNodalEnergy2d_sim,&
-      mhd_trafoNodalPressure3d_sim => mhd_trafoNodalPressure2d_sim,&
-      mhd_trafoNodalVelocity3d_sim => mhd_trafoNodalVelocity2d_sim,&
-      mhd_trafoNodalMomentum3d_sim => mhd_trafoNodalMomentum2d_sim,&
-      mhd_trafoNodalDenEng3d_sim => mhd_trafoNodalDenEng2d_sim,&
-      mhd_trafoNodalDenPre3d_sim => mhd_trafoNodalDenPre2d_sim,&
+      mhd_trafoFluxDensity3d_sim    => mhd_trafoFluxDensity2d_sim,&
+      mhd_trafoDiffDensity3d_sim    => mhd_trafoDiffDensity2d_sim,&
+      mhd_trafoFluxEnergy3d_sim     => mhd_trafoFluxEnergy2d_sim,&
+      mhd_trafoDiffEnergy3d_sim     => mhd_trafoDiffEnergy2d_sim,&
+      mhd_trafoFluxPressure3d_sim   => mhd_trafoFluxPressure2d_sim,&
+      mhd_trafoDiffPressure3d_sim   => mhd_trafoDiffPressure2d_sim,&
+      mhd_trafoFluxVelocity3d_sim   => mhd_trafoFluxVelocity2d_sim,&
+      mhd_trafoDiffVelocity3d_sim   => mhd_trafoDiffVelocity2d_sim,&
+      mhd_trafoFluxMomentum3d_sim   => mhd_trafoFluxMomentum2d_sim,&
+      mhd_trafoDiffMomentum3d_sim   => mhd_trafoDiffMomentum2d_sim,&
+      mhd_trafoFluxDenEng3d_sim     => mhd_trafoFluxDenEng2d_sim,&
+      mhd_trafoDiffDenEng3d_sim     => mhd_trafoDiffDenEng2d_sim,&
+      mhd_trafoFluxDenPre3d_sim     => mhd_trafoFluxDenPre2d_sim,&
+      mhd_trafoDiffDenPre3d_sim     => mhd_trafoDiffDenPre2d_sim,&
+      mhd_trafoFluxDenPreVel3d_sim  => mhd_trafoFluxDenPreVel2d_sim,&
+      mhd_trafoDiffDenPreVel3d_sim  => mhd_trafoDiffDenPreVel2d_sim,&
+      mhd_trafoDiffMagfield3d_sim   => mhd_trafoDiffMagfield2d_sim,&
+      mhd_trafoFluxMagfield3d_sim   => mhd_trafoFluxMagfield2d_sim,&
+      mhd_trafoNodalDensity3d_sim   => mhd_trafoNodalDensity2d_sim,&
+      mhd_trafoNodalEnergy3d_sim    => mhd_trafoNodalEnergy2d_sim,&
+      mhd_trafoNodalPressure3d_sim  => mhd_trafoNodalPressure2d_sim,&
+      mhd_trafoNodalVelocity3d_sim  => mhd_trafoNodalVelocity2d_sim,&
+      mhd_trafoNodalMomentum3d_sim  => mhd_trafoNodalMomentum2d_sim,&
+      mhd_trafoNodalDenEng3d_sim    => mhd_trafoNodalDenEng2d_sim,&
+      mhd_trafoNodalDenPre3d_sim    => mhd_trafoNodalDenPre2d_sim,&
       mhd_trafoNodalDenPreVel3d_sim => mhd_trafoNodalDenPreVel2d_sim,&
-      mhd_trafoNodalMagfield3d_sim => mhd_trafoNodalMagfield2d_sim
+      mhd_trafoNodalMagfield3d_sim  => mhd_trafoNodalMagfield2d_sim
 
   implicit none
 

@@ -68,11 +68,11 @@ module mhd_preprocessing
   use pprocerror
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use stdoperators
   use timestep
-  use timestepaux
+  use timestepbase
   use triangulation
 
   ! Modules from MHD model

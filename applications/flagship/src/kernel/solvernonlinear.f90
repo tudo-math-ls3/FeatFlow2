@@ -86,10 +86,10 @@ module solvernonlinear
   use linearsystemscalar
   use paramlist
   use problem
-  use solveraux
+  use solverbase
   use solverlinear
   use storage
-  use timestepaux
+  use timestepbase
 
   implicit none
 

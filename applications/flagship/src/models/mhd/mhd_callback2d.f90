@@ -245,7 +245,6 @@ module mhd_callback2d
   use paramlist
   use problem
   use scalarpde
-  use solveraux
   use storage
 
   ! Modules from MHD model

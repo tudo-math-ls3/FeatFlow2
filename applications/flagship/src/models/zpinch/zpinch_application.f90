@@ -57,12 +57,12 @@ module zpinch_application
   use linearsystemscalar
   use paramlist
   use problem
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
   use timestep
-  use timestepaux
+  use timestepbase
   use triangulation
   use ucd
   
@@ -985,7 +985,7 @@ contains
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
       ! Compute scaling for explicit part of the Lorentz force
-      dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+      dscale = (1.0_DP-rtimestep%p_rthetaScheme%theta) * rtimestep%dStep
 
       if (dscale .ne. 0.0_DP) then
         ! Calculate explicit part of the Lorentz force term
@@ -998,49 +998,22 @@ contains
       ! Prepare quick access arrays/vectors
       rcollection%p_rvectorQuickAccess1 => rsolution(1)
       rcollection%p_rvectorQuickAccess2 => rsolution(2)
-      rcollection%p_rvectorQuickAccess3 => rtimestep%RtempVectors(1)
-      rcollection%p_rvectorQuickAccess4 => rtimestep%RtempVectors(2)
+      rcollection%p_rvectorQuickAccess3 => rtimestep%p_rthetaScheme%RtempVectors(1)
+      rcollection%p_rvectorQuickAccess4 => rtimestep%p_rthetaScheme%RtempVectors(2)
 
-      ! What time-stepping scheme should be used?
-      select case(rtimestep%ctimestepType)
-
-      case (TSTEP_RK_SCHEME)
+      ! Perform a single time step
+      if (dscale .ne. 0.0_DP) then
         
-        ! Adopt explicit Runge-Kutta scheme
-        if (dscale .ne. 0.0_DP) then
-          
-          ! ... with source term
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, zpinch_nlsolverCallback,&
-              rcollection, Rforce)
-        else
-          ! ... without source term
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, zpinch_nlsolverCallback, rcollection)
-        end if
-
-
-      case (TSTEP_THETA_SCHEME)
-
-        ! Adopt two-level theta-scheme
-        if (dscale .ne. 0.0_DP) then
-
-          ! ... with source term
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, zpinch_nlsolverCallback,&
-              rcollection, Rforce)
-        else
-          ! ... without source term
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, zpinch_nlsolverCallback, rcollection)
-        end if
-
-
-      case default
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
-        call sys_halt()
-      end select
+        ! ... with source term
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, zpinch_nlsolverCallback,&
+            rcollection, 1, Rforce)
+      else
+        ! ... without source term
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, zpinch_nlsolverCallback,&
+            rcollection, 1)
+      end if
 
       !-------------------------------------------------------------------------
       ! Compute linearised FCT correction for hydrodynamic and transport model

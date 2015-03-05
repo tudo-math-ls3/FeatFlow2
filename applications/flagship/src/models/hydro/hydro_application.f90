@@ -72,12 +72,12 @@ module hydro_application
   use linearsystemscalar
   use paramlist
   use problem
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
   use timestep
-  use timestepaux
+  use timestepbase
   use triangulation
   use ucd
 
@@ -767,43 +767,17 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
-      ! What time-stepping scheme should be used?
-      select case(rtimestep%ctimestepType)
-
-      case (TSTEP_RK_SCHEME)
-
-        if (irhstype > 0) then
-          ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, hydro_nlsolverCallback,&
-              rcollection, rrhs)
-        else
-          ! Explicit Runge-Kutta scheme without right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, hydro_nlsolverCallback,&
-              rcollection)
-        end if
-
-      case (TSTEP_THETA_SCHEME)
-
-        if (irhstype > 0) then
-          ! Two-level theta-scheme with non-zero right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, hydro_nlsolverCallback,&
-              rcollection, rrhs)
-        else
-          ! Two-level theta-scheme without right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, hydro_nlsolverCallback,&
-              rcollection)
-        end if
-
-      case default
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_solveTransientPrimal')
-        call sys_halt()
-      end select
-
+      ! Perform a single time step
+      if (irhstype > 0) then
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, hydro_nlsolverCallback,&
+            rcollection, 1, rrhs)
+      else
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, hydro_nlsolverCallback,&
+            rcollection, 1)
+      end if
+      
       ! Start time measurement for vector assembly
       call stat_startTimer(p_rtimerAssemblyVector)
 

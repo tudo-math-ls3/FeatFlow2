@@ -54,9 +54,9 @@ module zpinch_callback
   use paramlist
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use storage
-  use timestepaux
+  use timestepbase
   use trilinearformevaluation
   
   ! Modules from hydro model
@@ -194,7 +194,7 @@ contains
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
         
         ! Compute the preconditioner
-        call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+        call hydro_calcPreconditioner(rproblemLevel, rtimestep,&
             rsolver, rsolution, ssectionNameHydro, rcollection)
       end if
 
@@ -223,7 +223,7 @@ contains
 
           ! Compute the constant right-hand side including the
           ! given explicit part of the Lorentz force term
-          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcRhs(rproblemLevel, rtimestep,&
               rsolver, rsolution0, rrhs, ssectionNameHydro, rcollection,&
               rsource)
         end if
@@ -240,7 +240,7 @@ contains
             'rparlist', ssectionName=ssectionName)
         
         ! Calculate scaling for implicit parts
-        dscale = -rtimestep%theta * rtimestep%dStep
+        dscale = -rtimestep%p_rthetaScheme%theta * rtimestep%dStep
 
         if (dscale .ne. 0.0_DP) then
 
@@ -251,7 +251,7 @@ contains
               dscale, .true., rforce, rcollection)
           
           ! Compute the residual including the implicit parts
-          call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcResidual(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep,&
               ssectionNameHydro, rcollection, rforce)
 
@@ -261,7 +261,7 @@ contains
         else
           
           ! Compute the residual without implicit parts
-          call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcResidual(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep,&
               ssectionNameHydro, rcollection)
 
@@ -318,7 +318,7 @@ contains
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the preconditioner in interleaved format
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
@@ -328,7 +328,7 @@ contains
         case (SYSTEM_BLOCKFORMAT)
 
           ! Compute the preconditioner in block format
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
@@ -375,7 +375,7 @@ contains
             case (SYSTEM_INTERLEAVEFORMAT)
               
               ! Compute the preconditioner in interleaved format
-              call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              call transp_calcPreconditioner(rproblemLevel, rtimestep,&
                   rsolver, rsolution0, ssectionNameTransport, rcollection,&
                   zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
                   zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
@@ -385,7 +385,7 @@ contains
             case (SYSTEM_BLOCKFORMAT)
 
               ! Compute the preconditioner in block format
-              call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              call transp_calcPreconditioner(rproblemLevel, rtimestep,&
                   rsolver, rsolution0, ssectionNameTransport, rcollection,&
                   zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
                   zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
@@ -399,7 +399,7 @@ contains
             end select
             
             ! Assemble the constant right-hand side
-            call transp_calcRhsThetaScheme(rproblemLevel, rtimestep, rsolver,&
+            call transp_calcRhs(rproblemLevel, rtimestep, rsolver,&
                 rsolution0, rrhs, ssectionNameTransport, rcollection, rsource,&
                 fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
                 fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
@@ -421,7 +421,7 @@ contains
           case (SYSTEM_INTERLEAVEFORMAT)
             
             ! Compute the preconditioner in interleaved format
-            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            call transp_calcPreconditioner(rproblemLevel, rtimestep,&
                 rsolver, rsolution, ssectionNameTransport, rcollection,&
                 zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
                 zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
@@ -431,7 +431,7 @@ contains
           case (SYSTEM_BLOCKFORMAT)
             
             ! Compute the preconditioner in block format
-            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            call transp_calcPreconditioner(rproblemLevel, rtimestep,&
                 rsolver, rsolution, ssectionNameTransport, rcollection,&
                 zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
                 zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
@@ -449,7 +449,7 @@ contains
         end if
         
         ! Compute the residual
-        call transp_calcResidualThetaScheme(rproblemLevel,&
+        call transp_calcResidual(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
             rrhs, rres, istep, ssectionNameTransport, rcollection,&
             fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
@@ -471,7 +471,7 @@ contains
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the preconditioner in interleaved format
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
@@ -481,7 +481,7 @@ contains
         case (SYSTEM_BLOCKFORMAT)
           
           ! Compute the preconditioner in block format
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
@@ -510,7 +510,7 @@ contains
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the Jacobian matrix in interleaved format
-          call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcJacobian(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
@@ -520,7 +520,7 @@ contains
         case (SYSTEM_BLOCKFORMAT)
 
           ! Compute the Jacobian matrix in block format
-          call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+          call transp_calcJacobian(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
@@ -2410,21 +2410,21 @@ contains
 !!$      p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 !!$
 !!$      ! Compute the preconditioner
-!!$      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+!!$      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
 !!$          rsolverTransport, Rsolution(2), ssectionNameTransport, rcollection)
 !!$
 !!$      ! Compute low-order "right-hand side" without theta parameter
 !!$      if (present(Rsource)) then
 !!$        if (Rsource(2)%NEQ .eq. 0) then
 !!$          ! ... without source term
-!!$          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$          call transp_calcRhs(rproblemLevel, rtimestepAux,&
 !!$              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
 !!$              ssectionNameTransport, rcollection,&
 !!$              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
 !!$              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
 !!$        else
 !!$          ! ... with source term
-!!$          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$          call transp_calcRhs(rproblemLevel, rtimestepAux,&
 !!$              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
 !!$              ssectionNameTransport, rcollection, Rsource(2),&
 !!$              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
@@ -2432,7 +2432,7 @@ contains
 !!$        end if
 !!$      else
 !!$        ! ... without source term
-!!$        call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$        call transp_calcRhs(rproblemLevel, rtimestepAux,&
 !!$            rsolverTransport, Rsolution(2), p_rpredictorTransport,&
 !!$            ssectionNameTransport, rcollection,&
 !!$            fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&

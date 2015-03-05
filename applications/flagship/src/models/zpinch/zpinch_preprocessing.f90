@@ -31,9 +31,9 @@ module zpinch_preprocessing
   use hydro_preprocessing
   use paramlist
   use problem
-  use solveraux
+  use solverbase
   use timestep
-  use timestepaux
+  use timestepbase
   use transport_preprocessing
 
   implicit none

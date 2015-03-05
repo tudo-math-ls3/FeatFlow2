@@ -217,7 +217,6 @@ module hydro_callback1d
   use paramlist
   use problem
   use scalarpde
-  use solveraux
   use spatialdiscretisation
   use storage
 

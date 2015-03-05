@@ -24,8 +24,8 @@
       use collection
       use linearsystemblock
       use problem
-      use solveraux
-      use timestepaux
+      use solverbase
+      use timestepbase
 
 !<input>
       ! old solution vector from previous time step

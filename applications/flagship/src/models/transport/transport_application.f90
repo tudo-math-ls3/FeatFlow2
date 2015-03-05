@@ -144,12 +144,12 @@ module transport_application
   use linearsystemscalar
   use paramlist
   use problem
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
   use timestep
-  use timestepaux
+  use timestepbase
   use triangulation
   use ucd
 
@@ -973,43 +973,17 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
-      ! What time-stepping scheme should be used?
-      select case(rtimestep%ctimestepType)
-
-      case (TSTEP_RK_SCHEME)
-
-        if (irhstype > 0) then
-          ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, transp_nlsolverCallback,&
-              rcollection, rrhs)
-        else
-          ! Explicit Runge-Kutta scheme without right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, transp_nlsolverCallback,&
-              rcollection)
-        end if
-
-      case (TSTEP_THETA_SCHEME)
-
-        if (irhstype > 0) then
-          ! Two-level theta-scheme with non-zero right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, transp_nlsolverCallback,&
-              rcollection, rrhs)
-        else
-          ! Two-level theta-scheme without right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, transp_nlsolverCallback,&
-              rcollection)
-        end if
-
-      case default
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
-        call sys_halt()
-      end select
-
+      ! Perform a single time step
+      if (irhstype > 0) then
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, 1, rrhs)
+      else
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, 1)
+      end if
+      
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
 
@@ -1473,8 +1447,9 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, transp_nlsolverCallback, rcollection, rrhs)
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, SYS_INFINITY_INT, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -1482,8 +1457,9 @@ contains
       else
 
         ! Solve the primal problem without right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, transp_nlsolverCallback, rcollection)
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, SYS_INFINITY_INT)
       end if
 
       ! Stop time measurement for solution procedure
@@ -1685,7 +1661,6 @@ contains
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
-
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
         'rtimerPrePostprocess', ssectionName=ssectionName)
@@ -1802,9 +1777,9 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
-            rcollection, rrhs)
+            rcollection, SYS_INFINITY_INT, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -1812,9 +1787,9 @@ contains
       else
 
         ! Solve the primal problem without right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
-            rcollection)
+            rcollection, SYS_INFINITY_INT)
       end if
 
       ! Stop time measurement for solution procedure
@@ -1869,9 +1844,9 @@ contains
       call solver_resetSolver(rsolver, .false.)
 
       ! Solve the dual problem
-      call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+      call tstep_performTimestep(p_rproblemLevel, rtimestep,&
           rsolver, rsolutionDual, transp_nlsolverCallback,&
-          rcollection, rtargetFunc)
+          rcollection, SYS_INFINITY_INT, rtargetFunc)
 
       ! Release discretised target functional
       call lsysbl_releaseVector(rtargetFunc)
@@ -2122,7 +2097,8 @@ contains
     rtimestep%dinitialTime  = 0.0_DP
     rtimestep%dinitialStep  = 1.0_DP
     rtimestep%dfinalTime    = 1.0_DP
-    rtimestep%theta         = 1.0_DP
+    allocate(rtimestep%p_rthetaScheme)
+    rtimestep%p_rthetaScheme%theta = 1.0_DP
 
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
@@ -2223,9 +2199,9 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, transp_nlsolverCallback, rcollection,&
-            rrhs)
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, 1, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -2233,8 +2209,9 @@ contains
       else
 
         ! Solve the primal problem without right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, transp_nlsolverCallback, rcollection)
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback,&
+            rcollection, 1)
       end if
 
       ! Stop time measurement for solution procedure
@@ -2439,7 +2416,6 @@ contains
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
-
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
         'rtimerPrePostprocess', ssectionName=ssectionName)
@@ -2462,7 +2438,8 @@ contains
     rtimestep%dinitialTime  = 0.0_DP
     rtimestep%dinitialStep  = 1.0_DP
     rtimestep%dfinalTime    = 1.0_DP
-    rtimestep%theta         = 1.0_DP
+    allocate(rtimestep%p_rthetaScheme)
+    rtimestep%p_rthetaScheme%theta = 1.0_DP
 
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
@@ -2564,9 +2541,9 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
-            rcollection, rrhs)
+            rcollection, 1, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -2574,9 +2551,9 @@ contains
       else
 
         ! Solve the primal problem without right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+        call tstep_performTimestep(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
-            rcollection)
+            rcollection, 1)
       end if
 
       ! Stop time measurement for solution procedure
@@ -2636,9 +2613,9 @@ contains
       call solver_resetSolver(rsolver, .false.)
 
       ! Solve the dual problem
-      call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-          rsolutionDual, transp_nlsolverCallback, rcollection,&
-          rtargetFunc)
+      call tstep_performTimestep(p_rproblemLevel, rtimestep,&
+          rsolver, rsolutionDual, transp_nlsolverCallback,&
+          rcollection, 1, rtargetFunc)
 
       ! Release discretised target functional
       call lsysbl_releaseVector(rtargetFunc)

@@ -54,10 +54,10 @@ module transport_errorestimation
   use pprocgradients
   use pprocindicator
   use problem
-  use solveraux
+  use solverbase
   use stdoperators
   use storage
-  use timestepaux
+  use timestepbase
   use triangulation
 
   ! Modules from transport model
@@ -181,7 +181,7 @@ contains
 
     ! Set time-stepping parameters
     dStep = rtimestep%dStep; rtimestep%dStep = 1.0_DP
-    theta = rtimestep%theta; rtimestep%theta = 1.0_DP
+    theta = rtimestep%p_rthetaScheme%theta; rtimestep%p_rthetaScheme%theta = 1.0_DP
 
     ! Set stabilisation to standard Galerkin
     cconvectionStabilisation =&
@@ -201,15 +201,15 @@ contains
 
     ! Calculate the standard Galerkin preconditioner
     ! (required for rhs and residual calculation)
-    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+    call transp_calcPreconditioner(rproblemLevel, rtimestep,&
         rsolver, rsolutionPrimal, ssectionName, rcollection)
 
     ! Calculate the standard Galerkin right-hand side vector
-    call transp_calcRhsThetaScheme(rproblemLevel, rtimestep, rsolver,&
+    call transp_calcRhs(rproblemLevel, rtimestep, rsolver,&
         rsolutionPrimal, rvector1, ssectionName, rcollection, rrhs)
 
     ! Calculate the standard Galerkin residual
-    call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+    call transp_calcResidual(rproblemLevel, rtimestep,&
         rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
         rvector2, 0, ssectionName, rcollection)
 
@@ -225,7 +225,7 @@ contains
 
     ! ... and the time-stepping structure
     rtimestep%dStep = dStep
-    rtimestep%theta = theta
+    rtimestep%p_rthetaScheme%theta = theta
 
     ! Again, set update notifiers for the discrete transport operator
     ! and the preconditioner in the problem level structure

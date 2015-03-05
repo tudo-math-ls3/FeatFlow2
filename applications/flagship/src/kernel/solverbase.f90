@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> solveraux </name>
+!# <name> solverbase </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -18,7 +18,7 @@
 !#
 !# ----------------------------------------------------------------------------
 !#
-!# 1.) solver_createSolver = solver_createSolverDirect /
+!# 1.) solver_createSolver = solver_createSolverFromParlist /
 !#                           solver_createSolverIndirect
 !#     -> Creates a new solver from parameter list
 !#
@@ -135,7 +135,7 @@
 !# </purpose>
 !##############################################################################
 
-module solveraux
+module solverbase
 
 #include "flagship.h"
 
@@ -214,7 +214,7 @@ module solveraux
   ! ****************************************************************************
 
   interface solver_createSolver
-    module procedure solver_createSolverDirect
+    module procedure solver_createSolverFromParlist
     module procedure solver_createSolverIndirect
   end interface
 
@@ -1015,7 +1015,7 @@ contains
 
 !<subroutine>
 
-  recursive subroutine solver_createSolverDirect(rparlist, ssectionName, rsolver)
+  recursive subroutine solver_createSolverFromParlist(rparlist, ssectionName, rsolver)
 
 !<description>
     ! This subroutine creates a new solver structure from a given
@@ -1127,7 +1127,7 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Invalid nonlinear solver for full multigrid solver!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
@@ -1180,7 +1180,7 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Invalid coarse grid solver for nonlinear multigrid solver!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
@@ -1218,7 +1218,7 @@ contains
         case default
           if (rsolver%coutputModeError .gt. 0) then
             call output_line('Invalid smoother for nonlinear multigrid solver!',&
-                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
           end if
           call sys_halt()
         end select
@@ -1277,7 +1277,7 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Invalid coarse grid solver for linear multigrid solver!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
@@ -1311,7 +1311,7 @@ contains
         case default
           if (rsolver%coutputModeError .gt. 0) then
             call output_line('Invalid smoother for nonlinear multigrid solver!',&
-                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
           end if
           call sys_halt()
         end select
@@ -1349,7 +1349,7 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Unsupported nonlinear solver!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
@@ -1422,13 +1422,13 @@ contains
         allocate(rsolver%p_rsolverGMRES%rz(nKrylov))
 
         Isize=nKrylov+1
-        call storage_new('solver_createDirect', 'Dh', Isize, ST_DOUBLE,&
+        call storage_new('solver_createFromParlist', 'Dh', Isize, ST_DOUBLE,&
                          rsolver%p_rsolverGMRES%h_Dh, ST_NEWBLOCK_NOINIT)
-        call storage_new('solver_createDirect', 'Dc', nKrylov, ST_DOUBLE,&
+        call storage_new('solver_createFromParlist', 'Dc', nKrylov, ST_DOUBLE,&
                          rsolver%p_rsolverGMRES%h_Dc, ST_NEWBLOCK_NOINIT)
-        call storage_new('solver_createDirect', 'Ds', nKrylov, ST_DOUBLE,&
+        call storage_new('solver_createFromParlist', 'Ds', nKrylov, ST_DOUBLE,&
                          rsolver%p_rsolverGMRES%h_Ds, ST_NEWBLOCK_NOINIT)
-        call storage_new('solver_createDirect', 'Dq', nKrylov+1, ST_DOUBLE,&
+        call storage_new('solver_createFromParlist', 'Dq', nKrylov+1, ST_DOUBLE,&
                          rsolver%p_rsolverGMRES%h_Dq, ST_NEWBLOCK_NOINIT)
 
         ! Check for preconditioner
@@ -1458,7 +1458,7 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Unsupported linear solver!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
@@ -1473,7 +1473,7 @@ contains
     case default
       if (rsolver%coutputModeError .gt. 0) then
         call output_line('Unsupported solver type!',&
-            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
       end if
       call sys_halt()
     end select
@@ -1762,14 +1762,14 @@ contains
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Unsupported convergence accelerator!',&
-              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverFromParlist')
         end if
         call sys_halt()
       end select
       
     end subroutine create_accelerator
 
-  end subroutine solver_createSolverDirect
+  end subroutine solver_createSolverFromParlist
 
   ! ***************************************************************************
 
@@ -8070,4 +8070,4 @@ contains
 
   end subroutine solver_decodeOutputLevel
 
-end module solveraux
+end module solverbase

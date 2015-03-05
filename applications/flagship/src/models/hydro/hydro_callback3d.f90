@@ -213,7 +213,6 @@ module hydro_callback3d
   use linearsystemblock
   use linearsystemscalar
   use problem
-  use solveraux
   use storage
 
   ! Modules from hydrodynamic model

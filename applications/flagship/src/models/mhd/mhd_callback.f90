@@ -16,21 +16,17 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) mhd_calcPrecondThetaScheme
+!# 1.) mhd_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
-!#        used in the two-level theta-scheme
 !#
-!# 2.) mhd_calcJacobianThetaScheme
+!# 2.) mhd_calcJacobian
 !#     -> Calculates the Jacobian matrix
-!#        used in the two-level theta-scheme
 !#
-!# 3.) mhd_calcResidualThetaScheme
+!# 3.) mhd_calcResidual
 !#     -> Calculates the nonlinear residual vector
-!#        used in the two-level theta-scheme
 !#
-!# 4.) mhd_calcRhsThetaScheme
+!# 4.) mhd_calcRhs
 !#     -> Calculates the explicit right-hand side vector
-!#        used in the two-level theta-scheme
 !#
 !# 5.) mhd_calcRhsRungeKuttaScheme
 !#     -> Calculates the right-hand side vector
@@ -89,7 +85,7 @@
 !#        boundary values. If you want to implement a special routine
 !#        for assembling the preconditioner, than you have to call it
 !#        from transp_nlsolverCallback instead if the standard routine
-!#        transp_calcResidualThetaScheme. Note that changing the
+!#        transp_calcResidual. Note that changing the
 !#        interface of this callback routine would require to update
 !#        ALL models. Hence, the interface should only be changed if
 !#        really necessary.
@@ -132,21 +128,21 @@ module mhd_callback
   use paramlist
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
-  use timestepaux
+  use timestepbase
   use triangulation
 
   implicit none
 
   private
   public :: mhd_nlsolverCallback
-  public :: mhd_calcPrecondThetaScheme
-  public :: mhd_calcJacobianThetaScheme
-  public :: mhd_calcResidualThetaScheme
-  public :: mhd_calcRhsThetaScheme
+  public :: mhd_calcPreconditioner
+  public :: mhd_calcJacobian
+  public :: mhd_calcResidual
+  public :: mhd_calcRhs
   public :: mhd_calcRhsRungeKuttaScheme
   public :: mhd_setBoundaryCondition
   public :: mhd_calcLinearisedFCT
@@ -233,7 +229,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
-      call mhd_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call mhd_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
     end if
 
@@ -255,13 +251,13 @@ contains
 
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
-        call mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+        call mhd_calcRhs(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection,&
             rsource)
       end if
 
       ! Compute the residual
-      call mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+      call mhd_calcResidual(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           ssectionName, rcollection)
     end if
@@ -286,7 +282,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+  subroutine mhd_calcPreconditioner(rproblemLevel, rtimestep,&
       rsolver, rsolution, ssectionName, rcollection)
 
 !<description>
@@ -341,7 +337,7 @@ contains
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
-    if (rtimestep%theta .eq. 0.0_DP) then
+    if (rtimestep%p_rthetaScheme%theta .eq. 0.0_DP) then
 
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'isystemformat', isystemFormat)
@@ -366,7 +362,7 @@ contains
               rproblemLevel%RmatrixScalar(systemMatrix))
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -393,13 +389,13 @@ contains
 
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
       case default
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
         call sys_halt()
       end select
 
@@ -457,7 +453,7 @@ contains
     ! Compute scaling parameter
     select case (imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      dscale = -rtimestep%theta*rtimestep%dStep
+      dscale = -rtimestep%p_rthetaScheme%theta*rtimestep%dStep
     case default
       dscale = -1.0_DP
     end select
@@ -504,7 +500,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -576,7 +572,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -612,7 +608,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -660,7 +656,7 @@ contains
       
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -696,7 +692,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -732,7 +728,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -768,7 +764,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -781,7 +777,7 @@ contains
 
     case default
       call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -916,7 +912,7 @@ contains
 
     case default
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -937,13 +933,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine mhd_calcPrecondThetaScheme
+  end subroutine mhd_calcPreconditioner
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+  subroutine mhd_calcJacobian(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, ssectionName, rcollection)
 
 !<description>
@@ -981,13 +977,13 @@ contains
     print *, "!!! ide MHD equations has yet not been implemented     !!!"
     stop
 
-  end subroutine mhd_calcJacobianThetaScheme
+  end subroutine mhd_calcJacobian
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+  subroutine mhd_calcRhs(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, ssectionName, rcollection, rsource)
 
 !<description>
@@ -1056,10 +1052,10 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Do we have an explicit part?
-      if (rtimestep%theta .ne. 1.0_DP) then
+      if (rtimestep%p_rthetaScheme%theta .ne. 1.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+        dscale = (1.0_DP-rtimestep%p_rthetaScheme%theta) * rtimestep%dStep
 
         !-----------------------------------------------------------------------
         ! Compute the divergence operator for the right-hand side
@@ -1129,7 +1125,7 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call mhd_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
                 AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
                 rsolutionPredictor=p_rpredictor)
           end select
@@ -1188,7 +1184,7 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call mhd_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
                 AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
                 rsolutionPredictor=p_rpredictor)
           end select
@@ -1221,13 +1217,13 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine mhd_calcRhsThetaScheme
+  end subroutine mhd_calcRhs
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcResidualThetaScheme(rproblemLevel,&
+  subroutine mhd_calcResidual(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
       ite, ssectionName, rcollection, rsource)
 
@@ -1321,7 +1317,7 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Compute scaling parameter
-      dscale = rtimestep%theta*rtimestep%dStep
+      dscale = rtimestep%p_rthetaScheme%theta*rtimestep%dStep
       
       !-----------------------------------------------------------------------
       ! Compute the transient term
@@ -1414,7 +1410,7 @@ contains
           ioperationSpec = ioperationSpec + AFCSTAB_FCTFLUX_REJECTED
 
       ! Assemble implicit part of the raw-antidiffusive fluxes
-      call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
+      call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%p_rthetaScheme%theta,&
           rtimestep%dStep, 1.0_DP, .true., .true., ioperationSpec,&
           ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
       
@@ -1502,7 +1498,7 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine mhd_calcResidualThetaScheme
+  end subroutine mhd_calcResidual
 
   !*****************************************************************************
 
@@ -1582,7 +1578,7 @@ contains
     !   $ dscale = weight * \Delta t $
     !---------------------------------------------------------------------------
     
-    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
+    dscale = rtimestep%p_rRungeKuttaScheme%DmultistepWeights(istep)*rtimestep%dStep
 
     !---------------------------------------------------------------------------
     ! Compute the divergence operator for the right-hand side
@@ -1679,7 +1675,7 @@ contains
 
         ! Assemble explicit part of the raw-antidiffusive fluxes
         call mhd_calcFluxFCT(rproblemLevel, rsolution,&
-            rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+            rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
             AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
             rsolutionPredictor=p_rpredictor)
 

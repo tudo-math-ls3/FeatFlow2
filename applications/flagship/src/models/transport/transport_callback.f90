@@ -16,21 +16,17 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) transp_calcPrecondThetaScheme
+!# 1.) transp_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
-!#        used in the two-level theta-scheme
 !#
-!# 2.) transp_calcJacobianThetaScheme
+!# 2.) transp_calcJacobian
 !#     -> Calculates the Jacobian matrix
-!#        used in the two-level theta-scheme
 !#
-!# 3.) transp_calcResidualThetaScheme
+!# 3.) transp_calcResidual
 !#     -> Calculates the nonlinear residual vector
-!#        used in the two-level theta-scheme
 !#
-!# 4.) transp_calcRhsThetaScheme
+!# 4.) transp_calcRhs
 !#     -> Calculates the explicit right-hand side vector
-!#        used in the two-level theta-scheme
 !#
 !# 5.) transp_calcRhsRungeKuttaScheme
 !#     -> Calculates the right-hand side vector
@@ -120,7 +116,7 @@
 !#        boundary values. If you want to implement a special routine
 !#        for assembling the preconditioner, than you have to call it
 !#        from transp_nlsolverCallback instead if the standard routine
-!#        transp_calcResidualThetaScheme. Note that changing the
+!#        transp_calcResidual. Note that changing the
 !#        interface of this callback routine would require to update
 !#        ALL models. Hence, the interface should only be changed if
 !#        really necessary.
@@ -170,11 +166,11 @@ module transport_callback
   use paramlist
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
-  use timestepaux
+  use timestepbase
   use triangulation
 
   ! Modules from transport model
@@ -187,10 +183,10 @@ module transport_callback
 
   private
   public :: transp_nlsolverCallback
-  public :: transp_calcPrecondThetaScheme
-  public :: transp_calcJacobianThetaScheme
-  public :: transp_calcResidualThetaScheme
-  public :: transp_calcRhsThetaScheme
+  public :: transp_calcPreconditioner
+  public :: transp_calcJacobian
+  public :: transp_calcResidual
+  public :: transp_calcRhs
   public :: transp_calcRhsRungeKuttaScheme
   public :: transp_setBoundaryCondition
   public :: transp_calcVelocityField
@@ -315,7 +311,7 @@ contains
     if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
       ! Compute the preconditioner
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
 
       ! Compute the right-hand side
@@ -339,21 +335,21 @@ contains
         ! explicitly for the old solution from the previous time step.
         if ((iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_INIT) .ne. 0) .or.&
             (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_INIT)  .ne. 0))&
-            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            call transp_calcPreconditioner(rproblemLevel, rtimestep,&
             rsolver, rsolution0, ssectionName, rcollection)
 
         ! Compute the constant right-hand side only in the very first
         ! step of each nonlinear solution loop
-        call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+        call transp_calcRhs(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection, rsource)
       end if
 
       ! Compute the preconditioner
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
 
       ! Compute the residual
-      call transp_calcResidualThetaScheme(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolution0, rrhs, rres, istep, ssectionName, rcollection)
 
       ! Remove specifier for the preconditioner (if any)
@@ -366,7 +362,7 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
     end if
 
@@ -376,7 +372,7 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
 
       ! Compute the Jacobian matrix
-      call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+      call transp_calcJacobian(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, ssectionName, rcollection)
     end if
 
@@ -415,7 +411,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcPrecondThetaScheme(rproblemLevel,&
+  subroutine transp_calcPreconditioner(rproblemLevel,&
       rtimestep, rsolver, rsolution, ssectionName, rcollection,&
       fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
       fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
@@ -544,7 +540,7 @@ contains
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
-          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          1.0_DP, -rtimestep%p_rthetaScheme%theta*rtimestep%dStep,&
           .false., .false., .true., .true.,&
           rproblemLevel%RmatrixScalar(systemMatrix))
 
@@ -579,7 +575,7 @@ contains
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(consistentMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
-          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          1.0_DP, -rtimestep%p_rthetaScheme%theta*rtimestep%dStep,&
           .false., .false., .true., .true.,&
           rproblemLevel%RmatrixScalar(systemMatrix))
 
@@ -639,13 +635,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcPrecondThetaScheme
+  end subroutine transp_calcPreconditioner
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcJacobianThetaScheme(rproblemLevel,&
+  subroutine transp_calcJacobian(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, ssectionName, rcollection,&
       fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
       fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
@@ -801,12 +797,12 @@ contains
 
     case (DIFFUSION_VARIABLE)
       call output_line('Variable diffusion matrices are yet not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
 
     case default
       call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end select
 
@@ -891,7 +887,7 @@ contains
         else ! callback function not present
 
           call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
           call sys_halt()
 
         end if
@@ -1154,7 +1150,7 @@ contains
         else ! callback function not present
 
           call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
           call sys_halt()
 
         end if
@@ -1246,7 +1242,7 @@ contains
 
     else
       call output_line('Invalid mode!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end if
 
@@ -1287,7 +1283,7 @@ contains
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
-          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          1.0_DP, -rtimestep%p_rthetaScheme%theta*rtimestep%dStep,&
           .false., .false., .true., bisExactStructure,&
           rproblemLevel%RmatrixScalar(jacobianMatrix))
 
@@ -1307,7 +1303,7 @@ contains
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(consistentMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
-          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          1.0_DP, -rtimestep%p_rthetaScheme%theta*rtimestep%dStep,&
           .false., .false., .true., bisExactStructure,&
           rproblemLevel%RmatrixScalar(jacobianMatrix))
 
@@ -1348,12 +1344,12 @@ contains
 
     case (DIFFUSION_VARIABLE)
       call output_line('Variable diffusion matrices are yet not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
 
     case default
       call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end select
 
@@ -1389,7 +1385,7 @@ contains
               call afcsc_buildJacobianFCT(&
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rsolution, fcb_calcMatrixPrimal_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix),&
                   rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1397,7 +1393,7 @@ contains
               call afcsc_buildJacobianFCT(&
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rsolution, fcb_calcMatrixPrimal_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix))
             end if
@@ -1422,7 +1418,7 @@ contains
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                   rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix),&
                   bisExtendedSparsity)
@@ -1441,7 +1437,7 @@ contains
         else ! callback function not present
 
           call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
           call sys_halt()
 
         end if
@@ -1466,13 +1462,13 @@ contains
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call afcsc_buildJacobianFCT(rsolution,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
           else
             call afcsc_buildJacobianFCT(rsolution,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1494,7 +1490,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call afcsc_buildJacobianGP(&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
-                rsolution, rsolution0, rtimestep%theta,&
+                rsolution, rsolution0, rtimestep%p_rthetaScheme%theta,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
@@ -1525,7 +1521,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwSTBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1533,7 +1529,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwSTBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1558,7 +1554,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwSTBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 bisExtendedSparsity)
@@ -1590,7 +1586,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwSTBLevP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1598,7 +1594,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwSTBLevP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1623,7 +1619,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwSTBLevP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 bisExtendedSparsity)
@@ -1655,7 +1651,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBurgP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1663,7 +1659,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBurgP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1688,7 +1684,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBurgP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 bisExtendedSparsity)
@@ -1720,7 +1716,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1728,7 +1724,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1753,7 +1749,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBurgP2d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix), bisExtendedSparsity)
           else
@@ -1784,7 +1780,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBLevP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1792,7 +1788,7 @@ contains
             call afcsc_buildJacobianFCT(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwBLevP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1817,7 +1813,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBLevP1d_sim,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 bisExtendedSparsity)
@@ -1861,7 +1857,7 @@ contains
               call afcsc_buildJacobianFCT(&
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rsolution, fcb_calcMatrixDual_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix),&
                   rproblemLevel%RmatrixScalar(consistentMassMatrix))
@@ -1869,7 +1865,7 @@ contains
               call afcsc_buildJacobianFCT(&
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rsolution, fcb_calcMatrixDual_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix))
             end if
@@ -1894,7 +1890,7 @@ contains
                   rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                   rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                   rsolution, rsolution0, fcb_calcMatrixDual_sim,&
-                  rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%RmatrixScalar(jacobianMatrix),&
                   bisExtendedSparsity)
@@ -1912,7 +1908,7 @@ contains
         else ! callback function not present
 
           call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
           call sys_halt()
 
         end if
@@ -1937,13 +1933,13 @@ contains
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call afcsc_buildJacobianFCT(rsolution,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
           else
             call afcsc_buildJacobianFCT(rsolution,&
-                rtimestep%theta, rtimestep%dStep, hstep, .false.,&
+                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
@@ -1964,7 +1960,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call afcsc_buildJacobianGP(&
                 rproblemLevel%RmatrixScalar(consistentMassMatrix),&
-                rsolution, rsolution0, rtimestep%theta,&
+                rsolution, rsolution0, rtimestep%p_rthetaScheme%theta,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%RmatrixScalar(jacobianMatrix),&
@@ -1982,7 +1978,7 @@ contains
 
     else
       call output_line('Invalid mode!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
       call sys_halt()
     end if
 
@@ -2016,7 +2012,7 @@ contains
     ! Stop time measurement for matrix evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcJacobianThetaScheme
+  end subroutine transp_calcJacobian
 
   !*****************************************************************************
 
@@ -2120,7 +2116,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! Compute scaling parameter
-    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
+    dscale = rtimestep%p_rRungeKuttaScheme%DmultistepWeights(istep)*rtimestep%dStep
     
     call lsyssc_matVec(rproblemLevel%RmatrixScalar(transportMatrix),&
         rsolution%rvectorBlock(1), rrhs%RvectorBlock(1), dscale, 0.0_DP)
@@ -2224,7 +2220,7 @@ contains
           ! with the contribution of the consistent mass matrix
           call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP,&
+              rsolution, rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
               rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxPredictor=p_rpredictor)
@@ -2233,7 +2229,7 @@ contains
           ! without the contribution of the consistent mass matrix
           call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rtimestep%theta, 1.0_DP, 1.0_DP,&
+              rsolution, rtimestep%p_rthetaScheme%theta, 1.0_DP, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT)
           
           ! Perform flux correction
@@ -2265,7 +2261,7 @@ contains
           call afcsc_buildVectorGP(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
-              rsolution, rsolution0, rtimestep%theta, dscale,&
+              rsolution, rsolution0, rtimestep%p_rthetaScheme%theta, dscale,&
               .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         else
           ! Apply flux limiting of TVD-type without mass-antidiffusion
@@ -2357,7 +2353,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+  subroutine transp_calcRhs(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -2463,10 +2459,10 @@ contains
       !-------------------------------------------------------------------------
 
       ! Do we have an explicit part?
-      if (rtimestep%theta .ne. 1.0_DP) then
+      if (rtimestep%p_rthetaScheme%theta .ne. 1.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+        dscale = (1.0_DP-rtimestep%p_rthetaScheme%theta) * rtimestep%dStep
 
         ! Build transport term $(1-theta)*dt*T(u^n)u^n$, where
         ! $T(u^n)$ denotes the discrete transport operator
@@ -2571,7 +2567,7 @@ contains
               ! with the contribution of the consistent mass matrix
               call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                  rtimestep%theta, rtimestep%dStep, 1.0_DP,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
                   rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                   rxPredictor=p_rpredictor)
@@ -2580,7 +2576,7 @@ contains
               ! without the contribution of the consistent mass matrix
               call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                  rtimestep%theta, 1.0_DP, 1.0_DP,&
+                  rtimestep%p_rthetaScheme%theta, 1.0_DP, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
                   rxPredictor=p_rpredictor)
             end if
@@ -2685,7 +2681,7 @@ contains
               ! with the contribution of the consistent mass matrix
               call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                  rtimestep%theta, rtimestep%dStep, 1.0_DP,&
+                  rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
                   rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                   rxPredictor=p_rpredictor)
@@ -2694,7 +2690,7 @@ contains
               ! without the contribution of the consistent mass matrix
               call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                  rtimestep%theta, 1.0_DP, 1.0_DP,&
+                  rtimestep%p_rthetaScheme%theta, 1.0_DP, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT)
             end if
 
@@ -2729,13 +2725,13 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcRhsThetaScheme
+  end subroutine transp_calcRhs
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcResidualThetaScheme(rproblemLevel,&
+  subroutine transp_calcResidual(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
       ite, ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
@@ -2862,10 +2858,10 @@ contains
       !-------------------------------------------------------------------------
 
       ! Do we have an implicit part?
-      if (rtimestep%theta .ne. 0.0_DP) then
+      if (rtimestep%p_rthetaScheme%theta .ne. 0.0_DP) then
         
         ! Compute scaling parameter
-        dscale = rtimestep%theta*rtimestep%dStep
+        dscale = rtimestep%p_rthetaScheme%theta*rtimestep%dStep
         
         ! Apply transport operator to the solution vector
         call lsyssc_matVec(rproblemLevel%RmatrixScalar(transportMatrix),&
@@ -3017,7 +3013,7 @@ contains
           ! with the contribution of the consistent mass matrix
           call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              rtimestep%theta, rtimestep%dStep, 1.0_DP,&
+              rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., ioperationSpec,&
               rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxPredictor=p_rpredictor)
@@ -3026,7 +3022,7 @@ contains
           ! without the contribution of the consistent mass matrix
           call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              rtimestep%theta, rtimestep%dStep, 1.0_DP,&
+              rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., ioperationSpec,&
               rxPredictor=p_rpredictor)
         end if
@@ -3097,7 +3093,7 @@ contains
           call afcsc_buildVectorGP(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
-              rsolution, rsolution0, rtimestep%theta, rtimestep%dStep,&
+              rsolution, rsolution0, rtimestep%p_rthetaScheme%theta, rtimestep%dStep,&
               .false., AFCSTAB_TVDALGO_STANDARD, rres)
         else
           call afcsc_buildVectorTVD(&
@@ -3182,7 +3178,7 @@ contains
     ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcResidualThetaScheme
+  end subroutine transp_calcResidual
 
   !*****************************************************************************
 

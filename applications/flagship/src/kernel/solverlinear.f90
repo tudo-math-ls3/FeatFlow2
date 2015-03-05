@@ -85,7 +85,7 @@ module solverlinear
   use linearsystemblock
   use linearsystemscalar
   use problem
-  use solveraux
+  use solverbase
   use sortstrategy
   use storage
 

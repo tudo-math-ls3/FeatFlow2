@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> timestepaux </name>
+!# <name> timestepbase </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,7 +9,7 @@
 !# </purpose>
 !##############################################################################
 
-module timestepaux
+module timestepbase
 
 #include "flagship.h"
 
@@ -22,12 +22,23 @@ module timestepaux
 !<constantblock description="Global time-stepping types">
 
   ! Two-level theta-scheme
-  integer, parameter, public :: TSTEP_THETA_SCHEME = 1
+  integer, parameter, public :: TSTEP_THETA_SCHEME  = 1
 
-  ! Two-level Runge-Kutta scheme
-  integer, parameter, public :: TSTEP_RK_SCHEME    = 2
-!</constantblock>
+  ! Strongly stability-preserving explicit Runge-Kutta Scheme
+  integer, parameter, public :: TSTEP_SSPERK_SCHEME = 2
+  
+  ! Explicit Runge-Kutta scheme
+  integer, parameter, public :: TSTEP_ERK_SCHEME    = 3
+  
+  ! Diagonally implicit Runge-Kutta scheme
+  integer, parameter, public :: TSTEP_DIRK_SCHEME   = 4
 
+  ! Implicit Runge-Kutta scheme
+  integer, parameter, public :: TSTEP_IRK_SCHEME    = 5
+  
+  ! OBSOLETE: Two-level Runge-Kutta scheme
+  integer, parameter, public :: TSTEP_RK_SCHEME     = 2
+!</constantblock> 
 
 !<constantblock description="Adaptive time-stepping types">
 
@@ -63,7 +74,7 @@ module timestepaux
   integer, parameter, public :: TSTEP_IOLEVEL_VERBOSE = 4
 
 !</constantblock>
-
+  
 !</constants>
 
   ! *****************************************************************************
@@ -100,6 +111,14 @@ module timestepaux
     integer :: isolNorm = 0
 
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Scaling parameter for explicit parts
+    real(DP) :: dscaleExplicit = 0.0_DP
+
+    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Scaling parameter for implicit parts
+    real(DP) :: dscaleImplicit = 0.0_DP
+    
+    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Initial simulation time
     real(DP) :: dinitialTime = 0.0_DP
 
@@ -129,12 +148,12 @@ module timestepaux
 
     ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Value for previous time step
-    real(DP) :: dStep1 = 0.0_DP
+    real(DP) :: dStepPrevious = 0.0_DP
 
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Factor by which the current time step should be scaled
     ! if the current time step failed; must be < 1.0
-    real(DP) :: dstepReductionFactor = 1.0_DP
+    real(DP) :: dStepReductionFactor = 1.0_DP
 
     ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Total number of performed time steps
@@ -143,14 +162,6 @@ module timestepaux
     ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Total number of rejected time steps
     integer :: nrejectedSteps = 0
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Implicitness parameter for two-level theta-scheme
-    real(DP) :: theta = 0.0_DP
-
-    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Number of multi-steps for Runge-Kutta method
-    integer :: multisteps = 0
 
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Algorithm for adaptive time step control
@@ -171,13 +182,13 @@ module timestepaux
     real(DP) :: depsSteady = 0.0_DP
 
     ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Weights for multistage methods
-    real(DP), dimension(:), pointer :: DmultistepWeights => null()
+    ! Two-level theta scheme
+    type(t_thetaScheme), pointer :: p_rthetaScheme => null()
 
     ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Temporal vectors for old solutions
-    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
-
+    ! Runge-Kutta scheme
+    type(t_RungeKuttaScheme), pointer :: p_rRungeKuttaScheme => null()
+    
     ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Substructure for PID controller
     type(t_pidController), pointer :: p_rpidController => null()
@@ -194,6 +205,55 @@ module timestepaux
 
 !</typeblock>
 
+  ! *****************************************************************************
+
+!<typeblock>
+
+  ! This data structure contains all settings/parameters for the
+  ! two-level theta scheme.
+  type t_thetaScheme
+
+    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Implicitness parameter for two-level theta-scheme
+    real(DP) :: theta = 0.0_DP
+    
+    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Temporal vectors for old solutions
+    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
+    
+  end type t_thetaScheme
+  
+!</typeblock>
+
+  ! *****************************************************************************
+
+!<typeblock>
+
+  ! This data structure contains all settings/parameters for 
+  ! multi-step Runge Kutta schemes
+  type t_RungeKuttaScheme
+
+    ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Number of stages for Runge-Kutta method
+    integer :: nstages = 0
+
+    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    real(DP), dimension(:,:), pointer :: Da
+    real(DP), dimension(:), pointer   :: Db
+    real(DP), dimension(:), pointer   :: Dc
+    
+    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Weights for multistage methods
+    real(DP), dimension(:), pointer :: DmultistepWeights => null()
+    
+    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    ! Temporal vectors for old solutions
+    type(t_vectorBlock), dimension(:), pointer :: RtempVectors => null()
+    
+  end type t_RungeKuttaScheme
+  
+!</typeblock>
+  
   ! *****************************************************************************
 
 !<typeblock>
@@ -297,4 +357,4 @@ module timestepaux
 
 !</type>
 
-end module timestepaux
+end module timestepbase

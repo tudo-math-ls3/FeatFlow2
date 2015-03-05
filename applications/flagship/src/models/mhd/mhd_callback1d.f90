@@ -228,7 +228,6 @@ module mhd_callback1d
   use linearsystemscalar
   use problem
   use scalarpde
-  use solveraux
   use spatialdiscretisation
   use storage
 
