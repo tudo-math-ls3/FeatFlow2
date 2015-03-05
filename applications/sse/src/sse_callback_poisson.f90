@@ -11,10 +11,10 @@
 !# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !#
-!# 1.) coeff_MatrixA_Poisson
+!# 1.) coeff_Matrix_Poisson
 !#     -> Returns analytic valyes for the system matrix A.
 !#
-!# 2.) coeff_MatrixA_Bdr_Poisson
+!# 2.) coeff_Matrix_Bdr_Poisson
 !#     -> Returns analytic valyes for the system matrix A.
 !#
 !# 3.) coeff_RHS_Poisson
@@ -77,33 +77,37 @@
 
 module sse_callback_poisson
 
-  use fsystem
-  use storage
-  use genoutput
-  use derivatives
+  use blockmatassemblybase
+  use blockmatassemblystdop
   use boundary
-  use triangulation
-  use linearsystemscalar
-  use linearsystemblock
-  use element
-  use cubature
-  use spatialdiscretisation
-  use scalarpde
-  use domainintegration
   use collection
+  use cubature
+  use derivatives
   use discretebc
   use discretefbc
-  use pprocgradients
+  use domainintegration
+  use element
+  use feevaluation2
+  use fsystem
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
   use pprocerror
+  use pprocgradients
+  use scalarpde
+  use spatialdiscretisation
+  use storage
+  use triangulation
   
   use sse_base
+  use sse_base_poisson
 
   implicit none
 
   private
 
-  public :: coeff_MatrixA_Poisson
-  public :: coeff_MatrixA_Bdr_Poisson
+  public :: coeff_Matrix_Poisson
+  public :: coeff_Matrix_Bdr_Poisson
   public :: coeff_RHS_Poisson
   public :: coeff_RHS_Bdr_Poisson
   public :: getBoundaryValues_Poisson
@@ -117,12 +121,12 @@ module sse_callback_poisson
   public :: getAnalyticValues_Poisson
 
 contains
-  
+ 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine coeff_MatrixA_Poisson(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_Matrix_Poisson(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,IdofsTrial,IdofsTest,&
       rdomainIntSubset,Dcoefficients,rcollection)
     
@@ -198,15 +202,42 @@ contains
     
   !</subroutine>
 
-    Dcoefficients(:,:,:) = dpoisson
+    ! local variables
+    integer :: cproblemtype,cproblemsubtype,imatrixpos
 
-  end subroutine
+    ! Get configuration from quick-access arrays
+    cproblemtype    = rcollection%IquickAccess(1)
+    cproblemsubtype = rcollection%IquickAccess(2)
+    imatrixpos      = rcollection%IquickAccess(3)
+
+    select case(cproblemtype)
+    case(POISSON_SCALAR)
+
+      ! The problem subtype has no influence on the matrix
+      select case(imatrixpos)
+      case(11)
+        Dcoefficients(:,:,:) = dpoisson
+        
+      case default
+        Dcoefficients(:,:,:) = 0.0_DP
+      end select
+
+    case (POISSON_SYSTEM)
+
+      ! The problem subtype has no influence on the matrix
+      
+    case default
+      Dcoefficients(:,:,:) = 0.0_DP
+      
+    end select
+    
+  end subroutine coeff_Matrix_Poisson
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine coeff_MatrixA_Bdr_Poisson(rdiscretisationTrial,rdiscretisationTest,&
+  subroutine coeff_Matrix_Bdr_Poisson(rdiscretisationTrial,rdiscretisationTest,&
       rform,nelements,npointsPerElement,Dpoints,ibct,DpointPar,IdofsTrial,&
       IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
 
@@ -294,10 +325,10 @@ contains
   !</output>
 
   !</subroutine>
-
+    
     Dcoefficients = 0.0_DP
 
-  end subroutine
+  end subroutine coeff_Matrix_Bdr_Poisson
 
   ! ***************************************************************************
 
@@ -373,13 +404,40 @@ contains
     
   !</subroutine>
 
-    !    u(x,y) = SIN(PI * x) * SIN(PI * y)
-    ! => f(x,y) = 2 * PI^2 * SIN(PI * x) * SIN(PI * y)
-    Dcoefficients (1,:,:) = 2.0_DP * SYS_PI * SYS_PI &
-                          * sin(SYS_PI * Dpoints(1,:,:)) &
-                          * sin(SYS_PI * Dpoints(2,:,:))
+    ! local variables
+    integer :: cproblemtype,cproblemsubtype,ivectorpos
+    
+    ! Get configuration from quick-access arrays
+    cproblemtype    = rcollection%IquickAccess(1)
+    cproblemsubtype = rcollection%IquickAccess(2)
+    ivectorpos      = rcollection%IquickAccess(3)
 
-  end subroutine
+    select case(cproblemtype)
+    case(POISSON_SCALAR)
+
+      ! The problem subtype has no influence on the matrix
+      select case(ivectorpos)
+      case(1)
+        !    u(x,y) = SIN(PI * x) * SIN(PI * y)
+        ! => f(x,y) = 2 * PI^2 * SIN(PI * x) * SIN(PI * y)
+        Dcoefficients (1,:,:) = 2.0_DP * SYS_PI * SYS_PI &
+                              * sin(SYS_PI * Dpoints(1,:,:)) &
+                              * sin(SYS_PI * Dpoints(2,:,:))
+        
+      case default
+        Dcoefficients(:,:,:) = 0.0_DP
+      end select
+      
+    case (POISSON_SYSTEM)
+      
+      ! The problem subtype has no influence on the matrix
+      
+    case default
+      Dcoefficients(:,:,:) = 0.0_DP
+      
+    end select
+
+  end subroutine coeff_RHS_Poisson
 
   ! ***************************************************************************
 
@@ -476,21 +534,46 @@ contains
 
 !</subroutine>
 
-#if defined(CASE_POISSON_DIRICHLET)
+    ! local variables
+    integer :: cproblemtype,cproblemsubtype,ivectorpos,icomp,isegment
+    
+    ! Get configuration from quick-access arrays
+    cproblemtype    = rcollection%IquickAccess(1)
+    cproblemsubtype = rcollection%IquickAccess(2)
+    ivectorpos      = rcollection%IquickAccess(3)
+    icomp           = rcollection%IquickAccess(4)
+    isegment        = rcollection%IquickAccess(5)
 
-    call output_line("There is no boundary integral in this benc", &
-        OU_CLASS_ERROR,OU_MODE_STD,"coeff_RHS_Bdr_Poisson")
-    call sys_halt()
+    select case(cproblemtype)
+    case(POISSON_SCALAR)
+      
+      select case(cproblemsubtype)
+      case(POISSON_DIRICHLET)
+        Dcoefficients(:,:,:) = 0.0_DP
+        
+      case(POISSON_DIRICHLET_NEUMANN)
+        if (isegment .eq. 2 .or. isegment .eq. 4) then
+          Dcoefficients(:,:,:) = dneumann
+        else
+          Dcoefficients(:,:,:) = 0.0_DP
+        end if
+        
+      case(POISSON_NEUMANN)
+        Dcoefficients(:,:,:) = dneumann
+        
+      case default
+        Dcoefficients(:,:,:) = 0.0_DP
+      end select
+      
+    case (POISSON_SYSTEM)
+      
+      
+    case default
+      Dcoefficients(:,:,:) = 0.0_DP
+      
+    end select
 
-#elif defined(CASE_POISSON_NEUMANN)
-
-    Dcoefficients (1,:,:) = -ddirichlet
-
-#else
-#error 'Test case is undefined.'
-#endif
-
-  end subroutine
+  end subroutine coeff_RHS_Bdr_Poisson
 
   ! ***************************************************************************
 
@@ -569,6 +652,9 @@ contains
   
 !</subroutine>
 
+  Dvalues(1) = ddirichlet
+  return
+  
 #if defined(CASE_POISSON_DIRICHLET)
 
     select case(rcollection%IquickAccess(1))
@@ -583,7 +669,7 @@ contains
       call sys_halt()
     end select
 
-#elif defined(CASE_POISSON_NEUMANN)
+#elif defined(CASE_POISSON_DIRICHLET_NEUMANN)
 
     ! local variables
     real(DP) :: dnx,dny
@@ -620,7 +706,7 @@ contains
 #error 'Test case is undefined.'
 #endif
   
-  end subroutine
+  end subroutine getBoundaryValues_Poisson
 
   ! ***************************************************************************
 
@@ -695,6 +781,9 @@ contains
   
 !</subroutine>
 
+  ! local variable
+  integer :: cproblemtype,cproblemsubtype,cderivativebase
+
   select case (cderivative)
   case (DER_FUNC)
     ! u(x,y) = SIN(PI * x) * SIN(PI * y)
@@ -712,12 +801,108 @@ contains
     Dvalues (:,:) = SYS_PI * &
         sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
 
-  case DEFAULT
+  case default
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+
+  return
   
-  end subroutine
+  ! Get configuration from quick-access arrays
+  cproblemtype    = rcollection%IquickAccess(1)
+  cproblemsubtype = rcollection%IquickAccess(2)
+  cderivativebase = rcollection%IquickAccess(3)
+
+  ! u(x,y) = SIN(PI * x) * SIN(PI * y)
+  select case(cderivativebase)
+  case (DER_FUNC)
+    ! We start from the solution
+    ! u(x,y) = SIN(PI * x) * SIN(PI * y)
+    ! ----------------------------------
+
+    select case (cderivative)
+    case (DER_FUNC)
+      ! u(x,y) = SIN(PI * x) * SIN(PI * y)
+      Dvalues (:,:) = sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_X)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_x(x,y) = PI * COS(PI * x) * SIN(PI * y)
+      Dvalues (:,:) = SYS_PI * &
+          cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_Y)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_y(x,y) = PI * SIN(PI * x) * COS(PI * y)
+      Dvalues (:,:) = SYS_PI * &
+          sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+      
+    case default
+      ! Unknown. Set the result to 0.0.
+      Dvalues = 0.0_DP
+    end select
+    
+  case (DER_DERIV_X)
+    ! We start from the x-derivative
+    ! u_x(x,y) = PI * COS(PI * x) * SIN(PI * y)
+    ! -----------------------------------------
+    
+    select case (cderivative)
+    case (DER_FUNC)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_x(x,y) = PI * COS(PI * x) * SIN(PI * y)
+      Dvalues (:,:) = SYS_PI * &
+          cos(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_X)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_xx(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
+      Dvalues (:,:) = -SYS_PI*SYS_PI * &
+          sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_Y)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_xy(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
+      Dvalues (:,:) = SYS_PI*SYS_PI * &
+          cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+      
+    case DEFAULT
+      ! Unknown. Set the result to 0.0.
+      Dvalues = 0.0_DP
+    end select
+    
+  case (DER_DERIV_Y)
+    ! We start from the y-derivative
+    ! u_y(x,y) = PI * SIN(PI * x) * COS(PI * y)
+    ! -----------------------------------------
+    
+    select case (cderivative)
+    case (DER_FUNC)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_y(x,y) = PI * SIN(PI * x) * COS(PI * y)
+      Dvalues (:,:) = SYS_PI * &
+          sin(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_Y)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_yy(x,y)= -PI * PI * SIN(PI * x) * SIN(PI * y)
+      Dvalues (:,:) = -SYS_PI*SYS_PI * &
+          sin(SYS_PI*Dpoints(1,:,:)) * sin(SYS_PI*Dpoints(2,:,:))
+      
+    case (DER_DERIV_X)
+      !    u(x,y)   = SIN(PI * x) * SIN(PI * y)
+      ! => u_yx(x,y)= PI * PI * COS(PI * x) * COS(PI * y)
+      Dvalues (:,:) = SYS_PI*SYS_PI * &
+          cos(SYS_PI*Dpoints(1,:,:)) * cos(SYS_PI*Dpoints(2,:,:))
+      
+    case DEFAULT
+      ! Unknown. Set the result to 0.0.
+      Dvalues = 0.0_DP
+    end select
+    
+  end select
+  
+  end subroutine getReferenceFunction_Poisson
 
   ! ***************************************************************************
 
@@ -816,7 +1001,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivX_Poisson
 
   ! ***************************************************************************
 
@@ -915,7 +1100,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivY_Poisson
 
   ! ***************************************************************************
 
@@ -1014,7 +1199,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivXX_Poisson
 
   ! ***************************************************************************
 
@@ -1113,7 +1298,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivXY_Poisson
 
   ! ***************************************************************************
 
@@ -1212,7 +1397,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivYX_Poisson
 
   ! ***************************************************************************
 
@@ -1311,7 +1496,7 @@ contains
     Dvalues = 0.0_DP
   end select
   
-  end subroutine
+  end subroutine getReferenceDerivYY_Poisson
 
   ! ***************************************************************************
 

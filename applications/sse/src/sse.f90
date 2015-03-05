@@ -4,14 +4,37 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This program is a simple test program for discretising the elliptic
-!# equation for sea surface elevation
+!# This program is a simple test program to solve several types of
+!# elliptic problems:
 !#
-!# \Nabla \dot (A \Nabla N) + i\omega N = 0   in \Omega
+!# 1) Poisson problem
 !#
-!#                                    N = N_D on \Gamma_D
+!#         -div(grad u) = f   in Omega
 !#
-!#                  (A \Nabla N)\cdot n = 0   on \Gamma_N
+!#                    u = u_D on Gamma_D
+!#
+!#                du/dn = g   on Gamma_N
+!#
+!# This equation can be solved either as is or cast into a first-order
+!# system, whereby an inf-sup stable finite element pair is used to
+!# approximate $u$ and its gradient $sigma=grad u$.
+!#
+!#          -div(sigma) = f   in Gamma
+!#
+!#       sigma - grad u = 0   in Gamma
+!#
+!#                    u = u_D on Gamma_D
+!#
+!#          d(sigma)/dn = g   on Gamma_N
+!#
+!#
+!# 2) Sea surface elevation problem
+!#
+!#    div( A(0) * (grad N)) + i * omega * N = 0   in Omega
+!#
+!#                                        N = N_D on Gamma_D
+!#
+!#                             d(A(0)*N)/dn = 0   on Gamma_N
 !#
 !# for a scalar complex function $N$. This equation can be solved
 !# either as is with high-order finite elements or cast into a
@@ -22,6 +45,11 @@
 !# split into their real and imaginary parts and solved as a coupled
 !# but real-valued problem.
 !#
+!#
+!# 3) Corin'e problem
+!#
+!#    TBA...
+!#
 !# </purpose>
 !##############################################################################
 
@@ -31,13 +59,16 @@ program sse
   use convergencetable
   use fsystem
   use genoutput
-  use linearsystemblock
+!!$  use linearsystemblock
   use paramlist
   use statistics
   use storage
 
   use sse_main
   use sse_base
+  use sse_base_poisson
+  use sse_base_sse
+  use sse_base_corine  
 
   ! local variables
   type(t_timer) :: rtimerTria,rtimerDiscr,rtimerMatVec,&
@@ -76,86 +107,43 @@ program sse
   call parlst_getvalue_int(rparlist, '', 'NLMIN', NLMIN)
   call parlst_getvalue_int(rparlist, '', 'NLMAX', NLMAX)
   call parlst_getvalue_int(rparlist, '', 'ILMIN', ILMIN, NLMIN)
-  call parlst_getvalue_int(rparlist, '', 'PROBLEMTYPE',&
-      rproblem%cproblemtype, rproblem%cproblemtype)
+  call parlst_getvalue_int(rparlist, '', 'PROBLEMTYPE', rproblem%cproblemtype)
+  call parlst_getvalue_int(rparlist, sse_getSection(rproblem%cproblemtype),&
+                                         'PROBLEMSUBTYPE', rproblem%cproblemsubtype)
+  
+  ! Write configuration to screen
+  call output_separator (OU_SEP_STAR)
+  
+  select case(rproblem%cproblemtype)
+  case (POISSON_SCALAR, POISSON_SYSTEM)
+    call sse_initParamPoisson(rproblem%cproblemtype,rparlist)
+    call sse_infoPoisson(rproblem%cproblemtype,rproblem%cproblemsubtype)
+    
+  case (SSE_SCALAR, SSE_SYSTEM1, SSE_SYSTEM2)
+    call sse_initParamSSE(rproblem%cproblemtype,rparlist)
+    call sse_infoSSE(rproblem%cproblemtype,rproblem%cproblemsubtype)
+    
+  case (CORINE_1D, CORINE_2D)
+    call sse_initParamCorine(rproblem%cproblemtype,rparlist)
+    call sse_infoCorine(rproblem%cproblemtype,rproblem%cproblemsubtype)
+
+  case default
+    call output_line("Invalid problem type", &
+        OU_CLASS_ERROR,OU_MODE_STD,"sse")
+    call sys_halt()
+  end select
+  
+  call output_separator (OU_SEP_STAR)
 
   ! Initialise the collection
   call collct_init (rproblem%rcollection)
   do i=1,NLMAX
     call collct_addlevel (rproblem%rcollection)
   end do
-
+  
   ! Initialise the convergence table
   call ctab_init(rtable)
-
-  ! Write configuration to screen
-  call output_separator (OU_SEP_STAR)
-  select case(rproblem%cproblemtype)
-  case (POISSON_SCALAR)
-    call output_line('BENCHMARK..........: Poisson problem')
-    call output_line('FORMULATION........: second-order equation')
-  case (POISSON_SYSTEM)
-    call output_line('BENCHMARK..........: Poisson problem')
-    call output_line('FORMULATION........: first-order system')
-  case (SSE_SCALAR)
-    call output_line('BENCHMARK..........: SSE problem')
-    call output_line('FORMULATION........: second-order equation')
-    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
-    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
-    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
-    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
-    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
-    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
-    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
-    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
-    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
-    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
-    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
-    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
-    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
-    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
-    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
-    
-  case (SSE_SYSTEM1)
-    call output_line('BENCHMARK..........: SSE problem')
-    call output_line('FORMULATION........: second-order equation')
-    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
-    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
-    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
-    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
-    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
-    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
-    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
-    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
-    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
-    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
-    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
-    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
-    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
-    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
-    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
-
-  case (SSE_SYSTEM2)
-    call output_line('BENCHMARK..........: SSE problem')
-    call output_line('FORMULATION........: second-order equation')
-    call output_line('Av0................: '//trim(adjustl(sys_sdE(dviscosity,5))))
-    call output_line('B..................: '//trim(adjustl(sys_sdE(dwidth,5))))
-    call output_line('H0/H...............: '//trim(adjustl(sys_sdE(dheightRatio,5))))
-    call output_line('H0.................: '//trim(adjustl(sys_sdE(dheight0,5))))
-    call output_line('H..................: '//trim(adjustl(sys_sdE(dheight,5))))
-    call output_line('L..................: '//trim(adjustl(sys_sdE(dlength,5))))
-    call output_line('Lb.................: '//trim(adjustl(sys_sdE(dlengthB,5))))
-    call output_line('M2.................: '//trim(adjustl(sys_sdE(dforcing,5))))
-    call output_line('f..................: '//trim(adjustl(sys_sdE(dcoraccel,5))))
-    call output_line('omega..............: '//trim(adjustl(sys_sdE(dtidalfreq,5))))
-    call output_line('s0.................: '//trim(adjustl(sys_sdE(dstress,5))))
-    call output_line('bathymetryType.....: '//trim(adjustl(sys_siL(ibathymetryType,1))))
-    call output_line('stressType.........: '//trim(adjustl(sys_siL(istressType,1))))
-    call output_line('viscosityType......: '//trim(adjustl(sys_siL(iviscosityType,1))))
-    call output_line('widthType..........: '//trim(adjustl(sys_siL(iwidthType,1))))
-  end select
-  call output_separator (OU_SEP_STAR)
-
+  
   do i=ILMIN,NLMAX
 
     ! Initialisation
@@ -167,7 +155,7 @@ program sse
     call output_line(&
         '............................................................'//&
         trim(sys_sdEL(rtimerTria%delapsedReal,3))//'sec')
-
+    
     call output_line('Initialising discretisation')
     call stat_clearTimer(rtimerDiscr)
     call stat_startTimer(rtimerDiscr,STAT_TIMERSHORT)

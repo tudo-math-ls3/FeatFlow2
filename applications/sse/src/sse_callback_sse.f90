@@ -134,6 +134,7 @@ module sse_callback_sse
   use pprocerror
   
   use sse_base
+  use sse_base_sse
 
   implicit none
 

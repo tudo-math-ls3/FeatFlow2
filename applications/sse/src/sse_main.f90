@@ -43,17 +43,15 @@
 !#
 !# 12.) sse_outputTable
 !#      -> Output the convergence table
-!#
-!# 13.) sse_getNVAR
-!#      -> Returns the number of variables
 !# </purpose>
 !##############################################################################
 
 module sse_main
 
-  use basicgeometry
   use bcassembly
   use bilinearformevaluation
+  use blockmatassembly
+  use blockmatassemblybase
   use boundary
   use collection
   use convergencetable
@@ -66,9 +64,7 @@ module sse_main
   use fsystem
   use genoutput
   use globalsystem
-  use linearalgebra
   use linearformevaluation
-  use lineariser
   use linearsolver
   use linearsystemblock
   use linearsystemscalar
@@ -84,15 +80,19 @@ module sse_main
   use sortstrategy
   use sortstrategybase
   use spatialdiscretisation
-  use storage
   use triangulation
   use ucd
   use vectorfilters
   use vectorio
 
   use sse_base
+  use sse_base_corine
+  use sse_base_poisson
+  use sse_base_sse
+  use sse_callback_corine
   use sse_callback_poisson
   use sse_callback_sse
+  
 
   implicit none
 
@@ -109,7 +109,6 @@ module sse_main
   public :: sse_doneDiscretisation
   public :: sse_doneParamTriang
   public :: sse_outputTable
-  public :: sse_getNVAR
 
   private
 
@@ -167,6 +166,9 @@ module sse_main
     ! Problem type
     integer :: cproblemtype
 
+    ! Problem subtype
+    integer :: cproblemsubtype
+    
     ! Minimum refinement level; = Level i in RlevelInfo
     integer :: ilvmin
 
@@ -231,7 +233,7 @@ contains
   integer :: i
 
   ! Path to the mesh
-  character(len=SYS_STRLEN) :: spredir,sconfig,strifile,sprmfile
+  character(len=SYS_STRLEN) :: spredir,sprmfile,ssection,striadiscr,strifile
 
   ! Initialise the level in the problem structure
   rproblem%ilvmin = ilvmin
@@ -243,17 +245,18 @@ contains
   if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
   ! Get the section for the configuration
-  call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
+  ssection = sse_getSection(rproblem%cproblemtype)
+  call parlst_getvalue_string(rparlist, ssection, 'problemtriadiscr', striadiscr)
 
   ! At first, read in the parametrisation of the boundary and save
   ! it to rboundary.
-  call parlst_getvalue_string(rparlist, trim(sconfig), 'prmfile', sprmfile, '')
+  call parlst_getvalue_string(rparlist, striadiscr, 'prmfile', sprmfile, '')
   if (trim(sprmfile) .ne. '') then
     call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/'//trim(sprmfile))
   end if
 
   ! Now read in the basic triangulation.
-  call parlst_getvalue_string(rparlist, trim(sconfig), 'trifile', strifile)
+  call parlst_getvalue_string(rparlist, striadiscr, 'trifile', strifile)
   if (trim(sprmfile) .ne. '') then
     call tria_readTriFile2D(rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
         trim(spredir)//'/'//trim(strifile), rproblem%rboundary)
@@ -342,167 +345,89 @@ contains
 !</subroutine>
 
   ! local variables
-  character(len=SYS_STRLEN) :: sconfig,sparameter
-  integer, dimension(3) :: Ccubaturetypes,Celementtypes
-  integer :: i,j,ccubaturetype,celementtype,nvar
+  character(len=SYS_STRLEN) :: striadiscr,sparameter,ssection
+  integer, dimension(:), allocatable :: Ccubaturetypes,Celementtypes
+  integer :: i,j,ccubaturetype,celementtype,nvar,nsubstrings
 
-  ! Get the section for the configuration
-  call parlst_getvalue_string(rparlist, '', 'config', sconfig, '')
+  ! Allocate temporal storage
+  nvar = sse_getNVAR(rproblem%cproblemtype)
+  allocate(Ccubaturetypes(nvar),Celementtypes(nvar))
 
-  select case(rproblem%cproblemtype)
-  case (POISSON_SCALAR,SSE_SCALAR)
-
-    ! Get type of element
-    call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter)
-    celementtype = elem_igetID(sparameter)
-
-    ! Get type of cubature formula
-    call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter)
-    ccubaturetype = cub_igetID(sparameter)
-
-    ! Get number of variables
-    nvar = sse_getNVAR(rproblem)
-
-    do i=rproblem%ilvmin,rproblem%ilvmax
-
-      ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies the blocks in the
-      ! solution vector. In this simple problem, we only have one block.
-      call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
-          nvar, rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-      
-      ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
-      ! list of scalar discretisation structures for every component
-      ! of the solution vector. Initialise the first element of the
-      ! list to specify the element for this solution component:
-      do j=1,nvar
-        call spdiscr_initDiscr_simple(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j), celementtype,&
-            rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-      end do
-
-      ! Set up an cubature info structure to tell the code which cubature
-      ! formula to use
-      ! Create an assembly information structure which tells the code
-      ! the cubature formula to use. Standard: Gauss 3x3.
-      do j=1,nvar
-        call spdiscr_createDefCubStructure(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
-            rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-            ccubaturetype)
-      end do
+  ! Read config section
+  ssection = sse_getSection(rproblem%cproblemtype)
+  call parlst_getvalue_string(rparlist, ssection, 'problemtriadiscr', striadiscr)
+  
+  ! Get type of element(s)
+  nsubstrings = parlst_querysubstrings(rparlist, striadiscr, 'ELEMENTTYPE')
+  if (nsubstrings .eq. 0) then
+    call parlst_getvalue_string(rparlist, striadiscr, 'ELEMENTTYPE', sparameter)
+    Celementtypes(1) = elem_igetID(sparameter)
+    do j = 2, nvar
+      Celementtypes(j) = Celementtypes(1)
     end do
-
-  case (POISSON_SYSTEM)
-
-    ! Get types of element for each variable
-    do j=1,3
-      call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
-          isubstring=j)
+  elseif (nsubstrings .eq. nvar) then
+    do j = 1, nvar
+      call parlst_getvalue_string(rparlist, striadiscr, 'ELEMENTTYPE', sparameter, isubstring=j)
       Celementtypes(j) = elem_igetID(sparameter)
     end do
-
-    ! Get types of cubature formula
-    do j=1,3
-      call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
-          isubstring=j)
-      Ccubaturetypes(j) = cub_igetID(sparameter)
-    end do
-
-    do i=rproblem%ilvmin,rproblem%ilvmax
-
-      ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies the blocks in the
-      ! solution vector. In this problem, we have three blocks.
-      call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
-          3,rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-
-      ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
-      ! list of scalar discretisation structures for every component
-      ! of the solution vector.  Initialise the first three elements
-      ! of the list to specify the elements for the solution
-      ! components:
-      do j=1,3
-        call spdiscr_initDiscr_simple(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
-            Celementtypes(j),rproblem%RlevelInfo(i)%rtriangulation,&
-            rproblem%rboundary)
-      end  do
-
-      ! Set up an cubature info structure to tell the code which cubature
-      ! formula to use
-      ! Create an assembly information structure which tells the code
-      ! the cubature formula to use. Standard: Gauss 3x3.
-      do j=1,3
-        call spdiscr_createDefCubStructure(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
-            rproblem%RlevelInfo(i)%RcubatureInfo(j),&
-            Ccubaturetypes(j))
-      end do
-    end do
-
-  case (SSE_SYSTEM1,SSE_SYSTEM2)
-
-    ! Get types of element for each variable
-    do j=1,3
-      call parlst_getvalue_string(rparlist, trim(sconfig), 'ELEMENTTYPE', sparameter,&
-          isubstring=j)
-      Celementtypes(j) = elem_igetID(sparameter)
-    end do
-
-    ! Get types of cubature formula
-    do j=1,3
-      call parlst_getvalue_string(rparlist, trim(sconfig), 'CUBATURETYPE', sparameter,&
-          isubstring=j)
-      Ccubaturetypes(j) = cub_igetID(sparameter)
-    end do
-
-    do i=rproblem%ilvmin,rproblem%ilvmax
-
-      ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies the blocks in the
-      ! solution vector. In this problem, we have three blocks.
-      call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
-          6,rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
-
-      ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
-      ! list of scalar discretisation structures for every component
-      ! of the solution vector.  Initialise the first three elements
-      ! of the list to specify the elements for the solution
-      ! components:
-      do j=1,3
-        call spdiscr_initDiscr_simple(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j-1),&
-            Celementtypes(j),rproblem%RlevelInfo(i)%rtriangulation,&
-            rproblem%rboundary)
-        call spdiscr_initDiscr_simple(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j),&
-            Celementtypes(j),rproblem%RlevelInfo(i)%rtriangulation,&
-            rproblem%rboundary)
-      end  do
-
-      ! Set up an cubature info structure to tell the code which cubature
-      ! formula to use
-      ! Create an assembly information structure which tells the code
-      ! the cubature formula to use. Standard: Gauss 3x3.
-      do j=1,3
-        call spdiscr_createDefCubStructure(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j-1),&
-            rproblem%RlevelInfo(i)%RcubatureInfo(j),&
-            Ccubaturetypes(j))
-        call spdiscr_createDefCubStructure(&
-            rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(2*j),&
-            rproblem%RlevelInfo(i)%RcubatureInfo(j),&
-            Ccubaturetypes(j))
-      end do
-    end do
-
-  case default
-    call output_line("Invalid type of problem.", &
+  else
+    call output_line("Mismatch in dimensions.", &
         OU_CLASS_ERROR,OU_MODE_STD,"sse_initDiscretisation")
     call sys_halt()
-  end select
+  end if
+  
+  ! Get type of cubature formula(e)
+  nsubstrings = parlst_querysubstrings(rparlist, striadiscr, 'CUBATURETYPE')
+  if (nsubstrings .eq. 0) then
+    call parlst_getvalue_string(rparlist, striadiscr, 'CUBATURETYPE', sparameter)
+    Ccubaturetypes(1) = cub_igetID(sparameter)
+    do j = 2, nvar
+      Ccubaturetypes(j) = Ccubaturetypes(1)
+    end do
+  elseif (nsubstrings .eq. nvar) then
+    do j = 1, nvar
+      call parlst_getvalue_string(rparlist, striadiscr, 'CUBATURETYPE', sparameter, isubstring=j)
+      Ccubaturetypes(j) = cub_igetID(sparameter)
+    end do
+  else
+    call output_line("Mismatch in dimensions.", &
+        OU_CLASS_ERROR,OU_MODE_STD,"sse_initDiscretisation")
+    call sys_halt()
+  end if
 
+  ! Create spatial discretisations on all levels
+  do i=rproblem%ilvmin,rproblem%ilvmax
+    
+    ! Now we can start to initialise the discretisation. At first, set
+    ! up a block discretisation structure that specifies the blocks in
+    ! the solution vector. In this problem, we have three blocks.
+    call spdiscr_initBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,&
+        nvar,rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary)
+    
+    ! rproblem%RlevelInfo(i)%rdiscretisation%Rdiscretisations is a
+    ! list of scalar discretisation structures for every component
+    ! of the solution vector.  Initialise the first three elements
+    ! of the list to specify the elements for the solution
+    ! components:
+    do j=1,nvar
+      call spdiscr_initDiscr_simple(&
+          rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+          Celementtypes(j),rproblem%RlevelInfo(i)%rtriangulation,&
+          rproblem%rboundary)
+    end  do
+
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! Create an assembly information structure which tells the code
+    ! the cubature formula to use. Standard: Gauss 3x3.
+    do j=1,nvar
+      call spdiscr_createDefCubStructure(&
+          rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(j),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(j),&
+          Ccubaturetypes(j))
+    end do
+  end do
+  
   end subroutine
 
   ! ***************************************************************************
@@ -532,7 +457,7 @@ contains
 
   ! local variables
   character(len=SYS_STRLEN) :: ssortstrategy
-  integer :: i,iboundarySeg
+  integer :: i,iboundarySeg,j,iboundComp,iboundSeg
 
   ! A boundary segment
   type(t_boundaryRegion) :: rboundaryRegion
@@ -557,7 +482,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix)
 
       ! Save matrix to the collection.
-      ! They maybe used later, expecially in nonlinear problems.
+      ! They may be used later, especially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
 
@@ -568,27 +493,31 @@ contains
       call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,&
           1, 1, LSYSSC_MATRIX9)
 
+      ! Prepare quick-access arrays of collection structure
+      rproblem%rcollection%IquickAccess(1) = rproblem%cproblemtype
+      rproblem%rcollection%IquickAccess(2) = rproblem%cproblemsubtype
+      
       ! And now to the entries of the matrix. For assembling the entries,
       ! we need a bilinear form, which first has to be set up manually.
       ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
       ! scalar system matrix in 2D.
       rform%itermCount = 2
+      rform%ballCoeffConstant = .false.
       rform%Idescriptors(1,1) = DER_DERIV_X
       rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Dcoefficients(1)  = 1.0
       rform%Idescriptors(1,2) = DER_DERIV_Y
       rform%Idescriptors(2,2) = DER_DERIV_Y
-
-      ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .true.
-      rform%Dcoefficients(1)  = 1.0
       rform%Dcoefficients(2)  = 1.0
 
+      ! Assemble matrix entry (1,1)
+      rproblem%rcollection%IquickAccess(3) = 11
       call bilf_buildMatrixScalar(rform,.true.,&
           rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
           rproblem%RlevelInfo(i)%RcubatureInfo(1),&
-          rcollection=rproblem%rcollection)
+          coeff_Matrix_Poisson,rproblem%rcollection)
     end do
-
+    
     ! Next step: Create a RHS vector and a solution vector and a temporary
     ! vector. All are filled with zero.
     call lsysbl_createVector(&
@@ -608,7 +537,7 @@ contains
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-
+    
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the
     ! first block.
@@ -621,28 +550,22 @@ contains
         rproblem%RlevelInfo(rproblem%ilvmax)%RcubatureInfo(1),&
         coeff_RHS_Poisson,rproblem%rcollection)
 
-#if defined(CASE_POISSON_DIRICHLET)
-    ! No boundary contributions to the system matrix
-
-#elif defined(CASE_POISSON_NEUMANN)
-
-    ! Create boundary region - part 2
-    call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
+    ! Impose boundary conditions
+    rproblem%rcollection%IquickAccess(3) = 1
     
-    ! Assemble the linear forms
-    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
-        rproblem%rrhs%RvectorBlock(1),coeff_RHS_Bdr_Poisson,rboundaryRegion)
-
-    ! Create boundary region - part 4
-    call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+    do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
+      rproblem%rcollection%IquickAccess(4) = iboundComp
+      
+      do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
+        rproblem%rcollection%IquickAccess(5) = iboundSeg
+        
+        call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,rboundaryRegion)
+        call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+            rproblem%rrhs%RvectorBlock(1),coeff_RHS_Bdr_Poisson,&
+            rboundaryRegion,rproblem%rcollection)
+      end do
+    end do
     
-    ! Assemble the linear forms
-    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
-        rproblem%rrhs%RvectorBlock(1),coeff_RHS_Bdr_Poisson,rboundaryRegion)
-#else
-#error 'Test case is undefined.' 
-#endif
-
   case (POISSON_SYSTEM)
     !---------------------------------------------------------------------------
     !
@@ -664,7 +587,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix)
 
       ! Save matrix to the collection.
-      ! They maybe used later, expecially in nonlinear problems.
+      ! They may be used later, especially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
 
@@ -778,7 +701,7 @@ contains
 #if defined(CASE_POISSON_DIRICHLET)
     ! No boundary integrals
 
-#elif defined(CASE_POISSON_NEUMANN)
+#elif defined(CASE_POISSON_DIRICHLET_NEUMANN)
     ! Initialise the linear form along the boundary
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
@@ -837,7 +760,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix)
 
       ! Save matrix to the collection.
-      ! They maybe used later, expecially in nonlinear problems.
+      ! They may be used later, especially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
 
@@ -950,7 +873,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrix)
 
       ! Save matrix to the collection.
-      ! They maybe used later, expecially in nonlinear problems.
+      ! They may be used later, especially in nonlinear problems.
       call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
           rproblem%RlevelInfo(i)%rmatrix,.true.,i)
 
@@ -1498,7 +1421,10 @@ contains
   integer :: i,iboundComp,iboundSeg
   type(t_boundaryRegion) :: rboundaryRegion
 
-
+  ! Prepare quick-access arrays of collection structure
+  rproblem%rcollection%IquickAccess(1) = rproblem%cproblemtype
+  rproblem%rcollection%IquickAccess(2) = rproblem%cproblemsubtype
+  
   do i=rproblem%ilvmin,rproblem%ilvmax
 
     ! Create a t_discreteBC structure where we store all discretised boundary
@@ -1507,13 +1433,14 @@ contains
 
     select case(rproblem%cproblemtype)
     case (POISSON_SCALAR)
-
-#if defined(CASE_POISSON_DIRICHLET)
-
+      rproblem%rcollection%IquickAccess(3) = 1
+      
       do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
-
+        rproblem%rcollection%IquickAccess(4) = iboundComp
+        
         do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
-
+          rproblem%rcollection%IquickAccess(5) = iboundSeg
+          
           ! We ask the boundary routines to create a "boundary region"
           ! - which is simply a part of the boundary corresponding to
           ! a boundary segment.  A boundary region roughly contains
@@ -1521,7 +1448,8 @@ contains
           ! endpoints are inside the region or not.
           call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,&
               rboundaryRegion)
-
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+          
           ! We use this boundary region and specify that we want to
           ! have Dirichlet boundary there. The following call does the
           ! following:
@@ -1533,39 +1461,12 @@ contains
           !   be applied to matrices and vectors
           ! - Add the calculated discrete BC`s to rdiscreteBC for
           !   later use.
-          rproblem%rcollection%IquickAccess(1) = 1
           call bcasm_newDirichletBConRealBD(&
               rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
               rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
               getBoundaryValues_Poisson,rproblem%rcollection)
         end do
       end do
-
-#elif defined(CASE_POISSON_NEUMANN)
-
-      ! Create boundary region - part 1
-      call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
-      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-      
-      rproblem%rcollection%IquickAccess(1) = 1
-      call bcasm_newDirichletBConRealBD(&
-          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
-          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Poisson,rproblem%rcollection)
-
-      ! Create boundary region - part 3
-      call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
-      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-      
-      rproblem%rcollection%IquickAccess(1) = 1
-      call bcasm_newDirichletBConRealBD(&
-          rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
-          rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
-          getBoundaryValues_Poisson,rproblem%rcollection)
-
-#else
-#error 'Test case is undefined.' 
-#endif
 
     case (SSE_SCALAR)
 
@@ -1651,7 +1552,7 @@ contains
 
       ! There are no essential boundary conditions to impose
 
-#elif defined(CASE_POISSON_NEUMANN)
+#elif defined(CASE_POISSON_DIRICHLET_NEUMANN)
 
       ! Create boundary region - part 2
       call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
@@ -1691,7 +1592,7 @@ contains
 
     case (SSE_SYSTEM1)
 
-      print *, "Not implxsemented yet"
+      print *, "Not implemented yet"
       stop
 
     case (SSE_SYSTEM2)
@@ -3950,40 +3851,5 @@ contains
   end select
 
   end subroutine
-
-  ! ***************************************************************************
-
-!<function>
-
-  pure function sse_getNVAR(rproblem) result(nvar)
-
-!<description>
-  ! Return the number of variables for the problem rproblem
-!</description>
-
-!<input>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(in) :: rproblem
-!</input>
-
-!<result>
-  ! Number of variables of the problem
-  integer :: nvar
-!</result>
-
-    select case(rproblem%cproblemtype)
-    case (POISSON_SCALAR)
-      nvar = 1
-    case (POISSON_SYSTEM)
-      nvar = 2
-    case (SSE_SCALAR)
-      nvar = 2
-    case (SSE_SYSTEM1,SSE_SYSTEM2)
-      nvar = 6
-    case default
-      nvar = 0
-    end select
-
-  end function sse_getNVAR
 
 end module sse_main
