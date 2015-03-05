@@ -36,26 +36,29 @@ module sse_base_corine
 !<publicvars>
 
   ! Bed friction in the momentum equation (=r) 
-  real(DP), public :: dr        = 0.0_DP
+  real(DP), public :: dr                  = 0.0_DP
 
   ! Gravitational constant in the momentum equation (=delta)
-  real(DP), public :: dDelta    = 0.0_DP
+  real(DP), public :: dDelta              = 0.0_DP
 
   ! Contribution of bedload transport in the bed evolution equation (=mu)
-  real(DP), public :: dmu       = 0.0_DP
+  real(DP), public :: dmu                 = 0.0_DP
 
   ! Constant to prevent the bed shear stress from blowing up (=h0) 
-  real(DP), public :: dh0       = 0.0_DP
+  real(DP), public :: dh0                 = 0.0_DP
 
   ! Ratio of diffusive timescale and the tidal period (=kappa) 
-  real(DP), public :: dkappa    = 0.0_DP
+  real(DP), public :: dkappa              = 0.0_DP
 
   ! Ratio of the deposition timescale and the tidal period (=a) 
-  real(DP), public :: da        = 0.0_DP
+  real(DP), public :: da                  = 0.0_DP
 
   ! Width of the basin (=W) 
-  real(DP), public :: dW        = 0.0_DP
+  real(DP), public :: dW                  = 0.0_DP
 
+  ! Flag indicating the existence of an analytical solution
+  logical, public :: bhasAnalyticSolution = .false.
+  
 !</publicvars>
 
 contains
@@ -87,13 +90,14 @@ contains
     call parlst_getvalue_string(rparlist, ssection, 'problemconfig', sconfig)
     
     ! Read parameters from parameter list (non-existing parameters are replaced by maximum value)
-    call parlst_getvalue_double(rparlist, sconfig, 'dr',     dr,     SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist, sconfig, 'dDelta', dDelta, SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dmu',    dmu,    SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sconfig, 'dW',     dW,     SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sconfig, 'da',     da,     SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist, sconfig, 'dh0',    dh0,    SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist, sconfig, 'dkappa', dkappa, SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'da',     da,     SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dW',     dW,     SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sconfig, 'dmu',    dmu,    SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sconfig, 'dr',     dr,     SYS_MAXREAL_DP)
+    call parlst_getvalue_logical(rparlist, sconfig, 'bhasAnalyticSolution', bhasAnalyticSolution, .false.)
     
   end subroutine sse_initParamCorine
 

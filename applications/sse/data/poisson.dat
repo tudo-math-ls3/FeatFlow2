@@ -14,10 +14,10 @@
 PROBLEMSUBTYPE = 0
 
 # Problem configuration (parameters)
-PROBLEMCONFIG = POISSON-0
+PROBLEMCONFIG = POISSON-%{POISSON.PROBLEMSUBTYPE}
 
 # Problem triangulation and discretisation
-PROBLEMTRIADISCR = POISSON_P2
+PROBLEMTRIADISCR = POISSON_P1
 
 ################################################################################
 [POISSON-0]

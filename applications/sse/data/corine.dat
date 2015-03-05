@@ -12,7 +12,7 @@
 PROBLEMSUBTYPE = 0
 
 # Problem configuration (parameters)
-PROBLEMCONFIG = CORINE-0
+PROBLEMCONFIG = CORINE-%{CORINE.PROBLEMSUBTYPE}
 
 # Problem triangulation and discretisation
 PROBLEMTRIADISCR = CORINE_P1

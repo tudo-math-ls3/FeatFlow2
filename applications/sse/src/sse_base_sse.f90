@@ -133,11 +133,11 @@ module sse_base_sse
   ! Vertical eddy viscosity (=Av0)
   real(DP), public :: dviscosity          = 0.0_DP
 
-  ! Flag indicating the existence of an analytical solution
-  logical, public :: bhasAnalyticSolution = .false.
-
   ! Gravitational acceleration (=g)
   real(DP), public :: dgravaccel          = 0.0_DP
+
+  ! Flag indicating the existence of an analytical solution
+  logical, public :: bhasAnalyticSolution = .false.
   
 !</publicvars>
 
@@ -170,23 +170,23 @@ contains
     call parlst_getvalue_string(rparlist, ssection, 'problemconfig', sconfig)
     
     ! Read parameters from parameter list (non-existing parameters are replaced by maximum value)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dlength',        dlength,     SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dlengthB',       dlengthB,    SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dwidth',         dwidth,      SYS_MAXREAL_DP)
-    call parlst_getvalue_int(rparlist,     sconfig, 'iwidthType',     iwidthType,      SYS_MAXINT)
-    call parlst_getvalue_int(rparlist,     sconfig, 'ibathymetryType',ibathymetryType, SYS_MAXINT)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dcoraccel',      dcoraccel,   SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dforcing',       dforcing,    SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dgravaccel',     dgravaccel,  SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist,  sconfig, 'dheight',        dheight,     SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist,  sconfig, 'dheight0',       dheight0,    SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist,  sconfig, 'dheightRatio',   dheightRatio,SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dforcing',       dforcing,    SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dcoraccel',      dcoraccel,   SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dtidalfreq',     dtidalfreq,  SYS_MAXREAL_DP)
-    call parlst_getvalue_int(rparlist,     sconfig, 'istressType',    istressType,     SYS_MAXINT)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dlength',        dlength,     SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dlengthB',       dlengthB,    SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist,  sconfig, 'dstress',        dstress,     SYS_MAXREAL_DP)
-    call parlst_getvalue_int(rparlist,     sconfig, 'iviscosityType', iviscosityType,  SYS_MAXINT)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dtidalfreq',     dtidalfreq,  SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist,  sconfig, 'dviscosity',     dviscosity,  SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist,  sconfig, 'dwidth',         dwidth,      SYS_MAXREAL_DP)
+    call parlst_getvalue_int(rparlist,     sconfig, 'ibathymetryType',ibathymetryType, SYS_MAXINT)
+    call parlst_getvalue_int(rparlist,     sconfig, 'istressType',    istressType,     SYS_MAXINT)
+    call parlst_getvalue_int(rparlist,     sconfig, 'iviscosityType', iviscosityType,  SYS_MAXINT)
+    call parlst_getvalue_int(rparlist,     sconfig, 'iwidthType',     iwidthType,      SYS_MAXINT)
     call parlst_getvalue_logical(rparlist, sconfig, 'bhasAnalyticSolution', bhasAnalyticSolution, .false.)
-    call parlst_getvalue_double(rparlist,  sconfig, 'dgravaccel',     dgravaccel,  SYS_MAXREAL_DP)
         
   end subroutine sse_initParamSSE
 

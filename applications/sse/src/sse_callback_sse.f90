@@ -11,6 +11,12 @@
 !# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !#
+!# 1.) sse_initMatVec_SSE
+!#     -> Initialises the matrices/vectors for the SSE problem
+!#
+!# 2.) sse_initDiscreteBC_SSE
+!#     -> Initialises the discrete version of the boundary conditions
+!#
 !# 1.) coeff_MatrixA_SSEre   /
 !#     coeff_MatrixA_SSEim   /
 !#     coeff_MatrixC1_SSE2re /
@@ -114,24 +120,27 @@
 
 module sse_callback_sse
 
-  use fsystem
-  use storage
-  use genoutput
-  use derivatives
+  use bcassembly
+  use bilinearformevaluation
   use boundary
-  use triangulation
-  use linearsystemscalar
-  use linearsystemblock
-  use element
-  use cubature
-  use spatialdiscretisation
-  use scalarpde
-  use domainintegration
   use collection
+  use cubature
+  use derivatives
   use discretebc
   use discretefbc
-  use pprocgradients
+  use domainintegration
+  use element
+  use fsystem
+  use genoutput
+  use linearformevaluation
+  use linearsystemblock
+  use linearsystemscalar
   use pprocerror
+  use pprocgradients
+  use scalarpde
+  use spatialdiscretisation
+  use storage
+  use triangulation
   
   use sse_base
   use sse_base_sse
@@ -140,6 +149,9 @@ module sse_callback_sse
 
   private
 
+  public :: sse_initMatVec_SSE
+  public :: sse_initDiscreteBC_SSE
+  
   public :: coeff_MatrixA_SSEre
   public :: coeff_MatrixA_SSEim
   public :: coeff_MatrixC1_SSE2re
@@ -187,6 +199,865 @@ module sse_callback_sse
 
 contains
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sse_initMatVec_SSE(rproblem)
+
+!<description>
+  ! Calculates the system matrix and RHS vector of the linear system
+  ! by discretising the problem with the default discretisation structure
+  ! in the problem structure.
+  ! Sets up a solution vector for the linear system.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,iboundarySeg
+
+  ! A boundary segment
+  type(t_boundaryRegion) :: rboundaryRegion
+
+  ! A bilinear and linear form describing the analytic problem to solve
+  type(t_bilinearForm) :: rform
+  type(t_linearForm) :: rlinform
+
+  select case(rproblem%cproblemtype)
+    case (SSE_SCALAR)
+    !---------------------------------------------------------------------------
+    !
+    ! Problem formulation in (test,trial)-notation
+    !
+    !  /                                                                         \
+    ! | (grad,-Re(A)*grad)                   (grad,Im(A)*grad)-\omega*(func,func) |
+    ! |                                                                           |
+    ! | (grad,-Im(A)*grad)+\omega(func,func) (grad,-Re(A)*grad)                   |
+    !  \                                                                         /
+    !
+    !   /     \   / \
+    !  | Re(N) | | 0 |
+    ! *|       |=|   |
+    !  | Im(N) | | 0 |
+    !   \     /   \ /
+
+    do i=rproblem%ilvmin,rproblem%ilvmax
+
+      ! Initialise the block matrix with default values based on
+      ! the discretisation.
+      call lsysbl_createMatrix(rproblem%RlevelInfo(i)%rdiscretisation,&
+          rproblem%RlevelInfo(i)%rmatrix)
+
+      ! Save matrix to the collection.
+      ! They may be used later, especially in nonlinear problems.
+      call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
+          rproblem%RlevelInfo(i)%rmatrix,.true.,i)
+
+      ! Now as the discretisation is set up, we can start to generate
+      ! the structure of the system matrix which is to solve.
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,&
+          1, 1, LSYSSC_MATRIX9)
+
+      ! Anisotropic diffusion matrix (real part)
+      rform%itermCount = 4
+      rform%ballCoeffConstant = .false.
+
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_X
+      rform%Idescriptors(1,3) = DER_DERIV_X
+      rform%Idescriptors(2,3) = DER_DERIV_Y
+      rform%Idescriptors(1,4) = DER_DERIV_Y
+      rform%Idescriptors(2,4) = DER_DERIV_Y
+
+      ! Assemble matrix block(1,1)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixA_SSEre,rproblem%rcollection)
+
+      ! Assemble matrix block(2,2)
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      ! Anisotropic diffusion matrix (imaginary part)
+      ! plus consistent mass matrix
+      rform%itermCount = 5
+      rform%ballCoeffConstant = .false.
+
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_X
+      rform%Idescriptors(1,3) = DER_DERIV_X
+      rform%Idescriptors(2,3) = DER_DERIV_Y
+      rform%Idescriptors(1,4) = DER_DERIV_Y
+      rform%Idescriptors(2,4) = DER_DERIV_Y
+      rform%Idescriptors(1,5) = DER_FUNC
+      rform%Idescriptors(2,5) = DER_FUNC
+
+      ! Duplicate matrix structure
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
+      ! Assemble matrix block(1,2)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixA_SSEim,rproblem%rcollection)
+
+      ! Assemble matrix block(2,1)
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),-1.0_DP)
+    end do
+
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rrhs,.true.)
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rvector,.true.)
+
+    ! Save the solution/RHS vector to the collection.
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
+
+  case (SSE_SYSTEM1)
+    !---------------------------------------------------------------------------
+    print *, "Not implemented!"
+    stop
+
+  case (SSE_SYSTEM2)
+    !---------------------------------------------------------------------------
+    !
+    ! Problem formulation in matrix notation
+    !
+    !  /                                                \   /       \   /     \
+    ! |     0     -omega*M  ReC_1  -ImC_1  ReC_2  -ImC_2 | |   ReN   | |   0   |
+    ! | omega*M        0    ImC_1   ReC_1  ImC_2   ReC_2 | |   ImN   | |   0   |
+    ! | B_x+D_1        0      A       0      0       0   | | ReTau_1 | | Reb_1 |
+    ! |     0      B_x+D_1    0       A      0       0   |*| ImTau_1 |=| Imb_1 |
+    ! | B_y+D_2        0      0       0      A       0   | | ReTau_2 | | Reb_2 |
+    ! |     0      B_y+D_2    0       0      0       A   | | ImTau_2 | | Imb_2 |
+    !  \                                                /   \       /   \     /
+    !
+    ! The definition of the matrices and vectors is given in the documentation.
+    !
+    do i=rproblem%ilvmin,rproblem%ilvmax
+
+      ! Initialise the block matrix with default values based on
+      ! the discretisation.
+      call lsysbl_createMatrix(rproblem%RlevelInfo(i)%rdiscretisation,&
+          rproblem%RlevelInfo(i)%rmatrix)
+
+      ! Save matrix to the collection.
+      ! They may be used later, especially in nonlinear problems.
+      call collct_setvalue_mat(rproblem%rcollection,"MATRIX",&
+          rproblem%RlevelInfo(i)%rmatrix,.true.,i)
+
+      ! Now as the discretisation is set up, we can start to generate
+      ! the structure of the system matrix which is to solve.
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,2,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,3,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,1,5,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,3,1,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,5,1,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,3,3,LSYSSC_MATRIX9)
+      call bilf_createMatrixStructure(rproblem%RlevelInfo(i)%rmatrix,5,5,LSYSSC_MATRIX9)
+
+      ! (1,2)-block -\omega*(w,Re(N))
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = -dtidalfreq
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          rcollection=rproblem%rcollection)
+
+      ! (2,1)-block \omega*(w,Im(N))
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,2),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,1),-1.0_DP)
+      
+      ! (3,3)-block (v_x,Re(tau_x)
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,3),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(2),&
+          rcollection=rproblem%rcollection)
+
+      ! (4,4)-block (v_x,Im(tau_x)
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,3),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(4,4),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      ! (5,5)-block (v_y,Re(tau_y)
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients(1)  = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,5),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(3),&
+          rcollection=rproblem%rcollection)
+
+      ! (6,6)-block (v_y,Im(tau_y)
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,5),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(6,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+      ! (1,3)-block (w,grad_x Re(a_11)*Re(tau_x) + grad_y Re(a_21)*Re(tau_y))
+      rform%itermCount = 2
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixC1_SSE2re,rproblem%rcollection)
+
+      ! (2,4)-block (w,grad_x Re(a_11)*Re(tau_x) + grad_y Re(a_21)*Re(tau_y))
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,4),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      ! (1,4)-block -(w,grad_x Im(a_11)*Im(tau_x) - grad_y Im(a_21)*Im(tau_y))
+      rform%itermCount = 2
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_FUNC
+      rform%Dcoefficients     = -1.0
+
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,3),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,4),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,4),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixC1_SSE2im,rproblem%rcollection)
+
+      ! (2,3)-block (w,grad_x Im(a_11)*Im(tau_x) + grad_y Im(a_21)*Im(tau_y))
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,4),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,3),-1.0_DP)
+
+      ! (1,5)-block (w,grad_x Re(a_12)*Re(tau_x) + grad_y Re(a_22)*Re(tau_y))
+      rform%itermCount = 2
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,5),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixC2_SSE2re,rproblem%rcollection)
+
+      ! (2,6)-block (w,grad_x Re(a_12)*Re(tau_x) + grad_y Re(a_22)*Re(tau_y))
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,5),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      ! (1,6)-block -(w,grad_x Im(a_12)*Im(tau_x) - grad_y Im(a_22)*Im(tau_y))
+      rform%itermCount = 2
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_FUNC
+      rform%Dcoefficients     = -1.0
+
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,5),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,6),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,6),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(1),&
+          coeff_MatrixC2_SSE2im,rproblem%rcollection)
+
+      ! (2,5)-block (w,grad_x Im(a_12)*Im(tau_x) + grad_y Im(a_22)*Im(tau_y))
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,6),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,5),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_scaleMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(2,5),-1.0_DP)
+
+      ! (3,1)-block (grad_x q_x,Re(N)) + boundary-term
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Dcoefficients     = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(2),&
+          rcollection=rproblem%rcollection)
+
+      ! (4,2)-block (grad_x q_x,Im(N)) + boundary-term
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(4,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      ! (5,1)-block (grad_y q_y,Re(N)) + boundary-term
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_DERIV_Y
+      rform%Dcoefficients     = 1.0
+
+      call bilf_buildMatrixScalar(rform,.true.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          rproblem%RlevelInfo(i)%RcubatureInfo(3),&
+          rcollection=rproblem%rcollection)
+
+      ! (6,2)-block (grad_y q_y,Im(N)) + boundary-term
+      call lsyssc_duplicateMatrix(&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(6,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
+
+      ! The contribution of the mass matrix evaluated along the
+      ! Neumann boundary needs to be included in the bilinear form.
+
+      do iboundarySeg = 1,3
+        
+        ! Create boundary region
+        call boundary_createRegion(rproblem%rboundary,1,iboundarySeg,rboundaryRegion)
+        select case(iboundarySeg)
+        case(1)
+          rboundaryRegion%iproperties = BDR_PROP_WITHEND
+        case(2)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+        case(3)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+        end select
+
+        ! (3,1)-block boundary term: (q_x,Re(N)*n_x)
+        ! (4,2)-block boundary term: (q_x,Im(N)*n_x) shares all data
+        rform%itermCount = 1
+        rform%ballCoeffConstant = .true.
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        rform%Dcoefficients     = 1.0
+
+        call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+            rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+            coeff_MatrixD1_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+
+        ! (5,1)-block boundary term: (q_y,Re(N)*n_y)
+        ! (6,2)-block boundary term: (q_y,Im(N)*n_y) shares all data
+        rform%itermCount = 1
+        rform%ballCoeffConstant = .true.
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        rform%Dcoefficients     = 1.0
+
+        call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+            rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+            coeff_MatrixD2_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+      end do
+      
+#elif defined(CASE_SSE_MARCHI)
+
+      ! There are no Neumann boundary conditions that need to be
+      ! included in the bilinear form.
+
+#elif defined(CASE_SSE_WALTERS)
+
+      ! Create boundary region - part 1
+      call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      ! (3,1)-block boundary term: (q_x,Re(N)*n_x)
+      ! (4,2)-block boundary term: (q_x,Im(N)*n_x) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          coeff_MatrixD1_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+      
+      ! (5,1)-block boundary term: (q_y,Re(N)*n_y)
+      ! (6,2)-block boundary term: (q_y,Im(N)*n_y) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          coeff_MatrixD2_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+
+      ! Create boundary region - part 2
+      call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      ! (3,1)-block boundary term: (q_x,Re(N)*n_x)
+      ! (4,2)-block boundary term: (q_x,Im(N)*n_x) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          coeff_MatrixD1_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+      
+      ! (5,1)-block boundary term: (q_y,Re(N)*n_y)
+      ! (6,2)-block boundary term: (q_y,Im(N)*n_y) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          coeff_MatrixD2_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+      
+      ! Create boundary region - part 4
+      call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      
+      ! (3,1)-block boundary term: (q_x,Re(N)*n_x)
+      ! (4,2)-block boundary term: (q_x,Im(N)*n_x) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(3,1),&
+          coeff_MatrixD1_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+      
+      ! (5,1)-block boundary term: (q_y,Re(N)*n_y)
+      ! (6,2)-block boundary term: (q_y,Im(N)*n_y) shares all data
+      rform%itermCount = 1
+      rform%ballCoeffConstant = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Dcoefficients     = 1.0
+      
+      call bilf_buildMatrixScalarBdr2D(rform,CUB_G5_1D,.false.,&
+          rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(5,1),&
+          coeff_MatrixD2_Bdr_SSE2,rboundaryRegion,rproblem%rcollection)
+
+#else
+#error 'Test case is undefined.' 
+#endif
+    end do
+
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rrhs,.true.)
+    call lsysbl_createVector(&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rdiscretisation,&
+        rproblem%rvector,.true.)
+
+    ! Save the solution/RHS vector to the collection.
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",rproblem%rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",rproblem%rvector,.true.)
+
+    ! The vector structure is ready but the entries are missing.
+    ! So the next thing is to calculate the content of that vector.
+
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
+
+    ! The contribution of the mass matrix evaluated along the
+    ! Neumann boundary needs to be included in the bilinear form.
+    
+    ! Create boundary region
+    call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 0_I32!BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+    ! Initialise the linear form along the boundary
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC
+
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHSb1_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(4),coeff_RHSb1_Bdr_SSEim,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(5),coeff_RHSb2_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
+    
+#elif defined(CASE_SSE_MARCHI)
+    
+    do iboundarySeg = 1,4
+
+      ! Create boundary region
+      call boundary_createRegion(rproblem%rboundary,1,iboundarySeg,rboundaryRegion)
+      
+      ! Initialise the linear form along the boundary
+      rlinform%itermCount = 1
+      rlinform%Idescriptors(1) = DER_FUNC
+      
+      ! Assemble the linear forms
+      call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+          rproblem%rrhs%RvectorBlock(3),coeff_RHSb1_Bdr_SSEre,rboundaryRegion)
+      call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+          rproblem%rrhs%RvectorBlock(4),coeff_RHSb1_Bdr_SSEim,rboundaryRegion)
+      call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+          rproblem%rrhs%RvectorBlock(5),coeff_RHSb2_Bdr_SSEre,rboundaryRegion)
+      call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
+      
+    end do
+
+#elif defined(CASE_SSE_WALTERS)
+
+    ! Initialise the linear form along the boundary
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC
+
+    ! Create boundary region - part 1
+    call boundary_createRegion(rproblem%rboundary,1,1,rboundaryRegion)
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHSb1_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(4),coeff_RHSb1_Bdr_SSEim,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(5),coeff_RHSb2_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
+
+    ! Create boundary region - part 2
+    call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHSb1_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(4),coeff_RHSb1_Bdr_SSEim,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(5),coeff_RHSb2_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
+
+    ! Create boundary region - part 4
+    call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+    
+    ! Assemble the linear forms
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(3),coeff_RHSb1_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(4),coeff_RHSb1_Bdr_SSEim,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(5),coeff_RHSb2_Bdr_SSEre,rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G5_1D,.false.,&
+        rproblem%rrhs%RvectorBlock(6),coeff_RHSb2_Bdr_SSEim,rboundaryRegion)
+    
+#else
+#error 'Test case is undefined.' 
+#endif
+  end select
+
+  end subroutine sse_initMatVec_SSE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sse_initDiscreteBC_SSE(rproblem)
+
+!<description>
+  ! This calculates the discrete version of the boundary conditions and
+  ! assigns it to the system matrix and RHS vector.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  type(t_boundaryRegion) :: rboundaryRegion
+  integer :: i,iboundSeg
+  
+  ! Prepare quick-access arrays of collection structure
+  rproblem%rcollection%IquickAccess(1) = rproblem%cproblemtype
+  rproblem%rcollection%IquickAccess(2) = rproblem%cproblemsubtype
+
+  ! Create a t_discreteBC structure where we store all discretised
+  ! boundary conditions.
+  do i=rproblem%ilvmin,rproblem%ilvmax
+    call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
+  end do
+
+  select case(rproblem%cproblemtype)
+  case (SSE_SCALAR)
+
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
+
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      do i=rproblem%ilvmin,rproblem%ilvmax        
+        ! Real part of the solution
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSEre,rproblem%rcollection)
+        
+        ! Imaginary part
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSEim,rproblem%rcollection)
+      end do
+
+#elif defined(CASE_SSE_MARCHI)
+
+      do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
+
+        do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
+
+          ! We ask the boundary routines to create a "boundary region"
+          ! - which is simply a part of the boundary corresponding to
+          ! a boundary segment.  A boundary region roughly contains
+          ! the type, the min/max parameter value and whether the
+          ! endpoints are inside the region or not.
+          call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,&
+              rboundaryRegion)
+
+          do i=rproblem%ilvmin,rproblem%ilvmax    
+            ! Real part of the solution
+            call bcasm_newDirichletBConRealBD(&
+                rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+                rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+                getBoundaryValues_SSEre,rproblem%rcollection)
+            
+            ! Imaginary part
+            call bcasm_newDirichletBConRealBD(&
+                rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+                rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+                getBoundaryValues_SSEim,rproblem%rcollection)
+          end do
+          
+        end do
+      end do
+      
+#elif defined(CASE_SSE_WALTERS)
+
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      do i=rproblem%ilvmin,rproblem%ilvmax
+        ! Real part of the solution
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSEre,rproblem%rcollection)
+        
+        ! Imaginary part
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSEim,rproblem%rcollection)
+      end do
+
+#else
+#error 'Test case is undefined.' 
+#endif
+      
+    case (SSE_SYSTEM1)
+      
+      print *, "Not implemented yet"
+      stop
+      
+    case (SSE_SYSTEM2)
+      
+#if defined(CASE_SSE_ALEX) || defined(CASE_SSE_WINANT)
+      
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      
+      do iboundSeg = 1,3
+        
+        call boundary_createRegion(rproblem%rboundary,1,iboundSeg,rboundaryRegion)
+        
+        select case(iboundSeg)
+        case(1)
+          rboundaryRegion%iproperties = BDR_PROP_WITHEND
+        case(2)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+        case(3)
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+        end select
+
+        do i=rproblem%ilvmin,rproblem%ilvmax    
+          ! Real part of the solution $Re(\tau_x)$
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,3,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues3_SSE2,rproblem%rcollection)
+          
+          ! Imaginary part of the solution $Im(\tau_x)$
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,4,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues4_SSE2,rproblem%rcollection)
+          
+          ! Real part of the solution $Re(\tau_y)$
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,5,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues5_SSE2,rproblem%rcollection)
+          
+          ! Imaginary part of the solution $Im(\tau_y)$
+          call bcasm_newDirichletBConRealBD(&
+              rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,6,&
+              rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+              getBoundaryValues6_SSE2,rproblem%rcollection)
+        end do
+      end do
+
+#elif defined(CASE_SSE_MARCHI)
+
+      do iboundComp=1,boundary_igetNBoundComp(rproblem%rboundary)
+
+        do iboundSeg=1,boundary_igetNsegments(rproblem%rboundary,iboundComp)
+
+          ! We ask the boundary routines to create a "boundary region"
+          ! - which is simply a part of the boundary corresponding to
+          ! a boundary segment.  A boundary region roughly contains
+          ! the type, the min/max parameter value and whether the
+          ! endpoints are inside the region or not.
+          call boundary_createRegion(rproblem%rboundary,iboundComp,iboundSeg,&
+              rboundaryRegion)
+
+          do i=rproblem%ilvmin,rproblem%ilvmax    
+            ! Real part of the solution
+            call bcasm_newDirichletBConRealBD(&
+                rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+                rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+                getBoundaryValues_SSE2re,rproblem%rcollection)
+            
+            ! Imaginary part
+            call bcasm_newDirichletBConRealBD(&
+                rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+                rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+                getBoundaryValues_SSE2im,rproblem%rcollection)
+          end do
+        end do
+      end do
+      
+#elif defined(CASE_SSE_WALTERS)
+
+      ! We ask the boundary routines to create a "boundary region"
+      ! - which is simply a part of the boundary corresponding to
+      ! a boundary segment.  A boundary region roughly contains
+      ! the type, the min/max parameter value and whether the
+      ! endpoints are inside the region or not.
+      call boundary_createRegion(rproblem%rboundary,1,3,rboundaryRegion)
+      rboundaryRegion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+
+      do i=rproblem%ilvmin,rproblem%ilvmax    
+        ! Real part of the solution
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,1,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSE2re,rproblem%rcollection)
+        
+        ! Imaginary part
+        call bcasm_newDirichletBConRealBD(&
+            rproblem%RlevelInfo(i)%rmatrix%p_rblockDiscrTest,2,&
+            rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
+            getBoundaryValues_SSE2im,rproblem%rcollection)
+      end do
+      
+#else
+#error 'Test case is undefined.' 
+#endif
+
+    case default
+      call output_line("Invalid type of problem.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sse_initDiscreteBC_SSE")
+      call sys_halt()
+    end select
+    
+  end subroutine sse_initDiscreteBC_SSE
+  
   ! ***************************************************************************
 
 !<subroutine>

@@ -15,14 +15,14 @@
 PROBLEMSUBTYPE = 0
 
 # Problem configuration (parameters)
-PROBLEMCONFIG = SSE-ALEX
+PROBLEMCONFIG = SSE-%{SSE.PROBLEMSUBTYPE}
 
 # Problem triangulation and discretisation
 PROBLEMTRIADISCR = SSE_P1
 
 
 ################################################################################
-[SSE-ALEX]
+[SSE-0]
 ################################################################################
 
 # Problem specific constants
@@ -47,7 +47,7 @@ bhasAnalyticSolution = T
 dgravaccel           = 10.0
 
 ################################################################################
-[SSE-MARCHI]
+[SSE-1]
 ################################################################################
 
 # Marchi benchmark
@@ -70,7 +70,7 @@ bhasAnalyticSolution = F
 dgravaccel           = 10.0
 
 ################################################################################
-[SSE-WALTERS]
+[SSE-2]
 ################################################################################
 
 # Walters benchmark
@@ -93,7 +93,7 @@ bhasAnalyticSolution = F
 dgravaccel           = 10.0
 
 ################################################################################
-[SSE-WINANT]
+[SSE-3]
 ################################################################################
 
 # Winant benchark

@@ -42,14 +42,17 @@ module sse_base_poisson
 !<publicvars>
 
   ! Scaling parameter
-  real(DP), public :: dpoisson   = 0.0_DP
+  real(DP), public :: dpoisson            = 0.0_DP
   
   ! Dirichlet boundary value (=u_D)
-  real(DP), public :: ddirichlet = 0.0_DP
+  real(DP), public :: ddirichlet          = 0.0_DP
 
   ! Neumann boundary value (=g)
-  real(DP), public :: dneumann   = 0.0_DP
+  real(DP), public :: dneumann            = 0.0_DP
 
+  ! Flag indicating the existence of an analytical solution
+  logical, public :: bhasAnalyticSolution = .false.
+  
 !</publicvars>
 
 contains
@@ -84,6 +87,7 @@ contains
     call parlst_getvalue_double(rparlist, sconfig, 'dpoisson',   dpoisson,   SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist, sconfig, 'ddirichlet', ddirichlet, SYS_MAXREAL_DP)
     call parlst_getvalue_double(rparlist, sconfig, 'dneumann',   dneumann,   SYS_MAXREAL_DP)
+    call parlst_getvalue_logical(rparlist, sconfig, 'bhasAnalyticSolution', bhasAnalyticSolution, .false.)
     
   end subroutine sse_initParamPoisson
 
