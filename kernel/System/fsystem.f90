@@ -308,30 +308,20 @@ module fsystem
   real(DP), public :: SYS_PI
 
   ! internal constant for infinity
-  real(SP), parameter, public :: SYS_INFINITY_SP = huge(1.0_SP)
-  real(DP), parameter, public :: SYS_INFINITY_DP = huge(1.0_DP)
-  real(QP), parameter, public :: SYS_INFINITY_QP = huge(1.0_QP)
-
-  ! increment value = 1
-  integer, parameter, public :: INCX = 1
+  integer,      parameter, public :: SYS_INFINITY_INT = huge(1)
+  integer(I8),  parameter, public :: SYS_INFINITY_I8  = huge(1_I8)
+  integer(I16), parameter, public :: SYS_INFINITY_I16 = huge(1_I16)
+  integer(I32), parameter, public :: SYS_INFINITY_I32 = huge(1_I32)
+  integer(I64), parameter, public :: SYS_INFINITY_I64 = huge(1_I64)
+  real(SP),     parameter, public :: SYS_INFINITY_SP  = huge(1.0_SP)
+  real(DP),     parameter, public :: SYS_INFINITY_DP  = huge(1.0_DP)
+  real(QP),     parameter, public :: SYS_INFINITY_QP  = huge(1.0_QP)
 
   ! flag for appending data to a file
   integer, parameter, public :: SYS_APPEND = 0
 
   ! flag for replacing a file
   integer, parameter, public :: SYS_REPLACE = 1
-
-!</constantblock>
-
-!<constantblock description="system signals">
-
-  integer, parameter, public :: SIGILL  =  4
-  integer, parameter, public :: SIGTRAP =  5
-  integer, parameter, public :: SIGABRT =  6
-  integer, parameter, public :: SIGEMT  =  7
-  integer, parameter, public :: SIGFPE  =  8
-  integer, parameter, public :: SIGBUS  = 10
-  integer, parameter, public :: SIGSEGV = 11
 
 !</constantblock>
 
