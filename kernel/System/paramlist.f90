@@ -173,6 +173,7 @@
 !#      parlst_getvalue_int
 !#      parlst_getvalue_single
 !#      parlst_getvalue_double
+!#      parlst_getvalue_logical
 !#      -> Get the string/int/real value of a parameter from the parameter list
 !#
 !# 10.) parlst_addvalue
@@ -389,6 +390,12 @@ module paramlist
     module procedure parlst_getvalue_double_fetch
     module procedure parlst_getvalue_double_indir
     module procedure parlst_getvalue_double_direct
+  end interface parlst_getvalue_double
+
+  interface parlst_getvalue_logical
+    module procedure parlst_getvalue_logical_fetch
+    module procedure parlst_getvalue_logical_indir
+    module procedure parlst_getvalue_logical_direct
   end interface
 
   interface parlst_findvalue
@@ -408,6 +415,7 @@ module paramlist
   public :: parlst_getvalue_int
   public :: parlst_getvalue_single
   public :: parlst_getvalue_double
+  public :: parlst_getvalue_logical
   public :: parlst_addvalue
   public :: parlst_setvalue
   public :: parlst_getStringRepresentation
@@ -1572,8 +1580,8 @@ contains
 !<description>
 
   ! Returns the value of a parameter in the section ssection.
-  ! If the value does not exist, idefault is returned.
-  ! If idefault is not given, an error will be thrown.
+  ! If the value does not exist, ddefault is returned.
+  ! If ddefault is not given, an error will be thrown.
   !
   ! If the value is an array of doubles, the optional parameter
   ! iarrayindex>=0 allows to specify the number of the double to be
@@ -1769,6 +1777,214 @@ contains
   end if
 
   dvalue = sys_StringToDouble(svalue,'(E27.19E3)')
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_logical_indir (rsection, sparameter, bvalue, &
+                                            bdefault, iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, bdefault is returned.
+  ! If bdefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of logicals, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the logical to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  logical, intent(in), optional :: bdefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  logical, intent(out) :: bvalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(bdefault)) then
+    write (sdefault,'(L1)') bdefault
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       sdefault, iarrayindex)
+  else
+    call parlst_getvalue_string_indir (rsection, sparameter, svalue, &
+                                       isubstring=iarrayindex)
+  end if
+
+  read (svalue,'(L1)') bvalue
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine parlst_getvalue_logical_fetch (rsection, iparameter, bvalue, &
+                                            bexists, iarrayindex)
+
+!<description>
+
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  !
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  !
+  ! If the value is an array of logicals, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the logical to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The number of the parameter.
+  integer, intent(in) :: iparameter
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  logical, intent(out) :: bvalue
+
+  ! OPTIONAL: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: svalue
+
+  write (svalue,'(L1)') .false.
+  call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
+                                     bexists, iarrayindex)
+
+  write (svalue,'(L1)') bvalue
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine parlst_getvalue_logical_direct (rparlist, ssectionName, &
+                                             sparameter, bvalue, bdefault,&
+                                             iarrayindex)
+!<description>
+
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, bdefault is returned.
+  ! If bdefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of logicals, the optional parameter
+  ! iarrayindex>=0 allows to specify the number of the logical to be
+  ! returned; iarrayindex=0 returns the value directly behind the '='
+  ! sign in the line of the parameter, iarrayindex>0 returns the
+  ! array-entry in the lines below the parameter.
+  !
+  ! When omitting iarrayindex, the value directly behind the '=' sign
+  ! is returned.
+
+!</description>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The section name - '' identifies the unnamed section.
+  character(LEN=*), intent(in) :: ssectionName
+
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! OPTIONAL: A default value
+  logical, intent(in), optional :: bdefault
+
+  ! OPTIONAL: The number of the arrayindex to be returned.
+  ! =0: returns the integer directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns array index  iarrayindex.
+  integer, intent(in), optional :: iarrayindex
+
+!</input>
+
+!<output>
+
+  ! The value of the parameter
+  logical, intent(out) :: bvalue
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
+
+  ! Call the string routine, perform a conversion afterwards.
+  if (present(bdefault)) then
+    write (sdefault,'(L1)') bdefault
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault, &
+                                        iarrayindex)
+  else
+    call parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, &
+                                        isubstring=iarrayindex)
+  end if
+
+  write (svalue,'(L1)') bvalue
 
   end subroutine
 
