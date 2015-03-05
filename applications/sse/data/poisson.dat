@@ -1,0 +1,233 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+# This is the main configuration file for the Poisson problem
+################################################################################
+[POISSON]
+################################################################################
+
+# Problem sub-type
+#
+# =0: Pure Dirichlet problem
+# =1: Mixed Dirichlet-Neumann problem
+# =2: Pure Neumann problem
+PROBLEMSUBTYPE = 0
+
+# Problem configuration (parameters)
+PROBLEMCONFIG = POISSON-0
+
+# Problem triangulation and discretisation
+PROBLEMTRIADISCR = POISSON_P2
+
+################################################################################
+[POISSON-0]
+################################################################################
+
+# Problem specific constants
+
+dpoisson   = 1.0
+ddirichlet = 3.0
+
+################################################################################
+[POISSON-1]
+################################################################################
+
+# Problem specific constants
+
+dpoisson   = 1.0
+ddirichlet = 3.0
+dneumann   = 0.0
+
+################################################################################
+[POISSON-2]
+################################################################################
+
+# Problem specific constants
+
+dpoisson   = 1.0
+dneumann   = 0.0
+
+################################################################################
+[POISSON_P1]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P1
+
+# Cubature type
+CUBATURETYPE = QG3_T
+
+################################################################################
+[POISSON_P2]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2
+
+# Cubature type
+CUBATURETYPE = QG4_T
+
+################################################################################
+[POISSON_P2E]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE = EL_P2E
+
+# Cubature type
+CUBATURETYPE = QG5_T
+
+################################################################################
+[POISSON_P2P1]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) =
+                 EL_P1
+                 EL_P2
+                 EL_P2
+
+# Cubature type
+CUBATURETYPE(3) =
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
+[POISSON_P2EP1]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = TRIA.prm
+
+# Domain triangulation
+TRIFILE = TRIA.tri
+
+# Element type
+ELEMENTTYPE(3) =
+                 EL_P1
+                 EL_P2E
+                 EL_P2E
+
+# Cubature type
+CUBATURETYPE(3) =
+                  QG4_T
+                  QG5_T
+                  QG5_T
+
+################################################################################
+[POISSON_Q1]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q1
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[POISSON_Q2]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q2
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[POISSON_Q3]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE = EL_Q3
+
+# Cubature type
+CUBATURETYPE = AUTO_G6
+
+################################################################################
+[POISSON_Q2Q1]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE(3) =
+                 EL_Q1
+                 EL_Q2
+                 EL_Q2
+
+# Cubature type
+CUBATURETYPE(3) =
+                  AUTO_G6
+                  AUTO_G6
+                  AUTO_G6
+
+################################################################################
+[POISSON_Q3Q2]
+################################################################################
+
+# Boundary parametrisation
+PRMFILE = QUAD.prm
+
+# Domain triangulation
+TRIFILE = QUAD.tri
+
+# Element type
+ELEMENTTYPE(3) =
+                 EL_Q2
+                 EL_Q3
+                 EL_Q3
+
+# Cubature type
+CUBATURETYPE(3) =
+                  AUTO_G6
+                  AUTO_G6
+                  AUTO_G6
+                  

@@ -1,4 +1,27 @@
-# This is the main configuration file for the sea surface elevation application
+# -*- mode: any-ini; -*-
+
+################################################################################
+# This is the main configuration file for the elliptic problem solver SSE      #
+################################################################################
+
+simportdatafiles(3) =
+  'poisson.dat'
+  'sse.dat'
+  'corine.dat'
+
+################################################################################
+
+# Problem type
+
+# =0: Standard Poisson problem
+# =1: Standard Poisson problem as first-order system
+# =2: SSE as scalar anisotropic diffusion problem
+# =3: SSE as first-order system (\sigma = A\nabla N)
+# =4: SSE as first-order system (\sigma = \nabla N)
+# =5: Corine`s problem
+PROBLEMTYPE = 0
+
+################################################################################
 
 # Minimum multigrid level
 NLMIN = 1
@@ -7,9 +30,7 @@ NLMIN = 1
 NLMAX = 6
 
 # Minimal grid level to start with in convergence study
-ILMIN = 6
-
-# Minimum grid level for convergence study
+ILMIN = 3
 
 # Sort strategy
 SORTSTRATEGY =
@@ -24,20 +45,6 @@ GRADTYPE = 1
 # =1: element-wise patch-recovery
 # =2: face-wise patch-recovery
 GRADSUBTYPE = 0
-
-# Problem type
-# =0: Standard Poisson problem
-# =1: Standard Poisson problem as first-order system
-# =2: SSE as scalar anisotropic diffusion problem
-# =3: SSE as first-order system (\sigma = A\nabla N)
-# =4: SSE as first-order system (\sigma = \nabla N)
-PROBLEMTYPE = 1
-
-# Name of configuration
-#CONFIG = QUAD_Q1_POISSON_SCALAR
-CONFIG = QUAD_Q2Q1_POISSON_SYSTEM
-#CONFIG = QUAD_Q1_SSE_SCALAR
-#CONFIG = QUAD_Q2Q1_SSE_SYSTEM
 
 # This defines a percentage factor (0..1) how far the fine mesh
 # is disturbed. Should usually be set to 0.0 except for debug
@@ -136,326 +143,5 @@ DEPSREL = 0e+0
 # Absolute stopping criterion
 DEPSABS = 1e-12
 
-################################################################################
-[TRIA_P1_POISSON_SCALAR-S]
-################################################################################
 
-# Boundary parametrisation
-PRMFILE = TRIA.prm
 
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P1
-
-# Cubature type
-CUBATURETYPE = QG3_T
-
-################################################################################
-[TRIA_P2_POISSON_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = TRIA.prm
-
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P2
-
-# Cubature type
-CUBATURETYPE = QG4_T
-
-################################################################################
-[TRIA_P2E_POISSON_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = TRIA.prm
-
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P2E
-
-# Cubature type
-CUBATURETYPE = QG5_T
-
-################################################################################
-[TRIA_P2P1_POISSON_SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = TRIA.prm
-
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_P1
-                 EL_P2
-                 EL_P2
-
-# Cubature type
-CUBATURETYPE(3) =
-                  QG4_T
-                  QG5_T
-                  QG5_T
-
-################################################################################
-[TRIA_P2EP1_POISSON_SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = TRIA.prm
-
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_P1
-                 EL_P2E
-                 EL_P2E
-
-# Cubature type
-CUBATURETYPE(3) =
-                  QG4_T
-                  QG5_T
-                  QG5_T
-
-################################################################################
-[QUAD_Q1_POISSON_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = QUAD.prm
-
-# Domain triangulation
-TRIFILE = QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q1
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[QUAD_Q2_POISSON_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = QUAD.prm
-
-# Domain triangulation
-TRIFILE = QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q2
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[QUAD_Q3_POISSON_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = QUAD.prm
-
-# Domain triangulation
-TRIFILE = QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q3
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[QUAD_Q2Q1_POISSON_SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = QUAD.prm
-
-# Domain triangulation
-TRIFILE = QUAD.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_Q1
-                 EL_Q2
-                 EL_Q2
-
-# Cubature type
-CUBATURETYPE(3) =
-                  AUTO_G6
-                  AUTO_G6
-                  AUTO_G6
-
-################################################################################
-[TRIA_P1_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_TRIA.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P1
-
-# Cubature type
-CUBATURETYPE = QG3_T
-
-################################################################################
-[TRIA_P2_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_TRIA.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P2
-
-# Cubature type
-CUBATURETYPE = QG4_T
-
-################################################################################
-[TRIA_P2E_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_TRIA.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P2E
-
-# Cubature type
-CUBATURETYPE = QG5_T
-
-################################################################################
-[TRIA_P2P1_SSE_SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_TRIA.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_TRIA.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_P1
-                 EL_P2
-                 EL_P2
-
-# Cubature type
-CUBATURETYPE(3) =
-                  QG4_T
-                  QG5_T
-                  QG5_T
-
-################################################################################
-[TRIA_P2EP1_SSE__SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_TRIA.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_TRIA.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_P1
-                 EL_P2E
-                 EL_P2E
-
-# Cubature type
-CUBATURETYPE(3) =
-                  QG4_T
-                  QG5_T
-                  QG5_T
-
-################################################################################
-[QUAD_Q1_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_QUAD.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q1
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[QUAD_Q2_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_QUAD.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q2
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[QUAD_Q3_SSE_SCALAR]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_QUAD.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q3
-
-# Cubature type
-CUBATURETYPE = AUTO
-
-################################################################################
-[QUAD_Q2Q1_SSE_SYSTEM]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = SSE_ALEX_FIXED_QUAD.prm
-
-# Domain triangulation
-TRIFILE = SSE_ALEX_FIXED_QUAD.tri
-
-# Element type
-ELEMENTTYPE(3) =
-                 EL_Q1
-                 EL_Q2
-                 EL_Q2
-
-# Cubature type
-CUBATURETYPE(3) =
-                  AUTO_G6
-                  AUTO_G6
-                  AUTO_G6
