@@ -253,9 +253,10 @@ contains
         rtimestep%DmultistepWeights = TSTEP_RK4
 
       case default
-        allocate(rtimestep%DmultistepWeights(&
-            abs(rtimestep%multisteps)))
-        rtimestep%DmultistepWeights = 1._DP
+        call output_line('Number of Runge-Kutta steps must be specified explicitly!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_createTimestepDirect')
+        call sys_halt()
       end select
 
       ! Allocate array of temporal vectors
