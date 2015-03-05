@@ -190,7 +190,7 @@
 !# 49.) lsyssc_spreadVector
 !#      -> Spreads a scalar vector into another scalar vector
 !#
-!# 50.) lsyssc_spreadMatrix
+!# 50.) lsyssc_spreadMatrix / lssysc_spreadDiagMatrix
 !#      -> Spreads a scalar matrix into another scalar matrix
 !#
 !# 51.) lsyssc_packVector
@@ -975,6 +975,7 @@ module linearsystemscalar
   public :: lsyssc_releaseMatrixContent
   public :: lsyssc_spreadVector
   public :: lsyssc_spreadMatrix
+  public :: lsyssc_spreadDiagMatrix
   public :: lsyssc_packVector
   public :: lsyssc_createFullMatrix
   
@@ -26157,8 +26158,10 @@ contains
   subroutine lsyssc_spreadMatrix(rmatrix1, rmatrix2)
 
 !<description>
-    ! This subroutine spreads a scalar matrix which is not stored in interleave
-    ! format into another matrix which is stored in interleave format.
+    ! This subroutine spreads the scalar matrix rmatrix1 which is not
+    ! stored in interleave format into another scalar matrix rmatrix2
+    ! which is stored in interleave format. Note that both matrices
+    ! must have the same matrix format.
 !</description>
 
 !<input>
@@ -26177,7 +26180,7 @@ contains
     real(SP), dimension(:), pointer :: p_Fdata1,p_Fdata2
     integer, dimension(:), pointer :: p_Idata1,p_Idata2
 
-    ! Source matrices must not be stored in interleave format
+    ! Source matrix must not be stored in interleave format
     if (rmatrix1%NVAR .ne. 1) then
       call output_line('Source matrix must not be stored in interleave format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
@@ -26201,13 +26204,13 @@ contains
         call lsyssc_getbase_double(rmatrix1, p_Ddata1)
         call lsyssc_getbase_double(rmatrix2, p_Ddata2)
         call do_spreadDP(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
-                           rmatrix2%NA, p_Ddata2)
+                         rmatrix2%NA, p_Ddata2)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix1, p_Fdata1)
         call lsyssc_getbase_single(rmatrix2, p_Fdata2)
         call do_spreadSP(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
-                           rmatrix2%NA, p_Fdata2)
+                         rmatrix2%NA, p_Fdata2)
 
       case (ST_INT)
         call lsyssc_getbase_int(rmatrix1, p_Idata1)
@@ -26227,13 +26230,13 @@ contains
         call lsyssc_getbase_double(rmatrix1, p_Ddata1)
         call lsyssc_getbase_double(rmatrix2, p_Ddata2)
         call do_spreadDP(p_Ddata1, rmatrix2%NVAR, 1,&
-                           rmatrix2%NA, p_Ddata2)
+                         rmatrix2%NA, p_Ddata2)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix1, p_Fdata1)
         call lsyssc_getbase_single(rmatrix2, p_Fdata2)
         call do_spreadSP(p_Fdata1, rmatrix2%NVAR, 1,&
-                           rmatrix2%NA, p_Fdata2)
+                         rmatrix2%NA, p_Fdata2)
 
       case (ST_INT)
         call lsyssc_getbase_int(rmatrix1, p_Idata1)
@@ -26304,6 +26307,279 @@ contains
       end do
 
     end subroutine
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_spreadDiagMatrix(rmatrix1, rmatrix2)
+
+!<description>
+    ! This subroutine spreads the scalar diagonal matrix rmatrix2
+    ! which is not stored in interleave format into another scalar
+    ! matrix rmatrix2 which is stored in interleave format. Note that
+    ! rmatrix1 must be stored in diagonal format.
+!</description>
+
+!<input>
+    ! Scalar source matrix
+    type(t_matrixScalar), intent(in) :: rmatrix1
+!</input>
+
+!<inputoutput>
+    ! Scalar destination matrix in interleave format
+    type(t_matrixScalar), intent(inout) :: rmatrix2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
+    real(SP), dimension(:), pointer :: p_Fdata1,p_Fdata2
+    integer, dimension(:), pointer :: p_Idata1,p_Idata2
+    integer, dimension(:), pointer :: p_Kdiagonal2,p_Kld2
+
+    ! Source matrix must not be stored in interleave format
+    if (rmatrix1%NVAR .ne. 1) then
+      call output_line('Source matrix must not be stored in interleave format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+      call sys_halt()
+    end if
+
+    ! Source matrix must be stored in diagonal format
+    if (rmatrix1%cmatrixFormat .ne. LSYSSC_MATRIXD) then
+      call output_line('Source matrix must be stored in diagonal format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+      call sys_halt()
+    end if
+
+    ! Source and destination matrix must have the same data format
+    if (rmatrix1%cdataType .ne. rmatrix2%cdataType) then
+      call output_line('Source and destination matrix must have the same data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+      call sys_halt()
+    end if
+    
+    ! What type of matrix format are we?
+    select case (rmatrix2%cmatrixFormat)
+    case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      call lsyssc_getbase_Kld(rmatrix2, p_Kld2)
+      
+      ! Ok, now we can copy the matrices
+      select case (rmatrix2%cinterleavematrixFormat)
+        
+      case (LSYSSC_MATRIXUNDEFINED)
+        ! Destination matrix is identical to source matrix
+        call lsyssc_duplicateMatrix (rmatrix1,rmatrix2,&
+            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+        
+      case (LSYSSC_MATRIX1)
+        ! Clear destination matrix
+        call lsyssc_clearMatrix(rmatrix2)
+
+        ! Spread diagonal matrix
+        select case (rmatrix1%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix1, p_Ddata1)
+          call lsyssc_getbase_double(rmatrix2, p_Ddata2)
+          call do_spreadDiagDP(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Ddata2)
+
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix1, p_Fdata1)
+          call lsyssc_getbase_single(rmatrix2, p_Fdata2)
+          call do_spreadDiagSP(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Fdata2)
+
+        case (ST_INT)
+          call lsyssc_getbase_int(rmatrix1, p_Idata1)
+          call lsyssc_getbase_int(rmatrix2, p_Idata2)
+          call do_spreadDiagInt(p_Idata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                                rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Idata2)
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+          call sys_halt()
+        end select
+
+      case (LSYSSC_MATRIXD)
+        ! Clear destination matrix
+        call lsyssc_clearMatrix(rmatrix2)
+
+        ! Spread diagonal matrix
+        select case (rmatrix1%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix1, p_Ddata1)
+          call lsyssc_getbase_double(rmatrix2, p_Ddata2)
+          call do_spreadDiagDP(p_Ddata1, rmatrix2%NVAR, 1,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Ddata2)
+
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix1, p_Fdata1)
+          call lsyssc_getbase_single(rmatrix2, p_Fdata2)
+          call do_spreadDiagSP(p_Fdata1, rmatrix2%NVAR, 1,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Fdata2)
+          
+        case (ST_INT)
+          call lsyssc_getbase_int(rmatrix1, p_Idata1)
+          call lsyssc_getbase_int(rmatrix2, p_Idata2)
+          call do_spreadDiagInt(p_Idata1, rmatrix2%NVAR, 1,&
+                                rmatrix2%NA, rmatrix2%NEQ, p_Kld2, p_Idata2)
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+        call sys_halt()
+      end select
+
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      call lsyssc_getbase_Kdiagonal(rmatrix2, p_Kdiagonal2)
+
+      ! Ok, now we can copy the matrices
+      select case (rmatrix2%cinterleavematrixFormat)
+        
+      case (LSYSSC_MATRIXUNDEFINED)
+        ! Destination matrix is identical to source matrix
+        call lsyssc_duplicateMatrix (rmatrix1,rmatrix2,&
+            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+        
+      case (LSYSSC_MATRIX1)
+        ! Clear destination matrix
+        call lsyssc_clearMatrix(rmatrix2)
+        
+        ! Spread diagonal matrix
+        select case (rmatrix1%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix1, p_Ddata1)
+          call lsyssc_getbase_double(rmatrix2, p_Ddata2)
+          call do_spreadDiagDP(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Ddata2)
+
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix1, p_Fdata1)
+          call lsyssc_getbase_single(rmatrix2, p_Fdata2)
+          call do_spreadDiagSP(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Fdata2)
+
+        case (ST_INT)
+          call lsyssc_getbase_int(rmatrix1, p_Idata1)
+          call lsyssc_getbase_int(rmatrix2, p_Idata2)
+          call do_spreadDiagInt(p_Idata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+                                rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Idata2)
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+          call sys_halt()
+        end select
+
+      case (LSYSSC_MATRIXD)
+        ! Clear destination matrix
+        call lsyssc_clearMatrix(rmatrix2)
+        
+        ! Spread diagonal matrix
+        select case (rmatrix1%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix1, p_Ddata1)
+          call lsyssc_getbase_double(rmatrix2, p_Ddata2)
+          call do_spreadDiagDP(p_Ddata1, rmatrix2%NVAR, 1,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Ddata2)
+
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix1, p_Fdata1)
+          call lsyssc_getbase_single(rmatrix2, p_Fdata2)
+          call do_spreadDiagSP(p_Fdata1, rmatrix2%NVAR, 1,&
+                               rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Fdata2)
+          
+        case (ST_INT)
+          call lsyssc_getbase_int(rmatrix1, p_Idata1)
+          call lsyssc_getbase_int(rmatrix2, p_Idata2)
+          call do_spreadDiagInt(p_Idata1, rmatrix2%NVAR, 1,&
+                                rmatrix2%NA, rmatrix2%NEQ, p_Kdiagonal2, p_Idata2)
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+        call sys_halt()
+      end select
+
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadDiagMatrix')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the real working routines follow.
+    
+    !**************************************************************
+    
+    subroutine do_spreadDiagDP(Ddata1, NVAR, MVAR, NA, NEQ, Kdiag2, Ddata2)
+      real(DP), dimension(:), intent(in) :: Ddata1
+      integer, intent(in) :: NVAR,MVAR
+      integer, intent(in) :: NA,NEQ
+      integer, dimension(:), intent(in) :: Kdiag2
+      real(DP), dimension(NVAR,MVAR,NA), intent(out) :: Ddata2
+
+      integer :: ia,ieq
+
+      do ieq = 1, NEQ
+        ia = Kdiag2(ieq)
+        Ddata2(:,:,ia) = Ddata1(ieq)
+      end do
+
+    end subroutine do_spreadDiagDP
+
+    !**************************************************************
+
+    subroutine do_spreadDiagSP(Fdata1, NVAR, MVAR, NA, NEQ, Kdiag2, Fdata2)
+      real(SP), dimension(:), intent(in) :: Fdata1
+      integer, intent(in) :: NVAR,MVAR
+      integer, intent(in) :: NA,NEQ
+      integer, dimension(:), intent(in) :: Kdiag2
+      real(SP), dimension(NVAR,MVAR,NA), intent(out) :: Fdata2
+
+      integer :: ia,ieq
+
+      do ieq = 1, NEQ
+        ia = Kdiag2(ieq)
+        Fdata2(:,:,ia) = Fdata1(ia)
+      end do
+
+    end subroutine
+
+    !**************************************************************
+
+    subroutine do_spreadDiagInt(Idata1, NVAR, MVAR, NA, NEQ, Kdiag2, Idata2)
+      integer, dimension(:), intent(in) :: Idata1
+      integer, intent(in) :: NVAR,MVAR
+      integer, intent(in) :: NA,NEQ
+      integer, dimension(:), intent(in) :: Kdiag2
+      integer, dimension(NVAR,MVAR,NA), intent(out) :: Idata2
+
+      integer :: ia,ieq
+
+      do ieq = 1, NEQ
+        ia = Kdiag2(ieq)
+        Idata2(:,:,ia) = Idata1(ia)
+      end do
+
+    end subroutine   
 
   end subroutine
 
