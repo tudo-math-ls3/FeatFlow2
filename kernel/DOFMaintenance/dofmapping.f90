@@ -3008,7 +3008,7 @@ contains
       IdofGlob( 1:8,i)  = IverticesAtElement(1:8,IelIdx(i))
       IdofGlob(9:20,i)  = NVT + IedgesAtElement(1:12,IelIdx(i))
       IdofGlob(21:26,i) = NVT + NMT + IfacesAtElement(1:6,IelIdx(i))
-      IdofGlob(   27,i) = NVT + NMT + IelIdx(i)
+      IdofGlob(   27,i) = NVT + NMT + NAT + IelIdx(i)
     end do
     !$omp end parallel do
 
