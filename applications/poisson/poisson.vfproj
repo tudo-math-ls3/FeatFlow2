@@ -92,6 +92,7 @@
 		<File RelativePath=".\src\poisson1d_method1_mg.f90"/></Filter>
 		<Filter Name="2D">
 		<File RelativePath=".\src\poisson2d_callback.f90"/>
+		<File RelativePath=".\src\poisson2d_method0_agmg.f90"/>
 		<File RelativePath=".\src\poisson2d_method0_block.f90"/>
 		<File RelativePath=".\src\poisson2d_method0_cmsort.f90"/>
 		<File RelativePath=".\src\poisson2d_method0_neumann.f90"/>
@@ -112,6 +113,7 @@
 		<File RelativePath=".\src\poisson2d_method2_mg.f90"/></Filter>
 		<Filter Name="3D">
 		<File RelativePath=".\src\poisson3d_callback.f90"/>
+		<File RelativePath=".\src\poisson3d_method0_agmg.f90"/>
 		<File RelativePath=".\src\poisson3d_method0_simple.f90"/>
 		<File RelativePath=".\src\poisson3d_method1_em30.f90"/>
 		<File RelativePath=".\src\poisson3d_method1_mg.f90"/></Filter>
