@@ -415,6 +415,8 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB3
     rnonlinearCCMatrix%p_rmatrixMass => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass
+    rnonlinearCCMatrix%p_rdiscretisation => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
         
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP)
 
