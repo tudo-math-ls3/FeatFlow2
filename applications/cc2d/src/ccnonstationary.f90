@@ -948,11 +948,18 @@ contains
 
 
     if (rtimestepping%ctimestepType .eq. TSCHM_ONESTEP) then
-      ! With the implicit Euler scheme, the pressure solution lives in the endpoints in
-      ! time (of every time intervall spanned by subsequent time steps). So, velocity and
-      ! pressure live in the same points in time such that we can just take over the
-      ! solution.
-      if (rtimestepping%dtheta .eq. 1.0_DP) then
+      if (&
+          ! With the implicit Euler scheme, the pressure solution lives in the endpoints
+          ! in time (of every time intervall spanned by subsequent time steps). So,
+          ! velocity and pressure live in the same points in time such that we can just
+          ! take over the solution.
+          rtimestepping%dtheta .eq. 1.0_DP .or. &
+          ! If the pressure is treated semi-implicitly (which does also require an initial
+          ! pressure start solution!), the pressure solution obviously lives in the same
+          ! point in time as the velocity solution which is treated semi-implicitly as
+          ! well. So, for semi-implicitly pressure treatment, no interpolation is needed,
+          ! independent of the actual value of \theta.
+          ipressureFullyImplicit .ne. 1.0_DP) then
         call lsysbl_copyVector (rvectorNew, rvectorInt)
         dtimeInt = dtimeNew
 

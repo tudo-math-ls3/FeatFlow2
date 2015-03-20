@@ -15,7 +15,8 @@
 # =0: Apply postprocessing to the raw solution vector.
 # =1 (standard): Apply postprocessing to a time-interpolated solution
 #   with velocity and pressure matching the same point in time.
-#   Necessary for higher order time stepping schemes like Crank-Nicolson.
+#   Necessary for higher order time stepping schemes like Crank-Nicolson
+#   unless ipressureFullyImplicit=0.
 
 ipostprocTimeInterpSolution = 1
 
@@ -58,17 +59,17 @@ dminTimeUCD = -1.0E100
 dmaxTimeUCD = 1.0E100
 
 # Time difference for UCD output.
-# =0.0: generate UCD output for every timestep in the range 
+# =0.0: generate UCD output for every timestep in the range
 #       dminTimeUCD..dmaxTimeUCD
 
 dtimeDifferenceUCD = 0.0
 
-# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the
 # solution of subsequent timesteps to match the time scale defined by
 # dtimeDifferenceUCD.
 # =0: Postprocess the solution at the current time. (May lead to
 #     non-equidistant timesteps in the UCD export)
-# =1: Standard. Interpolate the solution linearly to get an equidistant 
+# =1: Standard. Interpolate the solution linearly to get an equidistant
 #     timestepping for the UCD export. (May lead to slight time interpolation
 #     errors due to linear time interpolation.)
 # If dtimeDifferenceUCD=0, the solutions are written out as they come.
@@ -83,7 +84,7 @@ istartSuffixUCD = 0
 
 # ------------------------------------------------------------------------
 # Film output.
-# In a nonstationary simulation, this writes the raw solution vectors 
+# In a nonstationary simulation, this writes the raw solution vectors
 # to a sequence of files. For stationary simulations, this has no effect.
 
 # Type of output file to generate from solutions.
@@ -115,12 +116,12 @@ dminTimeFilm = -1.0E100
 dmaxTimeFilm = 1.0E100
 
 # Time difference for Film output.
-# =0.0: generate Film output for every timestep in the range 
+# =0.0: generate Film output for every timestep in the range
 #       dminTimeFilm..dmaxTimeFilm
 
 dtimeDifferenceFilm = 0.0
 
-# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the
 # solution of subsequent timesteps to match the time scale defined by
 # dtimeDifferenceFilm.
 # =0: Standard. Postprocess the solution at the current time. (May lead to
@@ -205,7 +206,7 @@ icalcKineticEnergy = 1
 # Cubature formula for error analysis. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
-scubError          = 
+scubError          =
 
 # Whether to write the L2/H1-error and/or kinetic energy to a file
 
@@ -227,7 +228,7 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 # =1: Calculate with standard FEAT-1 method. Constant viscosity.
 # =2: Calculate with extended method, supporting mixed meshes,
 #     general elements and nonlinear viscosity (standard)
-# =3: Calculate using volume forces, standard FEAT-1 method. 
+# =3: Calculate using volume forces, standard FEAT-1 method.
 #     Constant viscosity.
 # =4: Calculate using volume forces with extended method, supporting mixed
 #     meshes, general elements and nonlinear viscosity.
@@ -253,7 +254,7 @@ ibodyForcesBdComponent = 2
 # dbdForcesCoeff1 = 0.001
 
 # 2nd coefficient in the boundary integral of the drag coefficient.
-# If this is commented out, 0.004 is assumed (corresonds to flow 
+# If this is commented out, 0.004 is assumed (corresonds to flow
 # around cylinder with RE=1000: Umean=0.2, len=0.1
 # -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
 

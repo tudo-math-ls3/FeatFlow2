@@ -15,7 +15,8 @@
 # =0: Apply postprocessing to the raw solution vector.
 # =1 (standard): Apply postprocessing to a time-interpolated solution
 #   with velocity and pressure matching the same point in time.
-#   Necessary for higher order time stepping schemes like Crank-Nicolson.
+#   Necessary for higher order time stepping schemes like Crank-Nicolson
+#   unless ipressureFullyImplicit=0.
 
 ipostprocTimeInterpSolution = 1
 
