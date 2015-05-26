@@ -658,8 +658,8 @@ contains
     ! Also implement the discrete boundary conditions on the finest level
     ! onto our right-hand-side and solution vectors.
 
-    call vecfil_discreteBCrhs (rrhs,Rlevels(NLMAX)%rdiscreteBC)
-    call vecfil_discreteBCsol (Rlevels(NLMAX)%rvecSol,Rlevels(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCrhs (rrhs, Rlevels(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCsol (Rlevels(NLMAX)%rvecSol, Rlevels(NLMAX)%rdiscreteBC)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -696,7 +696,7 @@ contains
     ! The coarse grid in multigrid is always grid 1!
     call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
     p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-    p_rlevelInfo%p_rfilterChain => Rlevels(NLMAX)%RfilterChain
+    p_rlevelInfo%p_rfilterChain => Rlevels(NLMIN)%RfilterChain
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -763,7 +763,7 @@ contains
     call lsysbl_copyVector(rrhs, rvecDef)
     call lsysbl_matVec(Rlevels(NLMAX)%rmatrix, &
              Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
-    call vecfil_discreteBCdef (rvecDef)
+    call vecfil_discreteBCdef (rvecDef, Rlevels(NLMAX)%rdiscreteBC)
     dnlresInit = lsysbl_vectorNorm(rvecDef, LINALG_NORML2)
     
     ! Print the defect
@@ -833,7 +833,7 @@ contains
           
           ! And filter the restricted vector.
           ! Note: We do not need to filter the solution on the finest level
-          call vecfil_discreteBCsol (Rlevels(i-1)%rvecSol)
+          call vecfil_discreteBCsol (Rlevels(i-1)%rvecSol, Rlevels(i-1)%rdiscreteBC)
       
         end do
         
@@ -872,7 +872,7 @@ contains
           end select
           
           ! And filter the matrix
-          call matfil_discreteBC (Rlevels(i)%rmatrix)
+          call matfil_discreteBC (Rlevels(i)%rmatrix, Rlevels(i)%rdiscreteBC)
           
           ! The other velocity blocks are automatically updated, since they
           ! are just a shared copy of the X-velocity block
@@ -887,7 +887,7 @@ contains
                Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
       
       ! Filter the defect vector
-      call vecfil_discreteBCdef (rvecDef)
+      call vecfil_discreteBCdef (rvecDef, Rlevels(NLMAX)%rdiscreteBC)
       
       ! Calculate residual
       dnlres = lsysbl_vectorNorm(rvecDef, LINALG_NORML2)
@@ -922,9 +922,9 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//"/u3d_navst_mg.gmv")
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//"/u3d_navst_mg.vtk")
 
     ! Write velocity field
     call ucd_addVarVertBasedVec(rexport,"velocity",p_Du1,p_Du2,p_Du3)
