@@ -21,20 +21,28 @@
 #
 #
 # Crontab entries illustrating the current use of this script
-# lidong2:      45 2 * * *      /home/featflow/bin/runregressiontest_feat2 --master --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=10.1
-# lidong2:      15 3 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.0
-# lidong2:      45 3 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.1
-# lidong2:      15 4 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=12.0
-# lidong2:      00 3 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml
-# lidong2:      45 4 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-psc-goto
-# lidong2:      15 5 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.1
-# lidong2:      45 5 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.2
-# lidong2:      15 6 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.3
-# lidong2:      45 6 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.4
-# lidong2:      15 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.5
-# lidong2:      45 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.6
-# lidong2:      15 8 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.7
-# lidong2:      45 8 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=12.3
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --master --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=10.1
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.1
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=12.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=14.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=15.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=13.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=15.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-psc-goto
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.1
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.2
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.4beta
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.3
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.4
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.6
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.7
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.8
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.9
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=5.1
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-open64-acml --compiler-version=4.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-open64-acml --compiler-version=5.0
 #
 #
 # Written by sven.buijssen@math.tu-dortmund.de
@@ -476,13 +484,22 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.8.2"
 		    ;;
 
-		# GNU compiler suite 4.9.1
+		# GNU compiler suite 4.9.2
 		pc64-penryn-linux-gcc-*4.9)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.9.1"
+		    modules="$modules gcc/4.9.2"
 		    LIDOJOBNAMEPREFIX=ff2-gcc49
-		    COMPILERNAME="GCC 4.9.1"
+		    COMPILERNAME="GCC 4.9.2"
+		    ;;
+
+		# GNU compiler suite 5.1.0
+		pc64-penryn-linux-gcc-*5.1)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/5.1.0"
+		    LIDOJOBNAMEPREFIX=ff2-gcc51
+		    COMPILERNAME="GCC 5.1.0"
 		    ;;
 
 		# default GNU compiler suite
@@ -535,12 +552,20 @@ fb_customise() {
 		    COMPILERNAME="PGI 13.5"
 		    ;;
 
+		# PGI compiler suite 15.x
+		pc64-penryn-linux-pgi-*15.*)
+		    modules=""
+		    modules="$modules pgi/15.5-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi15
+		    COMPILERNAME="PGI 15.5"
+		    ;;
+
 		# default PGI compiler suite
 		pc64-penryn-linux-pgi-*)
 		    modules=""
-		    modules="$modules pgi/13.5-0"
+		    modules="$modules pgi/15.5-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
-		    COMPILERNAME="PGI 13.5"
+		    COMPILERNAME="PGI 15.5"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
@@ -588,9 +613,9 @@ fb_customise() {
 		# default Oracle Studio compiler suite
 		pc64-penryn-linux-sunstudio-*)
 		    modules=""
-		    modules="$modules oraclestudio/12.4beta-201407"
-		    LIDOJOBNAMEPREFIX=ff2-sun124beta
-		    COMPILERNAME="OracleStudio 12.4 Beta (Release 2014-July)"
+		    modules="$modules oraclestudio/12.4"
+		    LIDOJOBNAMEPREFIX=ff2-sun124
+		    COMPILERNAME="OracleStudio 12.4"
 		    ;;
 
 		# Open64 compiler suite 4.5.2
@@ -624,7 +649,7 @@ fb_customise() {
 		pc64-penryn-linux-intel-*10.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.023 intel/fce/10.1.023"
+		    modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.026 intel/fce/10.1.026"
 		    LIDOJOBNAMEPREFIX=ff2-intel101
 		    COMPILERNAME="Intel 10.1"
 		    ;;
@@ -690,6 +715,15 @@ fb_customise() {
 		    modules="$modules intel/mkl/11.1.3.174 intel/cce/14.0.3.174 intel/fce/14.0.3.174"
 		    LIDOJOBNAMEPREFIX=ff2-intel140
 		    COMPILERNAME="Intel 14.0"
+		    ;;
+
+		# Intel compiler suite 15.0.3.187
+		pc64-penryn-linux-intel-*15.0)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl/11.2.3.187 intel/cce/15.0.3.187 intel/fce/15.0.3.187"
+		    LIDOJOBNAMEPREFIX=ff2-intel150
+		    COMPILERNAME="Intel 15.0"
 		    ;;
 
 		# default Intel compiler suite and default build ID
