@@ -2092,14 +2092,6 @@ contains
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    ! Adjust time stepping scheme
-    rtimestep%ctimestepType = TSTEP_THETA_SCHEME
-    rtimestep%dinitialTime  = 0.0_DP
-    rtimestep%dinitialStep  = 1.0_DP
-    rtimestep%dfinalTime    = 1.0_DP
-    allocate(rtimestep%p_rthetaScheme)
-    rtimestep%p_rthetaScheme%theta = 1.0_DP
-
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'irhstype', irhstype)

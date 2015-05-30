@@ -1071,7 +1071,7 @@ contains
       ! Evaluate the function parser for the Neumann/Robin values in
       ! the cubature points on the boundary and store the result in
       ! Dcoefficients(1,:,:).
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM1D, npointsPerElement*nelements, Dpoints,&
           npointsPerElement*nelements, Dcoefficients(1,:,:), (/dtime/))
       
@@ -1134,7 +1134,7 @@ contains
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! cubature points on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM1D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -1231,7 +1231,7 @@ contains
         
         ! Evaluate the function parser in the cubature points on the
         ! boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM1D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
         
@@ -1466,7 +1466,7 @@ contains
       ! Evaluate the function parser for the Neumann/Robin values in
       ! the cubature points on the boundary and store the result in
       ! Dcoefficients(1,:,:).
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM1D, npointsPerElement*nelements, Dpoints,&
           npointsPerElement*nelements, Dcoefficients(1,:,:), (/dtime/))
       
@@ -1529,7 +1529,7 @@ contains
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! cubature points on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM1D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -1626,7 +1626,7 @@ contains
         
         ! Evaluate the function parser in the cubature points on the
         ! boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM1D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
         

@@ -1617,7 +1617,7 @@ contains
             rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
 
         ! Evaluate solution values in the positions of the degrees of freedom
-        call fparser_evalFuncBlockByName2(p_rfparser, ssolutionname,&
+        call fparser_evalFuncBlDbleFixName(p_rfparser, ssolutionname,&
             rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1)%NVAR,&
             rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1)%NEQ,&
             p_DdofCoords, rvector%RvectorBlock(1)%NEQ, p_Ddata, (/dtime/))

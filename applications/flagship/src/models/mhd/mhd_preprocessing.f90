@@ -1528,7 +1528,7 @@ contains
             
             if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
               ! Evaluate the function parser for all coordinates
-              call fparser_evalFuncBlockByName2(p_rfparser, ssolutionName,&
+              call fparser_evalFuncBlDbleFixName(p_rfparser, ssolutionName,&
                   rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NVAR,&
                   rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NEQ,&
                   p_DdofCoords, rvector%RvectorBlock(iblock)%NEQ, p_Ddata, (/dtime/))

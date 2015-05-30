@@ -4515,7 +4515,7 @@ contains
                 'svelocityname', svelocityname, isubString=idim)
             
             ! Evaluate all coefficients of the scalar subvector
-            call fparser_evalFuncBlockByName2(p_rfparser, svelocityname,&
+            call fparser_evalFuncBlDbleFixName(p_rfparser, svelocityname,&
                 ndim, neq, p_DdofCoords, neq, p_Ddata, (/dtime/))
           end do
           

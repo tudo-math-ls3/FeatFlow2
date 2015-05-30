@@ -374,13 +374,13 @@ contains
 
     ! Evaluate the function parser in the cubature points on the
     ! boundary and store the resuls in Dcoefficients(:,:,1:3)
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompFunc,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompFunc,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,1), (/dtime/))
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompVelX,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompVelX,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,2), (/dtime/))
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompVelY,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompVelY,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,3), (/dtime/))
 
@@ -546,13 +546,13 @@ contains
 
     ! Evaluate the function parser in the cubature points on the
     ! boundary and store the resuls in Dcoefficients(:,:,3:5)
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompFunc,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompFunc,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,3), (/dtime/))
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompVelX,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompVelX,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,4), (/dtime/))
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icompVelY,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icompVelY,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dcoefficients(:,:,5), (/dtime/))
 
@@ -680,7 +680,7 @@ contains
     
     ! Evaluate the function parser in the cubature points on the
     ! boundary and store the resuls in Dvalues
-    call fparser_evalFuncBlockByNumber2(p_rfparser, icomp,&
+    call fparser_evalFuncBlDbleFixNumber(p_rfparser, icomp,&
         NDIM2D, npointsPerElement*nelements, Dpoints,&
         npointsPerElement*nelements, Dvalues, (/dtime/))
 
@@ -2029,7 +2029,7 @@ do iedge = 1, nedges
 
       ! Evaluate the function parser for the Neumann/Robin values in the
       ! degrees of freedom on the boundary and store the result in Dvalue
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
           rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
       
@@ -2066,7 +2066,7 @@ do iedge = 1, nedges
       ! Evaluate the function parser for the Neumann/Robin boundary
       ! values in the cubature points on the boundary and store the
       ! result in Dcoefficients(1,:,:).
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM2D, npointsPerElement*nelements, Dpoints,&
           npointsPerElement*nelements, Dcoefficients(1,:,:), (/dtime/))
 
@@ -2193,7 +2193,7 @@ do iedge = 1, nedges
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! DOFs on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
             rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -2352,7 +2352,7 @@ do iedge = 1, nedges
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! cubature points on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -2477,7 +2477,7 @@ do iedge = 1, nedges
         
         ! Evaluate the function parser for the flux boundary values in
         ! the DOFs on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
             rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
 
@@ -2565,7 +2565,7 @@ do iedge = 1, nedges
         
         ! Evaluate the function parser in the cubature points on the
         ! boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
 
@@ -2861,7 +2861,7 @@ do iedge = 1, nedges
 
       ! Evaluate the function parser for the Neumann/Robin values in the
       ! degrees of freedom on the boundary and store the result in Dvalue
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
           rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
       
@@ -2898,7 +2898,7 @@ do iedge = 1, nedges
       ! Evaluate the function parser for the Neumann/Robin boundary
       ! values in the cubature points on the boundary and store the
       ! result in Dcoefficients(1,:,:).
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+      call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
           NDIM2D, npointsPerElement*nelements, Dpoints,&
           npointsPerElement*nelements, Dcoefficients(1,:,:), (/dtime/))
 
@@ -3025,7 +3025,7 @@ do iedge = 1, nedges
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! DOFs on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
             rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -3184,7 +3184,7 @@ do iedge = 1, nedges
       else
         ! Evaluate the function parser for the Dirichlet values in the
         ! cubature points on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
       end if
@@ -3309,7 +3309,7 @@ do iedge = 1, nedges
   
         ! Evaluate the function parser for the flux boundary values in
         ! the DOFs on the boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
             rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
         
@@ -3397,7 +3397,7 @@ do iedge = 1, nedges
 
         ! Evaluate the function parser in the cubature points on the
         ! boundary and store the result in Dvalue
-        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+        call fparser_evalFuncBlDbleFixNumber(p_rfparser, nmaxExpr*(isegment-1)+1,&
             NDIM2D, npointsPerElement*nelements, Dpoints,&
             npointsPerElement*nelements, Dvalue, (/dtime/))
         
