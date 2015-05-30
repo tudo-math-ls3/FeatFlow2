@@ -63,6 +63,7 @@ module hydro_application
   use flagship_basic
   use flagship_signals
   use fparser
+  use fsystem
   use genoutput
   use graph
   use hadaptaux

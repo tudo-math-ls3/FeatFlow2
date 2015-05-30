@@ -22,6 +22,7 @@
         ioperationSpec, rcollection, istatus, rsource)
 
       use collection
+      use fsystem
       use linearsystemblock
       use problem
       use solverbase

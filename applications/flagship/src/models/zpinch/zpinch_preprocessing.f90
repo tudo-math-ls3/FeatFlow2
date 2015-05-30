@@ -27,6 +27,7 @@ module zpinch_preprocessing
 !$ use omp_lib
   use collection
   use fparser
+  use fsystem
   use genoutput
   use hydro_preprocessing
   use paramlist
