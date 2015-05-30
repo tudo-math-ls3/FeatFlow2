@@ -36,82 +36,131 @@ module derivatives
 !<constantblock description="Descriptors to identify derivative types in 1D">
 
   ! function value in term
-  integer, parameter, public :: DER_FUNC1D     = 1
+  integer, parameter, public :: DER_FUNC1D       = 1
 
   ! 1st derivative in term
-  integer, parameter, public :: DER_DERIV1D_X  = 2
+  integer, parameter, public :: DER_DERIV1D_X    = 2
 
   ! 2nd derivative in term
-  integer, parameter, public :: DER_DERIV1D_XX = 3
+  integer, parameter, public :: DER_DERIV1D_XX   = 3
+
+  ! 3rd derivative in term
+  integer, parameter, public :: DER_DERIV1D_XXX  = 4
 
 !</constantblock>
 
 !<constantblock description="Descriptors to identify derivative types in 2D">
 
   ! function value in term
-  integer, parameter, public :: DER_FUNC       = 1
-  integer, parameter, public :: DER_FUNC2D     = 1
+  integer, parameter, public :: DER_FUNC         = 1
+  integer, parameter, public :: DER_FUNC2D       = 1
 
   ! x derivative in term
-  integer, parameter, public :: DER_DERIV_X    = 2
-  integer, parameter, public :: DER_DERIV2D_X  = 2
+  integer, parameter, public :: DER_DERIV_X      = 2
+  integer, parameter, public :: DER_DERIV2D_X    = 2
 
   ! y derivative in term
-  integer, parameter, public :: DER_DERIV_Y    = 3
-  integer, parameter, public :: DER_DERIV2D_Y  = 3
+  integer, parameter, public :: DER_DERIV_Y      = 3
+  integer, parameter, public :: DER_DERIV2D_Y    = 3
 
   ! 2nd x derivative in term
-  integer, parameter, public :: DER_DERIV_XX   = 4
-  integer, parameter, public :: DER_DERIV2D_XX = 4
+  integer, parameter, public :: DER_DERIV_XX     = 4
+  integer, parameter, public :: DER_DERIV2D_XX   = 4
 
   ! xy derivative in term
-  integer, parameter, public :: DER_DERIV_XY   = 5
-  integer, parameter, public :: DER_DERIV2D_XY = 5
+  integer, parameter, public :: DER_DERIV_XY     = 5
+  integer, parameter, public :: DER_DERIV2D_XY   = 5
 
   ! 2nd y derivative in term
-  integer, parameter, public :: DER_DERIV_YY   = 6
-  integer, parameter, public :: DER_DERIV2D_YY = 6
+  integer, parameter, public :: DER_DERIV_YY     = 6
+  integer, parameter, public :: DER_DERIV2D_YY   = 6
+
+  ! 3rd x derivative in term
+  integer, parameter, public :: DER_DERIV_XXX    = 7
+  integer, parameter, public :: DER_DERIV2D_XXX  = 7
+
+  ! xxy derivative in term
+  integer, parameter, public :: DER_DERIV_XXY    = 8
+  integer, parameter, public :: DER_DERIV2D_XXY  = 8
+
+  ! xyy derivative in term
+  integer, parameter, public :: DER_DERIV_XYY    = 9
+  integer, parameter, public :: DER_DERIV2D_XYY  = 9
+
+  ! 3rd y derivative in term
+  integer, parameter, public :: DER_DERIV_YYY    = 10
+  integer, parameter, public :: DER_DERIV2D_YYY  = 10
 
 !</constantblock>
 
 !<constantblock description="Descriptors to identify derivative types in 3D">
 
   ! function value in term
-  integer, parameter, public :: DER_FUNC3D     = 1
+  integer, parameter, public :: DER_FUNC3D      = 1
 
   ! x derivative in term
-  integer, parameter, public :: DER_DERIV3D_X  = 2
+  integer, parameter, public :: DER_DERIV3D_X   = 2
 
   ! y derivative in term
-  integer, parameter, public :: DER_DERIV3D_Y  = 3
+  integer, parameter, public :: DER_DERIV3D_Y   = 3
 
   ! z derivative in term
-  integer, parameter, public :: DER_DERIV3D_Z  = 4
+  integer, parameter, public :: DER_DERIV3D_Z   = 4
 
   ! 2nd x derivative in term
-  integer, parameter, public :: DER_DERIV3D_XX = 5
+  integer, parameter, public :: DER_DERIV3D_XX  = 5
 
   ! xy derivative in term
-  integer, parameter, public :: DER_DERIV3D_XY = 6
+  integer, parameter, public :: DER_DERIV3D_XY  = 6
 
   ! 2nd y derivative in term
-  integer, parameter, public :: DER_DERIV3D_YY = 7
+  integer, parameter, public :: DER_DERIV3D_YY  = 7
 
   ! xz derivative in term
-  integer, parameter, public :: DER_DERIV3D_XZ = 8
+  integer, parameter, public :: DER_DERIV3D_XZ  = 8
 
   ! yz derivative in term
-  integer, parameter, public :: DER_DERIV3D_YZ = 9
+  integer, parameter, public :: DER_DERIV3D_YZ  = 9
 
   ! zz derivative in term
-  integer, parameter, public :: DER_DERIV3D_ZZ = 10
+  integer, parameter, public :: DER_DERIV3D_ZZ  = 10
 
+  ! 3rd x derivative in term
+  integer, parameter, public :: DER_DERIV3D_XXX = 11
+
+  ! xxy derivative in term
+  integer, parameter, public :: DER_DERIV3D_XXY = 12
+
+  ! xxz derivative in term
+  integer, parameter, public :: DER_DERIV3D_XXZ = 13
+
+  ! xyy derivative in term
+  integer, parameter, public :: DER_DERIV3D_XYY = 14
+  
+  ! xyz derivative in term
+  integer, parameter, public :: DER_DERIV3D_XYZ = 15
+
+  ! xzz derivative in term
+  integer, parameter, public :: DER_DERIV3D_XZZ = 16
+
+  ! 3rd y derivative in term
+  integer, parameter, public :: DER_DERIV3D_YYY = 17
+
+  ! yyz derivative in term
+  integer, parameter, public :: DER_DERIV3D_YYZ = 18
+
+  ! zzy derivative in term
+  integer, parameter, public :: DER_DERIV3D_ZZY = 19
+
+  ! 3rd z derivative in term
+  integer, parameter, public :: DER_DERIV3D_ZZZ = 20
+  
 !</constantblock>
 
 !<constantblock description="General constants.">
 
   ! Number of derivative identifiers.
-  integer, parameter, public :: DER_MAXNDER  = 10
+  integer, parameter, public :: DER_MAXNDER  = 20
 
 !</constantblock>
 
@@ -163,6 +212,8 @@ contains
     der_igetID = DER_DERIV1D_X
   elseif (sder .eq. "DER_DERIV1D_XX") then
     der_igetID = DER_DERIV1D_XX
+  elseif (sder .eq. "DER_DERIV1D_XXX") then
+    der_igetID = DER_DERIV1D_XXX
 
     ! 2D case
   elseif (sder .eq. "DER_FUNC") then
@@ -189,6 +240,22 @@ contains
     der_igetID = DER_DERIV_YY
   elseif (sder .eq. "DER_DERIV2D_YY") then
     der_igetID = DER_DERIV2D_YY
+  elseif (sder .eq. "DER_DERIV_XXX") then
+    der_igetID = DER_DERIV_XXX
+  elseif (sder .eq. "DER_DERIV2D_XXX") then
+    der_igetID = DER_DERIV2D_XXX
+  elseif (sder .eq. "DER_DERIV_XXY") then
+    der_igetID = DER_DERIV_XXY
+  elseif (sder .eq. "DER_DERIV2D_XXY") then
+    der_igetID = DER_DERIV2D_XXY
+  elseif (sder .eq. "DER_DERIV_XYY") then
+    der_igetID = DER_DERIV_XYY
+  elseif (sder .eq. "DER_DERIV2D_XYY") then
+    der_igetID = DER_DERIV2D_XYY
+  elseif (sder .eq. "DER_DERIV_YYY") then
+    der_igetID = DER_DERIV_YYY
+  elseif (sder .eq. "DER_DERIV2D_YYY") then
+    der_igetID = DER_DERIV2D_YYY
 
     ! 3D case
   elseif (sder .eq. "DER_FUNC3D") then
@@ -211,6 +278,26 @@ contains
     der_igetID = DER_DERIV3D_YZ
   elseif (sder .eq. "DER_DERIV3D_ZZ") then
     der_igetID = DER_DERIV3D_ZZ
+  elseif (sder .eq. "DER_DERIV3D_XXX") then
+    der_igetID = DER_DERIV3D_XXX
+  elseif (sder .eq. "DER_DERIV3D_XXY") then
+    der_igetID = DER_DERIV3D_XXY
+  elseif (sder .eq. "DER_DERIV3D_XXZ") then
+    der_igetID = DER_DERIV3D_XXZ
+  elseif (sder .eq. "DER_DERIV3D_XYY") then
+    der_igetID = DER_DERIV3D_XYY
+  elseif (sder .eq. "DER_DERIV3D_XYY") then
+    der_igetID = DER_DERIV3D_XYY
+  elseif (sder .eq. "DER_DERIV3D_XYZ") then
+    der_igetID = DER_DERIV3D_XYZ
+  elseif (sder .eq. "DER_DERIV3D_XZZ") then
+    der_igetID = DER_DERIV3D_XZZ
+  elseif (sder .eq. "DER_DERIV3D_YYY") then
+    der_igetID = DER_DERIV3D_YYY
+  elseif (sder .eq. "DER_DERIV3D_YYZ") then
+    der_igetID = DER_DERIV3D_YYZ
+  elseif (sder .eq. "DER_DERIV3D_ZZZ") then
+    der_igetID = DER_DERIV3D_ZZZ
 
   else
     bchk = .false.
@@ -225,5 +312,5 @@ contains
   end if
 
   end function der_igetID
-
+  
 end module
