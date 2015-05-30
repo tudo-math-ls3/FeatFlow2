@@ -6,6 +6,13 @@
 !# <purpose>
 !# This module provides the basic routines and constants for Corine`s
 !# problem.
+!#
+!# 1.) sse_initParamCorine
+!#     -> Initialises the parameters of Corine`s problem
+!#
+!# 2.) sse_infoCorine
+!#     -> Output information about Corine`s problem
+!#
 !# </purpose>
 !##############################################################################
 
@@ -16,13 +23,13 @@ module sse_base_corine
   use paramlist
 
   use sse_base
-  
+
   implicit none
 
   private
   public :: sse_initParamCorine
   public :: sse_infoCorine
-  
+
 !<constants>
 
 !<constantblock description="Constants for problem subtypes">
@@ -32,7 +39,7 @@ module sse_base_corine
 !</constantblock>
 
 !</constants>
-  
+
 !<publicvars>
 
   ! Bed friction in the momentum equation (=r) 
@@ -56,9 +63,6 @@ module sse_base_corine
   ! Width of the basin (=W) 
   real(DP), public :: dW                  = 0.0_DP
 
-  ! Flag indicating the existence of an analytical solution
-  logical, public :: bhasAnalyticSolution = .false.
-  
 !</publicvars>
 
 contains
@@ -67,7 +71,7 @@ contains
 
 !<subroutine>
 
-  subroutine sse_initParamCorine(cproblemtype,rparlist)
+  subroutine sse_initParamCorine(cproblemType,rparlist)
 
 !<description>
     ! This subroutine initialises the global parameters of Corine`s problem
@@ -75,37 +79,36 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
-    
+    integer, intent(in) :: cproblemType
+
     ! Parameter list
     type(t_parlist), intent(in) :: rparlist
 !</input>
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: sconfig,ssection
+    character(len=SYS_STRLEN) :: sparam,ssection
 
     ! Read config section
-    ssection = sse_getSection(cproblemtype)
-    call parlst_getvalue_string(rparlist, ssection, 'problemconfig', sconfig)
-    
+    ssection = sse_getSection(cproblemType)
+    call parlst_getvalue_string(rparlist, ssection, 'problemparam', sparam)
+
     ! Read parameters from parameter list (non-existing parameters are replaced by maximum value)
-    call parlst_getvalue_double(rparlist, sconfig, 'dDelta', dDelta, SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dW',     dW,     SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'da',     da,     SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dh0',    dh0,    SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dkappa', dkappa, SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dmu',    dmu,    SYS_MAXREAL_DP)
-    call parlst_getvalue_double(rparlist, sconfig, 'dr',     dr,     SYS_MAXREAL_DP)
-    call parlst_getvalue_logical(rparlist, sconfig, 'bhasAnalyticSolution', bhasAnalyticSolution, .false.)
-    
+    call parlst_getvalue_double(rparlist, sparam, 'dDelta', dDelta, SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'dW',     dW,     SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'da',     da,     SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'dh0',    dh0,    SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'dkappa', dkappa, SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'dmu',    dmu,    SYS_MAXREAL_DP)
+    call parlst_getvalue_double(rparlist, sparam, 'dr',     dr,     SYS_MAXREAL_DP)
+
   end subroutine sse_initParamCorine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine sse_infoCorine(cproblemtype,cproblemsubtype)
+  subroutine sse_infoCorine(cproblemType)
 
 !<description>   
     ! This subroutine outputs information about the global parameters
@@ -114,29 +117,17 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
-    
-    ! Problem subtype
-    integer, intent(in) :: cproblemsubtype
+    integer, intent(in) :: cproblemType
 !</input>
 !</subroutine>
 
-    select case (cproblemtype)
+    select case (cproblemType)
     case (CORINE_1D)
       call output_line('PROBLEMTYPE........: Corine`s problem in 1D')
     case (CORINE_2D)
       call output_line('PROBLEMTYPE........: Corine`s problem in 2D')
     case default
       call output_line("Invalid problem type", &
-        OU_CLASS_ERROR,OU_MODE_STD,"sse_infoCorine")
-      call sys_halt()
-    end select
-
-    select case (cproblemsubtype)
-    case (CORINE_STD)
-      call output_line('PROBLEMSUBTYPE.....: Standard benchmark')
-    case default
-      call output_line("Invalid problem subtype", &
           OU_CLASS_ERROR,OU_MODE_STD,"sse_infoCorine")
       call sys_halt()
     end select
@@ -148,7 +139,7 @@ contains
     call output_line('kappa..............: '//trim(adjustl(sys_sdE(dkappa,5))))
     call output_line('mu.................: '//trim(adjustl(sys_sdE(dmu,5))))
     call output_line('r..................: '//trim(adjustl(sys_sdE(dr,5))))
-    
+
   end subroutine sse_infoCorine
-  
+
 end module sse_base_corine

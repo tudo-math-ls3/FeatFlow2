@@ -57,9 +57,9 @@ program sse
 
   use collection
   use convergencetable
+  use fparser
   use fsystem
   use genoutput
-!!$  use linearsystemblock
   use paramlist
   use statistics
   use storage
@@ -71,14 +71,16 @@ program sse
   use sse_base_corine  
 
   ! local variables
-  type(t_timer) :: rtimerTria,rtimerDiscr,rtimerMatVec,&
-                   rtimerBC,rtimerSolver,rtimerPostproc,rtimerFree
+  type(t_timer) :: rtimer
   type(t_parlist) :: rparlist
   type(t_problem) :: rproblem
   type(t_convergenceTable) :: rtable
   character(len=SYS_STRLEN) :: slogdir,slogfile
   integer :: ILMIN,NLMIN,NLMAX,i
 
+  real(DP) :: dvalue
+  
+  
   ! Initialise system-wide settings
   call sys_init()
 
@@ -99,6 +101,16 @@ program sse
   ! Initialise the FEAT 2.0 storage management
   call storage_init(999, 100)
 
+  ! Initialise function parser
+  call fparser_init()
+  call fparser_create(rfparser, 100)
+  
+  call fparser_parseFunction(rfparser, 1, 'abs(z)', (/'z'/) )
+  call fparser_evalFunction(rfparser,  1, (/2.0_DP/), dvalue)
+  print *, dvalue
+  
+  stop
+  
   ! Read parameter file
   call parlst_init(rparlist)
   call parlst_readfromfile(rparlist, 'data/master.dat', 'data', .true.)
@@ -107,32 +119,30 @@ program sse
   call parlst_getvalue_int(rparlist, '', 'NLMIN', NLMIN)
   call parlst_getvalue_int(rparlist, '', 'NLMAX', NLMAX)
   call parlst_getvalue_int(rparlist, '', 'ILMIN', ILMIN, NLMIN)
-  call parlst_getvalue_int(rparlist, '', 'PROBLEMTYPE', rproblem%cproblemtype)
-  call parlst_getvalue_int(rparlist, sse_getSection(rproblem%cproblemtype),&
-                                         'PROBLEMSUBTYPE', rproblem%cproblemsubtype)
-  
+  call parlst_getvalue_int(rparlist, '', 'PROBLEMTYPE', rproblem%cproblemType)
+
   ! Write configuration to screen
   call output_separator (OU_SEP_STAR)
-  
-  select case(rproblem%cproblemtype)
+
+  select case(rproblem%cproblemType)
   case (POISSON_SCALAR, POISSON_SYSTEM)
-    call sse_initParamPoisson(rproblem%cproblemtype,rparlist)
-    call sse_infoPoisson(rproblem%cproblemtype,rproblem%cproblemsubtype)
-    
+    call sse_initParamPoisson(rproblem%cproblemType,rparlist)
+    call sse_infoPoisson(rproblem%cproblemType)
+
   case (SSE_SCALAR, SSE_SYSTEM1, SSE_SYSTEM2)
-    call sse_initParamSSE(rproblem%cproblemtype,rparlist)
-    call sse_infoSSE(rproblem%cproblemtype,rproblem%cproblemsubtype)
-    
+    call sse_initParamSSE(rproblem%cproblemType,rparlist)
+    call sse_infoSSE(rproblem%cproblemType)
+
   case (CORINE_1D, CORINE_2D)
-    call sse_initParamCorine(rproblem%cproblemtype,rparlist)
-    call sse_infoCorine(rproblem%cproblemtype,rproblem%cproblemsubtype)
+    call sse_initParamCorine(rproblem%cproblemType,rparlist)
+    call sse_infoCorine(rproblem%cproblemType)
 
   case default
     call output_line("Invalid problem type", &
         OU_CLASS_ERROR,OU_MODE_STD,"sse")
     call sys_halt()
   end select
-  
+
   call output_separator (OU_SEP_STAR)
 
   ! Initialise the collection
@@ -140,84 +150,84 @@ program sse
   do i=1,NLMAX
     call collct_addlevel (rproblem%rcollection)
   end do
-  
+
   ! Initialise the convergence table
   call ctab_init(rtable)
-  
+
   do i=ILMIN,NLMAX
 
     ! Initialisation
     call output_line('Initialising triangulation')
-    call stat_clearTimer(rtimerTria)
-    call stat_startTimer(rtimerTria,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_initParamTriang(rparlist,NLMIN,i,rproblem)
-    call stat_stopTimer(rtimerTria)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerTria%delapsedReal,3))//'sec')
-    
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
+
     call output_line('Initialising discretisation')
-    call stat_clearTimer(rtimerDiscr)
-    call stat_startTimer(rtimerDiscr,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_initDiscretisation(rparlist,rproblem)
-    call stat_stopTimer(rtimerDiscr)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerDiscr%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
 
     call output_line('Initialising matrices/vectors')
-    call stat_clearTimer(rtimerMatVec)
-    call stat_startTimer(rtimerMatVec,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_initMatVec(rparlist,rproblem)
-    call stat_stopTimer(rtimerMatVec)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerMatVec%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
 
     call output_line('Initialising/implementing discrete boundary conditions')
-    call stat_clearTimer(rtimerBC)
-    call stat_startTimer(rtimerBC,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_initDiscreteBC(rproblem)
 
     ! Implementation of boundary conditions
     call sse_implementBC(rproblem)
-    call stat_stopTimer(rtimerBC)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerBC%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
 
     ! Solve the problem
     call output_line('Solving problem')
-    call stat_clearTimer(rtimerSolver)
-    call stat_startTimer(rtimerSolver,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_solve(rparlist,rproblem)
-    call stat_stopTimer(rtimerSolver)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerSolver%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
 
     ! Post-processing
     call output_line('Postprocessing solution')
-    call stat_clearTimer(rtimerPostproc)
-    call stat_startTimer(rtimerPostproc,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_postprocessing(rparlist,rproblem,rtable)
-    call stat_stopTimer(rtimerPostproc)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerPostproc%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
 
     ! Cleanup
     call output_line('Freeing memory')
-    call stat_clearTimer(rtimerFree)
-    call stat_startTimer(rtimerFree,STAT_TIMERSHORT)
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer,STAT_TIMERSHORT)
     call sse_doneMatVec(rproblem)
-    call sse_doneBC(rproblem)
+    call sse_doneDiscreteBC(rproblem)
     call sse_doneDiscretisation(rproblem)
     call sse_doneParamTriang(rproblem)
-    call stat_stopTimer(rtimerFree)
+    call stat_stopTimer(rtimer)
     call output_line(&
         '............................................................'//&
-        trim(sys_sdEL(rtimerFree%delapsedReal,3))//'sec')
+        trim(sys_sdEL(rtimer%delapsedReal,3))//'sec')
   end do
 
   ! Export convergence table
@@ -229,6 +239,10 @@ program sse
   ! Clear parameter list
   call parlst_done(rparlist)
 
+  ! Clean up function parser
+  call fparser_release(rfparser)
+  call fparser_done
+  
   ! Print out heap statistics
   call output_lbrk()
   call storage_info(.true.)

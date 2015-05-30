@@ -19,7 +19,7 @@ simportdatafiles(3) =
 # =3: SSE as first-order system (\sigma = A\nabla N)
 # =4: SSE as first-order system (\sigma = \nabla N)
 # =5: Corine`s problem
-PROBLEMTYPE = 0
+PROBLEMTYPE = 2
 
 ################################################################################
 
@@ -27,7 +27,7 @@ PROBLEMTYPE = 0
 NLMIN = 1
 
 # Maximum multigrid level
-NLMAX = 6
+NLMAX = 8
 
 # Minimal grid level to start with in convergence study
 ILMIN = 3

@@ -10,35 +10,47 @@
 
 module sse_base
 
+  use fparser
   use fsystem
   use genoutput
 
-  use boundary, only : t_boundary
+  use boundary, only : t_boundary,t_boundaryRegion
   use collection, only : t_collection
   use discretebc, only : t_discreteBC
   use filtersupport, only : t_filterChain
+  use fparser, only : t_fparser
   use linearsystemblock, only : t_matrixBlock,t_vectorBlock
   use linearsystemscalar, only : t_matrixScalar
   use multilevelprojection, only : t_interlevelProjectionBlock
   use sortstrategybase, only : t_blockSortStrategy
   use spatialdiscretisation, only : t_blockDiscretisation,t_scalarCubatureInfo
   use triangulation, only : t_triangulation
-  
+
   implicit none
 
   private
 
   public :: t_problem
   public :: t_problem_lvl
+  public :: t_problem_bdr
   public sse_getNDIM
   public sse_getNVAR
   public sse_getSection
   public sse_getSolver
-  
+
 #ifdef USE_COMPILER_INTEL
   public :: sinh
   public :: cosh
 #endif
+
+!<publicvars>
+
+  ! Function parser object
+  type(t_fparser), public, save :: rfparser
+
+!</publicvars>
+
+  ! ***************************************************************************
 
 !<constants>
 
@@ -49,7 +61,7 @@ module sse_base
 
   ! Compute standard Poisson problem in 2D as first-order system
   integer, parameter, public :: POISSON_SYSTEM = 1
-  
+
   ! Compute SSE solution from scalar problem in 2D
   integer, parameter, public :: SSE_SCALAR     = 2
 
@@ -65,7 +77,7 @@ module sse_base
   ! Compute Corine`s problem in 2D
   integer, parameter, public :: CORINE_2D      = 6
 !</constantblock>
-  
+
 !<constantblock description="Constants for complex numbers">
 
   ! Real part of complex number
@@ -83,13 +95,25 @@ module sse_base
 
   ! System solver
   integer, parameter, public :: SOLVER_SYSTEM       = 1
-  
+
   ! Saddle point solver
   integer, parameter, public :: SOLVER_SADDLEPOINT  = 2
-  
+
 !</constantblock>
-  
+
+!<constantblock description="Constants for boundary conditions">
+
+  ! Dirichlet boundary conditions
+  integer, parameter, public :: BDRCOND_DIRICHLET = 0
+
+  ! Neumann boundary conditions
+  integer, parameter, public :: BDRCOND_NEUMANN   = 1
+
+!</constantblock>
+
 !</constants>
+
+  ! ***************************************************************************
 
 !<types>
 
@@ -134,7 +158,27 @@ module sse_base
     ! Number of filters in the filter chain.
     integer :: nfilters
 
-  end type
+  end type t_problem_lvl
+
+!</typeblock>
+
+!<typeblock description="Type block defining each boundary condition">
+
+  type t_problem_bdr
+
+    ! Type of boundary condition
+    integer :: cboundaryConditionType
+
+    ! Equation to which the boundary condition applies to
+    integer :: iequation
+
+    ! Position in the function parser
+    integer :: iexpression
+
+    ! Boundary region structure
+    type(t_boundaryRegion) :: rboundaryRegion
+
+  end type t_problem_bdr
 
 !</typeblock>
 
@@ -143,11 +187,11 @@ module sse_base
   type t_problem
 
     ! Problem type
-    integer :: cproblemtype
+    integer :: cproblemType
 
     ! Problem subtype
-    integer :: cproblemsubtype
-    
+    integer :: cproblemSubtype
+
     ! Minimum refinement level; = Level i in RlevelInfo
     integer :: ilvmin
 
@@ -164,21 +208,25 @@ module sse_base
     ! to one level of the discretisation.
     type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
 
+    ! An array of t_problem_bdr structures, each corresponding
+    ! to a boundary condition
+    type(t_problem_bdr), dimension(:), pointer :: RboundaryCondition
+
     ! A collection object that saves structural data and some
     ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
 
-  end type
+  end type t_problem
 
 !</typeblock>
 
 !</types>
-  
+
 contains
 
   ! ***************************************************************************
-  
+
 #ifdef USE_COMPILER_INTEL
 !<function>
 
@@ -199,11 +247,11 @@ contains
 
     sinh = -cmplx(0.0_DP,1.0_DP) * sin(cmplx(0.0_DP,1.0_DP)*cx) 
 
-  end function
+  end function sinh
 #endif
-  
+
   ! ***************************************************************************
-  
+
 #ifdef USE_COMPILER_INTEL
 !<function>
 
@@ -224,14 +272,14 @@ contains
 
     cosh = cos(cmplx(0.0_DP,1.0_DP)*cx) 
 
-  end function
+  end function cosh
 #endif
 
   ! ***************************************************************************
 
 !<function>
 
-  function sse_getNDIM(cproblemtype) result(ndim)
+  function sse_getNDIM(cproblemType) result(ndim)
 
 !<description>
     ! This function returns the number of spatial dimensions
@@ -239,7 +287,7 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
+    integer, intent(in) :: cproblemType
 !</input>
 
 !<result>
@@ -248,7 +296,7 @@ contains
 !</result>
 !</function>
 
-    select case(cproblemtype)
+    select case(cproblemType)
     case(POISSON_SCALAR, POISSON_SYSTEM)
       ndim = 2
 
@@ -268,12 +316,12 @@ contains
       call sys_halt()
     end select
   end function sse_getNDIM
-  
+
   ! ***************************************************************************
 
 !<function>
 
-  function sse_getNVAR(cproblemtype) result(nvar)
+  function sse_getNVAR(cproblemType) result(nvar)
 
 !<description>
     ! This function returns the number of variables
@@ -281,7 +329,7 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
+    integer, intent(in) :: cproblemType
 !</input>
 
 !<result>
@@ -290,18 +338,18 @@ contains
 !</result>
 !</function>
 
-    select case(cproblemtype)
+    select case(cproblemType)
     case(POISSON_SCALAR)
       nvar = 1
 
     case(POISSON_SYSTEM)
-      nvar = 1 + sse_getNDIM(cproblemtype)
+      nvar = 1 + sse_getNDIM(cproblemType)
 
     case(SSE_SCALAR)
       nvar = 1 * 2
 
     case(SSE_SYSTEM1,SSE_SYSTEM2)
-      nvar = (1 + sse_getNDIM(cproblemtype)) * 2
+      nvar = (1 + sse_getNDIM(cproblemType)) * 2
 
     case (CORINE_1D)
       nvar = 6
@@ -322,7 +370,7 @@ contains
 
 !<function>
 
-  function sse_getSection(cproblemtype) result(sstring)
+  function sse_getSection(cproblemType) result(sstring)
 
 !<description>
     ! This function returns the section name
@@ -330,7 +378,7 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
+    integer, intent(in) :: cproblemType
 !</input>
 
 !<result>
@@ -339,7 +387,7 @@ contains
 !</result>
 !</function>
 
-    select case(cproblemtype)
+    select case(cproblemType)
     case(POISSON_SCALAR, POISSON_SYSTEM)
       sstring = 'POISSON'
 
@@ -362,7 +410,7 @@ contains
 
 !<function>
 
-  function sse_getSolver(cproblemtype) result(isolver)
+  function sse_getSolver(cproblemType) result(isolver)
 
 !<description>
     ! This function returns the type of solver
@@ -370,7 +418,7 @@ contains
 
 !<input>
     ! Problem type
-    integer, intent(in) :: cproblemtype
+    integer, intent(in) :: cproblemType
 !</input>
 
 !<result>
@@ -379,7 +427,7 @@ contains
 !</result>
 !</function>
 
-    select case(cproblemtype)
+    select case(cproblemType)
     case(POISSON_SCALAR, SSE_SCALAR)
       isolver = SOLVER_SCALAR
 
@@ -392,11 +440,11 @@ contains
 
     case default
       isolver = -1
-      
+
       call output_line("Invalid problem type", &
           OU_CLASS_ERROR,OU_MODE_STD,"sse_getSolver")
       call sys_halt()
     end select
   end function sse_getSolver
-  
+
 end module sse_base

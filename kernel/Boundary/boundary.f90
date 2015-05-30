@@ -2576,11 +2576,9 @@ contains
       ! Create a boundary region that covers the whole boundary component.
       select case (cpar)
       case (BDR_PAR_01)
-        dcurrentpar = real(iboundSegIdx-1,DP)
-        dmaxpar     = real(p_IsegCount(iboundCompIdx),DP)
+        dmaxpar = real(p_IsegCount(iboundCompIdx),DP)
       case (BDR_PAR_LENGTH)
-        dcurrentpar = p_DsegInfo(1+istartidx)
-        dmaxpar     = p_DmaxPar(iboundCompIdx)
+        dmaxpar = p_DmaxPar(iboundCompIdx)
       end select
 
       dcurrentpar = 0.0_DP

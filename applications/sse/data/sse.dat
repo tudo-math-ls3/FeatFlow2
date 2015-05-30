@@ -6,49 +6,47 @@
 [SSE]
 ################################################################################
 
-# Problem sub-type
-#
-# =0: Alex benchmark
-# =1: Marchi benchmark
-# =2: Walters benchmark
-# =3: Winant benchmark
-PROBLEMSUBTYPE = 0
+# Problem parameters
+PROBLEMPARAM = SSE_ALEX
 
-# Problem configuration (parameters)
-PROBLEMCONFIG = SSE-%{SSE.PROBLEMSUBTYPE}
-
-# Problem triangulation and discretisation
-PROBLEMTRIADISCR = SSE_P1
-
+# Problem configuration
+PROBLEMCONFIG = SSE_TRIA_P1
 
 ################################################################################
-[SSE-0]
+[SSE_ALEX]
 ################################################################################
 
-# Problem specific constants
+# Problem specific parameters
 
 # Alex benchmark
 dlength              = 6.0E4
 dlengthB             = 1.0e20
 dwidth               = 15000.0
-iwidthType           = 2
-ibathymetryType      = 0
 dheight              = 7.7
 dheight0             = 7.7
 #dheightRatio
 dforcing             = 1.0
 dcoraccel            = 0.0
 dtidalfreq           = 1.405634296908185E-4
-istressType          = 1
-dstress              = 0.0000098
-iviscosityType       = 1
-dviscosity           = 0.019
-bhasAnalyticSolution = T
 dgravaccel           = 10.0
 
+# Expression for bottom profile:
+# h = dheight0 + (dheight-dheight0)*(1-dx/dlength)
+cbathymetry = 7.7
+
+# Expression for bottom stress:
+# s = const
+cstress = 0.0000098
+
+# Expression for vertical eddy viscosity
+# A_v = const
+cviscosity = 0.019
+
 ################################################################################
-[SSE-1]
+[SSE_MARCHI]
 ################################################################################
+
+# Problem specific parameters
 
 # Marchi benchmark
 dlength             = 1.0
@@ -70,8 +68,10 @@ bhasAnalyticSolution = F
 dgravaccel           = 10.0
 
 ################################################################################
-[SSE-2]
+[SSE_WALTERS]
 ################################################################################
+
+# Problem specific parameters
 
 # Walters benchmark
 dlength              = 4.0E3
@@ -93,10 +93,12 @@ bhasAnalyticSolution = F
 dgravaccel           = 10.0
 
 ################################################################################
-[SSE-3]
+[SSE_WINANT]
 ################################################################################
 
-# Winant benchark
+# Problem specific parameters
+
+# Winant benchmark
 dlength              = 6.0E4
 #dlengthB
 dwidth               = 1000.0

@@ -6,46 +6,46 @@
 [POISSON]
 ################################################################################
 
-# Problem sub-type
-#
-# =0: Pure Dirichlet problem
-# =1: Mixed Dirichlet-Neumann problem
-# =2: Pure Neumann problem
-PROBLEMSUBTYPE = 0
+# Problem parameters
+PROBLEMPARAM = POISSON_PARAM
 
-# Problem configuration (parameters)
-PROBLEMCONFIG = POISSON-%{POISSON.PROBLEMSUBTYPE}
+# Problem configuration
+PROBLEMCONFIG = POISSON_Q1
 
-# Problem triangulation and discretisation
-PROBLEMTRIADISCR = POISSON_P1
+# Dirichlet boundary value
+DIRICHLET = 0.0
 
-################################################################################
-[POISSON-0]
-################################################################################
-
-# Problem specific constants
-
-dpoisson   = 1.0
-ddirichlet = 3.0
+# Neumann boundary value
+NEUMANN   = 0.0
 
 ################################################################################
-[POISSON-1]
+[POISSON_PARAM]
 ################################################################################
 
-# Problem specific constants
+# Problem specific parameters
 
-dpoisson   = 1.0
-ddirichlet = 3.0
-dneumann   = 0.0
+# Scaling parameter in bilinearform (constant value)
+dpoisson = 1.0
 
-################################################################################
-[POISSON-2]
-################################################################################
+# Scaling parameter in bilinear form (xy-dependent)
+#cpoisson   = x+y
 
-# Problem specific constants
+# Expression for right-hand side
+crhs = 2 * _PI * _PI * sin(_PI * x) * sin(_PI * y)
 
-dpoisson   = 1.0
-dneumann   = 0.0
+# Expression for exact solution
+csol = sin(_PI * x) * sin(_PI * y)
+
+# Expression for derivatives of exact solution
+csol_x   =              _PI * cos(_PI * x) * sin(_PI * y)
+csol_y   =              _PI * sin(_PI * x) * cos(_PI * y)
+csol_xx  =       -_PI * _PI * sin(_PI * x) * sin(_PI * y)
+csol_xy  =        _PI * _PI * cos(_PI * x) * cos(_PI * y)
+csol_yy  =       -_PI * _PI * sin(_PI * x) * sin(_PI * y)
+csol_xxx = -_PI * _PI * _PI * cos(_PI * x) * sin(_PI * y)
+csol_xxy = -_PI * _PI * _PI * sin(_PI * x) * cos(_PI * y)
+csol_xyy = -_PI * _PI * _PI * cos(_PI * x) * sin(_PI * y)
+csol_yyy = -_PI * _PI * _PI * sin(_PI * x) * cos(_PI * y)
 
 ################################################################################
 [POISSON_P1]
@@ -63,6 +63,21 @@ ELEMENTTYPE = EL_P1
 # Cubature type
 CUBATURETYPE = QG3_T
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  F  0.0  F  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  T  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  F  'NEU'  1  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_P2]
 ################################################################################
@@ -79,6 +94,21 @@ ELEMENTTYPE = EL_P2
 # Cubature type
 CUBATURETYPE = QG4_T
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  4.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_P2E]
 ################################################################################
@@ -94,6 +124,21 @@ ELEMENTTYPE = EL_P2E
 
 # Cubature type
 CUBATURETYPE = QG5_T
+
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
 
 ################################################################################
 [POISSON_P2P1]
@@ -117,6 +162,22 @@ CUBATURETYPE(3) =
                   QG5_T
                   QG5_T
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(2) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  2  %{POISSON.DIRICHLET}
+           1  0  '01'   0.0  T  0.0  T  'DIR'  3  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_P2EP1]
 ################################################################################
@@ -139,6 +200,26 @@ CUBATURETYPE(3) =
                   QG5_T
                   QG5_T
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(2) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  2  %{POISSON.DIRICHLET}
+           1  0  '01'   0.0  T  0.0  T  'DIR'  3  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(8) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  1  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_Q1]
 ################################################################################
@@ -154,6 +235,22 @@ ELEMENTTYPE = EL_Q1
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
+
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
 
 ################################################################################
 [POISSON_Q2]
@@ -171,6 +268,21 @@ ELEMENTTYPE = EL_Q2
 # Cubature type
 CUBATURETYPE = AUTO_G6
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_Q3]
 ################################################################################
@@ -186,6 +298,21 @@ ELEMENTTYPE = EL_Q3
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
+
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(1) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  1  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(4) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  1  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  1  %{POISSON.NEUMANN}
 
 ################################################################################
 [POISSON_Q2Q1]
@@ -209,6 +336,26 @@ CUBATURETYPE(3) =
                   AUTO_G6
                   AUTO_G6
 
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(2) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  2  %{POISSON.DIRICHLET}
+           1  0  '01'   0.0  T  0.0  T  'DIR'  3  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(8) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  1  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
+
 ################################################################################
 [POISSON_Q3Q2]
 ################################################################################
@@ -230,4 +377,24 @@ CUBATURETYPE(3) =
                   AUTO_G6
                   AUTO_G6
                   AUTO_G6
+
+# Boundary conditions: pure Dirichlet
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+BOUNDARYCONDITION(2) =
+           1  0  '01'   0.0  T  0.0  T  'DIR'  2  %{POISSON.DIRICHLET}
+           1  0  '01'   0.0  T  0.0  T  'DIR'  3  %{POISSON.DIRICHLET}
+
+# Boundary conditions: mixed Dirichlet-Neumann
+# syntax: icomp, isegment, partype, dminParam, bminParam,
+#         dmaxParam, bmaxParam, bdrtype, ieq, expression
+-BOUNDARYCONDITION(8) =
+           1  1  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  1  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  2  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  2  %{POISSON.DIRICHLET}
+           1  3  '01'   0.0  F  0.0  F  'DIR'  3  %{POISSON.DIRICHLET}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  2  %{POISSON.NEUMANN}
+           1  4  '01'   0.0  T  0.0  T  'NEU'  3  %{POISSON.NEUMANN}
                   

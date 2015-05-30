@@ -6,28 +6,36 @@
 [CORINE]
 ################################################################################
 
-# Problem sub-type
-#
-# =0: Standard problem
-PROBLEMSUBTYPE = 0
+# Problem parameters
+PROBLEMPARAM = CORINE_PARAM_SCALAR_1D
 
-# Problem configuration (parameters)
-PROBLEMCONFIG = CORINE-%{CORINE.PROBLEMSUBTYPE}
-
-# Problem triangulation and discretisation
-PROBLEMTRIADISCR = CORINE_P1
+# Problem configuration
+PROBLEMCONFIG = CORINE_P1_1D
+#PROBLEMCONFIG = CORINE_P1_2D
 
 ################################################################################
-[CORINE-0]
+[CORINE_PARAM_SCALAR]
 ################################################################################
 
 # Problem specific constants
 
-dpoisson   = 1.0
-ddirichlet = 3.0
+
+# Expression for exact solution
+csol =
+
+# Expression for derivatives of exact solution
+csol_x   =
+csol_y   =
+csol_xx  =
+csol_xy  =
+csol_yy  =
+csol_xxx =
+csol_xxy =
+csol_xyy =
+csol_yyy = 
 
 ################################################################################
-[CORINE_P1]
+[CORINE_P1_2D]
 ################################################################################
 
 # Boundary parametrisation
@@ -43,7 +51,7 @@ ELEMENTTYPE = EL_P1
 CUBATURETYPE = QG3_T
 
 ################################################################################
-[CORINE_P2]
+[CORINE_P2_2D]
 ################################################################################
 
 # Boundary parametrisation
@@ -59,23 +67,7 @@ ELEMENTTYPE = EL_P2
 CUBATURETYPE = QG4_T
 
 ################################################################################
-[CORINE_P2E]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = TRIA.prm
-
-# Domain triangulation
-TRIFILE = TRIA.tri
-
-# Element type
-ELEMENTTYPE = EL_P2E
-
-# Cubature type
-CUBATURETYPE = QG5_T
-
-################################################################################
-[CORINE_Q1]
+[CORINE_Q1_2D]
 ################################################################################
 
 # Boundary parametrisation
@@ -91,7 +83,7 @@ ELEMENTTYPE = EL_Q1
 CUBATURETYPE = AUTO_G6
 
 ################################################################################
-[CORINE_Q2]
+[CORINE_Q2_2D]
 ################################################################################
 
 # Boundary parametrisation
@@ -102,22 +94,6 @@ TRIFILE = QUAD.tri
 
 # Element type
 ELEMENTTYPE = EL_Q2
-
-# Cubature type
-CUBATURETYPE = AUTO_G6
-
-################################################################################
-[CORINE_Q3]
-################################################################################
-
-# Boundary parametrisation
-PRMFILE = QUAD.prm
-
-# Domain triangulation
-TRIFILE = QUAD.tri
-
-# Element type
-ELEMENTTYPE = EL_Q3
 
 # Cubature type
 CUBATURETYPE = AUTO_G6
