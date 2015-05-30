@@ -1223,6 +1223,7 @@ contains
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
+            call linf_releaseAssemblyData(rvectorAssembly)
 
           end do
 
@@ -1270,6 +1271,7 @@ contains
 
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
+              call linf_releaseAssemblyData(rvectorAssembly)
 
               ! Release memory
               deallocate(IelementList, IelementOrientation)
@@ -1701,6 +1703,7 @@ contains
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
+            call linf_releaseAssemblyData(rvectorAssembly)
 
           end do
 
@@ -1748,6 +1751,7 @@ contains
 
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
+              call linf_releaseAssemblyData(rvectorAssembly)
 
               ! Release memory
               deallocate(IelementList, IelementOrientation)
@@ -6206,6 +6210,7 @@ contains
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
+            call linf_releaseAssemblyData(rvectorAssembly)
 
           end do
 
@@ -6253,7 +6258,8 @@ contains
 
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
-
+              call linf_releaseAssemblyData(rvectorAssembly)
+              
               ! Release memory
               deallocate(IelementList, IelementOrientation)
 

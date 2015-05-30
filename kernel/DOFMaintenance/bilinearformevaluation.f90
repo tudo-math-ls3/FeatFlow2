@@ -7755,6 +7755,7 @@ contains
 
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
+            call bilf_releaseAssemblyData(rmatrixAssembly)
 
           end do
 
@@ -7803,7 +7804,8 @@ contains
 
               ! Release the assembly structure.
               call bilf_doneAssembly(rmatrixAssembly)
-
+              call bilf_releaseAssemblyData(rmatrixAssembly)
+              
               ! Release memory
               deallocate(IelementList, IelementOrientation)
 
