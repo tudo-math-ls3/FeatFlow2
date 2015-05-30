@@ -12,6 +12,8 @@ module user_flows
 
 use fsystem
 
+implicit none
+
 contains
 
   ! ***************************************************************************

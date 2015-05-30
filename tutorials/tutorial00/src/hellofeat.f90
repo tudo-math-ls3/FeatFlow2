@@ -7,6 +7,8 @@ program HelloFeat
   use fsystem
   use genoutput
 
+  implicit none
+
   ! Initialisation
   call sys_init()
   call output_init("")

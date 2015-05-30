@@ -14,6 +14,8 @@ module timestepaux
   use fsystem
   use linearsystemblock
 
+  implicit none
+
 !<constants>
 
 !<constantblock description="Global time-stepping types">

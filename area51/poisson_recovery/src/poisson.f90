@@ -25,6 +25,8 @@ program poisson
 
   use poisson2d
 
+  implicit none
+
   ! local variables
   type(t_parlist) :: rparlist
   type(t_problem) :: rproblem

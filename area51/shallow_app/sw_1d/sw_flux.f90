@@ -1,5 +1,7 @@
 module sw_flux
 
+        implicit none
+
 	contains
 	
 	

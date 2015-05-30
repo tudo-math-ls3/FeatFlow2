@@ -6,6 +6,8 @@ program featcmdline
   use commandparserbase
   use commandparser
 
+  implicit none
+
   ! Variables
   type(t_commandstatus) :: rcmdStatus
 

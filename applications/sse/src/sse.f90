@@ -70,6 +70,8 @@ program sse
   use sse_base_sse
   use sse_base_corine  
 
+  implicit none
+
   ! local variables
   type(t_timer) :: rtimer
   type(t_parlist) :: rparlist
