@@ -3739,9 +3739,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
-      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsys_buildFluxFCTBlock(rafcstab, rx, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+      rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -3755,13 +3756,12 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling parameter
+    ! scaling parameters
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -3837,31 +3837,32 @@ contains
         if (present(rxPredictor)) then
           ! ... both approximate time derivative and predictor are present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
-              rxTimeDeriv%RvectorBlock(1), rxPredictor%RvectorBlock(1),&
-              rcollection, rperfconfig)
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
+              rgroupFEMSet, rmatrix, rxTimeDeriv%RvectorBlock(1),&
+              rxPredictor%RvectorBlock(1), rcollection, rperfconfig)
         else
           ! ... only the approximate time derivative is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
-              rxTimeDeriv%RvectorBlock(1),&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
+              rgroupFEMSet, rmatrix, rxTimeDeriv%RvectorBlock(1),&
               rcollection=rcollection, rperfconfig=rperfconfig)
         end if
       else
         if (present(rxPredictor)) then
           ! ... only the predictor is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              theta, tstep, dscale, bclear,  bquickAssembly, ioperationSpec,&
-              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
-              rxPredictor=rxPredictor%RvectorBlock(1),&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
+              rgroupFEMSet, rmatrix, rxPredictor=rxPredictor%RvectorBlock(1),&
               rcollection=rcollection, rperfconfig=rperfconfig)
         else
           ! ... neither the approximate time derivative nor the predictor is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec,fcb_calcFluxFCTSys_sim,&
+              rgroupFEMSet, rmatrix,&
               rcollection=rcollection, rperfconfig=rperfconfig)
         end if
       end if
@@ -3960,16 +3961,16 @@ contains
         ! Assemble explicit part of raw-antidiffive fluxes
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 1.0_DP) then
+        if (dscaleExplicit .ne. 0.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
-          ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          ! $$ F_{ij}^n = dscaleExplicit\Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*dscaleExplicit,&
                 bclear, p_Dflux0)
           else
             call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*dscaleExplicit,&
                 bclear, p_Dflux0)
           end if
         elseif (.not.bquickAssembly .and. bclear) then
@@ -4090,16 +4091,16 @@ contains
 
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 0.0_DP) then
+        if (dscaleImplicit .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
-          ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
+          ! $$ F_{ij} = dscaleImplicit\Delta t D_{ij}(U_i-U_j) $$
           if (buseCallback) then
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*dscaleImplicit,&
                 bclear, p_Dflux)
           else
             call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*dscaleImplicit,&
                 bclear, p_Dflux)
           end if
         end if
@@ -4107,9 +4108,9 @@ contains
         if (bquickAssembly) then
           ! We may check of either the implicit or explicit part are
           ! missing so that some redundant computations may be skipped
-          if (theta .ne. 1.0_DP) then
+          if (dscaleExplicit .ne. 0.0_DP) then
             ! The explicit part of the raw-antidiffusive fluxes exists
-            if (theta .ne. 0.0_DP) then
+            if (dscaleImplicit .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
               call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
@@ -4120,7 +4121,7 @@ contains
               ! overwrite them by the explicit part
               call lalg_copyVector(p_Dflux0, p_Dflux)
             end if
-            ! if theta = 1 then the explicit part does not exist
+            ! If dscaleExplicit = 0 then no update of the implicit fluxes is required
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes
@@ -4690,9 +4691,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
-      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsys_buildFluxFCTScalar(rafcstab, rx, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+      rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -4704,13 +4706,12 @@ contains
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling parameter
+    ! scaling parameters
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -4861,16 +4862,16 @@ contains
         ! Assemble explicit part of raw-antidiffive fluxes
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 1.0_DP) then
+        if (dscaleExplicit .ne. 0.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
-          ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          ! $$ F_{ij}^n = dscaleExplicit\Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*dscaleExplicit,&
                 bclear, p_Dflux0)
           else
             call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*dscaleExplicit,&
                 bclear, p_Dflux0)
           end if
         elseif (.not.bquickAssembly .and. bclear) then
@@ -4991,16 +4992,16 @@ contains
 
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 0.0_DP) then
+        if (dscaleImplicit .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
-          ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
+          ! $$ F_{ij} = dscaleImplicit\Delta t D_{ij}(U_i-U_j) $$
           if (buseCallback) then
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*dscaleImplicit,&
                 bclear, p_Dflux)
           else
             call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*dscaleImplicit,&
                 bclear, p_Dflux)
           end if
         end if
@@ -5008,9 +5009,9 @@ contains
         if (bquickAssembly) then
           ! We may check of either the implicit or explicit part are
           ! missing so that some redundant computations may be skipped
-          if (theta .ne. 1.0_DP) then
+          if (dscaleExplicit .ne. 0.0_DP) then
             ! The explicit part of the raw-antidiffusive fluxes exists
-            if (theta .ne. 0.0_DP) then
+            if (dscaleImplicit .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
               call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
@@ -5021,7 +5022,7 @@ contains
               ! overwrite them by the explicit part
               call lalg_copyVector(p_Dflux0, p_Dflux)
             end if
-            ! if theta = 1 then the explicit part does not exist
+            ! If dscaleExplicit = 0 then no update of the implicit fluxes is required
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes

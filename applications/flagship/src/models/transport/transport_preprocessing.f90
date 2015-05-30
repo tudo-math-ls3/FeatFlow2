@@ -1760,7 +1760,7 @@ contains
 
         ! Compute the raw antidiffusive mass fluxes
         call afcsc_buildFluxFCT(rafcstab, rvectorHigh,&
-            0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+            0.0_DP, 0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
             AFCSTAB_FCTFLUX_EXPLICIT,&
             rmatrix=p_rconsistentMassMatrix, rxTimeDeriv=rvectorHigh)
 

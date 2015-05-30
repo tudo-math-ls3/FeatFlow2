@@ -276,16 +276,7 @@ sucdvariable(5) =
 ################################################################################
 
 # type of time-stepping algorithm
-# 1 = two-level theta-scheme
-# 2 = explicit Runge-Kutta scheme
-# 5 = full MG
-ctimestepType = 1
-
-# implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
-
-# number of steps for multisteps scheme
-multisteps = 0
+ctimestep = TSTEP_CRANK_NICHOLSON
 
 # final time for the simulation.
 dfinalTime = 0.231

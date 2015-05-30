@@ -267,10 +267,7 @@ sucdvariable(5) =
 ioutputlevel = 1
 
 # type of time-stepping algorithm
-# 1 = two-level theta-scheme
-# 2 = explicit Runge-Kutta scheme
-# 5 = full MG
-ctimestepType = 1
+ctimestep = TSTEP_CRANK_NICHOLSON
 
 # norm to use for solution variation checking
 # 0 = Euclidian norm
@@ -278,12 +275,6 @@ ctimestepType = 1
 # 2 = L2-norm
 # 3 = MAX-norm
 isolNorm = 0
-
-# implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
-
-# number of steps for multisteps scheme
-multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0

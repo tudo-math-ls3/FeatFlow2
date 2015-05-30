@@ -28,53 +28,49 @@
 !# 4.) hydro_calcRhs
 !#     -> Calculates the explicit right-hand side vector
 !#
-!# 5.) hydro_calcRhsRungeKuttaScheme
-!#     -> Calculates the right-hand side vector
-!#        used in the explicit Runge-Kutta scheme
-!#
-!# 6.) hydro_calcLinearisedFCT
+!# 5.) hydro_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
-!# 7.) hydro_calcFluxFCT
+!# 6.) hydro_calcFluxFCT
 !#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
 !#
-!# 8.) hydro_calcCorrectionFCT
+!# 7.) hydro_calcCorrectionFCT
 !#     -> Calculates the contribution of the antidiffusive fluxes
 !#        limited by the FCT algorithm and applies them to the residual
 !#
-!# 9.) hydro_limitEdgewiseVelocity
+!# 8.) hydro_limitEdgewiseVelocity
 !#     -> Performs synchronised flux correction for the velocity
 !#
-!# 10.) hydro_limitEdgewiseMomentum
-!#      -> Performs synchronised flux correction for the momentum
+!# 9.) hydro_limitEdgewiseMomentum
+!#     -> Performs synchronised flux correction for the momentum
 !#
-!# 11.) hydro_calcGeometricSourceterm
+!# 10.) hydro_calcGeometricSourceterm
 !#      -> Calculates the geometric source term for axi-symmetric,
 !#         cylindrical or sperical symmetric coordinate systems.
 !#
-!# 12.) hydro_calcDivergenceVector
+!# 11.) hydro_calcDivergenceVector
 !#      -> Calculates the divergence vector.
 !#
-!# 13.) hydro_calcTimeDerivative
+!# 12.) hydro_calcTimeDerivative
 !#      -> Calcuates the approximate time derivative
 !#
-!# 14.) hydro_coeffVectorFE
+!# 13.) hydro_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 15.) hydro_coeffVectorAnalytic
+!# 14.) hydro_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 16.) hydro_parseBoundaryCondition
+!# 15.) hydro_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 17.) hydro_setBoundaryCondition
+!# 16.) hydro_setBoundaryCondition
 !#      -> Imposes boundary conditions for nonlinear solver
 !#         by filtering the system matrix and the solution/residual
 !#         vector explicitly (i.e. strong boundary conditions)
 !#
-!# 18.) hydro_calcCFLnumber
+!# 17.) hydro_calcCFLnumber
 !#      -> Calculates the CFL-number
 !#
 !#
@@ -150,7 +146,6 @@ module hydro_callback
   public :: hydro_calcJacobian
   public :: hydro_calcResidual
   public :: hydro_calcRhs
-  public :: hydro_calcRhsRungeKuttaScheme
   public :: hydro_setBoundaryCondition
   public :: hydro_calcLinearisedFCT
   public :: hydro_calcFluxFCT
@@ -269,18 +264,7 @@ contains
           rsolver, rsolution, ssectionName, rcollection)
     end if
 
-
-    ! Do we have to calculate the constant right-hand side?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
-      ! Compute the right-hand side
-      call hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-          rcollection)
-    end if
-
-
+    
     ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
@@ -373,8 +357,8 @@ contains
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used. Then the system
     ! matrix equals the (lumped/consistent) mass matrix.
-    ! ---------------------------------------------------------------------------
-    if (rtimestep%p_rthetaScheme%theta .eq. 0.0_DP) then
+    !---------------------------------------------------------------------------
+    if (rtimestep%dscaleImplicit .eq. 0.0_DP) then
 
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'isystemformat', isystemFormat)
@@ -490,7 +474,7 @@ contains
     ! Compute scaling parameter
     select case (imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      dscale = -rtimestep%p_rthetaScheme%theta*rtimestep%dStep
+      dscale = -rtimestep%dscaleImplicit*rtimestep%dStep
     case default
       dscale = -1.0_DP
     end select
@@ -845,11 +829,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_L)-theta*dt*L $
+        !   $ A = blockdiag(M_L) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the lumped mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices add it to the lumped mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -864,11 +848,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_C)-theta*dt*L $
+        !   $ A = blockdiag(M_C) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the consistent mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices to add it to the consistent mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'consistentmassmatrix', consistentMassMatrix)
@@ -903,11 +887,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_L)-theta*dt*L $
+        !   $ A = blockdiag(M_L) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the lumped mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scale * dt * L" it suffices to add
+        ! it to the lumped mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -925,11 +909,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_C)-theta*dt*L $
+        !   $ A = blockdiag(M_C) - scaleExplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the consistent mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices to add it to the consistent mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'consistentmassmatrix', consistentMassMatrix)
@@ -1034,7 +1018,7 @@ contains
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = M*U^n + (1-\theta) * \Delta t * div F(U^n) + S(U^n) + b.c.`s  $$
+    !  $$ rhs = M*U^n + scaleExplicit * dt * div F(U^n) + S(U^n) + b.c.`s  $$
     !
     ! where the source term is optional.
 !</description>
@@ -1097,16 +1081,16 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Do we have an explicit part?
-      if (rtimestep%p_rthetaScheme%theta .ne. 1.0_DP) then
+      if (rtimestep%dscaleExplicit .ne. 0.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1.0_DP-rtimestep%p_rthetaScheme%theta) * rtimestep%dStep
+        dscale = rtimestep%dscaleExplicit*rtimestep%dStep
 
         !-----------------------------------------------------------------------
         ! Compute the divergence operator for the right-hand side
         ! evaluated at the solution from the previous(!) iteration
         !
-        !   $$ rhs = (1-\theta) * \Delta t * [div F(U^n) + geomSource(U^n) $$
+        !   $$ rhs = scaleExplicit * dt * [div F(U^n) + geomSource(U^n) $$
         !-----------------------------------------------------------------------
 
         call hydro_calcDivergenceVector(rproblemLevel,&
@@ -1170,18 +1154,18 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-                rsolutionPredictor=p_rpredictor)
+                rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+                1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+                ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
           end select
         end if
 
-      else ! theta = 1
+      else ! dscaleExplicit == 0
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
         !
-        !   $$ rhs = M*U^n $$
+        !   $$ rhs = M * U^n $$
         !-----------------------------------------------------------------------
 
         ! What type of mass matrix should be used?
@@ -1229,13 +1213,13 @@ contains
             
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-                rsolutionPredictor=p_rpredictor)
+                rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+                1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+                ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
           end select
         end if
         
-      end if ! theta
+      end if ! dscaleExplicit == 0
 
     case default
 
@@ -1275,12 +1259,12 @@ contains
 !<description>
     ! This subroutine computes the nonlinear residual vector
     !
-    ! $$ res^{(m)} = rhs-[M*U^{(m)}-\theta\Delta t div F(U^{(m)})-S^{(m)}-b.c.`s $$
+    ! $$ res^{(m)} = rhs - [M*U^{(m)} - scaleImplicit * dt * div F(U^{(m)})-S^{(m)}-b.c.`s $$
     !
-    ! for the standard two-level theta-scheme, whereby the  source
+    ! for any two-level time integration scheme, whereby the source
     ! term $S^{(m)}$ is optional. The constant right-hand side
     !
-    !  $$ rhs = [M*U^n + (1-\theta)\Delta t div F(U^n) + S^n + b.c.`s $$
+    !  $$ rhs = [M*U^n + scaleExplicit * dt * div F(U^n) + S^n + b.c.`s $$
     !
     ! must be provided via the precomputed vector rrhs.
 !</description>
@@ -1362,12 +1346,12 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Compute scaling parameter
-      dscale = rtimestep%p_rthetaScheme%theta*rtimestep%dStep
+      dscale = rtimestep%dscaleImplicit*rtimestep%dStep
       
       !-----------------------------------------------------------------------
       ! Compute the transient term
       !
-      !   $$ res := res - M*U^{(m)} $$
+      !   $$ res := res - M * U^{(m)} $$
       !-----------------------------------------------------------------------
       
       ! What type of mass matrix should be used?
@@ -1379,7 +1363,7 @@ contains
         call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
-            rres%RvectorBlock(iblock), -1._DP, 1.0_DP)
+            rres%RvectorBlock(iblock), -1.0_DP, 1.0_DP)
       end do
       
     case default
@@ -1396,8 +1380,8 @@ contains
     !
     ! where
     !
-    !   $dscale = \theta * \Delta t$ for transient flows
-    !   $dscale = 1$                 for steady-state flows
+    !   $dscale = scaleImplicit * dt$ for transient flows
+    !   $dscale = 1$                  for steady-state flows
     !---------------------------------------------------------------------------
 
     ! Do we have an implicit part?
@@ -1455,9 +1439,10 @@ contains
           ioperationSpec = ioperationSpec + AFCSTAB_FCTFLUX_REJECTED
 
       ! Assemble implicit part of the raw-antidiffusive fluxes
-      call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%p_rthetaScheme%theta,&
-          rtimestep%dStep, 1.0_DP, .true., .true., ioperationSpec,&
-          ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
+      call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+          rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+          1.0_DP, .true., .true., ioperationSpec, ssectionName,&
+          rcollection, rsolutionPredictor=p_rpredictor)
       
       ! Set operation specifier
       if (ite .eq. 0) then
@@ -1544,223 +1529,6 @@ contains
     call stat_stopTimer(p_rtimer)
 
   end subroutine hydro_calcResidual
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-      rcollection, rsource)
-
-!<description>
-    ! This subroutine computes the right-hand side vector
-    ! used in the explicit Lax-Wendroff time-stepping scheme
-!</description>
-
-!<input>
-    ! time-stepping structure
-    type(t_timestep), intent(in) :: rtimestep
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(in) :: rsolution0
-
-    ! number of explicit step
-    integer, intent(in) :: istep
-
-    ! section name in parameter list and collection structure
-    character(LEN=*), intent(in) :: ssectionName
-
-    ! OPTIONAL: source vector
-    type(t_vectorBlock), intent(in), optional :: rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! solver structure
-    type(t_solver), intent(inout) :: rsolver
-
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
-
-    ! right-hand side vector
-    type(t_vectorBlock), intent(inout) :: rrhs
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_parlist), pointer :: p_rparlist
-    type(t_timer), pointer :: p_rtimer
-    type(t_vectorBlock), pointer :: p_rpredictor
-    real(DP) :: dscale
-    integer :: lumpedMassMatrix, consistentMassMatrix, massMatrix
-    integer :: imasstype, iblock, massAFC, inviscidAFC, viscousAFC
-    
-    
-    ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection,&
-        'rtimerAssemblyVector', ssectionName=ssectionName)
-    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
-
-    ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
-
-    !---------------------------------------------------------------------------
-    ! Compute the scaling parameter
-    !
-    !   $ dscale = weight * \Delta t $
-    !---------------------------------------------------------------------------
-    
-    dscale = rtimestep%p_rRungeKuttaScheme%DmultistepWeights(istep)*rtimestep%dStep
-
-    !---------------------------------------------------------------------------
-    ! Compute the divergence operator for the right-hand side
-    ! evaluated at the solution from the previous(!) iteration
-    !
-    !   $$ rhs = dscale * [div F(U^n) + geomSource(U^n)]$$
-    !---------------------------------------------------------------------------
-
-    if (dscale .ne. 0.0_DP) then
-
-      ! Compute the explicit part of the divergence term
-      call hydro_calcDivergenceVector(rproblemLevel,&
-          rsolver%rboundaryCondition, rsolution,&
-          rtimestep%dTime-rtimestep%dStep, dscale, .true.,&
-          rrhs, ssectionName, rcollection)
-
-      ! Build the geometric source term (if any)
-      call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
-          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
-    end if
-      
-    select case(imasstype)
-    case (MASS_LUMPED, MASS_CONSISTENT)
-
-      !-------------------------------------------------------------------------
-      ! Compute the transient term
-      !
-      !   $$ rhs := rhs + M*U^n $$
-      !--------------------------------------------------------------------------
-
-      ! What type of mass matrix should be used?
-      massMatrix = merge(lumpedMassMatrix,&
-          consistentMassMatrix, imasstype .eq. MASS_LUMPED)
-      
-      ! Apply mass matrix to solution vector
-      do iblock = 1, rsolution%nblocks
-        call lsyssc_matVec(&
-            rproblemLevel%RmatrixScalar(massMatrix),&
-            rsolution%RvectorBlock(iblock),&
-            rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
-      end do
-    end select
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the mass term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*fmass(u^n+1,u^n) $$
-    !--------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'massAFC', massAFC, 0)
-    
-    if (massAFC > 0) then
-
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
-
-      case (AFCSTAB_NLINLPT_MASS)
-        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
-        stop
-      end select
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the inviscid term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*finviscid(u^n+1,u^n) $$
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
-    if (inviscidAFC > 0) then
-
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-        
-      case (AFCSTAB_NLINFCT_EXPLICIT,&
-            AFCSTAB_NLINFCT_IMPLICIT,&
-            AFCSTAB_NLINFCT_ITERATIVE)
-
-        ! Set pointer to predictor
-        p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-        
-        ! Compute $\tilde u = (M_L)^{-1}*b^n$
-        call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
-            rrhs, 1.0_DP, p_rpredictor)
-        
-        ! Set specifier
-        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
-            ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
-            AFCSTAB_HAS_PREDICTOR)
-
-        ! Assemble explicit part of the raw-antidiffusive fluxes
-        call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-            rtimestep%p_rthetaScheme%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-            AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-            rsolutionPredictor=p_rpredictor)
-
-        ! Perform flux correction
-        call hydro_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD, rrhs,&
-            ssectionName, rcollection)
-      end select
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the viscous term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*fviscous(u^n+1,u^n) $$
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'viscousAFC', viscousAFC, 0)
-
-    if (viscousAFC > 0) then
-      
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(viscousAFC)%cafcstabType)
-
-      case (AFCSTAB_NLINLPT_SYMMETRIC)
-        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
-        stop
-      end select
-    end if
-
-    ! Apply the source vector to the right-hand side (if any)
-    if (present(rsource)) then
-      if (rsource%NEQ .gt. 0)&
-          call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
-    end if
-
-    ! Stop time measurement for global operator
-    call stat_stopTimer(p_rtimer)
-
-  end subroutine hydro_calcRhsRungeKuttaScheme
 
   !*****************************************************************************
 
@@ -1960,9 +1728,10 @@ contains
           
           ! Build the raw antidiffusive fluxes and include
           ! contribution from the consistent mass matrix
-          call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-              ssectionName, rcollection, rsolutionTimeDeriv=p_rvector1)
+          call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+              1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+              AFCSTAB_FCTFLUX_EXPLICIT, ssectionName,&
+              rcollection, rsolutionTimeDeriv=p_rvector1)
           
           ! Release temporal memory
           if (.not.present(rvector1)) then
@@ -1974,9 +1743,9 @@ contains
           
           ! Build the raw antidiffusive fluxes without including
           ! the contribution from consistent mass matrix
-          call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-              ssectionName, rcollection)
+          call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+              1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+              AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection)
         end if
     
         !-----------------------------------------------------------------------
@@ -2056,8 +1825,9 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, ssectionName, rcollection,&
+  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, ssectionName, rcollection,&
       rsolutionTimeDeriv, rsolutionPredictor)
 
 !<description>
@@ -2069,13 +1839,12 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling parameter
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -2151,18 +1920,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2173,18 +1942,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2195,18 +1964,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2224,18 +1993,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2246,8 +2015,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2256,8 +2025,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2268,8 +2037,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2278,8 +2047,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2297,8 +2066,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2307,8 +2076,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2319,8 +2088,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2329,8 +2098,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2341,8 +2110,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2351,8 +2120,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)

@@ -199,17 +199,6 @@ contains
       end if
 
       
-      ! Do we have to calculate the constant right-hand side?
-      ! --------------------------------------------------------------------------
-      if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-        
-        ! Compute the right-hand side
-        call hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-            rcollection)
-      end if
-
-
       ! Do we have to calculate the residual?
       ! --------------------------------------------------------------------------
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
@@ -303,54 +292,6 @@ contains
 
       ! Make a local copy
       iSpec = ioperationSpec
-
-      ! Do we have to calculate the constant right-hand side?
-      ! --------------------------------------------------------------------------
-      if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-        
-        ! Get configuration from hydrodynamic section of parameter list
-        call parlst_getvalue_int(p_rparlist,&
-            ssectionNameHydro, 'isystemformat', isystemFormat)
-        
-        ! What type of system format are we?
-        select case(isystemFormat)
-          
-        case (SYSTEM_INTERLEAVEFORMAT)
-          
-          ! Compute the preconditioner in interleaved format
-          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
-              rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
-              zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
-              fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
-              fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
-
-        case (SYSTEM_BLOCKFORMAT)
-
-          ! Compute the preconditioner in block format
-          call transp_calcPreconditioner(rproblemLevel, rtimestep,&
-              rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
-              zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
-              fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
-              fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
-
-        case default
-          call output_line('Invalid system format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
-          call sys_halt()
-        end select
-        
-        ! Compute the right-hand side
-        call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rrhs, istep,&
-            ssectionNameTransport, rcollection, rsource,&
-            fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
-            fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
-        
-        ! Remove specifier for the preconditioner (if any)
-        iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
-      end if
 
 
       ! Do we have to calculate the residual?
@@ -2096,9 +2037,10 @@ contains
       
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
-      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-          ssectionNameHydro, rcollection, rsolutionTimeDeriv=p_Rvector1(1))
+      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1),&
+          1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+          AFCSTAB_FCTFLUX_EXPLICIT, ssectionNameHydro,&
+          rcollection, rsolutionTimeDeriv=p_Rvector1(1))
 
       ! Release temporal memory
       if (.not.present(Rvector1)) call lsysbl_releaseVector(Rvector1Tmp(1))
@@ -2109,9 +2051,9 @@ contains
       
       ! Build the raw antidiffusive fluxes without including the
       ! contribution from consistent mass matrix
-      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-          ssectionNameHydro, rcollection)
+      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1),&
+          1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+          AFCSTAB_FCTFLUX_EXPLICIT, ssectionNameHydro, rcollection)
     end if
 
     !--- transport model -------------------------------------------------------

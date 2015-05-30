@@ -129,20 +129,24 @@ contains
 !</subroutine>
 
     ! local variables
+    character(len=SYS_STRLEN) :: stimestepName
     integer :: npc
+    logical :: bcheck
 
     ! Set number of coupled problems
     npc = 1
     if (present(nproblemsCoupled)) npc = nproblemsCoupled
-
-
+    
     ! The INTENT(out) already initialises rtimestep with the most
     ! important information.
     rtimestep%sName = trim(adjustl(ssectionName))
-
+    
+    ! Get time-stepping algorithm (family + scheme type)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+        "ctimestep", stimestepName)
+    rtimestep%ctimestep   = tstep_igetID(stimestepName)
+    
     ! Get mandatory configuration values from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-        "ctimestepType", rtimestep%ctimestepType)
     call parlst_getvalue_double(rparlist, ssectionName,&
         "dfinalTime", rtimestep%dfinalTime)
     call parlst_getvalue_double(rparlist, ssectionName,&
@@ -172,28 +176,102 @@ contains
     call tstep_decodeOutputLevel(rtimestep)
 
     ! Get solver dependent configuration values from parameter list
-    select case(rtimestep%ctimestepType)
-    case (TSTEP_THETA_SCHEME)
-      ! Two-level theta scheme
+    ! and allocate array of temporal vectors
+    select case(tstep_getFamily(rtimestep%ctimestep))
+    case (TSTEP_THETA)
+      ! Two-level theta scheme family
       allocate(rtimestep%p_rthetaScheme)
+      
+      select case(tstep_getType(rtimestep%ctimestep))
+      case (TSTEP_FORWARD_EULER)
+        rtimestep%p_rthetaScheme%theta = 0.0_DP
+        
+      case (TSTEP_BACKWARD_EULER)
+        rtimestep%ctimestep = ior(rtimestep%ctimestep,TSTEP_IMPLICIT)
+        rtimestep%p_rthetaScheme%theta = 1.0_DP
+        
+      case (TSTEP_CRANK_NICHOLSON)
+        rtimestep%ctimestep = ior(rtimestep%ctimestep,TSTEP_IMPLICIT)
+        rtimestep%p_rthetaScheme%theta = 0.5_DP
+        
+      case (TSTEP_THETA_GEN)
+        ! Get theta value from from parameter list
+        call parlst_getvalue_double(rparlist, ssectionName,&
+            "theta", rtimestep%p_rthetaScheme%theta)
 
-      ! Get mandatory configuration values from parameter list
-      call parlst_getvalue_double(rparlist, ssectionName,&
-          "theta", rtimestep%p_rthetaScheme%theta)
+        if (rtimestep%p_rthetaScheme%theta .ne. 0.0) then
+          rtimestep%ctimestep = ior(rtimestep%ctimestep,TSTEP_IMPLICIT)
+        end if
+                
+      case (TSTEP_FSTHETA_GEN)
+        ! Get theta, and alpha values from from parameter list
+        call parlst_getvalue_double(rparlist, ssectionName,&
+            "theta", rtimestep%p_rthetaScheme%theta)
+        rtimestep%p_rthetaScheme%gamma = 1.0_DP-2.0_DP*rtimestep%p_rthetaScheme%theta
+        rtimestep%p_rthetaScheme%alpha = rtimestep%p_rthetaScheme%gamma/(1.0_DP-rtimestep%p_rthetaScheme%theta)
+        call parlst_getvalue_double(rparlist, ssectionName,&
+            "alpha", rtimestep%p_rthetaScheme%alpha, rtimestep%p_rthetaScheme%alpha)
+
+        if (rtimestep%p_rthetaScheme%alpha .ne. 0.0) then
+          rtimestep%ctimestep = ior(rtimestep%ctimestep,TSTEP_IMPLICIT)
+        end if
+        
+      case (TSTEP_FSTHETA_2)
+        rtimestep%ctimestep = ior(rtimestep%ctimestep,TSTEP_IMPLICIT)
+        rtimestep%p_rthetaScheme%theta = 1.0_DP-sqrt(2.0_DP)/2.0_DP
+        rtimestep%p_rthetaScheme%gamma = 1.0_DP-2.0_DP*rtimestep%p_rthetaScheme%theta
+        rtimestep%p_rthetaScheme%alpha = rtimestep%p_rthetaScheme%gamma/(1.0_DP-rtimestep%p_rthetaScheme%theta)
+        
+      case default
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Invalid type of time stepping algorithm!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_createTimestepFromParlist')
+        end if
+        call sys_halt()
+      end select
       
       ! Allocate array of temporal vectors
       allocate(rtimestep%p_rthetaScheme%RtempVectors(npc))
       
-    case (TSTEP_RK_SCHEME)
-      ! Multi-step Runge-Kutta scheme
+    case (TSTEP_RUNGE_KUTTA)
+      ! Multi-stage Runge-Kutta time-stepping scheme
       allocate(rtimestep%p_rRungeKuttaScheme)
+
+      ! Try Butcher tableau
+      call tstep_genButcherTableau(rtimestep%ctimestep,&
+          rtimestep%p_rRungeKuttaScheme%Da,&
+          rtimestep%p_rRungeKuttaScheme%Db,&
+          rtimestep%p_rRungeKuttaScheme%Dc,&
+          .true.,bcheck)
+
+      if (.not.bcheck) then
+        ! Try alpha-beta tableau
+        call tstep_genAlphaBetaTableau(rtimestep%ctimestep,&
+          rtimestep%p_rRungeKuttaScheme%Dalpha,&
+          rtimestep%p_rRungeKuttaScheme%Dbeta,&
+          rtimestep%p_rRungeKuttaScheme%Dc,&
+          .true.,bcheck)
+
+        if (.not.bcheck) then
+          if (rtimestep%coutputModeError .gt. 0) then
+            call output_line('Neither Butcher nor alpha-beta tableau available!',&
+                OU_CLASS_ERROR,rtimestep%coutputModeError,&
+                'tstep_createTimestepFromParlist')
+          end if
+          call sys_halt()
+        end if
+      end if
+
+      ! Get number of stages
+      rtimestep%p_rRungeKuttaScheme%nstages = size(rtimestep%p_rRungeKuttaScheme%Dc)
       
       ! Allocate array of temporal vectors
-      allocate(rtimestep%p_rRungeKuttaScheme%RtempVectors(4))
+      allocate(rtimestep%p_rRungeKuttaScheme%RtempVectors(npc*rtimestep%p_rRungeKuttaScheme%nstages))
       
     case default
       if (rtimestep%coutputModeError .gt. 0) then
-        call output_line('Invalid type of time stepping algorithm!',&
+        call output_line('Invalid family of time stepping algorithm!',&
             OU_CLASS_ERROR,rtimestep%coutputModeError,&
             'tstep_createTimestepFromParlist')
       end if
@@ -203,7 +281,7 @@ contains
 
     ! Perform adaptive time-stepping?
     select case(rtimestep%iadapttimestep)
-
+      
     case (TSTEP_NOADAPT)
       ! No adaptive time-stepping
 
@@ -256,7 +334,6 @@ contains
       call sys_halt()
     end select
 
-
     ! Reset any other values
     call tstep_resetTimestep(rtimestep, .true.)
     
@@ -288,50 +365,110 @@ contains
     ! The INTENT(out) already initialises rtimestep with the most
     ! important information. The rest comes now
     rtimestep = rtimestepTemplate
-    
-    ! Create two-level theta scheme
-    if (associated(rtimestepTemplate%p_rthetaScheme)) then
+
+    ! Copy data for time stepping scheme
+    select case(tstep_getFamily(rtimestep%ctimestep))
+    case (TSTEP_THETA)
+      ! Create two-level theta scheme
       allocate(rtimestep%p_rthetaScheme)
       rtimestep%p_rthetaScheme = rtimestepTemplate%p_rthetaScheme
-      ! Allocate memory for temporal memory
+
+      ! Allocate memory for temporal vectors
       allocate(rtimestep%p_rthetaScheme%RtempVectors(&
-          size(rtimestepTemplate%p_rthetaScheme%RtempVectors)))
-    end if
-    
-    ! Create multi-step Runge Kutta scheme
-    if (associated(rtimestepTemplate%p_rRungeKuttaScheme)) then
+          lbound(rtimestepTemplate%p_rthetaScheme%RtempVectors,1):&
+          ubound(rtimestepTemplate%p_rthetaScheme%RtempVectors,1)))
+
+    case (TSTEP_RUNGE_KUTTA)    
+      ! Create multi-step Runge Kutta time-stepping scheme
       allocate(rtimestep%p_rRungeKuttaScheme)
       rtimestep%p_rRungeKuttaScheme = rtimestepTemplate%p_rRungeKuttaScheme
-      ! Allocate memory for weights
-      allocate(rtimestep%p_rRungeKuttaScheme%DmultistepWeights(&
-          size(rtimestepTemplate%p_rRungeKuttaScheme%DmultistepWeights)))
-      rtimestep%p_rRungeKuttaScheme%DmultistepWeights =&
-          rtimestepTemplate%p_rRungeKuttaScheme%DmultistepWeights
+
       ! Allocate memory for temporal memory
       allocate(rtimestep%p_rRungeKuttaScheme%RtempVectors(&
-          size(rtimestepTemplate%p_rRungeKuttaScheme%RtempVectors)))
-    end if
-    
-    ! Create PID controller
-    if (associated(rtimestepTemplate%p_rpidController)) then
+          lbound(rtimestepTemplate%p_rRungeKuttaScheme%RtempVectors,1):&
+          ubound(rtimestepTemplate%p_rRungeKuttaScheme%RtempVectors,1)))
+
+      if (iand(rtimestep%ctimestep,TSTEP_BUTCHER_TABLEAU) .eq. TSTEP_BUTCHER_TABLEAU) then
+        ! Allocate memory for Butcher tableau
+        allocate(rtimestep%p_rRungeKuttaScheme%Da(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Da,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Da,1),&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Da,2):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Da,2)))
+        allocate(rtimestep%p_rRungeKuttaScheme%Db(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Db,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Db,1)))
+        allocate(rtimestep%p_rRungeKuttaScheme%Dc(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dc,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dc,1)))
+
+        ! Copy coefficients
+        rtimestep%p_rRungeKuttaScheme%Da = rtimestepTemplate%p_rRungeKuttaScheme%Da
+        rtimestep%p_rRungeKuttaScheme%Db = rtimestepTemplate%p_rRungeKuttaScheme%Db
+        rtimestep%p_rRungeKuttaScheme%Dc = rtimestepTemplate%p_rRungeKuttaScheme%Dc
+      else
+        ! Allocate memory for alpha-beta form
+        allocate(rtimestep%p_rRungeKuttaScheme%Dalpha(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dalpha,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dalpha,1),&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dalpha,2):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dalpha,2)))
+        allocate(rtimestep%p_rRungeKuttaScheme%Dbeta(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dbeta,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dbeta,1),&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dbeta,2):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dbeta,2)))
+        allocate(rtimestep%p_rRungeKuttaScheme%Dc(&
+            lbound(rtimestepTemplate%p_rRungeKuttaScheme%Dc,1):&
+            ubound(rtimestepTemplate%p_rRungeKuttaScheme%Dc,1)))
+        
+        ! Copy coefficients
+        rtimestep%p_rRungeKuttaScheme%Dalpha = rtimestepTemplate%p_rRungeKuttaScheme%Dalpha
+        rtimestep%p_rRungeKuttaScheme%Dbeta  = rtimestepTemplate%p_rRungeKuttaScheme%Dbeta
+        rtimestep%p_rRungeKuttaScheme%Dc     = rtimestepTemplate%p_rRungeKuttaScheme%Dc
+      end if
+
+    case default
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of time-stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_createTimestepIndirect')
+      end if
+      call sys_halt()
+    end select
+
+    ! Copy data for adaptive time stepping scheme
+    select case(rtimestep%iadapttimestep)
+    case (TSTEP_NOADAPT)
+      ! Create no adaptive time-stepping
+      
+    case (TSTEP_PIDADAPT)
+      ! Create PID controller
       allocate(rtimestep%p_rpidController)
       rtimestep%p_rpidController = rtimestepTemplate%p_rpidController
-    end if
 
-    ! Create automatic controller
-    if (associated(rtimestepTemplate%p_rautoController)) then
+    case (TSTEP_AUTOADAPT)
+      ! Create automatic controller
       allocate(rtimestep%p_rautoController)
       rtimestep%p_rautoController = rtimestepTemplate%p_rautoController
+      
       ! Allocate memory for temporal memory
       allocate(rtimestep%p_rautoController%RtempVectors(&
           size(rtimestepTemplate%p_rautoController%RtempVectors)))
-    end if
-    
-    ! Create SER controller
-    if (associated(rtimestepTemplate%p_rserController)) then
+
+    case (TSTEP_SERADAPT)
+      ! Create SER controller
       allocate(rtimestep%p_rserController)
       rtimestep%p_rserController = rtimestepTemplate%p_rserController
-    end if
+
+    case default
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of adaptive time-stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_createTimestepIndirect')
+      end if
+      call sys_halt()
+    end select
 
   end subroutine tstep_createTimestepIndirect
 
@@ -354,9 +491,9 @@ contains
     ! local variables
     integer :: i
 
-
-    ! Release two-step theta scheme
-    if (associated(rtimestep%p_rthetaScheme)) then
+    select case(tstep_getFamily(rtimestep%ctimestep))
+    case (TSTEP_THETA)
+      ! Release two-step theta scheme
       do i = lbound(rtimestep%p_rthetaScheme%RtempVectors, 1),&
              ubound(rtimestep%p_rthetaScheme%RtempVectors, 1)
         call lsysbl_releaseVector(rtimestep%p_rthetaScheme%RtempVectors(i))
@@ -365,46 +502,77 @@ contains
       nullify(rtimestep%p_rthetaScheme%RtempVectors)
       deallocate(rtimestep%p_rthetaScheme)
       nullify(rtimestep%p_rthetaScheme)
-    end if
 
-    ! Release multi-step Runge-Kutta scheme
-    if (associated(rtimestep%p_rRungeKuttaScheme)) then
+    case (TSTEP_RUNGE_KUTTA)
+      ! Release multi-step Runge-Kutta time-stepping scheme
       do i = lbound(rtimestep%p_rRungeKuttaScheme%RtempVectors, 1),&
              ubound(rtimestep%p_rRungeKuttaScheme%RtempVectors, 1)
         call lsysbl_releaseVector(rtimestep%p_rRungeKuttaScheme%RtempVectors(i))
       end do
       deallocate(rtimestep%p_rRungeKuttaScheme%RtempVectors)
       nullify(rtimestep%p_rRungeKuttaScheme%RtempVectors)
-      deallocate(rtimestep%p_rRungeKuttaScheme%DmultistepWeights)
-      nullify(rtimestep%p_rRungeKuttaScheme%DmultistepWeights)
+
+      if (iand(rtimestep%ctimestep,TSTEP_BUTCHER_TABLEAU) .eq. TSTEP_BUTCHER_TABLEAU) then
+        ! Release memory for Butcher tableau
+        deallocate(rtimestep%p_rRungeKuttaScheme%Da)
+        deallocate(rtimestep%p_rRungeKuttaScheme%Db)
+        deallocate(rtimestep%p_rRungeKuttaScheme%Dc)
+        nullify(rtimestep%p_rRungeKuttaScheme%Da)
+        nullify(rtimestep%p_rRungeKuttaScheme%Db)
+        nullify(rtimestep%p_rRungeKuttaScheme%Dc)
+      else
+        deallocate(rtimestep%p_rRungeKuttaScheme%Dalpha)
+        deallocate(rtimestep%p_rRungeKuttaScheme%Dbeta)
+        nullify(rtimestep%p_rRungeKuttaScheme%Dalpha)
+        nullify(rtimestep%p_rRungeKuttaScheme%Dbeta)
+      end if
+      
       deallocate(rtimestep%p_rRungeKuttaScheme)
       nullify(rtimestep%p_rRungeKuttaScheme)
-    end if
 
-    ! Release PID controller
-    if (associated(rtimestep%p_rpidController)) then
+    case default
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of time-stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_releaseTimestep')
+      end if
+      call sys_halt()
+    end select
+
+    select case(rtimestep%iadapttimestep)
+    case (TSTEP_NOADAPT)
+      ! Nothing to release
+      
+    case (TSTEP_PIDADAPT)
+      ! Release PID controller
       deallocate(rtimestep%p_rpidController)
       nullify(rtimestep%p_rpidController)
-    end if
 
-    ! Release automatic controller
-    if (associated(rtimestep%p_rautoController)) then
+    case (TSTEP_AUTOADAPT)
+      ! Release automatic controller
       do i = lbound(rtimestep%p_rautoController%RtempVectors, 1),&
-             ubound(rtimestep%p_rautoController%RtempVectors, 1)
+          ubound(rtimestep%p_rautoController%RtempVectors, 1)
         call lsysbl_releaseVector(rtimestep%p_rautoController%RtempVectors(i))
       end do
       deallocate(rtimestep%p_rautoController%RtempVectors)
       nullify(rtimestep%p_rautoController%RtempVectors)
       deallocate(rtimestep%p_rautoController)
       nullify(rtimestep%p_rautoController)
-    end if
 
-    ! Release SER controller
-    if (associated(rtimestep%p_rserController)) then
+    case (TSTEP_SERADAPT)
+      ! Release SER controller
       deallocate(rtimestep%p_rserController)
       nullify(rtimestep%p_rserController)
-    end if
-
+      
+    case default
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of adaptive time-stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_releaseTimestep')
+      end if
+      call sys_halt()
+    end select
+    
   end subroutine tstep_releaseTimestep
 
   ! *****************************************************************************
@@ -429,21 +597,21 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
+    integer :: i,j
 
 
     ! Output general information
     call output_line('Timestep:')
     call output_line('---------')
     call output_line('Name:                          '//trim(rtimestep%sName))
+    call output_line('Time stepping family:          '//trim(tstep_getFamilyName(rtimestep%ctimestep)))
+    call output_line('Time stepping type:            '//trim(tstep_getTypeName(rtimestep%ctimestep)))
     call output_line('Number of time steps:          '//trim(sys_siL(rtimestep%nSteps,15)))
     call output_line('Number of rejected time steps: '//trim(sys_siL(rtimestep%nrejectedSteps,15)))
 
     ! Output detailed information
     if (present(bprintInternal)) then
       if (bprintInternal) then
-
-        call output_line('ctimestepType:                 '//trim(sys_siL(rtimestep%ctimestepType,3)))
         call output_line('ioutputLevel:                  '//trim(sys_siL(rtimestep%ioutputLevel,3)))
         call output_line('isolNorm:                      '//trim(sys_siL(rtimestep%isolNorm,3)))
         call output_line('iadaptTimestep:                '//trim(sys_siL(rtimestep%iadaptTimestep,3)))      
@@ -466,6 +634,13 @@ contains
           call output_line('----------------------')
           call output_line('theta:                         '//&
               trim(sys_sdL(rtimestep%p_rthetaScheme%theta,5)))
+          
+          if (iand(rtimestep%ctimestep, TSTEP_FRACTIONAL_STEP) .eq. TSTEP_FRACTIONAL_STEP) then
+            call output_line('alpha:                         '//&
+                trim(sys_sdL(rtimestep%p_rthetaScheme%alpha,5)))
+            call output_line('gamma:                         '//&
+                trim(sys_sdL(rtimestep%p_rthetaScheme%gamma,5)))
+          end if
 
           ! Output information about auxiliary vectors
           call output_lbrk()
@@ -477,18 +652,99 @@ contains
           end do
         end if
 
-        ! Output information about the multi-step runge-Kutta scheme
+        ! Output information about the multi-step runge-Kutta time-stepping scheme
         if (associated(rtimestep%p_rRungeKuttaScheme)) then
           call output_lbrk()
           call output_line('Multi-step Runge-Kutta scheme:')
           call output_line('------------------------------')
-          call output_line('nstages:                      '//&
+          call output_line('nstages:                       '//&
               trim(sys_siL(rtimestep%p_rRungeKuttaScheme%nstages,3)))         
-          do i = 1,rtimestep%p_rRungeKuttaScheme%nstages
-            call output_line('multistep weight['//trim(sys_siL(i,1))//']:           '//&
-                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%DmultistepWeights(i),5)))
-          end do
 
+          if (iand(rtimestep%ctimestep,TSTEP_BUTCHER_TABLEAU) .eq. TSTEP_BUTCHER_TABLEAU) then
+            ! a-coefficient matrix
+            call output_line('a-coefficient matrix:          '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Da(1,1),5)), bnolinebreak=.true.)
+            do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Da(1,j),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line('')
+              call output_line('                               '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Da(i,1),5)), bnolinebreak=.true.)
+              do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+                call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Da(i,j),10,5)),&
+                    bnolinebreak=.true.)
+              end do
+            end do
+            call output_line('')
+
+            ! b-coefficient vector
+            call output_line('b-coefficient vector:          '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Db(1),5)), bnolinebreak=.true.)
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Db(i),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            call output_line('')
+
+            ! c-coefficient vector
+            call output_line('c-coefficient vector:          '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dc(1),5)), bnolinebreak=.true.)
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dc(i),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            call output_line('')
+            
+          else
+            ! alpha-coefficient matrix
+            call output_line('alpha-coefficient matrix:      '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dalpha(1,1),5)), bnolinebreak=.true.)
+            do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dalpha(1,j),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line('')
+              call output_line('                               '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dalpha(i,1),5)), bnolinebreak=.true.)
+              do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+                call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dalpha(i,j),10,5)),&
+                    bnolinebreak=.true.)
+              end do
+            end do
+            call output_line('')
+            
+            ! beta-coefficient matrix
+            call output_line('beta-coefficient matrix:       '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dbeta(1,1),5)), bnolinebreak=.true.)
+            do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dbeta(1,j),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line('')
+              call output_line('                               '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dbeta(i,1),5)), bnolinebreak=.true.)
+              do j=2,rtimestep%p_rRungeKuttaScheme%nstages
+                call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dbeta(i,j),10,5)),&
+                    bnolinebreak=.true.)
+              end do
+            end do
+            call output_line('')
+
+            ! c-coefficient vector
+            call output_line('c-coefficient vector:          '//&
+                trim(sys_sdL(rtimestep%p_rRungeKuttaScheme%Dc(1),5)), bnolinebreak=.true.)
+            do i=2,rtimestep%p_rRungeKuttaScheme%nstages
+              call output_line(trim(sys_sdP(rtimestep%p_rRungeKuttaScheme%Dc(i),10,5)),&
+                  bnolinebreak=.true.)
+            end do
+            call output_line('')
+            
+          end if
+          
           ! Output information about auxiliary vectors
           call output_lbrk()
           call output_line('Temporal vectors:')
@@ -769,12 +1025,12 @@ contains
       call lsysbl_copyVector(rsolution, p_rsolutionRef)
     end if
     
-    ! What time-stepping scheme should be used?
-    select case(rtimestep%ctimestepType)
+    ! What time-stepping family should be used?
+    select case(tstep_getFamily(rtimestep%ctimestep))
       
-    case (TSTEP_THETA_SCHEME)
+    case (TSTEP_THETA)
       !-------------------------------------------------------------------------
-      ! Two-level theta time-stepping scheme
+      ! Two-level theta time-stepping scheme family
       !-------------------------------------------------------------------------
       
       ! Set pointers to temporal vectors
@@ -792,8 +1048,8 @@ contains
       call lsysbl_copyVector(rsolution, p_rsolutionPrevious)
 
       ! Prepare time-stepping structure
-      rtimestep%dscaleExplicit  = (      -rtimestep%p_rthetaScheme%theta)
-      rtimestep%dscaleImplicit  = (1.0_DP-rtimestep%p_rthetaScheme%theta)
+      rtimestep%dscaleExplicit  = (1.0_DP-rtimestep%p_rthetaScheme%theta)
+      rtimestep%dscaleImplicit  =         rtimestep%p_rthetaScheme%theta
       
       ! Perform nsteps steps with two-level theta scheme
       theta_loop: do istep = 1, nsteps
@@ -919,6 +1175,11 @@ contains
         end do theta_loop_adapt
         
       end do theta_loop
+
+    case (TSTEP_RUNGE_KUTTA)
+      !-------------------------------------------------------------------------
+      ! Multi-stage Runge-Kutta time-stepping scheme family
+      !-------------------------------------------------------------------------
       
       
     case default
@@ -1096,8 +1357,104 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    print *, 'here we are'
-    stop
+    ! local variables
+    type(t_solver), pointer :: p_rsolver
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionAux
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionRef
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionPrevious
+    logical :: bcompatible, breject
+    integer :: icomponent,ncomponent
+    
+    ! Get number of components
+    ncomponent = size(Rsolution)
+
+    ! Check size of multi-component source vector (if any)
+    if (present(Rsource)) then
+      if (size(Rsource) .ne. ncomponent) then
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Dimension of coupled problem mismatch!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_performTimestepBlCpl')
+        end if
+        call sys_halt()
+      end if
+    end if
+
+    ! Set pointer to coupled solver
+    p_rsolver => solver_getNextSolverByType(rsolver, SV_COUPLED)
+    
+    if (.not. associated(p_rsolver)) then
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Unsupported/invalid solver type!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_performTimestepBlCpl')
+      end if
+      call sys_halt()
+    end if
+
+    ! Set pointer to temporal vectors
+    p_RsolutionPrevious => rtimestep%p_rthetaScheme%RtempVectors(1:ncomponent)
+    
+    ! ... and check if vectors are compatible
+    do icomponent = 1, ncomponent
+      call lsysbl_isVectorCompatible(Rsolution(icomponent),&
+          p_RsolutionPrevious(icomponent), bcompatible)
+      if (.not.bcompatible) then
+        call lsysbl_resizeVectorBlock(p_RsolutionPrevious(icomponent),&
+            Rsolution(icomponent), .false.)
+      end if
+      
+      ! Save the given solution vector to the temporal vector. If the
+      ! computed time step is not accepted, then the backup of the
+      ! given solution vector is used to recalculate the time step
+      call lsysbl_copyVector(Rsolution(icomponent),&
+          p_RsolutionPrevious(icomponent))
+    end do
+
+    ! Set pointers to temporal vectors for the computation of an
+    ! auxiliary solution by means of local substepping
+    if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
+      p_RsolutionRef =>&
+          rtimestep%p_rautoController%RtempVectors(1:ncomponent)
+      p_RsolutionAux =>&
+          rtimestep%p_rautoController%RtempVectors(ncomponent+1:2*ncomponent)
+
+      ! ... and check if vectors are compatible
+      do icomponent = 1, ncomponent
+        call lsysbl_isVectorCompatible(Rsolution(icomponent),&
+            p_RsolutionRef(icomponent), bcompatible)
+        if (.not.bcompatible) then
+          call lsysbl_resizeVectorBlock(p_RsolutionRef(icomponent),&
+              Rsolution(icomponent), .false.)
+          call lsysbl_resizeVectorBlock(p_RsolutionAux(icomponent),&
+              Rsolution(icomponent), .false.)
+        end if
+
+        ! Make a backup copy of the solution vector
+        call lsysbl_copyVector(Rsolution(icomponent),&
+            p_RsolutionRef(icomponent))
+      end do
+    end if
+
+    ! What time-stepping family should be used?
+    select case(tstep_getFamily(rtimestep%ctimestep))
+      
+    case (TSTEP_THETA)
+      !-------------------------------------------------------------------------
+      ! Two-level theta time-stepping scheme
+      !-------------------------------------------------------------------------
+      
+    case (TSTEP_RUNGE_KUTTA)
+      !-------------------------------------------------------------------------
+      ! Multi-stage Runge-Kutta time-stepping scheme family
+      !-------------------------------------------------------------------------
+      
+    case default
+      call output_line('Unsupported time-stepping scheme!',&
+          OU_CLASS_ERROR,rtimestep%coutputModeWarning,&
+          'tstep_performTimestepBlCpl')
+      call sys_halt()
+    end select
     
   end subroutine tstep_performTimestepBlCpl
   
@@ -1125,7 +1482,7 @@ contains
     ! Euler (theta=1) and the Crank-Nicolson (theta=0.5) time stepping
     ! algorithm. However, the fully explicit scheme is known to be
     ! unstable. It is therefore highly recommended to use an explicit
-    ! Runge-Kutta scheme instead.
+    ! Runge-Kutta time-stepping scheme instead.
     !
     ! In contrast to routine tstep_performThetaStepBl this routine
     ! is applicable to a sequence of coupled problems which are
@@ -1356,550 +1713,6 @@ contains
     end do timeadapt
 
   end subroutine tstep_performThetaStepCpl
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine tstep_performRKStepSc(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
-
-!<description>
-    ! This subroutine performs one step by means of an explicit
-    ! Runge-Kutta scheme to advance the solution from time level $t^n$
-    ! to time level $t^{n+1}$. Note that this subroutine serves as
-    ! wrapper for scalar solution vectors only.
-!</description>
-
-!<input>
-    ! Callback routines
-    include 'intf_solvercallback.inc'
-
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(in), optional :: rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
-    ! solver structure
-    type(t_solver), intent(inout) :: rsolver
-
-    ! solution vector
-    type(t_vectorScalar), intent(inout) :: rsolution
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock) :: rsourceBlock
-    type(t_vectorBlock) :: rsolutionBlock
-
-
-    if (present(rsource)) then
-
-      ! Convert scalar vectors to 1-block vectos
-      call lsysbl_createVecFromScalar(rsource, rsourceBlock)
-      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      
-      ! Call block version of this routine
-      call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
-      
-      ! Free temporal 1-block vectors
-      call lsysbl_releaseVector(rsourceBlock)
-      call lsysbl_releaseVector(rsolutionBlock)
-      
-    else
-
-      ! Convert scalar vector to 1-block vecto
-      call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-
-      ! Call block version of this routine
-      call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, fcb_nlsolverCallback, rcollection)
-
-      ! Free temporal 1-block vector
-      call lsysbl_releaseVector(rsolutionBlock)
-
-    end if
-
-  end subroutine tstep_performRKStepSc
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine tstep_performRKStepBl(rproblemLevel, rtimestep,&
-      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
-
-!<description>
-    ! This subroutine performs one step by means of an explicit
-    ! Runge-Kutta scheme to advance the solution from time level $t^n$
-    ! to time level $t^{n+1}$.  In particular, the two step version
-    ! suggested by Richtmyer and Morton is implemented so that no
-    ! artificial diffusion needs to be constructed.
-!</description>
-
-!<input>
-    ! Callback routines
-    include 'intf_solvercallback.inc'
-
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(in), optional :: rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout), target :: rtimestep
-
-    ! solver structure
-    type(t_solver), intent(inout), target :: rsolver
-
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_solver), pointer :: p_rsolver
-    type(t_vectorBlock), pointer :: p_rsolutionInitial, p_rsolutionRef, p_rsolutionAux
-    type(t_vectorBlock), pointer :: p_rconstB, p_raux
-    integer(I32) :: ioperationSpec
-    integer :: istep
-    logical :: bcompatible,breject
-
-
-    ! Set pointer to linear solver
-    p_rsolver => solver_getNextSolverByTypes(rsolver, (/SV_LINEARMG, SV_LINEAR/))
-
-    if (.not. associated(p_rsolver)) then
-      if (rtimestep%coutputModeError .gt. 0) then
-        call output_line('Unsupported/invalid solver type!',&
-            OU_CLASS_ERROR,rtimestep%coutputModeError,&
-            'tstep_performRKStepBl')
-      end if
-      call sys_halt()
-    end if
-
-    ! Set pointers to temporal vector
-    p_rsolutionInitial => rtimestep%p_rRungeKuttaScheme%RtempVectors(1)
-    p_rconstB          => rtimestep%p_rRungeKuttaScheme%RtempVectors(2)
-    p_raux             => rtimestep%p_rRungeKuttaScheme%RtempVectors(3)
-
-    ! Check if vectors are compatible
-    call lsysbl_isVectorCompatible(rsolution, p_rsolutionInitial, bcompatible)
-    if (.not.bcompatible) then
-      call lsysbl_resizeVectorBlock(p_rsolutionInitial, rsolution, .false.)
-      call lsysbl_resizeVectorBlock(p_rconstB, rsolution, .false.)
-      call lsysbl_resizeVectorBlock(p_raux, rsolution, .false.)
-    end if
-
-    ! Save the given solution vector
-    call lsysbl_copyVector(rsolution, p_rsolutionInitial)
-
-
-    ! Set pointer to second temporal vector for the solution computed by local substepping
-    if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
-      p_rsolutionRef => rtimestep%p_rautoController%RtempVectors(1)
-      p_rsolutionAux => rtimestep%p_rautoController%RtempVectors(2)
-
-      ! And check if vectors are compatible
-      call lsysbl_isVectorCompatible(rsolution, p_rsolutionRef, bcompatible)
-      if (.not.bcompatible) then
-        call lsysbl_resizeVectorBlock(p_rsolutionRef, rsolution, .false.)
-        call lsysbl_resizeVectorBlock(p_rsolutionAux, rsolution, .false.)
-      end if
-      call lsysbl_copyVector(rsolution, p_rsolutionRef)
-    end if
-
-
-    ! Adaptive time-stepping loop
-    timeadapt: do
-
-      ! Increase simulation time provisionally
-      rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime-rtimestep%dTime)
-      rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
-      rtimestep%nSteps= rtimestep%nSteps + 1
-
-      if (rtimestep%coutputModeInfo .gt. 0) then
-        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_line('Explicit Runge-Kutta scheme, Time = '//trim(sys_sdEL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
-                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-      end if
-
-
-      ! Perform multi-step Runge-Kutta method
-      do istep = 1, rtimestep%p_rRungeKuttaScheme%nstages
-
-        if (rtimestep%coutputModeInfo .gt. 0) then
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
-                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        end if
-
-        ! Initialise the constant right-hand side vector
-        if (present(rsource)) then
-          if (rsource%NEQ .gt. 0) then
-            call lsysbl_copyVector(rsource, p_rconstB)
-          else
-            call lsysbl_clearVector(p_rconstB)
-          end if
-        else
-          call lsysbl_clearVector(p_rconstB)
-        end if
-
-        ! Compute the explicit right-hand side vector and the residual
-        ioperationSpec = NLSOL_OPSPEC_CALCRHS +&
-                         NLSOL_OPSPEC_CALCRESIDUAL
-
-
-        print *, "Not working"
-        stop
-
-!!$        call fcb_nlsolverCallback(rproblemLevel, rtimestep, p_rsolver,&
-!!$                                  rsolution, p_rsolutionInitial, p_rconstB,&
-!!$                                  0, ioperationSpec, rcollection, istatus)
-
-!!$         ! Compute the new right-hand side
-!!$         call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, rsolution,&
-!!$                          p_rsolutionInitial, p_rb, istep, rcollection)
-!!$
-!!$         ! Apply given right-hand side vector
-!!$         if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
-!!$
-!!$         ! Impose boundary conditions
-!!$         call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                              rsolution, p_rb, p_rsolutionInitial, rcollection)
-
-         ! Call linear multigrid to solve A*u=b
-         call lsysbl_clearVector(p_raux)
-         call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
-
-         ! Add increment to solution vector
-         call lsysbl_vectorLinearComb(p_raux, p_rsolutionInitial, 1._DP, 1._DP, rsolution)
-      end do
-
-
-      ! Compute reference solution by performing two time steps of size Dt/2
-      if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
-
-        ! Set time step to smaller value
-        rtimestep%dStep = rtimestep%dStep/2.0_DP
-
-        if (rtimestep%coutputModeInfo .gt. 0) then
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_line('First substep in automatic time step control',&
-                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        end if
-
-
-        ! Perform multi-step Runge-Kutta method for first step
-        do istep = 1, rtimestep%p_rRungeKuttaScheme%nstages
-
-          if (rtimestep%coutputModeInfo .gt. 0) then
-            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
-                             OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          end if
-
-!!$          ! Compute the new right-hand side
-!!$          call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-!!$                           p_rsolutionInitial, p_rb, istep, rcollection)
-!!$
-!!$          ! Apply given right-hand side vector
-!!$          if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
-!!$
-!!$          ! Impose boundary conditions
-!!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                               p_rsolutionRef, p_rb, p_rsolutionInitial, rcollection)
-
-          ! Call linear multigrid to solve A*u=b
-          call lsysbl_clearVector(p_raux)
-          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
-
-          ! Add increment to solution vector
-          call lsysbl_vectorLinearComb(p_raux, p_rsolutionInitial, 1._DP, 1._DP, p_rsolutionRef)
-        end do
-
-
-        ! Save intermediate solution
-        call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
-
-        if (rtimestep%coutputModeInfo .gt. 0) then
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_line('Second substep in automatic time step control',&
-                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        end if
-
-
-        ! Perform multi-step Runge-Kutta method for first step
-        do istep = 1, rtimestep%p_rRungeKuttaScheme%nstages
-
-          if (rtimestep%coutputModeInfo .gt. 0) then
-            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
-                             OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-          end if
-
-
-!!$          ! Compute the new right-hand side
-!!$          call fcb_calcB(rproblemLevel, rtimestep, p_rsolver, p_rsolutionRef,&
-!!$                           p_rsolutionAux, p_rb, istep, rcollection)
-!!$
-!!$          ! Apply given right-hand side vector
-!!$          if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
-!!$
-!!$          ! Impose boundary conditions
-!!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$                               p_rsolutionRef, p_rb, p_rsolutionAux, rcollection)
-
-          ! Call linear multigrid to solve A*u=b
-          call lsysbl_clearVector(p_raux)
-          call linsol_solveMultigrid(rproblemLevel, p_rsolver, p_raux, p_rconstB)
-
-          ! Add increment to solution vector
-          call lsysbl_vectorLinearComb(p_raux, p_rsolutionAux, 1._DP, 1._DP, p_rsolutionRef)
-        end do
-
-        ! Check if solution from this time step can be accepted and
-        ! adjust the time step size automatically if this is required
-        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-                                      p_rsolutionRef, p_rsolutionInitial)
-
-        ! Prepare time step size for next "large" time step
-        rtimestep%dStep = rtimestep%dStep*2.0_DP
-
-      else
-
-        ! Check if solution from this time step can be accepted and
-        ! adjust the time step size automatically if this is required
-        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-                                      rsolution, p_rsolutionInitial)
-
-      end if
-
-      if (rtimestep%coutputModeInfo .gt. 0) then
-        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
-                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
-                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStepPrevious,5)),&
-                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
-                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
-        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
-      end if
-
-      ! Do we have to reject to current solution?
-      if (breject) then
-        ! Yes, so restore the old solution and
-        ! repeat the adaptive time-stepping loop
-        call lsysbl_copyVector(p_rsolutionInitial, rsolution)
-      else
-        ! No, accept current solution and
-        ! exit adaptive time-stepping loop
-        exit timeadapt
-      end if
-    end do timeadapt
-  end subroutine tstep_performRKStepBl
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine tstep_performRKStepScCpl(rproblemLevel, rtimestep,&
-      rsolver, Rsolution, fcb_nlsolverCallback, rcollection, Rsource)
-
-!<description>
-    ! This subroutine performs one step by means of an explicit
-    ! Runge-Kutta scheme to advance the solution from time level $t^n$
-    ! to time level $t^{n+1}$.  Note that this subroutine serves as
-    ! wrapper for scalar solution vectors only.
-    !
-    ! In contrast to routine tstep_performRKStepSc this routine
-    ! is applicable to a sequence of coupled problems which are
-    ! solved repeatedly until convergence.
-!</description>
-
-!<input>
-    ! Callback routines
-    include 'intf_solvercallback.inc'
-
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), dimension(:), intent(in), optional :: Rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
-    ! solver structure
-    type(t_solver), intent(inout) :: rsolver
-
-    ! solution vector
-    type(t_vectorScalar), dimension(:), intent(inout) :: Rsolution
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), dimension(:), allocatable :: RsolutionBlock
-    type(t_vectorBlock), dimension(:), allocatable :: RsourceBlock
-    integer :: icomponent
-
-    if (present(Rsource)) then
-
-      ! Allocate temporal memory
-      allocate(RsolutionBlock(size(Rsolution)))
-      allocate(RsourceBlock(size(Rsource)))
-
-      ! Convert scalar vectors to 1-block vectors
-      do icomponent = 1, size(Rsolution)
-        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
-            RsolutionBlock(icomponent))
-      end do
-
-      ! Convert scalar vectors to 1-block vectors
-      do icomponent = 1, size(Rsource)
-        call lsysbl_createVecFromScalar(Rsource(icomponent),&
-            RsourceBlock(icomponent))
-      end do
-
-      ! Call block version of this subroutine
-      call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection,&
-          RsourceBlock)
-
-      ! Deallocate temporal 1-block vectors
-      do icomponent = 1, size(Rsolution)
-        call lsysbl_releaseVector(RsolutionBlock(icomponent))
-      end do
-
-      ! Deallocate temporal 1-block vectors
-      do icomponent = 1, size(Rsource)
-        call lsysbl_releaseVector(RsourceBlock(icomponent))
-      end do
-
-      ! Release temporal memory
-      deallocate(RsolutionBlock)
-      deallocate(RsourceBlock)
-
-    else
-
-      ! Allocate temporal memory
-      allocate(RsolutionBlock(size(Rsolution)))
-
-      ! Convert scalar vectors to 1-block vectors
-      do icomponent = 1, size(Rsolution)
-        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
-            RsolutionBlock(icomponent))
-      end do
-
-      ! Call block version of this subroutine
-      call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection)
-
-      ! Deallocate temporal 1-block vectors
-      do icomponent = 1, size(Rsolution)
-        call lsysbl_releaseVector(RsolutionBlock(icomponent))
-      end do
-
-      ! Release temporal memory
-      deallocate(RsolutionBlock)
-
-    end if
-    
-  end subroutine tstep_performRKStepScCpl
-
-! *****************************************************************************
-
-!<subroutine>
-
-  subroutine tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-      rsolver, Rsolution,  fcb_nlsolverCallback, rcollection, Rsource)
-
-!<description>
-    ! This subroutine performs one step by means of an explicit
-    ! Runge-Kutta scheme to advance the solution from time level $t^n$
-    ! to time level $t^{n+1}$.  In particular, the two step version
-    ! suggested by Richtmyer and Morton is implemented so that no
-    ! artificial diffusion needs to be constructed.
-    !
-    ! In contrast to routine tstep_performRKStepBl this routine
-    ! is applicable to a sequence of coupled problems which are
-    ! solved repeatedly until convergence.
-!</description>
-
-!<input>
-    ! Callback routines
-    include 'intf_solvercallback.inc'
-
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout), target :: rtimestep
-
-    ! solver structure
-    type(t_solver), intent(inout), target :: rsolver
-
-    ! solution vector
-    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    print *, "Subroutine tstep_performRKStepBlCpl is not implemented"
-    stop
-
-  end subroutine tstep_performRKStepBlCpl
 
   ! *****************************************************************************
   ! AUXILIARY ROUTINES

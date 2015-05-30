@@ -90,7 +90,8 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorGPBlock(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, bclear, ioperationSpec, ry, rperfconfig)
+      rx, rx0, dscaleExplicit, dscaleImplicit, dscale,&
+      bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -109,10 +110,9 @@ contains
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! scaling factor
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
@@ -151,8 +151,8 @@ contains
     else
 
       call afcsc_buildVectorGPScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), theta, dscale, bclear, ioperationSpec,&
-          ry%RvectorBlock(1), rperfconfig)
+          rx0%RvectorBlock(1), dscaleExplicit, dscaleImplicit, dscale,&
+          bclear, ioperationSpec, ry%RvectorBlock(1), rperfconfig)
 
     end if
   end subroutine afcsc_buildVectorGPBlock
@@ -162,7 +162,8 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorGPScalar(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, bclear, ioperationSpec, ry, rperfconfig)
+      rx, rx0, dscaleExplicit, dscaleImplicit, dscale,&
+      bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -193,10 +194,9 @@ contains
     ! initial solution vector
     type(t_vectorScalar), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! scaling factor
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
@@ -267,8 +267,9 @@ contains
 
     ! Perform flux limiting by the general purpose limiter
     call doLimitDP(p_IedgeListIdx, p_IedgeList,&
-        p_DcoefficientsAtEdge, p_MC, p_Dx, p_Dx0, theta, dscale,&
-        rafcstab%NEDGE, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+        p_DcoefficientsAtEdge, p_MC, p_Dx, p_Dx0,&
+        dscaleExplicit, dscaleImplicit, dscale, rafcstab%NEDGE,&
+        p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
         p_Dflux, p_Dflux0, p_Dy)
 
     ! Set specifier
@@ -289,13 +290,14 @@ contains
     ! The FEM-GP limiting procedure
 
     subroutine doLimitDP(IedgeListIdx, IedgeList,&
-        DcoefficientsAtEdge, MC, Dx, Dx0, theta, dscale, NEDGE,&
+        DcoefficientsAtEdge, MC, Dx, Dx0,&
+        dscaleExplicit, dscaleImplicit, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dflux0, Dy)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0
-      real(DP), intent(in) :: theta,dscale
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
@@ -343,9 +345,10 @@ contains
           l_ji = DcoefficientsAtEdge(3,iedge)
           m_ij = MC(ij)
 
-          ! Compute: diff1 = dt*theta*(Dx_i-Dx_j) + dt*(1-theta)*(Dx0_i-Dx0_j)
+          ! Compute: diff1 = dt*dscaleImplicit*(Dx_i-Dx_j)
+          !                + dt*dscaleExplicit*(Dx0_i-Dx0_j)
           diff1 = Dx(i)-Dx(j); diff0 = Dx0(i)-Dx0(j)
-          diff  = dscale*(theta*diff1+(1.0_DP-theta)*diff0)
+          diff  = dscale*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
           ! Compute antidiffusive flux f_ij=min(0,p_ij)*(Dx_j-Dx_i)
           if (abs(diff) < AFCSTAB_EPSABS) then
@@ -436,9 +439,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacLinearGPBlock(rmatrix, rx,&
-      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobian,&
-      bextendedSparsity)
+  subroutine afcsc_buildJacLinearGPBlock(rmatrix, rx, rx0,&
+      dscaleExplicit, dscaleImplicit, tstep, hstep,&
+      bclear, rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -460,8 +463,9 @@ contains
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -498,9 +502,9 @@ contains
 
     else
 
-      call afcsc_buildJacLinearGPScalar(&
-          rmatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), theta, tstep, hstep,&
+      call afcsc_buildJacLinearGPScalar(rmatrix,&
+          rx%RvectorBlock(1), rx0%RvectorBlock(1),&
+          dscaleExplicit, dscaleImplicit, tstep, hstep,&
           bclear, rafcstab, rjacobian, bextendedSparsity)
 
     end if
@@ -510,9 +514,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacLinearGPScalar(rmatrix, rx,&
-      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobian,&
-      bextendedSparsity)
+  subroutine afcsc_buildJacLinearGPScalar(rmatrix, rx, rx0,&
+      dscaleExplicit, dscaleImplicit, tstep, hstep,&
+      bclear, rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -530,8 +534,9 @@ contains
     ! initial solution vector
     type(t_vectorScalar), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -638,7 +643,8 @@ contains
           p_IsuperdiagEdgesIdx, p_IedgeList, p_IsubdiagEdgesIdx,&
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
           p_Kld, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-          p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta, tstep, hstep,&
+          p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+          dscaleExplicit, dscaleImplicit, tstep, hstep,&
           rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
           bisExtended, .true., p_Ksep, p_Jac)
 
@@ -665,8 +671,9 @@ contains
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
           p_Kdiagonal, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
-          theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-          rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+          dscaleExplicit, dscaleImplicit, tstep, hstep,&
+          rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+          bisExtended, .false., p_Ksep, p_Jac)
 
       ! Free storage
       call storage_free(h_Ksep)
@@ -742,15 +749,16 @@ contains
     ! Assemble the Jacobian matrix for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP(IsuperdiagEdgesIdx, IedgeList,&
-        IsubdiagEdgesIdx, IsubdiagEdges, DcoefficientsAtEdge, Kld,&
-        Kcol, Kdiagonal, MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp,&
-        Drm, theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bisExtended,&
-        bisMat7, Ksep, Jac)
+        IsubdiagEdgesIdx, IsubdiagEdges, DcoefficientsAtEdge,&
+        Kld, Kcol, Kdiagonal, MC, Dx, Dx0, Dflux, Dflux0,&
+        Dpp, Dpm, Dqp, Dqm, Drp, Drm,&
+        dscaleExplicit, dscaleImplicit, tstep, hstep,&
+        NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       ! input/ parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -795,9 +803,10 @@ contains
           ! Update local coefficients
           call updateJacobianMat79_GP(&
               IedgeList, DcoefficientsAtEdge, MC, Dx, Dx0,&
-              Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, theta, tstep,&
-              hstep, iedge, iloc, k, Dpploc, Dpmloc, Dqploc,&
-              Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
+              Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Loop over all superdiagonal edges
@@ -809,9 +818,10 @@ contains
           ! Update local coefficients
           call updateJacobianMat79_GP(&
               IedgeList, DcoefficientsAtEdge, MC, Dx, Dx0,&
-              Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, theta, tstep,&
-              hstep, iedge, iloc, k, Dpploc, Dpmloc, Dqploc,&
-              Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
+              Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Save total number of local neighbors
@@ -869,13 +879,13 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine updateJacobianMat79_GP(IedgeList,&
         DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm,&
-        theta, tstep, hstep, iedge, iloc, k, Dpploc, Dpmloc,&
-        Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
+        dscaleExplicit, dscaleImplicit, tstep, hstep, iedge, iloc, k,&
+        Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: iedge,k,iloc
 
@@ -910,7 +920,7 @@ contains
       diff0 = Dx0(i)-Dx0(j)
 
       ! Determine total solution difference
-      diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+      diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
       ! Compute antidiffusive flux
       if (abs(diff) < AFCSTAB_EPSABS) then
@@ -960,7 +970,7 @@ contains
           diff1 = Dx(i)-Dx(j)+dsign*hstep
 
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+          diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
           ! Compute antidiffusive flux
           if (abs(diff) < AFCSTAB_EPSABS) then
@@ -1012,7 +1022,7 @@ contains
           diff1 = Dx(i)-Dx(j)-dsign*hstep
 
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+          diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
           ! Compute antidiffusive flux
           if (abs(diff) < AFCSTAB_EPSABS) then
@@ -1223,9 +1233,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacobianGPBlock(rgroupFEMSet, rmatrix,&
-      rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobian, bextendedSparsity, rcollection, rperfconfig)
+  subroutine afcsc_buildJacobianGPBlock(rgroupFEMSet, rmatrix, rx, rx0,&
+      fcb_calcMatrixSc_sim, dscaleExplicit, dscaleImplicit, tstep, hstep,&
+      bclear, rafcstab, rjacobian, bextendedSparsity, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -1250,9 +1260,10 @@ contains
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
+    
     ! time step size
     real(DP), intent(in) :: tstep
 
@@ -1298,10 +1309,10 @@ contains
 
     else
 
-      call afcsc_buildJacobianGPScalar(rgroupFEMSet,&
-          rmatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), fcb_calcMatrixSc_sim, theta, tstep, hstep,&
-          bclear, rafcstab, rjacobian,bextendedSparsity, rcollection, rperfconfig)
+      call afcsc_buildJacobianGPScalar(rgroupFEMSet, rmatrix,&
+          rx%RvectorBlock(1), rx0%RvectorBlock(1), fcb_calcMatrixSc_sim,&
+          dscaleExplicit, dscaleImplicit, tstep, hstep, bclear,&
+          rafcstab, rjacobian,bextendedSparsity, rcollection, rperfconfig)
 
     end if
   end subroutine afcsc_buildJacobianGPBlock
@@ -1310,9 +1321,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacobianGPScalar(rgroupFEMSet, rmatrix,&
-      rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobian, bextendedSparsity, rcollection, rperfconfig)
+  subroutine afcsc_buildJacobianGPScalar(rgroupFEMSet, rmatrix, rx, rx0,&
+      fcb_calcMatrixSc_sim, dscaleExplicit, dscaleImplicit, tstep, hstep,&
+      bclear, rafcstab, rjacobian, bextendedSparsity, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -1335,8 +1346,9 @@ contains
     ! initial solution vector
     type(t_vectorScalar), intent(in) :: rx0
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -1478,28 +1490,34 @@ contains
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+            p_DcoeffX,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_GP_2D(&
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+            p_DcoeffX, p_DcoeffY,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_GP_3D(&
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .true., p_Ksep, p_Jac)
       end select
 
       ! Free storage
@@ -1527,28 +1545,34 @@ contains
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+            p_DcoeffX,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_GP_2D(&
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+            p_DcoeffX, p_DcoeffY,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_GP_3D(&
             p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
-            tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
-            rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ,&
+            p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+            dscaleExplicit, dscaleImplicit, tstep, hstep,&
+            rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
+            bisExtended, .false., p_Ksep, p_Jac)
       end select
 
       ! Free storage
@@ -1630,15 +1654,16 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_1D(IsuperdiagEdgesIdx,&
         IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, MC, Dx, Dx0,&
-        Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX,&
+        MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm,&
+        dscaleExplicit, dscaleImplicit, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -1695,11 +1720,11 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
-              iloc, k,  Dpploc, Dpmloc, Dqploc, Dqmloc,&
-              Dfluxloc, Dfluxloc0, Kloc)
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, i, j, ij, ji, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Loop over all superdiagonal edges
@@ -1722,11 +1747,11 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
-              iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
-              Dfluxloc, Dfluxloc0, Kloc)
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, i, j, ij, ji, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Save total number of local neighbors
@@ -1787,15 +1812,16 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_2D(IsuperdiagEdgesIdx,&
         IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dx0,&
-        Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY,&
+        MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm,&
+        dscaleExplicit, dscaleImplicit, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -1852,11 +1878,11 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
-              iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
-              Dfluxloc, Dfluxloc0, Kloc)
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, i, j, ij, ji, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Loop over all superdiagonal edges
@@ -1879,11 +1905,11 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
-              iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
-              Dfluxloc, Dfluxloc0, Kloc)
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, i, j, ij, ji, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Save total number of local neighbors
@@ -1944,15 +1970,16 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_3D(IsuperdiagEdgesIdx,&
         IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx,&
-        Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ,&
+        MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm,&
+        dscaleExplicit, dscaleImplicit, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -2009,9 +2036,9 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep, iedge, i, j, ij, ji,&
               iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
               Dfluxloc, Dfluxloc0, Kloc)
         end do
@@ -2036,11 +2063,11 @@ contains
 
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux,&
-              Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
-              theta, tstep, hstep, iedge, i, j, ij, ji,&
-              iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
-              Dfluxloc, Dfluxloc0, Kloc)
+              DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0,&
+              Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+              dscaleExplicit, dscaleImplicit, tstep, hstep,&
+              iedge, i, j, ij, ji, iloc, k,&
+              Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
         end do
 
         ! Save total number of local neighbors
@@ -2100,14 +2127,15 @@ contains
     ! Update the local coefficients for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine updateJacobianMat79_GP(DcoefficientsAtEdge, MC, Dx, Dx0,&
-        Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji, theta, tstep, hstep,&
+        Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, c_ij, c_ji,&
+        dscaleExplicit, dscaleImplicit, tstep, hstep,&
         iedge, i, j, ij, ji, iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
         Dfluxloc, Dfluxloc0, Kloc)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm,C_ij,C_ji
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscaleExplicit,dscaleImplicit,tstep,hstep
       integer, intent(in) :: iedge,i,j,k,ij,ji,iloc
 
       ! We actually know, that all local quantities start at index zero
@@ -2141,7 +2169,7 @@ contains
       diff0 = Dx0(i)-Dx0(j)
 
       ! Determine total solution difference
-      diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+      diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
       ! Compute antidiffusive flux
       if (abs(diff) < AFCSTAB_EPSABS) then
@@ -2223,7 +2251,7 @@ contains
           diff1 = Dx(i)-Dx(j)+dsign*(hstep_ik-hstep_jk)
 
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+          diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
           ! Compute antidiffusive flux
           if (abs(diff) < AFCSTAB_EPSABS) then
@@ -2281,7 +2309,7 @@ contains
           diff1 = Dx(i)-Dx(j)+dsign*(hstep_ik-hstep_jk)
 
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
+          diff = tstep*(dscaleImplicit*diff1+dscaleExplicit*diff0)
 
           ! Compute antidiffusive flux
           if (abs(diff) < AFCSTAB_EPSABS) then

@@ -145,12 +145,13 @@ contains
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance
-    real(DP) :: daux, dtargetFunc, dStep, theta
+    real(DP) :: daux, dtargetFunc, dStep, dscaleExplicit, dscaleImplicit
     integer :: ieq, idim, convectionAFC, diffusionAFC, NEQ
     integer :: cconvectionStabilisation, cdiffusionStabilisation
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
     integer :: itargetfunctype, iexactsolutiontype, imasstype
     integer :: nprotectLayers, igridindicator
+    integer(I32) :: ctimestep
 
 
     !---------------------------------------------------------------------------
@@ -180,8 +181,15 @@ contains
     call parlst_setvalue(rparlist, ssectionName, 'imasstype', '0')
 
     ! Set time-stepping parameters
-    dStep = rtimestep%dStep; rtimestep%dStep = 1.0_DP
-    theta = rtimestep%p_rthetaScheme%theta; rtimestep%p_rthetaScheme%theta = 1.0_DP
+    ctimestep      = rtimestep%ctimestep
+    dStep          = rtimestep%dStep
+    dscaleExplicit = rtimestep%dscaleExplicit
+    dscaleImplicit = rtimestep%dscaleImplicit
+
+    rtimestep%ctimestep      = TSTEP_BACKWARD_EULER
+    rtimestep%dStep          = 1.0_DP
+    rtimestep%dscaleExplicit = 0.0_DP
+    rtimestep%dscaleImplicit = 1.0_DP
 
     ! Set stabilisation to standard Galerkin
     cconvectionStabilisation =&
@@ -224,8 +232,10 @@ contains
         trim(sys_si(imasstype, 3)))
 
     ! ... and the time-stepping structure
-    rtimestep%dStep = dStep
-    rtimestep%p_rthetaScheme%theta = theta
+    rtimestep%ctimestep      = ctimestep
+    rtimestep%dStep          = dStep
+    rtimestep%dscaleExplicit = dscaleExplicit
+    rtimestep%dscaleImplicit = dscaleImplicit
 
     ! Again, set update notifiers for the discrete transport operator
     ! and the preconditioner in the problem level structure

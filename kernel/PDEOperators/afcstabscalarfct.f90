@@ -1275,9 +1275,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
-      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsc_buildFluxFCTBlock(rafcstab, rx, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
+      rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -1292,13 +1293,12 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling factor
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -1368,15 +1368,16 @@ contains
       if (present(rxPredictor)) then
         ! ... both approximate time derivative and predictor are present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
-            rxTimeDeriv%RvectorBlock(1), rxPredictor%RvectorBlock(1), &
-            rcollection, rperfconfig)
+            tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+            bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
+            rgroupFEMSet, rmatrix, rxTimeDeriv%RvectorBlock(1),&
+            rxPredictor%RvectorBlock(1), rcollection, rperfconfig)
       else
         ! ... only the approximate time derivative is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
+            tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+            bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
+            rgroupFEMSet, rmatrix,&
             rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
             rcollection=rcollection, rperfconfig=rperfconfig)
       end if
@@ -1384,16 +1385,18 @@ contains
       if (present(rxPredictor)) then
         ! ... only the predictor is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
+            tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+            bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
+            rgroupFEMSet, rmatrix,&
             rxPredictor=rxPredictor%RvectorBlock(1),&
             rcollection=rcollection, rperfconfig=rperfconfig)
       else
         ! ... neither the approximate time derivative nor the predictor is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
-            rcollection=rcollection, rperfconfig=rperfconfig)
+            tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+            bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
+            rgroupFEMSet, rmatrix, rcollection=rcollection,&
+            rperfconfig=rperfconfig)
       end if
     end if
 
@@ -1404,9 +1407,10 @@ contains
 !<subroutine>
 
 
-  subroutine afcsc_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSc_sim,&
-      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsc_buildFluxFCTScalar(rafcstab, rx, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, fcb_calcFluxFCTSc_sim, rgroupFEMSet, rmatrix,&
+      rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -1418,13 +1422,12 @@ contains
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling factor
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -1619,8 +1622,8 @@ contains
       ! The raw antidiffusive fluxes for all algorithms can be
       ! assembled essentially in the same way.
       !
-      ! $$ f_{ij}^n = -m_{ij}*(u_i^n-u_j^n)+(1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
-      ! $$ f_{ij}^m = f_{ij}^n + m_{ij}*(u_i^m-u_j^m)+\theta\Delta t d_{ij}^m(u_i^m-u_j^m) $$
+      ! $$ f_{ij}^n = -m_{ij}*(u_i^n-u_j^n)+scaleExplicit\Delta t d_{ij}^n(u_i^n-u_j^n) $$
+      ! $$ f_{ij}^m = f_{ij}^n + m_{ij}*(u_i^m-u_j^m)+scaleImplicit\Delta t d_{ij}^m(u_i^m-u_j^m) $$
       !
       ! The only difference is that the amount of rejected  antidiffusion
       ! is subtracted from the initial fluxes in subsequent iterations if
@@ -1635,53 +1638,53 @@ contains
         ! Assemble explicit part of raw-antidiffive fluxes
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 1.0_DP) then
+        if (dscaleExplicit .ne. 0.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
+          ! $$ f_{ij}^n = scaleExplicit\Delta t d_{ij}^n(u_i^n-u_j^n) $$
           if (buseCallback) then
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
-                p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+                p_DcoeffsAtEdge, p_Dx, dscale*dscaleExplicit,&
                 bclear, p_Dflux0)
           else
              
              select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
              case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
                 call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Qcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     p_Qcoefficients, p_Qx, dscale*dscaleExplicit,&
                      bclear, p_Qflux0)
              case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
                 call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Qcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     p_Qcoefficients, p_Dx, dscale*dscaleExplicit,&
                      bclear, p_Qflux0)
              case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
                 call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Qcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     p_Qcoefficients, p_Fx, dscale*dscaleExplicit,&
                      bclear, p_Qflux0)
 
              case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
                 call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Dcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     p_Dcoefficients, p_Qx, dscale*dscaleExplicit,&
                      bclear, p_Dflux0)
              case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
                 call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     p_Dcoefficients, p_Dx, dscale*dscaleExplicit,&
                      bclear, p_Dflux0)
              case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
                 call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Dcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     p_Dcoefficients, p_Fx, dscale*dscaleExplicit,&
                      bclear, p_Dflux0)
 
              case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
                 call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Fcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     p_Fcoefficients, p_Qx, dscale*dscaleExplicit,&
                      bclear, p_Fflux0)
              case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
                 call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Fcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     p_Fcoefficients, p_Dx, dscale*dscaleExplicit,&
                      bclear, p_Fflux0)
              case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
                 call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
-                     p_Fcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     p_Fcoefficients, p_Fx, dscale*dscaleExplicit,&
                      bclear, p_Fflux0)
              end select
           end if
@@ -2037,43 +2040,43 @@ contains
 
         !-----------------------------------------------------------------------
 
-        if (theta .ne. 0.0_DP) then
+        if (dscaleImplicit .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
+          ! $$ f_{ij} = scaleImplicit\Delta t d_{ij}(u_i-u_j) $$
            if (buseCallback) then
               call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
-                   p_DcoeffsAtEdge, p_Dx, dscale*theta, bclear, p_Dflux)
+                   p_DcoeffsAtEdge, p_Dx, dscale*dscaleImplicit, bclear, p_Dflux)
            else
               select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
               case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
                  call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Qcoefficients, p_Qx, dscale*theta, bclear, p_Qflux)
+                      p_Qcoefficients, p_Qx, dscale*dscaleImplicit, bclear, p_Qflux)
               case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
                  call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Qcoefficients, p_Dx, dscale*theta, bclear, p_Qflux)
+                      p_Qcoefficients, p_Dx, dscale*dscaleImplicit, bclear, p_Qflux)
               case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
                  call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Qcoefficients, p_Fx, dscale*theta, bclear, p_Qflux)
+                      p_Qcoefficients, p_Fx, dscale*dscaleImplicit, bclear, p_Qflux)
 
               case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
                  call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Dcoefficients, p_Qx, dscale*theta, bclear, p_Dflux)
+                      p_Dcoefficients, p_Qx, dscale*dscaleImplicit, bclear, p_Dflux)
               case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
                  call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Dcoefficients, p_Dx, dscale*theta, bclear, p_Dflux)
+                      p_Dcoefficients, p_Dx, dscale*dscaleImplicit, bclear, p_Dflux)
               case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
                  call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Dcoefficients, p_Fx, dscale*theta, bclear, p_Dflux)
+                      p_Dcoefficients, p_Fx, dscale*dscaleImplicit, bclear, p_Dflux)
 
               case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
                  call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Fcoefficients, p_Qx, dscale*theta, bclear, p_Fflux)
+                      p_Fcoefficients, p_Qx, dscale*dscaleImplicit, bclear, p_Fflux)
               case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
                  call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Fcoefficients, p_Dx, dscale*theta, bclear, p_Fflux)
+                      p_Fcoefficients, p_Dx, dscale*dscaleImplicit, bclear, p_Fflux)
               case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
                  call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
-                      p_Fcoefficients, p_Fx, dscale*theta, bclear, p_Fflux)
+                      p_Fcoefficients, p_Fx, dscale*dscaleImplicit, bclear, p_Fflux)
               end select
            end if
         end if
@@ -2081,34 +2084,33 @@ contains
         if (bquickAssembly) then
           ! We may check of either the implicit or explicit part are
           ! missing so that some redundant computations may be skipped
-          if (theta .ne. 1.0_DP) then
+          if (dscaleExplicit .ne. 0.0_DP) then
             ! The explicit part of the raw-antidiffusive fluxes exists
-            if (theta .ne. 0.0_DP) then
+            if (dscaleImplicit .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
-               select case(rafcstab%cdataType)
-               case(ST_QUAD)
-                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_QP, p_Qflux0, p_Qflux)
-               case(ST_DOUBLE)
-                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
-               case(ST_SINGLE)
-                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_SP, p_Fflux0, p_Fflux)
-               end select
-
+              select case(rafcstab%cdataType)
+              case(ST_QUAD)
+                call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_QP, p_Qflux0, p_Qflux)
+              case(ST_DOUBLE)
+                call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+              case(ST_SINGLE)
+                call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_SP, p_Fflux0, p_Fflux)
+              end select
             else
               ! The implicit part of the raw-antidiffusive fluxes does
               ! not exists; the fluxes should be cleared so just
               ! overwrite them by the explicit part
               select case(rafcstab%cdataType)
               case(ST_QUAD)
-                 call lalg_copyVector(p_Qflux0, p_Qflux)
+                call lalg_copyVector(p_Qflux0, p_Qflux)
               case(ST_DOUBLE)
-                 call lalg_copyVector(p_Dflux0, p_Dflux)
+                call lalg_copyVector(p_Dflux0, p_Dflux)
               case(ST_SINGLE)
-                 call lalg_copyVector(p_Fflux0, p_Fflux)
+                call lalg_copyVector(p_Fflux0, p_Fflux)
               end select
             end if
-            ! if theta = 1 then the explicit part does not exist
+            ! If dscaleExplicit = 0 then no update of the implicit fluxes is required
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes
@@ -3048,7 +3050,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacLinearFCTBlock(rx, theta, tstep, hstep,&
+  subroutine afcsc_buildJacLinearFCTBlock(rx, dscale, tstep, hstep,&
       bclear, rafcstab, rjacobian, rmatrix)
 
 !<description>
@@ -3066,7 +3068,7 @@ contains
     type(t_vectorBlock), intent(in) :: rx
 
     ! implicitness parameter
-    real(DP), intent(in) :: theta
+    real(DP), intent(in) :: dscale
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -3101,7 +3103,7 @@ contains
     else
 
       call afcsc_buildJacLinearFCTScalar(&
-          rx%RvectorBlock(1), theta, tstep, hstep, bclear,&
+          rx%RvectorBlock(1), dscale, tstep, hstep, bclear,&
           rafcstab, rjacobian, rmatrix)
 
     end if
@@ -3111,7 +3113,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildJacLinearFCTScalar(rx, theta, tstep, hstep,&
+  subroutine afcsc_buildJacLinearFCTScalar(rx, dscale, tstep, hstep,&
       bclear, rafcstab, rjacobian, rmatrix)
 
 !<description>
@@ -3126,7 +3128,7 @@ contains
     type(t_vectorScalar), intent(in) :: rx
 
     ! implicitness parameter
-    real(DP), intent(in) :: theta
+    real(DP), intent(in) :: dscale
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -3200,11 +3202,11 @@ contains
           call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IedgeList, p_DcoefficientsAtEdge, p_Kld, p_MC, p_Dx,&
-              p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_Dflux, p_Dflux0, dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
               p_IedgeList, p_DcoefficientsAtEdge, p_Kld, p_Dx,&
-              p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_Dflux, p_Dflux0, dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
 
       case(LSYSSC_MATRIX9)
@@ -3220,11 +3222,11 @@ contains
           call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_Dx,&
-              p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_Dflux, p_Dflux0, dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
               p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal, p_Dx,&
-              p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_Dflux, p_Dflux0, dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
 
 
@@ -3250,13 +3252,13 @@ contains
 
     subroutine doJacobian_implFCTnoMass(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, Dx, Dflux,&
-        Dflux0, theta, tstep, hstep, NEDGE, Jac)
+        Dflux0, dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IedgeList
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
 
@@ -3283,7 +3285,7 @@ contains
 
         ! Determine coefficients
         d_ij = DcoefficientsAtEdge(1,iedge)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -3329,13 +3331,13 @@ contains
 
     subroutine doJacobian_implFCTconsMass(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, MC, Dx, Dflux,&
-        Dflux0, theta, tstep, hstep, NEDGE, Jac)
+        Dflux0, dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IedgeList
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
 
@@ -3363,7 +3365,7 @@ contains
 
         ! Determine coefficients
         d_ij = DcoefficientsAtEdge(1,iedge)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -3409,7 +3411,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildJacobianFCTBlock(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, dscale, tstep, hstep, bclear, rafcstab,&
       rjacobian, rmatrix, rcollection, rperfconfig)
 
 !<description>
@@ -3430,7 +3432,7 @@ contains
     type(t_vectorBlock), intent(in) :: rx
 
     ! implicitness parameter
-    real(DP), intent(in) :: theta
+    real(DP), intent(in) :: dscale
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -3476,7 +3478,7 @@ contains
 
       call afcsc_buildJacobianFCTScalar(rgroupFEMSet,&
           rx%RvectorBlock(1), fcb_calcMatrixSc_sim,&
-          theta, tstep, hstep, bclear, rafcstab, rjacobian,&
+          dscale, tstep, hstep, bclear, rafcstab, rjacobian,&
           rmatrix, rcollection, rperfconfig)
 
     end if
@@ -3487,7 +3489,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildJacobianFCTScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, dscale, tstep, hstep, bclear, rafcstab,&
       rjacobian, rmatrix, rcollection, rperfconfig)
 
 !<description>
@@ -3507,7 +3509,7 @@ contains
     type(t_vectorScalar), intent(in) :: rx
 
     ! implicitness parameter
-    real(DP), intent(in) :: theta
+    real(DP), intent(in) :: dscale
 
     ! time step size
     real(DP), intent(in) :: tstep
@@ -3614,12 +3616,12 @@ contains
             call doJacobian_implFCTconsMass_1D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
 
         case (NDIM2D)
@@ -3627,12 +3629,12 @@ contains
             call doJacobian_implFCTconsMass_2D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE,  p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
 
         case (NDIM3D)
@@ -3640,12 +3642,12 @@ contains
             call doJacobian_implFCTconsMass_3D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
 
@@ -3665,12 +3667,12 @@ contains
             call doJacobian_implFCTconsMass_1D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
 
         case (NDIM2D)
@@ -3678,12 +3680,12 @@ contains
             call doJacobian_implFCTconsMass_2D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
 
         case (NDIM3D)
@@ -3691,12 +3693,12 @@ contains
             call doJacobian_implFCTconsMass_3D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
-                theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                dscale, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
 
@@ -3722,12 +3724,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_1D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, Dx, Dflux, Dflux0,&
-        theta, tstep, hstep, NEDGE, Jac)
+        dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -3775,7 +3777,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -3791,7 +3793,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -3818,7 +3820,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -3834,7 +3836,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
@@ -3862,12 +3864,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_1D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, MC, Dx, Dflux, Dflux0,&
-        theta, tstep, hstep, NEDGE, Jac)
+        dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -3914,7 +3916,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -3930,7 +3932,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -3957,7 +3959,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -3973,7 +3975,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
@@ -4001,12 +4003,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_2D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux, Dflux0,&
-        theta, tstep, hstep, NEDGE, Jac)
+        dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -4055,7 +4057,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -4071,7 +4073,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -4098,7 +4100,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -4114,7 +4116,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
@@ -4141,12 +4143,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_2D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dflux, Dflux0,&
-        theta, tstep, hstep, NEDGE, Jac)
+        dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -4194,7 +4196,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -4210,7 +4212,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -4237,7 +4239,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -4253,7 +4255,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
@@ -4281,12 +4283,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_3D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx, Dflux, Dflux0,&
-        theta, tstep, hstep, NEDGE, Jac)
+        dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -4336,7 +4338,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -4352,7 +4354,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -4379,7 +4381,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*d_ij
+        a_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -4395,7 +4397,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*d_ij
+        b_ij = dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
@@ -4423,12 +4425,12 @@ contains
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_3D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx, Dflux,&
-        Dflux0, theta, tstep, hstep, NEDGE, Jac)
+        Dflux0, dscale, tstep, hstep, NEDGE, Jac)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dflux,Dflux0
-      real(DP), intent(in) :: theta,tstep,hstep
+      real(DP), intent(in) :: dscale,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -4477,7 +4479,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
@@ -4493,7 +4495,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_j+Dflux0(iedge)
@@ -4520,7 +4522,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)/tstep+theta*d_ij
+        a_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
@@ -4536,7 +4538,7 @@ contains
 !!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)/tstep+theta*d_ij
+        b_ij = MC(ij)/tstep+dscale*d_ij
 
         ! Compute and limit raw antidiffusive flux f(Dx_ij-h*e_j)
         f_j = b_ij*diff_i+Dflux0(iedge)
