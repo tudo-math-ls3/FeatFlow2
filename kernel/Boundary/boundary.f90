@@ -284,6 +284,7 @@ module boundary
   interface boundary_getCoords
     module procedure boundary_getCoords
     module procedure boundary_getCoords_mult
+    module procedure boundary_getCoords_sim
   end interface
 
   interface boundary_convertParameterList
