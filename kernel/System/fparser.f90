@@ -154,8 +154,12 @@
 !# acos(A)   : Arc-cosine of A. Returns the angle, measured in radians,
 !#             whose cosine is A.
 !# acosh(A)  : Same as acos() but for hyperbolic cosine.
+!# acot(A)   : Arc-cotangent of A (equivalent to 1/atan(A)).
+!# acoth(A)  : Same as acot() but for hyperbolic cotangens.
+!# acsc(A)   : Same as csc(A) but for hyperbolic cosecant.
 !# aint(A)   : Truncate A to a whole number
 !# anint(A)  : Rounds A to the closest integer. 0.5 is rounded to 1.
+!# asec(A)   : Same as sec(A) but for hyperbolic secant.
 !# asin(A)   : Arc-sine of A. Returns the angle, measured in radians, whose
 !#             sine is A.
 !# asinh(A)  : Same as asin() but for hyperbolic sine.
@@ -168,10 +172,12 @@
 !# atanh(A)  : Same as atan() but for hyperbolic tangent.
 !# ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
 !#             Rounds up to the next higher integer.
+!# conj(A)   : Complex conjugate of complex number A.
 !# cos(A)    : Cosine of A. Returns the cosine of the angle A, where A is
 !#             measured in radians.
 !# cosh(A)   : Same as cos() but for hyperbolic cosine.
 !# cot(A)    : Cotangent of A (equivalent to 1/tan(A)).
+!# coth(A)   : Same as cot() but for hyperbolic tangens.
 !# csc(A)    : Cosecant of A (equivalent to 1/sin(A)).
 !# exp(A)    : Exponential of A. Returns the value of e raised to the power
 !#             A where e is the base of the natural logarithm, i.e. the
@@ -181,10 +187,12 @@
 !# if(A,B,C) : If int(A) differs from 0, the return value of this function is B,
 !#             else C. Only the parameter which needs to be evaluated is
 !#             evaluated, the other parameter is skipped.
+!# imag(A)   : Imaginary part of complex number A.
 !# log(A)    : Natural (base e) logarithm of A.
 !# log10(A)  : Base 10 logarithm of A.
 !# max(A,B)  : If A > B, the result is A, else B.
 !# min(A,B)  : If A < B, the result is A, else B.
+!# real(A)   : Real part of complex number A.
 !# sec(A)    : Secant of A (equivalent to 1/cos(A)).
 !# sin(A)    : Sine of A. Returns the sine of the angle A, where A is
 !#             measured in radians.
@@ -194,8 +202,8 @@
 !# tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
 !#             is measured in radians.
 !# tanh(A)   : Same as tan() but for hyperbolic tangent.
-!# rrand(A,B) : Reproducable pseudo-random number; B'th random number with
-!#              Random-Seed A.
+!# rrand(A,B): Reproducable pseudo-random number; B'th random number with
+!#             Random-Seed A.
 !# </verb>
 !#
 !# The parser also supports a number of standard constants in the function
@@ -242,10 +250,14 @@
 !#                             fparser_parseFunctionByNumber
 !#     -> Parse function string and compile it into bytecode
 !#
-!# 8.) fparser_evalFunction = fparser_evalFuncScalarByName /
-!#                            fparser_evalFuncScalarByNumber /
-!#                            fparser_evalFuncBlockByName /
-!#                            fparser_evalFuncBlockByNumber
+!# 8.) fparser_evalFunction = fparser_evalFuncScDbleByName /
+!#                            fparser_evalFuncScDbleByNumber /
+!#                            fparser_evalFuncBlDbleByName /
+!#                            fparser_evalFuncBlDbleByNumber /
+!#                            fparser_evalFuncScCmplByName /
+!#                            fparser_evalFuncScCmplByNumber /
+!#                            fparser_evalFuncBlCmplByName /
+!#                            fparser_evalFuncBlCmplByNumber
 !#     -> Evaluate precompiled bytecode
 !#
 !# 9.) fparser_ErrorMsg
@@ -351,11 +363,13 @@
 !# 28.) CompileIf
 !#      -> Compile if-then-else
 !#
-!# 29.) evalFunctionScalar
-!#      -> Evaluate function for scalar data
+!# 29.) evalFunctionScDble /
+!#      evalFunctionScCmpl
+!#      -> Evaluate function for scalar data (real-/complex valued)
 !#
-!# 30.) evalFunctionBlock
-!#      -> Evaluate function for multi-component data
+!# 30.) evalFunctionBlDble /
+!#      evalFunctionBlCmpl
+!#      -> Evaluate function for multi-component data (real-/complex valued)
 !#
 !# </purpose>
 !##############################################################################
@@ -384,33 +398,53 @@ module fparser
   public :: fparser_release
   public :: fparser_parseFunction
   public :: fparser_evalFunction
-  public :: fparser_evalFuncBlockByName2
-  public :: fparser_evalFuncBlockByNumber2
+  public :: fparser_evalFunctionFixed
   public :: fparser_ErrorMsg
   public :: fparser_PrintByteCode
   public :: fparser_getFunctionNumber
 
-  !****************************************************************************
-  !****************************************************************************
-  !****************************************************************************
+  public :: fparser_evalFuncBlDbleFixName
+  public :: fparser_evalFuncBlDbleFixNumber
+  public :: fparser_evalFuncBlCmplFixName
+  public :: fparser_evalFuncBlCmplFixNumber
 
+  !****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
+  
+  interface fparser_defineConstant
+    module procedure fparser_defineConstantDble
+    module procedure fparser_defineConstantCmpl
+  end interface fparser_defineConstant
+  
   interface fparser_evalFunction
-    module procedure fparser_evalFuncScalarByName
-    module procedure fparser_evalFuncScalarByNumber
-    module procedure fparser_evalFuncBlockByName
-    module procedure fparser_evalFuncBlockByNumber
-  end interface
+    module procedure fparser_evalFuncScDbleByName
+    module procedure fparser_evalFuncScDbleByNumber
+    module procedure fparser_evalFuncBlDbleByName
+    module procedure fparser_evalFuncBlDbleByNumber
+    module procedure fparser_evalFuncScCmplByName
+    module procedure fparser_evalFuncScCmplByNumber
+    module procedure fparser_evalFuncBlCmplByName
+    module procedure fparser_evalFuncBlCmplByNumber
+  end interface fparser_evalFunction
+
+  interface fparser_evalFunctionFixed
+    module procedure fparser_evalFuncBlDbleFixName
+    module procedure fparser_evalFuncBlDbleFixNumber
+    module procedure fparser_evalFuncBlCmplFixName
+    module procedure fparser_evalFuncBlCmplFixNumber
+  end interface fparser_evalFunctionFixed
 
   interface fparser_parseFunction
     module procedure fparser_parseFunctionByName
     module procedure fparser_parseFunctionByNumber
   end interface
-
+  
   interface fparser_printByteCode
     module procedure fparser_printByteCodeByName
     module procedure fparser_printByteCodeByNumber
   end interface fparser_printByteCode
-
+  
   !****************************************************************************
   !****************************************************************************
   !****************************************************************************
@@ -497,33 +531,46 @@ module fparser
                             cMin         = 22, & ! <-- first dyadic operator: .OP.(A,B)
                             cMax         = 23, &
                             cRrand       = 24, &
-                            cAtan2       = 25, & ! --> last dyadic operator: .OP.(A,B)
-                            cAbs         = 26, & ! <-- monadic operator: .OP.(A)
-                            cAnint       = 27, &
-                            cAint        = 28, &
-                            cExp         = 29, &
-                            cLog10       = 30, &
-                            cLog         = 31
-  integer(is), parameter :: cSqrt        = 32, &
-                            cSinh        = 33, &
-                            cCosh        = 34, &
-                            cTanh        = 35, &
-                            cSin         = 36, &
-                            cCos         = 37, &
-                            cTan         = 38, &
-                            cCot         = 39, &
-                            cAsinh       = 40, &
-                            cAsin        = 41
-  integer(is), parameter :: cAcosh       = 42, &
-                            cAcos        = 43, &
-                            cAtanh       = 44, &
+                            cCmplx       = 25, &
+                            cAtan2       = 26, & ! --> last dyadic operator: .OP.(A,B)
+                            cAbs         = 27, & ! <-- monadic operator: .OP.(A)
+                            cAnint       = 28, &
+                            cAint        = 29, &
+                            cExp         = 30, &
+                            cLog10       = 31, &
+                            cLog         = 32, &
+                            cSqrt        = 33, &
+                            cCeil        = 34, &
+                            cFloor       = 35
+  integer(is), parameter :: cAsinh       = 36, &
+                            cAsin        = 37, &
+                            cSinh        = 38, &
+                            cSin         = 39, &
+                            cACosh       = 40, &
+                            cAcos        = 41, &
+                            cCosh        = 42, &
+                            cCos         = 43
+  integer(is), parameter :: cAtanh       = 44, &
                             cAtan        = 45, &
-                            cCeil        = 46, &
-                            cFloor       = 47, &
-                            cCsc         = 48, &
-                            cSec         = 49, &
-                            cSign        = 50, & ! --> last monadic operator: .OP.(A)
-                            VarBegin     = 51
+                            cTanh        = 46, &
+                            cTan         = 47, &
+                            cAcoth       = 48, &
+                            cAcot        = 49, &
+                            cCoth        = 50, &
+                            cCot         = 51
+  integer(is), parameter :: cAsech       = 52, &
+                            cAsec        = 53, &
+                            cSech        = 54, &
+                            cSec         = 55, &
+                            cAcsch       = 56, &
+                            cAcsc        = 57, &
+                            cCsch        = 58, &
+                            cCsc         = 59, &
+                            cReal        = 60, &
+                            cImag        = 61, &
+                            cConj        = 62, &
+                            cSign        = 63, & ! --> last monadic operator: .OP.(A)
+                            VarBegin     = 64
 
 !</constantblock>
 
@@ -555,6 +602,7 @@ module fparser
                                                                    'min  ', &
                                                                    'max  ', &
                                                                    'rrand', &
+                                                                   'cmplx', &
                                                                    'atan2', &
                                                                    'abs  ', &
                                                                    'anint', &
@@ -563,23 +611,35 @@ module fparser
                                                                    'log10', &
                                                                    'log  ', &
                                                                    'sqrt ', &
-                                                                   'sinh ', &
-                                                                   'cosh ', &
-                                                                   'tanh ', &
-                                                                   'sin  ', &
-                                                                   'cos  ', &
-                                                                   'tan  ', &
-                                                                   'cot  ', &
-                                                                   'asinh', &
-                                                                   'asin ', &
-                                                                   'acosh', &
-                                                                   'acos ', &
-                                                                   'atanh', &
-                                                                   'atan ', &
                                                                    'ceil ', &
                                                                    'floor', &
-                                                                   'csc  ', &
+                                                                   'asinh', &
+                                                                   'asin ', &
+                                                                   'sinh ', &
+                                                                   'sin  ', &
+                                                                   'acosh', &
+                                                                   'acos ', &
+                                                                   'cosh ', &
+                                                                   'cos  ', &
+                                                                   'atanh', &
+                                                                   'atan ', &
+                                                                   'tanh ', &
+                                                                   'tan  ', &
+                                                                   'acoth', &
+                                                                   'acot ', &
+                                                                   'coth ', &
+                                                                   'cot  ', &
+                                                                   'asech', &
+                                                                   'asec ', &
+                                                                   'sech ', &
                                                                    'sec  ', &
+                                                                   'acsch', &
+                                                                   'acsc ', &
+                                                                   'csch ', &
+                                                                   'csc  ', &
+                                                                   'real ', &
+                                                                   'imag ', &
+                                                                   'conj ', &
                                                                    'sign '/)
 
 !</constantblock>
@@ -594,7 +654,7 @@ module fparser
 !</constantblock>
 
 
-!<constantblock description="predefined constant values for parser">
+!<constantblock description="predefined real-valued constant values for parser">
 
   real(DP), dimension(3), parameter :: PredefinedConstvals = (/&
       3.141592653589793115997963468544185161590576171875_DP, &
@@ -634,8 +694,11 @@ module fparser
   ! Global constant names for parser
   character(LEN=FPAR_CONSTLEN), dimension(FPAR_MAXCONSTS), save :: CconstantName  = '     '
 
-  ! Global constant values for parser
-  real(DP), dimension(FPAR_MAXCONSTS), save :: DconstantValue = 0
+  ! Global constant values for parser (real-valued)
+  real(DP), dimension(FPAR_MAXCONSTS), save :: DconstantValue = 0.0_DP
+
+  ! Global constant values for parser (complex-valued)
+  complex(DP), dimension(FPAR_MAXCONSTS), save :: ZconstantValue = complex(0.0_DP,0.0_DP)
 
   ! Global expression name for parser
   character(LEN=FPAR_EXPRLEN), dimension(FPAR_MAXCONSTS), save :: CexpressionName = ''
@@ -698,11 +761,17 @@ module fparser
     ! Is vectorizable
     logical :: bisVectorizable = .true.
 
+    ! Is complex-valued
+    logical :: bisComplex = .false.
+    
     ! Bytecode
     integer(is), dimension(:), pointer :: IbyteCode => null()
 
-    ! Immediates
+    ! Immediates (real-valued)
     real(DP), dimension(:), pointer :: Dimmed => null()
+
+    ! Immediates (complex-valued)
+    complex(DP), dimension(:), pointer :: Zimmed => null()
   end type t_fparserComponent
 !</typeblock>
 
@@ -741,7 +810,7 @@ contains
       call pcfg_initPerfConfig(fparser_perfconfig)
       fparser_perfconfig%NELEMSIM = FPAR_NITEMSIM
     end if
-
+    
   end subroutine fparser_initPerfConfig
 
   ! *****************************************************************************
@@ -772,7 +841,7 @@ contains
       call fparser_defineExpression(PredefinedExpressions(i),&
                                     PredefinedExpressionvals(i))
     end do
-
+        
   end subroutine fparser_init
 
   ! *****************************************************************************
@@ -789,7 +858,8 @@ contains
     ! Reset constants
     nconstants     = 0
     Cconstantname  = '     '
-    DconstantValue = 0._DP
+    DconstantValue = 0.0_DP
+    ZconstantValue = complex(0.0_DP,0.0_DP)
 
     ! Reset expressions
     nexpressions      = 0
@@ -835,6 +905,7 @@ contains
     character(FPAR_STRLEN) :: sdata,svalue,svariable
     integer :: iunit,ios,ipos,jpos,kpos,ivar,idatalen,icomp
     real(DP) :: dvalue
+    complex(DP) :: zvalue
 
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit, .true.)
@@ -870,8 +941,21 @@ contains
           sconstName = trim(adjustl(sdata(ipos+1:jpos-1)))
           svalue = trim(adjustl(sdata(jpos+1:)))
 
-          read(svalue,*) dvalue
-          call fparser_defineConstant(sconstName, dvalue)
+          ! Is this a real-valued constant?
+          read(svalue,*,iostat=ios) dvalue
+          if (ios .eq. 0) then
+            call fparser_defineConstant(sconstName, dvalue)
+          else
+            ! Is this a complex-valued constant?
+            read(svalue,*,iostat=ios) zvalue
+            if (ios .eq. 0) then
+              call fparser_defineConstant(sconstName, zvalue)
+            else
+              call output_line('Constant is neither real- nor complex-valued!',&
+                  OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
+              call sys_halt()
+            end if
+          end if
 
         case (FPAR_EXPRESSION)
           ! Split the line into name and value
@@ -993,10 +1077,10 @@ contains
 
 !<subroutine>
 
-  subroutine fparser_defineConstant(sname, dvalue)
+  subroutine fparser_defineConstantDble(sname, dvalue)
 
 !<description>
-    ! Define a new constant for the function parser.
+    ! Define a new real-valued constant for the function parser.
     ! This subroutine checks if the given constant is already defined.
 !</description>
 
@@ -1018,7 +1102,7 @@ contains
       nconstants = nconstants+1
     else
       call output_line('No space left for definition of constant!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstantDble')
       call sys_halt()
     end if
 
@@ -1031,7 +1115,7 @@ contains
         ! If it is already defined, then it must not have a different value
         if(DconstantValue(iconst) .ne. dvalue) then
           call output_line('Constant is already defined with different value!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
+              OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstantDble')
           call sys_halt()
         else
           nconstants = nconstants-1
@@ -1043,8 +1127,67 @@ contains
     ! Apply constant value and constant name
     CconstantName(nconstants)  = sstring
     DconstantValue(nconstants) = dvalue
+    ZconstantValue(nconstants) = complex(dvalue,0.0_DP)
 
-  end subroutine fparser_defineConstant
+  end subroutine fparser_defineConstantDble
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_defineConstantCmpl(sname, zvalue)
+
+!<description>
+    ! Define a new complex-valued constant for the function parser.
+    ! This subroutine checks if the given constant is already defined.
+!</description>
+
+!<input>
+    ! Name of the constant
+    character(LEN=FPAR_CONSTLEN), intent(in) :: sname
+
+    ! Value of the constant
+    complex(DP), intent(in) :: zvalue
+!</input>
+!</subroutine>
+
+    ! local variables
+    character(LEN=len(sname)) :: sstring
+    integer :: iconst
+
+    ! Check if there is enough space
+    if (nconstants .lt. FPAR_MAXCONSTS) then
+      nconstants = nconstants+1
+    else
+      call output_line('No space left for definition of constant!',&
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstantCmpl')
+      call sys_halt()
+    end if
+
+    ! Prepare constant
+    call sys_tolower(sname, sstring)
+
+    ! Check if constant is already defined
+    do iconst = 1, nconstants-1
+      if (CconstantName(iconst) .eq. sstring) then
+        ! If it is already defined, then it must not have a different value
+        if(ZconstantValue(iconst) .ne. zvalue) then
+          call output_line('Constant is already defined with different value!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstantCmpl')
+          call sys_halt()
+        else
+          nconstants = nconstants-1
+          return
+        end if
+      end if
+    end do
+
+    ! Apply constant value and constant name
+    CconstantName(nconstants)  = sstring
+    DconstantValue(nconstants) = real(zvalue)
+    ZconstantValue(nconstants) = zvalue
+
+  end subroutine fparser_defineConstantCmpl
 
   ! *****************************************************************************
 
@@ -1172,6 +1315,7 @@ contains
     do icomp = 1, rfparser%nncomp
       if (associated(rfparser%Rcomp(icomp)%IbyteCode)) deallocate(rfparser%Rcomp(icomp)%IbyteCode)
       if (associated(rfparser%Rcomp(icomp)%Dimmed))    deallocate(rfparser%Rcomp(icomp)%Dimmed)
+      if (associated(rfparser%Rcomp(icomp)%Zimmed))    deallocate(rfparser%Rcomp(icomp)%Zimmed)
     end do
 
     ! Deallocate memory
@@ -1189,7 +1333,7 @@ contains
 !<subroutine>
 
   subroutine fparser_parseFunctionByName (rfparser, scompName, sfunctionString,&
-                                          Svariables, buseDegrees)
+                                          Svariables, buseDegrees, icomp)
 
 !<description>
     ! Parse function string sfuncStr and compile it into bytecode
@@ -1213,6 +1357,12 @@ contains
     ! Function parser
     type (t_fparser), intent(inout) :: rfparser
 !</inputoutput>
+
+!<output>
+    ! OPTIONAL: Function identifier
+    integer, optional :: icomp
+!</output>
+
 !</subroutine>
 
     ! Check if there is space for a new component
@@ -1232,6 +1382,9 @@ contains
     call fparser_parseFunction (rfparser, rfparser%ncomp, sfunctionString,&
                                 Svariables, buseDegrees)
 
+    ! Return function identifier
+    if (present(icomp)) icomp = rfparser%ncomp
+    
   end subroutine fparser_parseFunctionByName
 
   ! *****************************************************************************
@@ -1305,13 +1458,11 @@ contains
 
 !<subroutine>
 
-  subroutine fparser_evalFuncScalarByName (rfparser, scompName, Dvalue, dresult)
+  subroutine fparser_evalFuncScDbleByName (rfparser, scompName, Dvalue, dresult)
 
-!<description>
-    ! Evaluate bytecode of function named scompName for the values
-    ! passed in array Cval(:). Note that this function is a wrapper for
-    ! the working routine evalFunctionScalar. It is used to adjust the
-    ! dimensions of the global stack memory if required.
+!<description>   
+    ! Evaluate bytecode of function named scompName for the
+    ! real-valued values passed in array Dvalue(:).
 !</description>
 
 !<input>
@@ -1340,24 +1491,62 @@ contains
     ! Evaluate function by number
     call fparser_evalFunction (rfparser, icomp, Dvalue, dresult)
 
-  end subroutine fparser_evalFuncScalarByName
+  end subroutine fparser_evalFuncScDbleByName
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine fparser_evalFuncBlockByName (rfparser, scompName, idim, DValueBlock,&
-                                          Dresult, DvalueScalar, rperfconfig)
+  subroutine fparser_evalFuncScCmplByName (rfparser, scompName, Zvalue, zresult)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in
-    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
-    ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of
-    ! the resulting vector and those which are the same, e.g., time variable.
-    ! The latter ones can be passed to the ValScalar argument which is used
-    ! uniformly for each component of Res.
+    ! Evaluate bytecode of function named scompName for the
+    ! complex-valued values passed in array Zvalues(:).
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function name
+    character(LEN=*), intent(in) :: scompName
+
+    ! Variable values
+    complex(DP), dimension(:), intent(in) :: Zvalue
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), intent(out)  :: zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: icomp
+
+    ! Lookup function by name
+    icomp = fparser_getFunctionNumber(rfparser, scompName)
+
+    ! Evaluate function by number
+    call fparser_evalFunction (rfparser, icomp, Zvalue, zresult)
+
+  end subroutine fparser_evalFuncScCmplByName
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlDbleByName (rfparser, scompName, idim, DValueBlock,&
+                                           Dresult, DvalueScalar, rperfconfig)
+
+!<description>
+    ! Evaluate bytecode of function named scompName for the
+    ! real-valued array of values passed in array DvalueBlock(:,:). In
+    ! some situations, there a variables, such as nodal coordinates,
+    ! which are different for each component of the resulting vector
+    ! and those which are the same, e.g., time variable.  The latter
+    ! ones can be passed to the DvalueScalar argument which is used
+    ! uniformly for each component of Dresult.
     !
     ! WARNING: The ordering of the variables must be identical to that given
     ! during the byte-code compilation. Care must be taken by the user since
@@ -1413,24 +1602,95 @@ contains
     call fparser_evalFunction (rfparser, icomp, idim, DvalueBlock,&
                                Dresult, DvalueScalar, rperfconfig)
 
-  end subroutine fparser_evalFuncBlockByName
+  end subroutine fparser_evalFuncBlDbleByName
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine fparser_evalFuncBlockByName2 (rfparser, scompName, n1, n2, DValueBlock,&
-                                           n3, Dresult, DvalueScalar, rperfconfig)
+  subroutine fparser_evalFuncBlCmplByName (rfparser, scompName, idim, ZValueBlock,&
+                                           Zresult, ZvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in
-    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
-    ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of
-    ! the resulting vector and those which are the same, e.g., time variable.
-    ! The latter ones can be passed to the ValScalar argument which is used
-    ! uniformly for each component of Res.
+    ! Evaluate bytecode of function named scompName for the array of
+    ! complex-valued values passed in array ZvalueBlock(:,:). In some
+    ! situations, there a variables, such as nodal coordinates, which
+    ! are different for each component of the resulting vector and
+    ! those which are the same, e.g., time variable.  The latter ones
+    ! can be passed to the ZvalueScalar argument which is used
+    ! uniformly for each component of Dresult.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and DvalueScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then ZvalueBlock=[x,y] and
+    ! ZvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function name
+    character(LEN=*), intent(in) :: scompName
+
+    ! Orientation of the stored values
+    ! idim =1 : DvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : DvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
+    integer, intent(in) :: idim
+
+    ! Variable values (must have the same dimension as Dresult)
+    complex(DP), dimension(:,:), intent(in) :: ZvalueBlock
+
+    ! Variable values. This is a vector of scalar variables
+    ! which is the same for all components of Res, e.g. the time variable.
+    complex(DP), dimension(:), intent(in), optional :: ZvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), dimension(:), intent(out) :: Zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: icomp
+
+    ! Lookup function by name
+    icomp = fparser_getFunctionNumber(rfparser, scompName)
+
+    ! Evaluate function by number
+    call fparser_evalFunction (rfparser, icomp, idim, ZvalueBlock,&
+                               Zresult, ZvalueScalar, rperfconfig)
+
+  end subroutine fparser_evalFuncBlCmplByName
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlDbleFixName (rfparser, scompName, n1, n2, DValueBlock,&
+                                            n3, Dresult, DvalueScalar, rperfconfig)
+
+!<description>
+    ! Evaluate bytecode of function named scompName for the array of
+    ! real-valued values passed in array DvalueBlock(:,:). In some
+    ! situations, there a variables, such as nodal coordinates, which
+    ! are different for each component of the resulting vector and
+    ! those which are the same, e.g., time variable.  The latter ones
+    ! can be passed to the DvalueScalar argument which is used uniformly
+    ! for each component of Dresult.
     !
     ! WARNING: The ordering of the variables must be identical to that given
     ! during the byte-code compilation. Care must be taken by the user since
@@ -1489,23 +1749,102 @@ contains
                                  Dresult, DvalueScalar, rperfconfig)
     else
       call output_line('Invalid array dimensions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlockByName2')
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlDbleFixName')
       call sys_halt()
     end if
 
-  end subroutine fparser_evalFuncBlockByName2
+  end subroutine fparser_evalFuncBlDbleFixName
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine fparser_evalFuncScalarByNumber (rfparser, icomp, Dvalue, dresult)
+  subroutine fparser_evalFuncBlCmplFixName (rfparser, scompName, n1, n2, ZValueBlock,&
+                                            n3, Zresult, zvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the values passed in array
-    ! Dvalue(:). Note that this function is a wrapper for the working routine
-    ! evalFunctionScalar. It is used to adjust the dimensions of the global
-    ! stack memory if required.
+    ! Evaluate bytecode of function named scompName for the array of
+    ! real-valued values passed in array ZvalueBlock(:,:). In some
+    ! situations, there a variables, such as nodal coordinates, which
+    ! are different for each component of the resulting vector and
+    ! those which are the same, e.g., time variable.  The latter ones
+    ! can be passed to the ZvalueScalar argument which is used uniformly
+    ! for each component of Zresult.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and DvalueScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then ZvalueBlock=[x,y] and
+    ! ZvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function name
+    character(LEN=*), intent(in) :: scompName
+
+    ! Array dimensions
+    integer, intent(in) :: n1,n2,n3
+
+    ! Variable values (must have the same dimension as Zresult)
+    complex(DP), dimension(n1,n2), intent(in) :: ZvalueBlock
+
+    ! Variable values. This is a vector of scalar variables
+    ! which is the same for all components of Zresult, e.g. the time variable.
+    complex(DP), dimension(:), intent(in), optional :: ZvalueScalar
+    
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), dimension(n3), intent(out) :: Zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: icomp
+
+    ! Lookup function by name
+    icomp = fparser_getFunctionNumber(rfparser, scompName)
+
+    ! Evaluate function by number
+    if (n1 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 1, ZvalueBlock,&
+                                 Zresult, ZvalueScalar, rperfconfig)
+    elseif (n2 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 2, ZvalueBlock,&
+                                 Zresult, ZvalueScalar, rperfconfig)
+    else
+      call output_line('Invalid array dimensions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlCmplFixName')
+      call sys_halt()
+    end if
+
+  end subroutine fparser_evalFuncBlCmplFixName
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncScDbleByNumber (rfparser, icomp, Dvalue, dresult)
+
+!<description>
+    ! Evaluate bytecode of component icomp for the real-valued values
+    ! passed in array Dvalue(:). Note that this function is a wrapper
+    ! for the working routine evalFunctionScDble. It is used to adjust
+    ! the dimensions of the global stack memory if required.    
 !</description>
 
 !<input>
@@ -1532,7 +1871,7 @@ contains
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
-          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScDbleByNumber')
       call sys_halt()
     end if
 
@@ -1540,7 +1879,7 @@ contains
     allocate(Dstack(rfparser%Rcomp(icomp)%istackSize+1))
 
     ! Invoke working routine
-    call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+    call evalFunctionScDble(rfparser%Rcomp(icomp), Dstack,&
                             Dvalue, EvalErrType, dresult)
 
     ! Deallocate temporal memory
@@ -1549,28 +1888,90 @@ contains
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
       call output_line('An error occured during function evaluation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScDbleByNumber')
       call sys_halt()
     end if
 
-  end subroutine fparser_evalFuncScalarByNumber
+  end subroutine fparser_evalFuncScDbleByNumber
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine fparser_evalFuncBlockByNumber (rfparser, icomp, idim, DvalueBlock,&
-                                            Dresult, DvalueScalar, rperfconfig)
+  subroutine fparser_evalFuncScCmplByNumber (rfparser, icomp, Zvalue, zresult)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in
-    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
-    ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of
-    ! the resulting vector and those which are the same, e.g., time variable.
-    ! The latter ones can be passed to the ValScalar argument which is used
-    ! uniformly for each component of Res.
+    ! Evaluate bytecode of component icomp for the complex-valued values
+    ! passed in array Zvalue(:). Note that this function is a wrapper
+    ! for the working routine evalFunctionScCmpl. It is used to adjust
+    ! the dimensions of the global stack memory if required.    
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function identifier
+    integer, intent(in) :: icomp
+
+    ! Variable values
+    complex(DP), dimension(:), intent(in) :: Zvalue
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), intent(out)  :: zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    complex(DP), dimension(:), allocatable :: Zstack
+    integer :: EvalErrType
+
+    ! Check if component is valid
+    if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
+      call output_line('Component number is out of range',&
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScCmplByNumber')
+      call sys_halt()
+    end if
+
+    ! Allocate temporal memory
+    allocate(Zstack(rfparser%Rcomp(icomp)%istackSize+1))
+
+    ! Invoke working routine
+    call evalFunctionScCmpl(rfparser%Rcomp(icomp), Zstack,&
+                            Zvalue, EvalErrType, zresult)
+
+    ! Deallocate temporal memory
+    deallocate(Zstack)
+
+    ! Check if evaluation was successful
+    if (EvalErrType .ne. 0) then      
+      call output_line('An error occured during function evaluation!',&
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScCmplByNumber')
+      call sys_halt()
+    end if
+
+  end subroutine fparser_evalFuncScCmplByNumber
+  
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlDbleByNumber (rfparser, icomp, idim, DvalueBlock,&
+                                             Dresult, DvalueScalar, rperfconfig)
+
+!<description>
+    ! Evaluate bytecode of component icomp for the array of
+    ! real-valued values passed in array DvaluelBlock(:,:). Note that
+    ! this function is a wrapper for the working routine
+    ! evalFunctionBlDble. It is used to adjust the dimensions of the
+    ! global stack memory if required. In some situations, there a
+    ! variables, such as nodal coordinates, which are different for
+    ! each component of the resulting vector and those which are the
+    ! same, e.g., time variable.  The latter ones can be passed to the
+    ! DvalueScalar argument which is used uniformly for each component of
+    ! Dresult.
     !
     ! WARNING: The ordering of the variables must be identical to that given
     ! during the byte-code compilation. Care must be taken by the user since
@@ -1601,8 +2002,8 @@ contains
     ! Variable values (must have the same dimension as Dresult)
     real(DP), dimension(:,:), intent(in) :: DvalueBlock
 
-    ! Variable values. This is a vector of scalar variables
-    ! which is the same for all components of Res, e.g. the time variable.
+    ! Variable values. This is a vector of scalar variables which is
+    ! the same for all components of Dresult, e.g. the time variable.
     real(DP), dimension(:), intent(in), optional :: DvalueScalar
 
     ! OPTIONAL: local performance configuration. If not given, the
@@ -1634,7 +2035,7 @@ contains
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
-          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlDbleByNumber')
       call sys_halt()
     end if
 
@@ -1665,9 +2066,9 @@ contains
           iblockSize = iValMax-iValSet+1
 
           ! Invoke working routine
-          call evalFunctionBlock(rfparser%Rcomp(icomp), iblockSize, Dstack,&
-                                 DvalueBlock(iValSet:iValMax,:), idim, EvalErrType,&
-                                 Dresult(iValSet:iValMax), DvalueScalar)
+          call evalFunctionBlDble(rfparser%Rcomp(icomp), iblockSize, Dstack,&
+                                  DvalueBlock(iValSet:iValMax,:), idim, EvalErrType,&
+                                  Dresult(iValSet:iValMax), DvalueScalar)
         end do
         !$omp end do
 
@@ -1690,9 +2091,9 @@ contains
           iblockSize = iValMax-iValSet+1
 
           ! Invoke working routine
-          call evalFunctionBlock(rfparser%Rcomp(icomp), iblockSize, Dstack,&
-                                 DvalueBlock(:, iValSet:iValMax), idim, EvalErrType,&
-                                 Dresult(iValSet:iValMax), DvalueScalar)
+          call evalFunctionBlDble(rfparser%Rcomp(icomp), iblockSize, Dstack,&
+                                  DvalueBlock(:, iValSet:iValMax), idim, EvalErrType,&
+                                  Dresult(iValSet:iValMax), DvalueScalar)
         end do
         !$omp end do
 
@@ -1706,10 +2107,12 @@ contains
       ! Allocate temporal memory
       allocate(Dstack(rfparser%Rcomp(icomp)%iStackSize+1,1))
 
-      ! The compiled bytecode cannot be vectorised. Hence, evaluate the function
-      ! separately for each set of variables. Here, the organization of the array
-      ! DvalBlock(:,:) is important. Moreover, if the optional parameter DvalScalar is
-      ! given, then we have to combine those variables from DvalBlock and DvalScalar.
+      ! The compiled bytecode cannot be vectorised. Hence, evaluate
+      ! the function separately for each set of variables. Here, the
+      ! organization of the array DvalueBlock(:,:) is
+      ! important. Moreover, if the optional parameter DvalueScalar is
+      ! given, then we have to combine those variables from DvalBlock
+      ! and DvalueScalar.
 
       if (present(DvalueScalar)) then
 
@@ -1725,7 +2128,7 @@ contains
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+            call evalFunctionScDble(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         else
@@ -1735,7 +2138,7 @@ contains
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+            call evalFunctionScDble(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         end if
@@ -1749,7 +2152,7 @@ contains
           do iValSet = 1, nvalue
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+            call evalFunctionScDble(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueBlock(iValSet,:), EvalErrType,&
                                     Dresult(iValSet))
           end do
@@ -1757,7 +2160,7 @@ contains
           do iValSet = 1, nvalue
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+            call evalFunctionScDble(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueBlock(:, iValSet), EvalErrType,&
                                     Dresult(iValSet))
           end do
@@ -1773,28 +2176,258 @@ contains
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
       call output_line('An error occured during function evaluation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlDbleByNumber')
       call sys_halt()
     end if
 
-  end subroutine fparser_evalFuncBlockByNumber
+  end subroutine fparser_evalFuncBlDbleByNumber
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine fparser_evalFuncBlockByNumber2 (rfparser, icomp, n1, n2, DvalueBlock,&
-                                             n3, Dresult, DvalueScalar, rperfconfig)
+  subroutine fparser_evalFuncBlCmplByNumber (rfparser, icomp, idim, ZvalueBlock,&
+                                             Zresult, ZvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in
-    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
-    ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of
-    ! the resulting vector and those which are the same, e.g., time variable.
-    ! The latter ones can be passed to the ValScalar argument which is used
-    ! uniformly for each component of Res.
+    ! Evaluate bytecode of component icomp for the array of
+    ! complex-valued values passed in array ZvaluelBlock(:,:). Note that
+    ! this function is a wrapper for the working routine
+    ! evalFunctionBlCmpl. It is used to adjust the dimensions of the
+    ! global stack memory if required. In some situations, there a
+    ! variables, such as nodal coordinates, which are different for
+    ! each component of the resulting vector and those which are the
+    ! same, e.g., time variable.  The latter ones can be passed to the
+    ! ZvalueScalar argument which is used uniformly for each component of
+    ! Zresult.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and ValScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then ZvalueBlock=[x,y] and
+    ! ZvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function identifier
+    integer, intent(in) :: icomp
+
+    ! Orientation of the stored values
+    ! idim =1 : DvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : DvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
+    integer, intent(in) :: idim
+
+    ! Variable values (must have the same dimension as Zresult)
+    complex(DP), dimension(:,:), intent(in) :: ZvalueBlock
+
+    ! Variable values. This is a vector of scalar variables which is
+    ! the same for all components of Zresult, e.g. the time variable.
+    complex(DP), dimension(:), intent(in), optional :: ZvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), dimension(:), intent(out) :: Zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    complex(DP), dimension(:,:), allocatable :: Zstack
+    complex(DP), dimension(:), allocatable :: ZvalueTemp
+    integer :: iValSet,iValMax,nvalue,iblockSize,isizeValueScalar,isizeValueBlock
+    integer :: EvalErrType
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => fparser_perfconfig
+    end if
+
+    ! Check if component is valid
+    if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
+      call output_line('Component number is out of range',&
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlCmplByNumber')
+      call sys_halt()
+    end if
+
+    ! Get total number of variable sets
+    nvalue = size(ZvalueBlock, idim)
+
+    ! Initialise error flag
+    EvalErrType = 0
+
+    ! Check if the compiled function is vectorizable
+    if (rfparser%Rcomp(icomp)%bisVectorizable) then
+      ! ...ok, vectorization of the bytecode is admissible.
+
+      ! What is the organization of ValBlock(:,:)
+      if (idim .eq. 1) then
+        !$omp parallel default(shared)&
+        !$omp private(Zstack,iValMax,iblockSize)&
+        !$omp reduction(max:EvalErrType)
+
+        ! Allocate temporal memory
+        allocate(Zstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
+
+        !$omp do schedule(static,1)
+        do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
+
+          ! Initialization
+          iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
+          iblockSize = iValMax-iValSet+1
+
+          ! Invoke working routine
+          call evalFunctionBlCmpl(rfparser%Rcomp(icomp), iblockSize, Zstack,&
+                                  ZvalueBlock(iValSet:iValMax,:), idim, EvalErrType,&
+                                  Zresult(iValSet:iValMax), ZvalueScalar)
+        end do
+        !$omp end do
+
+        ! Deallocate temporal memory
+        deallocate(Zstack)
+        !$omp end parallel
+      else
+        !$omp parallel default(shared)&
+        !$omp private(Zstack,iValMax,iblockSize)&
+        !$omp reduction(max:EvalErrType)
+
+        ! Allocate temporal memory
+        allocate(Zstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
+
+        !$omp do schedule(static,1)
+        do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
+
+          ! Initialization
+          iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
+          iblockSize = iValMax-iValSet+1
+
+          ! Invoke working routine
+          call evalFunctionBlCmpl(rfparser%Rcomp(icomp), iblockSize, Zstack,&
+                                  ZvalueBlock(:, iValSet:iValMax), idim, EvalErrType,&
+                                  Zresult(iValSet:iValMax), ZvalueScalar)
+        end do
+        !$omp end do
+
+        ! Deallocate temporal memory
+        deallocate(Zstack)
+        !$omp end parallel
+      end if
+
+    else   ! The compiled function cannot be vectorised
+
+      ! Allocate temporal memory
+      allocate(Zstack(rfparser%Rcomp(icomp)%iStackSize+1,1))
+
+      ! The compiled bytecode cannot be vectorised. Hence, evaluate
+      ! the function separately for each set of variables. Here, the
+      ! organization of the array ZvalueBlock(:,:) is
+      ! important. Moreover, if the optional parameter ZvalueScalar is
+      ! given, then we have to combine those variables from
+      ! ZvalueBlock and ZvalueScalar.
+
+      if (present(ZvalueScalar)) then
+
+        ! Allocate auxiliary array
+        isizeValueBlock  = size(ZvalueBlock,3-idim)
+        isizeValueScalar = size(ZvalueScalar)
+        allocate(ZvalueTemp(isizeValueBlock+isizeValueScalar))
+
+        if (idim .eq. 1) then
+          do iValSet = 1, nvalue
+
+            ZvalueTemp(1:isizeValueBlock)  = ZvalueBlock(iValSet,1:isizeValueBlock)
+            ZvalueTemp(isizeValueBlock+1:) = ZvalueScalar
+
+            ! Invoke working routine
+            call evalFunctionScCmpl(rfparser%Rcomp(icomp), Zstack(:,1),&
+                                    ZvalueTemp, EvalErrType, Zresult(iValSet))
+          end do
+        else
+          do iValSet = 1, nvalue
+
+            ZvalueTemp(1:isizeValueBlock)  = ZvalueBlock(:,iValSet)
+            ZvalueTemp(isizeValueBlock+1:) = ZvalueScalar
+
+            ! Invoke working routine
+            call evalFunctionScCmpl(rfparser%Rcomp(icomp), Zstack(:,1),&
+                                    ZvalueTemp, EvalErrType, Zresult(iValSet))
+          end do
+        end if
+
+        ! Deallocate auxiliary array
+        deallocate(ZvalueTemp)
+
+      else
+
+        if (idim .eq. 1) then
+          do iValSet = 1, nvalue
+
+            ! Invoke working routine
+            call evalFunctionScCmpl(rfparser%Rcomp(icomp), Zstack(:,1),&
+                                    ZvalueBlock(iValSet,:), EvalErrType,&
+                                    Zresult(iValSet))
+          end do
+        else
+          do iValSet = 1, nvalue
+
+            ! Invoke working routine
+            call evalFunctionScCmpl(rfparser%Rcomp(icomp), Zstack(:,1),&
+                                    ZvalueBlock(:, iValSet), EvalErrType,&
+                                    Zresult(iValSet))
+          end do
+        end if
+
+      end if
+
+      ! Deallocate temporal memory
+      deallocate(Zstack)
+
+    end if
+
+    ! Check if evaluation was successful
+    if (EvalErrType .ne. 0) then
+      call output_line('An error occured during function evaluation!',&
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlCmplByNumber')
+      call sys_halt()
+    end if
+
+  end subroutine fparser_evalFuncBlCmplByNumber
+  
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlDbleFixNumber (rfparser, icomp, n1, n2, DvalueBlock,&
+                                              n3, Dresult, DvalueScalar, rperfconfig)
+
+!<description>   
+    ! Evaluate bytecode of component icomp for the array of
+    ! real-valued values passed in array DvaluelBlock(:,:). Note that
+    ! this function is a wrapper for the working routine
+    ! evalFunctionBlDble. It is used to adjust the dimensions of the
+    ! global stack memory if required. In some situations, there a
+    ! variables, such as nodal coordinates, which are different for
+    ! each component of the resulting vector and those which are the
+    ! same, e.g., time variable.  The latter ones can be passed to the
+    ! DvalueScalar argument which is used uniformly for each component
+    ! of Dresult.
     !
     ! WARNING: The ordering of the variables must be identical to that given
     ! during the byte-code compilation. Care must be taken by the user since
@@ -1823,8 +2456,8 @@ contains
     ! Variable values (must have the same dimension as Dresult)
     real(DP), dimension(n1,n2), intent(in) :: DvalueBlock
 
-    ! Variable values. This is a vector of scalar variables
-    ! which is the same for all components of Res, e.g. the time variable.
+    ! Variable values. This is a vector of scalar variables which is
+    ! the same for all components of Dresult, e.g. the time variable.
     real(DP), dimension(:), intent(in), optional :: DvalueScalar
 
     ! OPTIONAL: local performance configuration. If not given, the
@@ -1847,12 +2480,88 @@ contains
                                  Dresult, DvalueScalar, rperfconfig)
     else
       call output_line('Invalid array dimensions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlockByNumber2')
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlDbleFixNumber')
       call sys_halt()
     end if
 
-  end subroutine fparser_evalFuncBlockByNumber2
+  end subroutine fparser_evalFuncBlDbleFixNumber
 
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlCmplFixNumber (rfparser, icomp, n1, n2, ZvalueBlock,&
+                                              n3, Zresult, ZvalueScalar, rperfconfig)
+
+!<description>   
+    ! Evaluate bytecode of component icomp for the array of
+    ! complex-valued values passed in array ZvaluelBlock(:,:). Note that
+    ! this function is a wrapper for the working routine
+    ! evalFunctionBlCmpl. It is used to adjust the dimensions of the
+    ! global stack memory if required. In some situations, there a
+    ! variables, such as nodal coordinates, which are different for
+    ! each component of the resulting vector and those which are the
+    ! same, e.g., time variable.  The latter ones can be passed to the
+    ! ZvalueScalar argument which is used uniformly for each component
+    ! of Zresult.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and ValScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppose you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then ZvalueBlock=[x,y] and
+    ! ZvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser), intent(in) :: rfparser
+
+    ! Function identifier
+    integer, intent(in) :: icomp
+
+    ! Array dimensions
+    integer, intent(in) :: n1,n2,n3
+
+    ! Variable values (must have the same dimension as Zresult)
+    complex(DP), dimension(n1,n2), intent(in) :: ZvalueBlock
+
+    ! Variable values. This is a vector of scalar variables which is
+    ! the same for all components of Zresult, e.g. the time variable.
+    complex(DP), dimension(:), intent(in), optional :: ZvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    complex(DP), dimension(n3), intent(out) :: Zresult
+!</output>
+!</subroutine>
+
+    ! Evaluate function by number
+    if (n1 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 1, ZvalueBlock,&
+                                 Zresult, ZvalueScalar, rperfconfig)
+    elseif (n2 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 2, ZvalueBlock,&
+                                 Zresult, ZvalueScalar, rperfconfig)
+    else
+      call output_line('Invalid array dimensions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlCmplFixNumber')
+      call sys_halt()
+    end if
+
+  end subroutine fparser_evalFuncBlCmplFixNumber
+  
   ! *****************************************************************************
 
 !<function>
@@ -1864,12 +2573,10 @@ contains
 !</description>
 
     ! local constants
-    character (LEN=*), dimension(6), parameter :: m = (/ 'Division by zero                  ', &
-                                                         'Argument of SQRT negative         ', &
-                                                         'Argument of LOG negative          ', &
-                                                         'Argument of ASIN or ACOS illegal  ', &
-                                                         'Argument of ASINH or ACOSH illegal', &
-                                                         'Argument of ATANH illegal         ' /)
+    character (LEN=*), dimension(4), parameter :: m = (/ 'Division by zero       ', &
+                                                         'Illegal argument       ', &
+                                                         'Complex-valued argument', &
+                                                         'Illegal operation      '/)
 
 !<input>
     ! Error identifier
@@ -1968,7 +2675,13 @@ contains
         iinstPtr = iinstPtr+2
 
       case(cImmed)
-        write(*,FMT='(A,1X,T10,G16.8)') "push", p_Comp%Dimmed(idataPtr)
+        if (p_Comp%bisComplex) then
+          write(*,FMT='(A,1X,T10,A,G16.8,A,G16.8,A)') "push", "(",&
+              real(p_Comp%Zimmed(idataPtr)), ",",&
+              aimag(p_Comp%Zimmed(idataPtr)), ")"
+        else
+          write(*,FMT='(A,1X,T10,G16.8)') "push", p_Comp%Dimmed(idataPtr)
+        end if
         idataPtr = idataPtr+1
 
       case default
@@ -1988,7 +2701,7 @@ contains
           case(cGreater);     n = "gt"
           case(cGreaterOrEq); n = "ge"
           case(cAND);         n = "and"
-          case (cOR);         n = "or"
+          case(cOR);          n = "or"
           case(cNOT);         n = "not"
           case(cDEG);         n = "deg"
           case(cRAD);         n = "rad"
@@ -2083,7 +2796,7 @@ contains
 !</input>
 !</subroutine>
 
-    ! local avriables
+    ! local variables
     type(t_stackInt) :: rstack
     integer(is) :: n,iopSize
     character (LEN=1) :: c
@@ -2123,10 +2836,10 @@ contains
 
       ! Check for math function
       n = MathFunctionIndex (sfunctionString(ifunctionIndex:))
-      if (n .gt. 0) then
+      if (n .gt. 0) then      
         ! Math function found
         ifunctionIndex = ifunctionIndex+len_trim(Funcs(n))
-        if (ifunctionIndex > ifunctionLength) then
+        if (ifunctionIndex .gt. ifunctionLength) then
           call output_line('Premature end of string '//&
               trim(adjustl(sfunctionString))//' !',&
               OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
@@ -2156,7 +2869,7 @@ contains
           c = sfunctionString(ifunctionIndex:ifunctionIndex)
 
           ! Ugly, but other methods would just be uglier ...
-          goto 999
+          goto 2
         end if
 
         ! Push counter for parenthesss to stack
@@ -2192,8 +2905,18 @@ contains
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+in-1
-        if (ifunctionIndex > ifunctionLength) exit
+        if (ifunctionIndex .gt. ifunctionLength) exit
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
+
+!!$        ! Check if this is an imaginary number z = (a,b) = a+bi
+!!$        if (c .eq. ',') then
+!!$          ifunctionIndex = ifunctionIndex+1
+!!$          if (ifunctionIndex .gt. ifunctionLength) exit
+!!$          c = sfunctionString(ifunctionIndex:ifunctionIndex)
+!!$          
+!!$          ! Ugly, but other methods would just be uglier ...
+!!$          goto 1
+!!$        end if
       elseif (c .eq. '_') then
         ! Check for constant
         n = ConstantIndex (sfunctionString(ifunctionIndex:))
@@ -2204,7 +2927,7 @@ contains
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+len_trim(CconstantName(n))+1
-        if (ifunctionIndex > ifunctionLength) exit
+        if (ifunctionIndex .gt. ifunctionLength) exit
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
       elseif (c .eq. '@') then
         ! Check for expression
@@ -2218,7 +2941,7 @@ contains
         call CheckSyntax(CexpressionString(n), Svariables)
         ifunctionIndex = ifunctionIndex+len_trim(CexpressionName(n))+1
         if (ifunctionIndex .gt. ifunctionLength) exit
-        c = sfunctionString(ifunctionIndex:ifunctionIndex)
+        c = sfunctionString(ifunctionIndex:ifunctionIndex)       
       else
         ! Check for variable
         n = VariableIndex (sfunctionString(ifunctionIndex:), Svariables, ib, in)
@@ -2257,9 +2980,10 @@ contains
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
       end do
 
-      ! Now, we have a legal operand: A legal operator or end of string must follow
-999   if (ifunctionIndex .gt. ifunctionLength) exit
-
+      ! Now, we have a legal operand: A legal operator or the end of
+      ! string must follow
+2     if (ifunctionIndex .gt. ifunctionLength) exit
+      
       ! Check operators
       iopSize = 0
       if (.not.stack_empty(rstack)) then
@@ -2272,18 +2996,21 @@ contains
       else
         iopSize = isOperator(sfunctionString(ifunctionIndex:))
       end if
+      
       if (iopSize .eq. 0) then
         call output_line('Operator expected in string '//&
-              trim(adjustl(sfunctionString))//' !',&
+            trim(adjustl(sfunctionString))//' !',&
             OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
-
+      
       ! Now, we have an operand and an operator: the next loop will check for another
       ! operand (must appear)
       ifunctionIndex = ifunctionIndex+iopSize
     end do
-    if (iparenthCount .gt. 0) then
+
+    ! Sanity check if the number of opening and closing brackets is the same
+    if (iparenthCount .ne. 0) then
       call output_line('Missing ) in string '//&
               trim(adjustl(sfunctionString))//' !',&
           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
@@ -2316,17 +3043,16 @@ contains
 !</result>
 !</function>
 
-    ! local variables
-    integer(is) :: j,m
-
-    n = 0
+    integer(is) :: j
+    
+    ! Check all operators
     do j = cAdd, cOr
-      m = len_trim(Ops(j))
-      if (sfunctionString(1:m) .eq. trim(Ops(j))) then
-        n = m
-        exit
+      if (index(sfunctionString,trim(Ops(j))) .eq. 1) then
+        n=len_trim(Ops(j))
+        return
       end if
     end do
+    n = 0
 
   end function isOperator
 
@@ -2352,24 +3078,15 @@ contains
 !</function>
 
     ! local variables
-    integer(is) :: j
-    integer k
-    character (LEN=len(Funcs)) :: sfunctionName
+    character (LEN=len(sfunctionString)) :: sfunctionName
 
     ! Check all math functions
-    n = 0
-    do j = cIf, cSign
-      k = min(len_trim(Funcs(j)), len(sfunctionString))
-
-      ! Compare lower case letters
-      call sys_tolower(sfunctionString(1:k), sfunctionName)
-      if (sfunctionName .eq. Funcs(j)) then
-        ! Found a matching function
-        n = j
-        return
-      end if
+    call sys_tolower(sfunctionString, sfunctionName)
+    do n = cIf, cSign
+      if (index(sfunctionName,trim(Funcs(n))) .eq. 1) return
     end do
-
+    n = 0
+    
   end function MathFunctionIndex
 
   ! *****************************************************************************
@@ -2418,7 +3135,8 @@ contains
   function ConstantIndex (sfunctionString) result (n)
 
 !<description>
-    ! Return index of predefined constants beginnig at 1st position of string str
+    ! Return index of predefined constants beginnig at 1st position of
+    ! string sfunctinString    
 !</description>
 
 !<input>
@@ -2433,23 +3151,14 @@ contains
 !</function>
 
     ! local variables
-    integer(is) :: j
-    integer k
-    character (LEN=len(CconstantName)) :: sconstantName
+    character (LEN=len(sfunctionString)-1) :: sconstantName
 
-    ! Check all predefined constants
-    n = 0
-    do j = 1, nconstants
-      k = min(len_trim(CconstantName(j)), len(sfunctionString(2:)))
-
-      ! Compare lower case letters
-      call sys_tolower(sfunctionString(2:k+1), sconstantName)
-      if (sconstantName .eq. CconstantName(j)) then
-        ! Found a matching constant
-        n = j
-        return
-      end if
+    ! Check all math functions
+    call sys_tolower(sfunctionString(2:), sconstantName)
+    do n = 1, nconstants
+      if (index(sconstantName,trim(CconstantName(n))) .eq. 1) return
     end do
+    n = 0
 
   end function ConstantIndex
 
@@ -2460,7 +3169,8 @@ contains
   function ExpressionIndex (sfunctionString) result (n)
 
 !<description>
-    ! Return index of predefined expression beginnig at 1st position of string str
+    ! Return index of predefined expression beginnig at 1st position
+    ! of string sfunctionString    
 !</description>
 
 !<input>
@@ -2475,24 +3185,14 @@ contains
 !</function>
 
     ! local variables
-    integer(is) :: j
-    integer k
-    character (LEN=len(CexpressionName)) :: sexpressionName
+    character (LEN=len(sfunctionString)-1) :: sexpressionName
 
-    ! Check all predefined expressions
-    n = 0
-    do j = 1, nexpressions
-      k = min(len_trim(CexpressionName(j)), len(sfunctionString(2:)))
-
-      ! Compare lower case letters
-      call sys_tolower(sfunctionString(2:k+1), sexpressionName)
-
-      if (sexpressionName .eq. CexpressionName(j)) then
-        ! Found a matching expression
-        n = j
-        return
-      end if
+    ! Check all math functions
+    call sys_tolower(sfunctionString(2:), sexpressionName)
+    do n = 1, nexpressions
+      if (index(sexpressionName,trim(CexpressionName(n))) .eq. 1) return
     end do
+    n = 0
 
   end function ExpressionIndex
 
@@ -2502,8 +3202,9 @@ contains
 
   function VariableIndex (sstring, Svariables, ibegin, inext) result (n)
 
-!<description>
-    ! Return index of variable at begin of string sfunctionString (returns 0 if no variable found)
+!<description>    
+    ! Return index of variable at begin of string sfunctionString
+    ! (returns 0 if no variable found)
 !</description>
 
 !<input>
@@ -2650,12 +3351,14 @@ contains
 
     ! local variables
     integer(is), dimension(:), pointer :: IbyteCode
-    real(DP), dimension(:), pointer :: Dimmed
+    real(DP), dimension(:),    pointer :: Dimmed
+    complex(DP), dimension(:), pointer :: Zimmed
     integer :: ind,isize
 
     ! (Re-)initialise the bytecode structure (if required)
     if (associated(rcomp%IbyteCode)) deallocate (rcomp%IbyteCode)
     if (associated(rcomp%Dimmed))    deallocate (rcomp%Dimmed)
+    if (associated(rcomp%Zimmed))    deallocate (rcomp%Zimmed)
     rcomp%ibytecodeSize = 0
     rcomp%iimmedSize    = 0
     rcomp%istackSize    = 0
@@ -2666,7 +3369,7 @@ contains
     ! immediate expressions can exceed the size of the function
     ! string. Hence, allocate some initial memory
     isize = FunctionSize(sfunctionString)
-    allocate(rcomp%IbyteCode(isize), rcomp%Dimmed(isize))
+    allocate(rcomp%IbyteCode(isize), rcomp%Dimmed(isize), rcomp%Zimmed(isize))
 
     ! Compile function string into bytecode
     ind = CompileExpression(rcomp, sfunctionString, 1, Svariables)
@@ -2675,6 +3378,7 @@ contains
     if (rcomp%ibytecodeSize .eq. 0) then
       deallocate(rcomp%IbyteCode)
     else
+      ! Resize IbyteCode
       allocate(IbyteCode(rcomp%ibytecodeSize))
       IbyteCode = rcomp%IbyteCode(1:rcomp%ibytecodeSize)
       deallocate(rcomp%IbyteCode)
@@ -2686,13 +3390,23 @@ contains
     ! Adjust memory size of immediate stack
     if (rcomp%iimmedSize .eq. 0) then
       deallocate(rcomp%Dimmed)
+      deallocate(rcomp%Zimmed)
     else
+      ! Resize Dimmed
       allocate(Dimmed(rcomp%iimmedSize))
       Dimmed = rcomp%Dimmed(1:rcomp%iimmedSize)
       deallocate(rcomp%Dimmed)
       allocate(rcomp%Dimmed(rcomp%iimmedSize))
       rcomp%Dimmed = Dimmed
       deallocate(Dimmed)
+
+      ! Resize Zimmed
+      allocate(Zimmed(rcomp%iimmedSize))
+      Zimmed = rcomp%Zimmed(1:rcomp%iimmedSize)
+      deallocate(rcomp%Zimmed)
+      allocate(rcomp%Zimmed(rcomp%iimmedSize))
+      rcomp%Zimmed = Zimmed
+      deallocate(Zimmed)
     end if
 
   end subroutine Compile
@@ -2745,8 +3459,13 @@ contains
     rcomp%ibytecodeSize = rcomp%ibytecodeSize + 1
     rcomp%IbyteCode(rcomp%ibytecodeSize) = ibyte
 
-    ! Try to optimise the compiled bytecode. Check the bytecode instruction and
-    ! compute some values on-the-fly of this is possible
+    ! Try to optimise the compiled bytecode. Check the bytecode
+    ! instruction and compute some values on-the-fly of this is
+    ! possible. If rcomp%bisComplex is false, we compute only the
+    ! real-valued path and set the complex-valued path equal to the
+    ! real-valued path. Some functions return complex-valued
+    ! results. In this case rcomp%bisComplex is set to true and the
+    ! real-valued path is overwritten by SYS_INFINITY_DP.
     select case(ibyte)
       !------------------------------------------------------------
       ! Functions
@@ -2754,186 +3473,437 @@ contains
     case (cAbs)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = abs(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = abs(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cAcos)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Acos(A) gives complex result?
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. -1.0_DP .or. &
-            rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) then
-          call output_line('Invalid argument for ACOS!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+            rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zacos(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          ! Real-valued path
+          rcomp%Dimmed(rcomp%iimmedSize) = acos(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zacos(rcomp%Zimmed(rcomp%iimmedSize))
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = acos(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cAsin)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Asin(A) gives complex result?
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. -1.0_DP .or. &
-            rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) then
-          call output_line('Invalid argument for ASIN!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+            rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) rcomp%bisComplex = .true.
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zasin(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = asin(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zasin(rcomp%Zimmed(rcomp%iimmedSize))
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = asin(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cAtan)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = atan(rcomp%Dimmed(rcomp%iimmedSize))
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zatan(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = atan(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zatan(rcomp%Zimmed(rcomp%iimmedSize))
+        end if
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cAtan2)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex) then
+          call output_line('Invalid complex argument for ATAN2!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = atan2(rcomp%Dimmed(rcomp%iimmedSize),&
                                                  rcomp%Dimmed(rcomp%iimmedSize-1))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
       end if
 
+    case (cAcot)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zatan(1.0_dp/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = atan(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zatan(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cAcoth)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zatanh(1.0_dp/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = datanh(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zatanh(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+
     case (cAcosh)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        daux=rcomp%Dimmed(rcomp%iimmedSize)+sqrt(rcomp%Dimmed(rcomp%iimmedSize)**2-1)
-        if (daux .le. 0) then
-          call output_line('Invalid argument for ACOSH!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+
+        ! Acosh(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 1.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zacosh(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = dacosh(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zacosh(rcomp%Zimmed(rcomp%iimmedSize))
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = log(daux)
         call RemoveCompiledByte(rcomp)
       end if
 
-    case (cAnint)
+    case (cAcsc)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = anint(rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Acsc(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .gt. -SYS_PI/2.0_DP .and. &
+            rcomp%Dimmed(rcomp%iimmedSize) .lt.  SYS_PI/2.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zasin(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          ! Real-valued path
+          rcomp%Dimmed(rcomp%iimmedSize) =  asin(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zasin(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
         call RemoveCompiledByte(rcomp)
       end if
 
-    case (cAint)
+    case (cAcsch)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = aint(rcomp%Dimmed(rcomp%iimmedSize))
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zasinh(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          ! Real-valued path
+          rcomp%Dimmed(rcomp%iimmedSize) = dasinh(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zasinh(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+      
+    case (cAsec)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Asec(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .gt. -1.0_DP .and. &
+            rcomp%Dimmed(rcomp%iimmedSize) .lt.  1.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zacos(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          ! Real-valued path
+          rcomp%Dimmed(rcomp%iimmedSize) =  acos(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zacos(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cAsech)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Asech(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP .or. &
+            rcomp%Dimmed(rcomp%iimmedSize) .gt. 1.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zacosh(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          ! Real-valued path
+          rcomp%Dimmed(rcomp%iimmedSize) = dacosh(1.0_DP/rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zacosh(1.0_DP/rcomp%Zimmed(rcomp%iimmedSize))
+        end if
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cAsinh)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        daux=rcomp%Dimmed(rcomp%iimmedSize)+sqrt(rcomp%Dimmed(rcomp%iimmedSize)**2-1)
-        if (daux .le. 0) then
-          call output_line('Invalid argument for ASINH!',&
+
+        ! Asinh(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zasinh(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = dasinh(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zasinh(rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+      
+    case (cAtanh)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = zatanh(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = datanh(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = zatanh(rcomp%Zimmed(rcomp%iimmedSize))
+        end if
+        call RemoveCompiledByte(rcomp)
+      end if
+      
+    case (cAnint)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for ANINT!',&
               OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = log(daux)
+
+        ! Copy data from real-valued case
+        rcomp%Dimmed(rcomp%iimmedSize) = anint(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
 
-    case (cAtanh)
+    case (cAint)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        if (rcomp%Dimmed(rcomp%iimmedSize) .eq. -1.0_DP) then
-          call output_line('Invalid argument for ATANH!',&
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for AINT!',&
               OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
-        daux=(1+rcomp%Dimmed(rcomp%iimmedSize))/(1-rcomp%Dimmed(rcomp%iimmedSize))
-        if (daux .le. 0._DP) then
-          call output_line('Invalid argument for ATANH!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
-        end if
-        rcomp%Dimmed(rcomp%iimmedSize) = log(daux)/2.0_DP
+
+        ! Copy data from real-valued case
+        rcomp%Dimmed(rcomp%iimmedSize) = aint(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cCeil)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = ceiling(rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = cmplx(ceiling(real(rcomp%Zimmed(rcomp%iimmedSize))),&
+                                                 ceiling(aimag(rcomp%Zimmed(rcomp%iimmedSize))),DP)
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = ceiling(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
+        end if
         call RemoveCompiledByte(rcomp)
       end if
 
+    case (Ccmplx)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
+          rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+
+          ! Not available for complex-valued case
+          if (IsComplex(rcomp%Zimmed(rcomp%iimmedSize)) .or.&
+              IsComplex(rcomp%Zimmed(rcomp%iimmedSize-1))) then
+            call output_line('Invalid complex argument for CMPLX!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+            call sys_halt()
+          end if
+          
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(real(rcomp%Zimmed(rcomp%iimmedSize-1)),&
+                                                   real(rcomp%Zimmed(rcomp%iimmedSize)),DP)
+          rcomp%Dimmed(rcomp%iimmedSize-1) = SYS_INFINITY_DP
+          
+        else
+          rcomp%bisComplex =.true.
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),&
+                                                   rcomp%Dimmed(rcomp%iimmedSize),DP)
+          rcomp%Dimmed(rcomp%iimmedSize-1) = SYS_INFINITY_DP
+        end if
+        call RemoveCompiledImmediate(rcomp)
+        call RemoveCompiledByte(rcomp)
+        call RemoveCompiledByte(rcomp)
+      end if
+      
+    case (Cconj)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        ! Nothing needs to be done for the real-valued case
+        rcomp%Zimmed(rcomp%iimmedSize) = conjg(rcomp%Zimmed(rcomp%iimmedSize))
+        call RemoveCompiledByte(rcomp)
+      end if
+      
     case (cCos)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = cos(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cos(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cCosh)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = cosh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Dimmed(rcomp%iimmedSize) =  cosh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = zcosh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cCot)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        daux=tan(rcomp%Dimmed(rcomp%iimmedSize))
-        if (daux .eq. 0.0_DP) then
-          call output_line('Invalid argument for COT!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
-        end if
-        rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/ tan(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/ztan(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
+    case (cCoth)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/ tanh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/ztanh(rcomp%Zimmed(rcomp%iimmedSize))
+        call RemoveCompiledByte(rcomp)
+      end if
+      
     case (cCsc)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        daux=sin(rcomp%Dimmed(rcomp%iimmedSize))
-        if (daux .eq. 0._DP) then
-          call output_line('Invalid argument for CSC!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
-        end if
-        rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/sin(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/sin(rcomp%Zimmed(rcomp%iimmedSize))
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cCsch)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/ sinh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/zsinh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cExp)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = exp(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = exp(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cFloor)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = floor(rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = cmplx(floor(real(rcomp%Zimmed(rcomp%iimmedSize))),&
+                                                 floor(aimag(rcomp%Zimmed(rcomp%iimmedSize))),DP)
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = floor(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
+        end if
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cIf)
       ! No optimization possible
 
+    case (cImag)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then        
+        rcomp%Dimmed(rcomp%iimmedSize) =       aimag(rcomp%Zimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(aimag(rcomp%Zimmed(rcomp%iimmedSize)),0.0_DP,DP)
+        call RemoveCompiledByte(rcomp)
+      end if
+      
     case (cLog)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) then
-          call output_line('Invalid argument for LOG!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+
+        ! Log(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) rcomp%bisComplex = .true.
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = log(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = log(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = log(rcomp%Zimmed(rcomp%iimmedSize))
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = log(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cLog10)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) then
-          call output_line('Invalid argument for LOG!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+
+        ! Log10(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP) rcomp%bisComplex = .true.
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = log(rcomp%Zimmed(rcomp%iimmedSize))/log(10.0_DP)
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = log10(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = log(rcomp%Zimmed(rcomp%iimmedSize))/log(10.0_DP)
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = log10(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cMax)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize-1) = max(rcomp%Dimmed(rcomp%iimmedSize),&
-                                               rcomp%Dimmed(rcomp%iimmedSize-1))
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          if (abs(rcomp%Zimmed(rcomp%iimmedSize)) .ge.&
+              abs(rcomp%Zimmed(rcomp%iimmedSize-1))) then
+            rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize)
+          end if
+        else
+          rcomp%Dimmed(rcomp%iimmedSize-1) = max(rcomp%Dimmed(rcomp%iimmedSize),&
+                                                 rcomp%Dimmed(rcomp%iimmedSize-1))
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
+        end if
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -2942,16 +3912,41 @@ contains
     case (cMin)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex) then
+          call output_line('Invalid complex argument for MAX!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = min(rcomp%Dimmed(rcomp%iimmedSize),&
                                                rcomp%Dimmed(rcomp%iimmedSize-1))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cReal)      
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        rcomp%Dimmed(rcomp%iimmedSize) =       real(rcomp%Zimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(real(rcomp%Zimmed(rcomp%iimmedSize)),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cRrand)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for RRAND!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
         call random_seed (size=iaux)
         allocate (p_Irandom1(iaux))
         allocate (p_Irandom2(iaux))
@@ -2964,8 +3959,11 @@ contains
         do iaux=1,max(1,int(rcomp%Dimmed(rcomp%iimmedSize)))
           call random_number (daux)
         end do
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = daux
-
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(daux,0.0_DP,DP)
+        
         call random_seed (put=p_Irandom1)
         deallocate(p_Irandom1,p_Irandom2)
 
@@ -2976,54 +3974,70 @@ contains
 
     case (cSec)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        daux=cos(rcomp%Dimmed(rcomp%iimmedSize))
-        if (daux .eq. 0._DP) then
-          call output_line('Invalid argument for SEC!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
-        end if
-        rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/cos(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/cos(rcomp%Zimmed(rcomp%iimmedSize))
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cSech)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/cosh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/cosh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cSign)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = sign(1._DP,rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Dimmed(rcomp%iimmedSize) = sign(1.0_DP,rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Compute sign(A) = A./abs(A) following the definition in MATLAB
+        rcomp%Zimmed(rcomp%iimmedSize) = rcomp%Zimmed(rcomp%iimmedSize)/&
+                                         abs(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cSin)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = sin(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = sin(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cSinh)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = sinh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Dimmed(rcomp%iimmedSize) =  sinh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = zsinh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cSqrt)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP) then
-          call output_line('Invalid argument for SQRT!',&
-              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
-          call sys_halt()
+
+        ! Sqrt(A) gives complex result?
+        if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP) rcomp%bisComplex = .true.
+        
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+          rcomp%Zimmed(rcomp%iimmedSize) = sqrt(rcomp%Zimmed(rcomp%iimmedSize))
+        else
+          rcomp%Dimmed(rcomp%iimmedSize) = sqrt(rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize) = sqrt(rcomp%Zimmed(rcomp%iimmedSize))
         end if
-        rcomp%Dimmed(rcomp%iimmedSize) = sqrt(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cTan)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = tan(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Dimmed(rcomp%iimmedSize) =  tan(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = ztan(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cTanh)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize) = tanh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Dimmed(rcomp%iimmedSize) =  tanh(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = ztanh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
@@ -3039,6 +4053,7 @@ contains
     case (cNeg)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = -(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = -(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
@@ -3047,6 +4062,8 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)+&
                                            rcomp%Dimmed(rcomp%iimmedSize)
+        rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize-1)+&
+                                           rcomp%Zimmed(rcomp%iimmedSize)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3057,6 +4074,8 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)-&
                                            rcomp%Dimmed(rcomp%iimmedSize)
+        rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize-1)-&
+                                           rcomp%Zimmed(rcomp%iimmedSize)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3067,6 +4086,8 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)*&
                                            rcomp%Dimmed(rcomp%iimmedSize)
+        rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize-1)*&
+                                           rcomp%Zimmed(rcomp%iimmedSize)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3075,13 +4096,24 @@ contains
     case (cDiv)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Division by zero?
         if (rcomp%Dimmed(rcomp%iimmedSize) .eq. 0.0_DP) then
-          call output_line('Invalid argument for DIV!',&
+          call output_line('Division by zero!',&
               OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)/&
                                            rcomp%Dimmed(rcomp%iimmedSize)
+
+        ! Division by zero?
+        if (rcomp%Zimmed(rcomp%iimmedSize) .eq. cmplx(0.0_DP,0.0_DP,DP)) then
+          call output_line('Division by zero!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize-1)/&
+                                           rcomp%Zimmed(rcomp%iimmedSize)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3090,13 +4122,25 @@ contains
     case (cMod)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+
+        ! MOD(A,0) not available
         if (rcomp%Dimmed(rcomp%iimmedSize) .eq. 0.0_DP) then
           call output_line('Invalid argument for MOD!',&
               OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
+
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = mod(rcomp%Dimmed(rcomp%iimmedSize-1),&
                                                rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3105,7 +4149,10 @@ contains
     case (cPow)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)**rcomp%Dimmed(rcomp%iimmedSize)
+        rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)**&
+                                           rcomp%Dimmed(rcomp%iimmedSize)
+        rcomp%Zimmed(rcomp%iimmedSize-1) = rcomp%Zimmed(rcomp%iimmedSize-1)**&
+                                           rcomp%Zimmed(rcomp%iimmedSize)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3114,8 +4161,20 @@ contains
     case (cEqual)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .eq.&
-                                                      rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble((real(rcomp%Zimmed(rcomp%iimmedSize-1)) .eq.&
+                                                         real(rcomp%Zimmed(rcomp%iimmedSize))) .and.&
+                                                       (aimag(rcomp%Zimmed(rcomp%iimmedSize-1)) .eq.&
+                                                        aimag(rcomp%Zimmed(rcomp%iimmedSize))))
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)          
+        else
+          ! Copy data from real-valued case
+          rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .eq.&
+                                                        rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
+        end if
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3124,8 +4183,20 @@ contains
     case (cNEqual)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
-        rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .ne.&
-                                                      rcomp%Dimmed(rcomp%iimmedSize))
+
+        ! Different treatment for real- and complex-valued case
+        if(rcomp%bisComplex) then
+          rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble((real(rcomp%Zimmed(rcomp%iimmedSize-1)) .ne.&
+                                                         real(rcomp%Zimmed(rcomp%iimmedSize)))  .or.&
+                                                       (aimag(rcomp%Zimmed(rcomp%iimmedSize-1)) .ne.&
+                                                        aimag(rcomp%Zimmed(rcomp%iimmedSize))))
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)          
+        else
+          ! Copy data from real-valued case
+          rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .ne.&
+                                                        rcomp%Dimmed(rcomp%iimmedSize))
+          rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
+        end if
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3134,8 +4205,18 @@ contains
     case (cLess)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .lt.&
                                                       rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3144,8 +4225,18 @@ contains
     case (cLessOrEq)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .le.&
                                                       rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3154,8 +4245,18 @@ contains
     case (cGreater)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .gt.&
                                                       rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3164,8 +4265,18 @@ contains
     case (cGreaterOrEq)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(rcomp%Dimmed(rcomp%iimmedSize-1) .ge.&
                                                       rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3174,8 +4285,18 @@ contains
     case (cAnd)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case        
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(DbleToLogc(rcomp%Dimmed(rcomp%iimmedSize-1)) .and.&
                                                       DbleToLogc(rcomp%Dimmed(rcomp%iimmedSize)))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3184,8 +4305,18 @@ contains
     case (cOr)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case  
         rcomp%Dimmed(rcomp%iimmedSize-1) = LogcToDble(DbleToLogc(rcomp%Dimmed(rcomp%iimmedSize-1)) .or.&
                                                       DbleToLogc(rcomp%Dimmed(rcomp%iimmedSize)))
+        rcomp%Zimmed(rcomp%iimmedSize-1) = cmplx(rcomp%Dimmed(rcomp%iimmedSize-1),0.0_DP,DP)
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3193,7 +4324,17 @@ contains
 
     case (cNot)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+        
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case  
         rcomp%Dimmed(rcomp%iimmedSize) = LogcToDble(.not.DbleToLogc(rcomp%Dimmed(rcomp%iimmedSize)))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
 
@@ -3202,13 +4343,32 @@ contains
       !------------------------------------------------------------
     case (cDeg)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
+        ! Copy data from real-valued case
         rcomp%Dimmed(rcomp%iimmedSize) = RadToDeg(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
 
     case (cRad)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
+
+        ! Not available for complex-valued case
+        if (rcomp%bisComplex .and. IsComplex(rcomp%Zimmed(rcomp%iimmedSize))) then
+          call output_line('Invalid complex argument for MOD!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+          call sys_halt()
+        end if
+        
         rcomp%Dimmed(rcomp%iimmedSize) = DegToRad(rcomp%Dimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = cmplx(rcomp%Dimmed(rcomp%iimmedSize),0.0_DP,DP)
         call RemoveCompiledByte(rcomp)
       end if
     end select
@@ -3239,15 +4399,15 @@ contains
 
 !<subroutine>
 
-  subroutine AddImmediate (rcomp, immediate)
+  subroutine AddImmediateDouble (rcomp, dimmediate)
 
 !<description>
-    ! Add immediate
+    ! Add double-valued immediate
 !</description>
 
 !<input>
     ! Value of byte to be added
-    real(DP), intent(in) :: immediate
+    real(DP), intent(in) :: dimmediate
 !</input>
 
 !<inputoutput>
@@ -3255,10 +4415,40 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    rcomp%iimmedSize = rcomp%iimmedSize + 1
-    rcomp%Dimmed(rcomp%iimmedSize) = immediate
+    rcomp%iimmedSize               = rcomp%iimmedSize + 1
+    rcomp%Dimmed(rcomp%iimmedSize) = dimmediate
+    rcomp%Zimmed(rcomp%iimmedSize) = cmplx(dimmediate,0.0_DP,DP)
 
-  end subroutine AddImmediate
+  end subroutine AddImmediateDouble
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine AddImmediateComplex (rcomp, zimmediate)
+
+!<description>
+    ! Add complex-valued immediate
+!</description>
+
+!<input>
+    ! Value of byte to be added
+    complex(DP), intent(in) :: zimmediate
+!</input>
+
+!<inputoutput>
+    type (t_fparserComponent), intent(inout) :: rcomp
+!</inputoutput>
+!</subroutine>
+
+    rcomp%iimmedSize               = rcomp%iimmedSize + 1
+    rcomp%Zimmed(rcomp%iimmedSize) = SYS_INFINITY_DP
+    rcomp%Zimmed(rcomp%iimmedSize) = zimmediate
+
+    ! Complex-valued case
+    rcomp%bisComplex = .true.
+
+  end subroutine AddImmediateComplex
 
   ! *****************************************************************************
 
@@ -3275,8 +4465,9 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    rcomp%Dimmed(rcomp%iimmedSize) = 0
-    rcomp%iimmedSize = rcomp%iimmedSize - 1
+    rcomp%Dimmed(rcomp%iimmedSize) = 0.0_DP
+    rcomp%Zimmed(rcomp%iimmedSize) = cmplx(0.0_DP,0.0_DP,DP)
+    rcomp%iimmedSize               = rcomp%iimmedSize - 1
 
   end subroutine RemoveCompiledImmediate
 
@@ -3302,7 +4493,9 @@ contains
 
     if (rcomp%buseDegreeConversion) then
       select case(iopcode)
-      case(cCos, Ccosh, cCot, cCsc, cSec, cSin, cSinh, cTan, cTanh)
+      case(cCos, Ccosh, cCot, cCoth,&
+           cCsc, cCsch, cSec, cSech,&
+           cSin, cSinh, cTan, cTanh)
         call AddCompiledByte(rcomp, cRad)
       end select
     end if
@@ -3311,7 +4504,9 @@ contains
 
     if (rcomp%buseDegreeConversion) then
       select case(iopcode)
-      case(cAcos, cAcosh, cAsinh, cAtanh, cAsin, cAtan, cAtan2)
+      case(cAcos, cAcosh, cAcot, cAcoth,&
+           cAcsc, cACsch, cAsec, cAsech,&
+           cAsin, cAsinh, cAtan, cAtanh, cAtan2)
         call AddCompiledByte(rcomp, cDeg)
       end select
     end if
@@ -3950,7 +5145,8 @@ contains
     integer :: ind1,ind0,ib,in,nparams
     logical :: berror
 
-    ind1=ind; c=sfunctionString(ind1:ind1)
+    ind1 = ind
+    c = sfunctionString(ind1:ind1)
     if (c .eq. '(') then
       ind1 = CompileExpression(rcomp, sfunctionString, ind1+1, Svariables, .false.)
       ind2 = ind1+1   ! sfunctionString(ind1:ind1) is ')'
@@ -3965,10 +5161,29 @@ contains
             OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
         call sys_halt()
       end if
-      call AddImmediate(rcomp, dnumber)
+      ind2 = ind1+in-1
+      
+!!$      ! Check if this is an imaginary number z = (a,b) = a+bi
+!!$      c = sfunctionString(ind2:ind2)
+!!$      if (c .eq. ',') then
+!!$        ind1 = ind2+1
+!!$        dnumber2 = RealNum (sfunctionString(ind1:), ib, in, berror)
+!!$        if (berror) then
+!!$          call output_line('Invalid number format!',&
+!!$              OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
+!!$          call sys_halt()
+!!$        end if
+!!$        ind2 = ind1+in-1
+!!$        
+!!$        call AddImmediateComplex(rcomp, cmplx(dnumber,dnumber2,DP))
+!!$        call AddCompiledByte(rcomp, cImmed)
+!!$        call incstackPtr(rcomp)
+!!$        return
+!!$      end if
+      
+      call AddImmediateDouble(rcomp, dnumber)
       call AddCompiledByte(rcomp, cImmed)
       call incstackPtr(rcomp)
-      ind2 = ind1+in-1
       return
 
     else
@@ -3997,7 +5212,7 @@ contains
       n = ConstantIndex(sfunctionString(ind1:))
       if (n .gt. 0) then
         ind2 = ind1+len_trim(CconstantName(n))+1
-        call AddImmediate(rcomp, DconstantValue(n))
+        call AddImmediateDouble(rcomp, DconstantValue(n))
         call AddCompiledByte(rcomp, cImmed)
         call incStackPtr(rcomp)
         return
@@ -4181,7 +5396,7 @@ contains
 
 !<function>
 
-  elemental function DbleTOLogc(d) result(l)
+  elemental function DbleToLogc(d) result(l)
 
 !<description>
     ! This function transforms a Double into a Logical
@@ -4198,9 +5413,46 @@ contains
 !</result>
 !</function>
 
-    l = (abs(1-d) .le. 1e-12)
+    ! Convert all nonzero double values to .true. and 0.0_DP to
+    ! .false. This behavior is consistent with the MATLAB
+    ! implementation.
+    l = .not.(abs(d) .le. 1e-12)
+    
+    ! Previous implementation
+    ! l = (abs(1-d) .le. 1e-12)
 
-  end function DbleTOLogc
+  end function DbleToLogc
+
+  ! *****************************************************************************
+
+!<function>
+
+  elemental function CmplToLogc(c) result(l)
+
+!<description>
+    ! This function transforms a Complex into a Logical
+!</description>
+
+!<input>
+    ! Complex variable
+    complex(DP), intent(in) :: c
+!</input>
+
+!<result>
+    ! Logical variable
+    logical :: l
+!</result>
+!</function>
+
+    ! Convert all nonzero complex values to .true. and (0.0_DP,0.0_DP)
+    ! to .false. This behavior is consistent with the MATLAB
+    ! implementation.
+    l = .not.(abs(c) .le. 1e-12)
+    
+    ! Previous implementation
+    ! l = (abs(1-c) .le. 1e-12)
+
+  end function CmplToLogc
 
   ! *****************************************************************************
 
@@ -4223,7 +5475,7 @@ contains
 !</result>
 !</function>
 
-    d = merge(1._DP, 0._DP, l)
+    d = merge(1.0_DP, 0.0_DP, l)
 
   end function LogcToDble
 
@@ -4278,12 +5530,69 @@ contains
 
   ! *****************************************************************************
 
+!<function>
+
+  elemental function IsComplex(c) result(l)
+
+!<description>
+    ! This function returns .true. if the imaginary part of the given
+    ! value c is not zero. Otherwise it returns .false.    
+!</description>
+
+!<input>
+    ! complex value
+    complex(DP), intent(in) :: c
+!</input>
+
+!<result>
+    ! .true. if the imaginary part of c is not zero
+    logical :: l
+!</result>
+!</function>  
+
+    l = (aimag(c).ne.0.0_DP)
+    
+  end function IsComplex
+
+  ! *****************************************************************************
+
+!<function>
+
+  elemental function IsReal(c) result(l)
+
+!<description>
+    ! This function returns .true. if the imaginary part of the given
+    ! value c is zero. Otherwise it returns .false.    
+!</description>
+
+!<input>
+    ! complex value
+    complex(DP), intent(in) :: c
+!</input>
+
+!<result>
+    ! .true. if the imaginary part of c is zero
+    logical :: l
+!</result>
+!</function>  
+
+    l = (aimag(c).eq.0.0_DP)
+    
+  end function IsReal
+  
+  ! *****************************************************************************
+
 !<subroutine>
 
-  subroutine evalFunctionScalar (rcomp, Dstack, Dvalue, EvalErrType, dresult)
+  subroutine evalFunctionScDble (rcomp, Dstack, Dvalue, EvalErrType, dresult)
 
 !<description>
     ! Evaluate bytecode for the values passed in array Val(:).
+    ! Assume that all intermediate values and the final result
+    ! dresult is real-valued.
+    !
+    ! REMARK: If intermediate values become complex-valued then this
+    ! subroutine exists with a non-zero error code EvalErrType.
 !</description>
 
 !<input>
@@ -4320,6 +5629,9 @@ contains
     istackPtr = 0
     iinstPtr  = 0
 
+    ! Initialize error type
+    EvalErrType = 0
+    
     ! Repeat until complete bytecode has been processed
     do while(iinstPtr .lt. rcomp%ibytecodeSize)
       iinstPtr = iinstPtr+1
@@ -4333,20 +5645,18 @@ contains
         Dstack(istackPtr) = abs(Dstack(istackPtr))
 
       case (cAcos)
-        if ((Dstack(istackPtr) < -1._DP) .or. &
-            (Dstack(istackPtr) >  1._DP)) then
-          EvalErrType = 4
-          dresult     = 0._DP
-          return
+        if ((Dstack(istackPtr) .lt. -1.0_DP) .or. &
+            (Dstack(istackPtr) .gt.  1.0_DP)) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr) = acos(Dstack(istackPtr))
 
       case (cAsin)
-        if ((Dstack(istackPtr) < -1._DP) .or. &
-            (Dstack(istackPtr) >  1._DP)) then
-          EvalErrType = 4
-          dresult     = 0._DP
-          return
+        if ((Dstack(istackPtr) .lt. -1.0_DP) .or. &
+            (Dstack(istackPtr) .gt.  1.0_DP)) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr) = asin(Dstack(istackPtr))
 
@@ -4354,74 +5664,94 @@ contains
         Dstack(istackPtr) = atan(Dstack(istackPtr))
 
       case (cAtan2)
-        Dstack(istackPtr-1) = atan2(Dstack(istackPtr -1), Dstack(istackPtr))
+        Dstack(istackPtr-1) = atan2(Dstack(istackPtr-1), Dstack(istackPtr))
         istackPtr = istackPtr-1
 
-      case (cAcosh)
-        daux = Dstack(istackPtr)+sqrt(Dstack(istackPtr)**2-1)
-        if (daux .le. 0._DP) then
-          EvalErrType = 5
-          dresult     = 0._DP
-          return
-        end if
-        Dstack(istackPtr) = log(daux)
+      case (cAcot)
+        Dstack(istackPtr) = atan(1.0_DP/Dstack(istackPtr))
 
+      case (cAcoth)
+        Dstack(istackPtr) = datanh(1.0_DP/Dstack(istackPtr))
+        
+      case (cAcosh)
+        if (Dstack(istackPtr) .lt. 1.0_DP) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
+        end if
+        Dstack(istackPtr) = dacosh(Dstack(istackPtr))
+
+      case (cAcsc)
+        if (Dstack(istackPtr) .gt. -SYS_PI/2.0_DP .and.&
+            Dstack(istackPtr) .lt.  SYS_PI/2.0_DP) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
+        end if
+        Dstack(istackPtr) = asin(1.0_DP/Dstack(istackPtr))
+
+      case (cAcsch)
+        Dstack(istackPtr) = dasinh(1.0_DP/Dstack(istackPtr))
+
+      case (cAsec)
+        if ((Dstack(istackPtr) .gt. -1.0_DP) .and. &
+            (Dstack(istackPtr) .lt.  1.0_DP)) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
+        endif
+        Dstack(istackPtr) = acos(Dstack(istackPtr))
+
+      case (cAsech)
+        if ((Dstack(istackPtr) .lt. 0.0_DP) .or. &
+            (Dstack(istackPtr) .gt. 1.0_DP)) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
+        endif
+        Dstack(istackPtr) = dacosh(1.0_DP/Dstack(istackPtr))
+
+      case (cAsinh)
+        if ( Dstack(istackPtr) .le. 0._DP) then
+          EvalErrType = 3
+          dresult     = SYS_INFINITY_DP
+        end if
+        Dstack(istackPtr) = dasinh(Dstack(istackPtr))
+
+      case (cAtanh)
+        Dstack(istackPtr) = datanh(Dstack(istackPtr))
+        
       case (cAnint)
         Dstack(istackPtr) = anint(Dstack(istackPtr))
 
       case (cAint)
         Dstack(istackPtr) = aint(Dstack(istackPtr))
 
-      case (cAsinh)
-        daux = Dstack(istackPtr)+sqrt(Dstack(istackPtr)**2+1)
-        if (daux .le. 0._DP) then
-          EvalErrType = 5
-          dresult     = 0._DP
-          return
-        end if
-        Dstack(istackPtr) = log(daux)
-
-      case (cAtanh)
-        if (Dstack(istackPtr) .eq. -1._DP) then
-          EvalErrType = 6
-          dresult     = 0._DP
-          return
-        end if
-        daux = (1+Dstack(istackPtr))/(1-Dstack(istackPtr))
-        if (daux .le. 0._DP) then
-          EvalErrType = 3
-          dresult     = 0._DP
-          return
-        end if
-        Dstack(istackPtr) = log(daux)/2._DP
-
       case (cCeil)
         Dstack(istackPtr) = ceiling(Dstack(istackPtr))
 
+      case (Ccmplx)
+        ! Illegal operation
+        EvalErrType = 3
+        dresult     = SYS_INFINITY_DP
+        
+      case (Cconj)
+        ! Nothing needs to be done for the real-valued case
+        
       case (cCos)
         Dstack(istackPtr) = cos(Dstack(istackPtr))
 
       case (cCosh)
         Dstack(istackPtr) = cosh(Dstack(istackPtr))
-
+        
       case (cCot)
-        daux = tan(Dstack(istackPtr))
-        if (daux .eq. 0._DP) then
-          EvalErrType = 1
-          dresult     = 0._DP
-          return
-        end if
-        Dstack(istackPtr) = 1._DP/daux
+        Dstack(istackPtr) = 1.0_DP/tan(Dstack(istackPtr))
 
+      case (cCoth)
+        Dstack(istackPtr) = 1.0_DP/tanh(Dstack(istackPtr))
+        
       case (cCsc)
-        daux = sin(Dstack(istackPtr))
-        if (daux .eq. 0._DP) then
-          EvalErrType = 1
-          dresult     = 0._DP
-          return
-        endif
-        Dstack(istackPtr) = 1._DP/daux
+        Dstack(istackPtr) = 1.0_DP/sin(Dstack(istackPtr))
 
+      case (cCsch)
+        Dstack(istackPtr) = 1.0_DP/sinh(Dstack(istackPtr))
+        
       case (cExp)
         Dstack(istackPtr) = exp(Dstack(istackPtr))
 
@@ -4437,19 +5767,20 @@ contains
         end if
         istackPtr = istackPtr-1
 
+      case (cImag)
+        Dstack(istackPtr) = 0.0_DP      
+        
       case (cLog)
         if (Dstack(istackPtr) .le. 0._DP) then
           EvalErrType = 3
-          dresult     = 0._DP
-          return
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr) = log(Dstack(istackPtr))
 
       case (cLog10)
         if (Dstack(istackPtr) .le. 0._DP) then
           EvalErrType = 3
-          dresult     = 0._DP
-          return
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr) = log10(Dstack(istackPtr))
 
@@ -4461,6 +5792,9 @@ contains
         Dstack(istackPtr-1) = min(Dstack(istackPtr-1), Dstack(istackPtr))
         istackPtr = istackPtr-1
 
+      case (cReal)
+        ! Nothing needs to be done for the real-valued case
+        
       case (cRrand)
         call random_seed (size=iaux)
         allocate (p_Irandom1(iaux))
@@ -4483,28 +5817,24 @@ contains
         istackPtr = istackPtr-1
 
       case (cSec)
-        daux = cos(Dstack(istackPtr))
-        if (daux .eq. 0._DP) then
-          EvalErrType = 1
-          dresult     = 0._DP
-          return
-        endif
-        Dstack(istackPtr) = 1._DP/daux
+        Dstack(istackPtr) = 1.0_DP/cos(Dstack(istackPtr))
+
+      case (cSech)
+        Dstack(istackPtr) = 1.0_DP/cosh(Dstack(istackPtr))
 
       case (cSign)
-        Dstack(istackPtr) = sign(1._DP,Dstack(istackPtr))
-
+        Dstack(istackPtr) = sign(1.0_DP,Dstack(istackPtr))
+        
       case (cSin)
         Dstack(istackPtr) = sin(Dstack(istackPtr))
 
       case(cSinh)
         Dstack(istackPtr) = sinh(Dstack(istackPtr))
-
+        
       case(cSqrt)
-        if (Dstack(istackPtr) .lt. 0._DP) then
+        if (Dstack(istackPtr) .lt. 0.0_DP) then
           EvalErrType = 3
-          dresult     = 0._DP
-          return
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr) = sqrt(Dstack(istackPtr))
 
@@ -4545,19 +5875,17 @@ contains
         istackPtr = istackPtr-1
 
       case (cDiv)
-        if (Dstack(istackPtr) .eq. 0._DP) then
+        if (Dstack(istackPtr) .eq. 0.0_DP) then
           EvalErrType = 1
-          dresult     = 0._DP
-          return
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr-1) = Dstack(istackPtr-1)/Dstack(istackPtr)
         istackPtr = istackPtr-1
 
       case (cMod)
-        if (Dstack(istackPtr) .eq. 0._DP) then
+        if (Dstack(istackPtr) .eq. 0.0_DP) then
           EvalErrType = 1
-          dresult     = 0._DP
-          return
+          dresult     = SYS_INFINITY_DP
         endif
         Dstack(istackPtr-1) = mod(Dstack(istackPtr-1), Dstack(istackPtr))
         istackPtr = istackPtr-1
@@ -4616,19 +5944,425 @@ contains
         istackPtr = istackPtr+1
         Dstack(istackPtr) = DValue(rcomp%IbyteCode(iinstPtr)-VarBegin+1)
       end select
+      if (EvalErrType .ne. 0) return
     end do
 
     EvalErrType = 0
     dresult = Dstack(istackPtr)
 
-  end subroutine evalFunctionScalar
+  end subroutine evalFunctionScDble
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine evalFunctionBlock (rcomp, iblockSize, Dstack, DvalueBlock, idim,&
-                                EvalErrType, Dresult, DvalueScalar)
+  subroutine evalFunctionScCmpl (rcomp, Zstack, Zvalue, EvalErrType, zresult)
+
+!<description>
+    ! Evaluate bytecode for the values passed in array Val(:).
+    ! Assume that intermediate values and/or the final result
+    ! zresult is complex-valued.
+!</description>
+
+!<input>
+    ! Component of function parser
+    type(t_fparserComponent), intent(in) :: rcomp
+
+    ! Variable values
+    complex(DP), dimension(:), intent(in) :: Zvalue
+!</input>
+
+!<inputoutput>
+    ! Stack memory
+    complex(DP), dimension(:), intent(inout) :: Zstack
+!</inputoutput>
+
+!<output>
+    ! Error code for function evaluation
+    integer, intent(out) :: EvalErrType
+
+    ! Evaluated function
+    complex(DP), intent(out) :: zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer  :: iinstPtr,istackPtr,idataPtr
+    integer  :: ijumpAddr,iimmedAddr
+    
+    ! Initialization
+    idataPtr  = 1
+    istackPtr = 0
+    iinstPtr  = 0
+
+    ! Initialize error type
+    EvalErrType = 0
+    
+    ! Repeat until complete bytecode has been processed
+    do while(iinstPtr .lt. rcomp%ibytecodeSize)
+      iinstPtr = iinstPtr+1
+
+      ! What kind of bytecode are we?
+      select case (rcomp%IbyteCode(iinstPtr))
+        !------------------------------------------------------------
+        ! Functions
+        !------------------------------------------------------------
+      case (cAbs)
+        Zstack(istackPtr) = abs(Zstack(istackPtr))
+
+      case (cAcos)
+        Zstack(istackPtr) = zacos(Zstack(istackPtr))
+
+      case (cAsin)
+        Zstack(istackPtr) = zasin(Zstack(istackPtr))
+
+      case (cAtan)
+        Zstack(istackPtr) = zatan(Zstack(istackPtr))
+
+      case (cAtan2)
+        if (IsComplex(Zstack(istackPtr-1)) .or.&
+            IsComplex(Zstack(istackPtr))) then
+          ! ATAN2 is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(atan2(real(Zstack(istackPtr-1)),&
+                                          real(zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cAcot)
+        Zstack(istackPtr) = zatan(1.0_DP/Zstack(istackPtr))
+
+      case (cAcoth)
+        Zstack(istackPtr) = zatanh(1.0_DP/Zstack(istackPtr))
+
+      case (cAcosh)
+        Zstack(istackPtr) = zacosh(Zstack(istackPtr))
+
+      case (cAcsc)
+        Zstack(istackPtr) = zasin(1.0_DP/Zstack(istackPtr))
+
+      case (cAcsch)
+        Zstack(istackPtr) = zasinh(1.0_DP/Zstack(istackPtr))
+
+      case (cAsec)
+        Zstack(istackPtr) = zacos(Zstack(istackPtr))
+
+      case (cAsech)
+        Zstack(istackPtr) = zacosh(1.0_DP/Zstack(istackPtr))
+
+      case (cAsinh)
+        Zstack(istackPtr) = zasinh(Zstack(istackPtr))
+
+      case (cAtanh)
+        Zstack(istackPtr) = zatanh(Zstack(istackPtr))
+
+      case (cAnint)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! ANINT are not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr) = cmplx(anint(aimag(zstack(istackPtr))),0.0_DP,DP)
+          
+      case (cAint)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! AINT are not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr) = cmplx(aint(aimag(zstack(istackPtr))),0.0_DP,DP)
+        
+      case (cCeil)
+        Zstack(istackPtr) = cmplx(ceiling(real(Zstack(istackPtr))),&
+                                  ceiling(aimag(Zstack(istackPtr))),DP)
+
+      case (Ccmplx)
+        if (IsComplex(Zstack(istackPtr)) .or.&
+            IsComplex(Zstack(istackPtr-1))) then
+            ! CMPLX cannot be applied to a complex value
+            EvalErrType = 2
+            zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(real(Zstack(istackPtr-1)),&
+                                    real(zstack(istackPtr)),DP)
+        istackPtr = istackPtr-1
+        
+      case (Cconj)
+        Zstack(istackPtr) = conjg(Zstack(istackPtr))
+
+      case (cCos)
+        Zstack(istackPtr) = cos(Zstack(istackPtr))
+
+      case (cCosh)
+        Zstack(istackPtr) = zcosh(Zstack(istackPtr))
+
+      case (cCot)
+        Zstack(istackPtr) = 1.0_DP/ztan(Zstack(istackPtr))
+
+      case (cCoth)
+        Zstack(istackPtr) = 1.0_DP/ztanh(Zstack(istackPtr))
+
+      case (cCsc)
+        Zstack(istackPtr) = 1.0_DP/sin(Zstack(istackPtr))
+
+      case (cCsch)
+        Zstack(istackPtr) = 1.0_DP/zsinh(Zstack(istackPtr))
+
+      case (cExp)
+        Zstack(istackPtr) = exp(Zstack(istackPtr))
+
+      case (cFloor)
+        Zstack(istackPtr) = cmplx(floor(real(Zstack(istackPtr))),&
+                                  floor(aimag(Zstack(istackPtr))),DP)
+
+      case (cIf)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! IF is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        
+        iinstPtr = iinstPtr+1;   ijumpAddr  = rcomp%IbyteCode(iinstPtr)
+        iinstPtr = iinstPtr+1;   iimmedAddr = rcomp%IbyteCode(iinstPtr)
+        if (.not.DbleToLogc(real(Zstack(istackPtr)))) then
+          iinstPtr = ijumpAddr
+          idataPtr = iimmedAddr
+        end if
+        istackPtr = istackPtr-1
+
+      case (cImag)
+        Zstack(istackPtr) = cmplx(aimag(Zstack(istackPtr)),0.0_DP,DP)
+
+      case (cLog)
+        Zstack(istackPtr) = log(Zstack(istackPtr))
+
+      case (cLog10)
+        Zstack(istackPtr) = log(Zstack(istackPtr))/log(10.0_DP)
+
+      case (cMax)
+        if (abs(Zstack(istackPtr)) .gt. abs(Zstack(istackPtr-1))) then
+          Zstack(istackPtr-1) = Zstack(istackPtr)
+        end if
+        istackPtr = istackPtr-1
+        
+      case (cMin)
+        if (abs(Zstack(istackPtr)) .lt. abs(Zstack(istackPtr-1))) then
+          Zstack(istackPtr-1) = Zstack(istackPtr)
+        end if
+        istackPtr = istackPtr-1
+        
+      case (cReal)
+        Zstack(istackPtr) = cmplx(real(Zstack(istackPtr)),0.0_DP,DP)
+
+      case (cRrand)
+        ! RRAND is not supported in complex-valued case
+        EvalErrType = 2
+        zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        
+      case (cSec)
+        Zstack(istackPtr) = 1.0_DP/cos(Zstack(istackPtr))
+
+      case (cSech)
+        Zstack(istackPtr) = 1.0_DP/zcosh(Zstack(istackPtr))
+
+      case (cSign)
+        Zstack(istackPtr) = Zstack(istackPtr)/abs(Zstack(istackPtr))
+
+      case (cSin)
+        Zstack(istackPtr) = sin(Zstack(istackPtr))
+
+      case(cSinh)
+        Zstack(istackPtr) = zsinh(Zstack(istackPtr))
+
+      case(cSqrt)
+        Zstack(istackPtr) = sqrt(Zstack(istackPtr))
+
+      case (cTan)
+        Zstack(istackPtr) = tan(Zstack(istackPtr))
+        
+      case (cTanh)
+        Zstack(istackPtr) = ztanh(Zstack(istackPtr))
+
+      !------------------------------------------------------------
+      ! Misc
+      !------------------------------------------------------------
+      case (cImmed)
+        istackPtr         = istackPtr+1
+        Zstack(istackPtr) = rcomp%Zimmed(idataPtr)
+        idataPtr          = idataPtr+1
+
+      case (cJump)
+        idataPtr = rcomp%IbyteCode(iinstPtr+2)
+        iinstPtr = rcomp%IbyteCode(iinstPtr+1)
+
+      !------------------------------------------------------------
+      ! Operators
+      !------------------------------------------------------------
+      case (cNeg)
+        Zstack(istackPtr) = -Zstack(istackPtr)
+
+      case (cAdd)
+        Zstack(istackPtr-1) = Zstack(istackPtr-1)+Zstack(istackPtr)
+        istackPtr = istackPtr-1
+
+      case (cSub)
+        Zstack(istackPtr-1) = Zstack(istackPtr-1)-Zstack(istackPtr)
+        istackPtr = istackPtr-1
+
+      case (cMul)
+        Zstack(istackPtr-1) = Zstack(istackPtr-1)*Zstack(istackPtr)
+        istackPtr = istackPtr-1
+
+      case (cDiv)
+        if (Zstack(istackPtr) .eq. cmplx(0.0_DP,0.0_DP,DP)) then
+          EvalErrType = 1
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        endif
+        Zstack(istackPtr-1) = Zstack(istackPtr-1)/Zstack(istackPtr)
+        istackPtr = istackPtr-1
+
+      case (cMod)
+        if (IsComplex(Zstack(istackPtr)) .or.&
+            IsComplex(Zstack(istackPtr-1))) then
+          ! MOD is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+
+        if (aimag(Zstack(istackPtr)) .eq. 0.0_DP) then
+          EvalErrType = 1
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        endif
+        Zstack(istackPtr-1) = cmplx(mod(aimag(Zstack(istackPtr-1)),&
+                                        aimag(Zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cPow)
+        Zstack(istackPtr-1) = Zstack(istackPtr-1)**Zstack(istackPtr)
+        istackPtr = istackPtr-1
+
+      case (cEqual)
+        Zstack(istackPtr-1) = cmplx(LogcToDble((real(Zstack(istackPtr-1)) .eq.&
+                                                real(Zstack(istackPtr))) .and.&
+                                              (aimag(Zstack(istackPtr-1)) .eq.&
+                                               aimag(Zstack(istackPtr)))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cNEqual)
+        Zstack(istackPtr-1) = cmplx(LogcToDble((real(Zstack(istackPtr-1)) .ne.&
+                                                real(Zstack(istackPtr)))  .or.&
+                                              (aimag(Zstack(istackPtr-1)) .ne.&
+                                               aimag(Zstack(istackPtr)))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cLess)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! LESS is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(real(Zstack(istackPtr-1)) .lt.&
+                                               real(Zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+        
+      case (cLessOrEq)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! LESSOREQUAL is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(real(Zstack(istackPtr-1)) .le.&
+                                               real(Zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cGreater)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! GREATER is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(real(Zstack(istackPtr-1)) .gt.&
+                                               real(Zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+        
+      case (cGreaterOrEq)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! GREATEROREQUAL is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(real(Zstack(istackPtr-1)) .ge.&
+                                               real(Zstack(istackPtr))),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cAnd)
+        if (IsComplex(Zstack(istackPtr)) .or.&
+            IsComplex(Zstack(istackPtr-1))) then
+          ! AND is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(CmplToLogc(Zstack(istackPtr-1)) .and. &
+                                               CmplToLogc(Zstack(istackPtr)) ),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cOr)
+        if (IsComplex(Zstack(istackPtr)) .or.&
+            IsComplex(Zstack(istackPtr-1))) then
+          ! OR is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr-1) = cmplx(LogcToDble(CmplToLogc(Zstack(istackPtr-1)) .or. &
+                                               CmplToLogc(Zstack(istackPtr)) ),0.0_DP,DP)
+        istackPtr = istackPtr-1
+
+      case (cNot)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! NOT is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr) = cmplx(LogcToDble( .not. CmplToLogc(Zstack(istackPtr)) ),0.0_DP,DP)
+
+      !------------------------------------------------------------
+      ! Degrees-radians conversion
+      !------------------------------------------------------------
+      case (cDeg)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! DEG is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr) = cmplx(RadToDeg(real(Zstack(istackPtr))),0.0_DP,DP)
+
+      case (cRad)
+        if (IsComplex(Zstack(istackPtr))) then
+          ! RAD is not supported in complex-valued case
+          EvalErrType = 2
+          zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+        end if
+        Zstack(istackPtr) = cmplx(DegToRad(real(Zstack(istackPtr))),0.0_DP,DP)
+        
+      case default
+        istackPtr = istackPtr+1
+        Zstack(istackPtr) = ZValue(rcomp%IbyteCode(iinstPtr)-VarBegin+1)
+      end select
+      if (EvalErrType .ne. 0) return
+    end do
+    
+    EvalErrType = 0
+    zresult = Zstack(istackPtr)
+    
+  end subroutine evalFunctionScCmpl
+    
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine evalFunctionBlDble (rcomp, iblockSize, Dstack, DvalueBlock, idim,&
+                                 EvalErrType, Dresult, DvalueScalar)
 
 !<description>
     ! Evaluate bytecode for an array of values passed in DvalueBlock(:,:).
@@ -4678,6 +6412,9 @@ contains
     istackPtr = 0
     iinstPtr  = 0
 
+    ! Initialize error type
+    EvalErrType = 0
+    
     ! This is tricky. istartValueScalar indicates the number of the first
     ! variable which is passed as scalar. Hence, if the optional parameter
     ! DvalueScalar is missing, then istartValueScalar pointers to SIZE(DvalueBlock)+1.
@@ -4694,197 +6431,214 @@ contains
         !------------------------------------------------------------
       case (cAbs)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = abs(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = abs(Dstack(iblock,istackPtr))
         end do
-
 
       case (cAcos)
         do iblock = 1, iblockSize
-          if ((Dstack(iblock, istackPtr) .lt. -1._DP) .or.&
-              (Dstack(iblock, istackPtr) .gt.  1._DP)) then
-            EvalErrType = 4
-            Dresult(iblock) = 0._DP
+          if ((Dstack(iblock,istackPtr) .lt. -1._DP) .or.&
+              (Dstack(iblock,istackPtr) .gt.  1._DP)) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = acos(Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr) = acos(Dstack(iblock,istackPtr))
           end if
         end do
-
 
       case (cAsin)
         do iblock = 1, iblockSize
-          if ((Dstack(iblock, istackPtr) .lt. -1._DP) .or.&
-              (Dstack(iblock, istackPtr) .gt.  1._DP)) then
-            EvalErrType = 4
-            Dresult(iblock) = 0._DP
+          if ((Dstack(iblock,istackPtr) .lt. -1._DP) .or.&
+              (Dstack(iblock,istackPtr) .gt.  1._DP)) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = asin(Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr) = asin(Dstack(iblock,istackPtr))
           end if
         end do
-
 
       case (cAtan)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = atan(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = atan(Dstack(iblock,istackPtr))
         end do
-
 
       case (cAtan2)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = atan2(Dstack(iblock, istackPtr -1),&
-                                               Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = atan2(Dstack(iblock,istackPtr -1),&
+                                               Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
 
-
+      case (cAcot)
+        do iblock = 1, iblockSize
+           Dstack(iblock,istackPtr) = atan(1.0_DP/Dstack(iblock,istackPtr))
+         end do
+         
+       case (cAcoth)
+        do iblock = 1, iblockSize
+          Dstack(iblock,istackPtr) = datanh(1.0_DP/Dstack(iblock,istackPtr))
+        end do
+        
       case (cAcosh)
         do iblock = 1, iblockSize
-          daux = Dstack(iblock, istackPtr)+sqrt(Dstack(iblock, istackPtr)**2-1)
-          if (daux .le. 0._DP) then
-            EvalErrType = 5
-            Dresult(iblock) = 0._DP
+          if (Dstack(iblock,istackPtr) .lt. 1.0_DP) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = log(daux)
+            Dstack(iblock,istackPtr) = dacosh(Dstack(iblock,istackPtr))
           end if
         end do
 
-
-      case (cAnint)
+      case (cAcsc)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = anint(Dstack(iblock, istackPtr))
+          if (Dstack(iblock,istackPtr) .gt. -SYS_PI/2.0_DP .and.&
+              Dstack(iblock,istackPtr) .lt.  SYS_PI/2.0_DP) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
+          end if
+          Dstack(iblock,istackPtr) = asin(1.0_DP/Dstack(iblock,istackPtr))
+        end do
+        
+      case (cAcsch)
+        do iblock = 1, iblockSize
+          Dstack(iblock,istackPtr) = dasinh(1.0_DP/Dstack(iblock,istackPtr))
         end do
 
-
-      case (cAint)
+      case (cAsec)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = aint(Dstack(iblock, istackPtr))
+          if ((Dstack(iblock,istackPtr) .gt. -1.0_DP) .and. &
+              (Dstack(iblock,istackPtr) .lt.  1.0_DP)) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
+          endif
+          Dstack(iblock,istackPtr) = acos(Dstack(iblock,istackPtr))
         end do
 
+      case (cAsech)
+        do iblock = 1, iblockSize
+          if ((Dstack(iblock,istackPtr) .lt. 0.0_DP) .or. &
+              (Dstack(iblock,istackPtr) .gt. 1.0_DP)) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
+          endif
+          Dstack(iblock,istackPtr) = dacosh(1.0_DP/Dstack(iblock,istackPtr))
+        end do
 
       case (cAsinh)
         do iblock = 1, iblockSize
-          daux = Dstack(iblock, istackPtr)+sqrt(Dstack(iblock, istackPtr)**2+1)
-          if (daux .le. 0._DP) then
-            EvalErrType = 5
-            Dresult(iblock) = 0._DP
-          else
-            Dstack(iblock, istackPtr) = log(daux)
+          if ( Dstack(iblock,istackPtr) .le. 0._DP) then
+            EvalErrType = 3
+            Dresult(iblock) = SYS_INFINITY_DP
           end if
+          Dstack(iblock,istackPtr) = dasinh(Dstack(iblock,istackPtr))
         end do
-
-
+        
       case (cAtanh)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .eq. -1._DP) then
-            EvalErrType = 6
-            Dresult(iblock) = 0._DP
-          end if
-          daux = (1+Dstack(iblock, istackPtr))/(1-Dstack(iblock, istackPtr))
-          if (daux .le. 0._DP) then
-            EvalErrType = 3
-            Dresult(iblock) = 0._DP
-          else
-            Dstack(iblock, istackPtr) = log(daux)/2._DP
-          end if
+          Dstack(iblock,istackPtr) = datanh(Dstack(iblock,istackPtr))
+        end do
+        
+      case (cAnint)
+        do iblock = 1, iblockSize
+           Dstack(iblock,istackPtr) = anint(Dstack(iblock,istackPtr))
         end do
 
+      case (cAint)
+        do iblock = 1, iblockSize
+           Dstack(iblock,istackPtr) = aint(Dstack(iblock,istackPtr))
+        end do
 
       case (cCeil)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = ceiling(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = ceiling(Dstack(iblock,istackPtr))
         end do
 
+      case (Ccmplx)
+        ! Illegal operation
+        EvalErrType = 3
+        Dresult     = SYS_INFINITY_DP
 
+      case (Cconj)
+        ! Nothing needs to be done for the real-valued case
+        
       case (cCos)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = cos(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = cos(Dstack(iblock,istackPtr))
         end do
-
 
       case (cCosh)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = cosh(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = cosh(Dstack(iblock,istackPtr))
         end do
-
 
       case (cCot)
         do iblock = 1, iblockSize
-          daux=tan(Dstack(iblock, istackPtr))
-          if (daux .eq. 0) then
-            EvalErrType = 1
-            Dresult(iblock) = 0._DP
-          else
-            Dstack(iblock, istackPtr) = 1._DP/daux
-          end if
+          Dstack(iblock,istackPtr) = 1.0_DP/tan(Dstack(iblock,istackPtr))
         end do
-
-
+        
+      case (cCoth)
+        do iblock = 1, iblockSize
+          Dstack(iblock,istackPtr) = 1.0_DP/tanh(Dstack(iblock,istackPtr))
+        end do
+        
       case (cCsc)
         do iblock = 1, iblockSize
-          daux=sin(Dstack(iblock, istackPtr))
-          if (daux.eq.0._DP) then
-            EvalErrType = 1
-            Dresult(iblock) = 0._DP
-          else
-            Dstack(iblock, istackPtr) = 1._DP/daux
-          end if
+          Dstack(iblock,istackPtr) = 1.0_DP/sin(Dstack(iblock,istackPtr))
         end do
 
+      case (cCsch)
+        do iblock = 1, iblockSize
+          Dstack(iblock,istackPtr) = 1.0_DP/sinh(Dstack(iblock,istackPtr))
+        end do
 
       case (cExp)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = exp(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = exp(Dstack(iblock,istackPtr))
         end do
-
 
       case (cFloor)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = floor(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = floor(Dstack(iblock,istackPtr))
         end do
-
 
       case (cIf)
         ! IF-THEN-ELSE cannot be vectorised which should be noted during
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
         call output_line('IF-THEN-ELSE cannot be vectorised!',&
-            OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlock')
+            OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlDble')
         call sys_halt()
-
-
+        
       case (cLog)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .le. 0._DP) then
+          if (Dstack(iblock,istackPtr) .le. 0._DP) then
             EvalErrType = 3
-            Dresult(iblock) = 0._DP
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = log(Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr) = log(Dstack(iblock,istackPtr))
           end if
         end do
-
 
       case (cLog10)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .le. 0._DP) then
+          if (Dstack(iblock,istackPtr) .le. 0._DP) then
             EvalErrType = 3
-            Dresult(iblock) = 0._DP
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = log10(Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr) = log10(Dstack(iblock,istackPtr))
           end if
         end do
 
-
       case (cMax)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = max(Dstack(iblock, istackPtr-1),&
-                                             Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = max(Dstack(iblock,istackPtr-1),&
+                                             Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
 
-
       case (cMin)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = min(Dstack(iblock, istackPtr-1),&
-                                             Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = min(Dstack(iblock,istackPtr-1),&
+                                             Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
 
@@ -4896,13 +6650,13 @@ contains
 
         do iblock = 1, iblockSize
           p_Irandom2(:) = 0
-          p_Irandom2(1) = int(Dstack(iblock, istackPtr-1))
+          p_Irandom2(1) = int(Dstack(iblock,istackPtr-1))
           call random_seed (put=p_Irandom2)
           daux = 0.0_DP
-          do iaux=1,max(1,int(Dstack(iblock, istackPtr)))
+          do iaux=1,max(1,int(Dstack(iblock,istackPtr)))
             call random_number (daux)
           end do
-          Dstack(iblock, istackPtr-1) = daux
+          Dstack(iblock,istackPtr-1) = daux
         end do
 
         call random_seed (put=p_Irandom1)
@@ -4910,59 +6664,50 @@ contains
 
         istackPtr = istackPtr-1
 
-
       case (cSec)
         do iblock = 1, iblockSize
-          daux = cos(Dstack(iblock, istackPtr))
-          if (daux .eq. 0._DP) then
-            EvalErrType = 1
-            Dresult(iblock) = 0._DP
-          else
-            Dstack(iblock, istackPtr) = 1._DP/daux
-          end if
+          Dstack(iblock,istackPtr) = 1._DP/cos(Dstack(iblock,istackPtr))
         end do
 
-
+      case (cSech)
+        do iblock = 1, iblockSize
+          Dstack(iblock,istackPtr) = 1._DP/cosh(Dstack(iblock,istackPtr))
+        end do
+       
       case (cSign)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = sign(1._DP,Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = sign(1._DP,Dstack(iblock,istackPtr))
         end do
-
 
       case (cSin)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = sin(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = sin(Dstack(iblock,istackPtr))
         end do
-
 
       case(cSinh)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = sinh(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = sinh(Dstack(iblock,istackPtr))
         end do
-
 
       case(cSqrt)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .lt. 0._DP) then
+          if (Dstack(iblock,istackPtr) .lt. 0._DP) then
             EvalErrType = 3
-            Dresult(iblock) = 0._DP
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr) = sqrt(Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr) = sqrt(Dstack(iblock,istackPtr))
           end if
         end do
 
-
       case (cTan)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = tan(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = tan(Dstack(iblock,istackPtr))
         end do
-
 
       case (cTanh)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = tanh(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = tanh(Dstack(iblock,istackPtr))
         end do
-
 
         !------------------------------------------------------------
         ! Misc
@@ -4970,164 +6715,146 @@ contains
       case (cImmed)
         istackPtr = istackPtr+1
         do iblock = 1, iblockSize
-          Dstack(iblock, istackPtr) = rcomp%Dimmed(idataPtr)
+          Dstack(iblock,istackPtr) = rcomp%Dimmed(idataPtr)
         end do
         idataPtr = idataPtr+1
-
 
       case (cJump)
         idataPtr = rcomp%IbyteCode(iinstPtr+2)
         iinstPtr = rcomp%IbyteCode(iinstPtr+1)
-
 
         !------------------------------------------------------------
         ! Operators
         !------------------------------------------------------------
       case (cNeg)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = -Dstack(iblock, istackPtr)
+           Dstack(iblock,istackPtr) = -Dstack(iblock,istackPtr)
         end do
-
 
       case (cAdd)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)+&
-                                         Dstack(iblock, istackPtr)
+           Dstack(iblock,istackPtr-1) = Dstack(iblock,istackPtr-1)+&
+                                         Dstack(iblock,istackPtr)
         end do
         istackPtr = istackPtr-1
-
 
       case (cSub)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)-&
-                                         Dstack(iblock, istackPtr)
+           Dstack(iblock,istackPtr-1) = Dstack(iblock,istackPtr-1)-&
+                                         Dstack(iblock,istackPtr)
         end do
         istackPtr = istackPtr-1
-
 
       case (cMul)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)*&
-                                         Dstack(iblock, istackPtr)
+           Dstack(iblock,istackPtr-1) = Dstack(iblock,istackPtr-1)*&
+                                         Dstack(iblock,istackPtr)
         end do
         istackPtr = istackPtr-1
-
 
       case (cDiv)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .eq. 0._DP) then
+          if (Dstack(iblock,istackPtr) .eq. 0._DP) then
             EvalErrType = 1
-            Dresult(iblock) = 0._DP
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)/&
-                                          Dstack(iblock, istackPtr)
+            Dstack(iblock,istackPtr-1) = Dstack(iblock,istackPtr-1)/&
+                                          Dstack(iblock,istackPtr)
           end if
         end do
         istackPtr = istackPtr-1
-
 
       case (cMod)
         do iblock = 1, iblockSize
-          if (Dstack(iblock, istackPtr) .eq. 0._DP) then
+          if (Dstack(iblock,istackPtr) .eq. 0._DP) then
             EvalErrType = 1
-            Dresult(iblock) = 0._DP
+            Dresult(iblock) = SYS_INFINITY_DP
           else
-            Dstack(iblock, istackPtr-1) = mod(Dstack(iblock, istackPtr-1),&
-                                              Dstack(iblock, istackPtr))
+            Dstack(iblock,istackPtr-1) = mod(Dstack(iblock,istackPtr-1),&
+                                              Dstack(iblock,istackPtr))
           end if
         end do
         istackPtr = istackPtr-1
 
-
       case (cPow)
         do  iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)**Dstack(iblock, istackPtr)
+           Dstack(iblock,istackPtr-1) = Dstack(iblock,istackPtr-1)**Dstack(iblock,istackPtr)
         end do
         istackPtr = istackPtr-1
-
 
       case (cEqual)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .eq.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .eq.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cNEqual)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .ne.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .ne.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cLess)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .lt.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .lt.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cLessOrEq)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .le.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .le.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cGreater)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .gt.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .gt.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cGreaterOrEq)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .ge.&
-                                                    Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr-1) = LogcToDble(Dstack(iblock,istackPtr-1) .ge.&
+                                                    Dstack(iblock,istackPtr))
         end do
         istackPtr = istackPtr-1
-
 
       case (cAnd)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock, istackPtr-1)) .and. &
-                                                    DbleToLogc(Dstack(iblock, istackPtr)) )
+           Dstack(iblock,istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock,istackPtr-1)) .and. &
+                                                    DbleToLogc(Dstack(iblock,istackPtr)) )
         end do
         istackPtr = istackPtr-1
-
 
       case (cOr)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock, istackPtr-1)) .or. &
-                                                    DbleToLogc(Dstack(iblock, istackPtr)) )
+           Dstack(iblock,istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock,istackPtr-1)) .or. &
+                                                    DbleToLogc(Dstack(iblock,istackPtr)) )
         end do
         istackPtr = istackPtr-1
 
-
       case (cNot)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(iblock, istackPtr)) )
+           Dstack(iblock,istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(iblock,istackPtr)) )
         end do
-
 
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
       case (cDeg)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = RadToDeg(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = RadToDeg(Dstack(iblock,istackPtr))
         end do
 
 
       case (cRad)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = DegToRad(Dstack(iblock, istackPtr))
+           Dstack(iblock,istackPtr) = DegToRad(Dstack(iblock,istackPtr))
         end do
 
 
@@ -5138,27 +6865,881 @@ contains
         ! Do we have to process one of the scalar variables of one of the block variables
         if (iVariable .ge. istartValueScalar) then
           do iblock = 1, iblockSize
-             Dstack(iblock, istackPtr) = DvalueScalar(iVariable-istartValueScalar+1)
+             Dstack(iblock,istackPtr) = DvalueScalar(iVariable-istartValueScalar+1)
           end do
         else
           if (idim .eq. 1) then
             do iblock = 1, iblockSize
-               Dstack(iblock, istackPtr) = DvalueBlock(iblock, iVariable)
+               Dstack(iblock,istackPtr) = DvalueBlock(iblock,iVariable)
             end do
           else
             do iblock = 1, iblockSize
-               Dstack(iblock, istackPtr) = DvalueBlock(iVariable, iblock)
+               Dstack(iblock,istackPtr) = DvalueBlock(iVariable, iblock)
             end do
           end if
         end if
       end select
+      if (EvalErrType .ne. 0) return
     end do
-
-    EvalErrType = 0
+    
     do iblock = 1, iblockSize
-       Dresult(iblock) = Dstack(iblock, istackPtr)
+       Dresult(iblock) = Dstack(iblock,istackPtr)
     end do
 
-  end subroutine evalFunctionBlock
+  end subroutine evalFunctionBlDble
 
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine evalFunctionBlCmpl (rcomp, iblockSize, Zstack, ZvalueBlock, idim,&
+                                 EvalErrType, Zresult, ZvalueScalar)
+
+!<description>
+    ! Evaluate bytecode for an array of values passed in ZvalueBlock(:,:).
+!</description>
+
+!<input>
+    ! Component of function parser
+    type(t_fparserComponent), intent(in) :: rcomp
+
+    ! Variable values
+    complex(DP), dimension(:,:), intent(in) :: ZvalueBlock
+
+    ! Size of the vector block
+    integer, intent(in) :: iblockSize
+
+    ! Orientation of the stored values
+    ! idim =1 : ZvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : ZvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
+    integer, intent(in) :: idim
+
+    ! Vector of scalar variable values
+    complex(DP), dimension(:), intent(in), optional :: ZvalueScalar
+!</input>
+
+!<inputoutput>
+    ! Stack memory
+    complex(DP), dimension(:,:), intent(inout) :: Zstack
+!</inputoutput>
+
+!<output>
+    ! Error code for function evaluation
+    integer, intent(out) :: EvalErrType
+
+    ! Evaluated function
+    complex(DP), dimension(:), intent(out) :: Zresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer  :: iinstPtr,idataPtr,istackPtr,iblock,istartValueScalar,iVariable
+
+    ! Initialization
+    idataPtr  = 1
+    istackPtr = 0
+    iinstPtr  = 0
+
+    ! Initialize error type
+    EvalErrType = 0
+    
+    ! This is tricky. istartValueScalar indicates the number of the first
+    ! variable which is passed as scalar. Hence, if the optional parameter
+    ! DvalueScalar is missing, then istartValueScalar pointers to SIZE(DvalueBlock)+1.
+    ! Obviously, no variable beyond this value is addressed.
+    istartValueScalar = size(ZvalueBlock,3-idim)+1
+
+    ! Repeat until complete bytecode has been processed
+    do while(iinstPtr .lt. rcomp%ibytecodeSize)
+      iinstPtr = iinstPtr+1
+
+      select case (rcomp%IbyteCode(iinstPtr))
+        !------------------------------------------------------------
+        ! Functions
+        !------------------------------------------------------------
+      case (cAbs)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = abs(Zstack(iblock,istackPtr))
+        end do
+
+      case (cAcos)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zacos(Zstack(iblock,istackPtr))
+        end do
+
+      case (cAsin)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zasin(Zstack(iblock,istackPtr))
+        end do
+
+      case (cAtan)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zatan(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cAtan2)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr-1)) .or.&
+              IsComplex(Zstack(iblock,istackPtr))) then
+            ! ATAN2 is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(atan2(real(Zstack(iblock,istackPtr -1)),&
+                                                    real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cAcot)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = zatan(1.0_DP/Zstack(iblock,istackPtr))
+         end do
+         
+       case (cAcoth)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zatanh(1.0_DP/Zstack(iblock,istackPtr))
+        end do
+        
+      case (cAcosh)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zacosh(Zstack(iblock,istackPtr))
+        end do
+
+      case (cAcsc)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zasin(1.0_DP/Zstack(iblock,istackPtr))
+        end do
+        
+      case (cAcsch)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zasinh(1.0_DP/Zstack(iblock,istackPtr))
+        end do
+
+      case (cAsec)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zacos(Zstack(iblock,istackPtr))
+        end do
+
+      case (cAsech)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zacosh(1.0_DP/Zstack(iblock,istackPtr))
+        end do
+
+      case (cAsinh)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zasinh(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cAtanh)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zatanh(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cAnint)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! ANINT are not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr) = cmplx(aint(aimag(zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+
+      case (cAint)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! AINT are not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr) = cmplx(aint(aimag(zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        
+      case (cCeil)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = cmplx(ceiling(real(Zstack(iblock,istackPtr))),&
+                                           ceiling(aimag(Zstack(iblock,istackPtr))),DP)
+        end do
+        
+      case (Ccmplx)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr)) .or.&
+              IsComplex(Zstack(iblock,istackPtr-1))) then
+            ! CMPLX cannot be applied to a complex value
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(real(Zstack(iblock,istackPtr-1)),&
+                                             real(zstack(iblock,istackPtr)),DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (Cconj)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = conjg(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cCos)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = cos(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cCosh)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = zcosh(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cCot)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1.0_DP/ztan(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cCoth)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1.0_DP/ztanh(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cCsc)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1.0_DP/sin(Zstack(iblock,istackPtr))
+        end do
+
+      case (cCsch)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1.0_DP/zsinh(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cExp)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = exp(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cFloor)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = cmplx(floor(real(Zstack(iblock,istackPtr))),&
+                                           floor(aimag(Zstack(iblock,istackPtr))),DP)
+        end do
+        
+      case (cIf)
+        ! IF-THEN-ELSE cannot be vectorised which should be noted during
+        ! bytecode compilation. If we reach this point, then something
+        ! went wrong before.
+        call output_line('IF-THEN-ELSE cannot be vectorised!',&
+            OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlDble')
+        call sys_halt()
+
+      case (cImag)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = cmplx(aimag(Zstack(iblock,istackPtr)),0.0_DP,DP)
+        end do
+        
+      case (cLog)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = log(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cLog10)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = log(Zstack(iblock,istackPtr))/log(10.0_DP)
+        end do
+
+      case (cMax)
+        do iblock = 1, iblockSize
+          if (abs(Zstack(iblock,istackPtr)) .gt. abs(Zstack(iblock,istackPtr-1))) then
+            Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr)
+          end if
+        end do
+        istackPtr = istackPtr-1
+        
+      case (cMin)
+        do iblock = 1, iblockSize
+          if (abs(Zstack(iblock,istackPtr)) .lt. abs(Zstack(iblock,istackPtr-1))) then
+            Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr)
+          end if
+        end do
+        istackPtr = istackPtr-1
+
+      case (cReal)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = cmplx(real(Zstack(iblock,istackPtr)),0.0_DP,DP)
+        end do
+        
+      case (cRrand)
+        ! RRAND is not supported in complex-valued case
+        EvalErrType = 2
+        Zresult     = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+
+      case (cSec)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1._DP/cos(Zstack(iblock,istackPtr))
+        end do
+        
+      case (cSech)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = 1._DP/zcosh(Zstack(iblock,istackPtr))
+        end do
+       
+      case (cSign)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = Zstack(iblock,istackPtr)/abs(Zstack(iblock,istackPtr))
+        end do
+
+      case (cSin)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = sin(Zstack(iblock,istackPtr))
+        end do
+
+      case(cSinh)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = zsinh(Zstack(iblock,istackPtr))
+        end do
+
+      case(cSqrt)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = sqrt(Zstack(iblock,istackPtr))
+        end do
+
+      case (cTan)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = tan(Zstack(iblock,istackPtr))
+        end do
+
+      case (cTanh)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = ztanh(Zstack(iblock,istackPtr))
+        end do
+
+        !------------------------------------------------------------
+        ! Misc
+        !------------------------------------------------------------
+      case (cImmed)
+        istackPtr = istackPtr+1
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr) = rcomp%Dimmed(idataPtr)
+        end do
+        idataPtr = idataPtr+1
+
+      case (cJump)
+        idataPtr = rcomp%IbyteCode(iinstPtr+2)
+        iinstPtr = rcomp%IbyteCode(iinstPtr+1)
+
+        !------------------------------------------------------------
+        ! Operators
+        !------------------------------------------------------------
+      case (cNeg)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr) = -Zstack(iblock,istackPtr)
+        end do
+
+      case (cAdd)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr-1)+&
+                                         Zstack(iblock,istackPtr)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cSub)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr-1)-&
+                                         Zstack(iblock,istackPtr)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cMul)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr-1)*&
+                                         Zstack(iblock,istackPtr)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cDiv)
+        do iblock = 1, iblockSize
+          if (Zstack(iblock,istackPtr) .eq. cmplx(0.0_DP,0.0_DP,DP)) then
+            EvalErrType = 1
+            Zresult(iblock) = SYS_INFINITY_DP
+          else
+            Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr-1)/&
+                                          Zstack(iblock,istackPtr)
+          end if
+        end do
+        istackPtr = istackPtr-1
+
+      case (cMod)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr)) .or.&
+              IsComplex(Zstack(iblock,istackPtr-1))) then
+            EvalErrType = 1
+            Zresult(iblock) = SYS_INFINITY_DP
+          elseif (aimag(Zstack(iblock,istackPtr)) .eq. 0.0_DP) then
+            EvalErrType = 1
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          endif
+          Zstack(iblock,istackPtr-1) = cmplx(mod(aimag(Zstack(iblock,istackPtr-1)),&
+                                                 aimag(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cPow)
+        do  iblock = 1, iblockSize
+           Zstack(iblock,istackPtr-1) = Zstack(iblock,istackPtr-1)**Zstack(iblock,istackPtr)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cEqual)
+        do iblock = 1, iblockSize
+           Zstack(iblock,istackPtr-1) = cmplx(LogcToDble((real(Zstack(iblock,istackPtr-1)) .eq.&
+                                                          real(Zstack(iblock,istackPtr))) .and.&
+                                                        (aimag(Zstack(iblock,istackPtr-1)) .eq.&
+                                                         aimag(Zstack(iblock,istackPtr)))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cNEqual)
+        do iblock = 1, iblockSize
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble((real(Zstack(iblock,istackPtr-1)) .ne.&
+                                                         real(Zstack(iblock,istackPtr)))  .or.&
+                                                       (aimag(Zstack(iblock,istackPtr-1)) .ne.&
+                                                        aimag(Zstack(iblock,istackPtr)))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cLess)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! LESS is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(real(Zstack(iblock,istackPtr-1)) .lt.&
+                                                        real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cLessOrEq)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! LESSOREQUAL is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(real(Zstack(iblock,istackPtr-1)) .le.&
+                                                        real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cGreater)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! GREATER is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(real(Zstack(iblock,istackPtr-1)) .gt.&
+                                                        real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+        
+      case (cGreaterOrEq)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! GREATEROREQUAL is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(real(Zstack(iblock,istackPtr-1)) .ge.&
+                                                        real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cAnd)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr)) .or.&
+              IsComplex(Zstack(iblock,istackPtr-1))) then
+            ! AND is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(CmplToLogc(Zstack(iblock,istackPtr-1)) .and. &
+                                                        CmplToLogc(Zstack(iblock,istackPtr)) ),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cOr)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr)) .or.&
+              IsComplex(Zstack(iblock,istackPtr-1))) then
+            ! OR is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr-1) = cmplx(LogcToDble(CmplToLogc(Zstack(iblock,istackPtr-1)) .or. &
+                                                        CmplToLogc(Zstack(iblock,istackPtr)) ),0.0_DP,DP)
+        end do
+        istackPtr = istackPtr-1
+
+      case (cNot)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! NOT is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr) = cmplx(RadToDeg(real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        
+        !------------------------------------------------------------
+        ! Degrees-radians conversion
+        !------------------------------------------------------------
+      case (cDeg)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! DEG is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr) = cmplx(RadToDeg(real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        
+      case (cRad)
+        do iblock = 1, iblockSize
+          if (IsComplex(Zstack(iblock,istackPtr))) then
+            ! RAD is not supported in complex-valued case
+            EvalErrType = 2
+            Zresult(iblock) = cmplx(SYS_INFINITY_DP,SYS_INFINITY_DP,DP)
+          end if
+          Zstack(iblock,istackPtr) = cmplx(DegToRad(real(Zstack(iblock,istackPtr))),0.0_DP,DP)
+        end do
+        
+      case default
+        istackPtr  = istackPtr+1
+        iVariable = rcomp%IbyteCode(iinstPtr)-VarBegin+1
+
+        ! Do we have to process one of the scalar variables of one of the block variables
+        if (iVariable .ge. istartValueScalar) then
+          do iblock = 1, iblockSize
+             Zstack(iblock,istackPtr) = ZvalueScalar(iVariable-istartValueScalar+1)
+          end do
+        else
+          if (idim .eq. 1) then
+            do iblock = 1, iblockSize
+               Zstack(iblock,istackPtr) = ZvalueBlock(iblock,iVariable)
+            end do
+          else
+            do iblock = 1, iblockSize
+               Zstack(iblock,istackPtr) = ZvalueBlock(iVariable, iblock)
+            end do
+          end if
+        end if
+      end select
+      if (EvalErrType .ne. 0) return
+    end do
+    
+    do iblock = 1, iblockSize
+       Zresult(iblock) = Zstack(iblock,istackPtr)
+    end do
+    
+  end subroutine evalFunctionBlCmpl
+  
+  ! *****************************************************************************
+  ! *****************************************************************************
+  ! *****************************************************************************  
+
+!<function>
+
+  elemental function dacosh(dx)
+
+!<description>
+    ! Real-valued inverse hyperbolic cosine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    real(DP), intent(in) :: dx
+!</input>
+
+!<result>
+    real(DP) :: dacosh
+!</result>
+!</function>
+
+    dacosh = log(dx+sqrt(dx**2-1.0_DP))
+
+  end function dacosh
+
+  ! ***************************************************************************
+
+  !<function>
+  
+  elemental function dasinh(dx)
+    
+!<description>
+    ! Real-valued inverse hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    real(DP), intent(in) :: dx
+!</input>
+
+!<result>
+    real(DP) :: dasinh
+!</result>
+!</function>
+
+    dasinh = log(dx+sqrt(dx**2+1.0_DP))
+
+  end function dasinh
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function datanh(dx)
+
+!<description>
+    ! Real-valued inverse hyperbolic tangens functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    real(DP), intent(in) :: dx
+!</input>
+
+!<result>
+    real(DP) :: datanh
+!</result>
+!</function>
+
+    datanh = 0.5_DP*log((1+dx)/(1-dx))
+
+  end function datanh
+  
+  ! ***************************************************************************
+  
+!<function>
+
+  elemental function zacos(zx)
+
+!<description>
+    ! Complex-valued inverse cosine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zacos
+!</result>
+!</function>
+
+    zacos = -cmplx(0.0_DP,1.0_DP,DP)*log(zx+cmplx(0.0_DP,1.0_DP,DP)*sqrt(1.0-zx**2))
+
+  end function zacos
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zasin(zx)
+
+!<description>
+    ! Complex-valued inverse sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zasin
+!</result>
+!</function>
+
+    zasin = -cmplx(0.0_DP,1.0_DP,DP)*log(cmplx(0.0_DP,1.0_DP,DP)*zx+sqrt(1.0-zx**2))
+
+  end function zasin
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zatan(zx)
+
+!<description>
+    ! Complex-valued inverse tangens functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zatan
+!</result>
+!</function>
+
+    zatan = 0.5_DP*cmplx(0.0_DP,1.0_DP,DP)*log((cmplx(0.0_DP,1.0_DP,DP)+zx)/&
+                                               (cmplx(0.0_DP,1.0_DP,DP)-zx))
+
+  end function zatan
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zacosh(zx)
+
+!<description>
+    ! Complex-valued inverse hyperbolic cosine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zacosh
+!</result>
+!</function>
+
+    zacosh = log(zx+sqrt(zx**2-1.0_DP))
+
+  end function zacosh
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zasinh(zx)
+
+!<description>
+    ! Complex-valued inverse hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zasinh
+!</result>
+!</function>
+
+    zasinh = log(zx+sqrt(zx**2+1.0_DP))
+
+  end function zasinh
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zatanh(zx)
+
+!<description>
+    ! Complex-valued inverse hyperbolic tangens functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zatanh
+!</result>
+!</function>
+
+    zatanh = 0.5_DP*log((1+zx)/(1-zx))
+
+  end function zatanh
+  
+  ! ***************************************************************************
+  
+!<function>
+
+  elemental function zcosh(zx)
+
+!<description>
+    ! Complex-valued hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zcosh
+!</result>
+!</function>
+
+    zcosh = cos(cmplx(0.0_DP,1.0_DP,DP)*zx) 
+
+  end function zcosh
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function zsinh(zx)
+
+!<description>
+    ! Complex-valued hyperbolic sine functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: zsinh
+!</result>
+!</function>
+
+    zsinh = -cmplx(0.0_DP,1.0_DP,DP)*sin(cmplx(0.0_DP,1.0_DP,DP)*zx) 
+
+  end function zsinh
+
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function ztan(zx)
+
+!<description>
+    ! Complex-valued tangens functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: ztan
+!</result>
+!</function>
+
+    ztan = sin(zx)/cos(zx)
+
+  end function ztan
+  
+  ! ***************************************************************************
+
+!<function>
+
+  elemental function ztanh(zx)
+
+!<description>
+    ! Complex-valued hyperbolic tangens functions (available in Fortran 2008)
+!</description>
+
+!<input>
+    complex(DP), intent(in) :: zx
+!</input>
+
+!<result>
+    complex(DP) :: ztanh
+!</result>
+!</function>
+
+    ztanh = zsinh(zx)/zcosh(zx)
+
+  end function ztanh
+  
 end module fparser
