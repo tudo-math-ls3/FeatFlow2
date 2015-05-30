@@ -836,23 +836,21 @@ contains
 
 !<description>
   ! This routine returns the element id to a given element name.
-  ! It is  case-insensitive.
+  ! It is case-insensitive.
 !</description>
 
 !<result>
   ! id of the element
 !</result>
 
-  !<input>
-
+!<input>
   ! Element name - one of the EL_xxxx constants.
   character (LEN=*) :: selemName
 
   ! Check the element type. If set to TRUE and the element
   ! name is invalid, the program is not stopped, but 0 is returned.
   logical, intent(in), optional :: bcheck
-
-  !</input>
+!</input>
 
 !</function>
 
@@ -861,7 +859,7 @@ contains
 
     ! SELECT CASE is not allowed for strings (although supported by a majority
     ! of compilers), therefore we have to use a couple of if-commands :(
-    ! select case(trim(sys_upcase(scubName)))
+    ! select case(trim(sys_upcase(selemName)))
 
     selem = trim(sys_upcase(selemName))
 
@@ -1354,10 +1352,8 @@ contains
 !</description>
 
 !<input>
-
   ! The element type identifier.
   integer(I32), intent(in) :: celement
-
 !</input>
 
 !<result>
@@ -1636,10 +1632,8 @@ contains
 !</description>
 
 !<input>
-
   ! The element type identifier.
   integer(I32), intent(in) :: celement
-
 !</input>
 
 !<result>
@@ -1699,10 +1693,8 @@ contains
 !</description>
 
 !<input>
-
   ! The element type identifier.
   integer(I32), intent(in) :: celement
-
 !</input>
 
 !<result>
@@ -1912,10 +1904,8 @@ contains
 !</description>
 
 !<input>
-
   ! The element type identifier.
   integer(I32), intent(in) :: celement
-
 !</input>
 
 !<result>
@@ -2131,23 +2121,19 @@ contains
 
   elemental logical function elem_isNonparametric (celement) result (inonpar)
 
-  !<description>
-
+!<description>
   ! Determines whether an element celement is parametric or nonparametric.
+!</description>
 
-  !</description>
-
-  !<result>
+!<result>
   ! =true, if the element is nonparametric.
   ! =false, if the element is parametric.
-  !</result>
+!</result>
 
-  !<input>
-
+!<input>
   ! Element type qualifier.
   integer(I32), intent(in) :: celement
-
-  !</input>
+!</input>
 
 !</function>
 
@@ -2190,12 +2176,10 @@ contains
   ! The identifier of the 'standard' element, celement refers to.
 !</result>
 
-  !<input>
-
+!<input>
   ! Element type qualifier.
-   integer(I32), intent(in) :: celement
-
-  !</input>
+  integer(I32), intent(in) :: celement
+!</input>
 
 !</function>
 
@@ -2998,23 +2982,19 @@ contains
 
   elemental logical function elem_isLinearTrafo (celement) result (blinearTrafo)
 
-  !<description>
-
+!<description>
   ! Determines whether an element celement has (multi-)linear transformation
+!</description>
 
-  !</description>
-
-  !<result>
+!<result>
   ! =true, if the element has a (multi-)linear trnasformation.
   ! =false, if the element has a higher-oder transformation.
-  !</result>
+!</result>
 
-  !<input>
-
+!<input>
   ! Element type qualifier.
   integer(I32), intent(in) :: celement
-
-  !</input>
+!</input>
 
 !</function>
 
