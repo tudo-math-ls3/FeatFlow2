@@ -698,7 +698,7 @@ module fparser
   real(DP), dimension(FPAR_MAXCONSTS), save :: DconstantValue = 0.0_DP
 
   ! Global constant values for parser (complex-valued)
-  complex(DP), dimension(FPAR_MAXCONSTS), save :: ZconstantValue = complex(0.0_DP,0.0_DP)
+  complex(DP), dimension(FPAR_MAXCONSTS), save :: ZconstantValue = cmplx(0.0_DP,0.0_DP)
 
   ! Global expression name for parser
   character(LEN=FPAR_EXPRLEN), dimension(FPAR_MAXCONSTS), save :: CexpressionName = ''
@@ -859,7 +859,7 @@ contains
     nconstants     = 0
     Cconstantname  = '     '
     DconstantValue = 0.0_DP
-    ZconstantValue = complex(0.0_DP,0.0_DP)
+    ZconstantValue = cmplx(0.0_DP,0.0_DP)
 
     ! Reset expressions
     nexpressions      = 0
@@ -1127,7 +1127,7 @@ contains
     ! Apply constant value and constant name
     CconstantName(nconstants)  = sstring
     DconstantValue(nconstants) = dvalue
-    ZconstantValue(nconstants) = complex(dvalue,0.0_DP)
+    ZconstantValue(nconstants) = cmplx(dvalue,0.0_DP)
 
   end subroutine fparser_defineConstantDble
 
@@ -3982,7 +3982,7 @@ contains
     case (cSech)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = 1.0_DP/cosh(rcomp%Dimmed(rcomp%iimmedSize))
-        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/cosh(rcomp%Zimmed(rcomp%iimmedSize))
+        rcomp%Zimmed(rcomp%iimmedSize) = 1.0_DP/zcosh(rcomp%Zimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
 
