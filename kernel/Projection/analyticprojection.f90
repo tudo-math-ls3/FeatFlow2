@@ -1526,12 +1526,12 @@ contains
 
     ! Compute the fluxes for the raw mass antidiffusion
     call afcsc_buildFluxFCT(rafcstab, rvectorAux,&
-        0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+        0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
         AFCSTAB_FCTFLUX_EXPLICIT, rmatrix=rmatrixMass)
 
     ! Apply flux correction to improve the low-order L2-projection
     call afcsc_buildVectorFCT(rafcstab,&
-        p_rmatrixMassLumped, rvector, 1._DP, .false.,&
+        p_rmatrixMassLumped, rvector, 1.0_DP, .false.,&
         AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
     ! Release stabilisation structure
