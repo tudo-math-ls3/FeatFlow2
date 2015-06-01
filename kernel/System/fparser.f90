@@ -6179,7 +6179,7 @@ contains
         Zstack(istackPtr) = sqrt(Zstack(istackPtr))
 
       case (cTan)
-        Zstack(istackPtr) = tan(Zstack(istackPtr))
+        Zstack(istackPtr) = ztan(Zstack(istackPtr))
         
       case (cTanh)
         Zstack(istackPtr) = ztanh(Zstack(istackPtr))
