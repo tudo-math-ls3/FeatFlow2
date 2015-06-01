@@ -97,8 +97,9 @@ contains
 !</result>
 !</function>
 
+    sigcount = 0
     call output_line('Simulation terminated due to user interruption (SIGQUIT)')
-    stop
+    call sys_halt()
   end function flagship_SIGQUIT
   
 end module flagship_signals
