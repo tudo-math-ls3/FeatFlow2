@@ -2,32 +2,32 @@
 Calculating anisotropic diffusion problem with method 1
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441368E-01
-UMFPACK: !!solution!!    = 5.232664176453885E-01 Status = 0
+UMFPACK: !!solution!!    = 5.232664176453883E-01 Status = 0
 Min: -4.9959770653E-02
 Max: 2.0000000000E+00
 
 Calculating anisotropic diffusion problem with method 2
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441368E-01
-UMFPACK: !!solution!!    = 5.232664176453885E-01 Status = 0
+UMFPACK: !!solution!!    = 5.232664176453883E-01 Status = 0
 !!gradient error!! = 9.1657736585E-01
-UMFPACK: !!Initial RES!! = 9.199295443090622E-02
-UMFPACK: !!solution!!    = 5.877810225553357E-01 Status = 0
+UMFPACK: !!Initial RES!! = 9.199295443090619E-02
+UMFPACK: !!solution!!    = 5.877810225553380E-01 Status = 0
 !!gradient error!! = 7.4378460808E-01
 UMFPACK: !!Initial RES!! = 7.732888065719283E-02
-UMFPACK: !!solution!!    = 7.070471207538476E-01 Status = 0
+UMFPACK: !!solution!!    = 7.070471207538557E-01 Status = 0
 !!gradient error!! = 6.0869111906E-01
-UMFPACK: !!Initial RES!! = 6.143635585217140E-02
-UMFPACK: !!solution!!    = 7.590947612478819E-01 Status = 0
+UMFPACK: !!Initial RES!! = 6.143635585217139E-02
+UMFPACK: !!solution!!    = 7.590947612478978E-01 Status = 0
 !!gradient error!! = 4.8949447878E-01
 UMFPACK: !!Initial RES!! = 5.152772040634369E-02
-UMFPACK: !!solution!!    = 7.981398911139830E-01 Status = 0
+UMFPACK: !!solution!!    = 7.981398911138951E-01 Status = 0
 !!gradient error!! = 3.8430920047E-01
-UMFPACK: !!Initial RES!! = 4.436141502046827E-02
-UMFPACK: !!solution!!    = 8.703557157022059E-01 Status = 0
+UMFPACK: !!Initial RES!! = 4.436141502046826E-02
+UMFPACK: !!solution!!    = 8.703557157020111E-01 Status = 0
 !!gradient error!! = 3.0169838578E-01
 UMFPACK: !!Initial RES!! = 4.309680007589012E-02
-UMFPACK: !!solution!!    = 8.573256639309041E-01 Status = 0
+UMFPACK: !!solution!!    = 8.573256639306843E-01 Status = 0
 Min: -1.7928530437E-04
 Max: 2.0000000000E+00
 

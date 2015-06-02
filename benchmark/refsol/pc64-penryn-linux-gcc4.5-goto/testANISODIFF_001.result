@@ -2,32 +2,32 @@
 Calculating anisotropic diffusion problem with method 1
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441369E-01
-UMFPACK: !!solution!!    = 5.232664176453874E-01 Status = 0
+UMFPACK: !!solution!!    = 5.232664176453881E-01 Status = 0
 Min: -4.9959770653E-02
 Max: 2.0000000000E+00
 
 Calculating anisotropic diffusion problem with method 2
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441369E-01
-UMFPACK: !!solution!!    = 5.232664176453874E-01 Status = 0
+UMFPACK: !!solution!!    = 5.232664176453881E-01 Status = 0
 !!gradient error!! = 9.1657736585E-01
 UMFPACK: !!Initial RES!! = 9.199295443090619E-02
-UMFPACK: !!solution!!    = 5.877810225553308E-01 Status = 0
+UMFPACK: !!solution!!    = 5.877810225553316E-01 Status = 0
 !!gradient error!! = 7.4378460808E-01
 UMFPACK: !!Initial RES!! = 7.732888065719286E-02
-UMFPACK: !!solution!!    = 7.070471207538211E-01 Status = 0
+UMFPACK: !!solution!!    = 7.070471207538297E-01 Status = 0
 !!gradient error!! = 6.0869111906E-01
 UMFPACK: !!Initial RES!! = 6.143635585217151E-02
-UMFPACK: !!solution!!    = 7.590947612479112E-01 Status = 0
+UMFPACK: !!solution!!    = 7.590947612478883E-01 Status = 0
 !!gradient error!! = 4.8949447878E-01
 UMFPACK: !!Initial RES!! = 5.152772040634377E-02
-UMFPACK: !!solution!!    = 7.981398911137975E-01 Status = 0
+UMFPACK: !!solution!!    = 7.981398911137575E-01 Status = 0
 !!gradient error!! = 3.8430920047E-01
 UMFPACK: !!Initial RES!! = 4.436141502046823E-02
-UMFPACK: !!solution!!    = 8.703557157023208E-01 Status = 0
+UMFPACK: !!solution!!    = 8.703557157021415E-01 Status = 0
 !!gradient error!! = 3.0169838578E-01
 UMFPACK: !!Initial RES!! = 4.309680007589009E-02
-UMFPACK: !!solution!!    = 8.573256639311058E-01 Status = 0
+UMFPACK: !!solution!!    = 8.573256639308963E-01 Status = 0
 Min: -1.7928530437E-04
 Max: 2.0000000000E+00
 

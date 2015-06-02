@@ -316,8 +316,8 @@ H1-error: 3.7269151395E-02
 
 Calculating Poisson-2D-Problem with method 1 - EM30
 ---------------------------------------------------
-UMFPACK: !!Initial RES!! = 2.098843860710977E-02
-UMFPACK: !!solution!!    = 5.182340172412552E-01 Status = 0
+UMFPACK: !!Initial RES!! = 2.098843860710960E-02
+UMFPACK: !!solution!!    = 5.182340172412513E-01 Status = 0
 L2-error: 1.8029470064E-03
 H1-error: 1.9708230651E-01
 
@@ -486,33 +486,33 @@ H1-error: 5.3831837988E-02
 Calculating Poisson-2D-Problem with method 1 - L2-projection
 ------------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 4.394091213836495E-03
-Multigrid: Iteration 1,  !!RES!! = 1.808654767229902E-04
-Multigrid: Iteration 2,  !!RES!! = 5.683552541531511E-06
-Multigrid: Iteration 3,  !!RES!! = 4.824621616033920E-07
-Multigrid: Iteration 4,  !!RES!! = 4.407834614708518E-08
-Multigrid: Iteration 5,  !!RES!! = 4.163000007952449E-09
+Multigrid: Iteration 1,  !!RES!! = 1.808654767229878E-04
+Multigrid: Iteration 2,  !!RES!! = 5.683552541534943E-06
+Multigrid: Iteration 3,  !!RES!! = 4.824621616020904E-07
+Multigrid: Iteration 4,  !!RES!! = 4.407834614705181E-08
+Multigrid: Iteration 5,  !!RES!! = 4.163000008879761E-09
 
 Multigrid statistics:
 
 Iterations              : 5
 !!INITIAL RES!!         : 4.394091213836495E-03
-!!RES!!                 : 4.163000007952449E-09
-!!RES!!/!!INITIAL RES!! : 9.474086461481806E-07
+!!RES!!                 : 4.163000008879761E-09
+!!RES!!/!!INITIAL RES!! : 9.474086463592167E-07
 
-Rate of convergence     : 6.241765792550187E-02
+Rate of convergence     : 6.241765792828259E-02
 L2-error: 5.3515824224E-04
-H1-error: 9.8590865453E-02
+H1-error: 1.0316479477E-01
 
 Performing L2-projection of solution to Q1 space
 
-L2prj: Iteration 1,  !!RES!! = 5.042494373740044E-04
-L2prj: Iteration 2,  !!RES!! = 3.865134807865138E-06
-L2prj: Iteration 3,  !!RES!! = 1.061781122098172E-06
-L2prj: Iteration 4,  !!RES!! = 5.714912463577355E-07
-L2prj: Iteration 5,  !!RES!! = 3.392675486973108E-07
-L2prj: Iteration 6,  !!RES!! = 2.091010258538909E-07
-L2prj: Iteration 7,  !!RES!! = 1.314190097768400E-07
-L2prj: Iteration 8,  !!RES!! = 8.358738981477234E-08
+L2prj: Iteration 1,  !!RES!! = 5.042494373739921E-04
+L2prj: Iteration 2,  !!RES!! = 3.865134807865055E-06
+L2prj: Iteration 3,  !!RES!! = 1.061781122098149E-06
+L2prj: Iteration 4,  !!RES!! = 5.714912463577252E-07
+L2prj: Iteration 5,  !!RES!! = 3.392675486973038E-07
+L2prj: Iteration 6,  !!RES!! = 2.091010258538884E-07
+L2prj: Iteration 7,  !!RES!! = 1.314190097768371E-07
+L2prj: Iteration 8,  !!RES!! = 8.358738981477064E-08
 
 Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
 -----------------------------------------------------------
