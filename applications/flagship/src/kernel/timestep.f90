@@ -992,7 +992,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolutionAux
     type(t_vectorBlock), pointer :: p_rsolutionRef
     type(t_vectorBlock), pointer :: p_rsolutionPrevious
-    real(DP) :: dstep
+    real(DP) :: dstep,dtime
     logical :: bcompatible,breject
     integer :: istep
     
@@ -1032,7 +1032,7 @@ contains
       !-------------------------------------------------------------------------
       ! Two-level theta time-stepping scheme family
       !-------------------------------------------------------------------------
-      
+    
       ! Set pointers to temporal vectors
       p_rsolutionPrevious => rtimestep%p_rthetaScheme%RtempVectors(1)
       
@@ -1048,19 +1048,25 @@ contains
       call lsysbl_copyVector(rsolution, p_rsolutionPrevious)
 
       ! Prepare time-stepping structure
-      rtimestep%dscaleExplicit  = (1.0_DP-rtimestep%p_rthetaScheme%theta)
-      rtimestep%dscaleImplicit  =         rtimestep%p_rthetaScheme%theta
+      rtimestep%dscaleExplicit = (1.0_DP-rtimestep%p_rthetaScheme%theta)
+      rtimestep%dscaleImplicit =         rtimestep%p_rthetaScheme%theta
       
       ! Perform nsteps steps with two-level theta scheme
       theta_loop: do istep = 1, nsteps
 
+        ! Save current time
+        dtime = rtimestep%dTime
+        
         ! Adaptive time-stepping loop
         theta_loop_adapt: do
           
+          ! Compute admissible time step size
+          dstep = min(rtimestep%dStep, rtimestep%dfinalTime - dtime)
+          
           ! Increase simulation time provisionally
-          rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime - rtimestep%dTime)
-          rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
-          rtimestep%nSteps= rtimestep%nSteps + 1
+          rtimestep%dStep  = dstep
+          rtimestep%dTime  = dtime + rtimestep%dStep
+          rtimestep%nSteps = rtimestep%nSteps + 1
           
           ! Output information
           if (rtimestep%coutputModeInfo .gt. 0) then
@@ -1085,8 +1091,7 @@ contains
           ! Compute reference solution by performing two time steps of size Dt/2
           if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
 
-            ! Make a backup of the previous time step size and halve time step size
-            dstep = rtimestep%dStep
+            ! Perform two halve time-steps
             rtimestep%dStep = dstep/2.0_DP
 
             ! Output information
@@ -1159,8 +1164,7 @@ contains
 
           ! Do we have to reject to current solution?
           if (breject) then
-            ! Yes, so restore the old solution and
-            ! repeat the adaptive time-stepping loop
+            ! Yes, so restore the old solution and repeat the time step
             call lsysbl_copyVector(p_rsolutionPrevious, rsolution)
             if (rtimestep%coutputModeWarning .gt. 0) then
               call output_line('Time step was rejected!',&
@@ -1181,6 +1185,225 @@ contains
       ! Multi-stage Runge-Kutta time-stepping scheme family
       !-------------------------------------------------------------------------
       
+      ! Set pointers to temporal vectors
+      p_rsolutionPrevious => rtimestep%p_rRungeKuttaScheme%RtempVectors(1)
+      
+      ! Save the given solution vector to the temporal vector. If the
+      ! computed time step is not accepted, then the backup of the
+      ! given solution vector is used to recalculate the time step
+      call lsysbl_copyVector(rsolution, p_rsolutionPrevious)
+
+      select case(rtimestep%ctimestep)
+
+      case (TSTEP_SSPERK_1_1)
+        
+        ! Perform nsteps steps with explicit SSP-RK(1,1) scheme
+        ssperk_1_1_loop: do istep = 1, nsteps
+
+          ! Save current time
+          dtime = rtimestep%dTime
+          
+          ! Adaptive time-stepping loop
+          ssperk_1_1_loop_adapt: do
+
+            ! Compute admissible time step size
+            dstep = min(rtimestep%dStep, rtimestep%dfinalTime - dtime)
+
+            ! Increase simulation time provisionally
+            rtimestep%dStep  = rtimestep%p_rRungeKuttaScheme%Dc(1)*dstep
+            rtimestep%dTime  = dtime + rtimestep%dStep
+            rtimestep%nSteps = rtimestep%nSteps + 1
+            
+            ! Prepare time-stepping structure
+            rtimestep%dscaleExplicit = rtimestep%p_rRungeKuttaScheme%Dbeta(1,1)
+            rtimestep%dscaleImplicit = 0.0_DP
+
+            ! Output information
+            if (rtimestep%coutputModeInfo .gt. 0) then
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Explicit SSP-RK(1,1) scheme, Time = '//&
+                  trim(sys_sdEL(rtimestep%dTime,5))//&
+                  ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            end if
+
+            ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious, fcb_nlsolverCallback,&
+                rcollection, rsource)
+
+            ! Adjust status information of top-most solver
+            call solver_copySolver(p_rsolver, rsolver, .false., .true.)
+
+            ! Reset the time step size
+            rtimestep%dStep = dstep
+            
+            ! Check if solution from this time step can be accepted and
+            ! adjust the time step size automatically if this is required
+            breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious)
+            
+            ! Output information
+            if (rtimestep%coutputModeInfo .gt. 0) then
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStepPrevious,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            end if
+            
+            ! Do we have to reject to current solution?
+            if (breject) then
+              ! Yes, so restore the old solution and
+              ! repeat the adaptive time-stepping loop
+              call lsysbl_copyVector(p_rsolutionPrevious, rsolution)
+              if (rtimestep%coutputModeWarning .gt. 0) then
+                call output_line('Time step was rejected!',&
+                    OU_CLASS_WARNING,rtimestep%coutputModeWarning,&
+                    'tstep_performTimestepBl')
+              end if
+            else
+              ! No, accept current solution and
+              ! exit adaptive time-stepping loop
+              exit ssperk_1_1_loop_adapt
+            end if
+          end do ssperk_1_1_loop_adapt
+          
+        end do ssperk_1_1_loop
+        
+      case (TSTEP_SSPERK_2_2)
+        
+        ! Perform nsteps steps with explicit SSP-RK(2,2) scheme
+        ssperk_2_2_loop: do istep = 1, nsteps
+
+          ! Save current time
+          dtime = rtimestep%dTime
+          
+          ! Adaptive time-stepping loop
+          ssperk_2_2_loop_adapt: do
+
+            ! Compute admissible time step size
+            dstep = min(rtimestep%dStep, rtimestep%dfinalTime - dtime)
+
+            ! -- first step --
+            
+            ! Increase simulation time provisionally
+            rtimestep%dStep  = rtimestep%p_rRungeKuttaScheme%Dc(1)*dstep
+            rtimestep%dTime  = dtime + rtimestep%dStep
+            rtimestep%nSteps = rtimestep%nSteps + 1
+            
+            ! Prepare time-stepping structure
+            rtimestep%dscaleExplicit = rtimestep%p_rRungeKuttaScheme%Dbeta(1,1)
+            rtimestep%dscaleImplicit = 0.0_DP
+
+            ! Output information
+            if (rtimestep%coutputModeInfo .gt. 0) then
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Explicit SSP-RK(2,2) scheme [first step], Time = '//&
+                  trim(sys_sdEL(rtimestep%dTime,5))//&
+                  ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            end if
+
+            ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious, fcb_nlsolverCallback,&
+                rcollection, rsource)
+
+            ! -- second step --
+            
+            ! Increase simulation time provisionally
+            rtimestep%dStep  = rtimestep%p_rRungeKuttaScheme%Dc(2)*dstep
+            rtimestep%dTime  = dtime + rtimestep%dStep
+
+            ! Prepare time-stepping structure
+            rtimestep%dscaleExplicit = rtimestep%p_rRungeKuttaScheme%Dbeta(2,1)
+            rtimestep%dscaleImplicit = 0.0_DP
+
+            ! Output information
+            if (rtimestep%coutputModeInfo .gt. 0) then
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Explicit SSP-RK(2,2) scheme [second step], Time = '//&
+                  trim(sys_sdEL(rtimestep%dTime,5))//&
+                  ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            end if
+
+            ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious, fcb_nlsolverCallback,&
+                rcollection, rsource)
+
+            ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious, fcb_nlsolverCallback,&
+                rcollection, rsource)
+            
+            ! Adjust status information of top-most solver
+            call solver_copySolver(p_rsolver, rsolver, .false., .true.)
+
+            ! Reset the time step size
+            rtimestep%dStep = dstep
+            
+            ! Check if solution from this time step can be accepted and
+            ! adjust the time step size automatically if this is required
+            breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+                rsolution, p_rsolutionPrevious)
+            
+            ! Output information
+            if (rtimestep%coutputModeInfo .gt. 0) then
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStepPrevious,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
+                  OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+              call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            end if
+            
+            ! Do we have to reject to current solution?
+            if (breject) then
+              ! Yes, so restore the old solution and
+              ! repeat the adaptive time-stepping loop
+              call lsysbl_copyVector(p_rsolutionPrevious, rsolution)
+              if (rtimestep%coutputModeWarning .gt. 0) then
+                call output_line('Time step was rejected!',&
+                    OU_CLASS_WARNING,rtimestep%coutputModeWarning,&
+                    'tstep_performTimestepBl')
+              end if
+            else
+              ! No, accept current solution and
+              ! exit adaptive time-stepping loop
+              exit ssperk_2_2_loop_adapt
+            end if
+          end do ssperk_2_2_loop_adapt
+          
+        end do ssperk_2_2_loop
+        
+      case (TSTEP_SSPERK_3_3)
+
+      end select
       
     case default
       call output_line('Unsupported time-stepping scheme!',&
@@ -1362,7 +1585,7 @@ contains
     type(t_vectorBlock), dimension(:), pointer :: p_RsolutionAux
     type(t_vectorBlock), dimension(:), pointer :: p_RsolutionRef
     type(t_vectorBlock), dimension(:), pointer :: p_RsolutionPrevious
-    logical :: bcompatible, breject
+    logical :: bcompatible
     integer :: icomponent,ncomponent
     
     ! Get number of components
@@ -2163,7 +2386,5 @@ contains
                                        rtimestep%coutputModeWarning)
 
   end subroutine tstep_decodeOutputLevel
-
-  
-
+ 
 end module timestep
