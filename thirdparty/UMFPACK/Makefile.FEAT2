@@ -16,11 +16,12 @@ default: $(OBJDIR)/libumfpack.a
 #FEAT2# include ../SuiteSparse_config/SuiteSparse_config.mk
 
 C = LC_ALL=C $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNTIMER \
-    -IInclude -ISource -I../AMD/Include -I../SuiteSparse_config
+    -I../SuiteSparse/UMFPACK/Include -I../SuiteSparse/UMFPACK/Source \
+    -I../SuiteSparse/AMD/Include -I../SuiteSparse/SuiteSparse_config
 #FEAT2#    -I../Include -I../Source -I../../AMD/Include -I../../SuiteSparse_config
 
-SUITESPARSE_CONFIG = ../SuiteSparse_config/SuiteSparse_config.h \
-                     ../SuiteSparse_config/SuiteSparse_config.c
+SUITESPARSE_CONFIG = ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.h \
+                     ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.c
 
 
 #-------------------------------------------------------------------------------
@@ -82,14 +83,17 @@ GENERIC = umfpack_timer umfpack_tictoc umfpack_global
 #FEAT2 Substitution Rule# ../Include/ => Include/
 #FEAT2 Substitution Rule# ../Source/  => Source/
 #FEAT2 Substitution Rule# ../../AMD/  => ../AMD/
-INC = Include/umfpack.h $(SUITESPARSE_CONFIG) \
-	Source/umf_config.h Source/umf_version.h \
-	Source/umf_internal.h Source/umf_triplet.h \
-	$(addprefix Source/,  $(addsuffix .h,$(UMFCH))) \
-	$(addprefix Source/,  $(addsuffix .h,$(UMFINT))) \
-	$(addprefix Include/, $(addsuffix .h,$(USER))) \
-	$(addprefix Include/, $(addsuffix .h,$(GENERIC))) \
-	../AMD/Include/amd_internal.h ../AMD/Include/amd.h
+INC = ../SuiteSparse/UMFPACK/Include/umfpack.h \
+	$(SUITESPARSE_CONFIG) \
+	../SuiteSparse/UMFPACK/Source/umf_config.h \
+	../SuiteSparse/UMFPACK/Source/umf_version.h \
+	../SuiteSparse/UMFPACK/Source/umf_internal.h \
+	../SuiteSparse/UMFPACK/Source/umf_triplet.h \
+	$(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .h,$(UMFCH))) \
+	$(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .h,$(UMFINT))) \
+	$(addprefix ../SuiteSparse/UMFPACK/Include/, $(addsuffix .h,$(USER))) \
+	$(addprefix ../SuiteSparse/UMFPACK/Include/, $(addsuffix .h,$(GENERIC))) \
+	../SuiteSparse/AMD/Include/amd_internal.h ../SuiteSparse/AMD/Include/amd.h
 
 #-------------------------------------------------------------------------------
 # object files for each version
@@ -121,51 +125,51 @@ GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
 
 #FEAT2 Substitution Rule# All object files got a '$(OBJDIR)/' prefix
 #FEAT2 Substitution Rule# All source files got the '../' stripped
-$(OBJDIR)/umf_i_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_i_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DNCHOLMOD -DDINT -c $< -o $@
 
-$(OBJDIR)/umf_l_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_l_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DNCHOLMOD -DDLONG -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # compile each routine in the DI version
 #-------------------------------------------------------------------------------
 
-$(OBJDIR)/umf_di_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_di_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DDINT -c $< -o $@
 
-$(OBJDIR)/umf_di_%hsolve.o: Source/umf_%tsolve.c $(INC)
+$(OBJDIR)/umf_di_%hsolve.o: ../SuiteSparse/UMFPACK/Source/umf_%tsolve.c $(INC)
 	$(C) -DDINT -DCONJUGATE_SOLVE -c $< -o $@
 
-$(OBJDIR)/umf_di_triplet_map_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_di_triplet_map_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDINT -DDO_MAP -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_di_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_di_triplet_map_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDINT -DDO_MAP -c $< -o $@
 
-$(OBJDIR)/umf_di_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_di_triplet_nomap_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDINT -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_di_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_di_triplet_nomap_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDINT -c $< -o $@
 
-$(OBJDIR)/umf_di_assemble_fixq.o: Source/umf_assemble.c $(INC)
+$(OBJDIR)/umf_di_assemble_fixq.o: ../SuiteSparse/UMFPACK/Source/umf_assemble.c $(INC)
 	$(C) -DDINT -DFIXQ -c $< -o $@
 
-$(OBJDIR)/umf_di_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+$(OBJDIR)/umf_di_store_lu_drop.o: ../SuiteSparse/UMFPACK/Source/umf_store_lu.c $(INC)
 	$(C) -DDINT -DDROP -c $< -o $@
 
-$(OBJDIR)/umfpack_di_wsolve.o: Source/umfpack_solve.c $(INC)
+$(OBJDIR)/umfpack_di_wsolve.o: ../SuiteSparse/UMFPACK/Source/umfpack_solve.c $(INC)
 	$(C) -DDINT -DWSOLVE -c $< -o $@
 
-$(OBJDIR)/umfpack_di_%.o: Source/umfpack_%.c $(INC)
+$(OBJDIR)/umfpack_di_%.o: ../SuiteSparse/UMFPACK/Source/umfpack_%.c $(INC)
 	$(C) -DDINT -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # compile each routine in the DL version
 #-------------------------------------------------------------------------------
 
-$(OBJDIR)/umf_dl_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_dl_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
 #FEAT2# Workaround:
@@ -180,118 +184,118 @@ $(OBJDIR)/umf_dl_%.o: Source/umf_%.c $(INC)
 COMPILERVERSION := $(shell eval $(CXXVERSION) )
 ifneq (,$(findstring NEC C++ IA-64 Compiler,$(COMPILERVERSION)))
 ifneq (,$(findstring Revision 6.1,$(COMPILERVERSION)))
-$(OBJDIR)/umf_dl_blas3_update.o: Source/umf_blas3_update.c $(INC)
+$(OBJDIR)/umf_dl_blas3_update.o: ../SuiteSparse/UMFPACK/Source/umf_blas3_update.c $(INC)
 	$(subst -O3,-O2,$(C)) -DDLONG -c $< -o $@
 
-$(OBJDIR)/umf_dl_garbage_collection.o: Source/umf_garbage_collection.c $(INC)
+$(OBJDIR)/umf_dl_garbage_collection.o: ../SuiteSparse/UMFPACK/Source/umf_garbage_collection.c $(INC)
 	$(subst -O3,-O2,$(C)) -DDLONG -c $< -o $@
 endif
 endif
 
-$(OBJDIR)/umf_dl_%hsolve.o: Source/umf_%tsolve.c $(INC)
+$(OBJDIR)/umf_dl_%hsolve.o: ../SuiteSparse/UMFPACK/Source/umf_%tsolve.c $(INC)
 	$(C) -DDLONG -DCONJUGATE_SOLVE -c $< -o $@
 
-$(OBJDIR)/umf_dl_triplet_map_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_dl_triplet_map_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDLONG -DDO_MAP -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_dl_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_dl_triplet_map_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDLONG -DDO_MAP -c $< -o $@
 
-$(OBJDIR)/umf_dl_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_dl_triplet_nomap_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDLONG -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_dl_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_dl_triplet_nomap_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
-$(OBJDIR)/umf_dl_assemble_fixq.o: Source/umf_assemble.c $(INC)
+$(OBJDIR)/umf_dl_assemble_fixq.o: ../SuiteSparse/UMFPACK/Source/umf_assemble.c $(INC)
 	$(C) -DDLONG -DFIXQ -c $< -o $@
 
-$(OBJDIR)/umf_dl_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+$(OBJDIR)/umf_dl_store_lu_drop.o: ../SuiteSparse/UMFPACK/Source/umf_store_lu.c $(INC)
 	$(C) -DDLONG -DDROP -c $< -o $@
 
-$(OBJDIR)/umfpack_dl_wsolve.o: Source/umfpack_solve.c $(INC)
+$(OBJDIR)/umfpack_dl_wsolve.o: ../SuiteSparse/UMFPACK/Source/umfpack_solve.c $(INC)
 	$(C) -DDLONG -DWSOLVE -c $< -o $@
 
-$(OBJDIR)/umfpack_dl_%.o: Source/umfpack_%.c $(INC)
+$(OBJDIR)/umfpack_dl_%.o: ../SuiteSparse/UMFPACK/Source/umfpack_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # compile each routine in the ZI version
 #-------------------------------------------------------------------------------
 
-$(OBJDIR)/umf_zi_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_zi_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DZINT -c $< -o $@
 
-$(OBJDIR)/umf_zi_%hsolve.o: Source/umf_%tsolve.c $(INC)
+$(OBJDIR)/umf_zi_%hsolve.o: ../SuiteSparse/UMFPACK/Source/umf_%tsolve.c $(INC)
 	$(C) -DZINT -DCONJUGATE_SOLVE -c $< -o $@
 
-$(OBJDIR)/umf_zi_triplet_map_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zi_triplet_map_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZINT -DDO_MAP -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_zi_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zi_triplet_map_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZINT -DDO_MAP -c $< -o $@
 
-$(OBJDIR)/umf_zi_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zi_triplet_nomap_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZINT -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_zi_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zi_triplet_nomap_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZINT -c $< -o $@
 
-$(OBJDIR)/umf_zi_assemble_fixq.o: Source/umf_assemble.c $(INC)
+$(OBJDIR)/umf_zi_assemble_fixq.o: ../SuiteSparse/UMFPACK/Source/umf_assemble.c $(INC)
 	$(C) -DZINT -DFIXQ -c $< -o $@
 
-$(OBJDIR)/umf_zi_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+$(OBJDIR)/umf_zi_store_lu_drop.o: ../SuiteSparse/UMFPACK/Source/umf_store_lu.c $(INC)
 	$(C) -DZINT -DDROP -c $< -o $@
 
-$(OBJDIR)/umfpack_zi_wsolve.o: Source/umfpack_solve.c $(INC)
+$(OBJDIR)/umfpack_zi_wsolve.o: ../SuiteSparse/UMFPACK/Source/umfpack_solve.c $(INC)
 	$(C) -DZINT -DWSOLVE -c $< -o $@
 
-$(OBJDIR)/umfpack_zi_%.o: Source/umfpack_%.c $(INC)
+$(OBJDIR)/umfpack_zi_%.o: ../SuiteSparse/UMFPACK/Source/umfpack_%.c $(INC)
 	$(C) -DZINT -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # compile each routine in the ZL version
 #-------------------------------------------------------------------------------
 
-$(OBJDIR)/umf_zl_%.o: Source/umf_%.c $(INC)
+$(OBJDIR)/umf_zl_%.o: ../SuiteSparse/UMFPACK/Source/umf_%.c $(INC)
 	$(C) -DZLONG -c $< -o $@
 
-$(OBJDIR)/umf_zl_%hsolve.o: Source/umf_%tsolve.c $(INC)
+$(OBJDIR)/umf_zl_%hsolve.o: ../SuiteSparse/UMFPACK/Source/umf_%tsolve.c $(INC)
 	$(C) -DZLONG -DCONJUGATE_SOLVE -c $< -o $@
 
-$(OBJDIR)/umf_zl_triplet_map_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zl_triplet_map_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZLONG -DDO_MAP -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_zl_triplet_map_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zl_triplet_map_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZLONG -DDO_MAP -c $< -o $@
 
-$(OBJDIR)/umf_zl_triplet_nomap_x.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zl_triplet_nomap_x.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZLONG -DDO_VALUES -c $< -o $@
 
-$(OBJDIR)/umf_zl_triplet_nomap_nox.o: Source/umf_triplet.c $(INC)
+$(OBJDIR)/umf_zl_triplet_nomap_nox.o: ../SuiteSparse/UMFPACK/Source/umf_triplet.c $(INC)
 	$(C) -DZLONG -c $< -o $@
 
-$(OBJDIR)/umf_zl_assemble_fixq.o: Source/umf_assemble.c $(INC)
+$(OBJDIR)/umf_zl_assemble_fixq.o: ../SuiteSparse/UMFPACK/Source/umf_assemble.c $(INC)
 	$(C) -DZLONG -DFIXQ -c $< -o $@
 
-$(OBJDIR)/umf_zl_store_lu_drop.o: Source/umf_store_lu.c $(INC)
+$(OBJDIR)/umf_zl_store_lu_drop.o: ../SuiteSparse/UMFPACK/Source/umf_store_lu.c $(INC)
 	$(C) -DZLONG -DDROP -c $< -o $@
 
-$(OBJDIR)/umfpack_zl_wsolve.o: Source/umfpack_solve.c $(INC)
+$(OBJDIR)/umfpack_zl_wsolve.o: ../SuiteSparse/UMFPACK/Source/umfpack_solve.c $(INC)
 	$(C) -DZLONG -DWSOLVE -c $< -o $@
 
-$(OBJDIR)/umfpack_zl_%.o: Source/umfpack_%.c $(INC)
+$(OBJDIR)/umfpack_zl_%.o: ../SuiteSparse/UMFPACK/Source/umfpack_%.c $(INC)
 	$(C) -DZLONG -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # Create the generic routines (GN) using a generic rule
 #-------------------------------------------------------------------------------
 
-$(OBJDIR)/umfpack_gn_%.o: Source/umfpack_%.c $(INC)
+$(OBJDIR)/umfpack_gn_%.o: ../SuiteSparse/UMFPACK/Source/umfpack_%.c $(INC)
 	$(C) -c $< -o $@
 
-$(OBJDIR)/SuiteSparse_config.o: ../SuiteSparse_config/SuiteSparse_config.c \
-                                ../SuiteSparse_config/SuiteSparse_config.h
+$(OBJDIR)/SuiteSparse_config.o: ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.c \
+                                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.h
 	$(C) -c $< -o $@
 
 #-------------------------------------------------------------------------------
@@ -411,52 +415,56 @@ include ../unpack.mk
 
 
 #-------------------------------------------------------------------------------
-# Automatically extract AMD tarball when required.
+# Automatically download SuiteSparse tarball when required.
 #-------------------------------------------------------------------------------
 
-AMD_TARBALL = ../AMD-2.4.0.tar.gz
+SUITESPARSE_TARBALL = ../SuiteSparse-4.4.3.tar.gz
+
+# Try to download tar ball if not present
+$(SUITESPARSE_TARBALL):  URL      = http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.3.tar.gz
+$(SUITESPARSE_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(SUITESPARSE_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse-4.4.3.tar.gz
+$(SUITESPARSE_TARBALL):  WAITTIME = 15
+$(SUITESPARSE_TARBALL):  RETRIES  = 24
+$(SUITESPARSE_TARBALL):
+	@$(call DOWNLOAD)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AMD tarball when required.
+#-------------------------------------------------------------------------------
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-SRC_AMD = ../AMD/Include/amd_internal.h ../AMD/Include/amd.h
+SRC_AMD = ../SuiteSparse/AMD/Include/amd_internal.h ../SuiteSparse/AMD/Include/amd.h
 
 # Choose the last file that is extracted from the AMD tarball. It's
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/MATLAB/amd_mex.c
+LAST_FILE_FROM_AMD_TARBALL = ../SuiteSparse/AMD/Demo/Makefile
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the 
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME      = "AMD 2.4.0 sources"
-$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE  = ../LOCK.unpack.amd-2.4.0.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME      = "AMD 2.4.1 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(LAST_FILE_FROM_AMD_TARBALL):  SUBTREE  = SuiteSparse/AMD
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE  = ../LOCK.unpack.amd-2.4.1.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES   = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD  = echo
 $(LAST_FILE_FROM_AMD_TARBALL):  SKIP_IF_PRESENT = $(LAST_FILE_FROM_AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
+$(LAST_FILE_FROM_AMD_TARBALL): | $(SUITESPARSE_TARBALL)
 	@$(call UNPACK)
-
-# Try to download tar ball if not present
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.4.0.tar.gz
-$(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.4.0.tar.gz
-$(AMD_TARBALL):  WAITTIME = 15
-$(AMD_TARBALL):  RETRIES  = 24
-$(AMD_TARBALL):
-	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
-
-SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.3.1.tar.gz
 
 # List of required source files from SuiteSparse_config package. Purpose: let
 # them share a single common prerequisite that in turn is created by unpacking
@@ -468,90 +476,74 @@ SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
 # existence indicates that the SuiteSparse_config tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.h
+LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse/SuiteSparse_config/xerbla/xerbla.h
 # Avoid (in this case harmless) warning of kind:
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.3.1 sources"
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL   = $(SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.3.1.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME      = "SuiteSparse_config 4.4.3 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL   = $(SUITESPARSE_TARBALL)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  SUBTREE   = SuiteSparse/SuiteSparse_config
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE  = ../LOCK.unpack.suitesparse_config-4.4.3.tar.gz
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES   = 24
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD  = echo
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  SKIP_IF_PRESENT = $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_TARBALL)
 	@$(call UNPACK)
-
-# Try to download tar ball if not present
-$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.3.1.tar.gz
-$(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.3.1.tar.gz
-$(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
-$(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
-$(SUITESPARSE_CONFIG_TARBALL):
-	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-UMFPACK_TARBALL = ../UMFPACK-5.7.0.tar.gz
-
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-SRC_UMFPACK = Include/umfpack.h \
-              Source/umf_triplet.c Source/umf_config.h Source/umf_version.h \
-	      Source/umf_internal.h Source/umf_triplet.h \
-	      $(addprefix Source/,  $(addsuffix .c,$(UMFCH))) \
-	      $(addprefix Source/,  $(addsuffix .h,$(UMFCH))) \
-	      $(addprefix Source/,  $(addsuffix .c,$(UMFINT))) \
-	      $(addprefix Source/,  $(addsuffix .h,$(UMFINT))) \
-	      $(addprefix Source/,  $(addsuffix .c,$(USER))) \
-	      $(addprefix Include/, $(addsuffix .h,$(USER))) \
-	      $(addprefix Source/,  $(addsuffix .c,$(GENERIC))) \
-	      $(addprefix Include/, $(addsuffix .h,$(GENERIC)))
+SRC_UMFPACK = ../SuiteSparse/UMFPACK/Include/umfpack.h \
+              ../SuiteSparse/UMFPACK/Source/umf_triplet.c \
+              ../SuiteSparse/UMFPACK/Source/umf_config.h \
+              ../SuiteSparse/UMFPACK/Source/umf_version.h \
+	      ../SuiteSparse/UMFPACK/Source/umf_internal.h \
+              ../SuiteSparse/UMFPACK/Source/umf_triplet.h \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .c,$(UMFCH))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .h,$(UMFCH))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .c,$(UMFINT))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .h,$(UMFINT))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .c,$(USER))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Include/, $(addsuffix .h,$(USER))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Source/,  $(addsuffix .c,$(GENERIC))) \
+	      $(addprefix ../SuiteSparse/UMFPACK/Include/, $(addsuffix .h,$(GENERIC)))
 
 # Choose the last file that is extracted from the UMFPACK tarball. It's
 # existence indicates that the UMFPACK tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/README.txt
+LAST_FILE_FROM_UMFPACK_TARBALL = ../SuiteSparse/UMFPACK/Demo/HB/west0067.rua
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL) $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.7.0 sources"
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.7.0.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.7.1 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  SUBTREE  = SuiteSparse/UMFPACK
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.7.1.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
 # Fortunately, sed on NEC's gateway is a sed that supports in place editing.
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.7 sources for NEC..."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" ../SuiteSparse/UMFPACK/Source/*.c
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.7.1 sources for NEC..."
 else
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = cat ../UMFPACK_underscore.treatment.patch | patch -p0
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK sources to enable flexibel treatment of trailing underscores."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
 endif
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  SKIP_IF_PRESENT = $(LAST_FILE_FROM_UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
+$(LAST_FILE_FROM_UMFPACK_TARBALL): | $(SUITESPARSE_TARBALL)
 	@$(call UNPACK)
-
-# Try to download tar ball if not present
-$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.7.0.tar.gz
-$(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.7.0.tar.gz
-$(UMFPACK_TARBALL):  WAITTIME = 15
-$(UMFPACK_TARBALL):  RETRIES  = 24
-$(UMFPACK_TARBALL):
-	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
 # Automatically download tarballs when required.
 #-------------------------------------------------------------------------------
-getlib:   $(AMD_TARBALL) $(SUITESPARSE_CONFIG_TARBALL) $(UMFPACK_TARBALL)
+getlib:   $(SUITESPARSE_TARBALL)
 getlibs:  getlib
 
 
@@ -626,15 +618,34 @@ clean:
 	$(foreach dir, $(OBJDIR), $(remove_directory))
 
 .PHONY:	purge
-purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
+purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/SuiteSparse_config.o $(OBJDIR)/libumfpack.a
 purge:
         # Delete every file separately to prevent errors of kind: 
         # execvp: rm: Arg list too long
 	-$(foreach file, $(FILES), $(remove_file))
 	$(foreach dir, $(OBJDIR), $(remove_directory))
-	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
-	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \
-                ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
-                ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_GPU.mk \
-                ../SuiteSparse_config/SuiteSparse_config_Mac.mk ../SuiteSparse_config/xerbla
-	-rmdir ../SuiteSparse_config
+	-rm -rf ../SuiteSparse/UMFPACK/Demo \
+                ../SuiteSparse/UMFPACK/Doc \
+                ../SuiteSparse/UMFPACK/Include \
+                ../SuiteSparse/UMFPACK/Lib \
+                ../SuiteSparse/UMFPACK/MATLAB \
+                ../SuiteSparse/UMFPACK/Makefile \
+                ../SuiteSparse/UMFPACK/README.txt \
+                ../SuiteSparse/UMFPACK/Source \
+                ../SuiteSparse/UMFPACK/Tcov
+	-rm -rf ../SuiteSparse/SuiteSparse_config/Makefile \
+                ../SuiteSparse/SuiteSparse_config/README.txt \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.c \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.h \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_debug.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_gcc.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_icc.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_icc10.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_Mac.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_linux.mk \
+                ../SuiteSparse/SuiteSparse_config/xerbla
+	-rmdir ../SuiteSparse/SuiteSparse_config
+	-rmdir ../SuiteSparse/UMFPACK
+	-rmdir ../SuiteSparse

@@ -15,7 +15,7 @@ default: $(OBJDIR)/libamd.a
 #FEAT2# include ../SuiteSparse_config/SuiteSparse_config.mk
 
 #FEAT2# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../SuiteSparse_config
-C = LC_ALL=C $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../SuiteSparse_config
+C = LC_ALL=C $(CC) $(CFLAGS) $(CONFIG) -I../SuiteSparse/AMD/Include -I../SuiteSparse/SuiteSparse_config
 
 #-------------------------------------------------------------------------------
 # source files
@@ -25,11 +25,11 @@ AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
 	amd_order amd_control amd_info amd_valid amd_preprocess
 
 #FEAT2# SUITESPARSE_CONFIG = ../../SuiteSparse_config/SuiteSparse_config.h
-SUITESPARSE_CONFIG = ../SuiteSparse_config/SuiteSparse_config.h \
-                     ../SuiteSparse_config/SuiteSparse_config.c
+SUITESPARSE_CONFIG = ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.h \
+                     ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.c
 
 #FEAT2# INC = ../Include/amd.h ../Include/amd_internal.h $(SUITESPARSE_CONFIG)
-INC = Include/amd.h Include/amd_internal.h $(SUITESPARSE_CONFIG)
+INC = ../SuiteSparse/AMD/Include/amd.h ../SuiteSparse/AMD/Include/amd_internal.h $(SUITESPARSE_CONFIG)
 
 #-------------------------------------------------------------------------------
 # object files for each version
@@ -46,15 +46,15 @@ AMDL = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_l_,$(AMD)))
 #-------------------------------------------------------------------------------
 
 #FEAT2# amd_global.o: ../Source/amd_global.c $(INC)
-$(OBJDIR)/amd_global.o: Source/amd_global.c $(INC)
+$(OBJDIR)/amd_global.o: ../SuiteSparse/AMD/Source/amd_global.c $(INC)
 	$(C) -c $< -o $@
 
 #FEAT2# amd_i_%.o: ../Source/amd_%.c $(INC)
-$(OBJDIR)/amd_i_%.o: Source/amd_%.c $(INC)
+$(OBJDIR)/amd_i_%.o: ../SuiteSparse/AMD/Source/amd_%.c $(INC)
 	$(C) -DDINT -c $< -o $@
 
 #FEAT2# amd_l_%.o: ../Source/amd_%.c $(INC)
-$(OBJDIR)/amd_l_%.o: Source/amd_%.c $(INC)
+$(OBJDIR)/amd_l_%.o: ../SuiteSparse/AMD/Source/amd_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
 #-------------------------------------------------------------------------------
@@ -78,13 +78,13 @@ AMDF77 = $(OBJDIR)/amd.o $(OBJDIR)/amdbar.o
 
 #FEAT2# amd.o: ../Source/amd.f
 #FEAT2# 	$(F77) $(F77FLAGS) -c ../Source/amd.f -o amd.o
-$(OBJDIR)/amd.o: Source/amd.f
-	$(F77) $(F77FLAGS) -c Source/amd.f -o $(OBJDIR)/amd.o
+$(OBJDIR)/amd.o: ../SuiteSparse/AMD/Source/amd.f
+	$(F77) $(F77FLAGS) -c ../SuiteSparse/AMD/Source/amd.f -o $(OBJDIR)/amd.o
 
 #FEAT2# amdbar.o: ../Source/amdbar.f
 #FEAT2# 	$(F77) $(F77FLAGS) -c ../Source/amdbar.f -o amdbar.o
-$(OBJDIR)/amdbar.o: Source/amdbar.f
-	$(F77) $(F77FLAGS) -c Source/amdbar.f -o $(OBJDIR)/amdbar.o
+$(OBJDIR)/amdbar.o: ../SuiteSparse/AMD/Source/amdbar.f
+	$(F77) $(F77FLAGS) -c ../SuiteSparse/AMD/Source/amdbar.f -o $(OBJDIR)/amdbar.o
 
 #FEAT2# ../Lib/libamdf77.a: $(AMDF77)
 #FEAT2# 	$(AR) ../Lib/libamdf77.a $^
@@ -180,54 +180,61 @@ include ../unpack.mk
 
 
 #-------------------------------------------------------------------------------
-# Automatically extract AMD tarball when required.
+# Automatically download SuiteSparse tarball when required.
 #-------------------------------------------------------------------------------
 
-AMD_TARBALL = ../AMD-2.4.0.tar.gz
+SUITESPARSE_TARBALL = ../SuiteSparse-4.4.3.tar.gz
+
+# Try to download tar ball if not present
+$(SUITESPARSE_TARBALL):  URL      = http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.3.tar.gz
+$(SUITESPARSE_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(SUITESPARSE_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse-4.4.3.tar.gz
+$(SUITESPARSE_TARBALL):  WAITTIME = 15
+$(SUITESPARSE_TARBALL):  RETRIES  = 24
+$(SUITESPARSE_TARBALL):
+	@$(call DOWNLOAD)
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AMD tarball when required.
+#-------------------------------------------------------------------------------
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-SRC_AMD = Include/amd_internal.h Include/amd.h \
-	  Source/amd.f Source/amdbar.f Source/amd_global.c \
-	  $(addprefix Source/, $(addsuffix .c,$(AMD)))
+SRC_AMD = ../SuiteSparse/AMD/Include/amd_internal.h \
+          ../SuiteSparse/AMD/Include/amd.h \
+	  ../SuiteSparse/AMD/Source/amd.f \
+          ../SuiteSparse/AMD/Source/amdbar.f \
+          ../SuiteSparse/AMD/Source/amd_global.c \
+	  $(addprefix ../SuiteSparse/AMD/Source/, $(addsuffix .c,$(AMD)))
 
 # Choose the last file that is extracted from the AMD tarball. It's
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/MATLAB/amd_mex.c
+LAST_FILE_FROM_AMD_TARBALL = ../SuiteSparse/AMD/Demo/Makefile
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.4.0 sources"
-$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.4.0.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.4.1 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(LAST_FILE_FROM_AMD_TARBALL):  SUBTREE  = SuiteSparse/AMD
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.4.1.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_AMD_TARBALL):  SKIP_IF_PRESENT = $(LAST_FILE_FROM_AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
+$(LAST_FILE_FROM_AMD_TARBALL): | $(SUITESPARSE_TARBALL)
 	@$(call UNPACK)
-
-# Try to download tar ball if not present
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.4.0.tar.gz
-$(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.4.0.tar.gz
-$(AMD_TARBALL):  WAITTIME = 15
-$(AMD_TARBALL):  RETRIES  = 24
-$(AMD_TARBALL):
-	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
-
-SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.3.1.tar.gz
 
 # List of required source files from SuiteSparse_config package. Purpose: let
 # them share a single common prerequisite that in turn is created by unpacking
@@ -239,35 +246,26 @@ SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
 # existence indicates that the SuiteSparse_config tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.h
+LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse/SuiteSparse_config/xerbla/xerbla.h
 # Avoid (in this case harmless) warning of kind:
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME     = "SuiteSparse_config 4.3.1 sources"
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.3.1.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME     = "SuiteSparse_config 4.4.3 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_TARBALL)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  SUBTREE  = SuiteSparse/SuiteSparse_config
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.4.3.tar.gz
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  SKIP_IF_PRESENT = $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
-$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
-	@$(call UNPACK)
-
-# Try to download tar ball if not present
-$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.3.1.tar.gz
-$(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.3.1.tar.gz
-$(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
-$(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
-$(SUITESPARSE_CONFIG_TARBALL):
-	@$(call DOWNLOAD)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_TARBALL)
 
 
 #-------------------------------------------------------------------------------
 # Automatically download tarballs when required.
 #-------------------------------------------------------------------------------
-getlib:   $(AMD_TARBALL) $(SUITESPARSE_CONFIG_TARBALL)
+getlib:   $(SUITESPARSE_TARBALL)
 getlibs:  getlib
 
 
@@ -346,9 +344,27 @@ purge:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJDIR)/SuiteSparse_config.o $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	$(foreach dir, $(OBJDIR), $(remove_directory))
-	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
-	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \
-                ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
-                ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_Mac.mk \
-                ../SuiteSparse_config/SuiteSparse_config_GPU.mk ../SuiteSparse_config/xerbla
-	-rmdir ../SuiteSparse_config
+	-rm -rf ../SuiteSparse/AMD/Demo \
+                ../SuiteSparse/AMD/Doc \
+                ../SuiteSparse/AMD/Include \
+                ../SuiteSparse/AMD/Lib \
+                ../SuiteSparse/AMD/MATLAB \
+                ../SuiteSparse/AMD/Makefile \
+                ../SuiteSparse/AMD/README.txt \
+                ../SuiteSparse/AMD/Source
+	-rm -rf ../SuiteSparse/SuiteSparse_config/Makefile \
+                ../SuiteSparse/SuiteSparse_config/README.txt \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.c \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.h \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_debug.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_gcc.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_icc.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_GPU_icc10.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_Mac.mk \
+                ../SuiteSparse/SuiteSparse_config/SuiteSparse_config_linux.mk \
+                ../SuiteSparse/SuiteSparse_config/xerbla
+	-rmdir ../SuiteSparse/SuiteSparse_config
+	-rmdir ../SuiteSparse/AMD
+	-rmdir ../SuiteSparse
