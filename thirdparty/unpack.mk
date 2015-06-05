@@ -40,18 +40,20 @@ UNPACK=if test -f $(LOCKFILE); then \
 		exit 1; \
 	    fi; \
 	else \
-	    trap "rm -f $(LOCKFILE)" 2 3 9; \
-	    touch $(LOCKFILE); \
-	    echo "\# Extracting $(NAME)..."; \
-	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
-	    if test "echoX" != '$(PATCHCMD)X'; then \
-		test -n '$(PATCHTEXT1)' && echo $(PATCHTEXT1); \
-		test -n '$(PATCHTEXT2)' && echo $(PATCHTEXT2); \
-		test -n '$(PATCHTEXT3)' && echo $(PATCHTEXT3); \
-		echo "$(PATCHCMD)"; \
-		$(PATCHCMD); \
-		echo "\# Sources patched."; \
+	    if ! test -f $(SKIP_IF_PRESENT); then \
+		trap "rm -f $(LOCKFILE)" 2 3 9; \
+		touch $(LOCKFILE); \
+		echo "\# Extracting $(NAME)..."; \
+		gzip -dc $(TARBALL) | ( cd ..; tar -xvf - $(SUBTREE) ); \
+		if test "echoX" != '$(PATCHCMD)X'; then \
+		    test -n '$(PATCHTEXT1)' && echo $(PATCHTEXT1); \
+		    test -n '$(PATCHTEXT2)' && echo $(PATCHTEXT2); \
+		    test -n '$(PATCHTEXT3)' && echo $(PATCHTEXT3); \
+		    echo "$(PATCHCMD)"; \
+		    $(PATCHCMD); \
+		    echo "\# Sources patched."; \
+		fi; \
+		rm -f $(LOCKFILE); \
 	    fi; \
-	    rm -f $(LOCKFILE); \
 	fi; \
 	trap - 2 3 9;
