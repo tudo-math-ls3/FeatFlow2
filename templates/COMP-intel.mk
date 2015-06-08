@@ -222,6 +222,14 @@ ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
 endif
 
+# The Intel compiler 10.1 and above has intrinsic support for
+# some complex-valued function
+ifeq ($(call intelminversion,4,5),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_DACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DATANH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTAN   $(CFLAGSF90)
+endif
 
 
 ##############################################################################

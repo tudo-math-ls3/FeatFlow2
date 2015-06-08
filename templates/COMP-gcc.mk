@@ -247,6 +247,23 @@ ifeq ($(call gfortranminversion,4,1),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
 
+# The gfortran compiler 4.5 and above has intrinsic support for
+# complex-valued function
+ifeq ($(call gfortranminversion,4,5),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_DACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DATANH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZACOS  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZASIN  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZATAN  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZATANH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZCOSH  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZSINH  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTANH  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTAN   $(CFLAGSF90)
+endif
 
 
 ##############################################################################

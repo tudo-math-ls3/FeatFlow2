@@ -781,7 +781,7 @@ module fparser
   real(DP), dimension(FPAR_MAXCONSTS), save :: DconstantValue = 0.0_DP
 
   ! Global constant values for parser (complex-valued)
-  complex(DP), dimension(FPAR_MAXCONSTS), save :: ZconstantValue = cmplx(0.0_DP,0.0_DP,DP)
+  complex(DP), dimension(FPAR_MAXCONSTS), save :: ZconstantValue = 0.0_DP
 
   ! Global expression name for parser
   character(LEN=FPAR_EXPRLEN), dimension(FPAR_MAXCONSTS), save :: CexpressionName = ''

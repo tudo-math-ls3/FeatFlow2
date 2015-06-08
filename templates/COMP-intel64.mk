@@ -194,6 +194,15 @@ CFLAGSF90     := $(CFLAGSF90) -matmul
 endif
 endif
 
+# The Intel compiler 10.1 and above has intrinsic support for
+# some complex-valued function
+ifeq ($(call intelminversion,4,5),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_DACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DATANH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTAN   $(CFLAGSF90)
+endif
+
 
 
 ##############################################################################
