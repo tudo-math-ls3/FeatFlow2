@@ -157,6 +157,29 @@ ifeq ($(call pgiminversion,10,0),yes)
 CFLAGSF90     := -DHAS_INTRINSIC_IEEE_ARITHMETIC $(CFLAGSF90)
 endif
 
+# The PGI compiler 15.1 and above supports inverse hyperbolic
+# functions for real-valued data
+ifeq ($(call pgiminversion,15,1),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_DACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_DATANH $(CFLAGSF90)
+endif
+
+# The PGI compiler 15.4 and above supports inverse hyperbolic
+# functions for complex-valued data
+ifeq ($(call pgiminversion,15,4),yes)
+CFLAGSF90     := -DHAS_INTRINSIC_ZACOS  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZACOSH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZASIN  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZASINH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZATAN  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZATANH $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZCOSH  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZSINH  $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTAN   $(CFLAGSF90)
+CFLAGSF90     := -DHAS_INTRINSIC_ZTANH  $(CFLAGSF90)
+endif
+
 # Enable workarounds for PGI 6.1 compiler
 ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_6_1 $(CFLAGSF90)

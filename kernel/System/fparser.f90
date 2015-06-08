@@ -384,6 +384,89 @@ module fparser
   use storage
   use stackInt
 
+  ! Most compilers do not fully support complex numbers. Therefore,
+  ! software implementations of the functions a[cos,sin,tan][h] are
+  ! provided at the bottom of this module. Depending on the compiler
+  ! either intrinsic of explicitly provided functions are called.
+
+#ifdef HAS_INTRINSIC_DACOSH
+#define dacosh acosh
+#else
+#define dacosh dacosh_
+#endif
+
+#ifdef HAS_INTRINSIC_DASINH
+#define dasinh asinh
+#else
+#define dasinh dasinh_
+#endif
+
+#ifdef HAS_INTRINSIC_DATANH
+#define datanh atanh
+#else
+#define datanh datanh_
+#endif
+
+#ifdef HAS_INTRINSIC_ZACOS
+#define zacos  acos
+#else
+#define zacos  zacos_
+#endif
+
+#ifdef HAS_INTRINSIC_ZASIN
+#define zasin  asin
+#else
+#define zasin  zasin_
+#endif
+  
+#ifdef HAS_INTRINSIC_ZATAN
+#define zatan  atan
+#else
+#define zatan  zatan_
+#endif
+
+#ifdef HAS_INTRINSIC_ZACOSH
+#define zacosh  acosh
+#else
+#define zacosh  zacosh_
+#endif
+
+#ifdef HAS_INTRINSIC_ZASINH
+#define zasinh  asinh
+#else
+#define zasinh  zasinh_
+#endif
+  
+#ifdef HAS_INTRINSIC_ZATANH
+#define zatanh  atanh
+#else
+#define zatanh  zatanh_
+#endif
+  
+#ifdef HAS_INTRINSIC_ZCOSH
+#define zcosh  cosh
+#else
+#define zcosh  zcosh_
+#endif
+
+#ifdef HAS_INTRINSIC_ZSINH
+#define zsinh  sinh
+#else
+#define zsinh  zsinh_
+#endif
+  
+#ifdef HAS_INTRINSIC_ZTANH
+#define ztanh  tanh
+#else
+#define ztanh  ztanh_
+#endif
+
+#ifdef HAS_INTRINSIC_ZTAN
+#define ztan  tan
+#else
+#define ztan  ztan_
+#endif
+  
   implicit none
 
   private
@@ -7446,7 +7529,7 @@ contains
 
 !<function>
 
-  elemental function dacosh(dx)
+  elemental function dacosh_(dx)
 
 !<description>
     ! Real-valued inverse hyperbolic cosine functions (available in Fortran 2008)
@@ -7457,19 +7540,19 @@ contains
 !</input>
 
 !<result>
-    real(DP) :: dacosh
+    real(DP) :: dacosh_
 !</result>
 !</function>
 
-    dacosh = log(dx+sqrt(dx**2-1.0_DP))
+    dacosh_ = log(dx+sqrt(dx**2-1.0_DP))
 
-  end function dacosh
+  end function dacosh_
 
   ! ***************************************************************************
 
   !<function>
   
-  elemental function dasinh(dx)
+  elemental function dasinh_(dx)
     
 !<description>
     ! Real-valued inverse hyperbolic sine functions (available in Fortran 2008)
@@ -7480,19 +7563,19 @@ contains
 !</input>
 
 !<result>
-    real(DP) :: dasinh
+    real(DP) :: dasinh_
 !</result>
 !</function>
 
-    dasinh = log(dx+sqrt(dx**2+1.0_DP))
+    dasinh_ = log(dx+sqrt(dx**2+1.0_DP))
 
-  end function dasinh
+  end function dasinh_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function datanh(dx)
+  elemental function datanh_(dx)
 
 !<description>
     ! Real-valued inverse hyperbolic tangens functions (available in Fortran 2008)
@@ -7503,19 +7586,19 @@ contains
 !</input>
 
 !<result>
-    real(DP) :: datanh
+    real(DP) :: datanh_
 !</result>
 !</function>
 
-    datanh = 0.5_DP*log((1+dx)/(1-dx))
+    datanh_ = 0.5_DP*log((1+dx)/(1-dx))
 
-  end function datanh
+  end function datanh_
   
   ! ***************************************************************************
   
 !<function>
 
-  elemental function zacos(zx)
+  elemental function zacos_(zx)
 
 !<description>
     ! Complex-valued inverse cosine functions (available in Fortran 2008)
@@ -7526,19 +7609,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zacos
+    complex(DP) :: zacos_
 !</result>
 !</function>
 
-    zacos = -cmplx(0.0_DP,1.0_DP,DP)*log(zx+cmplx(0.0_DP,1.0_DP,DP)*sqrt(1.0-zx**2))
+    zacos_ = -cmplx(0.0_DP,1.0_DP,DP)*log(zx+cmplx(0.0_DP,1.0_DP,DP)*sqrt(1.0-zx**2))
 
-  end function zacos
+  end function zacos_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zasin(zx)
+  elemental function zasin_(zx)
 
 !<description>
     ! Complex-valued inverse sine functions (available in Fortran 2008)
@@ -7549,19 +7632,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zasin
+    complex(DP) :: zasin_
 !</result>
 !</function>
 
-    zasin = -cmplx(0.0_DP,1.0_DP,DP)*log(cmplx(0.0_DP,1.0_DP,DP)*zx+sqrt(1.0-zx**2))
+    zasin_ = -cmplx(0.0_DP,1.0_DP,DP)*log(cmplx(0.0_DP,1.0_DP,DP)*zx+sqrt(1.0-zx**2))
 
-  end function zasin
+  end function zasin_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zatan(zx)
+  elemental function zatan_(zx)
 
 !<description>
     ! Complex-valued inverse tangens functions (available in Fortran 2008)
@@ -7572,20 +7655,20 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zatan
+    complex(DP) :: zatan_
 !</result>
 !</function>
 
-    zatan = 0.5_DP*cmplx(0.0_DP,1.0_DP,DP)*log((cmplx(0.0_DP,1.0_DP,DP)+zx)/&
+    zatan_ = 0.5_DP*cmplx(0.0_DP,1.0_DP,DP)*log((cmplx(0.0_DP,1.0_DP,DP)+zx)/&
                                                (cmplx(0.0_DP,1.0_DP,DP)-zx))
 
-  end function zatan
+  end function zatan_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zacosh(zx)
+  elemental function zacosh_(zx)
 
 !<description>
     ! Complex-valued inverse hyperbolic cosine functions (available in Fortran 2008)
@@ -7596,19 +7679,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zacosh
+    complex(DP) :: zacosh_
 !</result>
 !</function>
 
-    zacosh = log(zx+sqrt(zx**2-1.0_DP))
+    zacosh_ = log(zx+sqrt(zx**2-1.0_DP))
 
-  end function zacosh
+  end function zacosh_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zasinh(zx)
+  elemental function zasinh_(zx)
 
 !<description>
     ! Complex-valued inverse hyperbolic sine functions (available in Fortran 2008)
@@ -7619,19 +7702,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zasinh
+    complex(DP) :: zasinh_
 !</result>
 !</function>
 
-    zasinh = log(zx+sqrt(zx**2+1.0_DP))
+    zasinh_ = log(zx+sqrt(zx**2+1.0_DP))
 
-  end function zasinh
+  end function zasinh_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zatanh(zx)
+  elemental function zatanh_(zx)
 
 !<description>
     ! Complex-valued inverse hyperbolic tangens functions (available in Fortran 2008)
@@ -7642,19 +7725,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zatanh
+    complex(DP) :: zatanh_
 !</result>
 !</function>
 
-    zatanh = 0.5_DP*log((1+zx)/(1-zx))
+    zatanh_ = 0.5_DP*log((1+zx)/(1-zx))
 
-  end function zatanh
+  end function zatanh_
   
   ! ***************************************************************************
   
 !<function>
 
-  elemental function zcosh(zx)
+  elemental function zcosh_(zx)
 
 !<description>
     ! Complex-valued hyperbolic sine functions (available in Fortran 2008)
@@ -7665,19 +7748,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zcosh
+    complex(DP) :: zcosh_
 !</result>
 !</function>
 
-    zcosh = cos(cmplx(0.0_DP,1.0_DP,DP)*zx) 
+    zcosh_ = cos(cmplx(0.0_DP,1.0_DP,DP)*zx) 
 
-  end function zcosh
+  end function zcosh_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function zsinh(zx)
+  elemental function zsinh_(zx)
 
 !<description>
     ! Complex-valued hyperbolic sine functions (available in Fortran 2008)
@@ -7688,19 +7771,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: zsinh
+    complex(DP) :: zsinh_
 !</result>
 !</function>
 
-    zsinh = -cmplx(0.0_DP,1.0_DP,DP)*sin(cmplx(0.0_DP,1.0_DP,DP)*zx) 
+    zsinh_ = -cmplx(0.0_DP,1.0_DP,DP)*sin(cmplx(0.0_DP,1.0_DP,DP)*zx) 
 
-  end function zsinh
+  end function zsinh_
 
   ! ***************************************************************************
 
 !<function>
 
-  elemental function ztan(zx)
+  elemental function ztan_(zx)
 
 !<description>
     ! Complex-valued tangens functions (available in Fortran 2008)
@@ -7711,19 +7794,19 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: ztan
+    complex(DP) :: ztan_
 !</result>
 !</function>
 
-    ztan = sin(zx)/cos(zx)
+    ztan_ = sin(zx)/cos(zx)
 
-  end function ztan
+  end function ztan_
   
   ! ***************************************************************************
 
 !<function>
 
-  elemental function ztanh(zx)
+  elemental function ztanh_(zx)
 
 !<description>
     ! Complex-valued hyperbolic tangens functions (available in Fortran 2008)
@@ -7734,12 +7817,12 @@ contains
 !</input>
 
 !<result>
-    complex(DP) :: ztanh
+    complex(DP) :: ztanh_
 !</result>
 !</function>
 
-    ztanh = zsinh(zx)/zcosh(zx)
+    ztanh_ = zsinh(zx)/zcosh(zx)
 
-  end function ztanh
+  end function ztanh_
   
 end module fparser
