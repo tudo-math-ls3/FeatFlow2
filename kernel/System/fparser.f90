@@ -7201,7 +7201,7 @@ contains
 
       case (cTan)
         do iblock = 1, iblockSize
-           Zstack(iblock,istackPtr) = tan(Zstack(iblock,istackPtr))
+           Zstack(iblock,istackPtr) = ztan(Zstack(iblock,istackPtr))
         end do
 
       case (cTanh)
