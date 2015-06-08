@@ -16,69 +16,61 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) hydro_calcPrecondThetaScheme
+!# 1.) hydro_calcPreconditioner
 !#     -> Calculates the nonlinear preconditioner
-!#        used in the two-level theta-scheme
 !#
-!# 2.) hydro_calcJacobianThetaScheme
+!# 2.) hydro_calcJacobian
 !#     -> Calculates the Jacobian matrix
-!#        used in the two-level theta-scheme
 !#
-!# 3.) hydro_calcResidualThetaScheme
+!# 3.) hydro_calcResidual
 !#     -> Calculates the nonlinear residual vector
-!#        used in the two-level theta-scheme
 !#
-!# 4.) hydro_calcRhsThetaScheme
+!# 4.) hydro_calcRhs
 !#     -> Calculates the explicit right-hand side vector
-!#        used in the two-level theta-scheme
 !#
-!# 5.) hydro_calcRhsRungeKuttaScheme
-!#     -> Calculates the right-hand side vector
-!#        used in the explicit Runge-Kutta scheme
-!#
-!# 6.) hydro_calcLinearisedFCT
+!# 5.) hydro_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
-!# 7.) hydro_calcFluxFCT
+!# 6.) hydro_calcFluxFCT
 !#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
 !#
-!# 8.) hydro_calcCorrectionFCT
+!# 7.) hydro_calcCorrectionFCT
 !#     -> Calculates the contribution of the antidiffusive fluxes
 !#        limited by the FCT algorithm and applies them to the residual
 !#
-!# 9.) hydro_limitEdgewiseVelocity
+!# 8.) hydro_limitEdgewiseVelocity
 !#     -> Performs synchronised flux correction for the velocity
 !#
-!# 10.) hydro_limitEdgewiseMomentum
-!#      -> Performs synchronised flux correction for the momentum
+!# 9.) hydro_limitEdgewiseMomentum
+!#     -> Performs synchronised flux correction for the momentum
 !#
-!# 11.) hydro_calcGeometricSourceterm
+!# 10.) hydro_calcGeometricSourceterm
 !#      -> Calculates the geometric source term for axi-symmetric,
 !#         cylindrical or sperical symmetric coordinate systems.
 !#
-!# 12.) hydro_calcDivergenceVector
+!# 11.) hydro_calcDivergenceVector
 !#      -> Calculates the divergence vector.
 !#
-!# 13.) hydro_calcTimeDerivative
+!# 12.) hydro_calcTimeDerivative
 !#      -> Calcuates the approximate time derivative
 !#
-!# 14.) hydro_coeffVectorFE
+!# 13.) hydro_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 15.) hydro_coeffVectorAnalytic
+!# 14.) hydro_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 16.) hydro_parseBoundaryCondition
+!# 15.) hydro_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 17.) hydro_setBoundaryCondition
+!# 16.) hydro_setBoundaryCondition
 !#      -> Imposes boundary conditions for nonlinear solver
 !#         by filtering the system matrix and the solution/residual
 !#         vector explicitly (i.e. strong boundary conditions)
 !#
-!# 18.) hydro_calcCFLnumber
+!# 17.) hydro_calcCFLnumber
 !#      -> Calculates the CFL-number
 !#
 !# 19.) hydro_setBdrCondPenalty
@@ -95,7 +87,7 @@
 !#        boundary values. If you want to implement a special routine
 !#        for assembling the preconditioner, than you have to call it
 !#        from transp_nlsolverCallback instead if the standard routine
-!#        transp_calcResidualThetaScheme. Note that changing the
+!#        transp_calcResidual. Note that changing the
 !#        interface of this callback routine would require to update
 !#        ALL models. Hence, the interface should only be changed if
 !#        really necessary.
@@ -109,7 +101,7 @@ module hydro_callback
 #include "hydro.h"
 #include "hydro_callback.h"
 
-!$use omp_lib
+!$ use omp_lib
   use afcstabbase
   use afcstabsystem
   use afcstabsystemfct
@@ -138,13 +130,12 @@ module hydro_callback
   use paramlist
   use problem
   use scalarpde
-  use solveraux
+  use solverbase
   use spatialdiscretisation
   use statistics
   use storage
-  use timestepaux
+  use timestepbase
   use triangulation
-  use triasearch
 
   ! Modules from hydrodynamic model
   use hydro_basic
@@ -156,11 +147,10 @@ module hydro_callback
 
   private
   public :: hydro_nlsolverCallback
-  public :: hydro_calcPrecondThetaScheme
-  public :: hydro_calcJacobianThetaScheme
-  public :: hydro_calcResidualThetaScheme
-  public :: hydro_calcRhsThetaScheme
-  public :: hydro_calcRhsRungeKuttaScheme
+  public :: hydro_calcPreconditioner
+  public :: hydro_calcJacobian
+  public :: hydro_calcResidual
+  public :: hydro_calcRhs
   public :: hydro_setBoundaryCondition
   public :: hydro_calcLinearisedFCT
   public :: hydro_calcFluxFCT
@@ -191,7 +181,7 @@ module hydro_callback
   integer, public            :: HYDRO_GEOMSOURCE_NEQMIN_OMP = 10000
 #endif
 #endif
-
+  
 !</constantblock>
 
 !</constants>
@@ -258,7 +248,6 @@ contains
     ! local variables
     character(len=SYS_STRLEN) :: ssectionName
 
-
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Copy solution vector to coprocessor device; in the first
     ! nonlinear step, the solution vector from the previous time step
@@ -278,35 +267,24 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
-      call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, ssectionName, rcollection)
     end if
 
-
-    ! Do we have to calculate the constant right-hand side?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
-      ! Compute the right-hand side
-      call hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-          rcollection)
-    end if
-
-
+    
     ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
-        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+        call hydro_calcRhs(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection,&
             rsource)
       end if
 
       ! Compute the residual
-      call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcResidual(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           ssectionName, rcollection)
     end if
@@ -331,7 +309,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcPreconditioner(rproblemLevel, rtimestep,&
       rsolver, rsolution, ssectionName, rcollection)
 
 !<description>
@@ -382,11 +360,12 @@ contains
         'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'systemmatrix', systemMatrix)
-
+    
     !---------------------------------------------------------------------------
-    ! Check if fully explicit time-stepping is used
+    ! Check if fully explicit time-stepping is used. Then the system
+    ! matrix equals the (lumped/consistent) mass matrix.
     !---------------------------------------------------------------------------
-    if (rtimestep%theta .eq. 0.0_DP) then
+    if (rtimestep%dscaleImplicit .eq. 0.0_DP) then
 
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'isystemformat', isystemFormat)
@@ -402,7 +381,7 @@ contains
 
         select case(imasstype)
         case (MASS_LUMPED)
-          call lsyssc_spreadMatrix(&
+          call lsyssc_spreadDiagMatrix(&
               rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rproblemLevel%RmatrixScalar(systemMatrix))
         case (MASS_CONSISTENT)
@@ -411,7 +390,7 @@ contains
               rproblemLevel%RmatrixScalar(systemMatrix))
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -438,13 +417,13 @@ contains
 
         case default
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
       case default
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
         call sys_halt()
       end select
 
@@ -502,7 +481,7 @@ contains
     ! Compute scaling parameter
     select case (imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      dscale = -rtimestep%theta*rtimestep%dStep
+      dscale = -rtimestep%dscaleImplicit*rtimestep%dStep
     case default
       dscale = -1.0_DP
     end select
@@ -550,7 +529,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -575,7 +554,7 @@ contains
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
               rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
-
+          
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -624,7 +603,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -661,7 +640,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -707,10 +686,10 @@ contains
               rsolution, hydro_calcMatGalerkin3d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiag3d_sim, rcollection=rcollection)
-
+      
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -747,7 +726,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -784,7 +763,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -821,7 +800,7 @@ contains
 
         case default
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
           call sys_halt()
         end select
 
@@ -834,7 +813,7 @@ contains
 
     case default
       call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -842,7 +821,7 @@ contains
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
-
+    
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
@@ -857,11 +836,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_L)-theta*dt*L $
+        !   $ A = blockdiag(M_L) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the lumped mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices add it to the lumped mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -876,11 +855,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_C)-theta*dt*L $
+        !   $ A = blockdiag(M_C) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the consistent mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices to add it to the consistent mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'consistentmassmatrix', consistentMassMatrix)
@@ -915,11 +894,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_L)-theta*dt*L $
+        !   $ A = blockdiag(M_L) - scaleImplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the lumped mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scale * dt * L" it suffices to add
+        ! it to the lumped mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -937,11 +916,11 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
-        !   $ A = blockdiag(M_C)-theta*dt*L $
+        !   $ A = blockdiag(M_C) - scaleExplicit * dt * L $
         !
-        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
-        ! and add it to the consistent mass matrix.
-        !-----------------------------------------------------------------------
+        ! Since we have assembled "-scaleImplicit * dt * L" it
+        ! suffices to add it to the consistent mass matrix.
+        ! -----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'consistentmassmatrix', consistentMassMatrix)
@@ -969,7 +948,7 @@ contains
 
     case default
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPreconditioner')
       call sys_halt()
     end select
 
@@ -990,13 +969,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcPrecondThetaScheme
+  end subroutine hydro_calcPreconditioner
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcJacobian(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, ssectionName, rcollection)
 
 !<description>
@@ -1034,19 +1013,19 @@ contains
     print *, "!!! Euler/Navier Stokes equations has yet not been implemented  !!!"
     stop
 
-  end subroutine hydro_calcJacobianThetaScheme
+  end subroutine hydro_calcJacobian
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcRhs(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = M*U^n + (1-\theta) * \Delta t * div F(U^n) + S(U^n) + b.c.`s  $$
+    !  $$ rhs = M*U^n + scaleExplicit * dt * div F(U^n) + S(U^n) + b.c.`s  $$
     !
     ! where the source term is optional.
 !</description>
@@ -1087,8 +1066,8 @@ contains
     real(DP) :: dscale
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: imasstype, iblock, inviscidAFC
-
-
+    
+    
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
@@ -1109,16 +1088,16 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Do we have an explicit part?
-      if (rtimestep%theta .ne. 1.0_DP) then
+      if (rtimestep%dscaleExplicit .ne. 0.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+        dscale = rtimestep%dscaleExplicit*rtimestep%dStep
 
         !-----------------------------------------------------------------------
         ! Compute the divergence operator for the right-hand side
         ! evaluated at the solution from the previous(!) iteration
         !
-        !   $$ rhs = (1-\theta) * \Delta t * [div F(U^n) + geomSource(U^n) $$
+        !   $$ rhs = scaleExplicit * dt * [div F(U^n) + geomSource(U^n) $$
         !-----------------------------------------------------------------------
 
         call hydro_calcDivergenceVector(rproblemLevel,&
@@ -1132,8 +1111,8 @@ contains
         call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
             rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
 
-        call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
-            rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+        !call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
+        !    rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
@@ -1157,22 +1136,22 @@ contains
         ! Perform preparation tasks for algebraic flux correction schemes
         ! of FCT-type which are based on a low-order predictor
         !-----------------------------------------------------------------------
-
+        
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
+        
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
           select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+            
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
                 AFCSTAB_NLINFCT_IMPLICIT)
 
             ! Compute the low-order predictor based on the right-hand side
             ! and assemble the explicit part of the raw-antidiffusive fluxes
-
+            
             ! Set pointer to predictor
             p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
@@ -1180,26 +1159,26 @@ contains
             call lsysbl_invertedDiagMatVec(&
                 rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
                 rrhs, 1.0_DP, p_rpredictor)
-
+            
             ! Set specifier
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
                 ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
                     AFCSTAB_HAS_PREDICTOR)
-
+            
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-                rsolutionPredictor=p_rpredictor)
+                rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+                1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+                ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
           end select
         end if
 
-      else ! theta = 1
+      else ! dscaleExplicit == 0
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
         !
-        !   $$ rhs = M*U^n $$
+        !   $$ rhs = M * U^n $$
         !-----------------------------------------------------------------------
 
         ! What type of mass matrix should be used?
@@ -1218,42 +1197,42 @@ contains
         ! Perform preparation tasks for algebraic flux correction schemes
         ! of FCT-type which are based on a low-order predictor
         !-----------------------------------------------------------------------
-
+        
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
+        
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
           select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+            
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
                 AFCSTAB_NLINFCT_IMPLICIT)
 
             ! Compute the low-order predictor based on the right-hand side
             ! and assemble the explicit part of the raw-antidiffusive fluxes
-
+            
             ! Set pointer to predictor
             p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
             ! Compute $\tilde u = (M_L)^{-1}*b^n = u^n$
             call lsysbl_copyVector(rsolution, p_rpredictor)
-
+            
             ! Set specifier
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
                 ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
                     AFCSTAB_HAS_PREDICTOR)
-
+            
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-                rsolutionPredictor=p_rpredictor)
+                rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+                1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+                ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
           end select
         end if
-
-      end if ! theta
+        
+      end if ! dscaleExplicit == 0
 
     case default
 
@@ -1280,25 +1259,25 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcRhsThetaScheme
+  end subroutine hydro_calcRhs
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcResidualThetaScheme(rproblemLevel,&
+  subroutine hydro_calcResidual(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
       ite, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
     !
-    ! $$ res^{(m)} = rhs-[M*U^{(m)}-\theta\Delta t div F(U^{(m)})-S^{(m)}-b.c.`s $$
+    ! $$ res^{(m)} = rhs - [M*U^{(m)} - scaleImplicit * dt * div F(U^{(m)})-S^{(m)}-b.c.`s $$
     !
-    ! for the standard two-level theta-scheme, whereby the  source
+    ! for any two-level time integration scheme, whereby the source
     ! term $S^{(m)}$ is optional. The constant right-hand side
     !
-    !  $$ rhs = [M*U^n + (1-\theta)\Delta t div F(U^n) + S^n + b.c.`s $$
+    !  $$ rhs = [M*U^n + scaleExplicit * dt * div F(U^n) + S^n + b.c.`s $$
     !
     ! must be provided via the precomputed vector rrhs.
 !</description>
@@ -1367,7 +1346,7 @@ contains
         ssectionName, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
-
+    
     !-------------------------------------------------------------------------
     ! Initialise the residual by the constant right-hand side
     !
@@ -1380,14 +1359,14 @@ contains
     case (MASS_LUMPED, MASS_CONSISTENT)
 
       ! Compute scaling parameter
-      dscale = rtimestep%theta*rtimestep%dStep
-
+      dscale = rtimestep%dscaleImplicit*rtimestep%dStep
+      
       !-----------------------------------------------------------------------
       ! Compute the transient term
       !
-      !   $$ res := res - M*U^{(m)} $$
+      !   $$ res := res - M * U^{(m)} $$
       !-----------------------------------------------------------------------
-
+      
       ! What type of mass matrix should be used?
       massMatrix = merge(lumpedMassMatrix,&
           consistentMassMatrix, imasstype .eq. MASS_LUMPED)
@@ -1397,14 +1376,14 @@ contains
         call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
-            rres%RvectorBlock(iblock), -1._DP, 1.0_DP)
+            rres%RvectorBlock(iblock), -1.0_DP, 1.0_DP)
       end do
-
+      
     case default
-
+      
       ! Set scaling parameter
       dscale = 1.0_DP
-
+      
     end select
 
     !---------------------------------------------------------------------------
@@ -1414,8 +1393,8 @@ contains
     !
     ! where
     !
-    !   $dscale = \theta * \Delta t$ for transient flows
-    !   $dscale = 1$                 for steady-state flows
+    !   $dscale = scaleImplicit * dt$ for transient flows
+    !   $dscale = 1$                  for steady-state flows
     !---------------------------------------------------------------------------
 
     ! Do we have an implicit part?
@@ -1424,7 +1403,7 @@ contains
       call hydro_calcDivergenceVector(rproblemLevel,&
           rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
           dscale, .false., rres, ssectionName, rcollection)
-
+      
       ! Build the geometric source term (if any)
       call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rres, rcollection)
@@ -1433,8 +1412,8 @@ contains
       call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rres, rcollection)
 
-      call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
-          rproblemLevel, rsolution, dscale, .false., rres, rcollection)
+      !call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
+      !    rproblemLevel, rsolution, dscale, .false., rres, rcollection)
 
     end if
 
@@ -1448,7 +1427,7 @@ contains
         ssectionName, 'massAFC', massAFC, 0)
 
     if (massAFC > 0) then
-
+      
       ! What kind of stabilisation should be applied?
       select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
 
@@ -1464,7 +1443,7 @@ contains
     !
     !   $$ res := res + dscale*finviscid(u^(m),u^n) $$
     !-------------------------------------------------------------------------
-
+    
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
     case (AFCSTAB_NLINFCT_EXPLICIT,&
@@ -1473,7 +1452,7 @@ contains
 
       ! Set pointer to the predictor vector
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-
+      
       ! Set operation specifier
       ioperationSpec = AFCSTAB_FCTFLUX_IMPLICIT
       if (ite .gt. 0)&
@@ -1481,10 +1460,11 @@ contains
           ioperationSpec = ioperationSpec + AFCSTAB_FCTFLUX_REJECTED
 
       ! Assemble implicit part of the raw-antidiffusive fluxes
-      call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
-          rtimestep%dStep, 1.0_DP, .true., .true., ioperationSpec,&
-          ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
-
+      call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+          rtimestep%dStep, rtimestep%dscaleExplicit, rtimestep%dscaleImplicit,&
+          1.0_DP, .true., .true., ioperationSpec, ssectionName,&
+          rcollection, rsolutionPredictor=p_rpredictor)
+      
       ! Set operation specifier
       if (ite .eq. 0) then
         ! Perform standard flux correction in zeroth iteration
@@ -1549,10 +1529,10 @@ contains
         ssectionName, 'viscousAFC', viscousAFC, 0)
 
     if (viscousAFC > 0) then
-
+      
       ! What kind of stabilisation should be applied?
       select case(rproblemLevel%Rafcstab(viscousAFC)%cafcstabType)
-
+        
       case (AFCSTAB_NLINLPT_SYMMETRIC)
         print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
         stop
@@ -1569,232 +1549,7 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine hydro_calcResidualThetaScheme
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-      rcollection, rsource)
-
-!<description>
-    ! This subroutine computes the right-hand side vector
-    ! used in the explicit Lax-Wendroff time-stepping scheme
-!</description>
-
-!<input>
-    ! time-stepping structure
-    type(t_timestep), intent(in) :: rtimestep
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(in) :: rsolution0
-
-    ! number of explicit step
-    integer, intent(in) :: istep
-
-    ! section name in parameter list and collection structure
-    character(LEN=*), intent(in) :: ssectionName
-
-    ! OPTIONAL: source vector
-    type(t_vectorBlock), intent(in), optional :: rsource
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! solver structure
-    type(t_solver), intent(inout) :: rsolver
-
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
-
-    ! right-hand side vector
-    type(t_vectorBlock), intent(inout) :: rrhs
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_parlist), pointer :: p_rparlist
-    type(t_timer), pointer :: p_rtimer
-    type(t_vectorBlock), pointer :: p_rpredictor
-    real(DP) :: dscale
-    integer :: lumpedMassMatrix, consistentMassMatrix, massMatrix
-    integer :: imasstype, iblock, massAFC, inviscidAFC, viscousAFC
-
-
-    ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection,&
-        'rtimerAssemblyVector', ssectionName=ssectionName)
-    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
-
-    ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
-
-    !---------------------------------------------------------------------------
-    ! Compute the scaling parameter
-    !
-    !   $ dscale = weight * \Delta t $
-    !---------------------------------------------------------------------------
-
-    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
-
-    !---------------------------------------------------------------------------
-    ! Compute the divergence operator for the right-hand side
-    ! evaluated at the solution from the previous(!) iteration
-    !
-    !   $$ rhs = dscale * [div F(U^n) + geomSource(U^n)]$$
-    !---------------------------------------------------------------------------
-
-    if (dscale .ne. 0.0_DP) then
-
-      ! Compute the explicit part of the divergence term
-      call hydro_calcDivergenceVector(rproblemLevel,&
-          rsolver%rboundaryCondition, rsolution,&
-          rtimestep%dTime-rtimestep%dStep, dscale, .true.,&
-          rrhs, ssectionName, rcollection)
-
-      ! Build the geometric source term (if any)
-      call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
-          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
-
-      ! Set the boundary conditions by penalty method
-      call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
-          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
-
-      call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
-          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
-
-    end if
-
-    select case(imasstype)
-    case (MASS_LUMPED, MASS_CONSISTENT)
-
-      !-------------------------------------------------------------------------
-      ! Compute the transient term
-      !
-      !   $$ rhs := rhs + M*U^n $$
-      !--------------------------------------------------------------------------
-
-      ! What type of mass matrix should be used?
-      massMatrix = merge(lumpedMassMatrix,&
-          consistentMassMatrix, imasstype .eq. MASS_LUMPED)
-
-      ! Apply mass matrix to solution vector
-      do iblock = 1, rsolution%nblocks
-        call lsyssc_matVec(&
-            rproblemLevel%RmatrixScalar(massMatrix),&
-            rsolution%RvectorBlock(iblock),&
-            rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
-      end do
-    end select
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the mass term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*fmass(u^n+1,u^n) $$
-    !--------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'massAFC', massAFC, 0)
-
-    if (massAFC > 0) then
-
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
-
-      case (AFCSTAB_NLINLPT_MASS)
-        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
-        stop
-      end select
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the inviscid term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*finviscid(u^n+1,u^n) $$
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
-    if (inviscidAFC > 0) then
-
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
-      case (AFCSTAB_NLINFCT_EXPLICIT,&
-            AFCSTAB_NLINFCT_IMPLICIT,&
-            AFCSTAB_NLINFCT_ITERATIVE)
-
-        ! Set pointer to predictor
-        p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-
-        ! Compute $\tilde u = (M_L)^{-1}*b^n$
-        call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
-            rrhs, 1.0_DP, p_rpredictor)
-
-        ! Set specifier
-        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
-            ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
-            AFCSTAB_HAS_PREDICTOR)
-
-        ! Assemble explicit part of the raw-antidiffusive fluxes
-        call hydro_calcFluxFCT(rproblemLevel, rsolution,&
-            rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
-            AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
-            rsolutionPredictor=p_rpredictor)
-
-        ! Perform flux correction
-        call hydro_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD, rrhs,&
-            ssectionName, rcollection)
-      end select
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the viscous term (if required)
-    !
-    !   $$ rhs := rhs + weight*dt*fviscous(u^n+1,u^n) $$
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'viscousAFC', viscousAFC, 0)
-
-    if (viscousAFC > 0) then
-
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(viscousAFC)%cafcstabType)
-
-      case (AFCSTAB_NLINLPT_SYMMETRIC)
-        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
-        stop
-      end select
-    end if
-
-    ! Apply the source vector to the right-hand side (if any)
-    if (present(rsource)) then
-      if (rsource%NEQ .gt. 0)&
-          call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
-    end if
-
-    ! Stop time measurement for global operator
-    call stat_stopTimer(p_rtimer)
-
-  end subroutine hydro_calcRhsRungeKuttaScheme
+  end subroutine hydro_calcResidual
 
   !*****************************************************************************
 
@@ -1816,7 +1571,7 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
-
+    
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
@@ -1900,7 +1655,7 @@ contains
     end select
 
   end subroutine hydro_setBoundaryCondition
-
+  
   !*****************************************************************************
 
 !<subroutine>
@@ -1967,7 +1722,7 @@ contains
 
       ! What type of stabilisation are we?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+        
         case (AFCSTAB_LINFCT)
         ! Get parameters from parameter list
         call parlst_getvalue_int(p_rparlist,&
@@ -1976,64 +1731,65 @@ contains
             ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'nfailsafe', nfailsafe)
-
+        
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-
+          
           ! Set up vector for computing the approximate time derivative
           if (present(rvector1)) then
             p_rvector1 => rvector1
           else
             allocate(p_rvector1)
           end if
-
+          
           ! Compute approximate time derivative
           call hydro_calcTimeDerivative(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionName, rcollection, p_rvector1,&
               rsource, rvector2, rvector3)
-
+          
           ! Build the raw antidiffusive fluxes and include
           ! contribution from the consistent mass matrix
-          call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-              ssectionName, rcollection, rsolutionTimeDeriv=p_rvector1)
-
+          call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+              1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+              AFCSTAB_FCTFLUX_EXPLICIT, ssectionName,&
+              rcollection, rsolutionTimeDeriv=p_rvector1)
+          
           ! Release temporal memory
           if (.not.present(rvector1)) then
             call lsysbl_releaseVector(p_rvector1)
             deallocate(p_rvector1)
           end if
-
+      
         else
-
+          
           ! Build the raw antidiffusive fluxes without including
           ! the contribution from consistent mass matrix
-          call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-              ssectionName, rcollection)
+          call hydro_calcFluxFCT(rproblemLevel, rsolution,&
+              1.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+              AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection)
         end if
-
+    
         !-----------------------------------------------------------------------
         ! Perform failsafe flux correction (if required)
         !-----------------------------------------------------------------------
-
+        
         if (nfailsafe .gt. 0) then
-
+          
           ! Get number of failsafe variables
           nvariable = max(1,&
               parlst_querysubstrings(p_rparlist,&
               ssectionName, 'sfailsafevariable'))
-
+          
           ! Allocate character array that stores all failsafe variable names
           allocate(SfailsafeVariables(nvariable))
-
+          
           ! Initialise character array with failsafe variable names
           do ivariable = 1, nvariable
             call parlst_getvalue_string(p_rparlist,&
                 ssectionName, 'sfailsafevariable',&
                 Sfailsafevariables(ivariable), isubstring=ivariable)
           end do
-
+          
           ! Compute FEM-FCT correction without applying the
           ! antidiffusive correction term to the low-order solution
           call hydro_calcCorrectionFCT(rproblemLevel,&
@@ -2041,7 +1797,7 @@ contains
               AFCSTAB_FCTALGO_STANDARD-&
               AFCSTAB_FCTALGO_CORRECT,&
               rsolution, ssectionName, rcollection)
-
+          
           ! Apply failsafe flux correction
           call afcsys_failsafeFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
@@ -2051,12 +1807,12 @@ contains
               nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
               fcb_extractVariable=hydro_getVariable,&
               rcollection=rcollection)
-
+                    
           ! Deallocate temporal memory
           deallocate(SfailsafeVariables)
-
+          
         else
-
+          
           ! Apply linearised FEM-FCT correction
           call hydro_calcCorrectionFCT(rproblemLevel,&
               rsolution, rtimestep%dStep, .false.,&
@@ -2068,7 +1824,7 @@ contains
       end select
     end if
 
-
+        
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
@@ -2090,8 +1846,9 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, ssectionName, rcollection,&
+  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution, tstep,&
+      dscaleExplicit, dscaleImplicit, dscale, bclear, bquickAssembly,&
+      ioperationSpec, ssectionName, rcollection,&
       rsolutionTimeDeriv, rsolutionPredictor)
 
 !<description>
@@ -2103,13 +1860,12 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
     ! time step size
     real(DP), intent(in) :: tstep
 
-    ! scaling parameter
+    ! scaling factors
+    real(DP), intent(in) :: dscaleExplicit
+    real(DP), intent(in) :: dscaleImplicit
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
@@ -2185,18 +1941,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2207,18 +1963,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2229,18 +1985,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTScDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTScDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2258,18 +2014,18 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2280,8 +2036,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2290,8 +2046,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2302,8 +2058,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2312,8 +2068,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRoeDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRoeDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
@@ -2331,8 +2087,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2341,8 +2097,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss1d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2353,8 +2109,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2363,8 +2119,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss2d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2375,8 +2131,8 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
@@ -2385,8 +2141,8 @@ contains
         else
           call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              hydro_calcFluxFCTRusDiss3d_sim,&
+              tstep, dscaleExplicit, dscaleImplicit, dscale, bclear,&
+              bquickAssembly, ioperationSpec, hydro_calcFluxFCTRusDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2471,7 +2227,7 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
-
+    
     ! Set pointer to stabilisation structure
     if (present(rafcstab)) then
       p_rafcstab => rafcstab
@@ -2480,7 +2236,7 @@ contains
           'inviscidAFC', inviscidAFC)
       p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
     end if
-
+    
     ! Get number of limiting variables
     if (present(slimitingvariableName)) then
       nvariable = max(1, parlst_querysubstrings(p_rparlist,&
@@ -2489,7 +2245,7 @@ contains
       nvariable = max(1, parlst_querysubstrings(p_rparlist,&
           ssectionName, 'slimitingvariable'))
     end if
-
+    
     ! Copy operation specifier and disable the correction step
     ! if sequential/multiplicative flux correction is performed
     if (nvariable .gt. 1) then
@@ -2501,7 +2257,7 @@ contains
     ! Loop over items in the list of variables that should
     ! be limited sequentially, i.e., in multiplicative way
     do ivariable = 1, nvariable
-
+      
       ! Get variable declaration string
       if (present(slimitingvariableName)) then
         call parlst_getvalue_string(p_rparlist,&
@@ -2640,7 +2396,7 @@ contains
               rcollection=rcollection,&
               fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         end select
-
+        
       elseif (trim(slimitingvariable) .eq. 'density,energy') then
 
         ! Apply FEM-FCT algorithm for density and energy fluxes
@@ -2725,7 +2481,7 @@ contains
         end select
 
       elseif (trim(slimitingvariable) .eq. 'none') then
-
+        
         if (nvariable .eq. 1) then
           ! Apply raw antidiffusive fluxes without correction
           iopSpec = ioperationSpec
@@ -2733,16 +2489,16 @@ contains
           iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
           iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
           iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
-
+          
           ! Enforce existence of edgewise correction factors
           p_rafcstab%istabilisationSpec =&
               ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
-
+          
           call afcsys_buildVectorFCT(&
               p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               rcollection=rcollection)
-
+          
           ! Nothing more needs to be done
           return
         else
@@ -2762,7 +2518,7 @@ contains
 
     ! Perform the correction step separately (if required)
     if (nvariable .gt. 1) then
-
+      
       ! Copy original specifier
       iopSpec = ioperationSpec
 
@@ -2772,7 +2528,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
-
+      
       call afcsys_buildVectorFCT(&
           p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2800,10 +2556,10 @@ contains
 !<input>
     ! Number of edges
     integer, intent(in) :: NEDGE
-
+    
     ! Number of nodes
     integer, intent(in) :: NEQ
-
+    
     ! Number of solution variables
     integer, intent(IN) :: NVAR
 
@@ -2853,12 +2609,12 @@ contains
     real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
     integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
-
+    
     ! Do we have to use the explicit fluxes as constraints?
     if (present(DfluxConstr)) then
       print *, "Not implemented yet"
       stop
-
+      
     else
 
       if ((ndim1 .eq. NVAR) .and. (ndim2 .eq. NEQ)) then
@@ -2873,21 +2629,21 @@ contains
 
         ! Loop over the edges
         do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
-
+          
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
-
+          
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
-
+          
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Fill auxiliary arrays
             DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
             DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
@@ -2902,10 +2658,10 @@ contains
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Get position of nodes
             i = IedgeList(1,iedge)
             j = IedgeList(2,iedge)
@@ -2915,17 +2671,17 @@ contains
                          DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
             R_ji = merge(Drp(:,j), Drm(:,j),&
                          DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
-
+            
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
-
+            
             ! Compute velocity average
             Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
                           Dx(2:NVARtransformed+1,j)/Dx(1,j))
-
+            
             ! Compute correction factor
             alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
-
+            
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
           end do
@@ -2934,7 +2690,7 @@ contains
         ! Deallocate temporal memory
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
-
+        
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
         !-----------------------------------------------------------------------
@@ -2947,21 +2703,21 @@ contains
 
         ! Loop over the edges
         do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
-
+          
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
-
+          
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
-
+          
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Fill auxiliary arrays
             DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
             DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
@@ -2972,14 +2728,14 @@ contains
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
-
+          
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Get position of nodes
             i = IedgeList(1,iedge)
             j = IedgeList(2,iedge)
@@ -2989,35 +2745,35 @@ contains
                          DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
             R_ji = merge(Drp(:,j), Drm(:,j),&
                          DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
-
+            
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
 
             ! Compute velocity average
             Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
                           Dx(j,2:NVARtransformed+1)/Dx(j,1))
-
+            
             ! Compute correction factor
             alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
-
+            
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
           end do
         end do
-
+        
         ! Deallocate temporal memory
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
-
+        
       else
-
+        
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_limitEdgewiseVelocity')
         call sys_halt()
-
+        
       end if
     end if
-
+    
   end subroutine hydro_limitEdgewiseVelocity
 
   !***************************************************************************
@@ -3039,10 +2795,10 @@ contains
 !<input>
     ! Number of edges
     integer, intent(in) :: NEDGE
-
+    
     ! Number of nodes
     integer, intent(in) :: NEQ
-
+    
     ! Number of solution variables
     integer, intent(IN) :: NVAR
 
@@ -3087,17 +2843,17 @@ contains
     ! auxiliary arras
     real(DP), dimension(:,:,:), pointer :: DdataAtEdge
     real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
-
+    
     ! local variables
     real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
     integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
-
+    
     ! Do we have to use the explicit fluxes as constraints?
     if (present(DfluxConstr)) then
       print *, "Not implemented yet"
       stop
-
+      
     else
 
       if ((ndim1 .eq. NVAR) .and. (ndim2 .eq. NEQ)) then
@@ -3112,21 +2868,21 @@ contains
 
         ! Loop over the edges
         do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
-
+          
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
-
+          
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
-
+          
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Fill auxiliary arrays
             DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
             DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
@@ -3141,10 +2897,10 @@ contains
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Get position of nodes
             i = IedgeList(1,iedge)
             j = IedgeList(2,iedge)
@@ -3154,17 +2910,17 @@ contains
                          DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
             R_ji = merge(Drp(:,j), Drm(:,j),&
                          DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
-
+            
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
-
+            
             ! Compute momentum average
             Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
                           Dx(2:NVARtransformed+1,j))
-
+            
             ! Compute correction factor
             alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
-
+            
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
           end do
@@ -3186,21 +2942,21 @@ contains
 
         ! Loop over the edges
         do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
-
+          
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
-
+          
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
-
+          
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Fill auxiliary arrays
             DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
             DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
@@ -3211,14 +2967,14 @@ contains
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
-
+          
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
-
+            
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-
+            
             ! Get position of nodes
             i = IedgeList(1,iedge)
             j = IedgeList(2,iedge)
@@ -3228,22 +2984,22 @@ contains
                          DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
             R_ji = merge(Drp(:,j), Drm(:,j),&
                          DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
-
+            
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
 
             ! Compute momentum average
             Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
                           Dx(j,2:NVARtransformed+1))
-
+            
             ! Compute correction factor
             alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
-
+            
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
           end do
         end do
-
+        
         ! Deallocate temporal memory
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
@@ -3253,7 +3009,7 @@ contains
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_limitEdgewiseMomentum')
         call sys_halt()
-
+        
       end if
     end if
 
@@ -3289,16 +3045,16 @@ contains
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
+    
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-
+    
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-
+    
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-
+    
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -3318,7 +3074,7 @@ contains
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-
+  
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -3332,7 +3088,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvector
     real(DP), dimension(:), pointer :: Ddata
     integer :: isystemFormat,ivar,iel,ipoint
-
+    
     if (.not. present(rcollection)) then
       Dcoefficients(:,:,:) = 0.0_DP
       return
@@ -3342,33 +3098,33 @@ contains
     isystemFormat = rcollection%IquickAccess(1)
     ivar = rcollection%IquickAccess(2)
     p_rvector => rcollection%p_rvectorQuickAccess1
-
+    
     ! What type of system format are we?
     select case(isystemFormat)
-
+   
     case(SYSTEM_INTERLEAVEFORMAT)
-
+      
       print *, "Not available"
       stop
-
+      
     case(SYSTEM_BLOCKFORMAT)
-
+      
       ! Allocate temporal array
       allocate(Ddata(npointsPerElement))
-
+      
       ! Loop over all elements
       do iel = 1, nelements
-
+        
         ! Evaluate solution in cubature points
         call fevl_evaluate(DER_FUNC, Ddata,&
             p_rvector%RvectorBlock(ivar), Dpoints(:,:,iel))
-
+        
         ! Loop over all cubature points
         do ipoint = 1, npointsPerElement
           Dcoefficients(1,ipoint,iel) = Ddata(ipoint)
         end do
       end do
-
+      
       ! Deallocate temporal array
       deallocate(Ddata)
 
@@ -3377,7 +3133,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorFE')
       call sys_halt()
     end select
-
+    
   end subroutine hydro_coeffVectorFE
 
   !***************************************************************************
@@ -3410,16 +3166,16 @@ contains
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
+    
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-
+    
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-
+    
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-
+    
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -3439,7 +3195,7 @@ contains
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-
+  
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -3454,15 +3210,15 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
     integer :: itermCount, ipoint, iel, ndim, icomp
-
-
+    
+    
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
         trim(rcollection%SquickAccess(2)),&
         ssectionName=trim(rcollection%SquickAccess(1)))
-
+        
     ! This subroutine assumes that the first quick access double value
     ! holds the simulation time
     dtime  = rcollection%DquickAccess(1)
@@ -3475,7 +3231,7 @@ contains
       icomp = rcollection%IquickAccess(itermCount)
 
       if (dtime < 0.0) then
-
+        
         ! Evaluate all coefficients using the function parser
         do iel = 1, nelements
           call fparser_evalFunction(p_rfparser, icomp, 2,&
@@ -3487,16 +3243,16 @@ contains
         ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
-
+        
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
-
+        
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
-
+            
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
+            
             ! Evaluate function parser
             call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
                 Dcoefficients(itermCount,ipoint,iel))
@@ -3506,7 +3262,7 @@ contains
       end if
 
     end do ! itermCount
-
+    
   end subroutine hydro_coeffVectorAnalytic
 
   !*****************************************************************************
@@ -3551,7 +3307,7 @@ contains
       ibdrCondType = BDRC_FREESLIP + BDRC_WEAK
     case ('FREESLIP_WEAK_LUMPED')
       ibdrCondType = BDRC_FREESLIP + BDRC_WEAK + BDRC_LUMPED
-
+      
     ! Relaxed free-slip boundary conditions
     case ('RLXFREESLIP_STRONG')
       ibdrCondType = BDRC_RLXFREESLIP + BDRC_STRONG
@@ -3570,7 +3326,7 @@ contains
 
     ! Freestream boundary conditions
     case ('FREESTREAM_STRONG')
-      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG
+      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG     
     case ('FREESTREAM_WEAK')
       ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK
     case ('FREESTREAM_WEAK_LUMPED')
@@ -3607,7 +3363,7 @@ contains
       ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
     case ('MASSOUTLET_WEAK_LUMPED')
       ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK + BDRC_LUMPED
-
+      
     ! Mach outlet boundary conditions
     case ('MACHOUTLET_STRONG')
       ibdrCondType = BDRC_MACHOUTLET + BDRC_STRONG
@@ -3641,7 +3397,7 @@ contains
       ibdrCondType = BDRC_OPEN + BDRC_WEAK
     case ('OPEN_WEAK_LUMPED')
       ibdrCondType = BDRC_OPEN + BDRC_WEAK + BDRC_LUMPED
-
+   
     ! Periodic boundary conditions
     case ('PERIODIC_STRONG')
       ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
@@ -3657,22 +3413,22 @@ contains
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
     case ('ANTIPERIODIC_WEAK_LUMPED')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK + BDRC_LUMPED
-
+    
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_parseBoundaryCondition')
       call sys_halt()
     end select
 
-
+    
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
     case (BDRC_OPEN)
       nexpressions = 0
-
+      
     case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXFREESLIP)
       nexpressions = 1
-
+     
     case (BDRC_MASSINLET)
       nexpressions = 2
 
@@ -3681,7 +3437,7 @@ contains
 
     case (BDRC_FREESTREAM, BDRC_SUPERINLET)
       nexpressions = ndimension+2
-
+      
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       nexpressions = 2 ! penalty parameter $\epsilon$
                        ! switching parameter $\gamma$
@@ -3752,14 +3508,14 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'mode', smode)
-
+    
     ! Are we in primal or dual mode?
     if (trim(smode) .eq. 'primal') then
-
+    
       !-------------------------------------------------------------------------
       ! We are in primal mode
       !-------------------------------------------------------------------------
-
+      
       ! Get further parameters from parameter list
       call parlst_getvalue_int(rparlist,&
           ssectionName, 'isystemformat', isystemformat)
@@ -3771,7 +3527,7 @@ contains
           ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
       call parlst_getvalue_int(rparlist,&
           ssectionName, 'dofCoords', dofCoords, 0)
-
+      
       ! Get pointers
       call lsysbl_getbase_double(rsolution, p_DdataSolution)
       call lsysbl_getbase_double(rsource, p_DdataSource)
@@ -3779,23 +3535,23 @@ contains
       ! Get number of equations and variables
       nvar = hydro_getNVAR(rproblemLevel)
       neq  = rsolution%NEQ/nvar
-
+      
       ! Get coordinates of the global DOF`s
       call lsysbl_getbase_double(&
           rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
-
+      
       ! What type of coordinate system are we?
       select case(icoordsystem)
       case (COORDS_CARTESIAN)
         ! No geometric source term required, clear vector (if required)
         if (bclear) call lsysbl_clearVector(rsource)
-
+        
 
       case (COORDS_AXIALSYMMETRY)
         !-----------------------------------------------------------------------
         ! Axi-symmetric (dalpha=1) flow (2D approximation to 3D flow)
         !-----------------------------------------------------------------------
-
+        
         select case(igeometricsourcetype)
         case (MASS_LUMPED)
           ! Use lumped mass matrix
@@ -3822,7 +3578,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+          
         case (MASS_CONSISTENT)
           ! Use consistent mass matrix
           call parlst_getvalue_int(rparlist,&
@@ -3831,7 +3587,7 @@ contains
               rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
           call lsyssc_getbase_Kld(rproblemLevel%RmatrixScalar(massmatrix), p_Kld)
           call lsyssc_getbase_Kcol(rproblemLevel%RmatrixScalar(massmatrix), p_Kcol)
-
+          
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource2DIntlConsistent(dscale, deffectiveRadius,&
@@ -3850,19 +3606,19 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+          
         case default
           call output_line('Unsupported geometric source type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
           call sys_halt()
         end select
-
+        
 
       case (COORDS_CYLINDRICALSYMMETRY)
         !-----------------------------------------------------------------------
         ! Cylindrically symmetric (dalpha=1) flow (1D approximation to 2D flow)
         !-----------------------------------------------------------------------
-
+        
         select case(igeometricsourcetype)
         case (MASS_LUMPED)
           ! Use lumped mass matrix
@@ -3870,14 +3626,14 @@ contains
               ssectionName, 'lumpedmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
               rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
-
+          
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource1DIntlLumped(dscale, deffectiveRadius,&
                 rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
                 p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
-
+            
           case (SYSTEM_BLOCKFORMAT)
             call doSource1DBlockLumped(dscale, deffectiveRadius,&
                 rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
@@ -3889,7 +3645,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+          
         case (MASS_CONSISTENT)
           ! Use consistent mass matrix
           call parlst_getvalue_int(rparlist,&
@@ -3911,25 +3667,25 @@ contains
                 rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
                 p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
                 p_DdataSolution, p_DdataSource)
-
+            
           case default
             call output_line('Invalid system format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+          
         case default
           call output_line('Unsupported geometric source type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
           call sys_halt()
         end select
-
-
+        
+        
       case (COORDS_SPHERICALSYMMETRY)
         !-----------------------------------------------------------------------
         ! Spherically symmetric (dalpha=2) flow (1D approximation to 3D flow)
         !-----------------------------------------------------------------------
-
+        
         select case(igeometricsourcetype)
         case (MASS_LUMPED)
           ! Use lumped mass matrix
@@ -3956,7 +3712,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+           
         case (MASS_CONSISTENT)
           ! Use consistent mass matrix
           call parlst_getvalue_int(rparlist,&
@@ -3984,28 +3740,28 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
             call sys_halt()
           end select
-
+          
         case default
           call output_line('Unsupported geometric source type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
           call sys_halt()
         end select
-
+        
       case default
         call output_line('Invalid coordinate system!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
         call sys_halt()
       end select
-
+      
     elseif (trim(smode) .eq. 'dual') then
-
+      
       !-------------------------------------------------------------------------
       ! We are in dual mode
       !-------------------------------------------------------------------------
-
+      
       print *, "Dual mode not implemented yet"
       stop
-
+      
     else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
@@ -4021,7 +3777,7 @@ contains
     ! or spherically symmetric (dalpha=2) flow in 1D. This routine
     ! assembles the geometric source term for systems stored in
     ! interleaved format using the lumped mass matrix.
-
+    
     subroutine doSource1DIntlLumped(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
@@ -4037,10 +3793,10 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
-
+      
       ! Clear source vector?
       logical, intent(in) :: bclear
 
@@ -4053,7 +3809,7 @@ contains
       ! Solution vector
       real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
 
@@ -4062,7 +3818,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4133,7 +3889,7 @@ contains
     ! or spherically symmetric (dalpha=2) flow in 1D. This routine
     ! assembles the geometric source term for systems stored in
     ! block format using the lumped mass matrix.
-
+    
     subroutine doSource1DBlockLumped(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
@@ -4149,10 +3905,10 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
-
+      
       ! Clear source vector?
       logical, intent(in) :: bclear
 
@@ -4165,7 +3921,7 @@ contains
       ! Solution vector
       real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
 
@@ -4174,7 +3930,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4239,13 +3995,13 @@ contains
       end if
 
     end subroutine doSource1DBlockLumped
-
+    
     !**************************************************************
     ! Calculate the geometric source term for cylindrically (dalpha=1)
     ! or spherically symmetric (dalpha=2) flow in 1D. This routine
     ! assembles the geometric source term for systems stored in
     ! interleaved format using the consistent mass matrix.
-
+    
     subroutine doSource1DIntlConsistent(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
@@ -4261,7 +4017,7 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -4280,7 +4036,7 @@ contains
       ! Solution vector
       real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
 
@@ -4290,7 +4046,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq,ia,jeq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4308,15 +4064,15 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
-
+            
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+            
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
             dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
@@ -4329,7 +4085,7 @@ contains
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Overwrite the geometric source term
           DdataSource(:,ieq) = Ddata
         end do
@@ -4351,7 +4107,7 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
@@ -4359,11 +4115,11 @@ contains
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+           
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
             dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
-
+ 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
                        XMOMENTUM2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
@@ -4372,22 +4128,22 @@ contains
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Update the geometric source term
           DdataSource(:,ieq) = DdataSource(:,ieq) + Ddata
         end do
         !$omp end parallel do
 
       end if
-
+      
     end subroutine doSource1DIntlConsistent
-
+    
     !**************************************************************
     ! Calculate the geometric source term for cylindrically (dalpha=1)
     ! or spherically symmetric (dalpha=2) flow in 1D. This routine
     ! assembles the geometric source term for systems stored in
     ! block format using the consistent mass matrix.
-
+    
     subroutine doSource1DBlockConsistent(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
@@ -4400,10 +4156,10 @@ contains
 
       ! Spatial dimension
       integer, intent(in) :: ndim
-
+      
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -4422,7 +4178,7 @@ contains
       ! Solution vector
       real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
 
@@ -4432,7 +4188,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq,ia,jeq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4450,15 +4206,15 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
-
+            
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+            
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
             dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
@@ -4471,7 +4227,7 @@ contains
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Overwrite the geometric source term
           DdataSource(ieq,:) = Ddata
         end do
@@ -4493,7 +4249,7 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
@@ -4501,11 +4257,11 @@ contains
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+           
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
             dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
-
+ 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
                        XMOMENTUM2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
@@ -4514,21 +4270,21 @@ contains
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Update the geometric source term
           DdataSource(ieq,:) = DdataSource(ieq,:) + Ddata
         end do
         !$omp end parallel do
 
       end if
-
+      
     end subroutine doSource1DBlockConsistent
 
     !**************************************************************
     ! Calculate the geometric source term for axi-symmetric (dalpha=1)
     ! flow in 2D. This routine assembles the geometric source term for
     ! systems stored in interleaved format using the lumped mass matrix.
-
+    
     subroutine doSource2DIntlLumped(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
@@ -4538,16 +4294,16 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
-
+      
       ! Spatial dimension
       integer, intent(in) :: ndim
-
+      
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
-
+      
       ! Clear source vector?
       logical, intent(in) :: bclear
 
@@ -4560,7 +4316,7 @@ contains
       ! Solution vector
       real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
 
@@ -4569,7 +4325,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4643,7 +4399,7 @@ contains
     ! Calculate the geometric source term for axi-symmetric (dalpha=1)
     ! flow in 2D. This routine assembles the geometric source term for
     ! systems stored in block format using the lumped mass matrix.
-
+    
     subroutine doSource2DBlockLumped(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
@@ -4659,10 +4415,10 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
-
+      
       ! Clear source vector?
       logical, intent(in) :: bclear
 
@@ -4675,7 +4431,7 @@ contains
       ! Solution vector
       real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
 
@@ -4684,7 +4440,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4753,12 +4509,12 @@ contains
       end if
 
     end subroutine doSource2DBlockLumped
-
+    
     !**************************************************************
     ! Calculate the geometric source term for axi-symmetric (dalpha=1)
     ! flow in 2D. This routine assembles the geometric source term for
     ! systems stored in interleaved format using the consistent mass matrix.
-
+    
     subroutine doSource2DIntlConsistent(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
@@ -4774,7 +4530,7 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -4793,7 +4549,7 @@ contains
       ! Solution vector
       real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
 
@@ -4803,7 +4559,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq,ia,jeq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4821,15 +4577,15 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
-
+            
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+            
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
             dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
@@ -4844,7 +4600,7 @@ contains
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Overwrite the geometric source term
           DdataSource(:,ieq) = Ddata
         end do
@@ -4866,7 +4622,7 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
@@ -4874,11 +4630,11 @@ contains
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+           
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
             dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
-
+ 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
                        XMOMENTUM2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
@@ -4889,21 +4645,21 @@ contains
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Update the geometric source term
           DdataSource(:,ieq) = DdataSource(:,ieq) + Ddata
         end do
         !$omp end parallel do
 
       end if
-
+      
     end subroutine doSource2DIntlConsistent
-
+    
     !**************************************************************
     ! Calculate the geometric source term for axi-symmetric (dalpha=1)
     ! flow in 2D. This routine assembles the geometric source term for
     ! systems stored in block format using the consistent mass matrix.
-
+    
     subroutine doSource2DBlockConsistent(deffectiveScale,&
         deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
@@ -4919,7 +4675,7 @@ contains
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
-
+      
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -4938,7 +4694,7 @@ contains
       ! Solution vector
       real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
 
-
+      
       ! Source vector
       real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
 
@@ -4948,7 +4704,7 @@ contains
       real(DP) :: daux, dradius, dvel, dpre
       integer :: ieq,ia,jeq
 
-
+      
       ! Do we have to clear the source vector?
       if (bclear) then
 
@@ -4966,15 +4722,15 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
-
+            
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+            
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
             dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
@@ -4989,7 +4745,7 @@ contains
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Overwrite the geometric source term
           DdataSource(ieq,:) = Ddata
         end do
@@ -5011,7 +4767,7 @@ contains
 
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
-
+            
             ! Get the r-coordinate and compute the radius
             daux = Dcoords(ndim*(jeq-1)+1)
             dradius = max(abs(daux), deffectiveRadius)
@@ -5019,11 +4775,11 @@ contains
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
-
+           
             ! Compute the radial velocity and pressure
             dvel = XVELOCITY2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
             dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
-
+ 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
                        XMOMENTUM2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
@@ -5034,14 +4790,14 @@ contains
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
                        (TOTALENERGY2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
-
+          
           ! Update the geometric source term
           DdataSource(ieq,:) = DdataSource(ieq,:) + Ddata
         end do
         !$omp end parallel do
 
       end if
-
+      
     end subroutine doSource2DBlockConsistent
 
   end subroutine hydro_calcGeometricSourceterm
@@ -5103,13 +4859,13 @@ contains
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-
+    
     ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
-
+    
     ! Do we have a zero scling parameter?
     if (dscale .eq. 0.0_DP) then
       if (bclear) call lsysbl_clearVector(rvector)
@@ -5118,25 +4874,25 @@ contains
       ! Check if group finite element structure and stabilisation
       ! structure are both available
       if ((inviscidGFEM .le. 0) .or. (inviscidAFC .le. 0)) return
-
+      
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+        
       case (AFCSTAB_GALERKIN)
-
+        
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution,&
               hydro_calcFluxGalerkin1d_sim, dscale, bclear, rvector, rcollection)
-
+          
         case (NDIM2D)
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution,&
               hydro_calcFluxGalerkin2d_sim, dscale, bclear, rvector, rcollection)
-
+          
         case (NDIM3D)
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5157,28 +4913,28 @@ contains
         ! Get parameter from parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'idissipationtype', idissipationtype)
-
+    
         ! What type of dissipation is applied?
         select case(idissipationtype)
-
+          
         case (DISSIPATION_ZERO)
-
+          
           ! Assemble divergence of flux without dissipation
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxGalerkin1d_sim, dscale, bclear, rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxGalerkin2d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecGalerkin2d_cuda))
-
+            
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5186,20 +4942,20 @@ contains
                 hydro_calcFluxGalerkin3d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecGalerkin2d_cuda))
           end select
-
+          
           !---------------------------------------------------------------------
-
+          
         case (DISSIPATION_SCALAR)
-
+          
           ! Assemble divergence of flux with scalar dissipation
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxScDiss1d_sim, dscale, bclear , rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5221,14 +4977,14 @@ contains
 
           ! Assemble divergence of flux with scalar dissipation
           ! adopting dimensional splitting
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxScDiss1d_sim, dscale, bclear, rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5243,20 +4999,20 @@ contains
                 hydro_calcFluxScDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecScDissDiSp3d_cuda))
           end select
-
+          
           !---------------------------------------------------------------------
 
         case (DISSIPATION_ROE)
-
+          
           ! Assemble divergence of flux with Roe-type dissipation
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5271,21 +5027,21 @@ contains
                 hydro_calcFluxRoeDiss3d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecRoeDiss3d_cuda))
           end select
-
+          
           !---------------------------------------------------------------------
 
         case (DISSIPATION_ROE_DSPLIT)
-
+          
           ! Assemble divergence of flux with Roe-type dissipation
           ! adopting dimensional splitting
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5300,13 +5056,13 @@ contains
                 hydro_calcFluxRoeDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecRoeDissDiSp3d_cuda))
           end select
-
+          
           !---------------------------------------------------------------------
 
         case (DISSIPATION_RUSANOV)
 
           ! Assemble divergence of flux with Rusanov-type flux
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
@@ -5332,17 +5088,17 @@ contains
           !---------------------------------------------------------------------
 
         case (DISSIPATION_RUSANOV_DSPLIT)
-
+          
           ! Assemble divergence of flux with Rusanov-type flux
           ! adopting dimensional splitting
-
+          
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
-
+            
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5357,7 +5113,7 @@ contains
                 hydro_calcFluxRusDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
                 COPROC_FCB_CALCVECTOREDGESYS(hydro_calcDivVecRusDissDiSp3d_cuda))
           end select
-
+          
         case default
           call output_line('Invalid type of dissipation!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivergenceVector')
@@ -5367,7 +5123,7 @@ contains
         !-----------------------------------------------------------------------
 
       case (AFCSTAB_TVD)
-
+        
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorTVD(&
@@ -5376,7 +5132,7 @@ contains
               rsolution, NDIM1D,&
               hydro_calcFluxGalNoBdr1d_sim,&
               hydro_calcCharacteristics1d_sim, dscale, bclear, rvector, rcollection)
-
+          
         case (NDIM2D)
           call afcsys_buildVectorTVD(&
               rproblemLevel%Rafcstab(inviscidAFC),&
@@ -5384,7 +5140,7 @@ contains
               rsolution, NDIM2D,&
               hydro_calcFluxGalNoBdr2d_sim,&
               hydro_calcCharacteristics2d_sim, dscale, bclear, rvector, rcollection)
-
+          
         case (NDIM3D)
           call afcsys_buildVectorTVD(&
               rproblemLevel%Rafcstab(inviscidAFC),&
@@ -5401,7 +5157,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivergenceVector')
         call sys_halt()
       end select
-
+      
       !-------------------------------------------------------------------------
       ! Evaluate linear form for boundary integral (if any)
       !-------------------------------------------------------------------------
@@ -5411,12 +5167,12 @@ contains
         call hydro_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, -dscale, ssectionName, hydro_coeffVectorBdr1d_sim,&
             rvector, rcollection)
-
+        
       case (NDIM2D)
         call hydro_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, -dscale, ssectionName, hydro_coeffVectorBdr2d_sim,&
             rvector, rcollection)
-
+        
       case (NDIM3D)
 !!$        call hydro_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, -dscale, ssectionName, hydro_coeffVectorBdr3d_sim,&
@@ -5493,7 +5249,7 @@ contains
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-
+    
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC, 0)
@@ -5514,12 +5270,12 @@ contains
         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
     !---------------------------------------------------------------------------
-
+    
     ! How should we compute the approximate time derivative?
     select case(iapproxtimederivativetype)
-
+      
     case(AFCSTAB_GALERKIN)
-
+      
       ! Get more parameters from parameter list
       call parlst_getvalue_double(p_rparlist,&
           ssectionName, 'depsAbsApproxTimeDerivative',&
@@ -5537,21 +5293,21 @@ contains
       else
         allocate(p_rvector1)
       end if
-
+      
       ! Check if rvector1 is compatible to the solution vector;
       ! otherwise create new vector as a duplicate of the solution vector
       call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
       if (.not.bcompatible)&
           call lsysbl_duplicateVector(rsolution, p_rvector1,&
           LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
+      
       ! Set up vector2 for computing the approximate time derivative
       if (present(rvector2)) then
         p_rvector2 => rvector2
       else
         allocate(p_rvector2)
       end if
-
+      
       ! Check if rvector2 is compatible to the solution vector;
       ! otherwise create new vector as a duplicate of the solution vector
       call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
@@ -5585,17 +5341,17 @@ contains
       call hydro_calcDivergenceVector(rproblemLevel,&
           rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
           1.0_DP, .true., p_rvector1, ssectionName, rcollection)
-
+      
       ! Build the geometric source term (if any)
       call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
-
+      
       ! Apply the source vector to the residual (if any)
       if (present(rsource)) then
         if (rsource%NEQ .gt. 0)&
             call lsysbl_vectorLinearComb(rsource, p_rvector1, 1.0_DP, 1.0_DP)
       end if
-
+      
       ! Reset stabilisation structures to their original configuration
       if (inviscidAFC > 0) then
         rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
@@ -5618,31 +5374,31 @@ contains
 
       ! Store norm of the initial guess from the lumped version
       dnorm0 = lsysbl_vectorNorm(rvector1, LINALG_NORML2)
-
+      
       richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
         ! Initialise rvector2 by the constant right-hand side
         call lsysbl_copyVector(p_rvector1, p_rvector2)
-
+        
         ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
         do iblock = 1,rsolution%nblocks
           call lsyssc_matVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rvector%RvectorBlock(iblock), p_rvector2%RvectorBlock(iblock),&
               -1.0_DP, 1.0_DP)
         end do
-
+          
         ! Scale rvector2 by the inverse of the lumped mass matrix
         call lsysbl_invertedDiagMatVec(rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             p_rvector2, 1.0_DP, p_rvector2)
-
+        
         ! Apply solution increment (rvector2) to the previous solution iterate
         call lsysbl_vectorLinearComb(p_rvector2, rvector, 1.0_DP, 1.0_DP)
-
+        
         ! Check for convergence
         dnorm = lsysbl_vectorNorm(p_rvector2, LINALG_NORML2)
         if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
             (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
       end do richardson
-
+      
       ! Release temporal memory
       if (.not.present(rvector1)) then
         call lsysbl_releaseVector(p_rvector1)
@@ -5652,9 +5408,9 @@ contains
         call lsysbl_releaseVector(p_rvector2)
         deallocate(p_rvector2)
       end if
-
+      
       !-----------------------------------------------------------------------
-
+      
     case(AFCSTAB_UPWIND)
 
       ! Make a backup copy of the stabilisation types because we
@@ -5683,11 +5439,11 @@ contains
       call hydro_calcDivergenceVector(rproblemLevel,&
           rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
           1.0_DP, .true., rvector, ssectionName, rcollection)
-
+      
       ! Build the geometric source term (if any)
       call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, 1.0_DP, .false., rvector, rcollection)
-
+      
       ! Apply the source vector to the residual (if any)
       if (present(rsource)) then
         if (rsource%NEQ .gt. 0)&
@@ -5791,7 +5547,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
         call sys_halt()
       end select
-
+      
     case (NDIM2D)
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -5805,7 +5561,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
         call sys_halt()
       end select
-
+      
     case (NDIM3D)
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -5819,7 +5575,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
         call sys_halt()
       end select
-
+      
     case default
       call output_line('Unsupported spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
@@ -5861,7 +5617,7 @@ contains
                     SOUNDSPEED2_1D(Ddata,IDX2_FORWARD,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber1DIntl
 
     !**************************************************************
@@ -5895,7 +5651,7 @@ contains
                     SOUNDSPEED2_1D(Ddata,IDX2_REVERSE,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber1DBlock
 
     !**************************************************************
@@ -5929,7 +5685,7 @@ contains
                     SOUNDSPEED2_2D(Ddata,IDX2_FORWARD,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber2DIntl
 
     !**************************************************************
@@ -5963,7 +5719,7 @@ contains
                     SOUNDSPEED2_2D(Ddata,IDX2_REVERSE,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber2DBlock
 
     !**************************************************************
@@ -5997,7 +5753,7 @@ contains
                     SOUNDSPEED2_3D(Ddata,IDX2_FORWARD,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber3DIntl
 
     !**************************************************************
@@ -6031,7 +5787,7 @@ contains
                     SOUNDSPEED2_3D(Ddata,IDX2_REVERSE,ieq,_,_)
         dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
       end do
-
+      
     end subroutine calcCFDnumber3DBlock
 
   end subroutine hydro_calcCFLnumber
@@ -6119,6 +5875,7 @@ contains
         call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty1D,rcollection,revalvectors=rvectorEval)
 
         ! clean up
+				call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
 
       case (NDIM2D)
@@ -6136,6 +5893,7 @@ contains
         call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty2D,rcollection,revalvectors=rvectorEval)
 
         ! clean up
+				call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
 
     case default
@@ -6232,6 +5990,7 @@ contains
         call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_NavStoVisc1D,rcollection,revalvectors=rvectorEval)
 
         ! clean up
+				call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
 
       case (NDIM2D)
@@ -6249,6 +6008,7 @@ contains
         call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_NavStoVisc2D,rcollection,revalvectors=rvectorEval)
 
         ! clean up
+				call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
 
     case default
