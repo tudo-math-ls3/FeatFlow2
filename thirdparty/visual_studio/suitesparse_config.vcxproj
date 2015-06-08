@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SuiteSparse_config\SuiteSparse_config.h" />
+    <ClInclude Include="..\SuiteSparse\SuiteSparse_config\SuiteSparse_config.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\SuiteSparse_config\SuiteSparse_config.c" />
+    <ClCompile Include="..\SuiteSparse\SuiteSparse_config\SuiteSparse_config.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C1B4CFF2-BA72-4E7E-8F92-8584EC8081BB}</ProjectGuid>

@@ -16,16 +16,8 @@ pack["lapack-3.5.0"] = [
   "http://www.netlib.org/lapack/lapack-3.5.0.tgz",
   "LICENSE"
 ]
-pack["AMD"] = [
-  "http://www.cise.ufl.edu/research/sparse/amd/AMD-2.3.1.tar.gz",
-  "README.txt"
-]
-pack["SuiteSparse_config"] = [
-  "http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.2.1.tar.gz",
-  "README.txt"
-]
-pack["UMFPACK"] = [
-  "http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.6.2.tar.gz",
+pack["SuiteSparse"] = [
+  "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-4.4.4.tar.gz",
   "README.txt"
 ]
 

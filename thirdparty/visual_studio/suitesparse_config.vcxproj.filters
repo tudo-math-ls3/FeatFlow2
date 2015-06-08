@@ -11,12 +11,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SuiteSparse_config\SuiteSparse_config.h">
+    <ClInclude Include="..\SuiteSparse\SuiteSparse_config\SuiteSparse_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\SuiteSparse_config\SuiteSparse_config.c">
+    <ClCompile Include="..\SuiteSparse\SuiteSparse_config\SuiteSparse_config.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

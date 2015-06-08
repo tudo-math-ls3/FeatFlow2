@@ -19,23 +19,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\AMD\Include\amd.h" />
-    <ClInclude Include="..\AMD\Include\amd_internal.h" />
+    <ClInclude Include="..\SuiteSparse\AMD\Include\amd.h" />
+    <ClInclude Include="..\SuiteSparse\AMD\Include\amd_internal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\AMD\Source\amd_1.c" />
-    <ClCompile Include="..\AMD\Source\amd_2.c" />
-    <ClCompile Include="..\AMD\Source\amd_aat.c" />
-    <ClCompile Include="..\AMD\Source\amd_control.c" />
-    <ClCompile Include="..\AMD\Source\amd_defaults.c" />
-    <ClCompile Include="..\AMD\Source\amd_dump.c" />
-    <ClCompile Include="..\AMD\Source\amd_global.c" />
-    <ClCompile Include="..\AMD\Source\amd_info.c" />
-    <ClCompile Include="..\AMD\Source\amd_order.c" />
-    <ClCompile Include="..\AMD\Source\amd_postorder.c" />
-    <ClCompile Include="..\AMD\Source\amd_post_tree.c" />
-    <ClCompile Include="..\AMD\Source\amd_preprocess.c" />
-    <ClCompile Include="..\AMD\Source\amd_valid.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_1.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_2.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_aat.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_control.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_defaults.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_dump.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_global.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_info.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_order.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_postorder.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_post_tree.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_preprocess.c" />
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_valid.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DEB5EB88-13B3-4F6B-8059-060343C304D3}</ProjectGuid>
@@ -93,7 +93,7 @@
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4267</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\SuiteSparse\AMD\Include;$(ProjectDir)..\SuiteSparse\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -121,7 +121,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4267</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\SuiteSparse\AMD\Include;$(ProjectDir)..\SuiteSparse\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

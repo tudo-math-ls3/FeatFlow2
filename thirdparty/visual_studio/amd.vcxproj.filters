@@ -11,51 +11,51 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\AMD\Include\amd.h">
+    <ClInclude Include="..\SuiteSparse\AMD\Include\amd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\AMD\Include\amd_internal.h">
+    <ClInclude Include="..\SuiteSparse\AMD\Include\amd_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\AMD\Source\amd_1.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_2.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_aat.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_aat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_control.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_control.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_defaults.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_defaults.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_dump.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_dump.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_global.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_global.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_info.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_info.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_order.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_order.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_post_tree.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_post_tree.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_postorder.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_postorder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_preprocess.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_preprocess.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AMD\Source\amd_valid.c">
+    <ClCompile Include="..\SuiteSparse\AMD\Source\amd_valid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

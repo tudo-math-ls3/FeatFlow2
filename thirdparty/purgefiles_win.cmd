@@ -59,3 +59,7 @@ rmdir /s /q .\UMFPACK\Source
 rmdir /s /q .\UMFPACK\Tcov
 del /q .\UMFPACK\Makefile
 del /q .\UMFPACK\README.txt
+
+rem ============================================================================
+echo Purging SuiteSparse...
+rmdir /s /q .\SuiteSparse
