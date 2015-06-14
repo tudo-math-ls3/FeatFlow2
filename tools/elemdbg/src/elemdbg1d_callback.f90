@@ -63,7 +63,7 @@ contains
     type(t_linearForm), intent(IN) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN) :: nelements
+    integer, intent(IN) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN) :: npointsPerElement
