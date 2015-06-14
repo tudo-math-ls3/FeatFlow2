@@ -2969,7 +2969,11 @@ contains
 
     case default
       call output_line ('Unsupported element: '//&
+#ifdef USE_LARGEINT
+                        trim(adjustl(sys_si(int(celement, I64),16)))//'.', &
+#else
                         trim(adjustl(sys_si(celement,16)))//'.', &
+#endif
                         OU_CLASS_ERROR,OU_MODE_STD,'elem_generic_sim2')
       call sys_halt()
     end select
