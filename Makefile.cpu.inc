@@ -743,8 +743,9 @@ ifeq ($(strip $(INTSIZE)), LARGE)
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
 # reference to it in the UMFPACK 5.2-5.6.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
+CFLAGSF90      := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
+CFLAGSC        := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
+UMFPACK_CONFIG := -DLONGBLAS
 endif
 
 

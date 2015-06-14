@@ -2943,7 +2943,7 @@ sub create_feat2AppMakefile {
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tCC=\"\$(PRECC) \$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
-        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tUMFPACK_CONFIG=\"\$(UMFPACK_CONFIG)\" ARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" ID=\"\$(ID)\")\n\n" .
 
     # AMD library path settings
