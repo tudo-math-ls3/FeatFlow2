@@ -14,7 +14,7 @@ module tutorial004f
 
   implicit none
   private
-  
+
   public :: start_tutorial004f
 
 contains
@@ -30,7 +30,7 @@ contains
     type(it_listInt) :: rlistIterator
     type(t_mapInt) :: rmap
     type(it_mapInt) :: rmapIterator
-    integer, dimension(:), allocatable :: Irandom
+    integer(I32), dimension(:), allocatable :: Irandom
     integer :: i
 
     ! Print a message
@@ -57,7 +57,7 @@ contains
     ! =================================
     ! Start time measurement for list
     ! =================================
-    
+
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
@@ -72,7 +72,11 @@ contains
     ! =================================
 
     do i=1,size(Irandom)
+#ifdef USE_LARGEINT
+      call list_push_back(rlist,int(Irandom(i), I64))
+#else
       call list_push_back(rlist,Irandom(i))
+#endif
     end do
 
     ! =================================
@@ -80,13 +84,17 @@ contains
     ! =================================
 
     do i=1,size(Irandom)
+#ifdef USE_LARGEINT
+      rlistIterator = list_find(rlist, int(Irandom(i), I64))
+#else
       rlistIterator = list_find(rlist, Irandom(i))
+#endif
     end do
 
     ! =================================
     ! Release list
     ! =================================
-    
+
     call list_release(rlist)
 
     ! =================================
@@ -101,7 +109,7 @@ contains
     ! =================================
     ! Start time measurement for map
     ! =================================
-    
+
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
@@ -116,7 +124,11 @@ contains
     ! =================================
 
     do i=1,size(Irandom)
+#ifdef USE_LARGEINT
+      rmapIterator = map_insert(rmap,int(Irandom(i), I64))
+#else
       rmapIterator = map_insert(rmap,Irandom(i))
+#endif
     end do
 
     ! =================================
@@ -124,13 +136,17 @@ contains
     ! =================================
 
     do i=1,size(Irandom)
+#ifdef USE_LARGEINT
+      rmapIterator = map_find(rmap, int(Irandom(i), I64))
+#else
       rmapIterator = map_find(rmap, Irandom(i))
+#endif
     end do
 
     ! =================================
     ! Release map
     ! =================================
-    
+
     call map_release(rmap)
 
     ! =================================

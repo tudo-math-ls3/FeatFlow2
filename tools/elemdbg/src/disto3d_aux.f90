@@ -167,10 +167,10 @@ contains
 !</subroutine>
 
   ! Parameter: Cubature formula
-  integer, parameter :: ccubature = CUB_G2_3D
+  integer(I32), parameter :: ccubature = CUB_G2_3D
 
   ! Arrays for the cubature formula
-  integer :: ncubp
+  integer(I32) :: ncubp
   real(DP), dimension(:,:), allocatable :: DcubPts
   real(DP), dimension(:), allocatable :: Domega
   
@@ -291,7 +291,7 @@ contains
 !</subroutine>
 
   ! Arrays for the cubature formula
-  integer :: ccub,ncubp
+  integer(I32) :: ccub,ncubp
   real(DP), dimension(:,:), allocatable :: DcubPts
   real(DP), dimension(:), allocatable :: Domega
   
@@ -333,12 +333,12 @@ contains
     if(present(ccubature)) then
       
       ! Check the shape
-      if(cub_igetShape(ccubature) .ne. BGEOM_SHAPE_QUAD) then
+      if(cub_igetShape(int(ccubature,I32)) .ne. BGEOM_SHAPE_QUAD) then
         call output_line ('Cubature rule is not a valid quadrilateral rule!', &
             OU_CLASS_ERROR,OU_MODE_STD,'disto3d_calcFaceNormalDeviation')
         call sys_halt()
       else
-        ccub = ccubature
+        ccub = int(ccubature,I32)
       end if
     end if
 
@@ -546,7 +546,7 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
-  integer :: i,ivt,idx,invt
+  integer :: i,ivt,invt
   integer(i32) :: iv
 
     ! Compute inverse mesh width
@@ -566,7 +566,7 @@ contains
     call storage_getbase_double2d (rtria%h_DvertexCoords, p_Dvtx)
 
     ! seed the rng with the vertex count
-    call rng_init(rrng, rtria%NVT)
+    call rng_init(rrng, int(rtria%NVT, I32))
 
     ! Loop over the vertices
     do ivt = 1, rtria%NVT
@@ -616,8 +616,8 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
-  integer :: i,ivt,idx,invt
-  integer(i32) :: iv
+  integer :: i,ivt,invt
+  integer(i32) :: iv,idx
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
@@ -693,8 +693,8 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
-  integer :: i,ivt,idx,invt
-  integer(i32) :: iv
+  integer :: i,ivt,invt
+  integer(i32) :: iv,idx
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
@@ -770,8 +770,8 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
-  integer :: i,ivt,idx,invt
-  integer(i32) :: iv
+  integer :: i,ivt,invt
+  integer(i32) :: iv,idx
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP

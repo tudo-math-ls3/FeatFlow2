@@ -267,10 +267,17 @@ contains
     if((idistType .ge. 2) .and. (idistType .le. 3)) then
       call output_line('Mesh Distortion 2..: ' // trim(sys_sdL(ddist2,8)))
     end if
+#ifdef USE_LARGEINT
+    call output_line('Element............: ' // trim(selement) // &
+                     ' (ID=' // trim(sys_siL(int(celement,I64),12)) // ')')
+    call output_line('Primary element....: ' // trim(sprimaryelement) // &
+                     ' (ID=' // trim(sys_siL(int(cprimaryelement,I64),12)) // ')')
+#else
     call output_line('Element............: ' // trim(selement) // &
                      ' (ID=' // trim(sys_siL(celement,12)) // ')')
     call output_line('Primary element....: ' // trim(sprimaryelement) // &
                      ' (ID=' // trim(sys_siL(cprimaryelement,12)) // ')')
+#endif
     call output_line('Cubature rule......: ' // trim(scubature) // &
                      ' (ID=' // trim(sys_siL(ccubature,12)) // ')')
     select case(isolver)
@@ -387,9 +394,9 @@ contains
           celement, rtriangulation, rboundary)
 
       ! Set up a cubature info structure
-      call spdiscr_createDefCubStructure(&  
-          rdiscretisation%RspatialDiscr(1), rcubatureInfo, ccubature)
-                   
+      call spdiscr_createDefCubStructure(&
+          rdiscretisation%RspatialDiscr(1), rcubatureInfo, int(ccubature,I32))
+
       ! Create matrix structure
       call lsysbl_createMatBlockByDiscr(rdiscretisation, rmatrix)
       if ((itest .eq. 203) .and. (istabil .eq. 2)) then

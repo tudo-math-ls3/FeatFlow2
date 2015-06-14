@@ -368,7 +368,7 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
 
     ! To get the arrays we need these pointers
     integer, dimension(:,:), pointer :: p_L2FuncComp, p_L1FuncComp, p_IntFuncComp
-    integer(I32), dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
+    integer, dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
 
     ! a pointer to the component + derivative array
     integer, dimension(:,:), pointer :: p_FuncComp
@@ -777,7 +777,7 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
 
     ! To get the arrays we need these pointers
     integer, dimension(:,:), pointer :: p_L2FuncComp, p_L1FuncComp, p_IntFuncComp
-    integer(I32), dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
+    integer, dimension(:), pointer :: p_L2CubRule, p_L1CubRule, p_IntCubRule
 
 
     ! Local variables:

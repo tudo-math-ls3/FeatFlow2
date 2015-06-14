@@ -11,7 +11,7 @@ module tutorial003e
 
   implicit none
   private
-  
+
   public :: start_tutorial003e
 
 contains
@@ -19,11 +19,11 @@ contains
   ! ***************************************************************************
 
   subroutine start_tutorial003e
-  
+
     ! Declare some variables
     type(t_random) :: rrng
     integer :: i
-    integer, dimension(4) :: Ival
+    integer(I32), dimension(4) :: Ival
     real(DP), dimension(4) :: Dval
 
     ! Print a message
@@ -31,14 +31,14 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 003e")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Generate random numbers
     ! =================================
-    
+
     ! Initialise the pseudo-random generator.
-    call rng_init(rrng, 7635)
-    
+    call rng_init(rrng, 7635_I32)
+
     ! Generate some integer numbers.
     do i=1,4
       call rng_get(rrng, Ival(i))
@@ -52,9 +52,13 @@ contains
     ! =================================
     ! Output
     ! =================================
-    
+
     do i=1,4
+#ifdef USE_LARGEINT
+      call output_line (" " // trim(sys_siL(int(Ival(i),I64),10)),bnolinebreak=(i .ne. 4))
+#else
       call output_line (" " // trim(sys_siL(Ival(i),10)), bnolinebreak=(i .ne. 4))
+#endif
     end do
 
     do i=1,4

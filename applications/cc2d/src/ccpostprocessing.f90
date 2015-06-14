@@ -3076,7 +3076,7 @@ contains
                                 "scubError",stemp,"")
     if (stemp .eq. "") then
       call parlst_getvalue_int (rproblem%rparamList,"CC-POSTPROCESSING",&
-                                "icubError",icubError,int(CUB_GEN_AUTO))
+                                "icubError",icubError,int(CUB_GEN_AUTO,I32))
     else
       icubError = cub_igetID(stemp)
     end if

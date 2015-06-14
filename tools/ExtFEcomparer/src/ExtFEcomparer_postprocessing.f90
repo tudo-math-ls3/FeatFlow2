@@ -160,7 +160,7 @@ subroutine ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_IntComp => NULL()
     character, dimension(:), pointer :: p_IntChiOmega => NULL()
     character, dimension(:), pointer :: p_IntTriFile => NULL()
-    integer(I32), dimension (:), pointer :: p_IntCubRule => NULL()
+    integer, dimension (:), pointer :: p_IntCubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
 
@@ -517,7 +517,7 @@ subroutine ExtFE_init_postprocessing_L1(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_L1Comp => NULL()
     character, dimension(:), pointer :: p_L1ChiOmega => NULL()
     character, dimension(:), pointer :: p_L1TriFile => NULL()
-    integer(I32), dimension (:), pointer :: p_L1CubRule => NULL()
+    integer, dimension (:), pointer :: p_L1CubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
 
@@ -874,7 +874,7 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_L2Comp => NULL()
     character, dimension(:), pointer :: p_L2ChiOmega => NULL()
     character, dimension(:), pointer :: p_L2TriFile => NULL()
-    integer(I32), dimension (:), pointer :: p_L2CubRule => NULL()
+    integer, dimension (:), pointer :: p_L2CubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
 

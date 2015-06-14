@@ -61,8 +61,8 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy
-  integer :: i,ivt,idx,invt
-  integer(i32) :: iv
+  integer :: i,ivt,invt
+  integer(i32) :: iv, idx
 
     ! Compute inverse mesh width
     dh = sqrt(real(rtria%NVT,DP)) - 1.0_DP
@@ -136,8 +136,8 @@ contains
   type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
   real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy
-  integer :: i,ivt,idx,invt
-  integer(i32) :: iv
+  integer :: i,ivt,invt
+  integer(i32) :: iv, idx
 
     ! Compute inverse mesh width
     dh = sqrt(real(rtria%NVT,DP)) - 1.0_DP

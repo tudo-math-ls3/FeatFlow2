@@ -633,7 +633,7 @@ contains
   type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  integer(I32), intent(IN)                                         :: ielement
+  integer, intent(IN)                                         :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
@@ -657,7 +657,7 @@ contains
   !            should be computed
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
   !   iwhere = Number of the edge where the normal stress should be computed.
-  integer(I32), intent(IN)                                         :: iwhere
+  integer, intent(IN)                                         :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC :

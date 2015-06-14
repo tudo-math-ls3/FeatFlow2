@@ -17,7 +17,7 @@ program ferecovery
   use vectorio
 
   implicit none
-  
+
   type(t_blockDiscretisation) :: rblockDiscrSolution, rblockDiscrGradient
   type(t_boundary) :: rbnd
   type(t_triangulation) :: rtria
@@ -25,7 +25,7 @@ program ferecovery
   real(DP), dimension(:), pointer :: p_Ddata
   character(len=256) :: sarg,scubature,selement,sgrad,smesh,sname,ssol,stoken
   integer ::  i,iarg,iel,ilinelen,ios,itoken,iunit,ntoken,ndim
-  integer, dimension(:), allocatable :: Celement
+  integer(I32), dimension(:), allocatable :: Celement
   logical :: bbnd
 
   ! Initialise system-wide settings:
@@ -36,7 +36,7 @@ program ferecovery
 
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
-  
+
   ! Print help
   if(sys_ncommandLineArgs() .lt. 1) then
     call output_lbrk()
@@ -66,7 +66,7 @@ program ferecovery
     ! fetch argument string
     call sys_getcommandLineArg(iarg, sarg)
     iarg = iarg + 1
-    
+
     ! check argument
     if(sarg .eq. '-read1d') then
       call sys_getcommandLineArg(iarg, smesh)
@@ -223,8 +223,8 @@ program ferecovery
   call spdiscr_releaseBlockDiscr(rblockDiscrGradient)
   call tria_done(rtria)
   if(bbnd) call boundary_release(rbnd)
-  
+
   ! Clean up the storage management, finish
   call storage_done()
-  
+
 end program ferecovery
