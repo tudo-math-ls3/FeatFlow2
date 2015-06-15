@@ -499,6 +499,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/5.1.0"
 		    LIDOJOBNAMEPREFIX=ff2-gcc51
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="GCC 5.1.0"
 		    ;;
 
@@ -714,6 +715,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/11.1.3.174 intel/cce/14.0.3.174 intel/fce/14.0.3.174"
 		    LIDOJOBNAMEPREFIX=ff2-intel140
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="Intel 14.0"
 		    ;;
 
@@ -723,6 +725,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/11.2.3.187 intel/cce/15.0.3.187 intel/fce/15.0.3.187"
 		    LIDOJOBNAMEPREFIX=ff2-intel150
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="Intel 15.0"
 		    ;;
 
