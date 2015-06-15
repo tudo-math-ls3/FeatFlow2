@@ -403,11 +403,11 @@ ifeq ($(call match,$(ID),.*-.*-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/COMP-g95.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-g95-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-g95.mk
 endif
 # Enable optimization flags for IA-64
-ifeq ($(call match,$(ID),ia64-*-.*-g95-.*),yes)
+ifeq ($(call match,$(ID),ia64-.*-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-ia64-g95.mk
 endif
 # Optimization flags for further architectures go here
@@ -425,19 +425,19 @@ ifeq ($(call match,$(ID),.*-.*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/COMP-gcc.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-gcc-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-gcc.mk
 endif
 # Enable optimization flags for IA-64
-ifeq ($(call match,$(ID),ia64-*-.*-gcc-.*),yes)
+ifeq ($(call match,$(ID),ia64-.*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-ia64-gcc.mk
 endif
 # Enable optimization flags for sun4u / sun4v
-ifeq ($(call match,$(ID),(sun4u|sun4v)-*-.*-gcc-.*),yes)
+ifeq ($(call match,$(ID),(sun4u|sun4v)-.*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-sun4u-gcc.mk
 endif
 # Enable optimization flags for ARM
-ifeq ($(call match,$(ID),(arm|arm64)-*-.*-gcc-.*),yes)
+ifeq ($(call match,$(ID),(arm|arm64)-.*-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-arm-gcc.mk
 endif
 # Optimization flags for further architectures go here
@@ -455,7 +455,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-intel-.*),yes)
 include $(TEMPLATESDIR)/COMP-intel.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-intel-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-intel-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-intel.mk
 endif
 # Optimization flags for further architectures go here
@@ -473,7 +473,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-intel64-.*),yes)
 include $(TEMPLATESDIR)/COMP-intel64.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for i64
-ifeq ($(call match,$(ID),ia64-*-.*-intel64-.*),yes)
+ifeq ($(call match,$(ID),ia64-.*-.*-intel64-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-ia-intel64.mk
 CFLAGSF77 := $(CFLAGSOPTF77) $(CFLAGSF77)
 CFLAGSF90 := $(CFLAGSOPTF90) $(CFLAGSF90)
@@ -494,7 +494,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-open64-.*),yes)
 include $(TEMPLATESDIR)/COMP-open64.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-open64-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-open64-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-open64.mk
 endif
 # Optimization flags for further architectures go here
@@ -512,7 +512,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/COMP-pathscale.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-psc-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-pathscale.mk
 endif
 # Optimization flags for further architectures go here
@@ -530,7 +530,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/COMP-pgi.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-pgi-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-pgi.mk
 endif
 # Optimization flags for further architectures go here
@@ -548,11 +548,11 @@ ifeq ($(call match,$(ID),.*-.*-.*-sunstudio-.*),yes)
 include $(TEMPLATESDIR)/COMP-sunstudio.mk
 ifeq ($(call optimise), YES)
 # Enable optimization flags for sun4u / sun4v
-ifeq ($(call match,$(ID),(sun4u|sun4v)-*-.*-sunstudio-.*),yes)
+ifeq ($(call match,$(ID),(sun4u|sun4v)-.*-.*-sunstudio-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-sun4u-sunstudio.mk
 endif
 # Enable optimization flags for x86 / x86_64
-ifeq ($(call match,$(ID),(pc|pc64)-*-.*-sunstudio-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-sunstudio-.*),yes)
 include $(TEMPLATESDIR)/CFLAGSOPT-pc-sunstudio.mk
 endif
 CFLAGSF77 := $(CFLAGSOPTF77) $(CFLAGSF77)
