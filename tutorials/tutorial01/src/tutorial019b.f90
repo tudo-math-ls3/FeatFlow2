@@ -12,29 +12,29 @@ module tutorial019b
   use fsystem
   use storage
   use genoutput
-  
+
   use boundary
   use triangulation
   use meshgeneration
-  
+
   use element
   use spatialdiscretisation
   use linearsystemscalar
   use bilinearformevaluation
-  
+
   use domainintegration
   use collection
-  
+
   use matrixio
   use vectorio
   use ucd
-  
+
   use analyticprojection
   use spdiscprojection
 
   implicit none
   private
-  
+
   public :: start_tutorial019b
 
 contains
@@ -105,11 +105,11 @@ contains
     real(DP) :: dvol
     real(DP), dimension(:), pointer :: p_DcellSize
     integer, dimension(:), pointer :: p_Ielements
-    
+
     ! From the triangulation, get an array with the cell size
     call storage_getbase_double (&
         rdiscretisation%p_rtriangulation%h_DelementVolume,p_DcellSize)
-        
+
     ! Get the list of real element IDs which are behind our
     ! local element numbers 1..nelements
     p_Ielements => rdomainIntSubset%p_Ielements
@@ -119,12 +119,12 @@ contains
 
       ! Volume of the element
       dvol = p_DcellSize (p_Ielements(iel))
-      
+
       do ipt = 1,npointsPerElement
-      
+
         ! Value of the function is the element volume
         Dvalues(ipt,iel) = dvol
-      
+
       end do
     end do
 
@@ -137,6 +137,7 @@ contains
     ! Declare some variables.
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
+    character(LEN=SYS_STRLEN) :: spredir
     type(t_spatialDiscretisation) :: rdiscrQ0, rdiscrQ1
     type(t_vectorScalar) :: rxQ0, rxQ1
     type(t_ucdExport) :: rexport
@@ -146,17 +147,24 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 019b")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Read the underlying domain
     ! and the mesh
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/bench1.prm")
-    
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/bench1.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/bench1.prm")
+    end if
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard, based on rboundary.
-    call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/bench1.tri", rboundary)
+    else
+      call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
+    end if
     call tria_initStandardMeshFromRaw (rtriangulation, rboundary)
 
     ! =================================
@@ -168,24 +176,24 @@ contains
 
     call spdiscr_initDiscr_simple (rdiscrQ0,EL_Q0_2D,rtriangulation)
     call spdiscr_initDiscr_simple (rdiscrQ1,EL_Q1_2D,rtriangulation)
-    
+
     ! =================================
     ! Create two vectors based on Q0 and Q1
     ! =================================
 
     call lsyssc_createVector (rdiscrQ0,rxQ0)
     call lsyssc_createVector (rdiscrQ1,rxQ1)
-    
+
     ! =================================
     ! Projection of the cell size to Q0
     ! =================================
-    
+
     call anprj_discrDirect (rxQ0, ffunction)
 
     ! =================================
     ! Projection Q0 to Q1
     ! =================================
-    
+
     call lsyssc_clearVector (rxQ1)
 
     call spdp_projectSolutionScalar (rxQ0,rxQ1)
@@ -199,23 +207,23 @@ contains
     ! Open
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial019b.vtk")
-                       
+
     ! Pass the vectors as solutions.
     call ucd_addVectorByElement (rexport, "x_q0", UCD_VAR_STANDARD, rxQ0)
     call ucd_addVectorByVertex (rexport, "x_q1", UCD_VAR_STANDARD, rxQ1)
-          
-    ! Write / close             
+
+    ! Write / close
     call ucd_write (rexport)
     call ucd_release (rexport)
 
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the vectors
     call lsyssc_releaseVector (rxQ1)
     call lsyssc_releaseVector (rxQ0)
-    
+
     ! Release discretisation structures
     call spdiscr_releaseDiscr (rdiscrQ1)
     call spdiscr_releaseDiscr (rdiscrQ0)
@@ -223,7 +231,7 @@ contains
     ! Release the triangulation and the boundary
     call tria_done (rtriangulation)
     call boundary_release (rboundary)
-    
+
   end subroutine
 
 end module

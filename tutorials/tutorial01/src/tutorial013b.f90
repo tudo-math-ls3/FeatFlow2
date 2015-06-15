@@ -7,12 +7,12 @@ module tutorial013b
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use boundary
 
   implicit none
   private
-  
+
   public :: start_tutorial013b
 
 contains
@@ -23,7 +23,8 @@ contains
 
     ! Declare some variables.
     type(t_boundary) :: rboundary
-    
+    character(LEN=SYS_STRLEN) :: spredir
+
     integer :: nbct,nsega,nsegb
     real(DP) :: dpar, dparlen
     real(DP) :: dmaxpar01a, dmaxparLena, dmaxpar01b, dmaxparLenb
@@ -32,7 +33,7 @@ contains
 
     real(DP), dimension(2,8) :: DcoordsCircle
     real(DP), dimension(2,8) :: DnormalsCircle
-    
+
     integer :: i
 
     ! Print a message
@@ -40,12 +41,16 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 013b")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Read the underlying domain
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/bench1.prm")
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/bench1.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/bench1.prm")
+    end if
 
     ! =================================
     ! Gather statistics
@@ -53,10 +58,10 @@ contains
 
     ! Number of boundary components
     nbct = boundary_igetNBoundComp(rboundary)
-    
+
     ! Number of boundary segments on 1st boundary component
     nsega = boundary_igetNsegments(rboundary,1)
-    
+
     ! Maximum parameter value of 1st boundary component,
     ! 0-1 and length parametrisation
     dmaxpar01a = boundary_dgetMaxParVal(rboundary, 1)
@@ -64,18 +69,18 @@ contains
 
     ! Number of boundary segments on 2nd boundary component (circle)
     nsegb = boundary_igetNsegments(rboundary,2)
-    
+
     ! Maximum parameter value of 2nd boundary component,
     ! 0-1 and length parametrisation
     dmaxpar01b = boundary_dgetMaxParVal(rboundary, 2)
     dmaxparLenb = boundary_dgetMaxParVal(rboundary, 2, BDR_PAR_LENGTH)
-    
+
     ! The four corners, at parmeter values 0.0, 1.0, 2.0 and 3.0
     call boundary_getCoords(rboundary, 1, 0.0_DP, Dcoords(1,1), Dcoords(2,1))
     call boundary_getCoords(rboundary, 1, 1.0_DP, Dcoords(1,2), Dcoords(2,2))
     call boundary_getCoords(rboundary, 1, 2.0_DP, Dcoords(1,3), Dcoords(2,3))
     call boundary_getCoords(rboundary, 1, 3.0_DP, Dcoords(1,4), Dcoords(2,4))
-    
+
     ! Normal vectors at the midpoints of the edges, parameter values 0.5, 1.5, 2.5 and 3.5
     call boundary_getNormalVec2D(rboundary, 1, 0.5_DP, Dnormals(1,1), Dnormals(2,1))
     call boundary_getNormalVec2D(rboundary, 1, 1.5_DP, Dnormals(1,2), Dnormals(2,2))
@@ -87,10 +92,10 @@ contains
       ! Parameter value of a point
       ! (0-1 parmetrisation, circle is one segment in the range 0-1)
       dpar = real(i-1,DP)/8.0_DP
-      
+
       call boundary_getCoords(rboundary, 2, dpar, &
           DcoordsCircle(1,i), DcoordsCircle(2,i))
-    
+
       call boundary_getNormalVec2D(rboundary, 2, dpar, &
           DnormalsCircle(1,i), DnormalsCircle(2,i))
     end do
@@ -101,10 +106,10 @@ contains
 
     call output_line ("Domain 'bench1.prm'. Statistics.")
     call output_line ("--------------------------------")
-    
+
     call output_line ("Number of boundary components     : "//&
         trim(sys_siL(nbct,10)))
-        
+
     call output_lbrk()
 
     call output_line ("Number of boundary segments, BC1  : "//&
@@ -115,21 +120,21 @@ contains
 
     call output_line ("Max. parameter value (length), BC1: "//&
         trim(sys_sdL(dmaxparLena,3)))
-        
+
     call output_lbrk()
 
     call output_line ("Coordinates corner 1              : "//&
         trim(sys_sdL(Dcoords(1,1),3)) // ", " // trim(sys_sdL(Dcoords(2,1),3)))
-    
+
     call output_line ("Coordinates corner 2              : "//&
         trim(sys_sdL(Dcoords(1,2),3)) // ", " // trim(sys_sdL(Dcoords(2,2),3)))
-    
+
     call output_line ("Coordinates corner 3              : "//&
         trim(sys_sdL(Dcoords(1,3),3)) // ", " // trim(sys_sdL(Dcoords(2,3),3)))
-    
+
     call output_line ("Coordinates corner 4              : "//&
         trim(sys_sdL(Dcoords(1,4),3)) // ", " // trim(sys_sdL(Dcoords(2,4),3)))
-        
+
     call output_lbrk()
 
     call output_line ("Normal vector edge 1              : "//&
@@ -154,17 +159,17 @@ contains
 
     call output_line ("Max. parameter value (length), BC2: "//&
         trim(sys_sdL(dmaxparLenb,3)))
-        
+
     call output_lbrk()
     call output_line ("Points on the circle:")
 
     do i=1,8
       ! Parameter value, 0-1 parametrisation
       dpar = real(i-1,DP)/8.0_DP
-      
+
       ! Corresponding parameter value in length parametrisation
       dparlen = boundary_convertParameter(rboundary, 2, dpar, BDR_PAR_01, BDR_PAR_LENGTH)
-      
+
       call output_line (" Parameter value "//&
           trim(sys_sdL(dpar,3))//"="//trim(sys_sdL(dparlen,3))//"      : "//&
           trim(sys_sdL(DcoordsCircle(1,i),3)) // ", " // trim(sys_sdL(DcoordsCircle(2,i),3)))
@@ -176,10 +181,10 @@ contains
     do i=1,8
       ! Parameter value, 0-1 parametrisation
       dpar = real(i-1,DP)/8.0_DP
-      
+
       ! Corresponding parameter value in length parametrisation
       dparlen = boundary_convertParameter(rboundary, 2, dpar, BDR_PAR_01, BDR_PAR_LENGTH)
-      
+
       call output_line (" Parameter value "//&
           trim(sys_sdL(dpar,3))//"="//trim(sys_sdL(dparlen,3))//"      : "//&
           trim(sys_sdL(DnormalsCircle(1,i),3)) // ", " // trim(sys_sdL(DnormalsCircle(2,i),3)))
@@ -188,10 +193,10 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the boundary definition
     call boundary_release(rboundary)
-    
+
   end subroutine
 
 end module

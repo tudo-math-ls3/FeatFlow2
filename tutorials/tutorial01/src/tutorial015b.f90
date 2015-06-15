@@ -7,36 +7,36 @@ module tutorial015b
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use boundary
   use triangulation
   use meshgeneration
-  
+
   use element
   use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
-  
+
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  
+
   use discretebc
   use bcassembly
   use vectorfilters
   use matrixfilters
-  
+
   use collection
-  
+
   use matrixio
   use vectorio
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial015b
 
 contains
@@ -109,11 +109,11 @@ contains
 
     ! Local variables
     real(DP) :: dx,dy
-    
+
     ! Get X/Y coordinates of the point
     call boundary_getCoords(rdiscretisation%p_rboundary, &
         rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-    
+
     ! We return the Dirichlet values: u(x,y) = y.
     ! This is =0 on the lower edge and =1 on the upper edge.
     Dvalues(1) = dy
@@ -127,6 +127,7 @@ contains
     ! Declare some variables.
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
+    character(LEN=SYS_STRLEN) :: spredir
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
     type(t_matrixBlock) :: rmatrix
@@ -141,17 +142,25 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 015b")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Read the underlying domain
     ! and the mesh
     ! =================================
 
-    call boundary_read_prm(rboundary, "pre/QUAD.prm")
-    
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
+    else
+      call boundary_read_prm(rboundary, "pre/QUAD.prm")
+    end if
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard.
-    call tria_readTriFile2D (rtriangulation, "pre/QUAD.tri", rboundary)
+    if (sys_getenv_string("PREDIR",spredir)) then
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
+    else
+      call tria_readTriFile2D (rtriangulation, "pre/QUAD.tri", rboundary)
+    end if
+
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! =================================
@@ -164,14 +173,14 @@ contains
 
     ! Create a spatial discretisation with Q1
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation,rboundary)
-    
+
     ! Create a block discretisation with 1 block Q1.
     call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation,rboundary)
     call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
     call spdiscr_commitBlockDiscr (rblockDiscr)
 
     ! =================================
-    ! Assemble a matrix, a RHS and create 
+    ! Assemble a matrix, a RHS and create
     ! an empty solution vector.
     ! =================================
 
@@ -194,17 +203,17 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
         bma_fcalc_laplace,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Create a RHS vector into block (1)
     call lsysbl_clearVector (rrhs)
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
         bma_fcalc_rhsBubble,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Clear the solution
     call lsysbl_clearVector (rsolution)
-    
+
     ! -----------------------------------------------------
     ! Cubature done.
     call spdiscr_releaseCubStructure (rcubatureInfo)
@@ -212,15 +221,15 @@ contains
     ! =================================
     ! Discretise boundary conditions
     ! =================================
-    
+
     ! Initialise a boundary condition structure
     call bcasm_initDiscreteBC(rdiscreteBC)
-    
+
     ! Create a boundary region that covers the complete boundary
     ! (1st boundary component).
     ! We want to prescribe Dirichlet-BC everywhere here.
     call boundary_createRegion (rboundary, 1, 0, rboundaryRegion)
-    
+
     ! Dirichlet-BC for equation 1.
     call bcasm_newDirichletBConRealBd (rblockDiscr, &
         1, rboundaryRegion, rdiscreteBC, fgetBoundaryValues)
@@ -263,22 +272,22 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the BC
     call bcasm_releaseDiscreteBC(rdiscreteBC)
-    
+
     ! Release the matrix/vectors
     call lsysbl_releaseMatrix (rmatrix)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
-    
+
     ! Release the discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
     call spdiscr_releaseDiscr (rspatialDiscr)
 
     ! Release the triangulation
     call tria_done (rtriangulation)
-    
+
     ! Release the boundary definition
     call boundary_release(rboundary)
 
