@@ -925,3 +925,20 @@ MESSAGE  := $(MESSAGE) \
 	    echo '*** Warning: No auto-tuning for GNU GCC below 4.2.0 compiler available!';
 endif
 endif
+
+
+##############################################################################
+# Known difficulties
+#
+##############################################################################
+
+ifeq ($(strip $(INTSIZE)), LARGE)
+ifneq ($(call gfortranminversion,4,5),yes)
+MESSAGE  := $(MESSAGE) \
+            echo '*** Message: Please be aware that using GCC <= 4.5.0 with 64-bit integers'; \
+            echo '             (INTSIZE=LARGE) is highly discouraged. Especially with GCC 4.4.7'; \
+            echo '             as shipped with CentOS 6.x this combination leads to unexplicable'; \
+            echo '             nonlinear solver stagnation for a number of CC2D configurations.'; \
+            echo '             Please do use a newer GCC version or a different compiler suite!';
+endif
+endif
