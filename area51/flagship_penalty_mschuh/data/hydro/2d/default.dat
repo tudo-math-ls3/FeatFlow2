@@ -1,0 +1,34 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#               Default parameters for hydrodynamic application in 2D          #
+#                                                                              #
+################################################################################
+
+simportdatafiles = '../1d/default.dat'
+
+################################################################################
+[Hydro]
+################################################################################
+
+# Position of the constant coefficient matrix CY in the scalar matrix structure
+CoeffMatrix_CY(1) = 7
+                    %{Hydro.CoeffMatrix_CX:1}
+
+# Position of the constant coefficient matrix CXX in the scalar matrix structure
+CoeffMatrix_CXX(1) = 0 #8
+                     %{Hydro.CoeffMatrix_CXX:1}
+
+# Position of the constant coefficient matrix CYY in the scalar matrix structure
+CoeffMatrix_CYY(1) = 0 #9
+                     %{Hydro.CoeffMatrix_CXX:1}
+
+# Position of the constant coefficient matrix CXY in the scalar matrix structure
+CoeffMatrix_CXY(1) = 0 #10
+                     %{Hydro.CoeffMatrix_CXX:1}
+
+# Type of cubature rule used at the boundary
+ccubTypeBdr = 103
+
+#-------------------------------------------------------------------------------

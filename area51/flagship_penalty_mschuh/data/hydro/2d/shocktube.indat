@@ -3,7 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                        Sod's shocktube problem in 1D                         #
+#                           Sod's shocktube problem                            #
 #                                                                              #
 # Initial conditions:                                                          #
 #  rho1 = 1.0;   p1 = 1.0                                                      #
@@ -12,35 +12,27 @@
 #                                                                              #
 ################################################################################
 
+# global constants
+defconst: rho0 = 1.0
+
 # Specify the initial solution
-#deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,t
-#deffunc: @initsol_vel = 0.0 ; x,t
-#deffunc: @initsol_Etot = if(x < 0.5, 2.5, 0.25) ; x,t
-#deffunc: @initsol_Etot = if(x < 0.5, 2.5, if(x<=1,0.25,2152.935)) ; x,t
-
-
-#Penalty start
-deffunc: @initsol_Etot = if(x < 0.5, 2.5, if(x<=1,0.25,0.25)) ; x,t
-deffunc: @initsol_rho = if(x < 0.5, 1.0, if(x<=1,0.125,0.125)) ; x,t
-deffunc: @initsol_vel = 0.0 ; x,t
+deffunc: @initsol_rho = if(x < 0.5, 1.0e0/_rho0, 1.25e-1/_rho0) ; x,y,t
+deffunc: @initsol_vel = 0.0 ; x,y,t
+deffunc: @initsol_Etot = if(x < 0.5, 2.5e0/_rho0, 2.5e-1/_rho0) ; x,y,t
 
 # Specify indicator function
-deffunc: @ChiOmegaS = if(x > 1, 1, 0) ; x
+#deffunc: @ChiOmegaS = if(x > 1, 1, 0) ; x,y
+deffunc: @ChiOmegaS = if(x+y > 1, 1, 0) ; x,y
 
 # Specify the boundary conditions
 [bdrcond_primal]
 NBCT
-2
+1
 NEXPR
-3
+4
 IBCT
 1
-NCOMP
-1
-IBCT
-2
 NCOMP
 1
 PARAMETERS
-0.0 T  'FREESLIP_WEAK'
-0.0 T  'FREESLIP_WEAK'
+4.0 T  'FREESLIP_WEAK'

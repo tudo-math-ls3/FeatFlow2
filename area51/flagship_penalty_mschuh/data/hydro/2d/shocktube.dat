@@ -5,18 +5,15 @@ version = 120829
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                        Sod's shocktube problem in 1D                         #
+#                           Sod's shocktube problem                            #
 ################################################################################
 
 simportdatafiles(5) =
-  '../../hydro/1d/default.dat'
+  '../../hydro/2d/default.dat'
   '../../solverdefault.dat'
   '../../adaptivitydefault.dat'
   '../../errorestdefault.dat'
   '../../solver_singlegrid_defcor.dat'
-
-slogfile = %{slogdirectory}/shocktube_someTEST
-
 
 ################################################################################
 
@@ -27,7 +24,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = %{sdatadirectory}/hydro/1d/shocktube_pen.indat
+indatfile = %{sdatadirectory}/hydro/2d/shocktube.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -36,7 +33,7 @@ sprimalbdrcondname = bdrcond_primal
 sdualbdrcondname = 
 
 # number of spatial dimensions
-ndimension = 1
+ndimension = 2
 
 # solution algorithm
 algorithm = transient_primal
@@ -61,10 +58,10 @@ iapproxtimederivativetype = 1
 
 # type of dissipation
 # 0 = no dissipation
-# 1 = scalar dissipation
-# 2 = tensorial dissipation
-# 3 = Rusanov type
-idissipationtype = 2
+# 1 = scalar dissipation (-1 = dimensional splitting)
+# 2 = tensorial dissipation (-2 = dimensional splitting)
+# 3 = Rusanov type (-3 = dimensional splitting)
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -98,12 +95,13 @@ slimitingvariable(2) =
   pressure
   
 # number of failsafe steps
-nfailsafe = 3
+nfailsafe = 0
 
 # variables for failsafe flux correction
-sfailsafevariable(2) =
+sfailsafevariable(3) =
   pressure
   velocity_x
+  velocity_y
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -114,8 +112,9 @@ sfailsafevariable(2) =
 isolutiontype = 3
 
 # section name of initial solution
-ssolutionname(3) = 
+ssolutionname(4) = 
   @initsol_rho
+  @initsol_vel
   @initsol_vel
   @initsol_Etot
 
@@ -138,17 +137,22 @@ ssolutionconstrainvariable(2) =
 nsolutionfailsafe = 3
 
 # variables for failsafe constrained initialisation
-ssolutionfailsafevariable(4) =
+ssolutionfailsafevariable(5) =
   density
   pressure
   velocity_x
+  velocity_y
   energy
 
 #-------------------------------------------------------------------------------
 
+# file which contains the boundary parametrisation
+# prmfile = %{sgriddirectory}/2d/rect_01x0.1_quads.prm
+prmfile = %{sgriddirectory}/2d/rect_0-1.5x0-0.1-75x5_quads.prm
+
 # file which contains the triangulation
-trifile = %{sgriddirectory}/1d/zero_to_onepoint5.tri
-#trifile = %{sgriddirectory}/1d/zero_to_onepoint5_1_15fine.tri
+# trifile = %{sgriddirectory}/2d/rect_01x0.1_quads.tri
+trifile = %{sgriddirectory}/2d/rect_0-1.5x0-0.1-75x5_quads.tri
 
 # type of finite element space(s)
 #
@@ -172,7 +176,10 @@ trifile = %{sgriddirectory}/1d/zero_to_onepoint5.tri
 #              Q1~ non-parametric, edge-midpoint based
 # EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
 #              Q1~ non-parametric, edge-midpoint based, new interface implementations
-celement = EL_P1_1D
+celement = EL_Q1_2D
+
+# convert mesh to triangular mesh?
+iconvToTria = 0
 
 # type of matrix format
 # 7 = matrix format 7
@@ -220,13 +227,13 @@ errorestimator = ErrorEstimator
 # 31 = FEM-GP
 # 41 = nonlinear upwind-biased FEM-LPT
 # 51 = linearised upwind-biased FEM-LPT
-istabilisation = 1
+istabilisation = 20
 
 # perform prelimiting
 #  0 = no prelimiting
 #  1 = standard prelimiting
 #  2 = minmod prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -250,16 +257,13 @@ ilineariseucd = 0
 nrefineucd = 0
 
 # time interval for UCD output
-dstepUCD = 0.001
+dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out_sometest/shocktube_TEST_parser
-
- # file for output of FE solution
-sfesolution = out_sometest/shocktube_TEST_parser
+sucdsolution = out/shocktube2D_ref
 
 # file for UCD output of error
-sucderror = 
+sucderror = out/shocktube_error2D_ref
 
 # variables for ucd output
 sucdvariable(5) =
@@ -267,28 +271,21 @@ sucdvariable(5) =
  velocity
  energy
  pressure
- internal_energy
-
-# variables for FE solution output
-sfevariable(5) =
- density
- velocity_x
- energy
- pressure
- internal_energy
+ machnumber
 
 ################################################################################
 [Timestepping]
 ################################################################################
 
 # type of time-stepping algorithm
-ctimestep = TSTEP_SSPERK_1_1
+#ctimestep = TSTEP_CRANK_NICHOLSON
+ctimestep = TSTEP_FORWARD_EULER
 
 # final time for the simulation.
 dfinalTime = 1.0
 
 # initial time step size
-dinitialStep = 1.0e-5
+dinitialStep = 1e-4
 
 
 ################################################################################
@@ -296,7 +293,7 @@ dinitialStep = 1.0e-5
 ################################################################################
 
 # multigrid level number
-nlev = 5
+nlev = 3
 
 
 ################################################################################
@@ -340,7 +337,7 @@ nmaxIterations = 100
 #  8 = FGMRES
 # 11 = UMFPACK4
 # 13 = AGMG
-isolver = 5
+isolver = 2
 
 # absolute tolerance for residual
 depsAbs = 1e-12
@@ -382,8 +379,9 @@ isolver = 50
 # this is realised with the function parser and the if-conditions.
 # allowed variables are x,y and z
 # it shall return 1 in \Omega_s and 0 outside
-# ChiOmegaS = if(x > 1,1,0)
+ChiOmegaS = if(x > 1,1,0)
 sChiOmegaSname = @ChiOmegaS
+
 
 # The fixed wall temperature of the obstacle that is
 # described with ChiOmegaS.
@@ -391,7 +389,7 @@ sChiOmegaSname = @ChiOmegaS
 dWallTemperature = 278.689324
 
 #value of the penalty-parameter (= 1/ \eta)
-dpenalty = 1E5
+dpenalty = 1E3
 
 ################################################################################
 [GasProperty]
