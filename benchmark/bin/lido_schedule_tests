@@ -22,7 +22,7 @@ MODULESLOADED=
 NOSCHEDULE=0
 NTASKS=
 OVERWRITE_LOG_DIRECTORY=
-WALLCLOCKLIMIT="00:40:00"
+WALLCLOCKLIMIT="00:10:00"
 
 case "`hostname -f`" in
     *.lidocluster.hp|lido*.itmc.tu-dortmund.de)
