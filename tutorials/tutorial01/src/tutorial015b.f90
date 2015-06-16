@@ -127,7 +127,7 @@ contains
     ! Declare some variables.
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
-    character(LEN=SYS_STRLEN) :: spredir
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
     type(t_matrixBlock) :: rmatrix
@@ -250,20 +250,40 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+        trim(spostdir)//"/tutorial015b_matrix.txt", "(E11.2)")
+    else
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
         "post/tutorial015b_matrix.txt", "(E11.2)")
+    end if
 
     ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
+        trim(spostdir)//"/tutorial015b_rhs.txt", "(E11.2)")
+    else
+      call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
         "post/tutorial015b_rhs.txt", "(E11.2)")
+    end if
 
     ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
+        trim(spostdir)//"/tutorial015b_sol.txt", "(E11.2)")
+    else
+      call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
         "post/tutorial015b_sol.txt", "(E11.2)")
+    end if
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial015b.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial015b.vtk")
+    end if
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)

@@ -137,7 +137,7 @@ contains
     ! Declare some variables.
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
-    character(LEN=SYS_STRLEN) :: spredir
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
     type(t_spatialDiscretisation) :: rdiscrQ0, rdiscrQ1
     type(t_vectorScalar) :: rxQ0, rxQ1
     type(t_ucdExport) :: rexport
@@ -205,8 +205,14 @@ contains
     call output_line ("Writing file 'post/tutorial019b.vtk'.")
 
     ! Open
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial019b.vtk")
+    else
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial019b.vtk")
+    end if
+
 
     ! Pass the vectors as solutions.
     call ucd_addVectorByElement (rexport, "x_q0", UCD_VAR_STANDARD, rxQ0)

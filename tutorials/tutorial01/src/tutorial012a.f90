@@ -7,14 +7,14 @@ module tutorial012a
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use triangulation
   use meshgeneration
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial012a
 
 contains
@@ -55,7 +55,7 @@ contains
     ! Open / write / close
     if (sys_getenv_string("POSTDIR",spostdir)) then
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                         trim(spostdir)//"tutorial012a_level1.vtk")
+                         trim(spostdir)//"/tutorial012a_level1.vtk")
     else
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                          "./post/tutorial012a_level1.vtk")
@@ -66,10 +66,10 @@ contains
     ! =================================
     ! Refine by 2-level ordering
     ! =================================
-    
+
     call tria_refine2LevelOrdering(rtriangulation)
     call tria_initStandardMeshFromRaw (rtriangulation)
-    
+
     ! =================================
     ! Write a VTK file with the mesh
     ! =================================
@@ -89,14 +89,14 @@ contains
     end if
     call ucd_write (rexport)
     call ucd_release (rexport)
-    
+
     ! =================================
     ! Refine by 2-level ordering
     ! =================================
-    
+
     call tria_refine2LevelOrdering(rtriangulation)
     call tria_initStandardMeshFromRaw (rtriangulation)
-    
+
     ! =================================
     ! Write a VTK file with the mesh
     ! =================================
@@ -120,9 +120,9 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     call tria_done (rtriangulation)
-    
+
   end subroutine
 
 end module

@@ -7,40 +7,40 @@ module tutorial017d
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use linearalgebra
   use triangulation
   use meshgeneration
-  
+
   use element
   use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
-  
+
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  
+
   use discretebc
   use bcassembly
   use meshregion
   use vectorfilters
   use matrixfilters
-  
+
   use filtersupport
   use multilevelprojection
   use multileveloperators
   use linearsolver
   use coarsegridcorrection
   use collection
-  
+
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial017d
 
 contains
@@ -102,7 +102,7 @@ contains
 
     ! Declare some variables.
     integer, parameter :: NLMAX = 5
-    
+
     type(t_triangulation), dimension(:), pointer :: p_Rtriangulations
     type(t_spatialDiscretisation), dimension(:), pointer :: p_RspatialDiscr
     type(t_blockDiscretisation), dimension(:), pointer :: p_RblockDiscr
@@ -110,17 +110,18 @@ contains
     type(t_filterChain), dimension(:,:), pointer :: p_RfilterChain
     type(t_scalarCubatureInfo), dimension(:), pointer :: p_RcubatureInfo
     integer, dimension(:), pointer :: Isize
-    
+
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices
     type(t_vectorBlock) :: rrhs, rsolution, rtemp
-    
+
     type(t_matrixScalar), dimension(:), pointer :: p_RprolMatrices
     type(t_matrixScalar), dimension(:), pointer :: p_RrestMatrices
     type(t_interlevelProjectionBlock), dimension(:), pointer :: p_Rprojection
-    
+
     type(t_meshRegion) :: rmeshRegion
     type(t_ucdExport) :: rexport
-    
+    character(LEN=SYS_STRLEN) :: spostdir
+
     type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rcoarsegridsolver
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     type(t_linsolMatrixSet) :: rmatrixSet
@@ -131,7 +132,7 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 017d")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Allocate level structures
     ! =================================
@@ -143,40 +144,40 @@ contains
     allocate (p_Rmatrices(NLMAX))
     allocate (p_RfilterChain(1,NLMAX))
     allocate (Isize(NLMAX))
-    
+
     allocate (p_RprolMatrices(NLMAX))
     allocate (p_RrestMatrices(NLMAX))
     allocate (p_Rprojection(NLMAX))
-    
+
     ! =================================
     ! Create a brick mesh
     ! =================================
 
-    ! The mesh must always be in "standard" format. 
+    ! The mesh must always be in "standard" format.
     ! First create a 5x5-mesh on [0,1]x[0,1], then convert to standard.
     call meshgen_rectangular2DQuadMesh (p_Rtriangulations(1), 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 4, 4)
     call tria_initStandardMeshFromRaw (p_Rtriangulations(1))
-    
+
     ! =================================
     ! Create a mesh hierarchy
     ! =================================
-    
+
     ! Refine until level NLMAX.
     do ilevel = 2,NLMAX
       call tria_refine2LevelOrdering(p_Rtriangulations(ilevel-1),p_Rtriangulations(ilevel))
       call tria_initStandardMeshFromRaw (p_Rtriangulations(ilevel))
     end do
-    
+
     ! =================================
     ! Create a hierarchy of Q1 discretisations
     ! =================================
 
-    ! On all levels, create a scalar and a block discretisation for a Q1 block.    
+    ! On all levels, create a scalar and a block discretisation for a Q1 block.
     do ilevel = 1,NLMAX
       ! Create a spatial discretisation with Q1
       call spdiscr_initDiscr_simple (&
           p_RspatialDiscr(ilevel),EL_Q1_2D,p_Rtriangulations(ilevel))
-      
+
       ! Create a block discretisation with 1 block Q1.
       call spdiscr_initBlockDiscr (p_RblockDiscr(ilevel),p_Rtriangulations(ilevel))
       call spdiscr_appendBlockComponent (p_RblockDiscr(ilevel),p_RspatialDiscr(ilevel))
@@ -219,7 +220,7 @@ contains
     end do
 
     ! =================================
-    ! Assemble a RHS and create 
+    ! Assemble a RHS and create
     ! an empty solution vector.
     ! =================================
 
@@ -237,20 +238,20 @@ contains
     ! =================================
     ! Discretise boundary conditions
     ! =================================
-    
+
     do ilevel = 1,NLMAX
-    
+
       ! Initialise a boundary condition structure
       call bcasm_initDiscreteBC(p_RdiscreteBC(ilevel))
-      
+
       ! Get a mesh region for the complete boundary
       call mshreg_createFromNodalProp(rmeshRegion, &
           p_Rtriangulations(ilevel), MSHREG_IDX_ALL)
-      
+
       ! Discretise Dirichlet boundary conditions
       call bcasm_newDirichletBConMR (p_RblockDiscr(ilevel), 1, &
           p_RdiscreteBC(ilevel), rmeshRegion, fgetBoundaryValuesMR)
-          
+
       call mshreg_done(rmeshregion)
 
     end do
@@ -263,24 +264,24 @@ contains
       ! Impose the BC into the matrix
       call matfil_discreteBC (p_Rmatrices(ilevel),p_RdiscreteBC(ilevel))
     end do
-    
+
     ! On the topmost level, impose to the RHS and the soluiton
     call vecfil_discreteBCrhs (rrhs,p_RdiscreteBC(NLMAX))
     call vecfil_discreteBCsol (rsolution,p_RdiscreteBC(NLMAX))
-    
+
     ! =================================
     ! Create prolongation/restriction
     ! matrices for level change in MG.
     ! =================================
-    
+
     ! Start with ilevel=2 which describes the solution exchange
     ! between level 1 and 2.
     do ilevel = 2,NLMAX
-    
+
       ! Create the prolongation matrix structure
       call mlop_create2LvlMatrixStruct (p_RspatialDiscr(ilevel-1),&
           p_RspatialDiscr(ilevel), LSYSSC_MATRIX9, p_RprolMatrices(ilevel))
-          
+
       ! and assemble the entries of the prolongation matrix.
       call mlop_build2LvlProlMatrix (&
           p_RspatialDiscr(ilevel-1),p_RspatialDiscr(ilevel),&
@@ -290,65 +291,65 @@ contains
 
       ! Transpose the matrix, this gives the restriction matrix
       call lsyssc_transposeMatrix (p_RprolMatrices(ilevel),p_RrestMatrices(ilevel))
-    
+
     end do
 
     ! =================================
     ! Solve the system with Multigrid elimination
     ! =================================
-    
+
     call output_line ("Solving linear system...")
-    
+
     ! ----------------
     ! Solver preparation
     ! ----------------
 
     ! Initialise a multigrid solver, NLMAX levels
     call linsol_initMultigrid2 (p_rsolverNode,NLMAX)
-    
+
     ! On level 1, add a Gauss elimination solver as coarse grid solver.
 
     ! On level 2..NLMAX, add Jacobi as pre- and postsmoother, 4 smoothing steps.
     do ilevel = 1, NLMAX
-    
+
       ! Get the mutigrid level data
       call linsol_getMultigrid2Level (p_rsolverNode,ilevel,p_rlevelInfo)
-    
+
       if (ilevel .eq. 1) then
-      
+
         ! ---------------------------------------
         ! Create a coarse grid solver
         ! ---------------------------------------
 
         ! Create UMFPACK
         call linsol_initUMFPACK4 (p_rcoarsegridsolver)
-        
+
         ! Set as coarse grid solver.
         p_rlevelInfo%p_rcoarseGridSolver => p_rcoarsegridsolver
-      
+
       else
-      
+
         ! ---------------------------------------
         ! Create a smoother
         ! ---------------------------------------
 
         ! Create Jacobi
         call linsol_initJacobi (p_rsmoother)
-        
+
         ! Configure as smoother, 4 steps, damping parameter 0.7
         call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
-        
+
         ! Set as pre- and postsmoother
         p_rlevelInfo%p_rpresmoother => p_rsmoother
         p_rlevelInfo%p_rpostsmoother => p_rsmoother
-      
-        ! Create and attach a filter chain that filters defect vectors on 
+
+        ! Create and attach a filter chain that filters defect vectors on
         ! this level to include boundary conditions.
         call filter_initFilterChain (p_RfilterChain(:,ilevel),Isize(ilevel))
         call filter_newFilterDiscBCDef (p_RfilterChain(:,ilevel),Isize(ilevel),p_RdiscreteBC(ilevel))
-        
+
         p_rlevelInfo%p_RfilterChain => p_RfilterChain(:,ilevel)
-      
+
         ! ---------------------------------------
         ! Prepare a matrix-based prolongation/
         ! restriction
@@ -357,34 +358,34 @@ contains
         ! Create a projection structure that describes prolongation/restriction
         ! for all blocks.
         call mlprj_initProjectionDiscr (p_Rprojection(ilevel),p_RblockDiscr(ilevel))
-        
+
         ! Initialise prolongation/restriction for the first block (our
         ! Q1 solution) according to the prolongation/restriction matrices.
         call mlprj_initMatrixProjection(p_Rprojection(ilevel)%RscalarProjection(1,1),&
             p_RprolMatrices(ilevel),rmatrixRest=p_RrestMatrices(ilevel))
-            
+
         ! Tell MG about the projection we want to use.
         p_rlevelInfo%p_rprojection => p_Rprojection(ilevel)
-        
+
       end if
     end do
-    
+
     ! Attach the system matrices
     call linsol_newMatrixSet (rmatrixSet)
     do ilevel=1,NLMAX
       call linsol_addMatrix (rmatrixSet,p_Rmatrices(ilevel))
     end do
-    
+
     call linsol_setMatrices (p_rsolverNode, rmatrixSet)
-    
+
     ! Symbolic factorisation
     call linsol_initStructure (p_rsolverNode, ierror)
-    
+
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line ("Error during symbolic factorisation.")
       call sys_halt()
     end if
-    
+
     ! Numeric factorisation
     call linsol_initData (p_rsolverNode, ierror)
 
@@ -407,32 +408,32 @@ contains
     ! ----------------
     ! Set multigrid specific settings
     ! ----------------
-    
+
     p_rsolverNode%p_rsubnodeMultigrid2%icycle = 0   ! 0=F-cycle, 1=V-cycle, 2=W-cycle
 
     ! ----------------
     ! Solve the system
     ! ----------------
-    
+
     ! Clear the solution
     call lsysbl_clearVector (rsolution)
-    
+
     ! Solve
     call linsol_solveAdaptively (p_rsolverNode,rsolution,rrhs,rtemp)
-    
+
     ! ----------------
     ! Cleanup
     ! ----------------
-    
+
     ! Numeric data
     call linsol_doneData (p_rsolverNode)
-    
+
     ! Symbolic data
     call linsol_doneStructure (p_rsolverNode)
-    
+
     ! Matrix set
     call linsol_releaseMatrixSet (rmatrixSet)
-    
+
     ! Remaining solver data
     call linsol_releaseSolver (p_rsolverNode)
 
@@ -443,8 +444,14 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
-        "post/tutorial017d.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
+                       trim(spostdir)//"/tutorial017d.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
+                       "post/tutorial017d.vtk")
+    end if
+
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)
@@ -453,12 +460,12 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release vectors
     call lsysbl_releaseVector (rtemp)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
-    
+
     ! Release the matrices/discretisation structures/BC/projection structurees
     do ilevel=1,NLMAX
       call mlprj_doneProjection(p_Rprojection(ilevel))
@@ -488,7 +495,7 @@ contains
     deallocate (p_RblockDiscr)
     deallocate (p_RspatialDiscr)
     deallocate (p_Rtriangulations)
-    
+
   end subroutine
 
 end module

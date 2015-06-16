@@ -7,36 +7,36 @@ module tutorial015a
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use triangulation
   use meshgeneration
-  
+
   use element
   use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
-  
+
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  
+
   use discretebc
   use bcassembly
   use meshregion
   use vectorfilters
   use matrixfilters
-  
+
   use collection
-  
+
   use matrixio
   use vectorio
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial015a
 
 contains
@@ -113,11 +113,11 @@ contains
 
     ! local variables
     real(DP) :: dx,dy
-    
+
     ! Get the coordinates
     dx = Dcoords(1)
     dy = Dcoords(2)
-    
+
     ! We return the Dirichlet values: u(x,y) = y.
     ! This is =0 on the lower edge and =1 on the upper edge.
     Dvalues(1) = dy
@@ -138,18 +138,19 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     type(t_meshRegion) :: rmeshRegion
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 015a")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Create a brick mesh
     ! =================================
 
-    ! The mesh must always be in "standard" format. 
+    ! The mesh must always be in "standard" format.
     ! First create a 5x5-mesh on [0,1]x[0,1], then convert to standard.
     call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 4, 4)
     call tria_initStandardMeshFromRaw (rtriangulation)
@@ -164,14 +165,14 @@ contains
 
     ! Create a spatial discretisation with Q1
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation)
-    
+
     ! Create a block discretisation with 1 block Q1.
     call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation)
     call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
     call spdiscr_commitBlockDiscr (rblockDiscr)
 
     ! =================================
-    ! Assemble a matrix, a RHS and create 
+    ! Assemble a matrix, a RHS and create
     ! an empty solution vector.
     ! =================================
 
@@ -194,17 +195,17 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
         bma_fcalc_laplace,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Create a RHS vector into block (1)
     call lsysbl_clearVector (rrhs)
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
         bma_fcalc_rhsBubble,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Clear the solution
     call lsysbl_clearVector (rsolution)
-    
+
     ! -----------------------------------------------------
     ! Cubature done.
     call spdiscr_releaseCubStructure (rcubatureInfo)
@@ -212,28 +213,28 @@ contains
     ! =================================
     ! Discretise boundary conditions
     ! =================================
-    
+
     ! Initialise a boundary condition structure
     call bcasm_initDiscreteBC(rdiscreteBC)
-    
+
     ! Get a mesh region for the bottommost edge and
     ! create Dirichlet-BC there. The values are returned
     ! by the above callback function.
     call mshreg_createFromExpression(rmeshRegion, rtriangulation, &
         MSHREG_IDX_ALL, .true., "Y = 0")
-    
+
     call bcasm_newDirichletBConMR (rblockDiscr, 1, rdiscreteBC, &
         rmeshRegion, fgetBoundaryValuesMR)
-    
+
     call mshreg_done(rmeshregion)
-        
+
     ! Another one for the topmost edge
     call mshreg_createFromExpression(rmeshRegion, rtriangulation, &
         MSHREG_IDX_ALL, .true., "Y = 1")
-    
+
     call bcasm_newDirichletBConMR (rblockDiscr, 1, rdiscreteBC, &
         rmeshRegion, fgetBoundaryValuesMR)
-        
+
     call mshreg_done(rmeshregion)
 
     ! =================================
@@ -252,20 +253,40 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+        trim(spostdir)//"/tutorial015a_matrix.txt", "(E11.2)")
+    else
+      call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
         "post/tutorial015a_matrix.txt", "(E11.2)")
+    end if
 
     ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
+        trim(spostdir)//"/tutorial015a_rhs.txt", "(E11.2)")
+    else
+      call vecio_writeBlockVectorHR (rrhs, "rhs", .true., 0, &
         "post/tutorial015a_rhs.txt", "(E11.2)")
+    end if
 
     ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
+        trim(spostdir)//"/tutorial015a_sol.txt", "(E11.2)")
+    else
+      call vecio_writeBlockVectorHR (rsolution, "vector", .true., 0, &
         "post/tutorial015a_sol.txt", "(E11.2)")
+    end if
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial015a.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial015a.vtk")
+    end if
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)
@@ -274,22 +295,22 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the BC
     call bcasm_releaseDiscreteBC(rdiscreteBC)
-    
+
     ! Release the matrix/vectors
     call lsysbl_releaseMatrix (rmatrix)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
-    
+
     ! Release the discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
     call spdiscr_releaseDiscr (rspatialDiscr)
 
     ! Release the triangulation
     call tria_done (rtriangulation)
-    
+
   end subroutine
 
 end module

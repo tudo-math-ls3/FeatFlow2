@@ -7,32 +7,32 @@ module tutorial020a
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use triangulation
   use meshgeneration
 
-  use derivatives  
+  use derivatives
   use element
   use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
-  
+
   use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  
+
   use linearsolver
   use filtersupport
   use collection
-  
+
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial020a
 
 contains
@@ -44,7 +44,7 @@ contains
   subroutine frhs(rvectorData,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
-!<description>  
+!<description>
     ! Calculates a right-hand side vector according to the right-hand
     ! side function f=dscale*32*y*(1-y)+32*x*(1-x) - 32/3.
     !
@@ -65,13 +65,13 @@ contains
 
     ! Structure with all data about the assembly
     type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
-    
+
     ! Number of points per element
     integer, intent(in) :: npointsPerElement
-    
+
     ! Number of elements
     integer, intent(in) :: nelements
-    
+
     ! Values of FEM functions automatically evaluated in the
     ! cubature points.
     type(t_fev2Vectors), intent(in) :: revalVectors
@@ -79,7 +79,7 @@ contains
     ! User defined collection structure
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
-    
+
 !</subroutine>
 
     ! Local variables
@@ -90,18 +90,18 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaVectorData), pointer :: p_rvectorData
     real(DP), dimension(:,:,:), pointer :: p_Dpoints
-  
+
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
     ! Get the coordinates of the cubature points
     p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-    
+
     ! Get the data arrays of subvector 1
     p_rvectorData => RvectorData(1)
     p_DlocalVector => p_rvectorData%p_Dentry
     p_DbasTest => p_rvectorData%p_DbasTest
-  
+
     ! FE space dimension
     ndimfe = p_rvectorData%ndimfe
 
@@ -110,7 +110,7 @@ contains
 
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
-      
+
         ! Get the coordinates of the cubature point.
         dx = p_Dpoints(1,icubp,iel)
         dy = p_Dpoints(2,icubp,iel)
@@ -118,32 +118,32 @@ contains
         ! Calculate the values of the RHS using the coordinates
         ! of the cubature points.
         dval = 32.0_DP*dy*(1.0_DP-dy) + 32_DP*dx*(1.0_DP-dx) - 32.0_DP/3.0_DP
-        
+
         ! Loop over the dimensions of the FE space
         do idimfe = 0,ndimfe-1
 
           ! Outer loop over the DOF's i=1..ndof on our current element,
           ! which corresponds to the (test) basis functions Psi_i:
           do idofe=1,p_rvectorData%ndofTest
-          
+
             ! Fetch the contributions of the (test) basis functions Psi_i
             ! into dbasI
             dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
-            
+
             ! Multiply the values of the basis functions
             ! (1st derivatives) by the cubature weight and sum up
             ! into the local vectors.
             p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
                 p_DcubWeight(icubp,iel) * dval * dbasI
-            
+
           end do ! idofe
-          
+
         end do ! idimfe
 
       end do ! icubp
-    
+
     end do ! iel
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -158,7 +158,8 @@ contains
     type(t_vectorBlock) :: rrhs, rsolution, rtemp
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_ucdExport) :: rexport
-    
+    character(LEN=SYS_STRLEN) :: spostdir
+
     type(t_filterChain), dimension(1), target :: RfilterChain
     integer :: nfilters
     type(t_linsolNode), pointer :: p_rsolverNode
@@ -169,12 +170,12 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 020a")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Create a brick mesh
     ! =================================
 
-    ! The mesh must always be in "standard" format. 
+    ! The mesh must always be in "standard" format.
     ! First create a 11x11-mesh on [0,1]x[0,1], then convert to standard.
     call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 10, 10)
     call tria_initStandardMeshFromRaw (rtriangulation)
@@ -189,14 +190,14 @@ contains
 
     ! Create a spatial discretisation with Q1
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation)
-    
+
     ! Create a block discretisation with 1 block Q1.
     call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation)
     call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
     call spdiscr_commitBlockDiscr (rblockDiscr)
 
     ! =================================
-    ! Assemble a matrix, a RHS and create 
+    ! Assemble a matrix, a RHS and create
     ! an empty solution vector.
     ! =================================
 
@@ -220,13 +221,13 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
         bma_fcalc_laplace,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Create a RHS vector into block (1)
     call lsysbl_clearVector (rrhs)
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
         frhs,rcubatureInfo=rcubatureInfo)
-    
+
     ! =================================
     ! Create a filter chain for the side condition
     !   int_Omega u = 0
@@ -240,32 +241,32 @@ contains
     ! =================================
     ! Solve the system with Gauss elimination
     ! =================================
-    
+
     call output_line ("Solving linear system...")
-    
+
     ! ----------------
     ! Solver preparation
     ! ----------------
-    
+
     ! Create a CG solver with the filter chain attached.
     call linsol_initCG (p_rsolverNode, Rfilter=RfilterChain)
-    
+
     ! Set output parameters and stopping criteria
     p_rsolverNode%nmaxIterations = 999999
     p_rsolverNode%depsRel = 1E-8_DP
     p_rsolverNode%ioutputLevel   = 2
-    
+
     ! Attach the system matrix
     call linsol_setMatrix (p_rsolverNode, rmatrix)
-    
+
     ! Symbolic factorisation
     call linsol_initStructure (p_rsolverNode, ierror)
-    
+
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line ("Error during symbolic factorisation.")
       call sys_halt()
     end if
-    
+
     ! Numeric factorisation
     call linsol_initData (p_rsolverNode, ierror)
 
@@ -277,26 +278,26 @@ contains
     ! ----------------
     ! Solve the system
     ! ----------------
-    
+
     ! Clear the solution
     call lsysbl_clearVector (rsolution)
-    
+
     ! Solve
     call linsol_solveAdaptively (p_rsolverNode,rsolution,rrhs,rtemp)
-    
+
     ! ----------------
     ! Cleanup
     ! ----------------
-    
+
     ! Numeric data
     call linsol_doneData (p_rsolverNode)
-    
+
     ! Symbolic data
     call linsol_doneStructure (p_rsolverNode)
-    
+
     ! Remaining solver data
     call linsol_releaseSolver (p_rsolverNode)
-    
+
     ! Filter chain
     call filter_doneFilterChain (RfilterChain,nfilters)
 
@@ -307,7 +308,14 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,"post/tutorial020a.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial020a.vtk")
+    else
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       "post/tutorial020a.vtk")
+    end if
+
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)
@@ -316,13 +324,13 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the matrix/vectors
     call lsysbl_releaseMatrix (rmatrix)
     call lsysbl_releaseVector (rtemp)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
-    
+
     ! Release the discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
     call spdiscr_releaseDiscr (rspatialDiscr)
@@ -332,7 +340,7 @@ contains
 
     ! Release the triangulation
     call tria_done (rtriangulation)
-    
+
   end subroutine
 
 end module

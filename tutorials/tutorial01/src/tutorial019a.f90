@@ -8,27 +8,27 @@ module tutorial019a
   use fsystem
   use storage
   use genoutput
-  
+
   use triangulation
   use meshgeneration
-  
+
   use element
   use spatialdiscretisation
   use linearsystemscalar
   use bilinearformevaluation
-  
+
   use domainintegration
   use collection
-  
+
   use matrixio
   use vectorio
   use ucd
-  
+
   use analyticprojection
 
   implicit none
   private
-  
+
   public :: start_tutorial019a
 
 contains
@@ -101,14 +101,14 @@ contains
     ! In every point on every element, return the value of our function.
     do iel = 1,nelements
       do ipt = 1,npointsPerElement
-      
+
         ! x/y coordinates
         dx = Dpoints(1,ipt,iel)
         dy = Dpoints(2,ipt,iel)
-        
+
         ! Value of the function. Here: u=||(x,y)||
         Dvalues(ipt,iel) = sqrt ( dx**2 + dy**2 )
-      
+
       end do
     end do
 
@@ -123,18 +123,19 @@ contains
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_vectorScalar) :: rx
     type(t_ucdExport) :: rexport
+    character(LEN=SYS_STRLEN) :: spostdir
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 019a")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Create a brick mesh
     ! =================================
 
-    ! The mesh must always be in "standard" format. 
+    ! The mesh must always be in "standard" format.
     ! First create a 5x5-mesh on [0,1]x[0,1], then convert to standard.
     call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 4, 4)
     call tria_initStandardMeshFromRaw (rtriangulation)
@@ -154,7 +155,7 @@ contains
 
     ! Create a vector.
     call lsyssc_createVector (rdiscretisation,rx)
-    
+
     ! =================================
     ! Projection of the above function into our FEM space
     ! =================================
@@ -167,29 +168,35 @@ contains
     call output_line ("Writing file 'post/tutorial019a.vtk'.")
 
     ! Open
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial019a.vtk")
+    else
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial019a.vtk")
-                       
+    end if
+
+
     ! Pass the vector as solution.
     call ucd_addVectorByVertex (rexport, "x", UCD_VAR_STANDARD, rx)
-          
-    ! Write / close             
+
+    ! Write / close
     call ucd_write (rexport)
     call ucd_release (rexport)
 
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the vector
     call lsyssc_releaseVector (rx)
-    
+
     ! Release the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)
 
     ! Release the triangulation
     call tria_done (rtriangulation)
-    
+
   end subroutine
 
 end module

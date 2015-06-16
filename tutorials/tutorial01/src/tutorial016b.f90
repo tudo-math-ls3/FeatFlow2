@@ -7,36 +7,36 @@ module tutorial016b
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  
+
   use linearalgebra
   use triangulation
   use meshgeneration
-  
+
   use element
   use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
-  
+
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  
+
   use discretebc
   use bcassembly
   use meshregion
   use vectorfilters
   use matrixfilters
-  
+
   use linearsolver
   use collection
-  
+
   use ucd
 
   implicit none
   private
-  
+
   public :: start_tutorial016b
 
 contains
@@ -105,7 +105,8 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     type(t_meshRegion) :: rmeshRegion
     type(t_ucdExport) :: rexport
-    
+    character(LEN=SYS_STRLEN) :: spostdir
+
     type(t_linsolNode), pointer :: p_rsolverNode
     integer :: ierror
 
@@ -114,12 +115,12 @@ contains
     call output_separator (OU_SEP_STAR)
     call output_line ("This is FEAT-2. Tutorial 016b")
     call output_separator (OU_SEP_MINUS)
-    
+
     ! =================================
     ! Create a brick mesh
     ! =================================
 
-    ! The mesh must always be in "standard" format. 
+    ! The mesh must always be in "standard" format.
     ! First create a 51x51-mesh on [0,1]x[0,1], then convert to standard.
     call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 50, 50)
     call tria_initStandardMeshFromRaw (rtriangulation)
@@ -134,14 +135,14 @@ contains
 
     ! Create a spatial discretisation with Q1
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation)
-    
+
     ! Create a block discretisation with 1 block Q1.
     call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation)
     call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
     call spdiscr_commitBlockDiscr (rblockDiscr)
 
     ! =================================
-    ! Assemble a matrix, a RHS and create 
+    ! Assemble a matrix, a RHS and create
     ! an empty solution vector.
     ! =================================
 
@@ -165,27 +166,27 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
         bma_fcalc_laplace,rcubatureInfo=rcubatureInfo)
-    
+
     ! -----------------------------------------------------
     ! Create a RHS vector into block (1)
     call lsysbl_clearVector (rrhs)
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
         bma_fcalc_rhsBubble,rcubatureInfo=rcubatureInfo)
-    
+
     ! =================================
     ! Discretise boundary conditions
     ! =================================
-    
+
     ! Initialise a boundary condition structure
     call bcasm_initDiscreteBC(rdiscreteBC)
-    
+
     ! Get a mesh region for the complete boundary
     call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, MSHREG_IDX_ALL)
-    
+
     ! Discretise Dirichlet boundary conditions
     call bcasm_newDirichletBConMR (rblockDiscr, 1, rdiscreteBC, &
         rmeshRegion, fgetBoundaryValuesMR)
-        
+
     call mshreg_done(rmeshregion)
 
     ! =================================
@@ -200,27 +201,27 @@ contains
     ! =================================
     ! Solve the system with Gauss elimination
     ! =================================
-    
+
     call output_line ("Solving linear system...")
-    
+
     ! ----------------
     ! Solver preparation
     ! ----------------
-    
+
     ! Create a CG solver
     call linsol_initCG (p_rsolverNode)
-    
+
     ! Attach the system matrix
     call linsol_setMatrix (p_rsolverNode, rmatrix)
-    
+
     ! Symbolic factorisation
     call linsol_initStructure (p_rsolverNode, ierror)
-    
+
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line ("Error during symbolic factorisation.")
       call sys_halt()
     end if
-    
+
     ! Numeric factorisation
     call linsol_initData (p_rsolverNode, ierror)
 
@@ -244,23 +245,23 @@ contains
     ! ----------------
     ! Solve the system
     ! ----------------
-    
+
     ! Clear the solution
     call lsysbl_clearVector (rsolution)
-    
+
     ! Solve
     call linsol_solveAdaptively (p_rsolverNode,rsolution,rrhs,rtemp)
-    
+
     ! ----------------
     ! Cleanup
     ! ----------------
-    
+
     ! Numeric data
     call linsol_doneData (p_rsolverNode)
-    
+
     ! Symbolic data
     call linsol_doneStructure (p_rsolverNode)
-    
+
     ! Remaining solver data
     call linsol_releaseSolver (p_rsolverNode)
 
@@ -271,7 +272,14 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,"post/tutorial016b.vtk")
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial016b.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       "post/tutorial016b.vtk")
+    end if
+
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)
@@ -280,16 +288,16 @@ contains
     ! =================================
     ! Cleanup
     ! =================================
-    
+
     ! Release the BC
     call bcasm_releaseDiscreteBC(rdiscreteBC)
-    
+
     ! Release the matrix/vectors
     call lsysbl_releaseMatrix (rmatrix)
     call lsysbl_releaseVector (rtemp)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
-    
+
     ! Release the discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
     call spdiscr_releaseDiscr (rspatialDiscr)
@@ -299,7 +307,7 @@ contains
 
     ! Release the triangulation
     call tria_done (rtriangulation)
-    
+
   end subroutine
 
 end module

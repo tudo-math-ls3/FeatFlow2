@@ -29,7 +29,7 @@ contains
     ! Declare some variables.
     type(t_boundary) :: rboundary
     type(t_triangulation) :: rtriangulation
-    character(LEN=SYS_STRLEN) :: spredir
+    character(LEN=SYS_STRLEN) :: spredir,spostdir
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: i
     type(t_ucdExport) :: rexport
@@ -119,8 +119,13 @@ contains
     call output_line ("Writing postprocessing files...")
 
     ! Open / write / close; write the solution to a VTK file.
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+    if (sys_getenv_string("POSTDIR",spostdir)) then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(spostdir)//"/tutorial014c.vtk")
+    else
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        "post/tutorial014c.vtk")
+    end if
     call ucd_write (rexport)
     call ucd_release (rexport)
 
