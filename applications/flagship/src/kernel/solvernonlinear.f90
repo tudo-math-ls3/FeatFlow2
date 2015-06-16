@@ -630,7 +630,7 @@ contains
 
       ! Check if multigrid solver exists
       if (.not.associated(rsolver%p_rsolverMultigrid)) then
-        call output_line('Multigrid solver does not exists!',&
+        call output_line('Multigrid solver does not exist!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
         call sys_halt()
       end if
@@ -647,7 +647,7 @@ contains
 
         ! Check if single-grid solver exists
         if (.not.associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
-          call output_line('Coarsegrid solver does not exists!',&
+          call output_line('Coarsegrid solver does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
           call sys_halt()
         end if

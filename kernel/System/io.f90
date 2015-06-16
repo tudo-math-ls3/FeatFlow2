@@ -147,7 +147,7 @@ contains
 
     else
 
-      call output_line('File <'//trim(adjustl(sfilename))//'> does not exists.', &
+      call output_line('File <'//trim(adjustl(sfilename))//'> does not exist.', &
                        OU_CLASS_ERROR,OU_MODE_STD,'io_openFileForReading')
       call sys_halt()
     endif

@@ -2625,8 +2625,8 @@ contains
   ! parameter sparameter. Returns a pointer to the value structure in
   ! p_rvalue.
   !
-  ! If the value does not exists and badd=false, an error is thrown.
-  ! If the value does not exists and badd=true, a new value is created.
+  ! If the value does not exist and badd=false, an error is thrown.
+  ! If the value does not exist and badd=true, a new value is created.
   ! However, no memory is allocated for array-type values.
   !
   ! If bexists is present, it is set to TRUE/FALSE to indicate whether
@@ -2651,7 +2651,7 @@ contains
   ! =COLLCT_UNDEFINED: suppress type check.
   integer, intent(in) :: itype
 
-  ! Whether to add the parameter if it does not exists.
+  ! Whether to add the parameter if it does not exist.
   ! =TRUE: add the parameter if necessary.
   ! =FALSE: throw an error that the parameter does not exist.
   logical, intent(in) :: badd

@@ -243,7 +243,7 @@ contains
       ! Check if multigrid solver exists
       if (.not.associated(rsolver%p_rsolverMultigrid)) then
         if (rsolver%coutputModeError .gt. 0) then
-          call output_line('Multigrid solver does not exists!',&
+          call output_line('Multigrid solver does not exist!',&
               OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveMultigridBlock')
         end if
         call sys_halt()
@@ -261,7 +261,7 @@ contains
         ! Check if single-grid solver exists
         if (.not.associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           if (rsolver%coutputModeError .gt. 0) then
-            call output_line('Coarsegrid solver does not exists!',&
+            call output_line('Coarsegrid solver does not exist!',&
                 OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveMultigridBlock')
           end if
           call sys_halt()

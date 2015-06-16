@@ -949,7 +949,7 @@ contains
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
-          call output_line('Vertex does not exists!',&
+          call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
@@ -983,7 +983,7 @@ contains
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
-          call output_line('Vertex does not exists!',&
+          call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
@@ -1023,7 +1023,7 @@ contains
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
-          call output_line('Vertex does not exists!',&
+          call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
@@ -1041,7 +1041,7 @@ contains
         ! Get table associated with vertex iFromVertex
         rmapIter = map_find(rgraph%rVertices,iFromVertex)
         if (map_isNull(rmapIter)) then
-          call output_line('Vertex does not exists!',&
+          call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else

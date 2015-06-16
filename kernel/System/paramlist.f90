@@ -4234,7 +4234,7 @@ contains
     call parlst_fetchparameter(rsection, paramname, idx)
     
     ! Check if value svalue exists in some substring and return its
-    ! index; of the value does not exists return -1
+    ! index; of the value does not exist return -1
     if (idx .eq. 0) then
       call sys_charArrayToString(&
           rsection%p_Rvalues(idx)%p_sentry, sbuf)
@@ -4317,7 +4317,7 @@ contains
     idx = parlst_queryvalue_indir (p_rsection, sparameter)
     
     ! Check if value svalue exists in some substring and return its
-    ! index; of the value does not exists return -1
+    ! index; of the value does not exist return -1
     if (idx .eq. 0) then
       call sys_charArrayToString(&
           p_rsection%p_Rvalues(idx)%p_sentry, sbuf)
