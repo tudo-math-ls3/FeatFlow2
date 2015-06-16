@@ -61,8 +61,7 @@ contains
     ! The mesh must always be in "standard" format to work with it.
     ! First read, then convert to standard, based on rboundary.
     if (sys_getenv_string("PREDIR",spredir)) then
-      call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
-      call tria_readTriFile2D (rtriangulation, trim(spredir)//"pre/bench1.tri", rboundary)
+      call tria_readTriFile2D (rtriangulation, trim(spredir)//"/bench1.tri", rboundary)
     else
       call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
     end if
