@@ -202,7 +202,7 @@ Body forces real bd., bdc/horiz/vert
 1/2||u||^2_L2      =    1.910596E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
-Time derivative:   RELU(L2)= 3.62E-01  RELP(L2)= 9.90E+00  REL= 3.62E-01
+Time derivative:   RELU(L2)= 1.06E-01  RELP(L2)= 2.90E+00  REL= 1.06E-01
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 Body forces real bd., bdc/horiz/vert
  2 /    0.000000E+00 /    0.000000E+00
@@ -410,7 +410,7 @@ Body forces real bd., bdc/horiz/vert
 1/2||u||^2_L2      =    2.677159E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
-Time derivative:   RELU(L2)= 1.57E-01  RELP(L2)= 1.24E+01  REL= 1.57E-01
+Time derivative:   RELU(L2)= 4.59E-02  RELP(L2)= 3.63E+00  REL= 4.59E-02
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 Body forces real bd., bdc/horiz/vert
  2 /    0.000000E+00 /    0.000000E+00
@@ -629,7 +629,7 @@ Body forces real bd., bdc/horiz/vert
 1/2||u||^2_L2      =    3.723907E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
-Time derivative:   RELU(L2)= 6.76E-02  RELP(L2)= 1.17E+01  REL= 6.76E-02
+Time derivative:   RELU(L2)= 1.98E-02  RELP(L2)= 3.43E+00  REL= 1.98E-02
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 Body forces real bd., bdc/horiz/vert
  2 /    0.000000E+00 /    0.000000E+00
@@ -843,5 +843,5 @@ Body forces real bd., bdc/horiz/vert
 1/2||u||^2_L2      =    4.629121E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
-Time derivative:   RELU(L2)= 2.82E-02  RELP(L2)= 5.88E+00  REL= 2.82E-02
+Time derivative:   RELU(L2)= 8.26E-03  RELP(L2)= 1.72E+00  REL= 8.26E-03
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
