@@ -66,13 +66,17 @@ if ($debugScript) {
 # follow now in the log file
 if ($testsConspicuous > 0 || $testsCrashed > 0) {
     FILE: while (<INFILE>) {
-	if (m/^The tests with deviating results have the following IDs:/) {
+	# single-line pattern
+	if (m/^The tests (with deviating results have the following IDs:|that crashed during execution have the following IDs:|that exceeded their assigned walltime have the following IDs:)/) {
 	    # Read till we find first empty line indicating
-	    # end of tests that deviated
+	    # end of tests that deviated/crashed/exceeded wall time.
 	    $_ = <INFILE>;
 	    last FILE if (eof INFILE);
 	    chomp($_);
 	    while (! m/^\s*$/) {
+		# No test ID contains whitespace, so assume everything after
+		# the first blank to be a comment of some kind
+		$_ =~ s/\s.*$//;
 		push @allconspicoustests, $_;
 		$_ = <INFILE>;
 	    	last FILE if (eof INFILE);
@@ -80,16 +84,20 @@ if ($testsConspicuous > 0 || $testsCrashed > 0) {
 	    }
 	}
 
-	if (m/^The tests that (could not be verified due to a missing|crashed during execution have the following IDs)/) {
+	# double-line pattern
+	if (m/^The tests that could not be verified due to a missing/) {
 	    # Skip next line as it's still text.
 	    $_ = <INFILE>;
 
 	    # Read till we find first empty line indicating
-	    # end of tests that crashed / did not have reference solutions
+	    # end of tests that did not have reference solutions
 	    $_ = <INFILE>;
 	    last FILE if (eof INFILE);
 	    chomp($_);
 	    while (! m/^\s*$/) {
+		# No test ID contains whitespace, so assume everything after
+		# the first blank to be a comment of some kind
+		$_ =~ s/\s.*$//;
 		push @allconspicoustests, $_;
 		$_ = <INFILE>;
 	    	last FILE if (eof INFILE);
@@ -289,7 +297,10 @@ LINE: while (<INFILE>) {
     # Create links to conspicuous tests at the end of the email
     if ($_ =~ m/^(\S+)\s*$/  &&  exists($nextFailedTest{$1})) {
         chomp($_);
-	$message .= qq{</pre>\n<div class="link"><a href="#$1">} . $_ . qq{</a></div>\n<pre>\n};
+	my $aux = $_;
+	$aux =~ m/^(\S+)(\s*.*)$/;
+	my ($auxBeforeBlank, $auxAfterBlank) = ($1, $2);
+	$message .= qq{</pre>\n<div class="link"><a href="#$auxBeforeBlank">} . $auxBeforeBlank . qq{</a>$auxAfterBlank</div>\n<pre>\n};
         $_ = "";
     }
 
