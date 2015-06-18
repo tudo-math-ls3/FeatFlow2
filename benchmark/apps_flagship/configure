@@ -32,17 +32,17 @@ LC_ALL=C
 # Try to come up with a reasonable location in $HOME/nobackup based on
 # the current working directory. One could simply append the current
 # working directory to a fixed object directory prefix, example:
-#  Source directory: $HOME/experimental/Featflow2/applications/cc2dmedium
-#  => Obj directory: $HOME/nobackup/feat2obj/$HOME/experimental/Featflow2/applications/cc2dmedium
+#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/$HOME/experimental/Featflow2/area51/cc2dmedium
 #
-# But in this case the path given to compilers to locate module files
-# (-fmod, -J options) and the path to the object file (-o option) can 
-# get rather lengthy and some compilers don't accept paths longer 132 
-# characters (e.g. PGI). So, try to come up with something more useful:
-# cut away the strings "$HOME" and "Featflow2" from the path to the
-# current directory and use that:
-#  Source directory: $HOME/experimental/Featflow2/applications/cc2dmedium
-#  => Obj directory: $HOME/nobackup/feat2obj/experimental/applications/cc2dmedium
+# But in this case the path given to compilers to locate module files (-fmod,
+# -J options) and the path to the object file (-o option) can get rather
+# lengthy and some compilers don't accept absolute paths to module files that
+# exceed 200 characters (e.g. PGI, see below). So, try to come up with
+# something more useful: cut away the strings "$HOME" and "Featflow2" from the
+# path to the current directory and use that:
+#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/experimental/area51/cc2dmedium
 
 # Change to the directory where this script resides
 # (it is possible to call this script via <some path>/configure,
@@ -74,9 +74,7 @@ CWD=`/bin/pwd`
 # Try to shorten the directory hierarchy below ${BASEDIR_OBJFILES}.
 # Why? Because it is used to create the object directory and some compilers
 # enforce (silently) restrictions on include and module directories (e.g.
-# PGI compiler version 7-13 supports include paths only up to a length of 162
-# characters. Longer paths cause the error "Unable to open include file"
-# for every 'include' statement.).
+# PGI compiler version 7-15, see below).
 # So, do not let path to object directory become too long!
 
 # Step 1: 
@@ -173,38 +171,48 @@ fi
 
 
 ######################################################
-# Sanity check. Don't let path to object directory become too long!
-# (The PGI compiler cannot handle including files from a directory
-#  whose path exceeds a length of 162 characters. It will complain about
-#  "Unable to open include file" even though the file exists in the given
-#  path. Given that include files are transferred to the object directory
-#  during the build process, object directories may not exceed this length.
-#  This constraint only holds for include files for PGI, not for module
-#  files.
-#  Instead of 162 characters use a smaller number given that the object
-#  directory prefix will get appended the build ID, whether or not to use
-#  coprocessors, Open MP, optimisation flags etc. such that the full object
-#  directory path may be considerably longer than 162 characters. )
-# But only check if the directory determined above will actually be
-# used: If --objdir-prefix is overridden on the command line (when this
-# script is invoked), there is no point in checking the length.
+# Sanity check. Don't let the path of the object directory prefix become too
+# long (unless the path determined above will not be used because
+# --objdir-prefix gets overridden by the user explicitly on the command line
+# (when this script is invoked).
+# The reason for imposing a maximum length restriction on the path of the
+# object directory is a deficiency of the PGI compiler. At least all versions
+# between 7.1-6 and 15.5-0 are affected. They fail to locate a header file if
+# the absolute path to said file exceeds 200 characters, the PGI compiler
+# reports for such a header file "Unable to open include file: <name of header
+# file>".
+# The object directory of a FEAT2 application consists of the object directory
+# prefix, the string "object/", the build ID and whether or not the current
+# build should include support for coproc library and OpenMP as well as the
+# optimisation level. On top of that comes the length of the longest header
+# file transferred to this object directory (because the preprocessor can not
+# operate directly on the header file as it should be altered itself) which is
+# currently "intf_calcNodalTransformation_sim.inc". The length of the absolute
+# path to this header file must not exceed 200 characters. Leaving a small
+# margin this constraint limits the prefix for object directories to 104
+# characters.
 case "$@" in
     *--id=[A-Za-z0-9_-]*-pgi*)
         case "$@" in
 	    *--objdir-prefix=*)
 	        ;;
 	    *)
-		if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "102" ]; then
+		if [ "`echo ${OBJDIRPREFIX} | wc -c`" -gt "104" ]; then
 		    echo "$0: ERROR."
-		    echo "    Sorry, the object directory prefix, argument to command line option"
-		    echo "    --objdir-prefix, is too long for the PGI compiler."
-		    echo "    The full object directory path - which will include also build ID info,"
-		    echo "    whether or not to use coprocessors and/or OpenMP and whether to do a debug"
-		    echo "    or release build - will most likely exceeds 162 characters. This will lead"
-		    echo "    to compilation errors with PGI 7-13 which will not be able to locate include"
-		    echo "    files from a directory that long."
-		    echo "    Please abbreviate the object directory which is currently"
-		    echo "    set to:"
+		    echo "    Sorry, the object directory prefix path exceeds 104 characters:"
+		    echo "   " ${OBJDIRPREFIX}
+		    echo "    As a consequence, the full object directory path - which will also"
+		    echo "    include build ID info, whether or not to use coprocessors and/or"
+		    echo "    OpenMP and whether to compile a debug or release build - will most"
+		    echo "    likely exceeds 164 characters and this, in turn, implies that the"
+		    echo "    absolute path to the header file with the longest file name in FEAT2"
+		    echo "    (currently: 36 characters) will exceed 200 characters."
+		    echo "    This may lead to compilation problems with certain compilers (e.g."
+		    echo "    PGI (at least all versions 7.1-6 until 15.5-0) will not be able to"
+		    echo "    locate and include Fortran90 header files if the absolute path to"
+		    echo "    said header file, stored in the object directory, exceeds 200"
+		    echo "    characters)."
+		    echo "    Please abbreviate the object directory which is currently set to:"
 		    echo "<"${OBJDIRPREFIX}">"
 		    echo
 		    echo "Application not configured."
