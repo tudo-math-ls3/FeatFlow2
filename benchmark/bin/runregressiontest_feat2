@@ -548,9 +548,9 @@ fb_customise() {
 		# PGI compiler suite 13.x
 		pc64-penryn-linux-pgi-*13.*)
 		    modules=""
-		    modules="$modules pgi/13.5-0"
+		    modules="$modules pgi/13.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
-		    COMPILERNAME="PGI 13.5"
+		    COMPILERNAME="PGI 13.10"
 		    ;;
 
 		# PGI compiler suite 15.x
