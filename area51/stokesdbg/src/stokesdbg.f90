@@ -33,7 +33,7 @@ integer :: idriver
 
   ! Fetch parameter file name from command line
   sDatFile = './data/stokesdbg.dat'
-  if(sys_ncommandLineArgs() .gt. 1) &
+  if(sys_ncommandLineArgs() .ge. 1) &
     call getarg(1, sDatFile)
 
   ! Read in parameter list
