@@ -93,5 +93,6 @@
 		<File RelativePath=".\src\stokesdbg_aux.f90"/>
 		<File RelativePath=".\src\stokesdbg_core.f90"/>
 		<File RelativePath=".\src\stokesdbg_div_eoj.f90"/>
-		<File RelativePath=".\src\stokesdbg_driver2d.f90"/></Filter></Files>
+		<File RelativePath=".\src\stokesdbg_driver2d.f90"/>
+		<File RelativePath=".\src\stokesdbg_edge_div.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
