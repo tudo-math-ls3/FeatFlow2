@@ -896,7 +896,6 @@ contains
   
     if(associated(rsystem%p_rsolver)) then
       call linsol_releaseSolver (rsystem%p_rsolver)
-      deallocate(rsystem%p_rsolver)
     end if
     
     if(associated(rsystem%p_RfilterChain)) &
