@@ -17,6 +17,8 @@ use collection, only: t_collection
 use stokesdbg_core
 use stokesdbg_driver2d
 
+use stokesdbg_edge_div
+
 implicit none
 
 private
@@ -74,6 +76,10 @@ contains
       call stdbg_initTriangulation2D(rproblem, 'QUADX4R')
     case (2)
       call stdbg_initTriangulation2D(rproblem, 'QUADIRR2')
+    case (100)
+      call stdbg_initTriangulation2D(rproblem, 'TRIA')
+    case (102)
+      call stdbg_initTriangulation2D(rproblem, 'TRIAX12')
     end select
 
     ! initialise discretisations
@@ -133,6 +139,9 @@ contains
       
       ! post-process solution
       call stdrv_postProcSol(rsystem)
+      
+      !*** write divergence ***
+      !call stokesdbg_writeEdgeDiv(rsystem%rvecSol%RvectorBlock(1:2), "edge-div", CUB_G5_1D)
       
       ! compute errors
       ! Set up the error structure for velocity

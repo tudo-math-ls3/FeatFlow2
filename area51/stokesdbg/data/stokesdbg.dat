@@ -14,7 +14,17 @@ SLOGFILE = ./log/output.txt
 # 2002 -> 2D Standing Vortex:
 #         Velocity field described by VORTEX_VELO
 #         Pressure function described by VORTEX_PRES
-DRIVER = 2001
+#
+# 2003 -> 2D Driven Cavity (singular BCs):
+#         u1(x,1) = 1
+#         u1(x,y) = 0, for y < 1
+#         u1(x,y) = 0
+#
+# 2004 -> 2D Driven Cavity (regularised)
+#         u1(x,y) = (4*x*(1-x))^sigma
+#         u1(x,y) = 0, for y < 1
+#         u1(x,y) = 0
+DRIVER = 2004
 
 # Velocity field for standing vortex driver (mandatory for DRIVER=2002)
 # 0 -> No-Flow, No-Slip BCs
@@ -40,12 +50,16 @@ VORTEX_VELO = 1
 # 3 -> p(x,y) = alpha * (1/2 - x^3 - y^3)
 # 4 -> p(x,y) -> static-bubble(alpha,beta)
 # 5 -> p(x,y) = alpha * (x-1/2) + beta * (y-1/2)
+# 6 -> p(x,y) = alpha * (x^3 - y^3)
 VORTEX_PRES = 1
 
 # Coarse Mesh (mandatory)
 # 0 -> QUAD
 # 1 -> QUADX4R
 # 2 -> QUADIRR2
+# 100 -> TRIA
+# 101 -> TRIAX4
+# 102 -> TRIAX12
 MESH = 0
 
 # Mesh distortion type (default: 0)
@@ -75,6 +89,20 @@ ELEMENT_PRESSURE = EL_DCQP1_2D
 # Cubature Rule identifier (mandatory)
 CUBATURE = G5_2D
 
+# Stabilisation (optional, default: 0)
+# 0 -> no stabilisation
+# 1 -> reactive jump-stabilisation
+# 2 -> gradient jump-stabilisation
+# 3 -> divergence jump-stabilisation
+# 4 -> normal-flow jump-stabilisation
+STABILISE = 0
+
+# Parameter for jump-stabilisation (optional, default: 0.01)
+EOJ_GAMMA = 0.01
+
+# Cubature formula ID for jump-stabilisation
+EOJ_CUBATURE = G5_1D
+
 # VTK file prefix (optional)
 # - if given, the output is written to './ucd/$(VTKFILE)_lvl$(LEVEL).vtk'
 # - if not given, no VTK file is written
@@ -87,6 +115,9 @@ NU = 1
 DALPHA = 1E+0
 DBETA = 0.05
 DGAMMA = 0.25
+
+# boundary condition parameters (optional, default: 1)
+DSIGMA = 1.0
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Preconditioner Parameters

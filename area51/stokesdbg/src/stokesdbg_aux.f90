@@ -46,6 +46,24 @@ contains
 
   ! ***********************************************************************************************
 
+  subroutine stdbg_aux_funcOneBC2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                     cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  integer, dimension(:), intent(in)                           :: Icomponents
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+  integer, intent(in)                                         :: ielement
+  integer, intent(in)                                         :: cinfoNeeded
+  integer, intent(in)                                         :: iwhere
+  real(DP), intent(in)                                        :: dwhere
+  type(t_collection), intent(inout), optional                 :: rcollection
+  real(DP), dimension(:), intent(out)                         :: Dvalues
+
+    Dvalues = 1.0_DP
+
+  end subroutine
+
+  ! ***********************************************************************************************
+
   subroutine stdbg_aux_funcParProfileBC2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                      cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   integer, dimension(:), intent(in)                           :: Icomponents
@@ -63,11 +81,39 @@ contains
     ! clear the output array; for vector-valued problems, this will set the Y-velocity to zero
     Dvalues = 0.0_DP
     if ((dwhere .ge. 3.0_DP) .and. (dwhere .le. 4.0_DP)) then
-      y = 4.0_DP-dwhere
+      y = 4.0_DP - dwhere
       Dvalues(1) = y*(1.0_DP-y)
     end if
   end subroutine
 
+  ! ***********************************************************************************************
+
+  subroutine stdbg_aux_funcRegDrivenCavityBC2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                                                cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  integer, dimension(:), intent(in)                           :: Icomponents
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+  integer, intent(in)                                         :: ielement
+  integer, intent(in)                                         :: cinfoNeeded
+  integer, intent(in)                                         :: iwhere
+  real(DP), intent(in)                                        :: dwhere
+  type(t_collection), intent(inout), optional                 :: rcollection
+  real(DP), dimension(:), intent(out)                         :: Dvalues
+
+  real(DP) :: x
+  real(DP) :: dsigma
+  
+    dsigma = 1.0_DP
+    if(present(rcollection)) &
+      dsigma = rcollection%DquickAccess(1)
+  
+    ! clear the output array; for vector-valued problems, this will set the Y-velocity to zero
+    Dvalues = 0.0_DP
+    if ((dwhere .gt. 2.0_DP) .and. (dwhere .lt. 3.0_DP)) then
+      x = dwhere - 2.0_DP
+      Dvalues(1) = (4.0_DP * x * (1.0_DP-x))**dsigma
+    end if
+  end subroutine
 
   ! ***********************************************************************************************
 

@@ -26,6 +26,12 @@ contains
       case (1)
         call stdbg_initSlipBCs(rproblem)
       end select
+      
+    case (2003)
+      call stdbg_initSingDrivenCavityBCs(rproblem)
+
+    case (2004)
+      call stdbg_initRegDrivenCavityBCs(rproblem)
 
     end select
   
@@ -47,6 +53,12 @@ contains
       rsystem%p_RfilterChain(2)%ifilterType = FILTER_TOL20
       rsystem%p_RfilterChain(2)%itoL20component = 3
       
+    case (2003, 2004)
+      allocate(rsystem%p_RfilterChain(2))
+      rsystem%p_RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+      rsystem%p_RfilterChain(2)%ifilterType = FILTER_TOL20
+      rsystem%p_RfilterChain(2)%itoL20component = 3
+      
     end select
     
   end subroutine
@@ -60,7 +72,12 @@ contains
     case (2002)
       ! filter pressure mean
       call stdbg_filterPressureMean(rsystem)
+      
+    case (2003, 2004)
+      ! filter pressure mean
+      call stdbg_filterPressureMean(rsystem)
     end select
+    
   end subroutine
 
   ! ***********************************************************************************************
@@ -144,6 +161,11 @@ contains
             - Dpoints(2,:,:)**2*(1.0_DP-Dpoints(2,:,:))**2*(-12.0_DP+24.0_DP*Dpoints(1,:,:))
         end select
       end select
+
+    case (2003, 2004)
+      ! no-flow
+      Dcoefficients(1,:,:) = 0.0_DP
+      
     end select
     
   end subroutine
@@ -229,8 +251,21 @@ contains
         case (2)
           Dcoefficients(1,:,:) = dbeta
         end select
-      
+        
+      case (6)
+        select case(icomp)
+        case (1)
+          Dcoefficients(1,:,:) =  dalpha*3.0_DP*Dpoints(1,:,:)**2
+        case (2)
+          Dcoefficients(1,:,:) = -dalpha*3.0_DP*Dpoints(2,:,:)**2
+        end select
+        
       end select
+
+    case (2003, 2004)
+      ! no-flow
+      Dcoefficients(1,:,:) = 0.0_DP
+      
     end select
     
   contains
@@ -256,8 +291,8 @@ contains
 
     end function
 
-
   end subroutine
+  
   ! ***********************************************************************************************
 
   subroutine stdrv_funcVelocity2D (icomponent, cderivative, rdiscretisation, &
@@ -401,6 +436,11 @@ contains
           end select
         end select
       end select
+
+    case (2003, 2004)
+      ! no-flow
+      Dvalues(:,:) = 0.0_DP
+      
     end select
 
   end subroutine
@@ -460,7 +500,15 @@ contains
       case (5)
         ! p(x,y) = alpha*(x - 1/2)  + beta*(y - 1/2)
         Dvalues(:,:) = dalpha*(Dpoints(1,:,:) - 0.5_DP) + dbeta*(Dpoints(2,:,:) - 0.5_DP)
+        
+      case (6)
+        ! p(x,y) = alpha*(x^3 - y^3)
+        Dvalues(:,:) = dalpha*(Dpoints(1,:,:)**3 - Dpoints(2,:,:)**3)
       end select
+
+    case (2003, 2004)
+      ! no-flow
+      Dvalues(:,:) = 0.0_DP
       
     end select
     

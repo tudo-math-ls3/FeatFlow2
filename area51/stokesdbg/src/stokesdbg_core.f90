@@ -35,8 +35,10 @@ use stdoperators
 use paramlist
 use quicksolver
 use iterationcontrol
+use jumpstabilisation
 
 use stokesdbg_aux
+use stokesdbg_div_eoj
   
 implicit none
 
@@ -106,11 +108,21 @@ implicit none
     ! number of velocity components
     integer :: ncompVelo = 0
     
+    ! stabilisation
+    integer :: stabilise = 0
+    
+    ! eoj parameter
+    real(DP) :: deojGamma = 0.0_DP
+    
+    ! eoj cubature id
+    integer(I32) :: ceojCubature = CUB_G3_1D
+    
     ! problem parameters
     real(DP) :: dnu = 1.0_DP
     real(DP) :: dalpha = 1.0_DP
     real(DP) :: dbeta = 1.0_DP
     real(DP) :: dgamma = 1.0_DP
+    real(DP) :: dsigma = 1.0_DP
     
     ! statistics array; dimension(DSTAT_LENGTH,ilevelMin:ilevelMax)
     real(DP), dimension(:,:), pointer :: p_Dstat
@@ -230,6 +242,7 @@ contains
   type(t_parlist), target, intent(in) :: rparam
 
   integer :: ilmin, ilmax, ilcrs
+  character(len=64) :: stxt
   
     ! store parameter pointer
     rproblem%p_rparam => rparam
@@ -258,6 +271,12 @@ contains
     rproblem%ilevelMax = ilmax
     rproblem%ilevelCoarse = ilcrs
     
+    ! fetch stabilisation parameters
+    call parlst_getvalue_int(rparam, '', 'STABILISE', rproblem%stabilise, 0)
+    call parlst_getvalue_double(rparam, '', 'EOJ_GAMMA', rproblem%deojGamma, 0.01_DP)
+    call parlst_getvalue_string(rparam, '', 'EOJ_CUBATURE', stxt, 'G3_1D')
+    rproblem%ceojCubature = cub_igetID(stxt)
+    
     ! allocate levels
     allocate(rproblem%Rlevels(ilcrs:ilmax))
     
@@ -266,6 +285,7 @@ contains
     call parlst_getvalue_double(rparam, '', 'DALPHA', rproblem%dalpha, 1.0_DP)
     call parlst_getvalue_double(rparam, '', 'DBETA', rproblem%dbeta, 1.0_DP)
     call parlst_getvalue_double(rparam, '', 'DGAMMA', rproblem%dgamma, 1.0_DP)
+    call parlst_getvalue_double(rparam, '', 'DSIGMA', rproblem%dsigma, 1.0_DP)
     
     ! allocate statistics arrays
     allocate(rproblem%p_Dstat(DSTAT_LENGTH,ilmin:ilmax))
@@ -455,7 +475,7 @@ contains
   type(t_problem), target, intent(inout) :: rproblem
   integer(I32), optional, intent(in) :: cconstrType
   
-  integer :: i, j, ilcrs, ilmax, ndim
+  integer :: i, j, k, ilcrs, ilmax, ndim, ctype
   type(t_level), pointer :: p_rlvl
   integer, dimension(3) :: Ideriv
   
@@ -468,6 +488,14 @@ contains
     else if(ndim .eq. 3) then
       Ideriv = (/ DER_DERIV3D_X, DER_DERIV3D_Y, DER_DERIV3D_Z /)
     end if
+    
+    ! choose construction type
+    select case(rproblem%stabilise)
+    case (1,2,3,4)
+      ctype = BILF_MATC_EDGEBASED
+    case default
+      ctype = BILF_MATC_ELEMENTBASED
+    end select
     
     do i = ilcrs, ilmax
 
@@ -483,7 +511,7 @@ contains
       
       ! Assemble A-matrix structure
       call bilf_createMatrixStructure(p_rlvl%rdiscr%RspatialDiscr(1),&
-          LSYSSC_MATRIX9, p_rlvl%rmatSys%RmatrixBlock(1,1))
+          LSYSSC_MATRIX9, p_rlvl%rmatSys%RmatrixBlock(1,1), cconstrType=ctype)
 
       ! Assemble B-matrix structure
       call bilf_createMatrixStructure (p_rlvl%rdiscr%RspatialDiscr(ndim+1),&
@@ -508,6 +536,22 @@ contains
         call lsyssc_duplicateMatrix (p_rlvl%rmatSys%RmatrixBlock(ndim+1,1),&
             p_rlvl%rmatSys%RmatrixBlock(ndim+1,j),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       end do
+      
+      ! duplicate matrix structures for div-div eoj
+      select case(rproblem%stabilise)
+      case (3,4)
+        do j = 1, ndim
+          do k = 1, ndim
+            if (k .ne. j) then
+              call lsyssc_duplicateMatrix (p_rlvl%rmatSys%RmatrixBlock(j,j),&
+                p_rlvl%rmatSys%RmatrixBlock(j,k),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+              call lsyssc_assignDiscrDirectMat (p_rlvl%rmatSys%RmatrixBlock(j,k),&
+                p_rlvl%rdiscr%RspatialDiscr(k))
+              call lsyssc_allocEmptyMatrix(p_rlvl%rmatSys%RmatrixBlock(j,k), LSYSSC_SETM_ZERO)
+            end if
+          end do
+        end do
+      end select
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Matrix Content Assembly
@@ -534,6 +578,38 @@ contains
         call lsyssc_transposeMatrix (p_rlvl%rmatSys%RmatrixBlock(j,ndim+1), &
             p_rlvl%rmatSys%RmatrixBlock(ndim+1,j), LSYSSC_TR_CONTENT)
       end do
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Stabilisation Assembly
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      select case(rproblem%stabilise)
+      case (1)
+        ! reactive jump-stabilisation
+        do j = 1, ndim
+          call jstab_calcReacJumpStabilisation(p_rlvl%rmatSys%RmatrixBlock(j,j), &
+            rproblem%deojGamma, 1.0_DP, rproblem%ceojCubature, rproblem%dnu)
+        end do
+
+      case (2)
+        ! gradient jump-stabilisation
+        do j = 1, ndim
+          call jstab_calcUEOJumpStabilisation(p_rlvl%rmatSys%RmatrixBlock(j,j), &
+            rproblem%deojGamma, 0.0_DP, 2.0_DP, 1.0_DP, rproblem%ceojCubature, rproblem%dnu)
+        end do
+
+      case (3)
+        ! divergence jump-stabilisation
+        do j = 1, ndim
+          call stokesdbg_divEoj(p_rlvl%rmatSys%RmatrixBlock, &
+            rproblem%deojGamma, 0.0_DP, 2.0_DP, 1.0_DP, rproblem%ceojCubature, rproblem%dnu)
+        end do
+
+      case (4)
+        ! normal-flow jump-stabilisation
+        do j = 1, ndim
+          call stokesdbg_flowEoj(p_rlvl%rmatSys%RmatrixBlock, rproblem%deojGamma, rproblem%ceojCubature)
+        end do
+      end select
       
     end do
     
@@ -685,6 +761,134 @@ contains
     
   end subroutine
 
+  ! ***********************************************************************************************
+
+  subroutine stdbg_initSingDrivenCavityBCs(rproblem)
+  type(t_problem), target, intent(inout) :: rproblem
+  
+  type(t_boundaryRegion) :: rrgn
+  integer :: i, j, ncomp
+  
+    if(rproblem%ncompVelo .gt. 1) then
+      ncomp = 1
+    else
+      ncomp = rproblem%ndim
+    end if
+  
+    do i = rproblem%ilevelCoarse, rproblem%ilevelMax
+
+      ! Initialise the discrete BC structure
+      call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
+
+      ! Top edge: u1 = 1, u2=0
+      call boundary_createRegion(rproblem%rbnd,1,3,rrgn)
+      rrgn%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
+          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcOneBC2D)
+      do j = 2, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Bottom edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,1,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Right edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,2,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Left edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,4,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+      
+      ! Assign BCs to system matrix
+      rproblem%Rlevels(i)%rmatSys%p_rdiscreteBC => rproblem%Rlevels(i)%rdiscreteBC
+
+      ! Filter system matrix
+      call matfil_discreteBC(rproblem%Rlevels(i)%rmatSys)
+      
+    end do
+    
+  end subroutine
+
+  ! ***********************************************************************************************
+
+  subroutine stdbg_initRegDrivenCavityBCs(rproblem)
+  type(t_problem), target, intent(inout) :: rproblem
+  
+  type(t_boundaryRegion) :: rrgn
+  type(t_collection) :: rcollect
+  integer :: i, j, ncomp
+  
+    if(rproblem%ncompVelo .gt. 1) then
+      ncomp = 1
+    else
+      ncomp = rproblem%ndim
+    end if
+    
+    rcollect%DquickAccess(1) = rproblem%dsigma
+  
+    do i = rproblem%ilevelCoarse, rproblem%ilevelMax
+
+      ! Initialise the discrete BC structure
+      call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
+
+      ! Top edge: u1 = 1, u2=0
+      call boundary_createRegion(rproblem%rbnd,1,3,rrgn)
+      rrgn%iproperties = 0
+      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
+          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcRegDrivenCavityBC2D, rcollect)
+      do j = 2, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Bottom edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,1,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Right edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,2,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+
+      ! Left edge: u = 0
+      call boundary_createRegion(rproblem%rbnd,1,4,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
+      
+      ! Assign BCs to system matrix
+      rproblem%Rlevels(i)%rmatSys%p_rdiscreteBC => rproblem%Rlevels(i)%rdiscreteBC
+
+      ! Filter system matrix
+      call matfil_discreteBC(rproblem%Rlevels(i)%rmatSys)
+      
+    end do
+    
+  end subroutine
   ! ***********************************************************************************************
   
   subroutine stdbg_doneSystem(rsystem)
