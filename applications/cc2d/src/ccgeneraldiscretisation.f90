@@ -2201,7 +2201,7 @@ contains
       if (p_rsolverNode%iresult .ne. 0) then
         call output_line("Cannot compute L2 projection for U1, solver broke down." // &
                          " In the past,", OU_CLASS_ERROR)
-        call output_line("cc2d would continue with start vector zero despite " // &,
+        call output_line("cc2d would continue with start vector zero despite " // &
                          "the setting", OU_CLASS_ERROR)
         call output_line("ctypeInitialSolution=" // &
                          trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
@@ -2234,7 +2234,7 @@ contains
           ! Cancel, there is something wrong.
           call output_line("Cannot compute L2 projection for U2, solver broke down." // &
                            " In the past,", OU_CLASS_ERROR)
-          call output_line("cc2d would continue with start vector zero despite " // &,
+          call output_line("cc2d would continue with start vector zero despite " // &
                            "the setting", OU_CLASS_ERROR)
           call output_line("ctypeInitialSolution=" // &
                            trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
@@ -2282,7 +2282,7 @@ contains
             ! Cancel, there is something wrong.
             call output_line("Cannot compute L2 projection for P, solver broke down." // &
                              " In the past,", OU_CLASS_ERROR)
-            call output_line("cc2d would continue with start vector zero despite " // &,
+            call output_line("cc2d would continue with start vector zero despite " // &
                              "the setting", OU_CLASS_ERROR)
             call output_line("ctypeInitialSolution=" // &
                              trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
