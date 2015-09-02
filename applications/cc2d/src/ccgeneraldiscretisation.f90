@@ -2199,9 +2199,19 @@ contains
       call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
 
       if (p_rsolverNode%iresult .ne. 0) then
-        ! Cancel, there is something wrong.
-        call output_line("Cannot compute L2 projection, solver broke down. Using zero!")
+        call output_line("Cannot compute L2 projection for U1, solver broke down." // &
+                         " In the past,", OU_CLASS_ERROR)
+        call output_line("cc2d would continue with start vector zero despite " // &,
+                         "the setting", OU_CLASS_ERROR)
+        call output_line("ctypeInitialSolution=" // &
+                         trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
+                         "change could get easily overlooked.", OU_CLASS_ERROR)
+        call output_line("Aborting execution.", OU_CLASS_ERROR)
+        call output_line("To resolve this, tweak the hardcoded solver settings " // &
+                         "in", OU_CLASS_ERROR)
+        call output_line("routine cc_initInitialSolution().", OU_CLASS_ERROR)
         call lsysbl_clearVector (rvector)
+        stop 1
 
       else
 
@@ -2222,9 +2232,19 @@ contains
 
         if (p_rsolverNode%iresult .ne. 0) then
           ! Cancel, there is something wrong.
-          call output_line(&
-              "Cannot compute L2 projection, solver broke down. Using zero!")
+          call output_line("Cannot compute L2 projection for U2, solver broke down." // &
+                           " In the past,", OU_CLASS_ERROR)
+          call output_line("cc2d would continue with start vector zero despite " // &,
+                           "the setting", OU_CLASS_ERROR)
+          call output_line("ctypeInitialSolution=" // &
+                           trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
+                           "change could get easily overlooked.", OU_CLASS_ERROR)
+          call output_line("Aborting execution.", OU_CLASS_ERROR)
+          call output_line("To resolve this, tweak the hardcoded solver settings " // &
+                           "in", OU_CLASS_ERROR)
+          call output_line("routine cc_initInitialSolution().", OU_CLASS_ERROR)
           call lsysbl_clearVector (rvector)
+          stop 1
 
         else
           ! -----
@@ -2240,7 +2260,7 @@ contains
 
           ! Attach a new matrix.
           call lsysbl_createMatrix(&
-              rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,rmassBlock)
+             rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,rmassBlock)
 
           call linsol_doneData (p_rsolverNode,ierror)
           call linsol_doneStructure (p_rsolverNode,ierror)
@@ -2260,9 +2280,19 @@ contains
 
           if (p_rsolverNode%iresult .ne. 0) then
             ! Cancel, there is something wrong.
-            call output_line(&
-                "Cannot compute L2 projection, solver broke down. Using zero!")
+            call output_line("Cannot compute L2 projection for P, solver broke down." // &
+                             " In the past,", OU_CLASS_ERROR)
+            call output_line("cc2d would continue with start vector zero despite " // &,
+                             "the setting", OU_CLASS_ERROR)
+            call output_line("ctypeInitialSolution=" // &
+                             trim(sys_siL(ctypeInitialSolution,2)) // ", but this " // &
+                             "change could get easily overlooked.", OU_CLASS_ERROR)
+            call output_line("Aborting execution.", OU_CLASS_ERROR)
+            call output_line("To resolve this, tweak the hardcoded solver settings " // &
+                             "in", OU_CLASS_ERROR)
+            call output_line("routine cc_initInitialSolution().", OU_CLASS_ERROR)
             call lsysbl_clearVector (rvector)
+            stop 1
           end if
         end if
       end if
