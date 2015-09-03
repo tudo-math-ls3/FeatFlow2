@@ -2167,14 +2167,13 @@ contains
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
       ! Now prepare a linear solver for solving with the mass matrix.
-      ! This is just a simple 1-level Jacobi solver as the mass matrix
-      ! is usually well conditioned.
+      ! We use PCG-Jacobi here; this will usually converge in 1 iteration,
+      ! since the mass matrix is very well conditioned.
       call linsol_initJacobi (p_rpreconditioner)
-      call linsol_initDefCorr (p_rsolverNode, p_rpreconditioner)
+      call linsol_initCG(p_rsolverNode , p_rpreconditioner)
 
-      p_rpreconditioner%domega = 0.8_DP
       p_rsolverNode%depsRel = SYS_EPSREAL_DP * 100.0_DP
-      p_rsolverNode%nmaxiterations = 1000
+      p_rsolverNode%nmaxiterations = 100
       p_rsolverNode%ioutputLevel = 1
 
       if (rproblem%MSHOW_Initialisation .ge. 1) &
