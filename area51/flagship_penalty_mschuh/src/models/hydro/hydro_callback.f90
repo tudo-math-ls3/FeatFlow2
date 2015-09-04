@@ -1110,9 +1110,6 @@ contains
         call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
             rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
 
-        !call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
-        !    rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
-
         !-----------------------------------------------------------------------
         ! Compute the transient term
         !
@@ -1410,9 +1407,6 @@ contains
       ! Set the boundary conditions by penalty method
       call hydro_setBdrCondPenalty(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rres, rcollection)
-
-      !call hydro_assembleNavStoViscous(p_rparlist, ssectionName,&
-      !    rproblemLevel, rsolution, dscale, .false., rres, rcollection)
 
     end if
 
@@ -5832,6 +5826,14 @@ contains
 !</subroutine>
 
     type(t_fev2Vectors) :: rvectorEval
+
+    ! We need a cubature information structure since we want to set it
+    ! from outside. Therefore we also need an I_32 int and a string
+    character(LEN=SYS_STRLEN) :: sCubRule
+    integer :: iCubRule
+    type(t_scalarCubatureInfo) :: RcubatureInformation
+
+
     integer :: isystemformat
 
     ! Check of source and solution vector are compatible
@@ -5853,29 +5855,26 @@ contains
         call lsysbl_clearVector(rsource)
     end if
 
+    ! Now find out which cubature rule to use
+    ! If nothing is found then we use a 3-Point Gaussian formula
+    call parlst_getvalue_string(rparlist,'PENALTY','sPenCubRule',sCubRule,sdefault="AUTO_G3")
+    ! Convert it to an integer
+    iCubRule = cub_igetID(sCubRule)
+    ! And now create the cubature information for this
+    call spdiscr_createDefCubStructure(rsource%p_rblockDiscr%RspatialDiscr(1), &
+            RcubatureInformation,int(iCubRule,I32))
+
     ! We need the parameter dscale and the parameter list in the callback routine
     ! We pass is via the collection
     rcollection%DquickAccess(1) = dscale
     rcollection%p_rparlistQuickAccess1 => rparlist
 
-    ! We need to parse the penalty area.
-    ! read out \Chi_{Omega_s}
-    !call parlst_getvalue_string(rparlist,'PENALTY','ChiOmegaS',str_ChiOmegaS)
-
-    ! Create the parser
-    !call fparser_create(parser_ChiOmegaS,1)
 
     rcollection%SquickAccess(1) = ssectionName
 
     ! Build the term according to the dimension
     select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-
-        ! Parse the penalty area
-        !call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x'/))
-
-        ! attach the parser to the collection
-        !rcollection%p_rfparserQuickAccess1 => parser_ChiOmegaS
 
         ! Add the components of the solution vector to the list of the vectors
         ! that have to be evaluated during the assembly of the source term.
@@ -5886,21 +5885,14 @@ contains
         call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(3),1)
 
         ! Build the penalty term
-        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty1D,rcollection,revalvectors=rvectorEval)
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty1D,rcollection=rcollection, &
+                revalvectors=rvectorEval,rcubatureInfo=RcubatureInformation)
 
         ! clean up
         call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
-        !call fparser_release(parser_ChiOmegaS)
-        !rcollection%p_rfparserQuickAccess1 => NULL()
 
       case (NDIM2D)
-
-        ! Parse the penalty area
-        !call fparser_parseFunction(parser_ChiOmegaS,1,str_ChiOmegaS,(/'x','y'/))
-
-        ! attach it to the collection
-        !rcollection%p_rfparserQuickAccess1 => parser_ChiOmegaS
 
         ! Add the components of the solution vector to the list of the vectors
         ! that have to be evaluated during the assembly of the source term.
@@ -5912,13 +5904,12 @@ contains
         call fev2_addVectorToEvalList(rvectorEval,rsolution%RvectorBlock(4),1)
 
         ! Build the penalty term
-        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty2D,rcollection,revalvectors=rvectorEval)
+        call bma_buildVector(rsource,BMA_CALC_STANDARD,hydro_fcalc_bdrcondPenalty2D,rcollection=rcollection,&
+                revalvectors=rvectorEval,rcubatureInfo=RcubatureInformation)
 
         ! clean up
-		call fev2_doneVectorEval(rvectorEval)
+        call fev2_doneVectorEval(rvectorEval)
         call fev2_releaseVectorList(rvectorEval)
-        !call fparser_release(parser_ChiOmegaS)
-        !rcollection%p_rfparserQuickAccess1 => NULL()
 
     case default
         call output_line('At the moment only 1D and 2D is supported!')
