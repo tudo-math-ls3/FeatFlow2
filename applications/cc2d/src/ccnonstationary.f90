@@ -327,15 +327,22 @@ contains
     call parlst_getvalue_int (rparams, &
         "TIME-DISCRETISATION", "IPRESSUREFULLYIMPLICIT", ipressureFullyImplicit, 1)
 
-    ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the velocity
-    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+    ! Force-off flag for DIRK schemes: In order to treat the pressure variable
+    ! semi-implicitly, i.e. exactly like the velocity variable. Requires a pressure start
+    ! solution, though.
+    if (rtimestepping%ctimestepType .eq. TSCHM_CN_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK3L     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK53PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK63PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK74PR) then
       ipressureFullyImplicit = 0
     end if
 
@@ -399,7 +406,8 @@ contains
     !
     ! <tex>$ f(t_{m} + c_{j} k) - N(U_{j}) U_{j} - B P_{j} $,
     ! see \cite[p. 517]{Rang200702}</tex> needed in right hand side assembly
-    type(t_vectorBlock), dimension(5), save :: rvectorAuxFmjUjplusBPj
+    integer(I32), parameter :: NMAXSTAGES = 6              ! not counting explicit stages!
+    type(t_vectorBlock), dimension(NMAXSTAGES), save :: rvectorAuxFmjUjplusBPj
     ! U_0, solution from last macro time step
     type(t_vectorBlock), save :: rsolutionFromLastMacroTimeStep
 
@@ -407,14 +415,19 @@ contains
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
 
-    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+    if (rtimestepping%ctimestepType .eq. TSCHM_CN_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK3L     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK53PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK63PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK74PR) then
       ! explicit first stage: use rtimestepping%isubstep - 1
       ! implicit first stage: use rtimestepping%isubstep
       select case (rtimestepping%isubstep - &
@@ -435,6 +448,8 @@ contains
         call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(4), bclear=.false.)
       case (5)
         call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(5), bclear=.false.)
+      case (6)
+        call lsysbl_createVector (rvector, rvectorAuxFmjUjplusBPj(6), bclear=.false.)
       end select
     end if
 
@@ -474,14 +489,19 @@ contains
       rnlSolver%dtimeNLpreconditioning = 0.0_DP
 
     else
-      if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
-          rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+      if (rtimestepping%ctimestepType .eq. TSCHM_CN_DIRK    .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK    .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK23L    .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK3L     .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK34La   .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb   .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK44L    .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_DIRK54L    .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_SDIRK2     .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR   .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_ESDIRK53PR .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_ESDIRK63PR .or. &
+          rtimestepping%ctimestepType .eq. TSCHM_ESDIRK74PR) then
 ! Note: inhomogeneous Neumann boundary conditions not supported (as of yet)!
 
         ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
@@ -876,18 +896,23 @@ contains
       call lsysbl_releaseVector (rsolutionAux)
     end if
 
-    if (rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
-        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+    if (rtimestepping%ctimestepType .eq. TSCHM_CN_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK23L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK3L     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34La   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK44L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_DIRK54L    .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK2     .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR   .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK53PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK63PR .or. &
+        rtimestepping%ctimestepType .eq. TSCHM_ESDIRK74PR) then
       if (rtimestepping%isubstep .eq. rtimestepping%nsubsteps) then
         ! Free up (velocity) solution from macro time step t_n
         call lsysbl_releaseVector (rsolutionFromLastMacroTimeStep)
-        do i = 5, 1, -1
+        do i = NMAXSTAGES, 1, -1
           if (i .le. rtimestepping%nsubsteps - &
                      merge(1,0,rtimestepping%bexplicitFirstStage .eqv. .TRUE.)) then
             call lsysbl_releaseVector (rvectorAuxFmjUjplusBPj(i))
@@ -947,7 +972,8 @@ contains
     real(DP) :: dfactor
 
 
-    if (rtimestepping%ctimestepType .eq. TSCHM_ONESTEP) then
+    select case (rtimestepping%ctimestepType)
+    case (TSCHM_ONESTEP)
       if (&
           ! With the implicit Euler scheme, the pressure solution lives in the endpoints
           ! in time (of every time intervall spanned by subsequent time steps). So,
@@ -965,20 +991,33 @@ contains
 
       ! With the general theta scheme, the pressure solution (being treated fully
       ! implicitly, as opposed to the velocity variable) lives between the points in time
-      ! where the velocity solution is calculated. See e.g. page 750 of paper
+      ! where the velocity solution is calculated. See e.g.
+      !    @TechReport{Rang2006,
+      !       author      = {Rang, Joachim},
+      !       title       = {A note on implicit $\theta$-schemes applied on the
+      !                     {N}avier--{S}tokes equations},
+      !       institution = {Fakult\"{a}t f\"{u}r Mathematik              #" silence ifort
+      !                      Otto-von-Guericke-Universit\"{a}t Magdeburg},#" silence ifort
+      !       year        = {2006},
+      !       note        = {Preprint 06-40},
+      !       url         = {http://www.math.ovgu.de/Forschung/Ver%C3%B6ffentlichungen/
+      !                      Preprints_+Technical+Reports+%28alte+Version%29/Preprints/
+      !                      2006/06_40.html},
+      !    }
+      ! or page 750 of paper
       !    @article{Rang2008747,
-      !       author  = "J. Rang",
-      !       title   = "Pressure corrected implicit $\theta$-schemes for %!" fix compiler
-      !                  the incompressible Navier--Stokes equations",    %!" warnings
-      !       journal = "Applied Mathematics and Computation",
-      !       volume  = "201",
-      !       number  = "1--2",
-      !       pages   = "747--761",
-      !       year    = "2008",
-      !       issn    = "0096-3003",
-      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
-      !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
-      !       note    = "",
+      !       author  = {Rang, Joachim},
+      !       title   = {Pressure corrected implicit $\theta$-schemes for
+      !                  the incompressible Navier--Stokes equations},
+      !       journal = {Applied Mathematics and Computation},
+      !       volume  = {201},
+      !       number  = {1--2},
+      !       pages   = {747--761},
+      !       year    = {2008},
+      !       issn    = {0096-3003},
+      !       doi     = {http://dx.doi.org/10.1016/j.amc.2008.01.010},
+      !       url  = {http://www.sciencedirect.com/science/article/pii/S0096300308000428},
+      !       note    = {},
       !    }
       ! for a proof. Take an appropriate mean in order to have both variables live at a
       ! common point in time (mandatory for subsequent calculations like lift and drag
@@ -998,8 +1037,7 @@ contains
              1.0_DP - dfactor, dfactor)
       end if
 
-    else if (rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_FS_DIRK) then
+    case (TSCHM_FRACTIONALSTEP)
       if (ipressureFullyImplicit .eq. 1) then
         ! For the fractional-step theta scheme, the paper
         !    @article{Rang2008747,
@@ -1027,14 +1065,16 @@ contains
         ! suffers from order reduction for stiff ODEs (Lemma 5.2) and due to that the
         ! pressure is only approximated with first (!) order accuracy along with second
         ! order approximation of the velocity variable. That can also be easily determined
-        ! experimantally (turn on ierrorAnalysisTimeSpace in postprocessing.dat and
+        ! experimentally (turn on ierrorAnalysisTimeSpace in postprocessing.dat and
         ! compare respective L2 errors for a sequence of time steps for a right hand side
         ! chosen according to an analytic, known solution).
-        ! Again, take an appropriate mean in order to have both variables live at a common
+        ! Again, take an appropriate mean in order to have both variables live in a common
         ! point in time (mandatory for subsequent calculations like lift and drag
         ! calculation) and interpolate *not* the pressure variable, but the velocity
         ! variable. Because only for the latter do we always have a start solution and as
-        ! such can use it in time step 1 for the first interpolation step.
+        ! such can use it in time step 1 for the first interpolation step; and we have
+        ! second order approximation not only in the time interval endpoints, but also
+        ! inbetween for the velocity such that we do not loose accuracy here.
 
         dfactor = 0.0_DP
         ! explicit first stage: rtimestepping%isubstep == 2,3 or 4?
@@ -1068,36 +1108,42 @@ contains
 
       else
         ! Velocity and pressure are treated in the same way, namely semi-implicitly. They
-        ! should both live in the same point in time.
+        ! should already both be living in the same point in time.
         call lsysbl_copyVector (rvectorNew, rvectorInt)
         dtimeInt = dtimeNew
       end if ! treat pressure implicitly or semi-implicitly?
 
-    else if (rtimestepping%ctimestepType .eq. TSCHM_FS_GLOWINSKI) then
+    case (TSCHM_FS_GLOWINSKI)
       ! For the time being, it is unknown at which point in time the pressure variable
       ! lives for this time stepping scheme. Do not interpolate just yet.
       call lsysbl_copyVector (rvectorNew, rvectorInt)
       dtimeInt = dtimeNew
 
-    else if (rtimestepping%ctimestepType .eq. TSCHM_DIRK23L  .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK34La .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK34Lb .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK44L  .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_DIRK54L  .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_SDIRK2   .or. &
-             rtimestepping%ctimestepType .eq. TSCHM_SDIRK3PR) then
+    case (TSCHM_CN_DIRK, &
+          TSCHM_FS_DIRK, &
+          TSCHM_DIRK23L, &
+          TSCHM_DIRK3L, &
+          TSCHM_DIRK34La, &
+          TSCHM_DIRK34Lb, &
+          TSCHM_DIRK44L, &
+          TSCHM_DIRK54L, &
+          TSCHM_SDIRK2, &
+          TSCHM_SDIRK3PR, &
+          TSCHM_ESDIRK53PR, &
+          TSCHM_ESDIRK63PR, &
+          TSCHM_ESDIRK74PR)
       ! Velocity and pressure are treated in the same way by these two time stepping
       ! schemes, namely semi-implicitly. They should both live in the same point in time.
       call lsysbl_copyVector (rvectorNew, rvectorInt)
       dtimeInt = dtimeNew
 
-    else
-      call output_line ("unknown time stepping scheme with index" // &
+    case default
+      call output_line ("unknown time stepping scheme with index " // &
                         trim(sys_siL(rtimestepping%ctimestepType, 2)), &
                         OU_CLASS_ERROR, OU_MODE_STD, "cc_interpolateTimesteps")
       call sys_halt()
 
-    end if
+    end select
 
   end subroutine
 
@@ -1212,6 +1258,8 @@ contains
 
     ! Postprocessing. Write out the initial solution.
     call output_line ("Starting postprocessing of initial solution...")
+    rpostprocessing%nsubsteps           = rtimestepping%nsubsteps
+    rpostprocessing%bexplicitFirstStage = rtimestepping%bexplicitFirstStage
     call cc_postprocessingNonstat (rproblem,&
         rvector,rproblem%rtimedependence%dtimeInit,&
         rvector,rproblem%rtimedependence%dtimeInit,&
@@ -1260,7 +1308,8 @@ contains
         !  schemes consisting of more than 2 substeps.)
         call parlst_getvalue_int (rproblem%rparamList, &
              "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
-        if (cscheme .eq. -TSCHM_DIRK23L) then
+        if (cscheme .eq. -TSCHM_DIRK23L .or. &
+            cscheme .eq. -TSCHM_DIRK3L) then
           ! Re-initialise the time stepping in the problem structure
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
@@ -1313,13 +1362,15 @@ contains
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
         ! scheme A to generate a suitable start solution for scheme B.
         ! (Why the choice of 5? Why not re-check after 1 time step with scheme A? Because
-        !  the scheme SDIRK2 consists of 4 stages (the first one being implicit, too),
-        !  i.e. 4 time (sub)steps and changing from scheme A to SDIRK3PR after 5 time
-        !  steps with A is consistent with how we treat other DIRK schemes consisting of
-        !  less than 5 substeps.)
+        !  the scheme SDIRK2 consists of 4 stages (the first one being implicit, too) and
+        !  ESDIRK53PR consists of 5 stages with the first one explicit, i.e. 4 time
+        !  (sub)steps and changing from scheme A to SDIRK2/ESDIRK53PR after 4 time steps
+        !  with A is consistent with how we treat other DIRK schemes consisting of less
+        !  than 4 substeps.)
         call parlst_getvalue_int (rproblem%rparamList, &
              "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
-        if (cscheme .eq. -TSCHM_SDIRK2) then
+        if (cscheme .eq. -TSCHM_SDIRK2 .or. &
+            cscheme .eq. -TSCHM_ESDIRK53PR) then
           ! Re-initialise the time stepping in the problem structure
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
@@ -1336,13 +1387,38 @@ contains
         ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
         ! scheme A to generate a suitable start solution for scheme B.
         ! (Why the choice of 6? Why not re-check after 1 time step with scheme A? Because
-        !  the scheme SDIRK3PR consists of 5 stages (the first one being implicit, too),
-        !  i.e. 5 time (sub)steps and changing from scheme A to SDIRK3PR after 5 time
-        !  steps with A is consistent with how we treat other DIRK schemes consisting of
-        !  less than 5 substeps.)
+        !  the scheme SDIRK3PR consists of 5 stages (the first one being implicit, too)
+        !  and ESDIRK63PR consists of 6 stages with the first one explicit, i.e. 5 time
+        !  (sub)steps and changing from scheme A to SDIRK3PR/ESDIRK63PR after 5 time steps
+        !  with A is consistent with how we treat other DIRK schemes consisting of less
+        !  than 5 substeps.)
         call parlst_getvalue_int (rproblem%rparamList, &
              "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
-        if (cscheme .eq. -TSCHM_SDIRK3PR) then
+        if (cscheme .eq. -TSCHM_SDIRK3PR .or. &
+            cscheme .eq. -TSCHM_ESDIRK63PR) then
+          ! Re-initialise the time stepping in the problem structure
+          daux1 = rtimestepping%dcurrentTime
+          daux2 = rtimestepping%dtstep
+          daux3 = rtimestepping%dtheta
+          call timstp_init (rtimestepping, abs(cscheme), daux1, daux2, daux3)
+
+          ! Force-off flag for DIRK schemes: treat pressure semi-implicitly, as the
+          ! velocity
+          ipressureFullyImplicit = 0
+        end if
+      end if
+
+      if (rproblem%rtimedependence%itimeStep .eq. 7) then
+        ! Re-check time stepping scheme to use. Possibly we only needed a few steps with
+        ! scheme A to generate a suitable start solution for scheme B.
+        ! (Why the choice of 7? Why not re-check after 1 time step with scheme A? Because
+        !  the scheme ESDIRK74PR consists of 7 stages with the first one explicit, i.e. 6
+        !  time (sub)steps and changing from scheme A to ESDIRK74PR after 6 time steps
+        !  with A is consistent with how we treat other DIRK schemes consisting of less
+        !  than 6 substeps.)
+        call parlst_getvalue_int (rproblem%rparamList, &
+             "TIME-DISCRETISATION", "ITIMESTEPSCHEME", cscheme, 0)
+        if (cscheme .eq. -TSCHM_ESDIRK74PR) then
           ! Re-initialise the time stepping in the problem structure
           daux1 = rtimestepping%dcurrentTime
           daux2 = rtimestepping%dtstep
@@ -1881,7 +1957,9 @@ contains
 
         ! Postprocessing. Write out the solution if it was calculated successfully and
         ! measure time errors for test problems (with analytically given solution).
-        rpostprocessing%ctimestepType = rtimestepping%ctimestepType
+        rpostprocessing%ctimestepType       = rtimestepping%ctimestepType
+        rpostprocessing%nsubsteps           = rtimestepping%nsubsteps
+        rpostprocessing%bexplicitFirstStage = rtimestepping%bexplicitFirstStage
         call cc_postprocessingNonstat (rproblem, &
             rprevTimeStepSolution, dprevTimeStepTime, &
             rvector, rproblem%rtimedependence%dtime, &

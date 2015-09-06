@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains a realisation of 1D time-stepping schemes used
 !# for the time discretisation of PDE`s. Examples for this are Explicit Euler,
-!# Crank Nicolson or the Fractional Step Theta scheme.
+!# Crank Nicolson or the fractional-step theta scheme.
 !#
 !# The basic time stepping is governed by the structure t_explicitTimeStepping,
 !# which is maintained by the routines in this module. It contains information
@@ -120,31 +120,48 @@ module timestepping
   ! Identifier for classic fractional-step theta scheme in DIRK context
   integer, parameter, public :: TSCHM_FS_DIRK        = 3
 
+  ! Identifier for Crank-Nicolson in DIRK context
+  integer, parameter, public :: TSCHM_CN_DIRK        = 4
+
   ! Identifier for (E)DIRK23L
   ! (In ODE literature also known as a cyclic combination of trapezoidal rule and the BDF2
   !  scheme)
-  integer, parameter, public :: TSCHM_DIRK23L        = 4
+  integer, parameter, public :: TSCHM_DIRK23L        = 5
+
+  ! Identifier for DIRK3L
+  integer, parameter, public :: TSCHM_DIRK3L         = 6
 
   ! Identifier for (ES)DIRK34L as proposed by Joachim Rang
-  integer, parameter, public :: TSCHM_DIRK34La       = 5
+  integer, parameter, public :: TSCHM_DIRK34La       = 7
 
   ! Identifier for another solution of the defining equations for (ES)DIRK34L
   ! (In literature also known as ESDIRK 3/2a)
-  integer, parameter, public :: TSCHM_DIRK34Lb       = 6
+  integer, parameter, public :: TSCHM_DIRK34Lb       = 8
 
   ! Identifier for (E)DIRK44L as proposed by Joachim Rang
-  integer, parameter, public :: TSCHM_DIRK44L        = 7
+  integer, parameter, public :: TSCHM_DIRK44L        = 9
 
   ! Identifier for (E)DIRK54L
-  integer, parameter, public :: TSCHM_DIRK54L        = 8
+  integer, parameter, public :: TSCHM_DIRK54L        = 10
 
   ! Identifier for SDIRK2
-  integer, parameter, public :: TSCHM_SDIRK2         = 9
+  integer, parameter, public :: TSCHM_SDIRK2         = 11
 
   ! Identifier for SDIRK3PR
-  integer, parameter, public :: TSCHM_SDIRK3PR       = 10
+  integer, parameter, public :: TSCHM_SDIRK3PR       = 12
+
+  ! Identifier for ESDIRK53PR
+  integer, parameter, public :: TSCHM_ESDIRK53PR     = 13
+
+  ! Identifier for ESDIRK63PR
+  integer, parameter, public :: TSCHM_ESDIRK63PR     = 14
+
+  ! Identifier for ESDIRK74PR
+  integer, parameter, public :: TSCHM_ESDIRK74PR     = 15
 
 !</constantblock>
+
+  integer(I32), parameter :: NMAXSTAGES = 7
 
 !</constants>
 
@@ -238,13 +255,13 @@ module timestepping
     real(DP)                 :: dthStep
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(5,5) :: dcoeffA
+    real(DP), dimension(NMAXSTAGES,NMAXSTAGES) :: dcoeffA
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(5)   :: dcoeffB
+    real(DP), dimension(NMAXSTAGES) :: dcoeffB
 
     ! Coefficients for diagonally implicit Runge-Kutta schemes
-    real(DP), dimension(5)   :: dcoeffC
+    real(DP), dimension(NMAXSTAGES) :: dcoeffC
 
     ! Simulation time in stage 1 of a diagonally implicit Runge-Kutta schemes, substeps
     ! determine their time using this base
@@ -332,10 +349,26 @@ contains
 !</function>
 
     select case (rtstepScheme%ctimestepType)
-    case (TSCHM_DIRK54L, TSCHM_DIRK44L, TSCHM_DIRK34La, TSCHM_DIRK34Lb, &
-          TSCHM_SDIRK3PR, TSCHM_SDIRK2)
+    case (TSCHM_ESDIRK74PR)
+      iorder = 4
+    case (TSCHM_ESDIRK53PR, &
+          TSCHM_ESDIRK63PR)
       iorder = 3
-    case (TSCHM_FRACTIONALSTEP, TSCHM_FS_GLOWINSKI, TSCHM_FS_DIRK, TSCHM_DIRK23L)
+    case (TSCHM_SDIRK3PR)
+      iorder = 3
+    case (TSCHM_SDIRK2)
+      iorder = 3  ! actually, experiments indicate a fractional order of around 2.2-2.4
+    case (TSCHM_DIRK34La, &
+          TSCHM_DIRK34Lb, &
+          TSCHM_DIRK44L, &
+          TSCHM_DIRK54L)
+      iorder = 3  ! order for pressure solving (Navier-)Stokes is reduced to 2
+    case (TSCHM_FRACTIONALSTEP, &
+          TSCHM_FS_GLOWINSKI, &
+          TSCHM_FS_DIRK, &
+          TSCHM_CN_DIRK, &
+          TSCHM_DIRK23L, &
+          TSCHM_DIRK3L)
       iorder = 2
     case (TSCHM_ONESTEP)
       if (rtstepScheme%dthStep .eq. 0.5_DP) then
@@ -420,6 +453,88 @@ contains
       rtstepScheme%dthStep          = dtstep * dtheta1
 
 
+    case (TSCHM_CN_DIRK)
+
+      rtstepScheme%ctimestepType = TSCHM_CN_DIRK
+
+      ! The classic one-step theta methods can be reinterpreted as a DIRK scheme,
+      ! see section 4 of
+      !    @article{Rang2008747,
+      !       author  = "Rang, Joachim",
+      !       title   = "Pressure corrected implicit $\theta$-schemes for %!" fix compiler
+      !                  the incompressible Navier--Stokes equations",    %!" warnings
+      !       journal = "Applied Mathematics and Computation",
+      !       volume  = "201",
+      !       number  = "1--2",
+      !       pages   = "747--761",
+      !       year    = "2008",
+      !       issn    = "0096-3003",
+      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
+      !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
+      !       note    = "",
+      !    }
+      ! (only difference: enforced semi-implicit treatment of the pressure, no fully
+      !  implicit treatment like proposed in Turek`s book). A-stable for theta=0.5,
+      ! provides 2nd ordner for velocity and the pressure and consists of 2
+      ! stages, ...
+      rtstepScheme%nsubsteps = 2
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
+      ! ... and uses several parameter:
+      dtheta1 = 0.5_DP
+      rtstepScheme%dcoeffA = &
+       ! (0             0                     )
+       ! (1-\theta      \theta                )
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            1.0_DP - dtheta1, &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            dtheta1, &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! third-7th column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fourth column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      !  @article{John2010514,
+      !     author  = {Volker John and Joachim Rang},
+      !     title   = {Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations},
+      !     journal = {Computer Methods in Applied Mechanics and Engineering},
+      !     volume  = {199},
+      !     number  = {9--12},
+      !     pages   = {514--524},
+      !     year    = {2010},
+      !     note    = {},
+      !     issn    = {0045-7825},
+      !     doi     = {http://dx.doi.org/10.1016/j.cma.2009.10.005},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0045782509003417},
+      !  }
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(2,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &          ! sum(rtstepScheme%dcoeffA(1,:))
+              1.0_DP, &          ! sum(rtstepScheme%dcoeffA(2,:))
+              0.0_DP, &          !
+              0.0_DP, &          !  3rd to 7th entry only to have 1 structure
+              0.0_DP, &          !  for all DIRK schemes
+              0.0_DP, &          !
+              0.0_DP /)          !
+
+
     case (TSCHM_FRACTIONALSTEP)
 
       rtstepScheme%ctimestepType    = TSCHM_FRACTIONALSTEP
@@ -435,8 +550,8 @@ contains
       !   alpha   = ( 1 - 2 * Theta ) / ( 1 - Theta )
       !   beta    = 1 - alpha
       !
-      ! The parameter THETA in the DAT-file is ignored and replaced
-      ! by a hard-coded setting.
+      ! The parameter THETA from the configuration file (DAT-file) is ignored and
+      ! replaced by a hard-coded setting.
 
       dtheta1 = 1.0_DP-sqrt(0.5_DP)
       dthetp1 = 1.0_DP-2.0_DP*dtheta1
@@ -506,21 +621,21 @@ contains
       ! The classic fractional-step theta scheme can be reinterpreted as a DIRK scheme,
       ! see section 5 of
       !    @article{Rang2008747,
-      !       author  = "J. Rang",
-      !       title   = "Pressure corrected implicit $\theta$-schemes for %!" fix compiler
-      !                  the incompressible Navier--Stokes equations",    %!" warnings
-      !       journal = "Applied Mathematics and Computation",
-      !       volume  = "201",
-      !       number  = "1--2",
-      !       pages   = "747--761",
-      !       year    = "2008",
-      !       issn    = "0096-3003",
-      !       doi     = "http://dx.doi.org/10.1016/j.amc.2008.01.010",
-      !       url  = "http://www.sciencedirect.com/science/article/pii/S0096300308000428",
-      !       note    = "",
+      !       author  = {Rang, Joachim},
+      !       title   = {Pressure corrected implicit $\theta$-schemes for
+      !                  the incompressible Navier--Stokes equations},
+      !       journal = {Applied Mathematics and Computation},
+      !       volume  = {201},
+      !       number  = {1--2},
+      !       pages   = {747--761},
+      !       year    = {2008},
+      !       issn    = {0096-3003},
+      !       doi     = {http://dx.doi.org/10.1016/j.amc.2008.01.010},
+      !       url  = {http://www.sciencedirect.com/science/article/pii/S0096300308000428},
+      !       note    = {},
       !    }
       ! (only difference: enforced semi-implicit treatment of the pressure, no fully
-      !  implicit treatment like proposed in Tureks's book) that is strongly A-stable,
+      !  implicit treatment like proposed in Turek`s book) that is strongly A-stable,
       ! provides 2nd ordner for velocity and 1st order for the pressure and consists of 4
       ! stages, ...
       rtstepScheme%nsubsteps = 4
@@ -544,46 +659,47 @@ contains
                             dtheta1*dbeta, &
                             dtheta1*dbeta, &
                             dtheta1*dbeta, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             dtheta1*dalpha, &
                             (dtheta1+dthetp1)*dalpha, &
                             (dtheta1+dthetp1)*dalpha, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             dthetp1*dbeta, &
                             (dtheta1+dthetp1)*dbeta, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             dtheta1*dalpha, &
-                            0.0_DP, &
-                            ! fifth column only needed to be able to use one data
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one data
                             ! structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       !  @article{John2010514,
-      !     author  = "Volker John and Joachim Rang",
-      !     title   = "Adaptive time step control for the incompressible
-      !                {N}avier--{S}tokes equations",
-      !     journal = "Computer Methods in Applied Mechanics and Engineering ",
-      !     volume  = "199",
-      !     number  = "9--12",
-      !     pages   = "514--524",
-      !     year    = "2010",
-      !     note    = "",
-      !     issn    = "0045-7825",
-      !     doi     = "http://dx.doi.org/10.1016/j.cma.2009.10.005",
-      !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
+      !     author  = {Volker John and Joachim Rang},
+      !     title   = {Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations},
+      !     journal = {Computer Methods in Applied Mechanics and Engineering},
+      !     volume  = {199},
+      !     number  = {9--12},
+      !     pages   = {514--524},
+      !     year    = {2010},
+      !     note    = {},
+      !     issn    = {0045-7825},
+      !     doi     = {http://dx.doi.org/10.1016/j.cma.2009.10.005},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0045782509003417},
       !  }
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -592,7 +708,7 @@ contains
               dtheta1, &                ! sum(rtstepScheme%dcoeffA(2,:))
               dtheta1+dthetp1, &        ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
-              0.0_DP /)
+              0.0_DP, 0.0_DP, 0.0_DP /)
 
 
     case (TSCHM_DIRK23L)
@@ -611,12 +727,12 @@ contains
       !     author = {Fredebeul, Christoph},
       !     title  = {{Konstruktion neuer schrittwechsel- und steif-stabiler zyklischer
       !                linearer Mehrschrittverfahren}},
-      !     note   = {Diplomarbeit, Universit\"{a}t Dortmund, 1989},
+      !     note   = {Diplomarbeit, Universit\"{a}t Dortmund, 1989},    %!" warnings
       !  }
       ! by Peter Albrecht on page 173 of
       !  @book{
       !     author = {Albrecht, Peter},
-      !     title  = {{Verfahren zur L\"{o}sung gew\"{o}hnlicher Differentialgleichungen
+      !     title  = {{Verfahren zur Loesung gewoehnlicher Differentialgleichungen
       !                unter Einschluss linearer zyklischer Verfahren und mit einer
       !                wesentlich vereinfachten Theorie der Runge-Kutta Verfahren}},
       !     note   = {to be released in 2015}
@@ -703,33 +819,27 @@ contains
                             0.0_DP, &
                             0.25_DP, &
                             1.0_DP/3.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             1.0_DP/3.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             1.0_DP/3.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            ! fourth and fifth column only needed to be able to use one
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fourth to 7th column only needed to be able to use one
                             ! data structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            !
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{3i}     (Butcher condition B(1)
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(3,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (Butcher condition C(1))
@@ -737,8 +847,165 @@ contains
            (/ 0.0_DP, &         ! sum(rtstepScheme%dcoeffA(1,:))
               1.0_DP/2.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
-              0.0_DP, &         ! 4th entry only to have 1 structure for all DIRK schemes
-              0.0_DP /)         ! 5th entry dito
+              0.0_DP, &         !
+              0.0_DP, &         !  4th to 7th entry only to have 1 structure
+              0.0_DP, &         !  for all DIRK schemes
+              0.0_DP /)         !
+
+
+    case (TSCHM_DIRK3L)
+
+      rtstepScheme%ctimestepType    = TSCHM_DIRK3L
+
+      ! The DIRK3L scheme as proposed in section 3.2 of
+      !  @TechReport{Rang200702,
+      !     author      = {Rang, Joachim},
+      !     title       = {Design of {DIRK} schemes for solving the
+      !                    {N}avier--{S}tokes equations},
+      !     institution = {Institute of Scientific Computing},
+      !     address     = {Technical University Braunschweig, Brunswick, Germany},
+      !     year        = {2007},
+      !     month       = feb,
+      !     url         = {http://www.digibib.tu-bs.de/?docid=00020655},
+      !     note        = {Informatikbericht Nr. 2007-02},
+      !  }
+      ! and compared to other time-stepping schemes in
+      !  @article{John2010514,
+      !     author  = {Volker John and Joachim Rang},
+      !     title   = {Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations},
+      !     journal = {Computer Methods in Applied Mechanics and Engineering},
+      !     volume  = {199},
+      !     number  = {9--12},
+      !     pages   = {514--524},
+      !     year    = {2010},
+      !     note    = {},
+      !     issn    = {0045-7825},
+      !     doi     = {http://dx.doi.org/10.1016/j.cma.2009.10.005},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0045782509003417},
+      !  }
+      ! is an L-stable diagonally implicit Runge-Kutta scheme of 2nd ordner for velocity
+      ! and X order for pressure that consists of 3 stages, ...
+      rtstepScheme%nsubsteps = 3
+      ! ... the first stage being explicit:
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
+      ! Parameters
+      !      a21 = a22 = a33, a31 = 1 - a32 - a33, a32
+      ! are determined using Maple and the following instructions:
+      !
+      !    with(LinearAlgebra):
+      !    s := 3;
+      !    A := Matrix([[0, 0, 0], [a21, a22, 0], [a31, a32, a33]]);
+      !    # condition C(1) + plus C(2) (i=1) to conclude that c1 = a11 = 0
+      !    c := Vector([0, a21+a22, 1]);
+      !    # "stiffly accurate" constraint:
+      !    bT := Row(A, 3);
+      !    # assumption for this scheme
+      !    a21 := a22;
+      !    # Butcher conditions for velocity order p=2 and pressure order q=2
+      !    B1 := bT[1]+bT[2]+bT[3] = 1;
+      !    B2 := simplify(Multiply(bT, c) = 1/2);
+      !    C1 := Multiply(A, Vector(s, 1)) = c;
+      !    #     / 0           \ = / 0           \
+      !    #   = | a21+a22     | = | a21+a22     |
+      !    #     \ 1           / = \ a31+a32+a33 /
+      !    C1row3 := (Row(op(1, C1), 3))(1) = (Row(op(2, C1), 3))(1);
+      !    #       = a31 + a32 + a33 = 1
+      !    # use this to define a31 explicitly (and do not re-use C1 later any more)
+      !    a31 := 1 - a32 - a33;
+      !    C2 := simplify(Multiply(A, c)) =
+      !          simplify(zip(proc(x,y) options operator, arrow; (1/2)*x^2 end proc,c,c));
+      !    # => C2 is equivalent to B2:
+      !    #     B2 := 2 a32 a33 + a33 = 1/2
+      !    #           [       0       ]   [  0   ]
+      !    #           [               ]   [      ]
+      !    #     C2 := [         2     ] = [     2]
+      !    #           [    2 a33      ]   [2 a33 ]
+      !    #           [               ]   [      ]
+      !    #           [2 a32 a33 + a33]   [ 1/2  ]
+      !    C2row2 := (Row(op(1, C2), 2))(1) = (Row(op(2, C2), 2))(1);
+      !    #       = a22*(a21+a22) = (1/2)*(a21+a22)^2
+      !    C2row3 := (Row(op(1, C2), 3))(1) = (Row(op(2, C2), 3))(1);
+      !    #       = a21 a32 + a22 a32 + a33 = 1/2
+      !    # L-stability constraint
+      !    #  R0(z) as defined in equation (12) on page 6 of said paper:
+      !    #    R0 := proc (z) options operator, arrow;
+      !    #          1 + z*Multiply(bT, Multiply(MatrixInverse(IdentityMatrix(s)-z*A),
+      !    #                                      Vector(s,1))) end proc;
+      !    #  alternative formulation for R0(z) with determinants is according to
+      !    #  proprosition 3.2 on page 41 of
+      !    #    @BOOK{HairerWanner,
+      !    #      author    = {Hairer, Ernst and Wanner, Gerhard.},
+      !    #      title     = {Solving ordinary differential equations II:
+      !    #                   Stiff and differential-algebraic problems}
+      !    #      edition   = {2nd},
+      !    #      publisher = {Springer-Verlag, Berlin, New York},
+      !    #      year      = {1996},
+      !    #      note      = {ISBN 978-3-540-60452-5},
+      !    #    }
+      !    R0 := proc (z) options operator, arrow;
+      !            Determinant(IdentityMatrix(s)-z*A+z*Multiply(Vector(s, 1), bT))/
+      !              Determinant(IdentityMatrix(s)-z*A) end proc;
+      !    with(MultiSeries, limit);
+      !    Lstability := simplify(limit(abs(R0(z)), z = -infinity) = 0);
+      !    #                   /   2 a32 + a33 - 1 2      2 a32 + a33 - 1 2\1/2
+      !    #     Lstability := |Re(---------------)  + Im(---------------) |    = 0
+      !    #                   \         a33                    a33        /
+      !    # and hence the condition in \cite[Lemma 7, page 10]{Rang200702}):
+      !    Lstability := 2 * a32 + a33 = 1;
+      !    # fix free parameter a22 such that diagonal values of (implicit steps of) A are
+      !    # identical
+      !    #a22 := a33;
+      !    solutions := [solve({B1, B2, Lstability})];
+      !    allvalues(solutions);
+      !    # Select the solution such that a21, a22 < 1:
+      !    solutions := [solve({B1, B2, Lstability, a22 = a33, a33 < 1})];
+      !    assign(solutions[1]); A;
+      !    # leads to
+      !    #       a21 = a22 = a33 = 1 - sqrt(2)/2
+      !    #       a31 = a32 = sqrt(2)/4
+
+      ! ... and uses several parameter:
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            1.0_DP - 0.5_DP * sqrt(2.0_DP), &
+                            0.25_DP * sqrt(2.0_DP), &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            1.0_DP - 0.5_DP * sqrt(2.0_DP), &
+                            0.25_DP * sqrt(2.0_DP), &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP - 0.5_DP * sqrt(2.0_DP), &
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fourth to 7th column only needed to be able to use one
+                            ! data structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
+      ! b_i = a_{3i}     (Butcher condition B(1)
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(3,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (Butcher condition C(1))
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                 ! sum(rtstepScheme%dcoeffA(1,:))
+              2.0_DP - sqrt(2.0_DP), &  ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
+              0.0_DP, &                 !
+              0.0_DP, &                 !  4th to 7th entry only to have 1 structure
+              0.0_DP, &                 !  for all DIRK schemes
+              0.0_DP /)                 !
 
 
     case (TSCHM_DIRK34La)
@@ -759,18 +1026,18 @@ contains
       !  }
       ! and compared to other time-stepping schemes in
       !  @article{John2010514,
-      !     author  = "Volker John and Joachim Rang",
-      !     title   = "Adaptive time step control for the incompressible
-      !                {N}avier--{S}tokes equations",
-      !     journal = "Computer Methods in Applied Mechanics and Engineering ",
-      !     volume  = "199",
-      !     number  = "9--12",
-      !     pages   = "514--524",
-      !     year    = "2010",
-      !     note    = "",
-      !     issn    = "0045-7825",
-      !     doi     = "http://dx.doi.org/10.1016/j.cma.2009.10.005",
-      !     url    = "http://www.sciencedirect.com/science/article/pii/S0045782509003417",
+      !     author  = {Volker John and Joachim Rang},
+      !     title   = {Adaptive time step control for the incompressible
+      !                {N}avier--{S}tokes equations},
+      !     journal = {Computer Methods in Applied Mechanics and Engineering},
+      !     volume  = {199},
+      !     number  = {9--12},
+      !     pages   = {514--524},
+      !     year    = {2010},
+      !     note    = {},
+      !     issn    = {0045-7825},
+      !     doi     = {http://dx.doi.org/10.1016/j.cma.2009.10.005},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0045782509003417},
       !  }
       ! is an L-stable diagonally implicit Runge-Kutta scheme of 3rd ordner for velocity
       ! and 2nd order for pressure that consists of 4 stages, ...
@@ -781,7 +1048,7 @@ contains
 
       ! ... and uses several parameter:
       rtstepScheme%dcoeffA = &
-       ! see \cite[p. 14]{Rang200702}:
+       ! see \cite[p. 16]{Rang200702}:
        !
        ! (0                      0                  0                   0                )
        ! (0.158983899988677      0.158983899988677  0                   0                )
@@ -807,32 +1074,33 @@ contains
                             1.0_DP - 0.158983899988677_DP  - 1.07248627073437_DP, &
                             1.0_DP - 0.7685298292769537_DP - 0.0966483609791597_DP &
                                    - 0.158983899988677_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.158983899988677_DP, &
                             1.07248627073437_DP, &
                             0.7685298292769537_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.158983899988677_DP, &
                             0.0966483609791597_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             0.158983899988677_DP, &
-                            0.0_DP, &
-                            ! fifth column only needed to be able to use one data
-                            ! structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one
+                            ! data structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -841,7 +1109,9 @@ contains
               0.317967799977354_DP, &   ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
-              0.0_DP /)
+              0.0_DP, &                 !  5th to 7th entry only to have 1 structure
+              0.0_DP, &                 !  for all DIRK schemes
+              0.0_DP /)                 !
 
 
     case (TSCHM_DIRK34Lb)
@@ -909,32 +1179,33 @@ contains
                             1.0_DP - 0.0735700902_DP - 0.43586652150845899941_DP, &
                             1.0_DP - 1.490563387_DP +  1.235239880_DP &
                                    - 0.43586652150845899941_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.43586652150845899941_DP, &
                             0.0735700902_DP, &
                             1.490563387_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.43586652150845899941_DP, &
                            -1.235239880_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             0.43586652150845899941_DP, &
-                            0.0_DP, &
-                            ! fifth column only needed to be able to use one data
-                            ! structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one
+                            ! data structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -943,7 +1214,9 @@ contains
               0.8717330428_DP, &        ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP, &                 ! sum(rtstepScheme%dcoeffA(4,:))
-              0.0_DP /)
+              0.0_DP, &                 !  5th to 7th entry only to have 1 structure
+              0.0_DP, &                 !  for all DIRK schemes
+              0.0_DP /)                 !
 
 
     case (TSCHM_DIRK44L)
@@ -1008,32 +1281,33 @@ contains
                             0.25_DP, &
                             (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
                             1.0_DP/6.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             (1.0_DP + sqrt(2.0_DP))/3.0_DP, &
                             2.0_DP/3.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
                             (sqrt(2.0_DP) - 1.0_DP)/6.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             (2.0_DP - sqrt(2.0_DP))/6.0_DP, &
-                            0.0_DP, &
-                            ! fifth column only needed to be able to use one data
-                            ! structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one
+                            ! data structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -1042,7 +1316,9 @@ contains
               0.5_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               1.0_DP, &  ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP, &  ! sum(rtstepScheme%dcoeffA(4,:))
-              0.0_DP /)
+              0.0_DP, &  !  5th to 7th entry only to have 1 structure
+              0.0_DP, &  !  for all DIRK schemes
+              0.0_DP /)  !
 
 
     case (TSCHM_DIRK54L)
@@ -1145,32 +1421,33 @@ contains
                             1.0_DP/6.0_DP, &
                             178.0_DP/1075.0_DP, &
                             5.0_DP/48.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             1.0_DP/6.0_DP, &
                             432.0_DP/1075.0_DP, &
                             27.0_DP/56.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             10.0_DP/43.0_DP, &
                             125.0_DP/336.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             1.0_DP/24.0_DP, &
-                            0.0_DP, &
-                            ! fifth column only needed to be able to use one data
-                            ! structure for all DIRK schemes
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one
+                            ! data structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -1179,14 +1456,16 @@ contains
               1.0_DP/3.0_DP, &  ! sum(rtstepScheme%dcoeffA(2,:))
               0.8_DP, &         ! sum(rtstepScheme%dcoeffA(3,:))
               1.0_DP, &         ! sum(rtstepScheme%dcoeffA(4,:))
-              0.0_DP /)
+              0.0_DP, &         !  5th to 7th entry only to have 1 structure
+              0.0_DP, &         !  for all DIRK schemes
+              0.0_DP /)         !
 
 
     case (TSCHM_SDIRK2)
 
       rtstepScheme%ctimestepType    = TSCHM_SDIRK2
 
-      ! The SDIRK2 scheme was first described in
+      ! The SDIRK2 scheme was first described on page 68 in
       !   @article{Cameron200261,
       !    author  = {Frank Cameron and Mikko Palmroth and Robert Piche},
       !    title   = {Quasi stage order conditions for \{SDIRK\} methods},
@@ -1206,37 +1485,43 @@ contains
       rtstepScheme%bexplicitFirstStage = .FALSE.
 
       rtstepScheme%dcoeffA = &
+       ! (1/4      0        0     0  )
+       ! (1/7      1/4      0     0  )
+       ! (61/144  -49/144   1/4   0  )
+       ! (0        0        3/4   1/4)
        reshape( source = (/ &
                             ! first column
                             0.25_DP, &
-                            1.0_DP/7_DP, &
+                            1.0_DP/7.0_DP, &
                             61.0_DP/144.0_DP, &
                             0.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             -49.0_DP/144.0_DP, &
                             0.0_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.25_DP, &
                             0.75_DP, &
-                            0.0_DP, &
+                            0.0_DP, 0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             0.25_DP, &
-                            0.0_DP, &
-                            ! fifth column
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP, &
-                            0.0_DP /), shape = (/ 5,5 /) )
+                            0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! fifth to 7th column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 6th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{4i}     (see \cite[p. 68, equation (16)]{Cameron200261})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(4,:)
       ! c_i = \sum_{j=1}^i a_{ij}  (see \cite[p. 68, equation (16)]{Cameron200261})
@@ -1245,7 +1530,7 @@ contains
               sum(rtstepScheme%dcoeffA(2,:)), &
               sum(rtstepScheme%dcoeffA(3,:)), &
               sum(rtstepScheme%dcoeffA(4,:)), &
-              sum(rtstepScheme%dcoeffA(5,:)) /)
+              0.0_DP, 0.0_DP, 0.0_DP /)
 
 
     case (TSCHM_SDIRK3PR)
@@ -1268,10 +1553,15 @@ contains
       !     url    = {http://www.sciencedirect.com/science/article/pii/S0377042713005177},
       !   }
       ! It consists of 5 stages (the first step is NOT explicit)
-      rtstepScheme%nsubsteps        = 5
+      rtstepScheme%nsubsteps = 5
       rtstepScheme%bexplicitFirstStage = .FALSE.
 
       rtstepScheme%dcoeffA = &
+       ! ( 1/4                    0                      0                     0      0  )
+       ! ( 7/22                   1/4                    0                     0      0  )
+       ! (-2227139147/260817928   2840529813/260817928   1/4                   0      0  )
+       ! ( 737173/1583568         4492609/15062544      -23287315/1690232616   1/4    0  )
+       ! ( 3170/4713             -2662/44829            -4657463/352131795     3/20   1/4)
        reshape( source = (/ &
                             ! first column
                             0.25_DP, &
@@ -1279,30 +1569,41 @@ contains
                            -8.539056974_DP, &
                             0.4655139533_DP, &
                             0.6726076809_DP, &
+                            0.0_DP, 0.0_DP, &
                             ! second column
                             0.0_DP, &
                             0.25_DP, &
                             10.89085338_DP, &
                             0.2982636266_DP, &
                            -0.05938120413_DP, &
+                            0.0_DP, 0.0_DP, &
                             ! third column
                             0.0_DP, &
                             0.0_DP, &
                             0.25_DP, &
                            -0.01377757995_DP, &
                            -0.01322647675_DP, &
+                            0.0_DP, 0.0_DP, &
                             ! fourth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             0.25_DP, &
                             0.15_DP, &
+                            0.0_DP, 0.0_DP, &
                             ! fifth column
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
                             0.0_DP, &
-                            0.25_DP /), shape = (/ 5,5 /) )
+                            0.25_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! 6th and 7th column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
       ! b_i = a_{5i}     (see \cite[p. 518, condition (H4)]{John2010514})
       rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(5,:)
       ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
@@ -1311,7 +1612,573 @@ contains
               sum(rtstepScheme%dcoeffA(2,:)), &
               sum(rtstepScheme%dcoeffA(3,:)), &
               sum(rtstepScheme%dcoeffA(4,:)), &
-              sum(rtstepScheme%dcoeffA(5,:)) /)
+              sum(rtstepScheme%dcoeffA(5,:)), &
+              0.0_DP, 0.0_DP /)
+
+
+    case (TSCHM_ESDIRK53PR)
+
+      rtstepScheme%ctimestepType    = TSCHM_ESDIRK53PR
+
+      ! The TSCHM_ESDIRK53PR is proposed in
+      !   @article{Rang201575,
+      !     author  = {Joachim Rang},
+      !     title   = {An analysis of the {P}rothero--{R}obinson example for constructing
+      !                new adaptive {ESDIRK} methods of order 3 and 4},
+      !     journal = {Applied Numerical Mathematics },
+      !     volume  = {94},
+      !     number  = {0},
+      !     pages   = {75-87},
+      !     year    = {2015},
+      !     note    = {},
+      !     issn    = {0168-9274},
+      !     doi     = {http://dx.doi.org/10.1016/j.apnum.2015.03.003},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0168927415000501},
+      !   }
+      ! It consists of 5 stages (the first stage being explicit)
+      rtstepScheme%nsubsteps = 5
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
+      ! Order properties and L-stability can be verified by means of Maple and the
+      ! following instructions:
+      !    restart: with(LinearAlgebra):
+      !    ndim := 5;
+      !    # the scheme
+      !    a11 := 0; a21 := 5/18; a31 := .3456552483519272; a41 := .3965643047257401;
+      !    a51 := .2481479828780141; a12 := 0; a22 := 5/18; a32 := .1681740315717733;
+      !    a42 := .1001154404932533; a52 := .2139473588935955; a13 := 0; a23 := 0;
+      !    a33 := 5/18; a43 := .1255424770032288; a53 := 1.206274239267400; a14 := 0;
+      !    a24 := 0; a34 := 0; a44 := 5/18; a54 := -.9461473588167871; a15 := 0;
+      !    a25 := 0; a35 := 0; a45 := 0; a55 := 5/18;
+      !    A := Matrix([[a11, a12, a13, a14, a15], [a21, a22, a23, a24, a25],
+      !                 [a31, a32, a33, a34, a35], [a41, a42, a43, a44, a45],
+      !                 [a51, a52, a53, a54, a55]]);
+      !    c := Multiply(A, Vector(ndim, 1));
+      !    # stiffly accurate b: equal to last row of A and sum(b) = 1
+      !    bT := Transpose(Vector([a51, a52, a53, a54, a55]));
+      !    #
+      !    # verification of properties (see page \cite[p.76]{Rang201575}):
+      !    #
+      !    # Order conditions for Runge-Kutta method up to order 4
+      !    # condition B(1) - for order 1:  \sum_i b_i = 1
+      !    B1 := Multiply(bT, Vector(ndim, 1)) = 1;
+      !    # condition B(2) - for order 2: \sum_i b_i c_i = 1/2
+      !    B2 := simplify(Multiply(bT, c) = 1/2);
+      !    # condition B(3) - for order 3: \sum_i b_i c_i^2 = 1/3
+      !    B3 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^2
+      !                                    end proc, c, c)) = 1/3);
+      !    # condition B(4) - for order 4: \sum_i b_i c_i^3 = 1/4
+      !    # (neither assumed to be fulfilled nor is that actually the case)
+      !    B4 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^3
+      !                                    end proc, c, c)) = 1/4);
+      !    # condition C(1): Ae = c: (by construction of c automatically fulfilled)
+      !    C1 := Multiply(A, Vector(ndim, 1)) = c;
+      !    # condition C(2); Ac = 1/2 * c^2:
+      !    C2 := simplify(Multiply(A, c)) = simplify(zip((x,y)->1/2*x^2,c,c));
+      !    # condition*C(3); Ac^2 = 1/3 * c^3:
+      !    # (neither assumed to be fulfilled nor is that actually the case)
+      !    C3 := simplify(Multiply(A, zip((x,y)->x^2,c,c))) =
+      !          simplify(zip((x,y)->1/3*x^3,c,c));
+      !    # L-stability constraint (in alternative formulation, see
+      !    # \cite[p. 41, proposition 3.2]{HairerWanner}):
+      !    R := proc (z) options operator, arrow;
+      !            Determinant(IdentityMatrix(ndim)-z*A+z*Multiply(Vector(ndim,1), bT))/
+      !              Determinant(IdentityMatrix(ndim)-z*A) end proc;
+      !    with(MultiSeries, limit):
+      !    # Increase numerical accurary. Otherwise stability function is wrongly claimed
+      !    # to be unbounded for z->-\infty.
+      !    Digits := 32:
+      !    Lstability := simplify(limit(abs(R(z)), z = -infinity) = 0);
+      !    #
+      !    # Generalisation of quasi-stage order conditions:
+      !    #
+      !    Atilde := Matrix([[a22, a23, a24, a25], [a32, a33, a34, a35],
+      !                      [a42, a43, a44, a45], [a52, a53, a54, a55]]);
+      !    ctilde := Vector([c(2), c(3), c(4), c(5)]);
+      !    btildeT := Transpose(Vector([bT(2), bT(3), bT(4), bT(5)]));
+      !    # condition (14) from \cite{Rang201575} with l=1, k=4:
+      !    l := 1; k := 4;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=2, k=5:
+      !    l := 2; k := 5;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !
+      ! See \cite[p. 86]{Rang201575}, table A.3
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            5.0_DP/18.0_DP, &
+                            3.456552483519272e-01_DP, &
+                            3.965643047257401e-01_DP, &
+                            2.481479828780141e-01_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            5.0_DP/18.0_DP, &
+                            1.681740315717733e-01_DP, &
+                            1.001154404932533e-01_DP, &
+                            2.139473588935955e-01_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/18.0_DP, &
+                            1.255424770032288e-01_DP, &
+                            1.206274239267400e+00_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/18.0_DP, &
+                           -9.461473588167871e-01_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! fifth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/18.0_DP, &
+                            0.0_DP, 0.0_DP, &
+                            ! 6th and 7th column only needed to be able to use one data
+                            ! structure for all DIRK schemes
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(5,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                         ! sum(rtstepScheme%dcoeffA(1,:))
+              5.0_DP/9.0_DP, &                  ! sum(rtstepScheme%dcoeffA(2,:))
+              sum(rtstepScheme%dcoeffA(3,:)), &
+              0.9_DP, &                         ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &
+              0.0_DP, 0.0_DP /)
+
+
+    case (TSCHM_ESDIRK63PR)
+
+      rtstepScheme%ctimestepType    = TSCHM_ESDIRK63PR
+
+      ! The TSCHM_ESDIRK63PR is proposed in
+      !   @article{Rang201575,
+      !     author  = {Joachim Rang},
+      !     title   = {An analysis of the {P}rothero--{R}obinson example for constructing
+      !                new adaptive {ESDIRK} methods of order 3 and 4},
+      !     journal = {Applied Numerical Mathematics },
+      !     volume  = {94},
+      !     number  = {0},
+      !     pages   = {75-87},
+      !     year    = {2015},
+      !     note    = {},
+      !     issn    = {0168-9274},
+      !     doi     = {http://dx.doi.org/10.1016/j.apnum.2015.03.003},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0168927415000501},
+      !   }
+      ! It consists of 6 stages (the first stage being explicit)
+      rtstepScheme%nsubsteps = 6
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
+      ! Order properties and L-stability can be verified by means of Maple and the
+      ! following instructions:
+      !    restart: with(LinearAlgebra):
+      !    ndim := 6;
+      !    # the scheme
+      !    a11 := 0; a21 := 5/12; a31 := .3640473915723038; a41 := -2.894969214392781;
+      !    a51 := .2309551022782098; a61 := .3054968378466108; a12 := 0; a22 := 5/12;
+      !    a32 := -0.4189886135331312e-1; a42 := -22.56341718064659;
+      !    a52 := -1.849667242832423; a62 := 4.057983152922798; a13 := 0; a23 := 0;
+      !    a33 := 5/12; a43 := 25.34171972837271; a53 := 2.197073089164931;
+      !    a63 := -2.202162095667910; a14 := 0; a24 := 0; a34 := 0; a44 := 5/12;
+      !    a54 := 0.4972384722615363e-2; a64 := .1333484429273537; a15 := 0; a25 := 0;
+      !    a35 := 0; a45 := 0; a55 := 5/12; a65 := -1.711333004695519; a16 := 0; a26 := 0;
+      !    a36 := 0; a46 := 0; a56 := 0; a66 := 5/12;
+      !    A := Matrix([[a11, a12, a13, a14, a15, a16], [a21, a22, a23, a24, a25, a26],
+      !                [a31, a32, a33, a34, a35, a36], [a41, a42, a43, a44, a45, a46],
+      !                [a51, a52, a53, a54, a55, a56], [a61, a62, a63, a64, a65, a66]]);
+      !    c := Multiply(A, Vector(ndim, 1));
+      !    # stiffly accurate b: equal to last row of A and sum(b) = 1
+      !    bT := Transpose(Vector([a61, a62, a63, a64, a65, a66]));
+      !    #
+      !    # verification of properties (see page \cite[p.76]{Rang201575}):
+      !    #
+      !    # Order conditions for Runge-Kutta method up to order 4
+      !    # condition B(1) - for order 1:  \sum_i b_i = 1
+      !    B1 := Multiply(bT, Vector(ndim, 1)) = 1;
+      !    # condition B(2) - for order 2: \sum_i b_i c_i = 1/2
+      !    B2 := simplify(Multiply(bT, c) = 1/2);
+      !    # condition B(3) - for order 3: \sum_i b_i c_i^2 = 1/3
+      !    B3 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^2
+      !                                    end proc, c, c)) = 1/3);
+      !    # condition B(4) - for order 4: \sum_i b_i c_i^3 = 1/4
+      !    # (neither assumed to be fulfilled nor is that actually the case)
+      !    B4 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^3
+      !                                    end proc, c, c)) = 1/4);
+      !    # condition C(1): Ae = c: (by construction of c automatically fulfilled)
+      !    C1 := Multiply(A, Vector(ndim, 1)) = c;
+      !    # condition C(2); Ac = 1/2 * c^2:
+      !    C2 := simplify(Multiply(A, c)) = simplify(zip((x,y)->1/2*x^2,c,c));
+      !    # condition*C(3); Ac^2 = 1/3 * c^3:
+      !    # (neither assumed to be fulfilled nor is that actually the case)
+      !    C3 := simplify(Multiply(A, zip((x,y)->x^2,c,c))) =
+      !          simplify(zip((x,y)->1/3*x^3,c,c));
+      !    # L-stability constraint (in alternative formulation, see
+      !    # \cite[p. 41, proposition 3.2]{HairerWanner}):
+      !    R := proc (z) options operator, arrow;
+      !            Determinant(IdentityMatrix(ndim)-z*A+z*Multiply(Vector(ndim,1), bT))/
+      !              Determinant(IdentityMatrix(ndim)-z*A) end proc;
+      !    with(MultiSeries, limit);
+      !    # Increase numerical accurary. Otherwise stability function is wrongly claimed
+      !    # to be unbounded for z->-\infty.
+      !    Digits := 32:
+      !    Lstability := simplify(limit(abs(R(z)), z = -infinity) = 0);
+      !    #
+      !    # Generalisation of quasi-stage order conditions:
+      !    #
+      !    Atilde := Matrix([[a22, a23, a24, a25, a26], [a32, a33, a34, a35, a36],
+      !                      [a42, a43, a44, a45, a46], [a52, a53, a54, a55, a56],
+      !                      [a62, a63, a64, a65, a66]]);
+      !    ctilde := Vector([c(2), c(3), c(4), c(5), c(6)]);
+      !    btildeT := Transpose(Vector([bT(2), bT(3), bT(4), bT(5), bT(6)]));
+      !    # condition (14) from \cite{Rang201575} with l=1, k=4:
+      !    l := 1; k := 4;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=2, k=5:
+      !    l := 2; k := 5;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=3, k=6:
+      !    l := 3; k := 6;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=1, k=5:
+      !    l := 1; k := 5;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !
+      ! See \cite[p. 86]{Rang201575}, table A.4
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                            0.3640473915723038_DP, &
+                           -2.894969214392781_DP, &
+                            0.2309551022782098_DP, &
+                            0.3054968378466108_DP, &
+                            0.0_DP, &
+                            ! second column
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                           -0.04189886135331312_DP, &
+                           -22.56341718064659_DP, &
+                           -1.849667242832423_DP, &
+                            4.057983152922798_DP, &
+                            0.0_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                            25.34171972837271_DP, &
+                            2.197073089164931_DP, &
+                           -2.202162095667910_DP, &
+                            0.0_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                            0.004972384722615363_DP, &
+                            0.1333484429273537_DP, &
+                            0.0_DP, &
+                            ! fifth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                           -1.711333004695519_DP, &
+                            0.0_DP, &
+                            ! 6th column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            5.0_DP/12.0_DP, &
+                            0.0_DP, &
+                            ! 7th column
+                            0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, 0.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(6,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (see \cite[p. 518]{John2010514})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                         ! sum(rtstepScheme%dcoeffA(1,:))
+              5.0_DP/6.0_DP, &                  ! sum(rtstepScheme%dcoeffA(2,:))
+              sum(rtstepScheme%dcoeffA(3,:)), &
+              0.3_DP, &                         ! sum(rtstepScheme%dcoeffA(4,:))
+              1.0_DP, &                         ! sum(rtstepScheme%dcoeffA(5,:))
+              1.0_DP, &                         ! sum(rtstepScheme%dcoeffA(6,:))
+              0.0_DP /)
+
+
+    case (TSCHM_ESDIRK74PR)
+
+      rtstepScheme%ctimestepType    = TSCHM_ESDIRK74PR
+
+      ! The TSCHM_ESDIRK74PR is proposed in
+      !   @article{Rang201575,
+      !     author  = {Joachim Rang},
+      !     title   = {An analysis of the {P}rothero--{R}obinson example for constructing
+      !                new adaptive {ESDIRK} methods of order 3 and 4},
+      !     journal = {Applied Numerical Mathematics },
+      !     volume  = {94},
+      !     number  = {0},
+      !     pages   = {75-87},
+      !     year    = {2015},
+      !     note    = {},
+      !     issn    = {0168-9274},
+      !     doi     = {http://dx.doi.org/10.1016/j.apnum.2015.03.003},
+      !     url    = {http://www.sciencedirect.com/science/article/pii/S0168927415000501},
+      !   }
+      ! It consists of 7 stages (the first stage being explicit)
+      rtstepScheme%nsubsteps = 7
+      rtstepScheme%bexplicitFirstStage = .TRUE.
+      rtstepScheme%isubstep = 2
+
+      ! Order properties and L-stability can be verified by means of Maple and the
+      ! following instructions:
+      !    restart: with(LinearAlgebra):
+      !    ndim := 7;
+      !    # the scheme
+      !    a11 := 0; a21 := 1/6; a31 := 1/24; a41 := -1.5; a51 := -75875*(1/48000);
+      !    a61 := -2.005366150605651; a71 := .1684854267805816; a12 := 0; a22 := 1/6;
+      !    a32 := -1/24; a42 := -4/3; a52 := -86375*(1/64000); a62 := -1.768688648609954;
+      !    a72 := .7501080898831836; a13 := 0; a23 := 0; a33 := 1/6; a43 := 10/3;
+      !    a53 := 889/256; a63 := 4.341269295345690; a73 := -.2255843889686931; a14 := 0;
+      !    a24 := 0; a34 := 0; a44 := 1/6; a54 := 21/512; a64 := 0.2326169434610579e-1;
+      !    a74 := -.9134421504267402; a15 := 0; a25 := 0; a35 := 0; a45 := 0; a55 := 1/6;
+      !    a65 := .1; a75 := 1.618140253772232; a16 := 0; a26 := 0; a36 := 0; a46 := 0;
+      !    a56 := 0; a66 := 1/6; a76 := -.5643738977072310; a17 := 0; a27 := 0; a37 := 0;
+      !    a47 := 0; a57 := 0; a67 := 0; a77 := 1/6;
+      !    A := Matrix([[a11, a12, a13, a14, a15, a16, a17],
+      !                 [a21, a22, a23, a24, a25, a26, a27],
+      !                 [a31, a32, a33, a34, a35, a36, a37],
+      !                 [a41, a42, a43, a44, a45, a46, a47],
+      !                 [a51, a52, a53, a54, a55, a56, a57],
+      !                 [a61, a62, a63, a64, a65, a66, a67],
+      !                 [a71, a72, a73, a74, a75, a76, a77]]);
+      !    c := Multiply(A, Vector(ndim, 1));
+      !    # stiffly accurate b: equal to last row of A and sum(b) = 1
+      !    bT := Transpose(Vector([a71, a72, a73, a74, a75, a76, a77]));
+      !    #
+      !    # verification of properties (see page \cite[p.76]{Rang201575}):
+      !    #
+      !    # Order conditions for Runge-Kutta method up to order 4
+      !    # condition B(1) - for order 1:  \sum_i b_i = 1
+      !    B1 := Multiply(bT, Vector(ndim, 1)) = 1;
+      !    # condition B(2) - for order 2: \sum_i b_i c_i = 1/2
+      !    B2 := simplify(Multiply(bT, c) = 1/2);
+      !    # condition B(3) - for order 3: \sum_i b_i c_i^2 = 1/3
+      !    B3 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^2
+      !                                    end proc, c, c)) = 1/3);
+      !    # condition B(4) - for order 4: \sum_i b_i c_i^3 = 1/4
+      !    B4 := simplify(Multiply(bT, zip(proc (x, y) options operator, arrow; x^3
+      !                                    end proc, c, c)) = 1/4);
+      !    # condition C(1): Ae = c: (by construction of c automatically fulfilled)
+      !    C1 := Multiply(A, Vector(ndim, 1)) = c;
+      !    # condition C(2); Ac = 1/2 * c^2:
+      !    C2 := simplify(Multiply(A, c)) = simplify(zip((x,y)->1/2*x^2,c,c));
+      !    # condition*C(3); Ac^2 = 1/3 * c^3:
+      !    # (neither assumed to be fulfilled nor is that actually the case)
+      !    C3 := simplify(Multiply(A, zip((x,y)->x^2,c,c))) =
+      !          simplify(zip((x,y)->1/3*x^3,c,c));
+      !    # L-stability constraint (in alternative formulation, see
+      !    # \cite[p. 41, proposition 3.2]{HairerWanner}):
+      !    R := proc (z) options operator, arrow;
+      !            Determinant(IdentityMatrix(ndim)-z*A+z*Multiply(Vector(ndim,1), bT))/
+      !              Determinant(IdentityMatrix(ndim)-z*A) end proc;
+      !    with(MultiSeries, limit);
+      !    # Increase numerical accurary. Otherwise stability function is wrongly claimed
+      !    # to be unbounded for z->-\infty.
+      !    Digits := 32:
+      !    Lstability := simplify(limit(abs(R(z)), z = -infinity) = 0);
+      !    #
+      !    # Generalisation of quasi-stage order conditions:
+      !    #
+      !    Atilde := Matrix([[a22, a23, a24, a25, a26, a27],
+      !                      [a32, a33, a34, a35, a36, a37],
+      !                      [a42, a43, a44, a45, a46, a47],
+      !                      [a52, a53, a54, a55, a56, a57],
+      !                      [a62, a63, a64, a65, a66, a67],
+      !                      [a72, a73, a74, a75, a76, a77]]);
+      !    btildeT := Transpose(Vector([bT(2), bT(3), bT(4), bT(5), bT(6), bT(7)]));
+      !    ctilde := Vector([c(2), c(3), c(4), c(5), c(6), c(7)]);
+      !    # condition (14) from \cite{Rang201575} with l=1, k=4:
+      !    l := 1; k := 4;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=2, k=5:
+      !    l := 2; k := 5;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=3, k=6:
+      !    l := 3; k := 6;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=1, k=5:
+      !    l := 1; k := 5;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !    # condition (14) from \cite{Rang201575} with l=2, k=6:
+      !    l := 2; k := 6;
+      !    Multiply(
+      !       Multiply(btildeT, MatrixFunction(MatrixInverse(Atilde), v^l, v)),
+      !       Multiply(MatrixInverse(Atilde),
+      !                zip(proc (x,y) options operator, arrow; x^(k-l) end proc,
+      !                    ctilde, ctilde))
+      !       - (k-l)*zip(proc (x,y) options operator, arrow; x^(k-l-1) end proc,
+      !                   ctilde, ctilde));
+      !
+      ! See \cite[p. 86]{Rang201575}, table A.5
+      rtstepScheme%dcoeffA = &
+       reshape( source = (/ &
+                            ! first column
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            1.0_DP/24.0_DP, &
+                           -1.5_DP, &
+                           -75875.0_DP/48000.0_DP, &
+                           -2.005366150605651_DP, &
+                            0.1684854267805816_DP, &
+                            ! second column
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                           -1.0_DP/24.0_DP, &
+                           -4.0_DP/3.0_DP, &
+                           -86375.0_DP/64000.0_DP, &
+                           -1.768688648609954_DP, &
+                            0.7501080898831836_DP, &
+                            ! third column
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            10.0_DP/3.0_DP, &
+                            889.0_DP/256.0_DP, &
+                            4.341269295345690_DP, &
+                           -0.2255843889686931_DP, &
+                            ! fourth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            21.0_DP/512.0_DP, &
+                            0.02326169434610579_DP, &
+                           -0.9134421504267402_DP, &
+                            ! fifth column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                            0.1_DP, &
+                            1.618140253772232_DP, &
+                            ! 6th column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/6.0_DP, &
+                           -0.5643738977072310_DP, &
+                            ! 7th column
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            0.0_DP, &
+                            1.0_DP/6.0_DP &
+                            /), shape = (/ NMAXSTAGES,NMAXSTAGES /) )
+      ! b_i = a_{4i}     (see \cite[p. 518, condition (H4)]{John2010514})
+      rtstepScheme%dcoeffB = rtstepScheme%dcoeffA(7,:)
+      ! c_i = \sum_{j=1}^i a_{ij}   (as required by simplifying Butcher condition C(1),
+      !                      free variables choice: \cite[p. 81, section 3.3]{Rang201575})
+      rtstepScheme%dcoeffC = &
+           (/ 0.0_DP, &                         ! sum(rtstepScheme%dcoeffA(1,:))
+              1.0_DP/3.0_DP, &                  ! sum(rtstepScheme%dcoeffA(2,:))
+              1.0_DP/6.0_DP, &                  ! sum(rtstepScheme%dcoeffA(3,:))
+              2.0_DP/3.0_DP, &                  ! sum(rtstepScheme%dcoeffA(4,:))
+              0.75_DP, &                        ! sum(rtstepScheme%dcoeffA(5,:))
+              6.0_DP/7.0_DP, &                  ! sum(rtstepScheme%dcoeffA(6,:))
+              1.0_DP /)                         ! sum(rtstepScheme%dcoeffA(7,:))
+
+#if defined(DEBUG) || defined(_DEBUG)
+    case default
+      call output_line ("unknown time stepping scheme with index" // &
+                        trim(sys_siL(ctimestepType, 2)), &
+                        OU_CLASS_ERROR, OU_MODE_STD, "timstp_init")
+      call sys_halt()
+#endif
 
     end select
 
@@ -1489,7 +2356,34 @@ contains
       end select
 
 
-    case (TSCHM_DIRK23L)
+    case (TSCHM_CN_DIRK)
+      rtstepScheme%dtau = dtstep
+      select case (rtstepScheme%isubstep)
+#if defined(DEBUG) || defined(_DEBUG)
+      case default
+        call output_line ("Time stepping scheme " // &
+                          trim(sys_siL(rtstepScheme%ctimestepType,2)) // &
+                          " has an explicit first stage." // &
+                          " This line should be unreachable!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "timstp_setBaseSteplength")
+        call sys_halt()
+#endif
+      case (2)
+        rtstepScheme%dtimeDIRKstage1    = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep             = rtstepScheme%dtau * rtstepScheme%dcoeffC(2)
+      end select
+
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
+                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
+
+
+    case (TSCHM_DIRK23L, &
+          TSCHM_DIRK3L)
       ! experimental
       ! tau, corresponding to the \tau from \cite[p. 517]{John2010514}, gets chosen such
       ! that
@@ -1579,8 +2473,13 @@ contains
                                       sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
 
 
-    case (TSCHM_SDIRK2)
-      rtstepScheme%dtau = 4.0_DP * dtstep
+    case (TSCHM_SDIRK2, &
+          TSCHM_SDIRK3PR)
+      rtstepScheme%dtau = &
+           ! SDIRK2:     4.0
+           ! SDIRK3PR:   5.0
+           real(rtstepScheme%nsubsteps - &
+                merge(1,0,rtstepScheme%bexplicitFirstStage .eqv. .TRUE.),DP) * dtstep
       select case (rtstepScheme%isubstep)
       case (1)
         rtstepScheme%dtimeDIRKstage1 = rtstepScheme%dcurrentTime
@@ -1594,33 +2493,7 @@ contains
       case (4)
         rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
                                                             rtstepScheme%dcoeffC(3))
-      end select
-
-      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
-                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
-      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
-      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
-      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
-      rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
-                                      sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
-
-
-    case (TSCHM_SDIRK3PR)
-      rtstepScheme%dtau = 5.0_DP * dtstep
-      select case (rtstepScheme%isubstep)
-      case (1)
-        rtstepScheme%dtimeDIRKstage1 = rtstepScheme%dcurrentTime
-        rtstepScheme%dtstep          = rtstepScheme%dtau * rtstepScheme%dcoeffC(1)
-      case (2)
-        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(2)-&
-                                                            rtstepScheme%dcoeffC(1))
-      case (3)
-        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
-                                                            rtstepScheme%dcoeffC(2))
-      case (4)
-        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
-                                                            rtstepScheme%dcoeffC(3))
-      case (5)
+      case (5) ! Only applicable for TSCHM_SDIRK3PR
         rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(5)-&
                                                             rtstepScheme%dcoeffC(4))
       end select
@@ -1633,6 +2506,61 @@ contains
       rtstepScheme%dweightStationaryRHS = rtstepScheme%dtau * &
                                       sum(rtstepScheme%dcoeffA(rtstepScheme%isubstep,:))
 
+
+    case (TSCHM_ESDIRK53PR, &
+          TSCHM_ESDIRK63PR, &
+          TSCHM_ESDIRK74PR)
+      rtstepScheme%dtau = &
+           ! ESDIRK53PR: 4.0
+           ! ESDIRK63PR: 5.0
+           ! ESDIRK74PR: 6.0
+           real(rtstepScheme%nsubsteps - &
+                merge(1,0,rtstepScheme%bexplicitFirstStage .eqv. .TRUE.),DP) * dtstep
+      select case (rtstepScheme%isubstep)
+#if defined(DEBUG) || defined(_DEBUG)
+      case default
+        call output_line ("Time stepping scheme " // &
+                          trim(sys_siL(rtstepScheme%ctimestepType,2)) // &
+                          " has an explicit first stage." // &
+                          " This line should be unreachable!", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "timstp_setBaseSteplength")
+        call sys_halt()
+#endif
+      case (2)
+        rtstepScheme%dtimeDIRKstage1 = rtstepScheme%dcurrentTime
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(2)-&
+                                                            rtstepScheme%dcoeffC(1))
+      case (3)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(3)-&
+                                                            rtstepScheme%dcoeffC(2))
+      case (4)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(4)-&
+                                                            rtstepScheme%dcoeffC(3))
+      case (5)
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(5)-&
+                                                            rtstepScheme%dcoeffC(4))
+      case (6) ! Only applicable for TSCHM_ESDIRK63PR and TSCHM_ESDIRK74PR
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(6)-&
+                                                            rtstepScheme%dcoeffC(5))
+      case (7) ! Only applicable for TSCHM_ESDIRK74PR
+        rtstepScheme%dtstep          = rtstepScheme%dtau * (rtstepScheme%dcoeffC(7)-&
+                                                            rtstepScheme%dcoeffC(6))
+      end select
+
+      rtstepScheme%dweightMatrixLHS     = rtstepScheme%dtau * &
+                     rtstepScheme%dcoeffA(rtstepScheme%isubstep,rtstepScheme%isubstep)
+      rtstepScheme%dweightMatrixRHS     = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightNewRHS        = SYS_MAXREAL_DP ! not applicable
+      rtstepScheme%dweightOldRHS        = SYS_MAXREAL_DP ! not applicable
+
+
+#if defined(DEBUG) || defined(_DEBUG)
+    case default
+      call output_line ("unknown time stepping scheme with index" // &
+                        trim(sys_siL(rtstepScheme%ctimestepType, 2)), &
+                        OU_CLASS_ERROR, OU_MODE_STD, "timstp_setBaseSteplength")
+      call sys_halt()
+#endif
 
     end select
 

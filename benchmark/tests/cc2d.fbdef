@@ -291,7 +291,7 @@ testid   = CC2D_108
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.1), 3 initial CN steps, then (ES)DIRK34La
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -5
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -7
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 
 ##########
@@ -311,7 +311,7 @@ DISCRETISATION_IPROJTYPEVELOCITY = 1
 DISCRETISATION_IPROJTYPEPRESSURE = 1
 LINEARSOLVER_ISMOOTHERTYPE = 0
 LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -5
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -7
 
 ##########
 # Test 110
@@ -325,7 +325,7 @@ testid   = CC2D_110
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then (ES)DIRK34Lb
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -6
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -8
 
 ##########
 # Test 111
@@ -339,7 +339,7 @@ testid   = CC2D_111
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then (ES)DIRK44L
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -7
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -9
 
 ##########
 # Test 112
@@ -353,7 +353,7 @@ testid   = CC2D_112
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 3 initial CN steps, then DIRK54L
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -8
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -10
 
 ##########
 # Test 113
@@ -367,7 +367,7 @@ testid   = CC2D_113
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 2 initial CN steps, then DIRK23L
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -4
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -5
 
 ##########
 # Test 114
@@ -381,7 +381,7 @@ testid   = CC2D_114
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 4 initial CN steps, then SDIRK2
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -9
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -11
 
 ##########
 # Test 115
@@ -395,4 +395,74 @@ testid   = CC2D_115
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 5 initial CN steps, then SDIRK3PR
 datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
-TIMEDISCRETISATION_ITIMESTEPSCHEME = -10
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -12
+
+##########
+# Test 116
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, ESDIRK53PR with 4 initial CN steps
+##########
+
+testid   = CC2D_116
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 4 initial CN steps, then ESDIRK53PR
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -13
+
+##########
+# Test 117
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, ESDIRK63PR with 5 initial CN steps
+##########
+
+testid   = CC2D_117
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 5 initial CN steps, then ESDIRK63PR
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -14
+
+##########
+# Test 118
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, ESDIRK74PR with 6 initial CN steps
+##########
+
+testid   = CC2D_118
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 6 initial CN steps, then ESDIRK74PR
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -15
+
+##########
+# Test 119
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, DIRK3L with 2 initial CN steps
+##########
+
+testid   = CC2D_119
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 2 initial CN steps, then DIRK3L
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -6
+
+##########
+# Test 120
+#
+# Nonstationary Navier-Stokes on level 2,3.
+# Q3 element, SD(0.1)
+# 10 time steps with average time step size 0.01, DIRKCN with 1 initial CN step
+##########
+
+testid   = CC2D_120
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q3, SD(0.1), 1 initial CN step, then DIRKCN
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2,3
+TIMEDISCRETISATION_ITIMESTEPSCHEME = -4

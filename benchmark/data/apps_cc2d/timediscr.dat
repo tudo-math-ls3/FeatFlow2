@@ -42,47 +42,66 @@ dminTimeDerivative = 0.00001              # EPSNS
 
 # Time-stepping scheme (IFRSTP);
 #   0=one step scheme
-#   1=classic fractional step theta (stiffly accurate, A-stable, convergence
-#      order=2 for velocity, =1 for pressure, three internal steps)
+#   1=classic fractional step theta (stiffly accurate, strongly A-stable,
+#     convergence order=2 for velocity, =1 for pressure, three internal steps)
 #   2=Glowinski new fractional step theta (stiffly accurate, A-stable,
 #     conv. order=2 for velocity, =1 for pressure, three internal steps)
 #   3=classic fractional step theta, implemented as diagonally implicit
-#     Runge-Kutta method (explicit first stage, stiffly accurate, A-stable,
-#     convergence order=2 for velocity, =1 for pressure, three internal steps,
-#     requires pressure start solution)
-#   4=diagonally implicit Runge-Kutta method (E)DIRK23L, in literature also known
+#     Runge-Kutta method (explicit first stage, stiffly accurate, strongly
+#     A-stable, convergence order=2 for velocity, =1 for pressure, three
+#     internal steps, requires pressure start solution)
+#   4=Crank-Nicolson, implemented as diagonally implicit Runge-Kutta method
+#     (explicit first stage, stiffly accurate, A-stable, convergence order=2 for
+#     velocity, =2 for pressure, one internal step, requires pressure start
+#     solution)
+#   5=diagonally implicit Runge-Kutta method (E)DIRK23L, in literature also known
 #     as cyclic combination of trapezoidal rule and the BDF2 scheme (explicit
 #     first stage, stiffly accurate, L-stable, convergence order=2 for
 #     velocity and pressure, two internal steps, requires pressure start
 #     solution)
-#   5=diagonally implicit Runge-Kutta method (ES)DIRK34L variant A (explicit
+#   6=diagonally implicit Runge-Kutta method (ES)DIRK3L (explicit first stage,
+#     stiffly accurate, L-stable, convergence order=2 for velocity,
+#     =2 for pressure, two internal steps, requires pressure start solution)
+#   7=diagonally implicit Runge-Kutta method (ES)DIRK34L variant A (explicit
 #     first stage, stiffly accurate, L-stable, convergence order=3 for
 #     velocity, =2 for pressure, three internal steps, requires pressure start
 #     solution)
-#   6=diagonally implicit Runge-Kutta method (ES)DIRK34L variant B, in
+#   8=diagonally implicit Runge-Kutta method (ES)DIRK34L variant B, in
 #     literature also known as ESDIRK 3/2a (explicit first stage, stiffly
 #     accurate, L-stable, convergence order=3 for velocity, =2 for pressure,
 #     three internal steps, requires pressure start solution)
-#   7=diagonally implicit Runge-Kutta method (E)DIRK44L (explicit first stage,
+#   9=diagonally implicit Runge-Kutta method (E)DIRK44L (explicit first stage,
 #     stiffly accurate, L-stable, (theoretical) convergence order=4 for
 #     velocity, realistic order =3 for velocity, =2 for pressure, three
 #     internal steps, requires pressure start solution)
-#   8=diagonally implicit Runge-Kutta method (E)DIRK54L (explicit first stage,
+#  10=diagonally implicit Runge-Kutta method (E)DIRK54L (explicit first stage,
 #     stiffly accurate, L-stable, (theoretical) convergence order=5 for
 #     velocity, realistic order =3 for velocity, =2 for pressure, three
 #     internal steps, requires pressure start solution)
-#   9=diagonally implicit Runge-Kutta method SDIRK2 (implicit first stage,
+#  11=diagonally implicit Runge-Kutta method SDIRK2 (implicit first stage,
 #     stiffly accurate, L-stable, convergence order between 2 and 3.5 for
 #     velocity, between 1 and 2 for pressure, four internal steps, requires
 #     pressure start solution)
-#  10=diagonally implicit Runge-Kutta method SDIRK3PR (explicit first stage,
+#  12=diagonally implicit Runge-Kutta method SDIRK3PR (explicit first stage,
 #     stiffly accurate, L-stable, convergence order between 2 and 4 for
 #     velocity, between 1 and 3 for pressure, five internal steps, requires
 #     pressure start solution)
+#  13=diagonally implicit Runge-Kutta method ESDIRK53PR (explicit first stage,
+#     stiffly accurate, L-stable, convergence order between 2 and 3 for
+#     velocity and pressure (depending on the stiffness of the problem), four
+#     internal steps, requires pressure start solution)
+#  14=diagonally implicit Runge-Kutta method ESDIRK63PR (explicit first stage,
+#     stiffly accurate, L-stable, convergence order between 2 and 3 for
+#     velocity and pressure (depending on the stiffness of the problem), five
+#     internal steps, requires pressure start solution)
+#  15=diagonally implicit Runge-Kutta method ESDIRK74PR (explicit first stage,
+#     stiffly accurate, L-stable, convergence order between 2 and 4 for
+#     velocity and pressure (depending on the stiffness of the problem), six
+#     internal steps, requires pressure start solution)
 # <=-3=initial time steps with a one step scheme to generate a start pressure
 #     solution, then the DIRK scheme with identifier |itimeStepScheme|. The
 #     number of initial time steps depends on the number of substeps the DIRK
-#     scheme consists of: 2 for DIRK23L, 3 for DIRKx4L
+#     scheme consists of: 2 for DIRK23L, 3 for DIRKx4L, 6 for ESDIRK74PR etc.
 
 itimeStepScheme = 0                       # IFRSTP
 
