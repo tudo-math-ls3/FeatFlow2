@@ -122,7 +122,7 @@ endif
 
 # Treatment of trailing underscores
 ifeq ($(strip $(UNDERSCORE)), YES)
-CFLAGSF77     := $(CFLAGSF77) -ext_names=underscore
+CFLAGSF77     := $(CFLAGSF77) -ext_names=underscores
 else
 CFLAGSF77     := $(CFLAGSF77) -DUSE_NO_UNDERSCORE -ext_names=plain
 CFLAGSC       := $(CFLAGSC) -DUSE_NO_UNDERSCORE
