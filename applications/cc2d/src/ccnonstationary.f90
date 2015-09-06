@@ -1241,7 +1241,7 @@ contains
                rproblem%rtimedependence%niterations) .and. &
               (rproblem%rtimedependence%dtime .lt. &
                rproblem%rtimedependence%dtimemax-100.0_DP*SYS_EPSREAL_DP) .and. &
-              (dtimederivative .ge. &
+              (abs(dtimederivative) .ge. &
                rproblem%rtimedependence%dminTimeDerivative) .or. &
               ! When using a multi-stage time stepping scheme (like classic
               ! fractional-step theta scheme or diagonally implicit Runge-Kutta scheme)
@@ -1934,7 +1934,7 @@ contains
                //trim(sys_sdEP(dtimeDerivative,9,2)),&
                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
 
-          if (dtimederivative .lt. rproblem%rtimedependence%dminTimeDerivative) then
+          if (abs(dtimederivative) .lt. rproblem%rtimedependence%dminTimeDerivative) then
             call output_line ("Solution reached stationary status. " // &
                  "Stopping simulation...", coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           end if
