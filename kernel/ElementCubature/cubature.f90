@@ -641,8 +641,6 @@ contains
     cub_igetID=CUB_TRZ_2D
   else if (scub .eq. "MID" .or. scub .eq. "MID_2D") then
     cub_igetID=CUB_MID_2D
-  else if (scub .eq. "SIMPSON" .or. scub .eq. "SIMPSON_2D") then
-    cub_igetID=CUB_SIMPSON_2D
   else if (scub .eq. "G2X2" .or. scub .eq. "G2_2D") then
     cub_igetID=CUB_G2_2D
   else if (scub .eq. "NS1") then
@@ -667,6 +665,10 @@ contains
     cub_igetID=CUB_PG2X2
   else if (scub .eq. "PG3X3") then
     cub_igetID=CUB_PG3X3
+  else if (scub .eq. "SIMPSON" .or. scub .eq. "SIMPSON_2D") then
+    cub_igetID=CUB_SIMPSON_2D
+  else if (scub .eq. "3_8" .or. scub .eq. "3_8_2D") then
+    cub_igetID=CUB_3_8
   else if (scub .eq. "QPW4G3T_2D") then
     cub_igetID=CUB_QPW4G3T_2D
   else if (scub .eq. "QPW4QG2T_2D") then
@@ -898,6 +900,8 @@ contains
       sname = 'MID_2D'
     case (CUB_SIMPSON_2D) ! alias: CUB_SIMPSON
       sname = 'SIMPSON_2D'
+    case (CUB_3_8)
+      sname = '3_8_2D'
     case (CUB_NS1)
       sname = 'NS1'
     case (CUB_NS2)
