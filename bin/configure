@@ -2622,7 +2622,7 @@ sub create_feat2AppMakefile {
 	"# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
+        "\tCPP=\"\$(CPP)\" CPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
 
     # Create separate rule for source file containing program
         "# Compile statement for source file containing program start\n" .
@@ -2630,7 +2630,7 @@ sub create_feat2AppMakefile {
         "#  and, hence, we should not try to move a .mod file as we do with any module.)\n" .
         "\$(OBJPRG): | \$(OBJDIR)\n" .
         "\$(OBJPRG):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+        "\tCPP=\"\$(CPP)\" CPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
     # Include implicit rules for files only needed for specific
     # build IDs. They are listed in $(SRCEXTRA) and are supposed
