@@ -56,11 +56,11 @@ FEAT2INSTDIR=${CWD}
 # this environment variable, Sun Solaris e.g. does not.
 test -z "$USER" && USER="$LOGNAME"
 # Username contained in path name?
-FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/^.*\/$USER\//\//;"`;
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | perl -pe "s,^.*/$USER/,/,;"`;
 
 # Step 2:
 #   remove "Featflow2/" and "Featflow2.gitsvn", case-insensitively
-FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s/\/Featflow2\//\//i; s/\/Featflow2.gitsvn\//\//i; "`;
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | perl -pe "s,/Featflow2/,/,i; s,/Featflow2.gitsvn/,/,i;"`;
 
 # Concatenate directory strings to come up with a directory name
 # for FEAT2 application object files
