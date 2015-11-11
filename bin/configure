@@ -533,13 +533,13 @@ GetOptions (
             "make=s"                        => \$cl{'make'},
             "makefile=s"                    => \$cl{'makefile'},
             "mode=s"                        => sub { if ($_[1] =~ m/\bparallel\b/i) {
-							 $cl{'MPI'} = 1;
-						     } elsif ($_[1] =~ m/\bserial\b/i) {
-							 $cl{'MPI'} = 0;
-						     } else {
-							 $cl{'MODE'} = $_[1]; # in check_options() we'll throw an error
-						     }
-						   },  # deprecated, use --mpi=
+        						 $cl{'MPI'} = 1;
+        					     } elsif ($_[1] =~ m/\bserial\b/i) {
+        						 $cl{'MPI'} = 0;
+        					     } else {
+        						 $cl{'MODE'} = $_[1]; # in check_options() we'll throw an error
+        					     }
+        					   },  # deprecated, use --mpi=
             "modextension=s"                => \$cl{'MODEXTENSION'},
             "monitor-compile-env!"          => \$cl{'MONITOR_COMPILE_ENV'},
             "movemod=s"                     => \$cl{'MOVEMOD'},
@@ -656,35 +656,35 @@ if ($#{$entry} >= 0 &&
         die "\n$progname: ERROR:\n" .
             "Cannot open file <$MAKEFILE> for writing: $!\n";
     print MAKEFILE_HDL
-	"#!/usr/bin/env make\n" .
-	"\n" .
-	"default:\n" .
-	"clean-app:\n" .
-	"clean-libs:\n" .
-	"clean:\n" .
-	"getlibs:\n" .
-	"id:\n" .
-	"idonly:\n" .
-	"libs:\n" .
-	"purge:\n";
+        "#!/usr/bin/env make\n" .
+        "\n" .
+        "default:\n" .
+        "clean-app:\n" .
+        "clean-libs:\n" .
+        "clean:\n" .
+        "getlibs:\n" .
+        "id:\n" .
+        "idonly:\n" .
+        "libs:\n" .
+        "purge:\n";
     close(MAKEFILE_HDL);
 
     # set error code on exit. The value is queried in fbenchmark2/bin/runregressiontest
     # (certain cases are known to fail and should not trigger an e-mail notification)
     $! = 15;
     die "\n$progname: ERROR:\n".
-	"Coprocessor support is not available in combination with\n" .
-	"Pathscale, Open64 and NEC compiler suites. Simply because the respective\n" .
-	"Fortran compilers create symbol names that can not be cross-language\n" .
-	"referenced in C code. I purposely refuse to create a Makefile.\n";
+        "Coprocessor support is not available in combination with\n" .
+        "Pathscale, Open64 and NEC compiler suites. Simply because the respective\n" .
+        "Fortran compilers create symbol names that can not be cross-language\n" .
+        "referenced in C code. I purposely refuse to create a Makefile.\n";
 }
 
 # Backup old Makefile if existent and has not zero size
 if ( -e $MAKEFILE && -s $MAKEFILE ) {
     print "renaming existing $MAKEFILE to $MAKEFILE" . ".bak\n";
     rename($MAKEFILE, $MAKEFILE . ".bak") or
-	die "\n$progname: ERROR:\n" .
-	    "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
+        die "\n$progname: ERROR:\n" .
+            "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
 }
 
 # Now, create either the FEAT2 regression directory meta Makefile
@@ -771,32 +771,32 @@ if ($cl{'regressionbenchmark'}) {
         my $dir = &concat_filename($cwd, $feat2appdir);
         print "\n\nEntering directory <$dir>.\n";
         chdir $feat2appdir;
-	# Ignore directory if no configure script available
-	if ( -e "configure" ) {
-	    # Call sub-configure with undocumented command line options
-	    # that cause skipping of time-consuming (and, for benchmark
-	    # applications' configure being sub-configure calls, redundant)
-	    # sanity checks.
-	    print "./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options\n" if ($cl{'debug'});
-	    system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
-	    # Catch errors
-	    if ($? != 0) {
-		$warnings .=
-		    "*************************************************************\n" .
-		    $progname.": WARNING:\n".
-		    "Invoking configure in subdirectory <$feat2appdir> returned\n" .
-		    "error code " . ($? >> 8) . ". You might want to check.\n" .
-		    "*************************************************************\n\n";
-	    }
-	} else {
-	    $warnings .=
-		"*************************************************************\n" .
-		$progname.": WARNING:\n".
-		"Skipping configure in subdirectory <$feat2appdir> because\n" .
-		"there is no configure script in that directory. You might\n" .
-		"want to check.\n" .
-		"*************************************************************\n\n";
-	}
+        # Ignore directory if no configure script available
+        if ( -e "configure" ) {
+            # Call sub-configure with undocumented command line options
+            # that cause skipping of time-consuming (and, for benchmark
+            # applications' configure being sub-configure calls, redundant)
+            # sanity checks.
+            print "./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options\n" if ($cl{'debug'});
+            system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
+            # Catch errors
+            if ($? != 0) {
+        	$warnings .=
+        	    "*************************************************************\n" .
+        	    $progname.": WARNING:\n".
+        	    "Invoking configure in subdirectory <$feat2appdir> returned\n" .
+        	    "error code " . ($? >> 8) . ". You might want to check.\n" .
+        	    "*************************************************************\n\n";
+            }
+        } else {
+            $warnings .=
+        	"*************************************************************\n" .
+        	$progname.": WARNING:\n".
+        	"Skipping configure in subdirectory <$feat2appdir> because\n" .
+        	"there is no configure script in that directory. You might\n" .
+        	"want to check.\n" .
+        	"*************************************************************\n\n";
+        }
         print "Leaving directory <$dir>.\n";
         chdir "..";
     }
@@ -937,7 +937,7 @@ sub check_make_sets_make_variable {
         my $tmpfile = POSIX::tmpnam();
         open(TMPFILE, ">", $tmpfile) or
             die "\n$progname: ERROR:\n".
-	        "Cannot open file <$tmpfile> for writing: $!\n";
+                "Cannot open file <$tmpfile> for writing: $!\n";
         print TMPFILE "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
         close(TMPFILE);
         my $currentString = `$make -f $tmpfile | grep maketemp=`;
@@ -969,7 +969,7 @@ sub check_options {
 
     # First detect if any unknown option has been given
     if ($unknownoption) {
-	die "\n$progname: ERROR:\n".
+        die "\n$progname: ERROR:\n".
            INITIAL_MESSAGE .
            "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
            (" " x (length($progname)+2)) . "Check options specified on command line or in your local\n" .
@@ -981,7 +981,7 @@ sub check_options {
     # command line options. (Only strings that do not start with '--'
     # are detected here.)
     if ($#ARGV > -1) {
-	die "\n$progname: ERROR:\n".
+        die "\n$progname: ERROR:\n".
            INITIAL_MESSAGE .
             "Unknown option(s) found: " . join(' ', @ARGV) . "\n" .
             "Check options specified on command line or in your local configure script.\n" .
@@ -992,32 +992,32 @@ sub check_options {
     # lists of values and multiple instances of the option are allowed.
     # Normalise the values by converting strings to real arrays.
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
-		       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
-		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
-		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP', 'WARN') {
-	# $cl{'...'} has been passed as an array to GetOptions()
-	# and as such is always defined. But is does not necessarily have
-	# entries: unset => #entries=-1; set, but empty => #entries=0
-	# So, don't test with perl function defined(). Test whether set.
-	if (defined($cl{$entry})) {
-	    my $numentries = $#{$cl{$entry}};
-	    if ($numentries > -1) {
-		@{ $cl{$entry} } = split(/\s+/,
-					 join(' ',
-					      split(/,/,
-						    join(',', @{ $cl{$entry} })
-					      )));
-	    }
-	    # Converting comma-separated entries into space-separated
-	    # ones may only increase the number of array entries, not
-	    # reduce them. If an array merely contained an empty
-	    # string, though, that string got removed by the previous
-	    # block. Re-add it.
-	    if ($numentries > $#{$cl{$entry}}) {
-		push @{ $cl{$entry} }, " ";
-	    }
-	}
+        	       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
+        	       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
+        	       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
+        	       'SRCLIST_APP', 'WARN') {
+        # $cl{'...'} has been passed as an array to GetOptions()
+        # and as such is always defined. But is does not necessarily have
+        # entries: unset => #entries=-1; set, but empty => #entries=0
+        # So, don't test with perl function defined(). Test whether set.
+        if (defined($cl{$entry})) {
+            my $numentries = $#{$cl{$entry}};
+            if ($numentries > -1) {
+        	@{ $cl{$entry} } = split(/\s+/,
+        				 join(' ',
+        				      split(/,/,
+        					    join(',', @{ $cl{$entry} })
+        				      )));
+            }
+            # Converting comma-separated entries into space-separated
+            # ones may only increase the number of array entries, not
+            # reduce them. If an array merely contained an empty
+            # string, though, that string got removed by the previous
+            # block. Re-add it.
+            if ($numentries > $#{$cl{$entry}}) {
+        	push @{ $cl{$entry} }, " ";
+            }
+        }
     }
 
     # For this list only commas are allowed to separate things.
@@ -1026,14 +1026,14 @@ sub check_options {
 
     # Do not allow whitespace-only values for OBJDIR_PREFIX and OBJDIR_LIB_PREFIX
     if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'} =~ m/^\s*$/) {
-	die "\n$progname: ERROR:\n".
-	    INITIAL_MESSAGE .
+        die "\n$progname: ERROR:\n".
+            INITIAL_MESSAGE .
             "Argument to --objdir-prefix must not contain whitespace characters only.\n" .
             "Try `$progname --help' for more information.\n";
     }
     if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'} =~ m/^\s*$/) {
-	die "\n$progname: ERROR:\n".
-	    INITIAL_MESSAGE .
+        die "\n$progname: ERROR:\n".
+            INITIAL_MESSAGE .
             "Argument to --objdir-lib-prefix must not contain whitespace characters only.\n" .
             "Try `$progname --help' for more information.\n";
     }
@@ -1042,10 +1042,10 @@ sub check_options {
     # the object directory in the linker command is given by "-L~/<some
     # path>". "~/" needs to be resolved.
     if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'} =~ m/^~\//) {
-	$cl{'objdirprefix'} =~ s/^~\//$ENV{HOME}\//;
+        $cl{'objdirprefix'} =~ s/^~\//$ENV{HOME}\//;
     }
     if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'} =~ m/^~\//) {
-	$cl{'objdirlibprefix'} =~ s/^~\//$ENV{HOME}\//;
+        $cl{'objdirlibprefix'} =~ s/^~\//$ENV{HOME}\//;
     }
 
     # Override default setting for Makefile name?
@@ -1066,15 +1066,15 @@ sub check_options {
     # * $cl{'OPT'} has value 0 when --no-opt has been specified
     # * $cl{'OPT'} has value "string" when --opt="string" has been specified
     foreach my $entry ('AGMG', 'EXECUTABLE', 'MPI', 'OPT', 'OPENMP', 'SHARED', 'UNDERSCORE') {
-	if (defined($cl{$entry})) {
-	    $cl{$entry} = 1 if ($cl{$entry} eq "");
-	}
+        if (defined($cl{$entry})) {
+            $cl{$entry} = 1 if ($cl{$entry} eq "");
+        }
     }
 
     # Special feature for Sven who always forgets the correct
     # keyword for all-in-optimisation: it's "expensive".
     if ($ENV{'MAKEFLAGS'}) {
-	$ENV{'MAKEFLAGS'} =~ s/\bOPT=(EXPENSIVE|EXTREME|EXTENDED|MASSIVE)\b/OPT=EXPENSIVE/ig;
+        $ENV{'MAKEFLAGS'} =~ s/\bOPT=(EXPENSIVE|EXTREME|EXTENDED|MASSIVE)\b/OPT=EXPENSIVE/ig;
     }
 
     # Now check whether some options are inherited via MAKEFLAGS and
@@ -1088,151 +1088,151 @@ sub check_options {
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
     foreach my $entry ('AGMG', 'BINARY', 'EXECUTABLE', 'COPROCLIST', 'FORCE_ID', 'INTSIZE',
-		       'MODE', 'MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
-		       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED', 'UNDERSCORE', 'WARN') {
-	# Check environment variable MAKEFLAGS and give a warning if
-	# options given via environment *and* command line collide.
-	if ($ENV{'MAKEFLAGS'}) {
-	    if ($ENV{'MAKEFLAGS'} =~ /\b$entry=(.+?)\b/i) {
-		my $envvalue = $1;
-		# Capitalise value
-		$envvalue =~ tr/a-z/A-Z/;
-		# Map 0/1 values to NO/YES
-		$envvalue = "NO"  if ($envvalue eq "0");
-		$envvalue = "YES" if ($envvalue eq "1");
+        	       'MODE', 'MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
+        	       'OPENMP', 'OPT', 'RELINK_ALWAYS', 'SHARED', 'UNDERSCORE', 'WARN') {
+        # Check environment variable MAKEFLAGS and give a warning if
+        # options given via environment *and* command line collide.
+        if ($ENV{'MAKEFLAGS'}) {
+            if ($ENV{'MAKEFLAGS'} =~ /\b$entry=(.+?)\b/i) {
+        	my $envvalue = $1;
+        	# Capitalise value
+        	$envvalue =~ tr/a-z/A-Z/;
+        	# Map 0/1 values to NO/YES
+        	$envvalue = "NO"  if ($envvalue eq "0");
+        	$envvalue = "YES" if ($envvalue eq "1");
 
-		if (defined($cl{$entry})) {
-		    my $clvalue = $cl{$entry};
-		    # Capitalise value
-		    $clvalue =~ tr/a-z/A-Z/;
-		    # Map 0/1 values to NO/YES
-		    $clvalue = "NO"  if ($clvalue eq "0");
-		    $clvalue = "YES" if ($clvalue eq "1");
+        	if (defined($cl{$entry})) {
+        	    my $clvalue = $cl{$entry};
+        	    # Capitalise value
+        	    $clvalue =~ tr/a-z/A-Z/;
+        	    # Map 0/1 values to NO/YES
+        	    $clvalue = "NO"  if ($clvalue eq "0");
+        	    $clvalue = "YES" if ($clvalue eq "1");
 
-		    # Value collision? Then issue a warning
-		    if ($clvalue ne $envvalue) {
-			# reconstruct name of command line option for variable
-			$cloption = lc("--" . $entry);
-			$cloption =~ s/_/-/g;
+        	    # Value collision? Then issue a warning
+        	    if ($clvalue ne $envvalue) {
+        		# reconstruct name of command line option for variable
+        		$cloption = lc("--" . $entry);
+        		$cloption =~ s/_/-/g;
                         $warnings .=
-			    "************************************************************************\n" .
-			    $progname.": WARNING:\n" .
-			    &format_filelist("", 0, 72,
-					     "\$MAKEFLAGS contains \"$entry=$envvalue\" while \"" . $cloption .
-					     "=$clvalue\" has been specified as well. Environment variables " .
-					     "take precedence, will take \"$entry=$envvalue\" for the " .
-					     "Makefile.\n", "", "") . "\n" .
-			    "************************************************************************\n\n";
-		    }
-		} else {
-		    # Treat an environment variable as if given via command line option.
-		    $cl{$entry} = $envvalue;
-		}
-	    }
-	}
+        		    "************************************************************************\n" .
+        		    $progname.": WARNING:\n" .
+        		    &format_filelist("", 0, 72,
+        				     "\$MAKEFLAGS contains \"$entry=$envvalue\" while \"" . $cloption .
+        				     "=$clvalue\" has been specified as well. Environment variables " .
+        				     "take precedence, will take \"$entry=$envvalue\" for the " .
+        				     "Makefile.\n", "", "") . "\n" .
+        		    "************************************************************************\n\n";
+        	    }
+        	} else {
+        	    # Treat an environment variable as if given via command line option.
+        	    $cl{$entry} = $envvalue;
+        	}
+            }
+        }
 
-	# Normal case: option not inherited by a make process (i.e. via MAKEFLAGS)
+        # Normal case: option not inherited by a make process (i.e. via MAKEFLAGS)
         # It cannot happen that an option is given directly via the environment,
         # as that would have triggered the unknown option error, we can now
         # proceed with capitalising and normalising values
-	elsif (defined($cl{$entry})) {
-	    if (ref($cl{$entry}) eq "") {
-		# Dealing with a scalar value
+        elsif (defined($cl{$entry})) {
+            if (ref($cl{$entry}) eq "") {
+        	# Dealing with a scalar value
 
-		# Capitalise value
-		$cl{$entry} =~ tr/a-z/A-Z/;
-		# Map 0/1 values to NO/YES
-		$cl{$entry} = "NO"  if ($cl{$entry} eq "0");
-		$cl{$entry} = "YES" if ($cl{$entry} eq "1");
-	    } elsif (ref($cl{$entry}) eq "ARRAY") {
-		# Dealing with an array
-		foreach my $tmp (@{$cl{$entry}}) {
-		    # Capitalise value
-		    $tmp =~ tr/a-z/A-Z/;
-		    # Map 0/1 values to NO/YES
-		    $tmp = "NO"  if ($tmp eq "0");
-		    $tmp = "YES" if ($tmp eq "1");
-		}
-	    } # end case command line option takes multiple values
-	}
+        	# Capitalise value
+        	$cl{$entry} =~ tr/a-z/A-Z/;
+        	# Map 0/1 values to NO/YES
+        	$cl{$entry} = "NO"  if ($cl{$entry} eq "0");
+        	$cl{$entry} = "YES" if ($cl{$entry} eq "1");
+            } elsif (ref($cl{$entry}) eq "ARRAY") {
+        	# Dealing with an array
+        	foreach my $tmp (@{$cl{$entry}}) {
+        	    # Capitalise value
+        	    $tmp =~ tr/a-z/A-Z/;
+        	    # Map 0/1 values to NO/YES
+        	    $tmp = "NO"  if ($tmp eq "0");
+        	    $tmp = "YES" if ($tmp eq "1");
+        	}
+            } # end case command line option takes multiple values
+        }
     }
 
 
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
         "AGMG"                => [ "yes", "no" ],
-	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "cuda37", "cuda50", "cuda52" ],  # List of valid coprocessor backends
-	"EXECUTABLE"          => [ "yes", "no" ],
-	"FORCE_ID"            => [ "yes", "no" ],
+        "BINARY"              => [ "std", "32", "64" ],
+        "COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "cuda37", "cuda50", "cuda52" ],  # List of valid coprocessor backends
+        "EXECUTABLE"          => [ "yes", "no" ],
+        "FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
         "MODE"                => [ "parallel", "serial" ],  # deprecated, use MPI=yes/no
-	"MONITOR_COMPILE_ENV" => [ "yes", "no" ],
-	"MPIWRAPPERS"         => [ "yes", "no" ],
+        "MONITOR_COMPILE_ENV" => [ "yes", "no" ],
+        "MPIWRAPPERS"         => [ "yes", "no" ],
         "OPENMP"              => [ "yes", "no" ],
-	"OPT"                 => [ "yes", "no", "expensive", "native", "native-expensive" ],
-	"RELINK_ALWAYS"       => [ "yes", "no" ],
-	"SHARED"              => [ "yes", "no" ],
-	"UNDERSCORE"          => [ "yes", "no" ],
-	"WARN"                => [ "debug", "deprecated", "off", "unsupported", "unusual" ],
+        "OPT"                 => [ "yes", "no", "expensive", "native", "native-expensive" ],
+        "RELINK_ALWAYS"       => [ "yes", "no" ],
+        "SHARED"              => [ "yes", "no" ],
+        "UNDERSCORE"          => [ "yes", "no" ],
+        "WARN"                => [ "debug", "deprecated", "off", "unsupported", "unusual" ],
     );
 
     foreach my $entry (keys %validkeywords) {
-	if (defined($cl{$entry})) {
-	    if (ref($cl{$entry}) eq "") {
-		# Dealing with a scalar value
+        if (defined($cl{$entry})) {
+            if (ref($cl{$entry}) eq "") {
+        	# Dealing with a scalar value
 
-		# Trim whitespace (not necessary?)
+        	# Trim whitespace (not necessary?)
 #	        $cl{$entry} =~ s/^\s*(\S*)\s*$/$1/;
 
-		my $regexp = "^(" . join('|', @{ $validkeywords{$entry} }) . ')$';
-		if ($cl{$entry} !~ m/$regexp/i) {
-		    # reconstruct name of command line option from variable name
-		    $cloption = lc("--" . $entry);
-		    $cloption =~ s/_/-/g;
-		    die "\n$progname: ERROR:\n".
-			INITIAL_MESSAGE .
-			"Unknown keyword for option $cloption: <$cl{$entry}>\n" .
-			"Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
-			"Try `$progname --help' for more information.\n";
-		}
+        	my $regexp = "^(" . join('|', @{ $validkeywords{$entry} }) . ')$';
+        	if ($cl{$entry} !~ m/$regexp/i) {
+        	    # reconstruct name of command line option from variable name
+        	    $cloption = lc("--" . $entry);
+        	    $cloption =~ s/_/-/g;
+        	    die "\n$progname: ERROR:\n".
+        		INITIAL_MESSAGE .
+        		"Unknown keyword for option $cloption: <$cl{$entry}>\n" .
+        		"Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
+        		"Try `$progname --help' for more information.\n";
+        	}
 
-	    } elsif (ref($cl{$entry}) eq "ARRAY") {
-		# Dealing with an array
+            } elsif (ref($cl{$entry}) eq "ARRAY") {
+        	# Dealing with an array
 
-		# convert array of valid keywords into hash for easier lookups
-		my %isvalid = ();
-		map { $isvalid{uc($_)} = $_; } @{ $validkeywords{$entry} };
+        	# convert array of valid keywords into hash for easier lookups
+        	my %isvalid = ();
+        	map { $isvalid{uc($_)} = $_; } @{ $validkeywords{$entry} };
 
                 # Check whether every keyword is a valid one.
-		foreach my $key ( @{ $cl{$entry} } ) {
-		    if (! defined($isvalid{$key})) {
-			# reconstruct name of command line option from variable name
-			$cloption = lc("--" . $entry);
-			$cloption =~ s/_/-/g;
-			die "\n$progname: ERROR:\n".
-			    INITIAL_MESSAGE .
-			    "Unknown keyword for option $cloption: <$key>\n" .
-			    "Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
+        	foreach my $key ( @{ $cl{$entry} } ) {
+        	    if (! defined($isvalid{$key})) {
+        		# reconstruct name of command line option from variable name
+        		$cloption = lc("--" . $entry);
+        		$cloption =~ s/_/-/g;
+        		die "\n$progname: ERROR:\n".
+        		    INITIAL_MESSAGE .
+        		    "Unknown keyword for option $cloption: <$key>\n" .
+        		    "Valid keywords are <" . join("> and <", @{ $validkeywords{$entry} }) . ">.\n" .
                             "Try '$progname --help' for more information.\n";
-		    }
-		}
-		undef %isvalid;
-	    } # end case command line option takes multiple values
-	} # end case command line option has been given
+        	    }
+        	}
+        	undef %isvalid;
+            } # end case command line option takes multiple values
+        } # end case command line option has been given
     } # end loop over all command line options to test
 
     # Map deprecated MODE=PARALLEL/SERIAL to MPI=YES/NO
     if (defined($cl{'MODE'})) {
-	warn "\n$progname: WARNING:\n".
-	     "The use of --mode=<parallel,serial> is deprecated, use --[no-]mpi\n" .
-	     "or --mpi=<yes,no> instead.\n\n";
-	if ($cl{'MODE'} eq "PARALLEL") {
-	    $cl{'MPI'} = "YES";
-	} elsif ($cl{'MODE'} eq "SERIAL") {
-	    $cl{'MPI'} = "NO";
-	}
+        warn "\n$progname: WARNING:\n".
+             "The use of --mode=<parallel,serial> is deprecated, use --[no-]mpi\n" .
+             "or --mpi=<yes,no> instead.\n\n";
+        if ($cl{'MODE'} eq "PARALLEL") {
+            $cl{'MPI'} = "YES";
+        } elsif ($cl{'MODE'} eq "SERIAL") {
+            $cl{'MPI'} = "NO";
+        }
     }
 
 
@@ -1265,7 +1265,7 @@ sub create_feat2AppMakefile {
     my $objectfiles_and_dependencies = "";
     # Determine Makefile dependency list for every kernel module object file
     foreach $entry (split(/\s+/, join(' ', SRCLIST_KERNEL))) {
-	$path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_KERNEL, $entry);
+        $path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_KERNEL, $entry);
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_KERNEL)/" . $entry, 1, "o", "o",
@@ -1275,7 +1275,7 @@ sub create_feat2AppMakefile {
     # Dependencies of each object file from architecture-specific
     # kernel modules
     foreach $entry (split(/\s+/, join(' ', SRCLIST_ARCH))) {
-	$path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_ARCH, $entry);
+        $path{$entry} = &concat_filename($FEAT2BASEDIR, $SRCDIR_ARCH, $entry);
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_ARCH)/" . $entry, 1, ".o", "o",
@@ -1284,41 +1284,41 @@ sub create_feat2AppMakefile {
 
     # Dependencies of each object file from application modules
     foreach $entry ( @{$srclist_app} ) {
-	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
+        $path{$entry} = &concat_filename($SRCDIR_APP, $entry);
         $objectfiles_and_dependencies .=
-	    &make_dep_list(\%dependencyLists, $path{$entry},
-			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
-			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
+            &make_dep_list(\%dependencyLists, $path{$entry},
+        		   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
+        		   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
     }
 
     # Dependencies of each object file from application extra source files
     foreach $entry ( @{$srcextra_app} ) {
-	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
+        $path{$entry} = &concat_filename($SRCDIR_APP, $entry);
         $objectfiles_and_dependencies .=
-	    &make_dep_list(\%dependencyLists, $path{$entry},
-			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
-			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
+            &make_dep_list(\%dependencyLists, $path{$entry},
+        		   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
+        		   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
     }
 
     # Dependencies of program file
 #    $entry = ((defined($cl{'PROGRAMFILE'})) ? $cl{'PROGRAMFILE'} : $defaults{'PROGRAMFILE'});
     $entry = &get_programsourcefile();
-	$path{$entry} = $entry;
+        $path{$entry} = $entry;
         $objectfiles_and_dependencies .=
-	    &make_dep_list(\%dependencyLists, $path{$entry},
-			   $entry, 1, "o", "o",
-			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
+            &make_dep_list(\%dependencyLists, $path{$entry},
+        		   $entry, 1, "o", "o",
+        		   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
 
     # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA)
     # can not be determined unfortunately at configure time. Because they may
     # be defined using Makefile variables (e.g. $(FEAT2BASEDIR)/kernel/arch/amub.f90)
     # which cannnot easily be expanded by configure.
     $objectfiles_and_dependencies .=
-	"# Dependencies of Fortran 90 files listed in Makefile variable \$(SRCEXTRA)\n" .
-	"# can not be determined unfortunately at configure time and incorporated into\n" .
-	"# this Makefile. Because the path to these files or the files themselves may\n" .
-	"# be defined using Makefile variables (e.g. \$(FEAT2BASEDIR)/kernel/arch/amub.f90)\n" .
-	"# whose value cannnot easily be expanded by configure.\n\n";
+        "# Dependencies of Fortran 90 files listed in Makefile variable \$(SRCEXTRA)\n" .
+        "# can not be determined unfortunately at configure time and incorporated into\n" .
+        "# this Makefile. Because the path to these files or the files themselves may\n" .
+        "# be defined using Makefile variables (e.g. \$(FEAT2BASEDIR)/kernel/arch/amub.f90)\n" .
+        "# whose value cannnot easily be expanded by configure.\n\n";
 
     print "done\n";
 
@@ -1344,30 +1344,30 @@ sub create_feat2AppMakefile {
     my %modulesParsed;
     my $i = -1;
     while ($i < $#modulesToParse) {
-	$i++;
-	# remove any path information
-	my $currentFile = &get_filename($modulesToParse[$i]);
+        $i++;
+        # remove any path information
+        my $currentFile = &get_filename($modulesToParse[$i]);
 
-	# Skip file if it has already been parsed.
-	next if (defined($modulesParsed{$currentFile}));
+        # Skip file if it has already been parsed.
+        next if (defined($modulesParsed{$currentFile}));
 
-	# Set flag that the files has already been parsed to
-	# prevent duplicate parsing.
-	$modulesParsed{$currentFile} = 1;
+        # Set flag that the files has already been parsed to
+        # prevent duplicate parsing.
+        $modulesParsed{$currentFile} = 1;
 
-	# Reuse the cached list of dependencies (modules and include files)
-	foreach my $entry (@{ $dependencyLists{$currentFile} }) {
-	    # Module?
-	    if ($entry =~ m/^module:(.+)$/) {
-		push @modulesToParse, $1 . ".f90";
-	    }
-	}
+        # Reuse the cached list of dependencies (modules and include files)
+        foreach my $entry (@{ $dependencyLists{$currentFile} }) {
+            # Module?
+            if ($entry =~ m/^module:(.+)$/) {
+        	push @modulesToParse, $1 . ".f90";
+            }
+        }
     }
     undef $i;
     my @requiredObjFiles;
     foreach my $entry (sort keys %modulesParsed) {
-	$entry =~ s/^(.*)\.f90$/\$(OBJDIR)\/$1.o/;
-	push @requiredObjFiles, $entry;
+        $entry =~ s/^(.*)\.f90$/\$(OBJDIR)\/$1.o/;
+        push @requiredObjFiles, $entry;
     }
 
     #
@@ -1375,8 +1375,8 @@ sub create_feat2AppMakefile {
     #
     print "creating $MAKEFILE.\n";
     open(MAKEFILE_HDL, ">" , $MAKEFILE) or
-	die "\n$progname: ERROR:\n".
-	    "Cannot open file <$MAKEFILE> for writing: $!\n";
+        die "\n$progname: ERROR:\n".
+            "Cannot open file <$MAKEFILE> for writing: $!\n";
 
     # Create head section: include global Makefile settings,
     # specifying the application name, sbblas version
@@ -1384,26 +1384,26 @@ sub create_feat2AppMakefile {
         "#!/usr/bin/env make\n" .
         "\n" .
 
-	"########################################################################\n" .
-	"#                                                                      #\n" .
-	"#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
-	"#                                                                      #\n" .
-	"# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
-	"#                                                                      #\n" .
-	"#                                                                      #\n" .
-	"# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
-	"#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
-	"#          Germany                                                     #\n" .
-	"#                                                                      #\n" .
-	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
-	"#          mailto:featflow\@featflow.de                                 #\n" .
-	"#                                                                      #\n" .
-	"########################################################################\n" .
+        "########################################################################\n" .
+        "#                                                                      #\n" .
+        "#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
+        "#                                                                      #\n" .
+        "# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
+        "#                                                                      #\n" .
+        "#                                                                      #\n" .
+        "# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
+        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+        "#          Germany                                                     #\n" .
+        "#                                                                      #\n" .
+        "# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
+        "#          mailto:featflow\@featflow.de                                 #\n" .
+        "#                                                                      #\n" .
+        "########################################################################\n" .
         "#                                                                      #\n";
     $entry = (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'};
     print MAKEFILE_HDL
         "# Makefile for application $entry for architecture:" .
-	(" " x (26 - length($entry))) . "#\n" .
+        (" " x (26 - length($entry))) . "#\n" .
         "#          " . $buildID . (" " x (60 - length($buildID))) . "#\n" .
         "#                                                                      #\n" .
         "# Automatically generated by:                                          #\n";
@@ -1411,9 +1411,9 @@ sub create_feat2AppMakefile {
     my $string = &hostname();
     print MAKEFILE_HDL
         "#          FEAT2-configure script " . $entry . (" " x (37 - length($entry))) . "#\n" .
-	"# on host " . $string . (" " x (61 - length($string))) . "#\n" .
-	"########################################################################\n" .
-	"\n";
+        "# on host " . $string . (" " x (61 - length($string))) . "#\n" .
+        "########################################################################\n" .
+        "\n";
     undef $string;
 
     print MAKEFILE_HDL
@@ -1421,11 +1421,11 @@ sub create_feat2AppMakefile {
         "MAKEFILE_NAME         = \$(firstword \$(MAKEFILE_LIST))\n\n";
 
     if (defined($cl{'ID'})) {
-	print MAKEFILE_HDL
-	    "# Fix a particular build ID, do not use the default one\n" .
-	    "# (There are Makefile rules that will verify that the given build ID\n" .
-	    "#  fits to the archicecture, cpu and operating system at make runtime.)\n" .
-	    "ID                   := $cl{'ID'}\n\n";
+        print MAKEFILE_HDL
+            "# Fix a particular build ID, do not use the default one\n" .
+            "# (There are Makefile rules that will verify that the given build ID\n" .
+            "#  fits to the archicecture, cpu and operating system at make runtime.)\n" .
+            "ID                   := $cl{'ID'}\n\n";
     }
     print MAKEFILE_HDL
         "# Path to this FEAT2 installation\n" .
@@ -1442,7 +1442,7 @@ sub create_feat2AppMakefile {
         "# compile time) enable full optimisation with \"EXPENSIVE\".\n" .
         "# If you want to compile your code to run maybe exclusively on the build host\n" .
         "# use \"NATIVE\" or \"NATIVE-EXPENSIVE\" to enable\n" .
-	"OPT                 = $entry\n\n";
+        "OPT                 = $entry\n\n";
 
     $entry = (defined($cl{'AGMG'})) ? $cl{'AGMG'} : $defaults{'AGMG'};
     print MAKEFILE_HDL
@@ -1457,7 +1457,7 @@ sub create_feat2AppMakefile {
     $entry = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
     print MAKEFILE_HDL
         "# Defines the binary type.\n" .
-	"# =STD : Standard code environment of the system.\n" .
+        "# =STD : Standard code environment of the system.\n" .
         "# =32  : Force 32-bit code environment.\n" .
         "# =64  : Force 64-bit code environment.\n" .
         "BINARY              = $entry\n\n";
@@ -1466,7 +1466,7 @@ sub create_feat2AppMakefile {
     print MAKEFILE_HDL
         "# Create executable?\n" .
         "EXECUTABLE          = $entry\n\n";
-	
+        
     $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
     print MAKEFILE_HDL
         "# Create shared application?\n" .
@@ -1535,28 +1535,28 @@ sub create_feat2AppMakefile {
             "COPROC              = YES\n\n" .
             "# Specification of Coprocessor support?\n";
 
-	# convert array with coprocessors into hash for easier lookups
-	my %coprocs = ();
-	map { $coprocs{$_} = $_; } @{ $entry };
+        # convert array with coprocessors into hash for easier lookups
+        my %coprocs = ();
+        map { $coprocs{$_} = $_; } @{ $entry };
 
-	# Remember to check for keywords in uppercase (as any lowercase letter
-	# got uppercased in check_options(), look out for "Values are
-	# converted to upper case for the Makefile" and "capitalising and
-	# normalising values" comment)
-	foreach $entry ('CUDA10', 'CUDA11', 'CUDA12', 'CUDA13',
-			'CUDA20', 'CUDA21', 'CUDA30', 'CUDA35', 'CUDA37', 'CUDA50', 'CUDA52') {
-	    print MAKEFILE_HDL
-		"HAS_" . uc($entry) . "          = ";
-	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
-	    print MAKEFILE_HDL "NO\n" unless (defined($coprocs{$entry}));
-	}
+        # Remember to check for keywords in uppercase (as any lowercase letter
+        # got uppercased in check_options(), look out for "Values are
+        # converted to upper case for the Makefile" and "capitalising and
+        # normalising values" comment)
+        foreach $entry ('CUDA10', 'CUDA11', 'CUDA12', 'CUDA13',
+        		'CUDA20', 'CUDA21', 'CUDA30', 'CUDA35', 'CUDA37', 'CUDA50', 'CUDA52') {
+            print MAKEFILE_HDL
+        	"HAS_" . uc($entry) . "          = ";
+            print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
+            print MAKEFILE_HDL "NO\n" unless (defined($coprocs{$entry}));
+        }
 
     } else {
         print MAKEFILE_HDL
             "COPROC              = NO\n\n";
     }
     print MAKEFILE_HDL
-	"\n";
+        "\n";
 
     # $cl{'WARN'} has been passed as an array (!) to GetOptions() (as opposed
     # to a mere string) and as such is always defined. But is does not
@@ -1568,23 +1568,23 @@ sub create_feat2AppMakefile {
         "# Create binary with warnings enabled?\n";
 
     if ($#{$entry} >= 0) {
-	# convert array with warnings into hash for easier lookups
-	my %warns = ();
-	map { $warns{$_} = $_; } @{ $entry };
+        # convert array with warnings into hash for easier lookups
+        my %warns = ();
+        map { $warns{$_} = $_; } @{ $entry };
 
-	# Remember to check for keywords in uppercase (as any lowercase letter
-	# got uppercased in check_options(), look out for "Values are
-	# converted to upper case for the Makefile" and "capitalising and
-	# normalising values" comment)
-	foreach $entry ('DEBUG', 'DEPRECATED', 'OFF', 'UNSUPPORTED', 'UNUSUAL') {
-	    print MAKEFILE_HDL
-		"WARN_" . uc($entry) . (" " x (12-length($entry))) . "= ";
-	    print MAKEFILE_HDL "YES\n" if (defined($warns{$entry}));
-	    print MAKEFILE_HDL "NO\n" unless (defined($warns{$entry}));
-	}
+        # Remember to check for keywords in uppercase (as any lowercase letter
+        # got uppercased in check_options(), look out for "Values are
+        # converted to upper case for the Makefile" and "capitalising and
+        # normalising values" comment)
+        foreach $entry ('DEBUG', 'DEPRECATED', 'OFF', 'UNSUPPORTED', 'UNUSUAL') {
+            print MAKEFILE_HDL
+        	"WARN_" . uc($entry) . (" " x (12-length($entry))) . "= ";
+            print MAKEFILE_HDL "YES\n" if (defined($warns{$entry}));
+            print MAKEFILE_HDL "NO\n" unless (defined($warns{$entry}));
+        }
     }
     print MAKEFILE_HDL
-	"\n";
+        "\n";
 
     ##############################################################################
     # Create section specifying source directories and source files
@@ -1621,7 +1621,7 @@ sub create_feat2AppMakefile {
         # Try to remove home directory portion of $FEAT2BASEDIR.
         $objdirprefix =~ s/^\Q$ENV{HOME}\E/\$(HOME)/;
 
-	# append default name for object directories
+        # append default name for object directories
         $objdir = File::Spec->catdir($objdirprefix, OBJDIR);
     }
 
@@ -1636,7 +1636,7 @@ sub create_feat2AppMakefile {
         # Try to remove home directory portion of $FEAT2BASEDIR.
         $objdirlibprefix =~ s/^\Q$ENV{HOME}\E/\$(HOME)/;
 
-	# append default name for object directories
+        # append default name for object directories
         $objdir_lib = File::Spec->catdir($objdirlibprefix, OBJDIR_LIB);
     }
     print MAKEFILE_HDL
@@ -1667,13 +1667,13 @@ sub create_feat2AppMakefile {
     delete $srclist{&get_programsourcefile()};
 
     print MAKEFILE_HDL
-	&format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
+        &format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
 
     %srclist = ();
     map { $srclist{$_} = "" } @{$srcextra_app};
 
     print MAKEFILE_HDL
-	&format_list("SRCEXTRA_APP   = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
+        &format_list("SRCEXTRA_APP   = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
     undef %srclist;
 
     print MAKEFILE_HDL
@@ -1683,19 +1683,19 @@ sub create_feat2AppMakefile {
     # Substitute absolute path information accordingly.
     my @tmparray = ();
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
-	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
-	push @tmparray, $file_PathUsingBasedir;
+        my $file_PathUsingBasedir = $entry;
+        $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+        push @tmparray, $file_PathUsingBasedir;
     }
     foreach $entry (@{$cl{'HEADER_FILES_TO_COPY'}}) {
-	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
-	push @tmparray, $file_PathUsingBasedir;
+        my $file_PathUsingBasedir = $entry;
+        $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+        push @tmparray, $file_PathUsingBasedir;
     }
     print MAKEFILE_HDL
         "# Files included in source files that need to be copied, not evaluated by cpp\n" .
         &format_list("INCLUDED_FILES_TO_COPY = ", 8, 70,
-		     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
+        	     join(' ', sort @tmparray), "\\\n", "\\") . "\n\n";
     undef @tmparray;
 
     # The idea is to have only paths relative to FEAT2BASEDIR.
@@ -1703,40 +1703,40 @@ sub create_feat2AppMakefile {
     my %tmparray = ();
     foreach $entry (sort keys %headerfiles) {
         my $file_PathUsingBasedir = $headerfiles{$entry}->{'URI'};
-	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
-	# Remove relative paths. This approach is feasible as we can assume
-	# that not many Feat2 users will do weird stuff with symbolic links
-	# in their checkout. If they do, strange things may happen during 'make',
-	# but then that's the users fault. If we would not remove the relative
-	# path information here, 'make' would regularly complain about duplicate
-	# definitions for e.g.
+        $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+        # Remove relative paths. This approach is feasible as we can assume
+        # that not many Feat2 users will do weird stuff with symbolic links
+        # in their checkout. If they do, strange things may happen during 'make',
+        # but then that's the users fault. If we would not remove the relative
+        # path information here, 'make' would regularly complain about duplicate
+        # definitions for e.g.
         # $(FEAT2BASEDIR)/kernel/Projection/intf_coefficientVectorSc.inc
         # $(FEAT2BASEDIR)/kernel/Projection/intf_refFunctionSc.inc
-	# as they are referenced both without path and with path in Feat2 sources:
+        # as they are referenced both without path and with path in Feat2 sources:
         # $(FEAT2BASEDIR)/kernel/Projection/../DOFMaintenance/intf_coefficientVectorSc.inc
         # $(FEAT2BASEDIR)/kernel/Projection/../Postprocessing/intf_refFunctionSc.inc
-	$file_PathUsingBasedir =~ s|/[^/]+/\.\./|/|;
-	$tmparray{$file_PathUsingBasedir} = 1;
+        $file_PathUsingBasedir =~ s|/[^/]+/\.\./|/|;
+        $tmparray{$file_PathUsingBasedir} = 1;
     }
     print MAKEFILE_HDL
         "# Files included in source files that need to be evaluated by cpp\n" .
         &format_list("INCLUDED_FILES_TO_EVALUATE_WITH_CPP = ", 8, 70,
-		     join(' ', sort keys %tmparray), "\\\n", "\\") . "\n\n";
+        	     join(' ', sort keys %tmparray), "\\\n", "\\") . "\n\n";
     undef %tmparray;
 
     # Create section where the source directories and files are put together
     # and the object files resulting from them.
     print MAKEFILE_HDL
         "# List of all Fortran 77 source files\n" .
-	"SRCF77   = \$(filter %.f, \\\n" .
-	"\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
-	"\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
-	"\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
+        "SRCF77   = \$(filter %.f, \\\n" .
+        "\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
+        "\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
+        "\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
         "# List of all Fortran 90 source files (without program file)\n" .
-	"SRCF90   = \$(filter %.f90, \\\n" .
-	"\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
-	"\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
-	"\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
+        "SRCF90   = \$(filter %.f90, \\\n" .
+        "\t\t\$(SRCLIST_KERNEL:%=\$(SRCDIR_KERNEL)/%) \\\n" .
+        "\t\t\$(SRCLIST_ARCH:%=\$(SRCDIR_ARCH)/%) \\\n" .
+        "\t\t\$(SRCLIST_APP:%=\$(SRCDIR_APP)/%))\n\n" .
         "# List of all object files from Fortran 77 source files\n" .
         "OBJF77   = \$(patsubst %.f, \$(OBJDIR)/%.o, \$(notdir \$(SRCF77)))\n\n" .
         "# List of all object files from Fortran 90 source files (only modules)\n" .
@@ -1762,7 +1762,7 @@ sub create_feat2AppMakefile {
         "#OBJ = \$(OBJF77) \$(OBJF90) \$(OBJEXTRA) \$(OBJPRG)\n\n" .
         "# Minimal list of object files needed to build the application\n" .
         &format_list("OBJ =", 6, 70,
-		     join(' ', @requiredObjFiles) . " \$(OBJF77) \$(OBJEXTRA)", "", "\\") . "\n\n" .
+        	     join(' ', @requiredObjFiles) . " \$(OBJF77) \$(OBJEXTRA)", "", "\\") . "\n\n" .
         "# List of library files\n" .
         "LIB = \$(BUILDLIB:%=\$(OBJDIR_LIB)/lib%.a)\n\n\n\n";
 
@@ -1782,58 +1782,58 @@ sub create_feat2AppMakefile {
     print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
     my $colwidth = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
-		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
-		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
-		       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
-		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
-		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
-	$colwidth = &max(length($entry), $colwidth);
+        	       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
+        	       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+        	       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
+        	       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
+        	       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
+        $colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
     my $overwritten = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
-		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
-		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
-		       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
-		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
-		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
-	# Determine type of variable: scalar or array
-	if (ref($cl{$entry}) eq "") {
-	    # current token is a scalar value, print if not empty
-	    # (Remember that an empty string is not allowed for
-	    #  command line options that take a string, not an array!)
-	    my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
-	    if (length($string) > 0) {
-		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
-		$overwritten++;
-	    }
+        	       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
+        	       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+        	       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
+        	       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
+        	       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
+        # Determine type of variable: scalar or array
+        if (ref($cl{$entry}) eq "") {
+            # current token is a scalar value, print if not empty
+            # (Remember that an empty string is not allowed for
+            #  command line options that take a string, not an array!)
+            my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
+            if (length($string) > 0) {
+        	print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
+        	$overwritten++;
+            }
 
-	} elsif (ref($cl{$entry}) eq "ARRAY") {
-	    # current token is an array, print if at least one entry
+        } elsif (ref($cl{$entry}) eq "ARRAY") {
+            # current token is an array, print if at least one entry
 
-	    # $cl{'...'} has been passed as an array to GetOptions()
-	    # and as such is always defined. But is does not necessarily have
-	    # entries: unset => #entries=-1; set, but empty => #entries=0
-	    # So, don't test with perl function defined(). Test whether set.
-	    my ($string, $minlengthToBeSet);
-	    if ($#{ $cl{$entry} } > -1) {
-		$string = $cl{$entry};
-		$minlengthToBeSet = 0;      # unset arrays have length -1, empty arrays length 0
-	    } else {
-		$string = $defaults{$entry};
-		$minlengthToBeSet = 1;     # defaults are always set; size of an empty array is 0, not -1 as for an unset array
-	    }
+            # $cl{'...'} has been passed as an array to GetOptions()
+            # and as such is always defined. But is does not necessarily have
+            # entries: unset => #entries=-1; set, but empty => #entries=0
+            # So, don't test with perl function defined(). Test whether set.
+            my ($string, $minlengthToBeSet);
+            if ($#{ $cl{$entry} } > -1) {
+        	$string = $cl{$entry};
+        	$minlengthToBeSet = 0;      # unset arrays have length -1, empty arrays length 0
+            } else {
+        	$string = $defaults{$entry};
+        	$minlengthToBeSet = 1;     # defaults are always set; size of an empty array is 0, not -1 as for an unset array
+            }
 
-	    if ($#{$string} >= $minlengthToBeSet) {
-		# Exception for 'APPONLYFLAGS': for better readability put every preprocessor directive on a separate line
-		if ($entry eq "APPONLYFLAGS") {
-		    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(" \\\n\t", @{$string}) . "\n";
-		} else {
-		    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(' ', @{$string}) . "\n";
-		}
-		$overwritten++;
-	    }
-	}
+            if ($#{$string} >= $minlengthToBeSet) {
+        	# Exception for 'APPONLYFLAGS': for better readability put every preprocessor directive on a separate line
+        	if ($entry eq "APPONLYFLAGS") {
+        	    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(" \\\n\t", @{$string}) . "\n";
+        	} else {
+        	    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(' ', @{$string}) . "\n";
+        	}
+        	$overwritten++;
+            }
+        }
     }
     if ($#{$cl{'suppressflags'}} >= 0) {
         foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCOPROC", "CFLAGSCXX", "CFLAGSCUDA", "LDFLAGS") {
@@ -1874,45 +1874,45 @@ sub create_feat2AppMakefile {
     $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     if ($#{$entry} >= 0) {
 
-	# convert array with coprocessors into hash for easier lookups
-	my %coprocs = ();
-	map { $coprocs{$_} = $_; } @{ $entry };
+        # convert array with coprocessors into hash for easier lookups
+        my %coprocs = ();
+        map { $coprocs{$_} = $_; } @{ $entry };
 
-	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
-	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda37', 'cuda50', 'cuda52') {
-	    if (defined($coprocs{$entry})) {
-		print MAKEFILE_HDL
-		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
-		    "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
-		    "MESSAGE  := \$(MESSAGE) \\\n" .
-		    "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-		    "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
-		    "else\n" .
-		    "APPONLYFLAGS := -DHAS_" . uc($entry) . " \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		    "endif\n" .
-		    "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
-		    "MESSAGE  := \$(MESSAGE) \\\n" .
-		    "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		    "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
-		    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
-		    "else\n" .
-		    "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH)\n" .
-		    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
-		    "endif\n";
-	    }
-	}
+        # if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
+        foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
+        		'cuda20', 'cuda21', 'cuda30', 'cuda35', 'cuda37', 'cuda50', 'cuda52') {
+            if (defined($coprocs{$entry})) {
+        	print MAKEFILE_HDL
+        	    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+        	    "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+        	    "MESSAGE  := \$(MESSAGE) \\\n" .
+        	    "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+        	    "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+        	    "else\n" .
+        	    "APPONLYFLAGS := -DHAS_" . uc($entry) . " \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+        	    "endif\n" .
+        	    "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+        	    "MESSAGE  := \$(MESSAGE) \\\n" .
+        	    "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+        	    "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+        	    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
+        	    "else\n" .
+        	    "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH)\n" .
+        	    "LIBS         := \$(LIBS) -lcudart -lcublas\n" .
+        	    "endif\n";
+            }
+        }
 
-	# write out general coproc-specific variable additions
+        # write out general coproc-specific variable additions
         print MAKEFILE_HDL
             "# Coprocessor-specific special options\n" .
-	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
-	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
+            "SRCEXTRA     := \$(SRCEXTRA)\n" .
+            "BUILDLIB     := coproc \$(BUILDLIB)\n" .
         "INC          := -I\$(FEAT2BASEDIR)/thirdparty/coproc \$(INC)\n" .
-	    "LIBS         := -lcoproc \$(LIBS)\n" .
-	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
+            "LIBS         := -lcoproc \$(LIBS)\n" .
+            "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
-	print MAKEFILE_HDL "\n";
+        print MAKEFILE_HDL "\n";
     }
     print MAKEFILE_HDL "\n";
 
@@ -1987,28 +1987,28 @@ sub create_feat2AppMakefile {
         "# print an error message if removal failed. (The restriction to two\n" .
         "# levels is rather arbitrary. It's the least number of directory levels\n" .
         "# created by a FEAT2 Makefile. To show an error message unconditionally\n" .
-	"# is not desired as one would eventually always get an error message, at\n" .
-	"# least when trying to remove /)\n" .
-	"# The for loop is to deal with given directory wildcards like object/pc-*-*-*.\n" .
+        "# is not desired as one would eventually always get an error message, at\n" .
+        "# least when trying to remove /)\n" .
+        "# The for loop is to deal with given directory wildcards like object/pc-*-*-*.\n" .
         "define remove_directory\n" .
-	"    \@rmdirFailures=\"\"; \\\n" .
-	"     for dir in \$(dir); do \\\n" .
-	"\tdepth=0; \\\n" .
-	"\twhile test -d \"\$\${dir}\" -a \"\$\${dir}\" != '.' -a \"\$\${dir}\" != '/'; do \\\n" .
-	"\t    if rmdir \"\$\${dir}\" 2>/dev/null; then \\\n" .
-	"\t\techo \"rmdir \$\${dir}\"; \\\n" .
-	"\t\tdir=`dirname \$\${dir}`; \\\n" .
-	"\t    else \\\n" .
-	"\t\ttest \$\${depth} -lt 2 && rmdirFailures=\"\$\${rmdirFailures} \$\${dir}\"; \\\n" .
-	"\t\tdir='.'; \\\n" .
-	"\t    fi; \\\n" .
-	"\t    depth=`expr \$\${depth} + 1`; \\\n" .
-	"\tdone; \\\n" .
-	"    done; \\\n" .
-	"    for dir in \$\${rmdirFailures}; do \\\n" .
-	"\tif test -d \"\$\${dir}\"; then \\\n" .
-	"\t    \$(print_directory_not_empty); \\\n" .
-	"\tfi; \\\n" .
+        "    \@rmdirFailures=\"\"; \\\n" .
+        "     for dir in \$(dir); do \\\n" .
+        "\tdepth=0; \\\n" .
+        "\twhile test -d \"\$\${dir}\" -a \"\$\${dir}\" != '.' -a \"\$\${dir}\" != '/'; do \\\n" .
+        "\t    if rmdir \"\$\${dir}\" 2>/dev/null; then \\\n" .
+        "\t\techo \"rmdir \$\${dir}\"; \\\n" .
+        "\t\tdir=`dirname \$\${dir}`; \\\n" .
+        "\t    else \\\n" .
+        "\t\ttest \$\${depth} -lt 2 && rmdirFailures=\"\$\${rmdirFailures} \$\${dir}\"; \\\n" .
+        "\t\tdir='.'; \\\n" .
+        "\t    fi; \\\n" .
+        "\t    depth=`expr \$\${depth} + 1`; \\\n" .
+        "\tdone; \\\n" .
+        "    done; \\\n" .
+        "    for dir in \$\${rmdirFailures}; do \\\n" .
+        "\tif test -d \"\$\${dir}\"; then \\\n" .
+        "\t    \$(print_directory_not_empty); \\\n" .
+        "\tfi; \\\n" .
         "    done\n\n" .
         "endef\n\n" .
         "# Function to be called if directory removal did not work unexpectedly.\n" .
@@ -2057,29 +2057,29 @@ sub create_feat2AppMakefile {
 #	"endif\n" .
 #	"endif\n\n" .
 
-	# Ensure there are no modules (stored in different directories) with identical names.
-	"# Ensure there are no modules (stored in different directories) with identical names.\n" .
-	"ifneq (\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort -u),\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort))\n" .
-	"MESSAGE := \$(MESSAGE) \\\n" .
-	"	   echo; \\\n" .
-	"	   echo '*** Error: There are at least two modules that share the same name.'; \\\n" .
-	"	   echo '***        This is not feasible given that all object files will be created in one common directory.'; \\\n" .
-	"	   echo '***        Look out for Makefile warnings \"<file> given more than once in the same rule.\" for a list'; \\\n" .
-	"	   echo '***        of a all identically named modules.'; \\\n" .
-	"	   echo '***        Cowardly refusing compilation.'; \\\n" .
-	"	   echo; \\\n" .
-	"	   exit 1;\n" .
-	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
-	"# all the command line options a compile command usually gets.\n" .
-	"F77  = \$(MESSAGE) echo\n" .
-	"F90  = \$(F77)\n" .
-	"CC   = \$(F77)\n" .
-	"CUDA = \$(F77)\n" .
-	"CXX  = \$(F77)\n" .
-	"LD   = \$(F77)\n" .
-	"endif\n\n" .
+        # Ensure there are no modules (stored in different directories) with identical names.
+        "# Ensure there are no modules (stored in different directories) with identical names.\n" .
+        "ifneq (\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort -u),\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort))\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "	   echo; \\\n" .
+        "	   echo '*** Error: There are at least two modules that share the same name.'; \\\n" .
+        "	   echo '***        This is not feasible given that all object files will be created in one common directory.'; \\\n" .
+        "	   echo '***        Look out for Makefile warnings \"<file> given more than once in the same rule.\" for a list'; \\\n" .
+        "	   echo '***        of a all identically named modules.'; \\\n" .
+        "	   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "	   echo; \\\n" .
+        "	   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77  = \$(MESSAGE) echo\n" .
+        "F90  = \$(F77)\n" .
+        "CC   = \$(F77)\n" .
+        "CUDA = \$(F77)\n" .
+        "CXX  = \$(F77)\n" .
+        "LD   = \$(F77)\n" .
+        "endif\n\n" .
 
-	"# Makefile variable AGMG must have exactly one out of two possible values:\n" .
+        "# Makefile variable AGMG must have exactly one out of two possible values:\n" .
         "# YES or NO\n" .
         "# In case neither YES nor NO are given as mode, unset all compiler\n" .
         "# definitions in order to always raise an error when make is invoked.\n" .
@@ -2103,7 +2103,7 @@ sub create_feat2AppMakefile {
         "endif\n" .
         "\n\n" .
 
-	"# Makefile variable BINARY must have exactly one out of three possible values:\n" .
+        "# Makefile variable BINARY must have exactly one out of three possible values:\n" .
         "# STD, 32 or 64\n" .
         "# In case neither STD, 32 nor 64 is specified, unset all compiler\n" .
         "# definitions in order to always raise an error when make is invoked.\n" .
@@ -2125,11 +2125,11 @@ sub create_feat2AppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-	"endif\n" .
-	"endif\n" .
-	"\n\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
 
-	"# Makefile variable EXECUTABLE must have exactly one out of two possible values:\n" .
+        "# Makefile variable EXECUTABLE must have exactly one out of two possible values:\n" .
         "# YES or NO\n" .
         "# In case neither YES nor NO are given as mode, unset all compiler\n" .
         "# definitions in order to always raise an error when make is invoked.\n" .
@@ -2177,60 +2177,60 @@ sub create_feat2AppMakefile {
         "endif\n" .
         "\n\n" .
 
-	"# Makefile variable SHARED must have exactly one out of two possible values:\n" .
-	"# YES or NO.\n" .
-	"# In case neither APPLICATION, LIBRARY or NO is specified, unset all compiler\n" .
-	"# definitions in order to always raise an error when make is invoked.\n" .
-	"ifneq (\$(strip \$(SHARED)), YES)\n" .
-	"ifneq (\$(strip \$(SHARED)), NO)\n" .
-	"MESSAGE := \$(MESSAGE) \\\n" .
-	"\t   echo; \\\n" .
-	"\t   echo '*** Error: Compile type SHARED=\$(SHARED) unknown.'; \\\n" .
-	"\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
-	"\t   echo '***        Cowardly refusing compilation.'; \\\n" .
-	"\t   echo; \\\n" .
-	"\t   exit 1;\n" .
-	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
-	"# all the command line options a compile command usually gets.\n" .
-	"F77 = \$(MESSAGE) echo\n" .
-	"F90 = \$(F77)\n" .
-	"CC  = \$(F77)\n" .
-	"CXX = \$(F77)\n" .
-	"LD  = \$(F77)\n" .
-	"endif\n" .
-	"endif\n" .
-	"\n\n" .
+        "# Makefile variable SHARED must have exactly one out of two possible values:\n" .
+        "# YES or NO.\n" .
+        "# In case neither APPLICATION, LIBRARY or NO is specified, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(SHARED)), YES)\n" .
+        "ifneq (\$(strip \$(SHARED)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Compile type SHARED=\$(SHARED) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
 
-	"# Makefile variable OPT must have exactly one out of five possible values:\n" .
-	"# NO, YES, EXPENSIVE, NATIVE, or NATIVE-EXPENSIVE. If that requirement is not\n" .
+        "# Makefile variable OPT must have exactly one out of five possible values:\n" .
+        "# NO, YES, EXPENSIVE, NATIVE, or NATIVE-EXPENSIVE. If that requirement is not\n" .
         "# met, unset all compiler definitions in order to always raise an error when\n" .
         "# make is invoked.\n" .
-	"ifneq (\$(strip \$(OPT)), NATIVE-EXPENSIVE)\n" .
-	"ifneq (\$(strip \$(OPT)), NATIVE)\n" .
-	"ifneq (\$(strip \$(OPT)), EXPENSIVE)\n" .
-	"ifneq (\$(strip \$(OPT)), YES)\n" .
-	"ifneq (\$(strip \$(OPT)), NO)\n" .
-	"MESSAGE := \$(MESSAGE) \\\n" .
-	"\t   echo; \\\n" .
+        "ifneq (\$(strip \$(OPT)), NATIVE-EXPENSIVE)\n" .
+        "ifneq (\$(strip \$(OPT)), NATIVE)\n" .
+        "ifneq (\$(strip \$(OPT)), EXPENSIVE)\n" .
+        "ifneq (\$(strip \$(OPT)), YES)\n" .
+        "ifneq (\$(strip \$(OPT)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
         "\t   echo '*** Error: Optimisation level keyword OPT=\$(OPT) unknown.'; \\\n" .
-	"\t   echo '***        Valid keywords are NO, YES, EXPENSIVE, NATIVE and NATIVE-EXPENSIVE.'; \\\n" .
-	"\t   echo '***        Cowardly refusing compilation.'; \\\n" .
-	"\t   echo; \\\n" .
-	"\t   exit 1;\n" .
-	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
-	"# all the command line options a compile command usually gets.\n" .
-	"F77  = \$(MESSAGE) echo\n" .
-	"F90  = \$(F77)\n" .
-	"CC   = \$(F77)\n" .
-	"CUDA = \$(F77)\n" .
-	"CXX  = \$(F77)\n" .
-	"LD   = \$(F77)\n" .
-	"endif\n" .
-	"endif\n" .
-	"endif\n" .
-	"endif\n" .
-	"endif\n" .
-	"\n\n" .
+        "\t   echo '***        Valid keywords are NO, YES, EXPENSIVE, NATIVE and NATIVE-EXPENSIVE.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77  = \$(MESSAGE) echo\n" .
+        "F90  = \$(F77)\n" .
+        "CC   = \$(F77)\n" .
+        "CUDA = \$(F77)\n" .
+        "CXX  = \$(F77)\n" .
+        "LD   = \$(F77)\n" .
+        "endif\n" .
+        "endif\n" .
+        "endif\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
 
         "# Makefile variable INTSIZE must have exactly one out of two possible values:\n" .
         "# STD or LARGE\n" .
@@ -2253,8 +2253,8 @@ sub create_feat2AppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-	"endif\n" .
-	"\n\n" .
+        "endif\n" .
+        "\n\n" .
 
         "# Makefile variable MPI must have exactly one out of two possible values:\n" .
         "# YES or NO\n" .
@@ -2326,14 +2326,14 @@ sub create_feat2AppMakefile {
         "LD  = \$(F77)\n" .
         "endif\n" .
         "endif\n" .
-	"\n\n" .
+        "\n\n" .
 
-	"# Warn about deprecated Makefile variable MODE=PARALLEL|SERIAL\n" .
-	"ifneq (\$(strip \$(MODE)),)\n" .
-	"MESSAGE := \$(MESSAGE) \\\n" .
-	"\t   echo; \\\n" .
-	"\t   echo '*** Warning: Use of Makefile variable MODE=\$(MODE) is deprecated.'; \\\n" .
-	"\t   echo '***          Use MPI=<YES|NO> instead.'; \\\n" .
+        "# Warn about deprecated Makefile variable MODE=PARALLEL|SERIAL\n" .
+        "ifneq (\$(strip \$(MODE)),)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Warning: Use of Makefile variable MODE=\$(MODE) is deprecated.'; \\\n" .
+        "\t   echo '***          Use MPI=<YES|NO> instead.'; \\\n" .
         "\t   exit 1;\n" .
         "# The trailing 'echo' in the next command definition is necessary to catch\n" .
         "# all the command line options a compile command usually gets.\n" .
@@ -2342,13 +2342,13 @@ sub create_feat2AppMakefile {
         "CC  = \$(F77)\n" .
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
-	"endif\n" .
-	"\n\n" .
+        "endif\n" .
+        "\n\n" .
 
         "# Catch case that a build ID has been given for which\n" .
         "# compiler settings are not (fully) set up.\n" .
         "DETAIL := \n" .
-	"ifneq (\$(TOKEN1)\$(TOKEN2)\$(TOKEN3)\$(TOKEN4)\$(TOKEN5), 11111)\n" .
+        "ifneq (\$(TOKEN1)\$(TOKEN2)\$(TOKEN3)\$(TOKEN4)\$(TOKEN5), 11111)\n" .
         "ifneq (\$(TOKEN1), 1)\n" .
         "DETAIL := \$(DETAIL) echo '***        1st token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
@@ -2365,7 +2365,7 @@ sub create_feat2AppMakefile {
         "DETAIL := \$(DETAIL) echo '***        5th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
         "endif\n" .
-	"\n\n" .
+        "\n\n" .
 
         "# Test for 6th token in case of MPI=YES\n" .
         "ifeq (\$(strip \$(MPI)), YES)\n" .
@@ -2373,7 +2373,7 @@ sub create_feat2AppMakefile {
         "DETAIL := \$(DETAIL) echo '***        6th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
         "endif\n" .
-	"\n\n" .
+        "\n\n" .
 
         "# Now, override any compiler settings in case any token is unset\n" .
         "ifneq (\$(DETAIL),)\n" .
@@ -2391,44 +2391,44 @@ sub create_feat2AppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-	"\n\n" .
+        "\n\n" .
 
-	"# Catch case (coproc-bail-out) that coprocessor support is not available for all build IDs\n" .
-	"ifneq (,\$(findstring -DENABLE_COPROCESSOR_SUPPORT ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
-	"# Initialise value\n" .
-	"DETAIL :=\n" .
-	"ifneq (, \$(findstring -DUSE_COMPILER_PATHSCALE ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
-	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Pathscale compiler suite:';\n" .
-	"endif\n" .
-	"ifneq (, \$(findstring -DUSE_COMPILER_OPEN64 ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
-	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Open64 compiler suite:';\n" .
-	"endif\n" .
-	"ifneq (, \$(findstring -DUSE_COMPILER_NEC ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
-	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with NEC compilers:';\n" .
-	"endif\n" .
-	"# Throw error if value is set by now\n" .
-	"ifneq (,\$(DETAIL))\n" .
-	"MESSAGE := \$(MESSAGE) \\\n" .
-	"\t   echo; \\\n" .
-	"\t   echo '*** Error: Coprocessor support not available for build ID \$(ID)'; \\\n" .
-	"\t   \$(DETAIL) \\\n" .
-	"\t   echo '*** Symbol names generated by its Fortran compiler lead to incompilable C code.'; \\\n" .
-	"\t   echo; \\\n" .
-	"\t   exit 51;\n" .
-	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
-	"# all the command line options a compile command usually gets.\n" .
-	"F77  = \$(MESSAGE) echo\n" .
-	"F90  = \$(F77)\n" .
-	"CC   = \$(F77)\n" .
-	"CUDA = \$(F77)\n" .
-	"CXX  = \$(F77)\n" .
-	"LD   = \$(F77)\n" .
-	"endif\n" .
-	"endif\n\n\n\n";
+        "# Catch case (coproc-bail-out) that coprocessor support is not available for all build IDs\n" .
+        "ifneq (,\$(findstring -DENABLE_COPROCESSOR_SUPPORT ,\\\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
+        "# Initialise value\n" .
+        "DETAIL :=\n" .
+        "ifneq (, \$(findstring -DUSE_COMPILER_PATHSCALE ,\\\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
+        "DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Pathscale compiler suite:';\n" .
+        "endif\n" .
+        "ifneq (, \$(findstring -DUSE_COMPILER_OPEN64 ,\\\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
+        "DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Open64 compiler suite:';\n" .
+        "endif\n" .
+        "ifneq (, \$(findstring -DUSE_COMPILER_NEC ,\\\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
+        "DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with NEC compilers:';\n" .
+        "endif\n" .
+        "# Throw error if value is set by now\n" .
+        "ifneq (,\$(DETAIL))\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Coprocessor support not available for build ID \$(ID)'; \\\n" .
+        "\t   \$(DETAIL) \\\n" .
+        "\t   echo '*** Symbol names generated by its Fortran compiler lead to incompilable C code.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 51;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77  = \$(MESSAGE) echo\n" .
+        "F90  = \$(F77)\n" .
+        "CC   = \$(F77)\n" .
+        "CUDA = \$(F77)\n" .
+        "CXX  = \$(F77)\n" .
+        "LD   = \$(F77)\n" .
+        "endif\n" .
+        "endif\n\n\n\n";
 
 
 
@@ -2457,9 +2457,9 @@ sub create_feat2AppMakefile {
         "# Dependencies of header files to be copied or evaluated and stored in\n" .
         "# object directory\n\n";
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
-	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(SRCDIR_KERNEL),;
-	$file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(FEAT2BASEDIR),;
+        my $file_PathUsingBasedir = $entry;
+        $file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(SRCDIR_KERNEL),;
+        $file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(FEAT2BASEDIR),;
         print MAKEFILE_HDL
             &make_dep_list(\%dependencyLists, $entry,
                            $file_PathUsingBasedir, 0, "", "o",
@@ -2493,14 +2493,14 @@ sub create_feat2AppMakefile {
             #         "Inform the configure maintainer about this case.\n";
             # } else {
 
-	    # The idea is to have only paths relative to FEAT2BASEDIR.
-	    # Substitute absolute path information accordingly.
-	    my $file_PathUsingBasedir = $entry;
-	    $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
-	    print MAKEFILE_HDL
-		&make_dep_list(\%dependencyLists, $entry,
-			       $file_PathUsingBasedir, 0, "", "o",
-			       "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
+            # The idea is to have only paths relative to FEAT2BASEDIR.
+            # Substitute absolute path information accordingly.
+            my $file_PathUsingBasedir = $entry;
+            $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+            print MAKEFILE_HDL
+        	&make_dep_list(\%dependencyLists, $entry,
+        		       $file_PathUsingBasedir, 0, "", "o",
+        		       "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
             # }
         }
     }
@@ -2589,12 +2589,12 @@ sub create_feat2AppMakefile {
         "\$(OBJ): | \$(OBJDIR_LIB) \$(OBJDIR)\n" .
         "\$(OBJ): | check-or-store-settings\n\n" .
 
-	"# Please keep in mind:\n" .
-	"# GNU Make 3.80 requires that an order-only prerequisite shall not be\n" .
-	"# put on the same line as a prerequisite of an implicit rule. \$< would\n" .
-	"# will be set to the first order-only prerequisite. Potentially this\n" .
-	"# leads to rebuilding the target every time make is invoked. Or the\n" .
-	"# target can not be built at all.\n\n" .
+        "# Please keep in mind:\n" .
+        "# GNU Make 3.80 requires that an order-only prerequisite shall not be\n" .
+        "# put on the same line as a prerequisite of an implicit rule. \$< would\n" .
+        "# will be set to the first order-only prerequisite. Potentially this\n" .
+        "# leads to rebuilding the target every time make is invoked. Or the\n" .
+        "# target can not be built at all.\n\n" .
 
     # Create build rule for object files from Fortran 77 source
         "# Compile statement for each object file from Fortran 77 source\n" .
@@ -2619,7 +2619,7 @@ sub create_feat2AppMakefile {
 #        "endif\n" .
 #        "endif\n\n" .
 
-	"# Create build rule for object files from Fortran 90 source\n" .
+        "# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
         "\tCPP=\"\$(CPP)\" CPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
@@ -2641,42 +2641,42 @@ sub create_feat2AppMakefile {
         "\$(OBJDIR)/%.o: | \$(OBJDIR)\n" .
 
     # Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP
-	"# Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP\n" .
-	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(PREF77) \$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+        "# Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP\n" .
+        "\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+        "\t\$(PREF77) \$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP
-	"# Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP\n" .
-	"# Note 1:\n" .
-	"# Remember that those files are supposed to provide no Fortran module\n" .
-	"# - otherwise they would be on the normal kernel file list - and as\n" .
-	"# such do not try to move a .mod file upon compilation as a workaround\n" .
-	"# for compilers that do not create .mod files in the object directory,\n" .
-	"# in the working directory.\n" .
-	"# Note 2:\n" .
-	"# Fortran 90 source files listed in SRCEXTRA and SRCEXTRA_APP may try to\n" .
-	"# 'use' Fortran 90 modules from the kernel. Add the complete list of object\n" .
-	"# files generated from the kernel's Fortran 90 sources to the dependency\n" .
-	"# list of the SRCEXTRA's and SRCEXTRA_APP's Fortran 90 source files to prevent\n" .
-	"# them from being compiled prematurely, e.g. in a highly parallel make run\n" .
-	"# (make -j N, with N>32 or N missing).\n" .
-	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
-	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+        "# Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP\n" .
+        "# Note 1:\n" .
+        "# Remember that those files are supposed to provide no Fortran module\n" .
+        "# - otherwise they would be on the normal kernel file list - and as\n" .
+        "# such do not try to move a .mod file upon compilation as a workaround\n" .
+        "# for compilers that do not create .mod files in the object directory,\n" .
+        "# in the working directory.\n" .
+        "# Note 2:\n" .
+        "# Fortran 90 source files listed in SRCEXTRA and SRCEXTRA_APP may try to\n" .
+        "# 'use' Fortran 90 modules from the kernel. Add the complete list of object\n" .
+        "# files generated from the kernel's Fortran 90 sources to the dependency\n" .
+        "# list of the SRCEXTRA's and SRCEXTRA_APP's Fortran 90 source files to prevent\n" .
+        "# them from being compiled prematurely, e.g. in a highly parallel make run\n" .
+        "# (make -j N, with N>32 or N missing).\n" .
+        "\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP
-	"# Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP\n" .
-	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+        "# Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP\n" .
+        "\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
         "\t\$(PRECC) \$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP
-	"# Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP\n" .
-	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(PRECXX) \$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+        "# Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP\n" .
+        "\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+        "\t\$(PRECXX) \$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP
-	"# Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP\n" .
-	"\$(patsubst %.cu, \$(OBJDIR)/%.o, \$(filter %.cu, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(PRECUDA) \$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+        "# Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP\n" .
+        "\$(patsubst %.cu, \$(OBJDIR)/%.o, \$(filter %.cu, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+        "\t\$(PRECUDA) \$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # All files listed in $(SRCEXTRA) should be compiled, but depending on
     # their extension with a separate rule. Fortran, Fortran90, C, C++ and
@@ -2705,7 +2705,7 @@ sub create_feat2AppMakefile {
         "    echo \"ERROR: <\$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))> not found.\";\n" .
         "    echo;\n" .
         "    echo \"<\$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))> is specified in\";\n" .
-	"    echo \"SRCEXTRA or SRCEXTRA_APP (defined in \$(MAKEFILE_CPU_INC) or\";\n" .
+        "    echo \"SRCEXTRA or SRCEXTRA_APP (defined in \$(MAKEFILE_CPU_INC) or\";\n" .
         "    echo \"\$(dir \$(MAKEFILE_CPU_INC))/templates/*.mk\";\n" .
         "    echo \"and as such is to be compiled additionally for this build ID.\";\n" .
         "    echo \"It is supposed to reside in directory\";\n" .
@@ -2848,7 +2848,7 @@ sub create_feat2AppMakefile {
         "# Clean all object files of all external libraries for all architectures\n" .
         "# (But be utmost restrictive by only removing files created by a (recent) FEAT2 Makefile.)\n" .
         "purge-libs: PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
-	"# Ensure that all libraries are removed that have possibly been compiled\n" .
+        "# Ensure that all libraries are removed that have possibly been compiled\n" .
         "purge-libs: \$(ALLLIB:%=purge-%)\n" .
         "        # Go to the directories that contain the architecture-specific\n" .
         "        # object sub-directories and delete in those sub-directories\n" .
@@ -2897,7 +2897,7 @@ sub create_feat2AppMakefile {
         "\$(LIB): | check-or-store-settings\n\n" .
 
     # separate rule to download third party library tarballs
-	"# separate rule to download third party library tarballs\n" .
+        "# separate rule to download third party library tarballs\n" .
         "getlibs:\t\$(ALLLIB:%=get-%)\n\n" .
 
     # coproc library path settings
@@ -2907,13 +2907,13 @@ sub create_feat2AppMakefile {
 
     # coproc library
         "# Create coproc library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libcoproc.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libcoproc.a\n" .
         "\$(OBJDIR_LIB)/libcoproc.a:\n" .
         "\t\@echo \"# Building unified coproc library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tCC=\"\$(PRECC) \$(CC)\" \\\n" .
-	"\t\tCUDA=\"\$(PRECUDA) \$(CUDA)\" \\\n" .
+        "\t\tCUDA=\"\$(PRECUDA) \$(CUDA)\" \\\n" .
         "\t\tOPT=\"\$(OPT)\" \\\n" .
         "\t\tCFLAGSCOPROC_FROM_FEAT2=\"\$(CFLAGSCOPROC)\" \\\n" .
         "\t\tCFLAGSCUDA=\"\$(CFLAGSCUDA)\" \\\n" .
@@ -2921,14 +2921,14 @@ sub create_feat2AppMakefile {
         "\t\tAPPONLYFLAGS=\"\$(APPONLYFLAGS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" \\\n" .
-	"\t\t";
+        "\t\t";
 
     my $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
-	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+        print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
     }
     print MAKEFILE_HDL
-	")\n\n" .
+        ")\n\n" .
 
     # umfpack library path settings
         "# umfpack library path settings\n" .
@@ -2937,7 +2937,7 @@ sub create_feat2AppMakefile {
 
     # umfpack library
         "# Create umfpack library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libumfpack.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libumfpack.a\n" .
         "\$(OBJDIR_LIB)/libumfpack.a:\n" .
         "\t\@echo \"# Building umfpack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2953,7 +2953,7 @@ sub create_feat2AppMakefile {
 
     # AMD library
         "# Create AMD library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libamd.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libamd.a\n" .
         "\$(OBJDIR_LIB)/libamd.a:\n" .
         "\t\@echo \"# Building amd library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2965,11 +2965,18 @@ sub create_feat2AppMakefile {
     # blas path settings
         "# blas library path settings\n" .
         "\$(OBJDIR_LIB)/libblas.a clean-blas get-blas purge-blas: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/BLAS\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/thirdparty/BLAS-3.5.0\n" .
+        "\$(OBJDIR_LIB)/libblas.a clean-blas get-blas purge-blas: \\\n" .
+        "\tOLDDIR = \$(FEAT2BASEDIR)/thirdparty/BLAS\n" .
+        "\$(OBJDIR_LIB)/libblas.a clean-blas purge-blas: | check-blas-directory-name\n\n" .
+        "check-blas-directory-name:\n" .
+        "\t\@-test -d \$(OLDDIR) && \\\n" .
+        "\t    (echo \"# Renaming old blas directory to match name currently extracted from\"; \\\n" .
+        "\t     echo \"# newly downloaded BLAS tarball...\"; mv \$(OLDDIR)/* \$(DIR); rmdir \$(OLDDIR))\n\n" .
 
     # blas library
         "# Create blas library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libblas.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libblas.a\n" .
         "\$(OBJDIR_LIB)/libblas.a:\n" .
         "\t\@echo \"# Building blas library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
@@ -2985,7 +2992,7 @@ sub create_feat2AppMakefile {
 
     # lapack library
         "# Create lapack library\n" .
-	".PHONY: \$(OBJDIR_LIB)/liblapack.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/liblapack.a\n" .
         "ifeq (\$(GOTOBLAS_PATCH_FOR_LAPACK),)\n" .
         "\$(OBJDIR_LIB)/liblapack.a: GOTOBLAS_PATCH_FOR_LAPACK = NOT_REQUIRED\n" .
         "endif\n" .
@@ -2993,7 +3000,7 @@ sub create_feat2AppMakefile {
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tF95=\"eval \$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
+        "\t\tF95=\"eval \$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -3020,20 +3027,20 @@ sub create_feat2AppMakefile {
 
     # AGMG library
         "# Create AGMG library\n" .
-	".PHONY: \$(OBJDIR_LIB)/libagmg.a\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libagmg.a\n" .
         "\$(OBJDIR_LIB)/libagmg.a:\n" .
         "\t\@echo \"# Building AGMG library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tFORTRAN=\"\$(PREF90) eval \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF90) eval \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
     # Download rule for every library
     print MAKEFILE_HDL
-	"# Download rule for every library\n" .
+        "# Download rule for every library\n" .
         "\$(ALLLIB:%=get-%):\n" .
-	"\t(cd \$(DIR) && \$(MAKE) -f Makefile.FEAT2 getlibs)\n\n";
+        "\t(cd \$(DIR) && \$(MAKE) -f Makefile.FEAT2 getlibs)\n\n";
 
     # Clean rule for every library
     print MAKEFILE_HDL
@@ -3046,10 +3053,10 @@ sub create_feat2AppMakefile {
         "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(OBJDIR_LIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" ";
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
-	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+        print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
     }
     print MAKEFILE_HDL
-	"clean )\n\n";
+        "clean )\n\n";
 
     # Purge rule for every library
     print MAKEFILE_HDL
@@ -3063,10 +3070,10 @@ sub create_feat2AppMakefile {
         "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-coproc*-openmp*-opt*\" MODEXTENSION=\"\$(MODEXTENSION)\" ";
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
-	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
+        print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";
     }
     print MAKEFILE_HDL
-	"purge )\n\n" .
+        "purge )\n\n" .
         "\n\n";
 
 
@@ -3581,8 +3588,8 @@ sub create_feat2AppMakefile {
         "store-settings-objdir: DIR = \$(OBJDIR)\n" .
         "store-settings-objdir: \$(OBJDIR) #| check-settings-objdir\n" .
         "\t\@+additionalflags=\"APPONLYFLAGS  = \$(APPONLYFLAGS)\"; \\\n" .
-	"\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
-	"\techo \"# used to compile the application for subsequent 'make' calls\"; \\\n" .
+        "\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
+        "\techo \"# used to compile the application for subsequent 'make' calls\"; \\\n" .
         "\techo \"# to detect future changes and force automatic recompilation...\"; \\\n" .
         "\t\$(store-settings)\n\n" .
 
@@ -3591,8 +3598,8 @@ sub create_feat2AppMakefile {
         "store-settings-objdir_lib: \$(OBJDIR_LIB) #| check-settings-objdir_lib\n" .
         "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
         "\t\@+additionalflags=\"\"; \\\n" .
-	"\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
-	"\techo \"# used to compile the libraries for subsequent 'make' calls\"; \\\n" .
+        "\techo \"# Storing current compiler and compiler command line settings\"; \\\n" .
+        "\techo \"# used to compile the libraries for subsequent 'make' calls\"; \\\n" .
         "\techo \"# to detect future changes and force automatic recompilation...\"; \\\n" .
 
         "\t\$(store-settings)\n" .
@@ -3761,7 +3768,7 @@ sub create_feat2AppMakefile {
         "\t echo '***        \$(FEAT2BASEDIR)/bin/guess_id reported a host of type \$(REALID_SHORT).'; \\\n" .
         "\t echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t echo;\n" .
-	"\t\@exit 1;\n" .
+        "\t\@exit 1;\n" .
         "endif\n" .
         "endif\n\n";
 
@@ -3805,13 +3812,13 @@ sub create_feat2AppMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
 # orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
-	"\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(REALID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(REALID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
+        "\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(REALID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(REALID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
-	"ifneq (\$(ID), \$(REALID))\n" .
+        "ifneq (\$(ID), \$(REALID))\n" .
         "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
-	"endif\n\n" .
+        "endif\n\n" .
 
 
     # print a list of all valid build IDs
@@ -3828,14 +3835,14 @@ sub create_feat2AppMakefile {
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
-	"ifneq (\$(ID), \$(REALID))\n" .
+        "ifneq (\$(ID), \$(REALID))\n" .
         "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
-	"endif\n\n" .
+        "endif\n\n" .
 
 
     # create tag file for emacs users
-	"# create tag file for emacs users\n" .
-	".PHONY: tags\n" .
+        "# create tag file for emacs users\n" .
+        ".PHONY: tags\n" .
         "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
         "\trm -f TAGS\n" .
         "\tctags -e --langmap=c++:+.cu --totals=yes \$(filter %.c %.cc %.cu %.f %.f90,\$^)\n\n" .
@@ -3886,28 +3893,28 @@ sub create_feat2AppMakefile {
         "\t\@echo \"                   no need to remember or know the name of that directory\"\n" .
         "\t\@echo \"\"\n" .
         "\t\@echo \"Makefile variables that you might consider overwriting on the command line include:\"\n" .
-	"\t\@echo \"  AGMG=<YES|NO>\"\n" .
+        "\t\@echo \"  AGMG=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to add AGMG support to the application\"\n" .
         "\t\@echo \"  APPNAME=<string>\"\n" .
         "\t\@echo \"                 application name\"\n" .
-	"\t\@echo \"  MODE=<PARALLEL|SERIAL> (deprecated, use MPI=<YES|NO>)\"\n" .
+        "\t\@echo \"  MODE=<PARALLEL|SERIAL> (deprecated, use MPI=<YES|NO>)\"\n" .
         "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
-	"\t\@echo \"  MONITOR_COMPILE_ENV=<NO|YES>\"\n" .
+        "\t\@echo \"  MONITOR_COMPILE_ENV=<NO|YES>\"\n" .
         "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
         "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
         "\t\@echo \"                   compilation attempts\"\n" .
-	"\t\@echo \"  MPI=<YES|NO>\"\n" .
+        "\t\@echo \"  MPI=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to build a MPI or serial version of the application\"\n" .
-	"\t\@echo \"  MPIWRAPPERS=<NO|YES>\"\n" .
+        "\t\@echo \"  MPIWRAPPERS=<NO|YES>\"\n" .
         "\t\@echo \"                 whether or not to use MPI wrapper commands for compilation\"\n" .
         "\t\@echo \"  OPENMP=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to add OpenMP support to the application\"\n" .
-	"\t\@echo \"  OPT=<NO|YES|EXPENSIVE|NATIVE|NATIVE-EXPENSIVE>\"\n" .
+        "\t\@echo \"  OPT=<NO|YES|EXPENSIVE|NATIVE|NATIVE-EXPENSIVE>\"\n" .
         "\t\@echo \"                 whether to compile application without, with normal optimisation\"\n" .
         "\t\@echo \"                   or expensive optimisation flags and optionally auto-tuned for the\"\n" .
         "\t\@echo \"                   architecture of the build host. 'make OPT=NO' is equivalent to\"\n" .
         "\t\@echo \"                   'make debug'\"\n" .
-	"\t\@echo \"  RELINK_ALWAYS=<NO|YES>\"\n" .
+        "\t\@echo \"  RELINK_ALWAYS=<NO|YES>\"\n" .
         "\t\@echo \"                 whether or not $make should relink an application every time it\"\n" .
         "\t\@echo \"                   is invoked regardless whether a source file has changed\"\n" .
         "\t\@echo \"\"\n" .
@@ -3950,35 +3957,35 @@ sub create_feat2BenchmarkMakefile {
     print MAKEFILE_HDL
         "#!/usr/bin/env make\n" .
         "\n" .
-	"########################################################################\n" .
-	"#                                                                      #\n" .
-	"#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
-	"#                                                                      #\n" .
-	"# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
-	"#                                                                      #\n" .
-	"#                                                                      #\n" .
-	"# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
-	"#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
-	"#          Germany                                                     #\n" .
-	"#                                                                      #\n" .
-	"# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
-	"#          mailto:featflow\@featflow.de                                 #\n" .
-	"#                                                                      #\n" .
-	"########################################################################\n" .
+        "########################################################################\n" .
+        "#                                                                      #\n" .
+        "#                   FINITE ELEMENT ANALYSIS TOOLS 2                    #\n" .
+        "#                                                                      #\n" .
+        "# Authors: M. Koester, M. Moeller, S. Turek, S. Buijssen               #\n" .
+        "#                                                                      #\n" .
+        "#                                                                      #\n" .
+        "# Contact: Applied Mathematics, TU Dortmund University                 #\n" .
+        "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
+        "#          Germany                                                     #\n" .
+        "#                                                                      #\n" .
+        "# Web:     http://www.featflow.de/en/software/featflow2.html           #\n" .
+        "#          mailto:featflow\@featflow.de                                 #\n" .
+        "#                                                                      #\n" .
+        "########################################################################\n" .
         "#                                                                      #\n" .
         "# Makefile for FEAT2 regression benchmark                              #\n" .
         "# (auto-created by ./configure                                         #\n" .
         "#                                                                      #\n" .
         "########################################################################\n" .
         "\n" .
-	"# Some variables\n\n";
+        "# Some variables\n\n";
 
     if (defined($cl{'ID'})) {
-	print MAKEFILE_HDL
-	    "# Fix a particular build ID, do not use the default one\n" .
-	    "# (There are Makefile rules that will verify that the given build ID\n" .
-	    "#  matches the architecture, cpu and operating system at make runtime.)\n" .
-	    "ID                 := $cl{'ID'}\n\n";
+        print MAKEFILE_HDL
+            "# Fix a particular build ID, do not use the default one\n" .
+            "# (There are Makefile rules that will verify that the given build ID\n" .
+            "#  matches the architecture, cpu and operating system at make runtime.)\n" .
+            "ID                 := $cl{'ID'}\n\n";
     }
 
     print MAKEFILE_HDL
@@ -4013,18 +4020,18 @@ sub create_feat2BenchmarkMakefile {
 
     $entry = (defined($cl{'EXECUTABLE'})) ? $cl{'EXECUTABLE'} : $defaults{'EXECUTABLE'};
     print MAKEFILE_HDL
-	"# Build executable?\n" .
-	"EXECUTABLE = $entry\n\n";
+        "# Build executable?\n" .
+        "EXECUTABLE = $entry\n\n";
 
     $entry = (defined($cl{'UNDERSCORE'})) ? $cl{'UNDERSCORE'} : $defaults{'UNDERSCORE'};
     print MAKEFILE_HDL
-	"# Add trailing underscore?\n" .
-	"UNDERSCORE = $entry\n\n";
-	
+        "# Add trailing underscore?\n" .
+        "UNDERSCORE = $entry\n\n";
+        
     $entry = (defined($cl{'SHARED'})) ? $cl{'SHARED'} : $defaults{'SHARED'};
     print MAKEFILE_HDL
-	"# Type of build process?\n" .
-	"SHARED = $entry\n\n";
+        "# Type of build process?\n" .
+        "SHARED = $entry\n\n";
 
     $entry = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
     print MAKEFILE_HDL
@@ -4032,12 +4039,12 @@ sub create_feat2BenchmarkMakefile {
         "INTSIZE = $entry\n\n";
 
     print MAKEFILE_HDL
-	"# Name of log base directory\n" .
-	"LOG_BASE_DIR = logs\n" .
-	"\n" .
+        "# Name of log base directory\n" .
+        "LOG_BASE_DIR = logs\n" .
+        "\n" .
         "# Location of Makefile.buildID.inc\n" .
         "MAKEFILE_BUILDID_INC  = \$(FEAT2BASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n" .
-	"\n" .
+        "\n" .
         "# Location of Makefile.cpu.inc\n" .
         "MAKEFILE_CPU_INC      = \$(FEAT2BASEDIR)/" . $MAKEFILE_CPU_INC . "\n" .
         "\n";
@@ -4114,10 +4121,10 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "libs:\tcompile-libs\n" .
         "compile-libs:\n" .
-	"ifeq (\$(SRCDIR),)\n" .
-	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
-	"\t\@exit 1\n" .
-	"endif\n" .
+        "ifeq (\$(SRCDIR),)\n" .
+        "\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+        "\t\@exit 1\n" .
+        "endif\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) libs\n" .
         "\n" .
         "# Generic rule to build a specific library only\n" .
@@ -4125,10 +4132,10 @@ sub create_feat2BenchmarkMakefile {
         "\tliblapack.a libsplib.a libumfpack.a splib umfpack\n" .
         "agmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "liblapack.a libsplib.a libumfpack.a splib umfpack:\n" .
-	"ifeq (\$(SRCDIR),)\n" .
-	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
-	"\t\@exit 1\n" .
-	"endif\n" .
+        "ifeq (\$(SRCDIR),)\n" .
+        "\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+        "\t\@exit 1\n" .
+        "endif\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "\n" .
         "compile-apps:\t\$(foreach APP, \$(APPS), \$(APP) )\n" .
@@ -4148,10 +4155,10 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "# Compile a FEAT2 benchmark application\n" .
         "compile-META:\n" .
-	"ifeq (\$(SRCDIR),)\n" .
-	"\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
-	"\t\@exit 1\n" .
-	"endif\n" .
+        "ifeq (\$(SRCDIR),)\n" .
+        "\t\@echo \"ERROR: It seems no files named <\$(MAKEFILE_NAME)> have been created in subdirectories.\" 1>&2\n" .
+        "\t\@exit 1\n" .
+        "endif\n" .
         "\t\@echo \"# Compiling FEAT2 benchmark application \$(APP)...\"\n" .
         "\t\@( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) APPNAME=../\$(APPNAME) )\n" .
         "\t\@echo \"# FEAT2 benchmark application \$(APPNAME) successfully compiled.\"\n" .
@@ -4193,20 +4200,20 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
 
         "# Dynamic targets: all test IDs\n" .
-	"TEMPORARY_RUN_SCRIPT=_tmp_.fbconf\n" .
-	".PHONY: clear-temporary-run-script\n" .
-	"clear-temporary-run-script:\n" .
-	"\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n\n" .
+        "TEMPORARY_RUN_SCRIPT=_tmp_.fbconf\n" .
+        ".PHONY: clear-temporary-run-script\n" .
+        "clear-temporary-run-script:\n" .
+        "\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n\n" .
 
-	".PHONY: \$(TESTIDS)\n" .
-	"\$(TESTIDS): | clear-temporary-run-script\n" .
+        ".PHONY: \$(TESTIDS)\n" .
+        "\$(TESTIDS): | clear-temporary-run-script\n" .
         "\$(TESTIDS):\n" .
-	"        # By means of the dependency-only target clear-temporary-run-script and\n" .
-	"        # the append operator '>>' it becomes feasible to specify multiple test\n" .
-	"        # IDs subsequently on the command line - just as is the case with the\n" .
-	"        # schedule scripts for queueing systems bin/lido_schedule_tests and\n" .
-	"        # bin/nec_schedule_tests. Example:\n" .
-	"        #  make AUTOPART0020 AUTOPART0021 BC0001 BC0003 NAVSTO-SOL11-0002 run\n" .
+        "        # By means of the dependency-only target clear-temporary-run-script and\n" .
+        "        # the append operator '>>' it becomes feasible to specify multiple test\n" .
+        "        # IDs subsequently on the command line - just as is the case with the\n" .
+        "        # schedule scripts for queueing systems bin/lido_schedule_tests and\n" .
+        "        # bin/nec_schedule_tests. Example:\n" .
+        "        #  make AUTOPART0020 AUTOPART0021 BC0001 BC0003 NAVSTO-SOL11-0002 run\n" .
         "\t\@echo \$\@ >> \$(TEMPORARY_RUN_SCRIPT)\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) TESTCASES=\$(TEMPORARY_RUN_SCRIPT) create-script\n\n" .
 
@@ -4219,55 +4226,55 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         "# Create a sh script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in tests/\$(TESTCASES).\n" .
-	".PHONY: create-script\n" .
-	"create-script:\n" .
+        ".PHONY: create-script\n" .
+        "create-script:\n" .
         "\t\@echo \"# Creating script to perform test whose IDs are coded in <\$(TESTCASES)>\"\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) create-script-header\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) create-script-body\n" .
-	"\n" .
-	".PHONY: create-script-header\n" .
-	"create-script-header:  COMPILERVERSION=\n" .
-	"create-script-header:  DEBUGGER=0\n" .
-	"create-script-header:  KEEPGOING=0\n" .
-	"create-script-header:  MPIENV=\n" .
-	"create-script-header:  OVERWRITE_LOG_DIRECTORY=\n" .
-	"create-script-header:  SUPPRESSOUTPUT=1\n" .
-	"create-script-header:	include/runtests.template\n" .
-	"        # Include script template, applying defaults settings or overriding\n" .
-	"        # them with command line given settings:\n" .
-	"        # If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
-	"        # otherwise SUPPRESSOUTPUT keeps default value defined in this Makefile\n" .
-	"        # target's variable definition section.\n" .
-	"        # The same mechanism applies to DEBUGGER and MPIENV.\n" .
-	"\t\@cat include/runtests.template | \\\n" .
+        "\n" .
+        ".PHONY: create-script-header\n" .
+        "create-script-header:  COMPILERVERSION=\n" .
+        "create-script-header:  DEBUGGER=0\n" .
+        "create-script-header:  KEEPGOING=0\n" .
+        "create-script-header:  MPIENV=\n" .
+        "create-script-header:  OVERWRITE_LOG_DIRECTORY=\n" .
+        "create-script-header:  SUPPRESSOUTPUT=1\n" .
+        "create-script-header:  include/runtests.template\n" .
+        "        # Include script template, applying defaults settings or overriding\n" .
+        "        # them with command line given settings:\n" .
+        "        # If SUPPRESSOUTPUT is specified on command line, its value is used,\n" .
+        "        # otherwise SUPPRESSOUTPUT keeps default value defined in this Makefile\n" .
+        "        # target's variable definition section.\n" .
+        "        # The same mechanism applies to DEBUGGER and MPIENV.\n" .
+        "\t\@cat include/runtests.template | \\\n" .
         "\t\tsed -e \"s/^COMPILERVERSION=<SET_VIA_MAKEFILE>/COMPILERVERSION=\$(COMPILERVERSION)/; \\\n" .
         "\t\t\ts/^DEBUGGER=<SET_VIA_MAKEFILE>/DEBUGGER=\$(DEBUGGER)/; \\\n" .
         "\t\t\ts/^KEEPGOING=<SET_VIA_MAKEFILE>/KEEPGOING=\$(KEEPGOING)/; \\\n" .
         "\t\t\ts/^MPIENV=<SET_VIA_MAKEFILE>/MPIENV=\$(MPIENV)/; \\\n" .
         "\t\t\ts/^SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>/SUPPRESSOUTPUT=\$(SUPPRESSOUTPUT)/;\" > \$(SCRIPT)\n".
-	"\n" .
-	"        # Determine build ID\n" .
+        "\n" .
+        "        # Determine build ID\n" .
         "\t\@echo \"BUILDID=\$(LIBID)\" >> \$(SCRIPT);\n" .
         "\t\@echo >> \$(SCRIPT);\n" .
-	"\n" .
-	"        # Applications are named according the scheme:\n" .
-	"        #   <APPL_BASENAME>-<application>\n" .
+        "\n" .
+        "        # Applications are named according the scheme:\n" .
+        "        #   <APPL_BASENAME>-<application>\n" .
         "        # where <application> is both found \n" .
         "        # * in {kernel,apps,area51}_<application> and \n" .
         "        # * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.\n" .
-	"        #\n" .
-	"        # Define <APPL_BASENAME>\n" .
+        "        #\n" .
+        "        # Define <APPL_BASENAME>\n" .
         "\t\@(echo \"APPL_BASENAME=\"\$(APPBASE); echo) >> \$(SCRIPT)\n" .
-	"\n" .
-	".PHONY: create-script-body\n" .
-	"create-script-body:\n" .
-	"        # Create detailed instructions for each test in \$(TESTCASES)\n" .
+        "\n" .
+        ".PHONY: create-script-body\n" .
+        "create-script-body:\n" .
+        "        # Create detailed instructions for each test in \$(TESTCASES)\n" .
         "\t\@ID=\$(LIBID) LOG_BASE_DIRECTORY=\$(LOG_BASE_DIR) MPI=\$(MPI) OVERWRITE_LOG_DIRECTORY=\$(OVERWRITE_LOG_DIRECTORY) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
-	"\n" .
-	"        # Call footer function\n" .
+        "\n" .
+        "        # Call footer function\n" .
         "\t\@( echo; echo fb_footer; echo; ) >> \$(SCRIPT)\n" .
-	"\n" .
-	"        # Give script executable permissions\n" .
+        "\n" .
+        "        # Give script executable permissions\n" .
         "\t\@chmod a+x \$(SCRIPT)\n" .
         "\t\@echo \"# Script named <\$(SCRIPT)> has been created.\"\n" .
         "\n" .
@@ -4277,7 +4284,7 @@ sub create_feat2BenchmarkMakefile {
         "\n" .
         ".PHONY:\trun\n" .
         "run:\n" .
-	"\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n" .
+        "\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n" .
         "\t\@./\$(SCRIPT)\n" .
         "\n" .
         "\n" .
@@ -4309,7 +4316,7 @@ sub create_feat2BenchmarkMakefile {
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
-	"\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -f \$(MAKEFILE_NAME) -C\$(dir) clean-app ); )\n" .
         "endif\n" .
         "endif\n\n" .
@@ -4330,7 +4337,7 @@ sub create_feat2BenchmarkMakefile {
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
         "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
-	"\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
+        "\t\@\$(MAKE) -f \$(MAKEFILE_NAME) -C\$(SRCDIR) clean-libs\n" .
         "endif\n" .
         "endif\n\n" .
         "# Clean up FEAT2 output and auxiliary files for the FEAT2 benchmark,\n" .
@@ -4421,13 +4428,13 @@ sub create_feat2BenchmarkMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
 # orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
-	"\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
+        "\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
-	"ifneq (\$(ID), \$(REALID))\n" .
+        "ifneq (\$(ID), \$(REALID))\n" .
         "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
-	"endif\n\n" .
+        "endif\n\n" .
 
 
     # print a list of all valid build IDs
@@ -4444,9 +4451,9 @@ sub create_feat2BenchmarkMakefile {
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
-	"ifneq (\$(ID), \$(REALID))\n" .
+        "ifneq (\$(ID), \$(REALID))\n" .
         "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
-	"endif\n\n" .
+        "endif\n\n" .
 
 
     # Support a query for the log directory setting to have exactly one
@@ -4541,49 +4548,49 @@ sub debug_command_line_options {
 
     my $colwidth = 0;
     foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
-		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
-		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
-		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
+        	       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
+        	       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
+        	       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
-	$colwidth = &max(length($entry), $colwidth);
+        	       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
+        $colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
 
     foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
-		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
-		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
-		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
+        	       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
+        	       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'EXECUTABLE', 'F77', 'F90', 'FORCE_ID',
+        	       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SHARED', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
-	# Determine type of variable: scalar or array
-	if (ref($cl{$entry}) eq "") {
-	    # current token is a scalar value, print if not empty
-	    next unless (defined($cl{$entry}));
+        	       'SRCLIST_APP', 'UNDERSCORE', 'WARN') {
+        # Determine type of variable: scalar or array
+        if (ref($cl{$entry}) eq "") {
+            # current token is a scalar value, print if not empty
+            next unless (defined($cl{$entry}));
 
-	    $string .= $entry . " "x($colwidth-length($entry)) . "= " . $cl{$entry} . "\n";
-	} elsif (ref($cl{$entry}) eq "ARRAY") {
-	    # current token is an array, print if at least one entry
+            $string .= $entry . " "x($colwidth-length($entry)) . "= " . $cl{$entry} . "\n";
+        } elsif (ref($cl{$entry}) eq "ARRAY") {
+            # current token is an array, print if at least one entry
 
-	    # $cl{'...'} has been passed as an array to GetOptions()
-	    # and as such is always defined. But is does not necessarily have
-	    # entries: unset => #entries=-1; set, but empty => #entries=0
-	    # So, don't test with perl function defined(). Test whether set.
-	    next unless ($#{ $cl{$entry} } > -1);
+            # $cl{'...'} has been passed as an array to GetOptions()
+            # and as such is always defined. But is does not necessarily have
+            # entries: unset => #entries=-1; set, but empty => #entries=0
+            # So, don't test with perl function defined(). Test whether set.
+            next unless ($#{ $cl{$entry} } > -1);
 
-	    $string .= $entry . " "x($colwidth-length($entry)) . "= " . join(' ', @{ $cl{$entry} }) . "\n";
-	}
+            $string .= $entry . " "x($colwidth-length($entry)) . "= " . join(' ', @{ $cl{$entry} }) . "\n";
+        }
     }
 
     if ($string ne "") {
-	print "These Makefile variables have been explicitly overridden by command line\n" .
-	      "options. Their values will take precedence over the default settings made\n" .
-	      "in kernel/arch/Makefile.inc and the template files kernel/arch/templates/*.mk:\n" .
-	      $string . "\n";
+        print "These Makefile variables have been explicitly overridden by command line\n" .
+              "options. Their values will take precedence over the default settings made\n" .
+              "in kernel/arch/Makefile.inc and the template files kernel/arch/templates/*.mk:\n" .
+              $string . "\n";
     }
 
     return;
@@ -4651,25 +4658,25 @@ sub get_buildID {
         $buildID = $cachedtests{'build-id'};
 
     } else {
-	# Otherwise take default build id from MAKEFILE_INC for guessed platform
-	print "retrieving default build ID... ";
+        # Otherwise take default build id from MAKEFILE_INC for guessed platform
+        print "retrieving default build ID... ";
 
-	# Pass along the desired execution mode of the application.
-	# If set to parallel mode, the build ID contains an additional 6th token
-	# naming the MPI library.
-	my $mpi = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
+        # Pass along the desired execution mode of the application.
+        # If set to parallel mode, the build ID contains an additional 6th token
+        # naming the MPI library.
+        my $mpi = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
 
-	# Use '--no-print-directory' to ensure that when this configure script
-	# is run from a Makefile, make will not print lines like
-	# make[?]: Entering directory `<some dirs>/Featflow2/<some other dirs>'
-	# See section 5.6.4 of GNU Make Manual,
-	# http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
-	my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_BUILDID_INC)) .
+        # Use '--no-print-directory' to ensure that when this configure script
+        # is run from a Makefile, make will not print lines like
+        # make[?]: Entering directory `<some dirs>/Featflow2/<some other dirs>'
+        # See section 5.6.4 of GNU Make Manual,
+        # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
+        my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_BUILDID_INC)) .
                       "\" && $make --no-print-directory -f " . &basename($MAKEFILE_BUILDID_INC) .
                       " MPI=$mpi FEAT2BASEDIR=. .idonly";
-	$buildID = `$command`;
-	chomp($buildID);
-	$defaultBuildID = $buildID;
+        $buildID = `$command`;
+        chomp($buildID);
+        $defaultBuildID = $buildID;
 
         # Use build id string from command line if specified or environment
         if (defined($cl{'ID'}) && $cl{'ID'} !~ m/^\s*$/) {
@@ -4709,8 +4716,8 @@ sub get_dependency {
 
 #    open (INFILE, "<:utf8", $file) or die "$progname: Cannot open file <$file> for reading: $!\n";
     open (INFILE, "<", $file) or
-	die "\n$progname: ERROR:\n".
-	    "Cannot open file <$file> for reading: $!\n";
+        die "\n$progname: ERROR:\n".
+            "Cannot open file <$file> for reading: $!\n";
 
     # Loop through file line by line
     LINE: while (defined($line = <INFILE>)) {
@@ -4789,63 +4796,63 @@ sub get_filename {
 # Function: Finds file containing the Fortran 90 PROGRAM keyword among source files.
 sub get_programsourcefile {
     if (defined($cl{'PROGRAMFILE'})) {
-	return $cl{'PROGRAMFILE'};
+        return $cl{'PROGRAMFILE'};
     } else {
-	# If no program source file is given on the command line, try to dynamically
-	# determine it: Parse all application-specific source files.
-	if ($defaults{'PROGRAMFILE'} ne "DETERMINED_ON_DEMAND_IF_UNSET") {
-	    # Either the default value is set to some proper value
-	    # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
-	    # just return that or we did already run this function earlier and determined
-	    # the program source file in which case we can simply return the previous result.
-	    return $defaults{'PROGRAMFILE'};
-	} else {
-	    print "WARNING: program source file not given on command line.\n" .
-		  "         Trying to compensate, check result in configuration summary below.\n";
-	    print "determining presumed (!) program source file... ";
-	    my $line = "";
-	    my @programfiles = ();
-	    # Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
-	    undef $defaults{'PROGRAMFILE'};
-	    foreach my $file ( &get_sourcefilelist() ) {
-		open (INFILE, "<", $file) or
-		    die "\n$progname: ERROR:\n".
-		        "Cannot open file <$file> for reading: $!\n";
+        # If no program source file is given on the command line, try to dynamically
+        # determine it: Parse all application-specific source files.
+        if ($defaults{'PROGRAMFILE'} ne "DETERMINED_ON_DEMAND_IF_UNSET") {
+            # Either the default value is set to some proper value
+            # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
+            # just return that or we did already run this function earlier and determined
+            # the program source file in which case we can simply return the previous result.
+            return $defaults{'PROGRAMFILE'};
+        } else {
+            print "WARNING: program source file not given on command line.\n" .
+        	  "         Trying to compensate, check result in configuration summary below.\n";
+            print "determining presumed (!) program source file... ";
+            my $line = "";
+            my @programfiles = ();
+            # Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
+            undef $defaults{'PROGRAMFILE'};
+            foreach my $file ( &get_sourcefilelist() ) {
+        	open (INFILE, "<", $file) or
+        	    die "\n$progname: ERROR:\n".
+        	        "Cannot open file <$file> for reading: $!\n";
 
-		# Loop through file line by line
-	        LINE: while (defined($line = <INFILE>)) {
-		  # Remove comments
-		  $line =~ s/\!.*$//;
-		  $line =~ s/^[Cc].*$//;
+        	# Loop through file line by line
+                LINE: while (defined($line = <INFILE>)) {
+        	  # Remove comments
+        	  $line =~ s/\!.*$//;
+        	  $line =~ s/^[Cc].*$//;
 
-		  # Parse for "program foobar" statements
-		  # and add the module to the list
-		  if ($line =~ m/^\s*program\s+\w+/i) {
-		      push @programfiles, $file;
-		  }
-		}
-		close (INFILE);
+        	  # Parse for "program foobar" statements
+        	  # and add the module to the list
+        	  if ($line =~ m/^\s*program\s+\w+/i) {
+        	      push @programfiles, $file;
+        	  }
+        	}
+        	close (INFILE);
 
-		# Ensure there is only *one* program source file
-		if ($#programfiles > 0) {
-		    die "\n\n$progname: ERROR:\n".
-			"You did not specify the program source file with the\n" .
-			"--programfile command line option. Additionally, while trying\n" .
-			"to dynamically determine the program source file from the list\n" .
-			"of application-specific source files, multiple files matched:\n" .
-			&format_list("  ", 2, 75,
-				     "<" . join("> <", @programfiles), "", "") . ">\n" .
-			"There can be only one source file with the PROGRAM keyword!\n" .
-			"I refuse to create <" . $MAKEFILE . ">.\n\n" .
-			"Please specify the appropriate one explicitly with the\n" .
-			"--programfile command line option.\n";
-		} else {
-		    $defaults{'PROGRAMFILE'} = $programfiles[0];
-		}
-	    }
-	    print "done\n";
-	    return $defaults{'PROGRAMFILE'};
-	}
+        	# Ensure there is only *one* program source file
+        	if ($#programfiles > 0) {
+        	    die "\n\n$progname: ERROR:\n".
+        		"You did not specify the program source file with the\n" .
+        		"--programfile command line option. Additionally, while trying\n" .
+        		"to dynamically determine the program source file from the list\n" .
+        		"of application-specific source files, multiple files matched:\n" .
+        		&format_list("  ", 2, 75,
+        			     "<" . join("> <", @programfiles), "", "") . ">\n" .
+        		"There can be only one source file with the PROGRAM keyword!\n" .
+        		"I refuse to create <" . $MAKEFILE . ">.\n\n" .
+        		"Please specify the appropriate one explicitly with the\n" .
+        		"--programfile command line option.\n";
+        	} else {
+        	    $defaults{'PROGRAMFILE'} = $programfiles[0];
+        	}
+            }
+            print "done\n";
+            return $defaults{'PROGRAMFILE'};
+        }
     }
     # Return an empty string, just to meet the interface. Code should never come here, though.
     return "";
@@ -4876,54 +4883,54 @@ sub get_sourcefilelist {
                 }
             }
         }
-	return @tmplist;
+        return @tmplist;
     } else {
-	# If no app source list given on the command line, try to dynamically
-	# determine a list: Use all source files in a generic src subdirectory
-	# for a FEAT2 application.
-	if (${ $defaults{'SRCLIST_APP'} }[0] ne "DETERMINED_ON_DEMAND_IF_UNSET") {
-	    # Either the default value is set to some proper value
-	    # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
-	    # just return that or we did already run this function earlier and determined
-	    # the list in which case we can simply return the previous result.
-	    return @{ $defaults{'SRCLIST_APP'} };
-	} else {
-	    print "WARNING: application-specific source files not given on command line.\n" .
-		  "         Trying to compensate, check result in configuration summary below.\n";
-	    print "creating a list of presumed (!) application source files... ";
-	    if (opendir SRCDIR, SRCDIR_APP) {
-		my $files = 0;
-		# Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
-		undef $defaults{'SRCLIST_APP'};
-		map { $files++; push @{ $defaults{'SRCLIST_APP'} }, SRCDIR_APP . "/$_" }
-			sort grep { /.+\.f90$/ && ! /^\./ } readdir SRCDIR;
-		closedir SRCDIR;
-		# SRCLIST_APP still empty?
-		if ($files == 0) {
-		    die "\n\n$progname: ERROR:\n".
-			"You did not specify a list of application-specific source file\n" .
-			"with the --srclist_app command line option. Additionally, the\n" .
-			"subdirectory <" . SRCDIR_APP . ">, searched by default for " .
-			"application-specific\n" .
-			"source files in such a case, does not contain any *.f90 file.\n" .
-			"I refuse to create <" . $MAKEFILE . ">.\n\n" .
-			"Please specify the list of application-specific source files with\n" .
-			"the --srclist_app command line option.\n";
-		}
-		print "done\n";
-		return @{ $defaults{'SRCLIST_APP'} };
-	    } else {
-		die "\n\n$progname: ERROR:\n".
-		    "You did not specify a list of application-specific source files\n" .
-		    "with the --srclist_app command line option. Additionally, the\n" .
-		    "subdirectory <" . SRCDIR_APP . ">, searched by default for " .
-		    "application-specific\n" .
-		    "source files in such a case, does not exist.\n" .
-		    "I refuse to create <" . $MAKEFILE . ">.\n\n" .
-		    "Please specify the list of application-specific source files with\n" .
-		    "the --srclist_app command line option.\n";
-	    }
-	}
+        # If no app source list given on the command line, try to dynamically
+        # determine a list: Use all source files in a generic src subdirectory
+        # for a FEAT2 application.
+        if (${ $defaults{'SRCLIST_APP'} }[0] ne "DETERMINED_ON_DEMAND_IF_UNSET") {
+            # Either the default value is set to some proper value
+            # (in particular not equal to DETERMINED_ON_DEMAND_IF_UNSET !) and we can
+            # just return that or we did already run this function earlier and determined
+            # the list in which case we can simply return the previous result.
+            return @{ $defaults{'SRCLIST_APP'} };
+        } else {
+            print "WARNING: application-specific source files not given on command line.\n" .
+        	  "         Trying to compensate, check result in configuration summary below.\n";
+            print "creating a list of presumed (!) application source files... ";
+            if (opendir SRCDIR, SRCDIR_APP) {
+        	my $files = 0;
+        	# Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
+        	undef $defaults{'SRCLIST_APP'};
+        	map { $files++; push @{ $defaults{'SRCLIST_APP'} }, SRCDIR_APP . "/$_" }
+        		sort grep { /.+\.f90$/ && ! /^\./ } readdir SRCDIR;
+        	closedir SRCDIR;
+        	# SRCLIST_APP still empty?
+        	if ($files == 0) {
+        	    die "\n\n$progname: ERROR:\n".
+        		"You did not specify a list of application-specific source file\n" .
+        		"with the --srclist_app command line option. Additionally, the\n" .
+        		"subdirectory <" . SRCDIR_APP . ">, searched by default for " .
+        		"application-specific\n" .
+        		"source files in such a case, does not contain any *.f90 file.\n" .
+        		"I refuse to create <" . $MAKEFILE . ">.\n\n" .
+        		"Please specify the list of application-specific source files with\n" .
+        		"the --srclist_app command line option.\n";
+        	}
+        	print "done\n";
+        	return @{ $defaults{'SRCLIST_APP'} };
+            } else {
+        	die "\n\n$progname: ERROR:\n".
+        	    "You did not specify a list of application-specific source files\n" .
+        	    "with the --srclist_app command line option. Additionally, the\n" .
+        	    "subdirectory <" . SRCDIR_APP . ">, searched by default for " .
+        	    "application-specific\n" .
+        	    "source files in such a case, does not exist.\n" .
+        	    "I refuse to create <" . $MAKEFILE . ">.\n\n" .
+        	    "Please specify the list of application-specific source files with\n" .
+        	    "the --srclist_app command line option.\n";
+            }
+        }
     }
     # Return an empty array, just to meet the interface. Code should never come here, though.
     return @{[]};
@@ -4954,7 +4961,7 @@ sub get_extrasourcefilelist {
                 }
             }
         }
-	return @tmplist;
+        return @tmplist;
     }
     # Return an empty array
     return @{[]};
@@ -4967,7 +4974,7 @@ sub get_validIDs {
     my $filename = &concat_filename($FEAT2BASEDIR, $MAKEFILE_CPU_INC);
 
     open(FILE, "<" , $filename) or
-	die "\n$progname: ERROR:\n".
+        die "\n$progname: ERROR:\n".
             INITIAL_MESSAGE .
             "Cannot open file <$filename> for reading: $!\n\n" .
             "Make sure the path to Makefile.inc is set correctly in\n" .
@@ -5020,7 +5027,7 @@ sub id_is_valid {
 
     my ($id) = (@_);
     foreach my $entry (@valid_id) {
-	return 1 if ($id =~ m/$entry/);
+        return 1 if ($id =~ m/$entry/);
     }
     return 0;
 }
@@ -5042,17 +5049,17 @@ sub list_all_ids {
         }
     }
     if (-1 == $#valid_id) {
-	print "     (none)\n\n" .
-	      "This is not supposed to happen. There has probably been some syntax change\n" .
-	      "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
-	      "Please adapt function list_all_ids() and/or get_validIDs() in $0 to it.\n";
+        print "     (none)\n\n" .
+              "This is not supposed to happen. There has probably been some syntax change\n" .
+              "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
+              "Please adapt function list_all_ids() and/or get_validIDs() in $0 to it.\n";
     } else {
-	print "\n" .
+        print "\n" .
               "Use any of these build IDs as argument for the --id option.\n" .
               "The current build ID for " . &hostname() . " is:\n" .
               " " x ((66 - length($buildID))/2) . $buildID;
-	print " (enforced)" if ($buildID ne $defaultBuildID);
-	print "\n\n";
+        print " (enforced)" if ($buildID ne $defaultBuildID);
+        print "\n\n";
     }
     exit 0;
 }
@@ -5086,40 +5093,40 @@ sub list_ids {
           "Valid build IDs (for $id_1st3tokens hosts) match\n" .
           "against the following regular expressions:\n";
     foreach my $complete_matching_rule (sort @valid_id) {
-	# $entry is a matching rule for a build ID. Even in the first three tokens
-	# of $entry wildcards may have been used. In order to have an arbitrarily
-	# given or set build ID with prefix "pc-coreduo-cygwin_nt5.1" result in
-	# the following matches
-	#     pc-coreduo-cygwin_nt.*-.*-blas.*
-	#     pc-coreduo-cygwin_nt.*-g95-.*
-	# (note the "nt5.1" in the prefix and the "nt.*" in the matches which is
-	#  exactly the opposite of what we would like to have)
-	# extract the first three tokens of $entry and try to match the first tokens
-	# of the current build ID against them. In case of matches, print the complete
-	# matching rule, i.e. the complete $entry.
-	my $match_1st3tokens = $complete_matching_rule;
-	$match_1st3tokens =~ s/([^-]+-[^-]+-[^-]+)(-.*)$/$1/;
+        # $entry is a matching rule for a build ID. Even in the first three tokens
+        # of $entry wildcards may have been used. In order to have an arbitrarily
+        # given or set build ID with prefix "pc-coreduo-cygwin_nt5.1" result in
+        # the following matches
+        #     pc-coreduo-cygwin_nt.*-.*-blas.*
+        #     pc-coreduo-cygwin_nt.*-g95-.*
+        # (note the "nt5.1" in the prefix and the "nt.*" in the matches which is
+        #  exactly the opposite of what we would like to have)
+        # extract the first three tokens of $entry and try to match the first tokens
+        # of the current build ID against them. In case of matches, print the complete
+        # matching rule, i.e. the complete $entry.
+        my $match_1st3tokens = $complete_matching_rule;
+        $match_1st3tokens =~ s/([^-]+-[^-]+-[^-]+)(-.*)$/$1/;
 
-	if ($id_1st3tokens =~ m/$match_1st3tokens/) {
+        if ($id_1st3tokens =~ m/$match_1st3tokens/) {
             if ($complete_matching_rule eq $buildID) {
                 print "* $complete_matching_rule (default)\n";
             } else {
                 print "* $complete_matching_rule\n";
             }
-	}
+        }
     }
     if (-1 == $#valid_id) {
-	print "     (none)\n\n" .
-	      "This is not supposed to happen. There has probably been some syntax change\n" .
-	      "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
-	      "Please adapt function list_ids() and/or get_validIDs() in $0 to it.\n";
+        print "     (none)\n\n" .
+              "This is not supposed to happen. There has probably been some syntax change\n" .
+              "in the file <" . $MAKEFILE_CPU_INC . ">.\n" .
+              "Please adapt function list_ids() and/or get_validIDs() in $0 to it.\n";
     } else {
-	print "\n" .
-	      "Use any of these build IDs as argument for the --id option.\n" .
-	      "The current build ID for " . &hostname() . " is:\n" .
-	      " " x ((66 - length($buildID))/2) . $buildID;
-	print " (enforced)" if ($buildID ne $defaultBuildID);
-	print "\n\n";
+        print "\n" .
+              "Use any of these build IDs as argument for the --id option.\n" .
+              "The current build ID for " . &hostname() . " is:\n" .
+              " " x ((66 - length($buildID))/2) . $buildID;
+        print " (enforced)" if ($buildID ne $defaultBuildID);
+        print "\n\n";
     }
     exit 0;
 }
@@ -5150,7 +5157,7 @@ sub list_kernel_modules {
 # returns the dependency list for a Makefile statement.
 sub make_dep_list {
     my ($dependencyListsHashRef,                        # is output variable
-	$fileToParse, $parsedFile_PathInMakeSyntax,
+        $fileToParse, $parsedFile_PathInMakeSyntax,
         $parsedFile_changeExtensionForMakeTarget,       # boolean variable
         $parsedFile_ExtensionForMakeTarget,             # if previous variable is true, this holds the new extension
         $moduleFiles_extension,                         # file extension of Fortran~90 module object files, typically: "o"
@@ -5188,130 +5195,130 @@ sub make_dep_list {
     foreach $aux (@deps) {
         # Module?
         if ($aux =~ m/^module:(.+)$/) {
-	    $appstring = "$objectdir/$1.$moduleFiles_extension ";
-	    # Append only if not already in list
-	    if ($depstring !~ m/\Q$appstring\E/) {
-		$depstring .= $appstring;
-	    }
+            $appstring = "$objectdir/$1.$moduleFiles_extension ";
+            # Append only if not already in list
+            if ($depstring !~ m/\Q$appstring\E/) {
+        	$depstring .= $appstring;
+            }
         }
         # Include file
         elsif ($aux =~ m/^include:(.+)$/) {
-	    my $match = $1;
-	    $appstring = "$objectdir/" . &basename($match) . " ";
-	    # Append only if not already in list
-	    if ($depstring !~ m/\Q$appstring\E/) {
-		$depstring .= $appstring;
+            my $match = $1;
+            $appstring = "$objectdir/" . &basename($match) . " ";
+            # Append only if not already in list
+            if ($depstring !~ m/\Q$appstring\E/) {
+        	$depstring .= $appstring;
 
-		# Add included file (adding relevant path info) to global list
-		# of included files (in order to have them evaluated by cpp
-		# on make invocation and then stored into object directory).
-		# The approach differs depending on whether we have absolute
-		# or relative base paths.
-		# Absolute path case?
-		if ($FEAT2BASEDIR =~ m/^\//) {
-		    $aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
-		} else {
-		    $aux = &concat_filename(&dirname($fileToParse), $match);
-		    # Cut off leading './', if any
-		    $aux =~ s/^\.\///;
-		}
+        	# Add included file (adding relevant path info) to global list
+        	# of included files (in order to have them evaluated by cpp
+        	# on make invocation and then stored into object directory).
+        	# The approach differs depending on whether we have absolute
+        	# or relative base paths.
+        	# Absolute path case?
+        	if ($FEAT2BASEDIR =~ m/^\//) {
+        	    $aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
+        	} else {
+        	    $aux = &concat_filename(&dirname($fileToParse), $match);
+        	    # Cut off leading './', if any
+        	    $aux =~ s/^\.\///;
+        	}
 
-		# Add to the list if not already on the list or in 'forbidden' lists
-		my $auxBasename = &basename($aux);
-		unless ((DO_NOT_INCLUDE          =~ m/\Q$auxBasename\E/) or
-			($HEADER_FILES_TO_COPY   =~ m/\Q$auxBasename\E/) or
-			defined(${ $headerFilesToCopyHashRef }{$auxBasename})) {
-		    # Ensure first that the current file exists.
-		    if (! -e $aux) {
-			my $str =
-			    "<$match> which got automatically expanded to\n" .
-			    "<$aux>.\n";
-			if ($match eq $aux) {
-			    $str =
-				"<$match>.\n";
-			}
-			die "\n\n$progname: ERROR:\n".
-			    "File <$fileToParse> contains a reference to\n" .
-			    $str .
-			    "But no such file exists!\n\n" .
-			    "(Hint: Most likely, you forgot to add the (relative) path to the file in the\n" .
-			    "       Fortran 90 include statement.)\n";
-		    }
+        	# Add to the list if not already on the list or in 'forbidden' lists
+        	my $auxBasename = &basename($aux);
+        	unless ((DO_NOT_INCLUDE          =~ m/\Q$auxBasename\E/) or
+        		($HEADER_FILES_TO_COPY   =~ m/\Q$auxBasename\E/) or
+        		defined(${ $headerFilesToCopyHashRef }{$auxBasename})) {
+        	    # Ensure first that the current file exists.
+        	    if (! -e $aux) {
+        		my $str =
+        		    "<$match> which got automatically expanded to\n" .
+        		    "<$aux>.\n";
+        		if ($match eq $aux) {
+        		    $str =
+        			"<$match>.\n";
+        		}
+        		die "\n\n$progname: ERROR:\n".
+        		    "File <$fileToParse> contains a reference to\n" .
+        		    $str .
+        		    "But no such file exists!\n\n" .
+        		    "(Hint: Most likely, you forgot to add the (relative) path to the file in the\n" .
+        		    "       Fortran 90 include statement.)\n";
+        	    }
 
-		    # Strategy:
-		    # * No file with this name seen yet. Store URI, inode and md5 sum of
-		    #   file content
-		    # * File with same URI already present:
-		    #   skip file
-		    # * File with different URI already present: compare inode and - if
-		    #   inode is different - md5 sum of its content with stored
-		    #   values. If both differ throw an error. Because even header files
-		    #   are copied or preprocessed and stored into a single object
-		    #   directory. So, having different files with the same name is not
-		    #   feasible.
-		    if (defined($headerfiles{$auxBasename})) {
-			# Already seen a file with this name.
-			# Compare URI. If identical, no need to throw an error. Skip file.
-			if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
-			    # URIs differ. Possibly because of "../" in URI.
-			    # Compare inodes.
-			    my $auxInode = stat($aux)->ino;
-			    if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
-				# URIs and inodes differ. Possibly, the second file
-				# has identical content in which case it is still feasible
-				# to specify it. Maybet the second file is a symbolic link
-				# or lies on a different file system for strange reasons.
-				#
-				# Compute sum of current file content
-				open(HEADERFILE, "<", $aux) or
-				    die "\n$progname: ERROR:\n".
-				    "Cannot open header file <$aux> for reading: $!\n";
-				my $auxData = do { local $/; <HEADERFILE> };
-				close(HEADERFILE);
-				my $auxMD5 = md5($auxData);
-				if ($auxMD5 ne $headerfiles{$auxBasename}->{'md5'}) {
-				    die "\n\n$progname: ERROR:\n".
-					"File <$fileToParse> contains a reference to\n" .
-					"<$aux>, but source file\n" .
-					"<" . $headerfiles{$auxBasename}->{'referer'} . "> parsed earlier\n" .
-					"already contained a reference to a file with the same name,\n" .
-					"but a different URI: <" . $headerfiles{$auxBasename}->{'URI'} . ">.\n" .
-					"Additionally, the inode and md5sum of these files differ.\n" .
-					"Given that all header files are copied to the same object directory\n" .
-					"this file name collision is not feasible. Please rename either file.\n";
-				} # different md5sum
-			    } # different idnoe
-			} # different URI
-		    } else {
-			# Parse this file for dependencies
-			push @deps, &get_dependency($aux);
+        	    # Strategy:
+        	    # * No file with this name seen yet. Store URI, inode and md5 sum of
+        	    #   file content
+        	    # * File with same URI already present:
+        	    #   skip file
+        	    # * File with different URI already present: compare inode and - if
+        	    #   inode is different - md5 sum of its content with stored
+        	    #   values. If both differ throw an error. Because even header files
+        	    #   are copied or preprocessed and stored into a single object
+        	    #   directory. So, having different files with the same name is not
+        	    #   feasible.
+        	    if (defined($headerfiles{$auxBasename})) {
+        		# Already seen a file with this name.
+        		# Compare URI. If identical, no need to throw an error. Skip file.
+        		if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
+        		    # URIs differ. Possibly because of "../" in URI.
+        		    # Compare inodes.
+        		    my $auxInode = stat($aux)->ino;
+        		    if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
+        			# URIs and inodes differ. Possibly, the second file
+        			# has identical content in which case it is still feasible
+        			# to specify it. Maybet the second file is a symbolic link
+        			# or lies on a different file system for strange reasons.
+        			#
+        			# Compute sum of current file content
+        			open(HEADERFILE, "<", $aux) or
+        			    die "\n$progname: ERROR:\n".
+        			    "Cannot open header file <$aux> for reading: $!\n";
+        			my $auxData = do { local $/; <HEADERFILE> };
+        			close(HEADERFILE);
+        			my $auxMD5 = md5($auxData);
+        			if ($auxMD5 ne $headerfiles{$auxBasename}->{'md5'}) {
+        			    die "\n\n$progname: ERROR:\n".
+        				"File <$fileToParse> contains a reference to\n" .
+        				"<$aux>, but source file\n" .
+        				"<" . $headerfiles{$auxBasename}->{'referer'} . "> parsed earlier\n" .
+        				"already contained a reference to a file with the same name,\n" .
+        				"but a different URI: <" . $headerfiles{$auxBasename}->{'URI'} . ">.\n" .
+        				"Additionally, the inode and md5sum of these files differ.\n" .
+        				"Given that all header files are copied to the same object directory\n" .
+        				"this file name collision is not feasible. Please rename either file.\n";
+        			} # different md5sum
+        		    } # different idnoe
+        		} # different URI
+        	    } else {
+        		# Parse this file for dependencies
+        		push @deps, &get_dependency($aux);
 
-			# Store URI
-			$headerfiles{$auxBasename}->{'URI'}   = $aux;
-			# Store inode
-			$headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
-			# Compute and md5 sum of file content
-			open(HEADERFILE, "<", $aux) or
-			    die "\n$progname: ERROR:\n".
-			    "Cannot open header file <$aux> for reading: $!\n";
-			my $auxData = do { local $/; <HEADERFILE> };
-			close(HEADERFILE);
-			my $auxMD5 = md5($auxData);
-			$headerfiles{$auxBasename}->{'md5'} = $auxMD5;
-			# Store first file that references this header file
-			$headerfiles{$auxBasename}->{'referer'} = $fileToParse;
-		    } # file seen before
+        		# Store URI
+        		$headerfiles{$auxBasename}->{'URI'}   = $aux;
+        		# Store inode
+        		$headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
+        		# Compute and md5 sum of file content
+        		open(HEADERFILE, "<", $aux) or
+        		    die "\n$progname: ERROR:\n".
+        		    "Cannot open header file <$aux> for reading: $!\n";
+        		my $auxData = do { local $/; <HEADERFILE> };
+        		close(HEADERFILE);
+        		my $auxMD5 = md5($auxData);
+        		$headerfiles{$auxBasename}->{'md5'} = $auxMD5;
+        		# Store first file that references this header file
+        		$headerfiles{$auxBasename}->{'referer'} = $fileToParse;
+        	    } # file seen before
 #                push @headerfiles, $aux;
-		} # not on exclude nor copy list
-	    }
+        	} # not on exclude nor copy list
+            }
         }
         # Files that must be included
         elsif ($aux =~ m/^mustinclude:(.+)$/) {
-	    $appstring = "$1 ";
-	    # Append only if not already in list
-	    if ($depstring !~ m/\Q$appstring\E/) {
-		$depstring .= $appstring;
-	    }
+            $appstring = "$1 ";
+            # Append only if not already in list
+            if ($depstring !~ m/\Q$appstring\E/) {
+        	$depstring .= $appstring;
+            }
         }
     }
 
@@ -5337,21 +5344,21 @@ sub print_statistics_about_feat2AppMakefile {
     print "\n$MAKEFILE successfully generated by $progname !\n\n";
     print "Configuration:\n";
     print "  Application name                 : " .
-	( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
+        ( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
     print "  Application program file         : <" .
-	&get_programsourcefile() . ">\n";
+        &get_programsourcefile() . ">\n";
 
     print &format_list("  Application's source files       :", 37, 75,
-		       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
+        	       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
 
     if ($#{$cl{'SRCEXTRA_APP'}} >= 0) {
-	print &format_list("  Application's extra source files :", 37, 75,
-			   "<" . join("> <", @{$srcextra_app}), "", "") . ">\n";
+        print &format_list("  Application's extra source files :", 37, 75,
+        		   "<" . join("> <", @{$srcextra_app}), "", "") . ">\n";
     }
 
     $string = (defined($cl{'RELINK_ALWAYS'})) ? $cl{'RELINK_ALWAYS'} : $defaults{'RELINK_ALWAYS'};
     print "  Application binary               : will be " .
-	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
+        ( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
 
     $string = (defined($cl{'AGMG'})) ? $cl{'AGMG'} : $defaults{'AGMG'};
     print "  AGMG support                     : " .
@@ -5382,7 +5389,7 @@ sub print_statistics_about_feat2AppMakefile {
     $string =~ s/\$\(ID\)/$buildID/;
     # In case of a serial build, remove any given 6th token
     if (((defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'}) ne "YES") {
-	$string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
+        $string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
     }
     $string .= "-coproc" . ((defined($cl{'COPROCLIST'}) && ($#{$cl{'COPROCLIST'}})) ? "NO" : "YES");
     $string .= "-openmp" . ((defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'});
@@ -5418,7 +5425,7 @@ sub print_statistics_about_feat2AppMakefile {
 
     $string = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
     print "  Detect changes in compile env    : " .
-	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
+        ( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
 
     $string = (defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'};
     print "  OpenMP support                   : " .
@@ -5430,11 +5437,11 @@ sub print_statistics_about_feat2AppMakefile {
 
     $string = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
     print "  Use MPI wrapper commands         : " .
-	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
+        ( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
 
     if ($#{$cl{'COPROCLIST'}} >= 0) {
-	print &format_list("  Coprocessor(s)                   :", 37, 100,
-			   join(' ', @{$cl{'COPROCLIST'}}), "", "") . "\n";
+        print &format_list("  Coprocessor(s)                   :", 37, 100,
+        		   join(' ', @{$cl{'COPROCLIST'}}), "", "") . "\n";
     }
 
     $string = (defined($cl{'UNDERSCORE'})) ? $cl{'UNDERSCORE'} : $defaults{'UNDERSCORE'};
@@ -5456,7 +5463,7 @@ sub show_help {
         "Options specified here will override these settings.\n" .
         "Configuration:\n" .
         "--------------\n" .
-	"--[no-]agmg         Create Makefile for application with/without AGMG support\n" .
+        "--[no-]agmg         Create Makefile for application with/without AGMG support\n" .
         "                    (default: " . lc($defaults{'AGMG'}) . ").\n" .
         "--appname=<file>    Set application name to <file> (default: " . $defaults{'APPNAME'} . ")\n" .
         "--apponlyflags=<string>\n" .
@@ -5470,31 +5477,31 @@ sub show_help {
         "                    applications as they are compiled without flags in\n" .
         "                    <string>.\n" .
         "--ar=<file>         Path and options for creating archives\n" .
-	"--binary=<string>   Allows to set the default binary.\n" .
-	"                    <string> can be one of the following:\n" .
-	"                    --binary=32 : Generate code for 32-bit environment.\n" .
-	"                    --binary=64 : Generate code for 64-bit environment.\n" .
+        "--binary=<string>   Allows to set the default binary.\n" .
+        "                    <string> can be one of the following:\n" .
+        "                    --binary=32 : Generate code for 32-bit environment.\n" .
+        "                    --binary=64 : Generate code for 64-bit environment.\n" .
         "--buildlib=<string> Specify libraries to build\n" .
         "                    (like: agmg amd blas coproc lapack splib umfpack)\n" .
         "--cc=<file>         C compiler\n" .
         "--cflagsc=<string>  Set C compiler flags to <string>\n" .
         "--cflagscoproc=<string>\n" .
-	"                    Set C compiler flags for coproc library to <string>,\n" .
-	"                    requires --coproclist=<target>\n" .
+        "                    Set C compiler flags for coproc library to <string>,\n" .
+        "                    requires --coproclist=<target>\n" .
         "--cflagscuda=<string>\n" .
-	"                    Set CUDA compiler flags to <string>\n" .
+        "                    Set CUDA compiler flags to <string>\n" .
         "--cflagscxx=<string>\n" .
-	"                    Set C++ compiler flags to <string>\n" .
+        "                    Set C++ compiler flags to <string>\n" .
         "--cflagsf77=<string>\n" .
-	"                    Set Fortran 77 compiler flags to <string>\n" .
+        "                    Set Fortran 77 compiler flags to <string>\n" .
         "--cflagsf90=<string>\n" .
-	"                    Set Fortran 90 compiler flags to <string>\n" .
-	"--coproclist=<string>\n" .
-	"                    Identifier for coprocessor support.\n" .
-	"                    Valid IDs are: cpu, cuda10, cuda11, cuda12, cuda13,\n" .
-	"                    cuda20, cuda21, cuda30, cuda35, cuda37, cuda50, cuda52.\n" .
+        "                    Set Fortran 90 compiler flags to <string>\n" .
+        "--coproclist=<string>\n" .
+        "                    Identifier for coprocessor support.\n" .
+        "                    Valid IDs are: cpu, cuda10, cuda11, cuda12, cuda13,\n" .
+        "                    cuda20, cuda21, cuda30, cuda35, cuda37, cuda50, cuda52.\n" .
     "                    Note that the identifier must always be set if coprocessor\n" .
-	"                    support is requested.\n" .
+        "                    support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
         "--cuda=<file>       CUDA compiler\n" .
         "--cxx=<file>        C++ compiler\n" .
@@ -5503,10 +5510,10 @@ sub show_help {
         "                    This flag is *not* an alias for --no-opt nor does\n" .
         "                    it result in a Makefile that creates code with\n" .
         "                    debugging symbols!\n\n" .
-	"--disable-shared    Compile statically linked binary.\n" .
-	"                    This flag is an alias for --shared=yes.\n\n" .
-	"--enable-shared     Compile dynamically linked binray.\n" .
-	"                    This flag is an alias for --shared=no.\n\n" .
+        "--disable-shared    Compile statically linked binary.\n" .
+        "                    This flag is an alias for --shared=yes.\n\n" .
+        "--enable-shared     Compile dynamically linked binray.\n" .
+        "                    This flag is an alias for --shared=no.\n\n" .
         "--f77=<file>        Fortran 77 compiler\n" .
         "--f90=<file>        Fortran 90 compiler\n" .
         "--force-id          A build ID is accepted even if the system verify fails\n" .
@@ -5545,7 +5552,7 @@ sub show_help {
         "                    compile settings for changes in subsequent\n" .
         "                    compilations. In case of discrepancies, recompile\n" .
         "                    application (default: " .
-	lc($defaults{'MONITOR_COMPILE_ENV'}) . ").\n" .
+        lc($defaults{'MONITOR_COMPILE_ENV'}) . ").\n" .
         "--movemod=<string>  If the Fortran 90 compiler fails to store module\n" .
         "                    information files in \$(OBJDIR) and fills up the\n" .
         "                    working directory instead, use --movemod=YES to\n" .
@@ -5554,23 +5561,23 @@ sub show_help {
         "                    (default: " . lc($defaults{'MPI'}) . ").\n" .
         "--mpiinc=<string>   Include directive for MPI header files\n" .
         "--mpilibdir=<string>\n" .
-	"                    Extension for the linker search path to find MPI\n" .
-	"                    libraries\n" .
+        "                    Extension for the linker search path to find MPI\n" .
+        "                    libraries\n" .
         "--mpilibs=<string>  Linker commands specifying MPI libraries to link against\n" .
         "--[no-]mpiwrappers  Controls whether or not to use MPI wrappers for\n" .
         "                    compiling and linking (default: " .
-	lc($defaults{'MPIWRAPPERS'}) . ").\n" .
+        lc($defaults{'MPIWRAPPERS'}) . ").\n" .
         "--objdir-lib-prefix=<dir>\n" .
-	"                    Prepend <dir> to paths of libraries' object files.\n" .
-	"                    Typically all libraries can be shared among all FEAT2\n" .
-	"                    applications as they have no dependency on the FEAT2\n" .
-	"                    kernel or a FEAT2 application and have always identical\n" .
-	"                    compile settings. In particular when compiling the\n" .
-	"                    the regression benchmark it makes a big difference\n" .
-	"                    having to compile libraries only once (default: ../..).\n" .
+        "                    Prepend <dir> to paths of libraries' object files.\n" .
+        "                    Typically all libraries can be shared among all FEAT2\n" .
+        "                    applications as they have no dependency on the FEAT2\n" .
+        "                    kernel or a FEAT2 application and have always identical\n" .
+        "                    compile settings. In particular when compiling the\n" .
+        "                    the regression benchmark it makes a big difference\n" .
+        "                    having to compile libraries only once (default: ../..).\n" .
         "--objdir-prefix=<dir>\n" .
-	"                    Prepend <dir> to paths of an application's object files.\n" .
-	"                    (default: none)\n" .
+        "                    Prepend <dir> to paths of an application's object files.\n" .
+        "                    (default: none)\n" .
         "--[no-]openmp       Create Makefile for application with/without OpenMP support\n" .
         "                    (default: " . lc($defaults{'OPENMP'}) . ").\n" .
         "--[no-]opt,--opt=expensive,--opt=native,--opt=native-expensive\n" .
@@ -5580,17 +5587,17 @@ sub show_help {
         "                    for the build host should be enabled if this feature\n" .
         "                    is supported by the compiler." .
         "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
-	"--precc=<file>      Command to prepand to the C compiler\n" .
-	"--precxx=<file>     Command to prepand to the C++ compiler\n" .
-	"--precuda=<file>    Command to prepand to the Cuda compiler\n" .
-	"--pref77=<file>     Command to prepand to the Fortran 77 compiler\n" .
-	"--pref90=<file>     Command to prepand to the Fortran 90 compiler\n" .
-	"--preld=<file>      Command to prepand to the Linker\n" .
+        "--precc=<file>      Command to prepand to the C compiler\n" .
+        "--precxx=<file>     Command to prepand to the C++ compiler\n" .
+        "--precuda=<file>    Command to prepand to the Cuda compiler\n" .
+        "--pref77=<file>     Command to prepand to the Fortran 77 compiler\n" .
+        "--pref90=<file>     Command to prepand to the Fortran 90 compiler\n" .
+        "--preld=<file>      Command to prepand to the Linker\n" .
         "--programfile=<file>\n" .
-	"                    Set application's program file to <file>\n" .
-	"                    (Reason: Parsing to build a minimal list of required \n" .
-	"                     source files needs a starting point. Being explicit\n" .
-	"                     avoids problems with less tidy users.)\n" .
+        "                    Set application's program file to <file>\n" .
+        "                    (Reason: Parsing to build a minimal list of required \n" .
+        "                     source files needs a starting point. Being explicit\n" .
+        "                     avoids problems with less tidy users.)\n" .
         "--ranlib=<file>     Path and options to create index for archives\n" .
         "--regression-benchmark\n" .
         "                    Create Makefile for FEAT2 regression benchmark and\n" .
@@ -5599,29 +5606,29 @@ sub show_help {
         "--[no-]relink-always\n" .
         "                    Whether or not to relink the application every time\n" .
         "                    make is invoked (default: " .
-	lc($defaults{'RELINK_ALWAYS'}) . ").\n" .
+        lc($defaults{'RELINK_ALWAYS'}) . ").\n" .
         "                    Be careful with --no-relink-always:\n" .
         "                    When developing on multiple platforms, your\n" .
         "                    application might not be relinked if no source file\n" .
         "                    has changed since you changed platform!\n" .
         "--srcextra=<string>\n" .
-	"                    Set extra source files (other than Fortran) to <string>\n" .
+        "                    Set extra source files (other than Fortran) to <string>\n" .
         "--srcextra_app=<string>\n" .
-	"                    Set application's extra source files (other than Fortran) to <string>\n" .
+        "                    Set application's extra source files (other than Fortran) to <string>\n" .
         "--srclist_app=<string>\n" .
-	"                    Set application's source files to <string>\n" .
+        "                    Set application's source files to <string>\n" .
         "--suppressflags=<string>\n" .
         "                    Remove all (comma-separated) strings in <string> from C,\n" .
         "                    Fortran 77/90 compiler and linker settings, i.e.\n" .
         "                    from CFLAGSF77, CFLAGSF90, CFLAGSC, CFLAGSCOPROC, \n" .
-	"                    CFLAGSCXX and LDFLAGS.\n" .
+        "                    CFLAGSCXX and LDFLAGS.\n" .
         "                    If your application does not compile or run properly\n" .
         "                    because of a specific compiler option that ought not\n" .
         "                    be removed globally, you can inhibit its usage for\n" .
         "                    your application by adding the exact string to <string>.\n" .
         "--[no]-underscore   Add/do not add trailing underscore to routines as it\n" .
         "                    is the default behaviour of most Fortran compilers.\n" .
-	"--warn=<string>     Compile code with warnings <string> enabled.\n" .
+        "--warn=<string>     Compile code with warnings <string> enabled.\n" .
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .
         "--help              Print this message\n" .
@@ -5697,43 +5704,43 @@ sub signal_handler {
     # configure process, i.e. configuring a single benchmark application as
     # part of configuring the benchmark itself.
     if (scalar keys(%cachedtests) > 0) {
-	# Unfortunately, we do not only need to kill the parent, but in most
-	# cases even the grand parent and the great grand parent, as the
-	# benchmark Perl configure script invokes per benchmark application a
-	# shell configure script with per-application settings which in turn
-	# calls the Perl configure script. So, determine the process
-	# hierarchy.
-	my %ppid = ();
-	my %cmd = ();
-	my $i = 0;
-	open(PSEF_PIPE, "ps -ef|")
-	    or warn "$progname: Cannot determine process hierarchy and hence not kill grand parent pid.\n";
-	<PSEF_PIPE>;
-	while (<PSEF_PIPE>) {
-	    chomp();
-	    my @psefField = split(' ', $_, 8);
-	    my $pid     = $psefField[1];
-	    $ppid{$pid} = $psefField[2];
-	    $cmd{$pid}  = $psefField[7];
-	}
-	close(PSEF_PIPE);
+        # Unfortunately, we do not only need to kill the parent, but in most
+        # cases even the grand parent and the great grand parent, as the
+        # benchmark Perl configure script invokes per benchmark application a
+        # shell configure script with per-application settings which in turn
+        # calls the Perl configure script. So, determine the process
+        # hierarchy.
+        my %ppid = ();
+        my %cmd = ();
+        my $i = 0;
+        open(PSEF_PIPE, "ps -ef|")
+            or warn "$progname: Cannot determine process hierarchy and hence not kill grand parent pid.\n";
+        <PSEF_PIPE>;
+        while (<PSEF_PIPE>) {
+            chomp();
+            my @psefField = split(' ', $_, 8);
+            my $pid     = $psefField[1];
+            $ppid{$pid} = $psefField[2];
+            $cmd{$pid}  = $psefField[7];
+        }
+        close(PSEF_PIPE);
 
-	my $thisppid = getppid();
-	my $msgPrefixShown = 0;
-	foreach my $pid ($ppid{$ppid{$thisppid}}, $ppid{$thisppid}, $thisppid) {
-	    if ($cmd{$pid} =~ m/\/configure\b/) {
-		if (kill(0, $pid)) {   # Check if pid still exists
-		    unless ($msgPrefixShown) {
-			print "*** Terminating parent configures (PIDs $pid";
-		    } else {
-			print ", $pid";
-		    }
-		    $msgPrefixShown++;
-		    kill 9, $pid;
-		}
-	    }
-	}
-	print ").\n";
+        my $thisppid = getppid();
+        my $msgPrefixShown = 0;
+        foreach my $pid ($ppid{$ppid{$thisppid}}, $ppid{$thisppid}, $thisppid) {
+            if ($cmd{$pid} =~ m/\/configure\b/) {
+        	if (kill(0, $pid)) {   # Check if pid still exists
+        	    unless ($msgPrefixShown) {
+        		print "*** Terminating parent configures (PIDs $pid";
+        	    } else {
+        		print ", $pid";
+        	    }
+        	    $msgPrefixShown++;
+        	    kill 9, $pid;
+        	}
+            }
+        }
+        print ").\n";
     }
     exit 1;
 }

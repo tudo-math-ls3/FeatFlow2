@@ -1228,7 +1228,7 @@ fb_checkWhetherToRun() {
 	    ignore=""
 	    for string in \
 		'benchmark_*' .svn AGMG_3.1.2 AGMG_3.1.2.tar.gz \
-		BLAS SuiteSparse SuiteSparse-4.4.3.tar.gz \
+		BLAS-3.5.0 SuiteSparse SuiteSparse-4.4.3.tar.gz \
 		codefragments docs_* documentation incoming \
 		lapack-3.5.0 lapack-3.5.0.tgz splib splib.tar.gz
 	    do

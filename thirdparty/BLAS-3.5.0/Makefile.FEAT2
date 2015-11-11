@@ -103,7 +103,7 @@ $(ZB1AUX): $(FRC)
 #  Level 2 and Level 3 BLAS.  Comment it out only if you already have
 #  both the Level 2 and 3 BLAS.
 #---------------------------------------------------------------------
-SRC_ALLBLAS  = lsame.f xerbla.f
+SRC_ALLBLAS  = lsame.f xerbla.f xerbla_array.f
 ALLBLAS      = $(SRC_ALLBLAS:%.f=$(OBJDIR)/%.o)
 $(ALLBLAS) : $(FRC)
 
