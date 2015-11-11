@@ -251,7 +251,7 @@ purge:
 			 $(SRC_ZBLAS1) $(SRC_ZBLAS2) $(SRC_ZBLAS3) \
 			 csrot.f drotm.f drotmg.f dsdot.f scabs1.f \
 			 sdsdot.f srotm.f srotmg.f zdrot.f \
-			 Makefile make.inc, $(remove_file))
+			 ._Makefile Makefile make.inc, $(remove_file))
 
 
 #-------------------------------------------------------------------------------
