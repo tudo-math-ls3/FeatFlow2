@@ -23,7 +23,7 @@
 ########################################################################
 
 
-# The function match is used to match ID agains wildcards.
+# The function match is used to match ID against wildcards.
 #
 # variant 1 (slower, especially on old machines, but possibly more portable)
 match=$(shell echo $(1) | awk '/$(2)/ { print "yes"; }')
@@ -714,9 +714,13 @@ HAS_CUDA13 := $(shell echo $(HAS_CUDA13) | tr '[a-z]' '[A-Z]')
 HAS_CUDA20 := $(shell echo $(HAS_CUDA20) | tr '[a-z]' '[A-Z]')
 HAS_CUDA21 := $(shell echo $(HAS_CUDA21) | tr '[a-z]' '[A-Z]')
 HAS_CUDA30 := $(shell echo $(HAS_CUDA30) | tr '[a-z]' '[A-Z]')
+HAS_CUDA32 := $(shell echo $(HAS_CUDA32) | tr '[a-z]' '[A-Z]')
 HAS_CUDA35 := $(shell echo $(HAS_CUDA35) | tr '[a-z]' '[A-Z]')
+HAS_CUDA37 := $(shell echo $(HAS_CUDA37) | tr '[a-z]' '[A-Z]')
 HAS_CUDA50 := $(shell echo $(HAS_CUDA50) | tr '[a-z]' '[A-Z]')
-ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA35)$(HAS_CUDA50)))
+HAS_CUDA52 := $(shell echo $(HAS_CUDA52) | tr '[a-z]' '[A-Z]')
+HAS_CUDA53 := $(shell echo $(HAS_CUDA53) | tr '[a-z]' '[A-Z]')
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA32)$(HAS_CUDA35)$(HAS_CUDA37)$(HAS_CUDA50)$(HAS_CUDA52)$(HAS_CUDA53)))
 include $(TEMPLATESDIR)/COMP-nvcc.mk
 endif
 
@@ -846,7 +850,7 @@ endif
 	fi
         # If cuda switch -DHAS_CUDAxx does occur in compiler flags,
         # show CUDA compiler
-ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA35)$(HAS_CUDA50)))
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA32)$(HAS_CUDA35)$(HAS_CUDA37)$(HAS_CUDA50)$(HAS_CUDA52)$(HAS_CUDA53)))
 	@if test -z "$(findstring exit 1, $(CUDA))"; then \
 	    echo '  CUDA compiler      :' $(PRECUDA) \
 		$(shell (which 2>/dev/null $(CUDA) || \
@@ -878,7 +882,7 @@ endif
 	@echo '  CFLAGSF90    =' $(CFLAGSF90) $(MODOPTION)$(OBJDIR)
 	@echo '  CFLAGSC      =' $(CFLAGSC)
 	@echo '  CFLAGSCXX    =' $(CFLAGSCXX)
-ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA35)$(HAS_CUDA50)))
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)$(HAS_CUDA32)$(HAS_CUDA35)$(HAS_CUDA37)$(HAS_CUDA50)$(HAS_CUDA52)$(HAS_CUDA53)))
 	@echo '  CFLAGSCUDA   =' $(CFLAGSCUDA)
 endif
 ifneq ($(strip $(COPROCLIST)),)

@@ -73,6 +73,9 @@ endif
 ifeq ($(strip $(HAS_CUDA30)),YES)
 CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_30 -code=sm_30 -m64  -DHAS_CUDADOUBLEPREC
 endif
+ifeq ($(strip $(HAS_CUDA32)),YES)
+CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_32 -code=sm_32 -m64  -DHAS_CUDADOUBLEPREC
+endif
 ifeq ($(strip $(HAS_CUDA35)),YES)
 CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_35 -code=sm_35 -m64  -DHAS_CUDADOUBLEPREC
 endif
@@ -84,6 +87,9 @@ CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_50 -code=sm_50 -m64  -DHAS_CUDADOUBLE
 endif
 ifeq ($(strip $(HAS_CUDA52)),YES)
 CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_52 -code=sm_52 -m64  -DHAS_CUDADOUBLEPREC
+endif
+ifeq ($(strip $(HAS_CUDA53)),YES)
+CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_53 -code=sm_53 -m64  -DHAS_CUDADOUBLEPREC
 endif
 
 
