@@ -112,7 +112,12 @@ CDPATH =
 # C preprocessor
 CPP           = cpp
 # C preprocessor flags
+ifneq (,$(findstring (GCC),$(shell $(CPP) --version | head -n 1)))
+# Avoid that GNU cpp removes C++-style comments which is also the Fortran concatenation operator
+CPPFLAGS      = -CC -x assembler-with-cpp $(filter -D% -U% '-D% '-U%, $(APPONLYFLAGS) $(CFLAGSF90))
+else
 CPPFLAGS      = -x assembler-with-cpp $(filter -D% -U% '-D% '-U%, $(APPONLYFLAGS) $(CFLAGSF90))
+endif
 
 # FEAT2's preprocessor
 F90CPP        = $(FEAT2BASEDIR)/bin/f90cpp
