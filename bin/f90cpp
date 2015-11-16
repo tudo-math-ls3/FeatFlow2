@@ -38,6 +38,23 @@ if test -n "${CPPFLAGS}"; then
     cppflags="${CPPFLAGS}"
 fi
 
+# We really need GNU cpp; clang cpp does not support the command line option -x
+# assembler-with-cpp which causes GNU cpp to collapse white spaces in macro
+# definitions and adds support for stringification within macros.
+# Ensure we really do use GNU cpp.
+if echo "" | cpp -x assembler-with-cpp - 2>&1 | grep -vqi "\berror\b"; then
+  # Avoid that GNU cpp removes C++-style comments which is also the Fortran
+  # concatenation operator
+  cppflags="-CC ${cppflags}"
+else
+  echo "****************************************************************" 1>&2
+  echo "ATTENTION: You seem to not be using the GNU C preprocessor cpp." 1>&2
+  echo "Please re-configure your application using the configure command" 1>&2
+  echo "option --cpp=/path/to/gnu/cpp." 1>&2
+  echo "****************************************************************" 1>&2
+  exit 1
+fi
+
 AWK_SCRIPT="`dirname $0`/postprocess_cppoutput.awk"
 if test ! -f ${AWK_SCRIPT}; then
     if test -n "${FEAT2BASEDIR}"; then
@@ -316,9 +333,9 @@ rc=$?
 
 # Do not start compilation if the preprocessor reported an error.
 if test ${rc} -ne 0; then
-  echo "****************************************************************"
-  echo "ATTENTION: The preprocessor returned a nonzero error code."
-  echo "This probably means it tries to signal an error, so we bail out."
+  echo "****************************************************************" 1>&2
+  echo "ATTENTION: The preprocessor returned a nonzero error code." 1>&2
+  echo "This probably means it tries to signal an error, so we bail out." 1>&2
 #   echo "As the author of this funky hack does not have access to"
 #   echo "anything other than the GNU preprocessor (for which nonzero really"
 #   echo "means that an error has occured), then please implement a more"
@@ -327,7 +344,7 @@ if test ${rc} -ne 0; then
 #   echo "compiler output. You might want to try compilation without"
 #   echo "the -j parameter to make."
 #   echo "Cheers, dom [April 1st 2008]"
-  echo "****************************************************************"
+  echo "****************************************************************" 1>&2
   \rm ${preprocessedfile} ${preprocessedfile}".$$"
   exit ${rc}
 fi
