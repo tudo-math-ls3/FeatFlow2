@@ -42,7 +42,7 @@ fi
 # assembler-with-cpp which causes GNU cpp to collapse white spaces in macro
 # definitions and adds support for stringification within macros.
 # Ensure we really do use GNU cpp.
-if echo "" | cpp -x assembler-with-cpp - 2>&1 | grep -vqi "\berror\b"; then
+if echo "" | ${cppcmd} -x assembler-with-cpp - 2>&1 | grep -vqi "\berror\b"; then
   # Avoid that GNU cpp removes C++-style comments which is also the Fortran
   # concatenation operator
   cppflags="-CC ${cppflags}"
