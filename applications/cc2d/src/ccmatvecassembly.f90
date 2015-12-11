@@ -1062,6 +1062,20 @@ contains
             call output_line (&
                 "This assembly method does not support nonconstant viscosity!", &
                 OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=4 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support deformation tensor!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=4 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
             call sys_halt()
           end if
 
@@ -1211,6 +1225,20 @@ contains
             call output_line (&
                 "This assembly method does not support nonconstant viscosity!", &
                 OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=5 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support deformation tensor!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=5 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
             call sys_halt()
           end if
 
@@ -1310,9 +1338,23 @@ contains
             call output_line (&
                 "This assembly method does not support nonconstant viscosity!", &
                 OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=5 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
             call sys_halt()
           end if
 
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support deformation tensor!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call output_line (&
+                "Set iUpwind=5 in your [CC-DISCRETISATION] data file!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+          
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
