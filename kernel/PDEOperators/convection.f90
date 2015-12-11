@@ -11350,6 +11350,13 @@ contains
           cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
         end if
 
+        ! If we have non-constant viscosity or mass matrix coefficients, then
+        ! we also provide real point coordinates, as we have no chance to
+        ! check whether the corresponding callback function requires them here.
+        if (.not. (rconfig%bconstNu .and. rconfig%bconstAlpha)) then
+          cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+        end if
+
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
