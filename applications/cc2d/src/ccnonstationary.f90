@@ -318,7 +318,7 @@ contains
 
     ! Initialise the time stepping in the problem structure
     if (cscheme .lt. 0) then
-      cscheme = 0
+      cscheme = TSCHM_ONESTEP
     end if
     call timstp_init (rtimestepping, &
                       cscheme, dtimemin, dtstep, dtheta)
