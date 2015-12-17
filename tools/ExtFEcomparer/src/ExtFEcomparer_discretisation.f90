@@ -81,7 +81,7 @@ subroutine ExtFE_init_discretisation_1D(rproblem)
 
         case(ExtFE_OneElement)
 
-            call ExtFE_init_discretisation_1D_OneElementType(rproblem)
+            call ExtFE_init_discretisation_1D_OneElemType(rproblem)
 
         case(ExtFE_ElementList)
             call ExtFE_init_discretisation_1D_ElementList(rproblem)
@@ -97,7 +97,7 @@ subroutine ExtFE_init_discretisation_1D(rproblem)
 end subroutine
 
 
-subroutine ExtFE_init_discretisation_1D_OneElementType(rproblem)
+subroutine ExtFE_init_discretisation_1D_OneElemType(rproblem)
 !<description>
   ! This routine initialises a discretisation structure for a vector
   ! that contains 1D-Variables, and all of them use the same element
@@ -189,7 +189,7 @@ subroutine ExtFE_init_discretisation_2D(rproblem)
     select case (rproblem%elementSetting)
 
         case(ExtFE_OneElement)
-            call ExtFE_init_Discretisation_2D_OneELementType(rproblem)
+            call ExtFE_init_Discretisation_2D_OneElemType(rproblem)
 
         case(ExtFE_ElementPair)
             ! Element pair - i.e. one element type for the speed,
@@ -210,7 +210,7 @@ subroutine ExtFE_init_discretisation_2D(rproblem)
 end subroutine
 
 
-subroutine ExtFE_init_Discretisation_2D_OneELementType(rproblem)
+subroutine ExtFE_init_Discretisation_2D_OneElemType(rproblem)
 
 !<inputoutput>
     ! A problem structure saving problem-dependent information.
