@@ -169,15 +169,18 @@ endif
 # functions for complex-valued data
 ifeq ($(call pgiminversion,15,4),yes)
 CFLAGSF90     := -DHAS_INTRINSIC_ZACOS  $(CFLAGSF90)
-CFLAGSF90     := -DHAS_INTRINSIC_ZACOSH $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZASIN  $(CFLAGSF90)
-CFLAGSF90     := -DHAS_INTRINSIC_ZASINH $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZATAN  $(CFLAGSF90)
-CFLAGSF90     := -DHAS_INTRINSIC_ZATANH $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZCOSH  $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZSINH  $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZTAN   $(CFLAGSF90)
 CFLAGSF90     := -DHAS_INTRINSIC_ZTANH  $(CFLAGSF90)
+# PGI 15.4 - 15.10 do indeed provide the intrinsic functions acosh, asinh and atanh
+# (see /path/to/pgi/15.*/linux86-64/15.*/src/libm.f90), but only with real-valued
+# arguments.
+#CFLAGSF90     := -DHAS_INTRINSIC_ZACOSH $(CFLAGSF90)
+#CFLAGSF90     := -DHAS_INTRINSIC_ZASINH $(CFLAGSF90)
+#CFLAGSF90     := -DHAS_INTRINSIC_ZATANH $(CFLAGSF90)
 endif
 
 # Enable workarounds for PGI 6.1 compiler
