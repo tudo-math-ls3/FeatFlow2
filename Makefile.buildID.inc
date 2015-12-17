@@ -24,7 +24,7 @@
 
 # Path to this FEAT2 installation main directory
 ifeq ($(strip $(FEAT2BASEDIR)),)
-FEAT2BASEDIR:=../..
+  FEAT2BASEDIR:=../..
 endif
 
 # machine and architecture info, machine ID
@@ -67,56 +67,119 @@ CDPATH=
 
 # Use DEC Fortran compiler for DEC Alpha machines
 ifeq ($(call match,$(REALID),alpha-.*-osf1.*),yes)
-REALID:=$(strip $(REALID))-cf90-dxml
+  REALID:=$(strip $(REALID))-cf90-dxml
 endif
 
 # Use xlf Fortran compiler on IBM machines running AIX
 ifeq ($(call match,$(REALID),ibm-.*-aix.*),yes)
-REALID:=$(strip $(REALID))-xlf-blas
+  REALID:=$(strip $(REALID))-xlf-blas
 endif
 
 # Use SunStudio Fortran compiler on Sun machines running SunOS
 ifeq ($(call match,$(REALID),sun.*-.*-sunos.*),yes)
-REALID:=$(strip $(REALID))-sunstudio-perf
+  REALID:=$(strip $(REALID))-sunstudio-perf
 endif
 
 # Use NEC Fortran compiler on NEC SX machines running SuperUX
 ifeq ($(call match,$(REALID),sx.*-.*-superux.*),yes)
-REALID:=$(strip $(REALID))-f90-keisan
+  REALID:=$(strip $(REALID))-f90-keisan
 endif
+
+
+# Default build ID extenstion if no match in the previous definitions
+#
+# part 1:
+# Use Intel compiler if a related environment variable exists, use GCC
+# compiler if not. With Intel, try to use MKL.
+ifeq ($(call match,$(REALID),[^-]*-[^-]*-[^-]*),yes)
+  ifneq ($(strip $(INTEL_LICENSE_FILE)$(INTEL_CC_HOME)$(INTEL_FC_HOME)),)
+    REALID:=$(strip $(REALID))-intel
+    ifneq ($(strip $(INTEL_MKL_LIB)$(MKLROOT)),)
+      REALID:=$(strip $(REALID))-mkl
+    endif
+  else
+    REALID:=$(strip $(REALID))-gcc
+  endif
+endif
+
+# part 2:
+# If no BLAS/LAPACK installation predescribed yet in build ID, try OpenBLAS,
+# GotoBLAS2, then non-optimised, self-compiled local BLAS.
+ifeq ($(call match,$(REALID),[^-]*-[^-]*-[^-]*-[^-]*),yes)
+  ifneq ($(strip $(OPENBLAS_HOME)$(OPENBLAS_LIB)),)
+    REALID:=$(strip $(REALID))-openblas
+  else
+    ifneq ($(strip $(GOTOBLAS2_HOME)$(GOTOBLAS2_LIB)),)
+      REALID:=$(strip $(REALID))-goto2
+    else
+      REALID:=$(strip $(REALID))-blas
+    endif
+  endif
+endif
+
 
 # Default build id extenstion if no match in the previous definitions
 # gcc compiler with non-optimised BLAS, only standard optimisation.
 ifeq ($(call match,$(REALID),[^-]*-[^-]*-[^-]*),yes)
-REALID:=$(strip $(REALID))-gcc-blas
+  REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 
 # Set default target platforms for compilation of parallel applications.
 # i.e. refine the machine REALID even more by specifying the MPI environment.
 ifeq ($(strip $(MPI)), YES)
-ifeq ($(call match,$(REALID),ibm-.*-aix-xlf-goto),yes)
-REALID:=$(strip $(REALID))-poempi
-endif
+  ifeq ($(call match,$(REALID),ibm-.*-aix-xlf-goto),yes)
+    REALID:=$(strip $(REALID))-poempi
+  endif
 
-ifeq ($(call match,$(REALID),sx.*-.*-superux-f90-keisan),yes)
-REALID:=$(strip $(REALID))-mpi
-endif
+  ifeq ($(call match,$(REALID),sx.*-.*-superux-f90-keisan),yes)
+    REALID:=$(strip $(REALID))-mpi
+  endif
 
-ifeq ($(call match,$(REALID),[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*),yes)
-REALID:=$(REALID)-ompi
-endif
-endif
+  # If no MPI environment predescribed yet in build ID,
+  # refine the machine REALID even more by specifying the MPI environment.
+  ifeq ($(strip $(REALID)), ibm-powerpc_power4-aix-xlf-goto)
+    REALID:=$(strip $(REALID))-poempi
+  endif
+
+  ifeq ($(strip $(REALID)), pc-pentium4-linux64-intel-goto)
+    REALID:=$(strip $(REALID))-lanlmpi
+  endif
+
+  ifeq ($(strip $(REALID)), sx6-none-superux-f90-keisan)
+    REALID:=$(strip $(REALID))-mpi
+  endif
+
+  ifeq ($(strip $(REALID)), sx8-none-superux-f90-keisan)
+    REALID:=$(strip $(REALID))-mpi
+  endif
+
+  ifeq ($(strip $(REALID)), ia64-itanium2-linux64-intel-mkl)
+    REALID:=$(strip $(REALID))-mpi
+  endif
+
+  # Automatically fix an incompletely given build ID in case MPI=YES
+  # to use Open MPI.
+  ifeq ($(call match,$(REALID),[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*),yes)
+    REALID:=$(REALID)-ompi
+  endif
+
+  # Automatically fix an incompletely given build ID in case MPI=YES
+  # to use Open MPI.
+  ifeq ($(call match,$(ID),[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*),yes)
+    ID:=$(ID)-ompi
+  endif
+endif   # end MPI=YES
 
 
 # Set default build ID if none set
 ifeq ($(strip $(ID)),)
-ID:=$(REALID)
+  ID:=$(REALID)
 endif
 
 # Automatically fix an incompletely given build ID in case MPI=YES
 ifeq ($(call match,$(ID),[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*),yes)
-ID:=$(ID)-ompi
+  ID:=$(ID)-ompi
 endif
 
 
@@ -136,7 +199,7 @@ LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-
 # mode, but still giving 6 tokens, i.e. the error of unnecessarily adding the MPI token.
 # Remove it.
 ifeq ($(strip $(MPI)), NO)
-ID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$$/$$1/;')
+  ID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$$/$$1/;')
 endif
 
 
