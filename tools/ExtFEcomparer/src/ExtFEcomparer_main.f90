@@ -167,16 +167,27 @@ subroutine ExtFE_getModus(modus)
     !<output>
     integer :: modus
     !</output>
+		
+		! internal variables
+		character(LEN=ExtFE_STRLEN) :: masterDat
 
     type(t_parlist) :: rparlist
 
 
     ! Init the parlist
     call parlst_init(rparlist)
-    ! Now we parse the command-line arguments.
+
     ! We do no search in the dat-files as this modus will
     ! not be set up in the dat-files
+		! The only file we search is the master.dat as this is
+		! set up in the benchmark
+		call ExtFEcomparer_getCmdlMasterDat(masterDat)
 
+		! read the master-dat file
+		call parlst_readfromfile(rparlist,masterDat)
+
+		! Now we parse the command line. Thus the
+		! commandline overrules the master.dat
     call ExtFEcomparer_parseCmdlArguments(rparlist)
 
     ! Now we search in the section "ExtFE-Modus" for the variable modus

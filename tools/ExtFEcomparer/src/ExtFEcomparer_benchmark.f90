@@ -406,7 +406,7 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
             rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
 
 
-    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! We will actually parse the region of interest here in a parser
     ! In component i is the region of interest for calculation i
     call fparser_create(rpostprocessing%pIntChiOmegaParser,nIntCalculations)
 
@@ -464,11 +464,11 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
 
     ! We test the L1-Calculations
     ! How many tests do we do?
-    ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
-    ! second L2-Series: ||f_1(i)|| on half of the domain
-    ! third L2-series: ||f_1(i)|| on the full domain
-    ! 4th L2-Series: ||f_2(i)|| on x<0.5
-    ! 5th L2-series: ||f_2(i)|| on the whole domain
+    ! first L1-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
+    ! second L1-Series: ||f_1(i)|| on half of the domain
+    ! third L1-series: ||f_1(i)|| on the full domain
+    ! 4th L1-Series: ||f_2(i)|| on x<0.5
+    ! 5th L1-series: ||f_2(i)|| on the whole domain
     ! The first test should always return something close to 0
     ! the second and third one together verify that parsing
     ! still works. So we have 5*NVAR tests
@@ -492,7 +492,7 @@ subroutine ExtFE_setup_calc_test101(rproblem1,rproblem2,rpostprocessing)
             rpostprocessing%h_L1CubRule, ST_NEWBLOCK_ZERO)
 
 
-    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! We will actually parse the L1RegionOfInterest here in a parser
     ! In component i is the region of interest for calculation i
     call fparser_create(rpostprocessing%pL1ChiOmegaParser,nL1Calculations)
 
@@ -731,7 +731,7 @@ subroutine ExtFE_setup_problem_test201(rproblem)
     rproblem%elementSetting = ExtFE_ElementList
 
     ! We need to count manually how many elements we test
-    nElemTest = 12
+    nElemTest = 14
 
     ! For each element 1 component
     ! Do not change this line! Only change nElemTest!
@@ -753,6 +753,8 @@ subroutine ExtFE_setup_problem_test201(rproblem)
     rproblem%iElemList(10) = EL_QP1NPD_2D
     rproblem%iElemList(11) = EL_Q1T_2D
     rproblem%iElemList(12) = EL_EM31_2D
+    rproblem%iElemList(13) = EL_Q1NP_2D
+    rproblem%iElemList(14) = EL_EM30_2D
 
 end subroutine
 
@@ -819,7 +821,7 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
             rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
 
 
-    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! We will actually parse the region of interest here in a parser
     ! In component i is the region of interest for calculation i
     call fparser_create(rpostprocessing%pIntChiOmegaParser,nIntCalculations)
 
@@ -877,11 +879,11 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
 
     ! We test the L1-Calculations
     ! How many tests do we do?
-    ! first L2-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
-    ! second L2-Series: ||f_1(i)|| on half of the domain
-    ! third L2-series: ||f_1(i)|| on the full domain
-    ! 4th L2-Series: ||f_2(i)|| on x<0.5
-    ! 5th L2-series: ||f_2(i)|| on the whole domain
+    ! first L1-Series: ||f_1(i) - f_2(i)||_L2 on the entire domain
+    ! second L1-Series: ||f_1(i)|| on half of the domain
+    ! third L1-series: ||f_1(i)|| on the full domain
+    ! 4th L1-Series: ||f_2(i)|| on x<0.5
+    ! 5th L1-series: ||f_2(i)|| on the whole domain
     ! The first test should always return something close to 0
     ! the second and third one together verify that parsing
     ! still works. So we have 5*NVAR tests
@@ -905,7 +907,7 @@ subroutine ExtFE_setup_calc_test201(rproblem1,rproblem2,rpostprocessing)
             rpostprocessing%h_L1CubRule, ST_NEWBLOCK_ZERO)
 
 
-    ! We will actually parse the L2RegionOfInterest here in a parser
+    ! We will actually parse the L1RegionOfInterest here in a parser
     ! In component i is the region of interest for calculation i
     call fparser_create(rpostprocessing%pL1ChiOmegaParser,nL1Calculations)
 
@@ -1127,6 +1129,8 @@ end subroutine
 
 
 ! We have some routines for filling the vector, too
+! In this routine we fill the vector with ones - so every entry is 1
+! no matter to which element/variable it belongs
 subroutine ExtFE_fill_vec_ones(rproblem)
     type(t_problem) :: rproblem
     integer :: ifuncComp, ientry
