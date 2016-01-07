@@ -313,3 +313,7 @@ ELEMDBG_303_R1
 # Tutorial #1
 #
 TUTORIAL01_001
+
+# ExtFEcomparer
+ExtFEcomparer_101_1D
+ExtFEcomparer_201_2D

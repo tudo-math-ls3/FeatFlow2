@@ -1,0 +1,91 @@
+# -*- mode: sh -*-
+##
+# Description of the file format:
+# This file is supposed to be a simple ASCII text file. Settings are
+# defined per line via
+#   keyword  = value
+# The scope of a keyword/value setting is from its definition till
+# being overwritten or till the end of file.
+# A test definition starts with
+#   testid       = ARBITRARY_TESTNAME
+# All keyword/value settings defined earlier - as well as those defined in
+# the file defaults.fbdef - are automatically assigned to this test definition.
+# The value of any keyword can, of course, be subsequently overwritten
+# via a line "keyword = value". This updated keyword/value setting will then
+# be the default for any subsequently defined test.
+# Anything behind a hash sign (#) is regarded as comment.
+#
+# Every keyword found is exported as environment variable (in uppercase).
+# The case of the corresponding values is left untouched.
+#
+# Example for keyword/value settings inheritance: The following block
+#
+#	datfile = data/master_app1.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO1
+#	appl = baz
+#
+#	testid   = FOO2
+#	datfile = data/master_app2.dat
+#
+#	testid   = FOO3
+#	appl = foobar
+#	mglevels = 5,6
+#
+# is equivalent to
+#
+#	testid   = FOO1
+#	appl = baz
+#	datfile = data/master_app1.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO2
+#	appl = baz
+#	datfile = data/master_app2.dat
+#	mglevels = 1,2,3,4
+#
+#	testid   = FOO3
+#	appl = foobar
+#	datfile = data/master_app2.dat
+#	mglevels = 5,6
+#
+
+include 'defaults.inc'
+
+#============================================================
+# global settings for all tests defined in this file
+#============================================================
+
+appl = ExtFEcomparer
+class = FLAGSHIP
+
+# The ExtFEcomparer accepts only a call like
+# ./ExtFEcomparer -smaster=path/to/some/master.dat
+# So we have to cheat a little bit:
+datfile = "-smaster=data/tools_ExtFEcomparer/master.dat"
+
+
+# we don't need it but we want the benchmark suite to be happy
+mglevels = 1
+
+#========================
+# define the tests
+#========================
+
+#------------------------------------------------------------
+# In the following tests the benchmark configurations are
+# tested as is to unsure that all provided parameter file
+# are valid.
+#------------------------------------------------------------
+
+# Test 101
+testid   = ExtFEcomparer_101_1D
+ExtFEtestID = 101
+descr    = Calculate some integrals in 1D and do some point evaluations. The test itself is defined in ExtFEcomparer_benchmark.f90
+
+# Test 201
+testid   = ExtFEcomparer_201_2D
+ExtFEtestID = 201
+descr    = Calculate some integrals in 2D and do some point evaluations. The test itself is defined in ExtFEcomparer_benchmark.f90
+

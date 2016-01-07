@@ -1,0 +1,39 @@
+# Define the log-directory provided by the benchmark environment
+
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+
+# To activate the benchmark modus we use the not-documented section ExtFE-Modus
+# and the variable modus. It has the following meaning:
+# modus
+# =0: don't do the benchmark calculations
+# =1: do the benchmark calculations, do not do ucd-output
+# =2: do the benchmark calculations, do ucd-output.
+# setting it to 0 would be pointless and setting it to 2 is
+# just done when developing/adding new features so that you quickly
+# can set up a test problem with a graphical reference.
+[ExtFE-Modus]
+modus=1
+
+# To choose the testID we use the hidden section ExtFE-Benchmark
+# and the variable testID. However, the testID will be set in the benchmark file via
+# an environment variable. The test-cases should be documented in the file
+# ExtFEcomparer_benchmark.f90
+[ExtFE-Benchmark]
+testID=$EXTFETESTID
+
+[ExtFE-LOGFILESETTINGS]
+
+# Log file for messages. ='': No log file output.
+smsgLog = '%{slogdirectory}/output.log'
+
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as smsgLog
+serrorLog = ''
+
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchLog = '%{slogdirectory}/benchmarkresultfile'
