@@ -120,7 +120,7 @@ subroutine ExtFE_calc_Integral(rproblem_1,rproblem_2, rpostprocessing)
   ! where we will find what we want to calculate
   real(DP), dimension(:),  pointer :: p_Intresults =>NULL()
   integer, dimension (:,:), pointer :: p_IntComp => NULL()
-  integer, dimension(:), pointer :: p_IntCubRule => NULL()
+  integer(I32), dimension(:), pointer :: p_IntCubRule => NULL()
   ! For the collection we need to convert the scalar
   ! vectors to block vectors
   type(t_vectorBlock), target :: blockSecond
@@ -161,7 +161,7 @@ subroutine ExtFE_calc_Integral(rproblem_1,rproblem_2, rpostprocessing)
   ! Get the arrays
   call storage_getbase_double(rpostprocessing%h_IntResults,p_Intresults)
   call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,p_IntComp)
-  call storage_getbase_int(rpostprocessing%h_IntCubRule,p_IntCubRule)
+  call storage_getbase_int32(rpostprocessing%h_IntCubRule,p_IntCubRule)
 
   ! Attatch the parser to the collection
   ! It has already parsed the region of interest
@@ -242,7 +242,7 @@ subroutine ExtFE_calc_Integral(rproblem_1,rproblem_2, rpostprocessing)
          (lBothFunctions .eqv. .FALSE.)) then
          ! Create the cubature information
           call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
-                    RcubatureInformation, int(p_IntCubRule(i), I32))
+                    RcubatureInformation, p_IntCubRule(i))
           ! mark the function to be evaluated - only function values
           call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
 
@@ -281,7 +281,7 @@ subroutine ExtFE_calc_Integral(rproblem_1,rproblem_2, rpostprocessing)
                  (lBothFunctions .eqv. .TRUE.)) then
           ! Create a cubature information
           call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
-                  RcubatureInformation, int(p_IntCubRule(i), I32))
+                  RcubatureInformation, p_IntCubRule(i))
 
           ! mark the function to be evaluated
           call fev2_addVectorToEvalList(fefunction,rFirst,0)
@@ -365,7 +365,7 @@ subroutine ExtFE_calc_L1(rproblem_1,rproblem_2, rpostprocessing)
   ! where we will find what we want to calculate
   real(DP), dimension(:),  pointer :: p_L1results =>NULL()
   integer, dimension (:,:), pointer :: p_L1Comp => NULL()
-  integer, dimension(:), pointer :: p_L1CubRule => NULL()
+  integer(I32), dimension(:), pointer :: p_L1CubRule => NULL()
   ! For the collection we need to convert the scalar
   ! vectors to block vectors
   type(t_vectorBlock), target :: blockSecond
@@ -406,7 +406,7 @@ subroutine ExtFE_calc_L1(rproblem_1,rproblem_2, rpostprocessing)
   ! Get the arrays
   call storage_getbase_double(rpostprocessing%h_L1Results,p_L1results)
   call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,p_L1Comp)
-  call storage_getbase_int(rpostprocessing%h_L1CubRule,p_L1CubRule)
+  call storage_getbase_int32(rpostprocessing%h_L1CubRule,p_L1CubRule)
 
   ! Attatch the parser to the collection
   ! It has already parsed the region of interest
@@ -482,7 +482,7 @@ subroutine ExtFE_calc_L1(rproblem_1,rproblem_2, rpostprocessing)
          (lBothFunctions .eqv. .FALSE.)) then
          ! Create the cubature information
           call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
-                    RcubatureInformation, int(p_L1CubRule(i), I32))
+                    RcubatureInformation, p_L1CubRule(i))
           ! mark the function to be evaluated - only function values
           call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
 
@@ -521,7 +521,7 @@ subroutine ExtFE_calc_L1(rproblem_1,rproblem_2, rpostprocessing)
                  (lBothFunctions .eqv. .TRUE.)) then
           ! Create a cubature information
           call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
-                  RcubatureInformation, int(p_L1CubRule(i), I32))
+                  RcubatureInformation, p_L1CubRule(i))
 
           ! mark the function to be evaluated
           call fev2_addVectorToEvalList(fefunction,rFirst,0)
@@ -604,7 +604,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
   ! where we will find what we want to calculate
   real(DP), dimension(:),  pointer :: p_L2results =>NULL()
   integer, dimension (:,:), pointer :: p_L2Comp => NULL()
-  integer, dimension(:), pointer :: p_L2CubRule => NULL()
+  integer(I32), dimension(:), pointer :: p_L2CubRule => NULL()
   ! For the collection we need to convert the scalar
   ! vectors to block vectors
   type(t_vectorBlock), target :: blockSecond
@@ -645,7 +645,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
   ! Get the arrays
   call storage_getbase_double(rpostprocessing%h_L2Results,p_L2results)
   call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
-  call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
+  call storage_getbase_int32(rpostprocessing%h_L2CubRule,p_L2CubRule)
 
   ! Attatch the parser to the collection
   ! It has already parsed the region of interest
@@ -721,7 +721,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
          (lBothFunctions .eqv. .FALSE.)) then
          ! Create the cubature information
           call spdiscr_createDefCubStructure(rCalcThis%p_rspatialDiscr,&
-                    RcubatureInformation, int(p_L2CubRule(i), I32))
+                    RcubatureInformation, p_L2CubRule(i))
           ! mark the function to be evaluated - only function values
           call fev2_addVectorToEvalList(fefunction,rCalcThis,0)
 
@@ -764,7 +764,7 @@ subroutine ExtFE_calc_L2(rproblem_1,rproblem_2, rpostprocessing)
                  (lBothFunctions .eqv. .TRUE.)) then
           ! Create a cubature information
           call spdiscr_createDefCubStructure(rFirst%p_rspatialDiscr,&
-                  RcubatureInformation, int(p_L2CubRule(i), I32))
+                  RcubatureInformation, p_L2CubRule(i))
 
           ! mark the function to be evaluated
           call fev2_addVectorToEvalList(fefunction,rFirst,0)

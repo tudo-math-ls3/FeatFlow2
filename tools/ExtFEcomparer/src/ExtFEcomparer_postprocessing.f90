@@ -160,9 +160,10 @@ subroutine ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_IntComp => NULL()
     character, dimension(:), pointer :: p_IntChiOmega => NULL()
     character, dimension(:), pointer :: p_IntTriFile => NULL()
-    integer, dimension (:), pointer :: p_IntCubRule => NULL()
+    integer(I32), dimension (:), pointer :: p_IntCubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
+    integer :: iaux
 
 
 
@@ -212,8 +213,9 @@ subroutine ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
              rpostprocessing%h_IntResults,ST_NEWBLOCK_ZERO)
 
     ! Array for the cubature rules
+    iaux = ST_INT32
     call storage_new("ExtFEcomparer_init_postprocessing", &
-            "IntCubRule",nIntCalculations,ST_INT32, &
+            "IntCubRule",nIntCalculations, iaux, &
             rpostprocessing%h_IntCubRule, ST_NEWBLOCK_ZERO)
 
     ! Array to store the region of interest for some
@@ -264,7 +266,7 @@ subroutine ExtFE_init_postprocessing_Integral(rpostprocessing,rparlist)
     call storage_getbase_int2D(rpostprocessing%h_IntCompFunc,p_IntComp)
     call storage_getbase_char(rpostprocessing%h_IntChiOmega,p_IntChiOmega)
     call storage_getbase_char(rpostprocessing%h_IntTriFile,p_IntTriFile)
-    call storage_getbase_int(rpostprocessing%h_IntCubRule,p_IntCubRule)
+    call storage_getbase_int32(rpostprocessing%h_IntCubRule,p_IntCubRule)
 
     ! We will store which mesh is used
     call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
@@ -517,7 +519,7 @@ subroutine ExtFE_init_postprocessing_L1(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_L1Comp => NULL()
     character, dimension(:), pointer :: p_L1ChiOmega => NULL()
     character, dimension(:), pointer :: p_L1TriFile => NULL()
-    integer, dimension (:), pointer :: p_L1CubRule => NULL()
+    integer(I32), dimension (:), pointer :: p_L1CubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
 
@@ -621,7 +623,7 @@ subroutine ExtFE_init_postprocessing_L1(rpostprocessing,rparlist)
     call storage_getbase_int2D(rpostprocessing%h_L1CompFunc,p_L1Comp)
     call storage_getbase_char(rpostprocessing%h_L1ChiOmega,p_L1ChiOmega)
     call storage_getbase_char(rpostprocessing%h_L1TriFile,p_L1TriFile)
-    call storage_getbase_int(rpostprocessing%h_L1CubRule,p_L1CubRule)
+    call storage_getbase_int32(rpostprocessing%h_L1CubRule,p_L1CubRule)
 
     ! We will store which mesh is used
     call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
@@ -874,7 +876,7 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
     integer, dimension (:,:), pointer :: p_L2Comp => NULL()
     character, dimension(:), pointer :: p_L2ChiOmega => NULL()
     character, dimension(:), pointer :: p_L2TriFile => NULL()
-    integer, dimension (:), pointer :: p_L2CubRule => NULL()
+    integer(I32), dimension (:), pointer :: p_L2CubRule => NULL()
     character(LEN=ExtFE_STRLEN) :: sparam
     character(LEN=ExtFE_STRLEN) ::sTriFileFirst, sTriFileSecond
 
@@ -978,7 +980,7 @@ subroutine ExtFE_init_postprocessing_L2(rpostprocessing,rparlist)
     call storage_getbase_int2D(rpostprocessing%h_L2CompFunc,p_L2Comp)
     call storage_getbase_char(rpostprocessing%h_L2ChiOmega,p_L2ChiOmega)
     call storage_getbase_char(rpostprocessing%h_L2TriFile,p_L2TriFile)
-    call storage_getbase_int(rpostprocessing%h_L2CubRule,p_L2CubRule)
+    call storage_getbase_int32(rpostprocessing%h_L2CubRule,p_L2CubRule)
 
     ! We will store which mesh is used
     call parlst_getvalue_string (rparlist,"ExtFE-FIRST",&
