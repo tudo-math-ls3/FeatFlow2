@@ -58,10 +58,12 @@ include 'defaults.inc'
 #============================================================
 
 appl = ExtFEcomparer
-class = FLAGSHIP
+class = DEFAULT
 
 # The ExtFEcomparer accepts only a call like
 # ./ExtFEcomparer -smaster=path/to/some/master.dat
+# The command executed by the benchmark is something like
+#		./appname $datfile
 # So we have to cheat a little bit:
 datfile = "-smaster=data/tools_ExtFEcomparer/master.dat"
 
