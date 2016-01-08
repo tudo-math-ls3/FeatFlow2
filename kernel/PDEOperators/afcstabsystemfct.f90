@@ -127,10 +127,10 @@ contains
     integer, intent(in), optional :: NVARtransformed
 
     ! OPTIONAL: callback function to compute variable transformation
-    include 'intf_calcFluxTransformation_sim.inc'
+    include 'intf_calcFluxTransform_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
-    include 'intf_calcDiffTransformation_sim.inc'
+    include 'intf_calcDiffTransform_sim.inc'
     optional :: fcb_calcDiffTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
@@ -1978,10 +1978,10 @@ contains
     integer, intent(in), optional :: NVARtransformed
 
     ! OPTIONAL: callback function to compute variable transformation
-    include 'intf_calcFluxTransformation_sim.inc'
+    include 'intf_calcFluxTransform_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
-    include 'intf_calcDiffTransformation_sim.inc'
+    include 'intf_calcDiffTransform_sim.inc'
     optional :: fcb_calcDiffTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations

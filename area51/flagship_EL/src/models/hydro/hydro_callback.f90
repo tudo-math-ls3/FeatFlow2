@@ -3117,7 +3117,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransform_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
@@ -3353,7 +3353,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransform_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining

@@ -39,7 +39,7 @@
     integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
-    include 'intf_calcDiffTransformation_sim.inc'
+    include 'intf_calcDiffTransform_sim.inc'
     optional :: fcb_calcDiffTransformation_sim
 !</input>
 
