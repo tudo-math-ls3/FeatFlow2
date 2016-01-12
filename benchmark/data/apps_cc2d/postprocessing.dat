@@ -195,6 +195,23 @@ ierrorAnalysisTimeSpace = 0
 #     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
 # =5: L2 norm in time, numerically integrated using 3-Point Gauss quadrature
 #     rule to evaluate cubic Lagrange polynomial (time-)interpolation of solution
+#
+# How to decide which method to use?
+# * Methods 0 and 1 give a good lower estimate of the experimental order of
+#   conversion (EOC) of time stepping schemes of order 1 up to 4 (thus
+#   including ESDIRK74PR), but both tend to underestimate the EOC.
+# * Methods 2 and 3 are computationally a little more expensive than 0 and 1,
+#   but give more accurate EOC values. They are infeasible, though, for time
+#   stepping schemes of order > 3 because, by construction, they calculate at
+#   most EOCs of 3.
+# * Methods 4 and 5 are computationally a little more expensive than 0 and 1;
+#   they tend to overestimate the EOC of 3rd order time stepping schemes for
+#   larger time steps and only assymptotically converge to the EOC reported
+#   correctly by methods 0-3. But they give accurate EOC values for time
+#   stepping schemes of order > 3, like ESDIRK74PR.
+#   (Note: for a 4th order time stepping scheme one would expect the need for
+#    a quartic Lagrange polynomial, but due to superconvergence effects a
+#    cubic polynom is sufficient, along with a 3-Point Gauss quadrature rule.)
 ierrorAnalysisTimeSpaceMethod = 1
 
 # Calculate the kinetic energy.
