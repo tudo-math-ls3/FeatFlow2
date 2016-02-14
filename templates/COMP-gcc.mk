@@ -153,6 +153,21 @@ CFLAGSF77     := -flto $(CFLAGSF77)
 CFLAGSC       := -flto $(CFLAGSC)
 LDFLAGS       := -flto $(LDFLAGS)
 endif
+ifeq ($(call gfortranminversion,4,9),yes)
+# Citing https://gcc.gnu.org/wiki/LinkTimeOptimizationFAQ#ar.2C_nm_and_ranlib:
+# If you try to build bigger projects with -flto you have to make sure that you
+# use a version of binutils that supports gcc's liblto_plugin. Since version
+# 4.9 gcc produces slim object files that only contain the intermediate
+# representation. In order to handle archives of these objects you have to use
+# the gcc wrappers: gcc-ar, gcc-nm and gcc-ranlib
+AR      := gcc-ar -rv
+RANLIB  := gcc-ranlib
+MESSAGE  := $(MESSAGE) \
+            echo '*** Warning: Enabled interprocedural optimisation (-flto). In case linking'; \
+            echo '***          fails it might be that you need to re-compile GCC >= 4.9 using'; \
+            echo '***          newer binutils. See for more details'; \
+            echo '***          https://gcc.gnu.org/wiki/LinkTimeOptimizationFAQ\#ar.2C_nm_and_ranlib';
+endif
 endif
 
 
