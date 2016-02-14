@@ -329,7 +329,7 @@ SRC_BLAS = $(SRC_SBLAS1) $(SRC_CBLAS1) $(SRC_DBLAS1) $(SRC_ZBLAS1) \
 # existence indicates that the BLAS tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_BLAS_TARBALL = ../BLAS/ztrsv.f
+LAST_FILE_FROM_BLAS_TARBALL = ../BLAS-3.5.0/ztrsv.f
 $(SRC_BLAS): $(LAST_FILE_FROM_BLAS_TARBALL)
 
 # To catch the case where several applications simultaneously
