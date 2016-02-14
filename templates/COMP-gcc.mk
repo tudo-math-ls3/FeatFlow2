@@ -146,7 +146,9 @@ endif
 
 # Specify -flto for all gcc compilers
 ifneq (,$(findstring EXPENSIVE,$(OPT)))
-ifeq ($(call gfortranminversion,4,1),yes)
+# Link-time optimiser support got added as early as GCC 4.5, but may not be
+# enabled just yet in every GCC 4.5 installation.
+ifeq ($(call gfortranminversion,4,5),yes)
 CFLAGSF77     := -flto $(CFLAGSF77)
 CFLAGSC       := -flto $(CFLAGSC)
 LDFLAGS       := -flto $(LDFLAGS)
