@@ -50,7 +50,7 @@
 
 # Don't let the script be confused by non-english messages
 # from system information programs.
-# (LC_ALL overrides the value of the LANG environment variable 
+# (LC_ALL overrides the value of the LANG environment variable
 # and the values of any other LC_* environment variables.)
 LC_ALL=C
 
@@ -104,10 +104,10 @@ case ${id} in
 	    arch="pc"
             ;;
     esac
-    
+
     # generic version
     cpu="x86"
-    
+
     # try to guess the cpu specs in more detail; the mechanisms to
     # collect information about the cpu it differs from one OS to the
     # other so that we have to use different commands
@@ -118,7 +118,7 @@ case ${id} in
 	    vendor=`awk '/^(vendor|vendor_id)/ { print $3; exit;}' /proc/cpuinfo`
 	    family=`awk '/^(family|cpu family)/ { print $3$4; exit;}' /proc/cpuinfo | tr -d ':'`
 	    model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
-	    
+
             # The following syntax
             #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
             # is nicer, but only available in bash. For maximum portability use a syntax
@@ -183,8 +183,8 @@ case ${id} in
 	    ;;
 	*)
 	    ;;
-    esac	    
-    
+    esac
+
     # try to identify the cpu specs in more detail
     case "$vendor" in
 	# Intel
@@ -194,20 +194,20 @@ case ${id} in
 		    # Intel 80386
 		    cpu="i386"
 		    ;;
-		4) 
+		4)
 		    case "$model" in
 			0|1|3|7|8|9)
    		            # Intel 80486DX/DX2/DX4
 			    core="DX"
 			    ;;
-			2|4|5) 
+			2|4|5)
 		            # Intel 80486SX/SL (no math coprocessor)
 			    core="SX"
-			    ;;       
+			    ;;
 		    esac
 		    cpu="i486"
 		    ;;
-		5) 
+		5)
 		    case "$model" in
 			0|1|2|3)
 		            # Intel Pentium (P5/P54CS/Overdrive)
@@ -220,31 +220,31 @@ case ${id} in
 		    esac
 		    cpu="pentium"
 		    ;;
-		6) 
+		6)
 		    case "$model" in
 			0|1)
 		            # Intel Pentium Pro
-			    cpu="pentiumpro" 
+			    cpu="pentiumpro"
 			    core=cpu
 			    ;;
 			3)
 		            # Intel Pentium II (Klamath)
-			    cpu="pentium2" 
+			    cpu="pentium2"
 			    core="klamath"
 			    ;;
 			4|5)
 		            # Intel Pentium II (Deschutes)
-			    cpu="pentium2" 
+			    cpu="pentium2"
 			    core="deschutes"
 			    ;;
 			6)
 		            # Intel Pentium II (Mendocino)
-			    cpu="pentium2" 
+			    cpu="pentium2"
 			    core="mendocino"
 			    ;;
 			7)
 		            # Intel Pentium III / III Xeon (Katmai)
-			    cpu="pentium3" 
+			    cpu="pentium3"
 			    core="katmai"
 			    ;;
 			8)
@@ -256,15 +256,15 @@ case ${id} in
 		            # Intel Pentium M / Celeron M (Banias)
 			    cpu="pentiumm"
 			    core="banias"
-			    ;;        
+			    ;;
 			10)
 		            # Intel Pentium III Xeon (Cascades)
-			    cpu="pentium3" 
+			    cpu="pentium3"
 			    core="cascades"
 			    ;;
 			11)
 		            # Intel Pentium III / Celeron (Tualatin)
-			    cpu="pentium3" 
+			    cpu="pentium3"
 			    core="tualatin"
 			    ;;
 			13)
@@ -284,7 +284,7 @@ case ${id} in
 		            #       as well as mobile versions
 			    cpu="coreduo"
 			    core=cpu
-			    ;;    
+			    ;;
 			23|29)
 		            # Intel Core 2 Duo (Wolfdale / Penryn / Yorkfield)
 		            #       and Xeon (Wolfdale / Yorkfield / Hapertown / Dunnington)
@@ -316,10 +316,10 @@ case ${id} in
 		            # (see also https://en.wikipedia.org/wiki/Ivy_Bridge_%28microarchitecture%29)
 			    cpu="ivybridge"
 			    ;;
-			60|69)
-		            # Haswell CPU (not yet released)
+			60|63|69)
+		            # Haswell CPU
 			    cpu="haswell"
-			    ;;                   
+			    ;;
 			28|38|54)
 		            # Intel Atom (Pine, Oak, Cedar)
 			    cpu="atom" core=cpu
@@ -366,12 +366,12 @@ case ${id} in
 		    ;;
 		31)
 	            # Intel Itanium2 (McKinley / Madison / Deerfield / Hondo / Madison / Fanwood)
-		    cpu="itanium2" 
+		    cpu="itanium2"
 		    core=cpu
-		    ;;             
-		32) 
+		    ;;
+		32)
 	            # Intel Itanium2 Dual-Core Processor 9x00 ( Montecito / Millington / Montvale / Tukwila)
-		    cpu="itanium2x2" 
+		    cpu="itanium2x2"
 		    core=cpu
 		    ;;
 		Itanium\ 2)
@@ -379,14 +379,14 @@ case ${id} in
 		    cpu="itanium2"
 		    core=cpu
 		    ;;
-		
-		*) 
+
+		*)
 	            # Intel i386 compatible as fallback
 		    cpu="i386"
 		    core=cpu;;
 	    esac
-	    ;; 
-	
+	    ;;
+
 	# AMD
 	AuthenticAMD)
 	    case "$family" in
@@ -395,7 +395,7 @@ case ${id} in
 		    cpu="amd486"
 		    core=cpu
 		    ;;
-		5) 
+		5)
 		    case "$model" in
 			0|1|2|3)
 			    # AMD 5k86
@@ -422,7 +422,7 @@ case ${id} in
 			    cpu="geode"
 			    core=cpu
 			    ;;
-			13) 
+			13)
 			    # AMD K6-2+, K6-III+
 			    cpu="k6"
 			    core="k6-2"
@@ -435,12 +435,12 @@ case ${id} in
 			    # AMD Athlon / Duron
 			    cpu="athlon"
 			    core=cpu
-			    ;;        
-			4) 
+			    ;;
+			4)
 			    # AMD Athlon (Thunderbird)
 			    cpu="athlon"
 			    core="thunderbird"
-			    ;;    
+			    ;;
 			6)
 			    # AMD Athlon (MP) (Palomino)
 			    cpu="athlonxp"
@@ -496,7 +496,7 @@ case ${id} in
 			    # Family 15 is AMD Opteron / Athlon 64 and better
 			    cpu="athlon64"
 			    core=cpu
-			    ;;			
+			    ;;
 		    esac
 		    ;;
 		16)
@@ -570,7 +570,7 @@ case ${id} in
 			    ;;
                     esac
                     ;;
-                20) 
+                20)
                     # AMD Bobcat, Family 14h
                     case "$model" in
                         1)
@@ -583,7 +583,7 @@ case ${id} in
 			    ;;
                     esac
                     ;;
-                21) 
+                21)
                     # AMD Bulldozer, Family 15h
                     case "$model" in
                         0)
@@ -613,18 +613,18 @@ case ${id} in
 		    ;;
 	    esac
 	    ;;
-	
+
 	# Cyrix
 	CyrixInstead)
 	    case "$family" in
 		4) cpu="mediagx";;
-		5) 
+		5)
 		    case "$model" in
 			2) cpu="6x86";;
 			4) cpu="mediagx";;
 		    esac
 		    ;;
-		6) 
+		6)
 		    case "$model" in
 			0) cpu="6x86";;
 			5) cpu="cyrixm2";;
@@ -646,7 +646,7 @@ case ${id} in
 		    ;;
 	    esac
 	    ;;
-	
+
 	# NexGen
 	NexGenDriven)
 	    case "$family" in
@@ -671,7 +671,7 @@ case ${id} in
 	# UMC
 	'UMC UMC UMC')
 	    case "$family" in
-		4) 
+		4)
 		    case "$model" in
 			1) cpu="u5d";;
 			2) cpu="u5s";;
@@ -710,7 +710,7 @@ case ${id} in
     # Below, you find special non-x86-compatible hardware platforms!
     # Be aware that these platforms are less intensively tested, and therefore,
     # CPU-detection may be errorneous or at least less optimised.
-    
+
     alpha-*-osf*)
         # alpha more specific version
 	#family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The alpha \([evEV0-9]*\).* processor.*$/\1/p' | head -n 1 )`
@@ -719,7 +719,7 @@ case ${id} in
 	echo "DEC Alpha systems with OSF/1 is no longer supported"
 	return
 	;;
-    
+
     alpha-*-linux)
         # alpha more specific version
 	#family=`(sed -n 's/^cpu model.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
@@ -737,7 +737,7 @@ case ${id} in
 	armv5*|armv6*|armv7*)
 	    # 32 bit ARM
 	    arch="arm"
-	    ;; 
+	    ;;
         armv8*)
 	    # 64 bit ARM (not tested yet)
 	    arch="arm64"
@@ -777,7 +777,7 @@ case ${id} in
 		    cpu="arm9"
 		    ;;
    	        -1879695144)
-	            # ARM 11	
+	            # ARM 11
 	            cpu="arm11"
 	            ;;
 	        -1122301207)
