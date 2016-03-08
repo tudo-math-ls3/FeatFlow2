@@ -1,0 +1,838 @@
+#!/bin/bash
+# ('bash' is required because of the use of the 'declare' builtin command.)
+
+# 'fb_' stands for 'FEAT2 benchmark'.
+# Variables are written in capital letters if used globally.
+
+
+# Initialisations
+ALLTESTS=
+AFTERJOB=""
+BENCHMARKRUNSCRIPT=runtests
+COMPILERVERSION=
+DOSENDMAIL=
+EMAILADDRESS=
+FORCE_COMPLETE_NODES=0    # If FORCE_COMPLETE_NODES=0, then the term
+                          # 'nodes' in variable names actually refers
+                          # to cores (e.g. in CORESPERNODE).
+GNUMAKE=
+JOBFILEPREFIX="feat2job"
+MEMWATCH=0
+MODULESHOME=/sfw/Modules/default
+MODULES2LOAD=""
+#MODULES2LOAD="torque/4.2.10 binutils/2.25 gcc/4.9.2 openblas/0.2.15"
+#MODULES2LOAD="torque/4.2.10 intel/cce/15.0.5.223 intel/fce/15.0.5.223 intel/mkl/11.2.4.223"
+NOSCHEDULE=0
+NTASKS=
+OVERWRITE_LOG_DIRECTORY=
+PBS_DEFAULT_VMEM_SETTING=16gb   # Setting required to override the queue default vmem
+                                # setting of 8gb which gets imposed when the job files
+                                # only specify PBS resource pvmem, something done for
+                                # FORCE_COMPLETE_NODES=0.
+WALLCLOCKLIMIT="00:58:00"
+
+case "`hostname -f`" in
+    *.mathematik.tu-dortmund.de)
+	CORESPERNODE=16;
+	MAXCORESUSEDPERNODE=16;
+	EXTRACORESPERNODEFACTOR=1;
+	;;
+    *)
+	cat <<EOF 1>&2
+$0: Error: Hostname returned an unhandled string. Script cancelled.
+EOF
+	exit 18
+	;;
+esac
+
+
+# ==================================================================
+# IMPORTANT
+# ==================================================================
+# It is assumed this script is called from a benchmark directory.
+# This assumption is not only made here, but also later as the
+# Makefile in a benchmark directory (whatever its actual name is)
+# is needed to create a BENCHMARKRUNSCRIPT. The library function
+# fb_ensureCorrectWorkingDir even checks whether that's the case.
+
+
+# ==================================================
+# = Load library with functions needed for         =
+# = every scheduling script (NEC, LiDO, JUMP etc.) =
+# ==================================================
+. include/lib_for_xxx_schedule_tests || exit 1
+
+# maximum wallclock time (in seconds) and
+# maximum virtual memory use as well as
+# maximum number of nodes currently available (= online nodes)
+declare -a wallclocksecondslimit[1];
+declare -a vmemlimit[1];
+declare -a maxavailnodes[1];
+
+#  Function: Query PBS to find out about available nodes and maximum walltime per queue
+fb_queryPBS() {
+    # Create temporary file (with unique file name)
+    qmgr=`mktemp`
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+	exit 2
+    fi
+
+    # Query PBS queue manager and store result in temporary file
+    qmgr -c 'list queue @caretaker' > ${qmgr}
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error: Could not query PBS manager for available resources. Script cancelled.
+EOF
+	exit 3
+    fi
+
+    # Create temporary file (with unique file name)
+    sedFileSuppressOfflineNodes="`mktemp`"".sed"
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+	exit 4
+    fi
+
+    # Query PBS for offline nodes, transform the output into sed instructions
+    # (that remove any occurrence of offline nodes from input strings) and
+    # store it to a temporary file
+    pbsnodes -l | grep offline | sed 's/^\([^ ]*\).*$/s\/\1+*\/\/;/' > ${sedFileSuppressOfflineNodes}
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error: Could not query PBS for offline nodes. Script cancelled.
+EOF
+	exit 5
+    fi
+
+    # Define a smaller helper routine for code repeatedly needed
+    # Query a given queue for its hosts, its vmem and walltime limits
+    fb_getSettingsForQueue() {
+	queue="$1"  # IN
+	# Query queue manager for acl_hosts list (unwrap the list), virtual memory and max wall time settings
+	sed -n -e '/Queue /p; /^\tacl_hosts/ { :x; /,$/ { N; s/\n[ ]*//; tx; }; p; }; /^\tresources_max.vmem/p; /^\tresources_max.walltime/p' ${qmgr} | \
+		# Turn output into one line per queue
+		sed 'N; N; N; s/\n//g;' | \
+		# Suppress offline nodes
+		sed -f ${sedFileSuppressOfflineNodes} | \
+		# Extract current queue
+		grep -w ${queue}
+    }
+
+    queue="batch";
+    # Determine maximum wall clock time
+    wallclocksecondslimit[1]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+    # Determine maximum virtual memory use
+    vmemlimit[1]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.vmem = \([0-9][0-9]*[kmgt]b\).*$/\1/'`
+    # Determine maximum number of nodes available
+    maxavailnodes[1]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+    if test "$FORCE_COMPLETE_NODES" -eq "0"; then
+	maxavailnodes[1]=`expr ${maxavailnodes[1]} \* ${CORESPERNODE} \* ${EXTRACORESPERNODEFACTOR}`
+    fi
+
+    rm -f ${qmgr} ${sedFileSuppressOfflineNodes} `echo ${sedFileSuppressOfflineNodes} | sed 's/\.sed$//'`
+}
+
+
+#  Function: Determine vmem limit for a given queue
+fb_getVMemLimitForQueue() {
+    queue="$1"  # IN
+
+    case "${queue}" in
+	batch)
+	    echo ${vmemlimit[1]};
+	    return;
+	    ;;
+    esac
+
+    echo "0kb";
+    return
+}
+
+
+#  Function: Determine most suitable queue depending on node, walltime and interconnect requirements
+fb_determineQueue() {
+    nodes="$1"      # IN (format: integer)
+
+    walltimeseconds="`echo $2 | awk -F: '{print $1*3600+$2*60+$3}'`"   # IN (format: hh:mm:ss)
+
+    queue="batch";
+    # Check whether wall time limits are not exceeded
+    if test ${walltimeseconds} -le ${wallclocksecondslimit[1]}; then
+	echo ${queue};
+	return;
+    fi
+    return;
+}
+
+
+#  Function: Determine PBS node setting, following a complete-nodes-only or a take-only-as-many-cores-as-needed policy
+fb_determineNodeSetting() {
+    tasks="$1"      # IN (format: integer)
+
+    nodes=0
+    if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+	# Only allocate complete nodes to prevent that some other
+	# cluster user influences this job. Other processes possibly
+	# use much more ressources than available (e.g. more memory than
+	# available => swapping, cpu threading => less cpu for us,
+	# network card flooding, whatever else)
+
+	nodes=`echo "$tasks / ($MAXCORESUSEDPERNODE * $EXTRACORESPERNODEFACTOR)" | bc`;
+	# If number of CPUs per node ($MAXCORESUSEDPERNODE) is not divisor of the
+	# number of processes requested, then there has been an arithmetic
+	# remainder of the devision and we need one more (incompletely used)
+	# node.
+	if test `echo "$tasks % ($MAXCORESUSEDPERNODE * $EXTRACORESPERNODEFACTOR) != 0" | bc` -eq 1; then
+	    nodes=`expr $nodes + 1`
+	fi
+	echo "nodes=${nodes}:ppn=`expr $MAXCORESUSEDPERNODE \* $EXTRACORESPERNODEFACTOR`:bttf-cpu"
+
+    else
+	# Torque 4.2.x does not support the feature from 2.x any more where
+	#   -l nodes=X
+	# meant asking for X cores. Instead, 'nodes' now really means nodes and 'ppn'
+	# number of cores per node. But Torque 4.2.x now supports an additive syntax:
+	#   -l nodes=2:ppn=16+1:ppn=1
+	nodes=`echo "$tasks / ($MAXCORESUSEDPERNODE * $EXTRACORESPERNODEFACTOR)" | bc`;
+	# If number of CPUs per node ($MAXCORESUSEDPERNODE) is not divisor of the
+	# number of processes requested, then there has been an arithmetic
+	# remainder of the devision and we need one more (incompletely used)
+	# node.
+	if test `echo "$tasks % ($MAXCORESUSEDPERNODE * $EXTRACORESPERNODEFACTOR) != 0" | bc` -eq 1; then
+	    remainder=`echo "$tasks - $nodes * ($MAXCORESUSEDPERNODE * $EXTRACORESPERNODEFACTOR)" | bc`
+	    if test ${nodes} -gt 0; then
+		echo "nodes=${nodes}:ppn=`expr $MAXCORESUSEDPERNODE \* $EXTRACORESPERNODEFACTOR`:bttf-cpu+1:ppn=${remainder}:bttf-cpu"
+	    else
+		echo "nodes=1:ppn=${remainder}:bttf-cpu"
+	    fi
+	else
+	    echo "nodes=${nodes}:ppn=`expr $MAXCORESUSEDPERNODE \* $EXTRACORESPERNODEFACTOR`:bttf-cpu"
+	fi
+    fi
+
+    return
+}
+
+
+#  Function: Create a jobfile for the backtothefuture cluster for a given test ID
+fb_createJobfile() {
+    benchmarktest="$1"  # IN
+    file="$2"           # IN
+
+    fb_createRuntestsScript "$benchmarktest"
+    if test $? -ne 0; then
+	return 1
+    fi
+
+    fb_getNTASKS
+    if test $? -ne 0; then
+	return 2
+    fi
+
+    sedQueueingSystem=TORQUE
+    sedMemWatchEnv=${MEMWATCH}
+    sedMaxCores=0
+    envSetting=""
+    if test -n "$MODULES2LOAD"; then
+	echo -e "$0: "'\E[37;34m'"\033[4mUsing the following (hardcoded) list of modulefiles in all job files:\033[0m"
+	echo -e "$0:    "'\E[37;34m'"\033[4m${MODULES2LOAD}\033[0m"
+
+    # Use currently loaded modulefiles
+    elif test -n "$LOADEDMODULES"; then
+	# Use currently loaded modulefiles in jobfile, too.
+	echo -e "$0: "'\E[37;34m'"\033[4mUsing the following (currently loaded) modulefiles in all job files:\033[0m"
+	echo -e "$0:    "'\E[37;34m'"\033[4m"`echo $LOADEDMODULES | sed 's/:/ /g'`"\033[0m"
+
+    # Neither modules loaded nor MODULES2LOAD set.
+    else
+
+	cat <<EOF 1>&2
+$0: Error: \$MODULES2LOAD not set nor are any modulefiles loaded. Job files cannot be created.
+$0:        Either load modulefiles to use in job files, too, or edit this script's header to
+$0:        define $MODULES2LOAD. Because it is very unlikely that no modulefile is needed in
+$0:        the job file to correctly run the FEAT2 benchmark test.
+EOF
+	exit 6
+    fi
+
+    # No MPI module loaded
+    echo "$0: No MPI required."
+    sedMPIEnv=not-needed-as-no-mpi-module-loaded
+    nodeSetting=`fb_determineNodeSetting "${NTASKS}"`
+    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}"`
+
+    sedMaxCores=$MAXCORESUSEDPERNODE
+
+    # Check whether we got a valid queue
+    if test -z "${pbsOptionQueue}"; then
+	cat <<EOF 1>&2
+$0: Error: No queue available that satisfied the node and wallclock
+$0: requirements:
+$0:   nodes          >= ${nodes}
+$0:   wallclock time >= ${WALLCLOCKLIMIT}
+EOF
+	return 3
+    else
+	echo "$0: Trying to enqueue to <${pbsOptionQueue}>."
+    fi
+
+    # Now, it is known which is the target queue.
+    # Check whether queue is enabled/disabled.
+    queueState="`qstat -Q $pbsOptionQueue | tail -1 | awk '{print \$4}'`"
+    if test "$queueState""x" = "nox"; then
+	cat <<EOF 1>&2
+$0: Error: Queue $pbsOptionQueue is currently closed, job scheduling
+$0: is not possible. Script cancelled.
+EOF
+	exit 7
+    fi
+
+    if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+	# We prefer to allocate complete nodes.
+	pbsOptionNodes="#PBS -l $nodeSetting";
+	# We use the complete nodes anyway. Require all available memory
+	vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+	pbsOptionVMem="#PBS -l vmem=${vmem}";
+	pbsOptionPVMem="";
+    else
+	# No complete nodes
+	pbsOptionNodes="#PBS -l $nodeSetting";
+
+	# We use only partial nodes. Given that determining and storing the memory
+	# requirements per benchmark test is rather tedious (also automated in the
+	# meantime), but above all has proven a bit unreliable (they differ
+	# significantly depending on compiler (version), MPI, BLAS/LAPACK
+	# implementations), we just ask for maxAvailPerNode/coresPerNode.
+	divisor="${CORESPERNODE}";
+	vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+	number=`echo ${vmem} | sed -e 's/^\(.*\)[kmgt]b$/\1/'`
+	unit=`echo ${vmem} | sed -e 's/^.*\([kmgt]b$\)/\1/'`
+	# 'bc' cuts off decimals in the final calculation of the variable "number".
+	# To avoid that, e.g., 7.9GiB gets capped to 7GiB convert values to kiB.
+	case "${unit}" in
+	    gb)
+		number=`echo ${number}*1024*1024 | bc`
+		unit=kb
+		;;
+	    mb)
+		number=`echo ${number}*1024 | bc`
+		unit=kb
+		;;
+	    kb)
+		;;
+	esac
+	# Deliberately do not prescribe a value for vmem, but pvmem:
+	# vmem is a per-node value that holds for all nodes. Such that in
+	# case a job entails several complete nodes plus one node merely
+	# partially, one would have to prescribe a vmem setting for the
+	# complete nodes that would also hold for the only partially
+	# requested node. That PBS resource request would mean that one
+	# has to wait until the only partially used node is completely
+	# void of other jobs, too.
+	number=`echo ${number}/${divisor} | bc`
+	pbsOptionPVMem="#PBS -l pvmem=${number}${unit}";
+	# Problem is that if not specifying vmem, we get a default vmem
+	# setting (resources_default.vmem)) imposed, if set. That can be
+	# too low!
+	pbsOptionVMem="#PBS -l vmem=${PBS_DEFAULT_VMEM_SETTING}";
+    fi
+
+
+    # Evaluate command line parameter options
+    #
+    # Send mail on job begin, abort and end?
+    pbsOptionMail=""
+    if test "$DOSENDMAIL" -eq "1"; then
+      pbsOptionMail="#PBS -m bae"
+    fi
+
+    # Let the job depend on another job?
+    pbsOptionAfter=""
+    if test "$AFTERJOB" != ""; then
+      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
+    fi
+
+    # Determine build ID
+    ID=`$GNUMAKE .idonly`
+    # Ensure build ID is
+    case $ID in
+	pc64-haswell-linux-*)
+	    # everything fine
+	    ;;
+	*)
+	    (echo -e '\E[37;31m'"\033[1mWarning: First three tokens of build ID <$ID>";
+	     echo "do not match the hardware of the compute nodes of the bttf cluster.";
+	     echo "Either hardcode the build ID in the Makefiles by running";
+	     echo
+	     echo "\$ ./configure --id=pc64-haswell-linux-<suitable-compiler>-<suitable-blaslapack> --force-id";
+	     echo
+	     echo "or invoke this scheduling script directly in an interactive session";
+	     echo "on the compute nodes. Otherwise results will be stored in the wrong";
+	     echo "directory, namely <results/$ID>";
+	     echo "instead of in <results/pc64-haswell-linux-*-*>.";
+	     echo -n "Pausing 15s to make sure this warning gets read.";
+	     for i in $(seq 1 15); do
+		echo -n "."; sleep 1;
+	     done
+	     echo -e "\033[0m") 1>&2
+	    ;;
+    esac
+
+    # Now, create the jobfile.
+    LOG_BASE_DIRECTORY=`$GNUMAKE print-base-log-dir`
+    cat <<EOF > $file
+#!/bin/sh
+
+#PBS -l walltime=$WALLCLOCKLIMIT
+$pbsOptionNodes
+$pbsOptionVMem
+$pbsOptionPVMem
+#PBS -q $pbsOptionQueue
+#PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
+# join standard output and error streams
+#PBS -j oe
+#PBS -M $EMAILADDRESS
+$pbsOptionMail
+$pbsOptionAfter
+
+cd $PWD
+test -d ${LOG_BASE_DIRECTORY} || mkdir -p ${LOG_BASE_DIRECTORY}
+
+EOF
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error while creating jobfile.
+EOF
+	exit 8
+    fi
+
+
+    # Add environment settings to jobfile
+    echo "$envSetting" >> $file
+    echo >> $file
+    if test -n "$MODULES2LOAD"; then
+	fb_addHardcodedModuleInstructions >> $file
+    else
+	fb_addModuleInstructions >> $file
+    fi
+    echo >> $file
+
+
+    # Add the content of our BENCHMARKRUNSCRIPT to the jobfile, but
+    # * omit the first lines (i.e. the shebang, leading comments)
+    # * set execution mode to PBSQUEUED
+    # * set MPI environment to use
+#         s|^LOGDIR=[ ]*\.|LOGDIR=$sedLogDir|i;
+#         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
+    sed -e \
+	"1,2d; \
+	 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$sedQueueingSystem|i; \
+	 s|MAX_CORES_PER_NODE_TO_USE =>[ ]*[0-9]*;|MAX_CORES_PER_NODE_TO_USE => $sedMaxCores;|i; \
+	 s|^MEMWATCH=.*$|MEMWATCH=$sedMemWatchEnv|i; \
+	 s|^MPIENV=[ ]*$|MPIENV=$sedMPIEnv|i;" $BENCHMARKRUNSCRIPT \
+	>> $file
+
+
+    # Make jobfile executable
+    chmod 750 $file
+
+    echo $0": Jobfile <$jobfile> created."
+}
+
+
+#  Function: Create jobfiles for all given test IDs, bypassing the
+#  usual mechanism to avoid repeated calls of 'make create-script' which slows
+#  processing down by an order of magnitude (because both the initialisation
+#  step of invoking make is expensive as well as repeatedly parsing all *.fbdef
+#  files given the large amount of test definitions we set up by now)
+fb_fastCreateAndSubmitJobfiles() {
+    jobfileprefix="$1"   # IN
+
+    # Check whether Makefile is available (i.e. whether configure has been run)
+    if test ! -s Makefile; then
+	cat <<EOF 1>&2
+$0: Error: No Makefile found. Please run './configure' first.
+EOF
+	exit 9
+    fi
+
+    echo $0": Creating all jobfiles at once."
+
+    sedQueueingSystem=TORQUE
+    sedMemWatchEnv=${MEMWATCH}
+    sedMaxCores=0
+    envSetting=""
+    if test -n "$MODULES2LOAD"; then
+	echo -e "$0: "'\E[37;34m'"\033[4mUsing the following (hardcoded) list of modulefiles in all job files:\033[0m"
+	echo -e "$0:    "'\E[37;34m'"\033[4m${MODULES2LOAD}\033[0m"
+	# No MPI module loaded
+	echo "$0: MPI not required for any job file."
+	sedMPIEnv=not-needed-as-no-mpi-module-loaded
+
+    # Use currently loaded modulefiles
+    elif test -n "$LOADEDMODULES"; then
+	# Use currently loaded modulefiles in jobfile, too.
+	echo -e "$0: "'\E[37;34m'"\033[4mUsing the following (currently loaded) modulefiles in all job files:\033[0m"
+	echo -e "$0:    "'\E[37;34m'"\033[4m"`echo $LOADEDMODULES | sed 's/:/ /g'`"\033[0m"
+
+    # Neither modules loaded nor MODULES2LOAD set.
+    else
+
+	cat <<EOF 1>&2
+$0: Error: \$MODULES2LOAD not set nor are any modulefiles loaded. Job files cannot be created.
+$0:        Either load modulefiles to use in job files, too, or edit this script's header to
+$0:        define $MODULES2LOAD. Because it is very unlikely that no modulefile is needed in
+$0:        the job file to correctly run the FEAT2 benchmark test.
+EOF
+	exit 10
+    fi
+
+
+    echo $0": Creating template for all job files..."
+    # Create a unique temporary file
+    # (Unfortunately 'mktemp' does not support suffixes.
+    #  So, get a temporary name, append the suffix ".fbconf", check whether
+    #  such a file already exists. If so, remove the temporary file created
+    #  by mktemp (the one without the suffix), create a new one and repeat
+    #  the test.)
+    tmpfile="`mktemp feat2.benchmark.schedulefile.XXXXX`";
+    trap "rm -f ${tmpfile}; exit 11" 2 3 9
+    while test -e ${tmpfile}.fbconf; do
+	rm -f ${tmpfile}
+	tmpfile="`mktemp feat2.benchmark.schedulefile.XXXXX`";
+    done
+    rm -f ${tmpfile}
+    tmpfile="${tmpfile}.fbconf";
+    echo $ALLTESTS | tr ' ' '\n' > $tmpfile;
+
+    # Create part of job scripts that is identical for all tests (for a given
+    # choice of MPI/no MPI and build ID)
+    $GNUMAKE --no-print-directory create-script-header COMPILERVERSION=${COMPILERVERSION}
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error while creating template for job files.
+EOF
+	rm -f $BENCHMARKRUNSCRIPT
+	exit 12
+    fi
+
+    sedMaxCores=$MAXCORESUSEDPERNODE
+
+    # Already patch the template BENCHMARKRUNSCRIPT for execution on LiDO:
+    # * omit the first lines (i.e. the shebang, leading comments)
+    # * set queueing system and MPI env based on loaded modules.
+    sed -i -e \
+		"1,2d; \
+		 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$sedQueueingSystem|i; \
+		 s|MAX_CORES_PER_NODE_TO_USE =>[ ]*[0-9]*;|MAX_CORES_PER_NODE_TO_USE => $sedMaxCores;|i; \
+		 s|^MEMWATCH=.*$|MEMWATCH=$sedMemWatchEnv|i; \
+		 s|^MPIENV=[ ]*$|MPIENV=$sedMPIEnv|i;" $BENCHMARKRUNSCRIPT
+    echo $0": Creating template for all job files... Done."
+
+    # Duplicate header for all jobfiles to be created
+    echo $0": Cloning template job file..."
+    trap "rm -f ${tmpfile} _tmp_.$BENCHMARKRUNSCRIPT.*; exit 13" 2 3 9
+    for testid in $ALLTESTS
+    do
+	cp -fp $BENCHMARKRUNSCRIPT _tmp_.$BENCHMARKRUNSCRIPT.$testid
+    done
+    if test $? -ne 0; then
+	cat <<EOF 1>&2
+$0: Error while cloning template job file.
+EOF
+	rm -f $BENCHMARKRUNSCRIPT _tmp_.$BENCHMARKRUNSCRIPT.*
+	exit 14
+    fi
+    echo $0": Cloning template job file... Done."
+
+    # Now, replicate the actions of the make target 'create-script-body'
+    #
+    # Determine build ID
+    ID=`$GNUMAKE .idonly`
+    # Ensure build ID is
+    case $ID in
+	pc64-haswell-linux-*)
+	    # everything fine
+	    ;;
+	*)
+	    (echo -e '\E[37;31m'"\033[1mWarning: First three tokens of build ID <$ID>";
+	     echo "do not match the hardware of the compute nodes of the bttf cluster.";
+	     echo "Either hardcode the build ID in the Makefiles by running";
+	     echo
+	     echo "\$ ./configure --id=pc64-haswell-linux-<suitable-compiler>-<suitable-blaslapack> --force-id";
+	     echo
+	     echo "or invoke this scheduling script directly in an interactive session";
+	     echo "on the compute nodes. Otherwise results will be stored in the wrong";
+	     echo "directory, namely <results/$ID>";
+	     echo "instead of in <results/pc64-haswell-linux-*-*>.";
+	     echo -n "Pausing 15s to make sure this warning gets read.";
+	     for i in $(seq 1 15); do
+		echo -n "."; sleep 1;
+	     done
+	     echo -e "\033[0m") 1>&2
+	    ;;
+    esac
+    #
+    # Determine whether or not to use MPI
+    MPI=`$GNUMAKE .mpi`
+    #
+    # Determine base dir for all log files
+    LOG_BASE_DIRECTORY=`$GNUMAKE print-base-log-dir`
+    #
+    # Call the script that includes the appropriate environment variables for
+    # a given test, but unlike in the Makefile call it with additional command
+    # line parameters instructing it to not write to screen, but to append
+    # directly to the temporary files just created.
+    export ID LOG_BASE_DIRECTORY MPI OVERWRITE_LOG_DIRECTORY;
+    include/create_script.pl --append-to-files "_tmp_.$BENCHMARKRUNSCRIPT." $tmpfile
+    rm $tmpfile
+    trap "rm -f _tmp_.$BENCHMARKRUNSCRIPT.*; exit 15" 2 3 9
+
+    # Now, turn all these temporary files into proper PBS jobscripts
+    for testid in $ALLTESTS
+    do
+	# Ignore commented out test IDs - create_script.pl has, too.
+	# So, there is no point in listing them among tests that had errors.
+	if test "`echo $testid | cut -c1`" = "#"; then
+	    rm -f $tmpjobfile;
+	    continue;
+	fi
+	jobfile="$jobfileprefix.$testid.sh"
+	tmpjobfile="_tmp_.$BENCHMARKRUNSCRIPT.$testid"
+	if diff -q $BENCHMARKRUNSCRIPT $tmpjobfile 1>/dev/null; then
+	    # Files do not differ, so include/create_script.pl did not append anything
+	    # which is an indicator for the test ID having had errors.
+	    testIDsWithErrors="$testIDsWithErrors $testid"
+	    rm -f $tmpjobfile;
+
+	else
+	    echo $0": Creating jobfile for <$testid>."
+
+	    # The still remaining action of the make target 'create-script':
+	    # Add footer function to temporary jobfile
+	    (echo; echo fb_footer; echo; ) >> $tmpjobfile
+
+	    fb_getNTASKS $tmpjobfile
+	    if test $? -ne 0; then
+		echo $0": An error occurred creating the jobfile <$jobfile>."
+		testIDsWithErrors="$testIDsWithErrors $testid"
+		rm -f $tmpjobfile
+		continue
+	    fi
+
+	    envSetting=""
+	    nodeSetting=`fb_determineNodeSetting "${NTASKS}"`
+	    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}"`
+
+	    # Check whether we got a valid queue
+	    if test -z "${pbsOptionQueue}"; then
+		cat <<EOF 1>&2
+$0: Error: No queue available that satisfied the node, wallclock and
+$0: interconnect requirements:
+$0:   nodes          >= ${nodes}
+$0:   wallclock time >= ${WALLCLOCKLIMIT}
+EOF
+		testIDsWithErrors="$testIDsWithErrors $testid"
+		rm -f $tmpjobfile
+		continue
+	    else
+		echo "$0: Trying to enqueue to <${pbsOptionQueue}>."
+	    fi
+
+	    if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+		# We prefer to allocate complete nodes.
+		pbsOptionNodes="#PBS -l $nodeSetting";
+		# We use the complete nodes anyway. Require all available memory
+		vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+		pbsOptionVMem="#PBS -l vmem=${vmem}";
+		pbsOptionPVMem="";
+	    else
+		# No complete nodes
+		pbsOptionNodes="#PBS -l $nodeSetting";
+
+		# We use only partial nodes. Given that determining and storing the memory
+		# requirements per benchmark test is rather tedious (also automated in the
+		# meantime), but above all has proven a bit unreliable (they differ
+		# significantly depending on compiler (version), MPI, BLAS/LAPACK
+		# implementations), we just ask for maxAvailPerNode/coresPerNode.
+		divisor="${CORESPERNODE}";
+		vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+		number=`echo ${vmem} | sed -e 's/^\(.*\)[kmgt]b$/\1/'`
+		unit=`echo ${vmem} | sed -e 's/^.*\([kmgt]b$\)/\1/'`
+		# 'bc' cuts off decimals in the final calculation of the variable "number".
+		# To avoid that, e.g., 7.9GiB gets capped to 7GiB convert values to kiB.
+		case "${unit}" in
+		    gb)
+			number=`echo ${number}*1024*1024 | bc`
+			unit=kb
+			;;
+		    mb)
+			number=`echo ${number}*1024 | bc`
+			unit=kb
+			;;
+		    kb)
+			;;
+		esac
+		# Deliberately do not prescribe a value for vmem, but pvmem:
+		# vmem is a per-node value that holds for all nodes. Such that
+		# in case a job entails several complete nodes plus one node
+		# merely partially, one would have to prescribe a vmem setting
+		# for the complete nodes that would also hold for the only
+		# partially requested node. That PBS resource request would
+		# mean that one has to wait until the only partially used node
+		# is completely void of other jobs, too.
+		number=`echo ${number}/${divisor} | bc`
+		pbsOptionPVMem="#PBS -l pvmem=${number}${unit}";
+		# Problem is that if not specifying vmem, we get a default
+		# vmem setting (resources_default.vmem)) imposed, if set. That
+		# can be too low!
+		pbsOptionVMem="#PBS -l vmem=${PBS_DEFAULT_VMEM_SETTING}";
+	    fi
+
+	    # Send mail on job begin, abort and end?
+	    pbsOptionMail=""
+	    if test "$DOSENDMAIL" -eq "1"; then
+	      pbsOptionMail="#PBS -m bae"
+	    fi
+
+	    # Let the job depend on another job?
+	    pbsOptionAfter=""
+	    if test "$AFTERJOB" != ""; then
+		pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
+	    fi
+
+
+	    # Now, create the jobfile.
+	    cat <<EOF > $jobfile
+#!/bin/sh
+
+#PBS -l walltime=$WALLCLOCKLIMIT
+$pbsOptionNodes
+$pbsOptionVMem
+$pbsOptionPVMem
+#PBS -q $pbsOptionQueue
+#PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$testid
+# join standard output and error streams
+#PBS -j oe
+#PBS -M $EMAILADDRESS
+$pbsOptionMail
+$pbsOptionAfter
+
+cd $PWD
+test -d ${LOG_BASE_DIRECTORY} || mkdir -p ${LOG_BASE_DIRECTORY}
+
+EOF
+	    if test $? -ne 0; then
+		cat <<EOF 1>&2
+$0: Error while creating jobfile.
+EOF
+		rm -f _tmp_.$BENCHMARKRUNSCRIPT.*
+		exit 16
+	    fi
+
+
+	    # Add environment settings to jobfile
+	    echo "$envSetting" >> $jobfile
+	    echo >> $jobfile
+	    if test -n "$MODULES2LOAD"; then
+		fb_addHardcodedModuleInstructions >> $file
+	    else
+		fb_addModuleInstructions >> $file
+	    fi
+	    echo >> $jobfile
+
+
+	    # Add the content of our BENCHMARKRUNSCRIPT to the jobfile
+	    cat $tmpjobfile >> $jobfile
+	    rm -f $tmpjobfile;
+
+	    # Make jobfile executable
+	    chmod 750 $jobfile
+
+	    echo $0": Jobfile <$jobfile> created."
+	    successfulTests=`expr $successfulTests + 1`
+
+	    if [ $NOSCHEDULE -ne "1" ]; then
+		# Check whether queue is enabled/disabled.
+		queueState="`qstat -Q $pbsOptionQueue | tail -1 | awk '{print \$4}'`"
+		if test "$queueState""x" = "nox"; then
+		    cat <<EOF 1>&2
+$0: Error: Queue $pbsOptionQueue is currently closed, job scheduling
+$0: is not possible. Script cancelled.
+EOF
+		    exit 17
+		fi
+		echo $0": Submitting <$jobfile>."
+		# Submit the jobfile. Keep trying to submit it in
+		# case the maximum number of jobs per user is already
+		# reached.
+		fb_submitPBSJobfile "$jobfile" "Maximum number of jobs already in queue"
+	    else
+		echo $0": Submitting <$jobfile> skipped."
+	    fi
+	fi
+    done
+    trap - 2 3 9;
+}
+
+
+
+
+# ================================================
+# = Here is where to script really gets executed =
+# ================================================
+
+fb_readargs "$@"
+fb_ensureCorrectWorkingDir
+fb_setMailSender
+fb_findGNUMake
+fb_queryPBS
+echo
+
+successfulTests=0
+testIDsWithErrors=""
+
+# Intelligently create jobfile. Strategy: Bypass the usual mechanism
+# involving repeated calls of 'make singletest' to speed up processing.
+#
+# # Takes 1.5min for 930 tests.
+# fb_fastCreateAndSubmitJobfiles "$JOBFILEPREFIX"
+# # Show error messages, if any
+# fb_postprocess "$successfulTests" "$testIDsWithErrors"
+
+# Create jobfiles one by one. Basically following the strategy:
+#       for testid in $ALLTESTS
+#           echo $testid > singletest.fbconf
+#           make singletest
+#           rm -f singletest.fbconf
+#       done
+# Takes 34 min for 930 tests.
+for testid in $ALLTESTS
+do
+    jobfile="$JOBFILEPREFIX.$testid.sh"
+    echo $0": Creating jobfile for <$testid>."
+    fb_createJobfile "$testid" "$jobfile"
+    if test $? -eq 0; then
+	successfulTests=`expr $successfulTests + 1`
+	if [ $NOSCHEDULE -ne "1" ]; then
+	    echo $0": Submitting <$jobfile>."
+	    # Submit the jobfile. Keep trying to submit it in
+	    # case the maximum number of jobs per user is already
+	    # reached.
+	    fb_submitPBSJobfile "$jobfile" "Maximum number of jobs already in queue"
+	else
+	    echo $0": Submitting <$jobfile> skipped."
+	fi
+    else
+	echo $0": An error occurred creating the jobfile. Submit cancelled."
+	testIDsWithErrors="$testIDsWithErrors $testid"
+    fi
+    echo
+done
+# Show error messages, if any
+fb_postprocess "$successfulTests" "$testIDsWithErrors"

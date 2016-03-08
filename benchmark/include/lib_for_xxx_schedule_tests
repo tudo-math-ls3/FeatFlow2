@@ -28,7 +28,8 @@ fb_usage() {
     esac
 
     cat <<EOF
-Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-w wallclock limit] [-a jobid] <TEST ID | test suite> [<TEST ID | test suite>]
+Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-w wallclock limit] \
+          [-a jobid] <TEST ID | test suite> [<TEST ID | test suite>]
 
 $0 provides a convenient way to schedule one 
 or more FEAST benchmark tests (identified by test ID, given directly 
@@ -59,6 +60,9 @@ submits the job file to the scheduler.
       Default: $EMAILADDRESS
   --help, -h
       prints this usage statement
+  --noschedule, --no-schedule
+      Creates a job script but does not schedule the job. Used for
+      debugging purposes.
   --overwrite-log-directory, -o
       In case a benchmark test ID's log directory does already exist, don't
       rename it to save its content, but re-use it. Potentially overwrites
@@ -127,7 +131,7 @@ fb_readargs() {
 	  --corespernode|-c*)  # Number of cores per node to use
 	      CORESPERNODE="$2"
 	      CORESPERQUADNODE="$2"
-	      echo "$0: Using $CORESPERNODE nodes"
+	      echo "$0: Using $CORESPERNODE cores per node"
 	      shift
 	      shift
 	      ;;
@@ -191,6 +195,9 @@ fb_readargs() {
 	echo "$0: No benchmark test IDs specified. Nothing done."
 	echo "For help invoke '$0 --help'."
 	exit
+    else
+	# Sort and discard duplicates from test IDs given on command line
+	ALLTESTS=`echo $ALLTESTS | tr ' ' '\n' | sort -u`
     fi
 }
 
@@ -229,11 +236,6 @@ fb_cleanUpPreviousRun() {
 #            Sets $EMAILADDRESS and $DOSENDMAIL (boolean variable whether to send email at all)
 fb_setMailSender() {
     case "$USER" in
-	cbecker|featflow|xambeck)
-	    EMAILADDRESS=christian.becker@math.tu-dortmund.de
-	    DOSENDMAIL=0
-	    ;;
-
 	buijssen|xamsbuij)
 	    EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
 	    DOSENDMAIL=1
@@ -241,11 +243,6 @@ fb_setMailSender() {
 
 	goeddeke)
 	    EMAILADDRESS=goeddeke@math.tu-dortmund.de
-	    DOSENDMAIL=1
-	    ;;
-
-	wobker)
-	    EMAILADDRESS=hilmar.wobker@math.tu-dortmund.de
 	    DOSENDMAIL=1
 	    ;;
 
@@ -309,7 +306,7 @@ EOF
 #            finally the modules to load).
 fb_addModuleInstructions() {
     if [ -n "$MODULESHOME" ]; then
-	# 'runtests' is a sh shell script. A jobfile must be a sh shell script 
+	# 'runtests' is a sh shell script. A jobfile must be a sh shell script
 	# as well, hence.
 	echo ". $MODULESHOME/init/sh"
     else
@@ -334,12 +331,42 @@ EOF
 	# Only load 3 modules at once.
 	# Modules Enviroment 3.2.x randomly crashes when trying to
 	# load/unload more at the same time.
+	echo "module purge"
 	echo $LOADEDMODULES | sed 's/:/ /g' | xargs -n 3 echo "module load"
     else
 	cat <<EOF 1>&2
 $0: Error: \$LOADEDMODULES not set. Job files cannot be created.
 EOF
 	exit 1006
+    fi
+}
+
+
+#  Function: Creates all necessary instructions to be able to use a hardcoded
+#            list of modules later on, hardcoded in the variable MODULES2LOAD.
+fb_addHardcodedModuleInstructions() {
+    if [ -n "$MODULESHOME" ]; then
+	# 'runtests' is a sh shell script. A jobfile must be a sh shell script
+	# as well, hence.
+	echo ". $MODULESHOME/init/sh"
+    else
+	cat <<EOF 1>&2
+$0: Error: \$MODULESHOME not set. Job files cannot be created.
+EOF
+	exit 1007
+    fi
+
+    if [ -n "$MODULES2LOAD" ]; then
+	# Only load 3 modules at once.
+	# Modules Enviroment 3.2.x randomly crashes when trying to
+	# load/unload more at the same time.
+	echo "module purge"
+	echo $MODULES2LOAD | xargs -n 3 echo "module load"
+    else
+	cat <<EOF 1>&2
+$0: Error: \$MODULES2LOAD not set. Job files cannot be created. Please edit this script's header.
+EOF
+	exit 1008
     fi
 }
 
@@ -373,7 +400,7 @@ fb_createRuntestsScript() {
 	cat <<EOF 1>&2
 $0: Error: File 'GNUmakefile' not found. Please run './configure' first.
 EOF
-	exit 1007
+	exit 1009
     fi
 
     # Create a 'runtests' script which serves as base for the jobfile.
@@ -383,7 +410,7 @@ EOF
 	cat <<EOF 1>&2
 $0: Error: Creating temporary file failed. Script cancelled.
 EOF
-	exit 1008
+	exit 1010
     fi
 
     $GNUMAKE COMPILERVERSION=${COMPILERVERSION} `echo $tmpfile | sed 's/.fbconf$//'`
@@ -430,8 +457,39 @@ fb_createLogDir() {
 }
 
 
+# Function: Try hard to submit a jobfile to LoadLeveler
+fb_submitLoadLevelerJobfile() {
+    jobfile="$1"           # IN
+
+    success=0
+    # time to wait (in seconds) between subsequent qstat calls
+    sleeptime=60
+    # how many cycles to wait till for all jobs to finish
+    maxwaitcycles=512
+    iteration=1
+    while test $success -eq 0 -a $iteration -le $maxwaitcycles; do
+	output="`llsubmit $jobfile 2>&1`"
+	returncode=$?
+	if [ $returncode -eq 0 ]; then
+	    echo $output
+	    success=1
+
+	# All other errors: end script
+	else
+	    echo $output
+	    cat <<EOF 1>&2
+$0: Error while submitting jobfile <$jobfile>:
+$0: qsub returned error code $returncode.
+EOF
+	    exit 1011
+	fi
+    done
+
+}
+
+
 # Function: Try hard to submit a jobfile
-fb_submitJobfile() {
+fb_submitPBSJobfile() {
     jobfile="$1"           # IN
     maxjobsmessage="$2"    # IN
 
@@ -448,14 +506,43 @@ fb_submitJobfile() {
 	    echo $output
 	    success=1
 
+	# Catch case "qsub: would exceed complex's per-user limit" aka error code 38. Just
+	# wait and then re-submit in this case.
+	elif [ $returncode -eq 38 ]; then
+	    echo $output
+	    # Wait and try again
+	    iteration=`expr $iteration + 1`
+	    echo $0": Waiting $sleeptime second, then retrying submission..."
+	    sleep $sleeptime
+
+	# Catch case "PBS server down, possibly getting restarted" aka error code 111. Just
+	# re-submit in this case.
+	elif [ $returncode -eq 111 ]; then
+	    echo $output
+	    # Wait and try again
+	    iteration=`expr $iteration + 1`
+	    echo $0": Waiting $sleeptime second, then retrying submission..."
+	    sleep $sleeptime
+
 	# Catch case "invalid credential" aka error code 171. Just
 	# re-submit in this case.
-	elif [ $returncode -eq 171 ]; then
+	# Same for code 159: "Invalid credential. Cannot authenticate user. No Permission."
+	# Same for code 194: "Server shutting down"
+	elif [ $returncode -eq 159 -o $returncode -eq 171 -o $returncode -eq 194 ]; then
 	    echo $output
 	    # Wait and try again
 	    iteration=`expr $iteration + 1`
 	    echo $0": Waiting 1 second, then retrying submission..."
 	    sleep 1
+
+	# Catch case "queue disabled" aka error code 173. Just
+	# re-submit in this case.
+	elif [ $returncode -eq 173 ]; then
+	    echo $output
+	    # Wait and try again
+	    iteration=`expr $iteration + 1`
+	    echo $0": Waiting $sleeptime second, then retrying submission..."
+	    sleep $sleeptime
 
 	# Catch case "Maximum number of jobs already in queue".
 	# Currently, the message seems not related one to one to
@@ -476,7 +563,7 @@ fb_submitJobfile() {
 $0: Error while submitting jobfile <$jobfile>:
 $0: qsub returned error code $returncode.
 EOF
-	    exit 1010
+	    exit 1012
 	fi
     done
 
@@ -500,7 +587,7 @@ fb_postprocess() {
 $0: Not a single jobfile could be created as no valid test ID was given.
 
 EOF
-	exit 1011
+	exit 1013
     fi
     # Some tests had errors
     if [ -n "$testIDsWithErrors" ]; then
