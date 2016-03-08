@@ -150,7 +150,7 @@ CONSECJOB=
 # ==================================================================
 # It is assumed this script is called from a FEAT2 directory.
 # This assumption is not only made here, but also later as the
-# Makefile in a fbenchmark2 directory (whatever its actual name is)
+# Makefile in a fbenchmark directory (whatever its actual name is)
 # is needed to create a 'runtests' script. The library function
 # fb_ensureCorrectWorkingDir even checks whether that's the case.
 
