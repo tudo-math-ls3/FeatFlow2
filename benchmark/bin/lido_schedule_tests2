@@ -321,5 +321,5 @@ if test "$NOSCHEDULE" != "1"
   then
     # Submit the jobs
     echo $0": Submitting jobs..."
-    fb_submitJobfiles "$COLLECTJOBS" "MSGQUEUEFULL"
+    fb_submitPBSJobfiles "$COLLECTJOBS" "MSGQUEUEFULL"
   fi

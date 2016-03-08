@@ -952,7 +952,7 @@ EOF
 		# Submit the jobfile. Keep trying to submit it in
 		# case the maximum number of jobs per user is already
 		# reached.
-		fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+		fb_submitPBSJobfile "$jobfile" "Maximum number of jobs already in queue"
 	    else
 		echo $0": Submitting <$jobfile> skipped."
 	    fi
@@ -1006,7 +1006,7 @@ fb_postprocess "$successfulTests" "$testIDsWithErrors"
 #	    # Submit the jobfile. Keep trying to submit it in
 #	    # case the maximum number of jobs per user is already
 #	    # reached.
-#	    fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+#	    fb_submitPBSJobfile "$jobfile" "Maximum number of jobs already in queue"
 #	else
 #	    echo $0": Submitting <$jobfile> skipped."
 #	fi

@@ -1657,10 +1657,10 @@ fb_createLogDir() {
 # ==================================================
 # FUNCTION: Try hard to submit a jobfile
 #
-# Tries to submit a job file to the queueing system of the cluster.
+# Tries to submit a job file to the torque/PBS queueing system of the cluster.
 #
 # Call:
-#    fb_submitJobfile [jobfile] [logfolder] [maxjobsmessage] [consecjobid]
+#    fb_submitPBSJobfile [jobfile] [logfolder] [maxjobsmessage] [consecjobid]
 #
 # where
 #    [jobfile]        = name of the jobfile to submit
@@ -1682,7 +1682,7 @@ fb_createLogDir() {
 # success is set to 1.
 # ==================================================
 
-fb_submitJobfile() {
+fb_submitPBSJobfile() {
     jobfile="$1"           # IN
     logfolder="$2"         # IN
     maxjobsmessage="$3"    # IN
@@ -1780,7 +1780,7 @@ EOF
 # Sumbit all jobfiles.
 #
 # Call:
-#    fb_submitJobfiles [parexec] [maxjobsmessage]
+#    fb_submitPBSJobfiles [parexec] [maxjobsmessage]
 #
 # where
 #    [parexec]        = 0, if the script should submit one job per test-id
@@ -1793,7 +1793,7 @@ EOF
 # queue is assumed to be full.
 # ==================================================
 
-fb_submitJobfiles()
+fb_submitPBSJobfiles()
 {
   # Set parexec=1 if multiple jobs are collected in 'parallel' scripts.
   if test "$1" -eq "0"
@@ -1829,7 +1829,7 @@ fb_submitJobfiles()
           fb_getJobfileName $testid 0
           fb_readTaskLogDir $JOBFILE
           # Submit the job.
-          fb_submitJobfile "$TEMPJOBFILE" "$LOG_DIR" "$maxjobsmessage" "$CONSECJOB"
+          fb_submitPBSJobfile "$TEMPJOBFILE" "$LOG_DIR" "$maxjobsmessage" "$CONSECJOB"
         fi
     done
 }
