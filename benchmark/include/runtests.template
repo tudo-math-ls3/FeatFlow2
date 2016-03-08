@@ -1,15 +1,15 @@
 #!/bin/sh
 
-# ===================================================================
-# Script that runs an arbitrary number of FEAT2 benchmark tests.
-# These tests are identified by their benchmark test id (e.g. CC2D_002,
-# POISSON_001, FLAGSHIP_TRANSPORT_003_1D, generally any sequence of non-blanks
-# specified as value of the keyword 'testid') and defined in *.fbdef
-# files in the subdirectory 'tests/'.
+# ============================================================================
+# Script that runs an arbitrary number of FEAT2 benchmark tests. These tests
+# are identified by their benchmark test id (e.g. CC2D_002, POISSON_001,
+# FLAGSHIP_TRANSPORT_003_1D, generally any sequence of non-blanks specified as
+# value of the keyword 'testid') and defined in *.fbdef files in the
+# subdirectory 'tests/'.
 #
-# The script works on standalone workstations, pc clusters and
-# supercomputers like NEC SX-6/-8/-9 and IBM p690 systems.
-# ===================================================================
+# The script works on standalone workstations, pc clusters and supercomputers
+# like NEC SX-6/-8/-9 and IBM p690 systems.
+# ============================================================================
 
 
 # 'fb_' in function names stands for 'FEAT2 benchmark'.
@@ -48,14 +48,6 @@ COMPILERVERSION=<SET_VIA_MAKEFILE>
 #        may be overwritten by adding "DEBUGGER=<value>" on the command line,
 #        e.g.:         make singletests DEBUGGER=DDT
 DEBUGGER=<SET_VIA_MAKEFILE>
-
-
-## Type:	boolean
-## Default:     0/false
-#
-# Whether or not to use a hostfile to e.g. put the master process on a
-# separate node
-GENERATE_AND_USE_HOSTFILE=0
 
 
 ## Type:        boolean integer
@@ -128,6 +120,8 @@ MPIENV=<SET_VIA_MAKEFILE>
 #          NEC SX jobs entailing not more than 8 cpus
 #  * NEC_internode
 #          NEC SX jobs entailing more than 8 cpus
+#  * TORQUE
+#          Torque 4.2.x installation at TU Dortmund Math Faculty
 #
 # The scripts used to set up and start batch job scripts
 # (bin/*schedule_*tests) may set/overwrite this value dynamically when
@@ -176,13 +170,6 @@ SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>
 ## Type:	string
 ## Default:     empty
 #
-# Command line arguments when running totalview.
-TOTALVIEW_ARGS=
-
-
-## Type:	string
-## Default:     empty
-#
 # Command line arguments when running valgrind.
 VALGRIND_ARGS=""
 #VALGRIND_ARGS="${VALGRIND_ARGS} -v"
@@ -214,404 +201,7 @@ fb_initialiseEnv() {
     # variables FEAT2 uses in its configuration files. We will
     # always append to this variable, that's why an initialisation is needed.
     addEnvVars=""
-#    addEnvVars="--hostfile <file> --nolocal"
-#    addEnvVars="--mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
-#    addEnvVars="--mca mpi_maffinity_alone 1 --hostfile <file> --rankfile <file>"
-    # Syntax of Open MPI 1.x.x hostfile
-    #   <hostname>	slots=<no.>	max_slots=<no.>
-    # Per host on line.
-    #
-    # Syntax of Open MPI 1.3.x rankfile:
-    #   rank <rank no.>=<hostname>  slot=<socket no.>:<core no.>
-    # Per rank one line. Hence, a different rank file is required for different
-    # number of processes/parallel blocks.
-    #
-    # Example:
-    # The following hostfile/rankfile combination treats our GPU cluster as if
-    # it only had one socket, ie, only one dualcore CPU instead of two:
-    #
-    # --hostfile
-    # ashenvale   slots=4 max_slots=4
-    # azeroth     slots=4 max_slots=4
-    # kalimdor    slots=4 max_slots=4
-    # stonetalon  slots=4 max_slots=4
-    #
-    # --rankfile
-    # rank 0=azeroth    slot=0:0
-    # rank 1=azeroth    slot=1:0
-    # rank 2=azeroth    slot=1:1
-    # rank 3=ashenvale  slot=1:0
-    # rank 4=ashenvale  slot=1:1
-    # rank 5=kalimdor   slot=1:0
-    # rank 6=kalimdor   slot=1:1
-    # rank 7=stonetalon slot=1:0
-    # rank 8=stonetalon slot=1:1
-    #
-    # Note that azeroth also runs the master, on a separate socket in this example.
 
-
-    # A shell function that creates a hostfile and prints it to screen
-    fb_generate_host() {
-	# empty function by default
-	file="$1"  # IN
-	echo "# ${file}";
-    }
-
-
-    # ===================================================================
-    # Define MPI commands depending on top-of-file settings
-    # ===================================================================
-    ARCH="`uname -m`";
-    case "${QUEUEINGSYSTEM}" in
-	# No queueing system
-	"")
-	    case "${ARCH}" in
-		# Alpha platform: yggdrasill, nidhoegg, ragnaroek
-		"alpha")
-		    # By default Digital MPI should be used on Alpha.
-		    # So, set MPIENV to "DigitalMPI" if it's not yet set to a particular
-		    # value.
-		    if test "x" = "${MPIENV}""x"; then
-			MPIENV=DigitalMPI
-		    fi
-
-		    case "${MPIENV}" in
-			# LAM/MPI on Alpha
-			"LAMMPI")
-			    MPIRC='mpirun C '
-			    MPICLEAN='lamclean'
-			    MPISTART='lamboot'
-			    MPISTOP='lamhalt'
-			    ;;
-
-			# DigitalMPI on Alpha
-			"DigitalMPI")
-			    MPIRC='dmpirun -np ${ntasks} '
-			    MPICLEAN='mpiclean 1> /dev/null 2>&1 #'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    ;;
-			*)
-			    echo "Script is not prepared to be run on Alpha platforms with an MPI environment";
-			    echo "named <${MPIENV}>. Benchmark not executed.";
-			    exit 1;
-		    esac
-		    ;;
-
-		# Itanium2 server
-		"ia64")
-#		    if test "x" = "${MPIENV}""x"; then
-#			# No default set. Find out whether we are on a
-#			# NEC SX gateway Itanium2 server and are using MPI/EX.
-#			if test "`which mpirun`" = "/opt/NECmpi/bin/mpirun"; then
-#			    MPIENV=MPIEX
-#			else
-#			    MPIENV=OpenMPI
-#			fi
-#		    fi
-
-		    case "${MPIENV}" in
-			# MPI/EX
-			"MPIEX")
-			    MPIRC='mpirun -np ${ntasks} '
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
-			    # are taken that ensure that all environment variables set by this
-			    # script and referenced in any file read in by the FEAT2 application
-			    # are avaibable on all nodes (via MPIEXPORT)
-			    NECSXMODE=true
-
-			    # Ensure MKL libraries are found
-			    LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/MathKeisan/MKL/lib/64
-			    export LD_LIBRARY_PATH
-
-#			    F_PROGINF=DETAIL
-#			    MPIPROGINF=YES
-#			    F_FILEINF=YES
-#			    export F_PROGINF MPIPROGINF F_FILEINF
-			    ;;
-
-			# OpenMPI
-			"OpenMPI")
-			    MPIRC='mpirun  -np ${ntasks} '
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    ;;
-
-			# none
-			*)
-			    MPIRC='echo'
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    ;;
-		    esac
-		    ;;
-
-		# Catch-all for all non-queueing systems: Sun, Linux 32bit, Linux 64bit etc.
-		*)
-		    # By default OpenMPI should be used that's the MPI flavour still being
-		    # developed currently.
-		    # So, set MPIENV to "OpenMPI" if it's not yet set to a particular
-		    # value.
-		    if test "x" = "${MPIENV}""x"; then
-			MPIENV=OpenMPI
-		    fi
-
-		    case "${MPIENV}" in
-			# LAM/MPI
-			"LAMMPI")
-#			    MPIRC='mpirun C '
-			    MPIRC='mpirun  -np ${ntasks} '
-			    MPICLEAN='lamclean'
-			    MPISTART='lamboot'
-			    MPISTOP='lamhalt'
-			    ;;
-
-			# MPICH
-			"MPICH")
-			    MPIRC='mpirun  -np ${ntasks} '
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    ;;
-
-			# MPICH2
-			"MPICH2")
-#			    MPIRC='mpirun C '
-			    MPIRC='mpirun  -np ${ntasks} '
-			    MPICLEAN='mpdcleanup'
-			    MPISTART='mpdboot -n 1 -1'
-			    MPISTOP='mpdallexit'
-			    ;;
-
-			# MVAPICH
-			"MVAPICH")
-			    MPIRC='mpirun  -np ${ntasks} '
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-			    ;;
-
-			# OpenMPI
-			"OpenMPI")
-			    # mpool_sm_size:
-			    #     size of shared memory block for communication in bytes
-			    #     allocated per process at program start
-			    # btl self,sm,tcp:
-			    #     type and order to try to communicate via
-
-			    # 512 MB shared memory intranode communication buffer
-#			    MPIRC='mpirun  --mca mpool_sm_size 536870912 -np ${ntasks} '
-
-			    # 128 MB shared memory intranode communication buffer
-#			    MPIRC='mpirun  --mca mpool_sm_size 134217728 -np ${ntasks} '
-
-			    # 64 MB shared memory intranode communication buffer
-#			    MPIRC='mpirun  --mca mpool_sm_size 67108864  -np ${ntasks} '
-
-			    # Disable shared memory communication
-#			    MPIRC='mpirun  --mca btl tcp,self  -np ${ntasks} '
-
-			    # Default settings
-			    MPIRC='mpirun  -np ${ntasks} '
-
-			    MPICLEAN='echo'
-			    MPISTART='echo'
-			    MPISTOP='echo'
-
-			    # Update command line settings for TotalView Debugger
-			    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi Open\ MPI"
-			    ;;
-
-			# Unhandled case
-			*)
-			    echo "Script is not prepared to be run on <${ARCH}> with an MPI environment";
-			    echo "named <${MPIENV}>. Benchmark not executed.";
-			    exit 1;
-			    ;;
-		    esac
-
-		    # If g95 is being used and a specific g95 environment variable is set,
-		    # issue a warning.
-		    if test -n "`echo ${BUILDID} | grep g95-`"; then
-			if test "${G95_MEM_INIT+set}" = set ; then
-			    echo "========================================================================";
-			    echo "WARNING: The environment variable G95_MEM_INIT was found to be set!";
-			    echo "It has been unset to ensure that even big jobs (that overload the";
-			    echo "host due to a large number of parallel blocks) will run.";
-			    echo "G95_MEM_INIT=0 will touch every byte that is allocated. Code that";
-			    echo "allocates more memory than it actually uses may allocate more";
-			    echo "memory than physically available or addressable. With G95_MEM_INIT=0";
-			    echo "that code will crash due to out-of-memory, without the environment";
-			    echo "setting the code will probably run.";
-			    echo "========================================================================";
-			    unset G95_MEM_INIT
-			fi
-		    fi
-	    esac
-	    ;;
-
-	# LiDO
-	"LIDO")
-	    # Remark:
-	    # To directly run jobs on the LiDO gateway nodes (which is a violation of
-	    # the user policy, but convenient to briefly test things), set above
-	    #    set QUEUEINGSYSTEM=
-	    #    set MPIENV=OpenMPI   (or LAMMPI, MPICH2 etc.)
-
-	    case "${MPIENV}" in
-		# LAM/MPI on LiDO
-		"LAMMPI")
-		    MPIRC='mpirun C '
-		    MPICLEAN='lamclean'
-		    # Boot MPI universe, but ignore any messages on stderr (like: "node 'foo' added to known hosts")
-		    MPISTART='lamboot -ssi boot_rsh_ignore_stderr 1 ${PBS_NODEFILE}'
-		    MPISTOP='lamhalt'
-		    # Update command line settings for TotalView Debugger
-		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"LAM\""
-		    ;;
-
-		# MPICH on LiDO
-		"MPICH")
-		    MPIRC='mpirun  -np ${ntasks} '
-		    MPICLEAN='echo'
-		    MPISTART='echo'
-		    MPISTOP='echo'
-		    # Update command line settings for TotalView Debugger
-		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MPICH\""
-		    ;;
-
-		# MPICH2 on LiDO
-		"MPICH2")
-#		    MPIRC='mpirun C '
-		    MPIRC='mpirun  -np ${ntasks} '
-		    MPICLEAN='mpdcleanup'
-		    MPISTART='mpdboot -n 1 -1'
-		    MPISTOP='mpdallexit'
-		    # Update command line settings for TotalView Debugger
-		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MPICH2\""
-		    ;;
-
-		# OpenMPI on LiDO
-		"OpenMPI")
-		    MPIRC='mpirun -np ${ntasks} '
-		    MPICLEAN='echo'
-		    MPISTART='echo'
-		    MPISTOP='echo'
-		    case "`hostname -f`" in
-			*.cvos.cluster)
-			    # bind an MPI process to a cpu and its memory; the linux scheduler sucks for MPI
-			    addEnvVars="${addEnvVars} --mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
-			    ;;
-			*.lidocluster.hp)
-			    # maff-paff is deadly (so far) on LiDO-2 nodes: Run times may explode for
-			    # from 3s to > 18min depending on how many jobs are scheduled to a node.
-
-			    # A shell function that creates a hostfile and prints it to screen
-			    unset -f fb_generate_host;
-			    fb_generate_host() {
-				file="$1"  # IN
-				# Setting that puts master on a separate node
-				uniq ${file} | \
-				    perl -e 'use strict; my $line = 0; while (<>) { $line++; chomp(); if (1 == $line) { print $_ . "\tslots=1 \tmax_slots=1\n"; } else { print $_ . "\tslots=4 \tmax_slots=8\n"; }}'
-			    }
-			    ;;
-		    esac
-		    # Update command line settings for TotalView Debugger
-		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"Open MPI\""
-		    ;;
-
-		# MVAPICH on LiDO
-		"MVAPICH")
-		    MPIRC='mpirun -np ${ntasks} '
-		    MPICLEAN='echo'
-		    MPISTART='echo'
-		    MPISTOP='echo'
-		    # Update command line settings for TotalView Debugger
-		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MVAPICH\""
-#		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"MVAPICH2\""
-		    ;;
-
-		"not-needed-as-feat2-is-serial-only")
-		    MPIRC='echo "Feat2 is serial only"; exit 1; echo'
-		    MPICLEAN='echo'
-		    MPISTART='echo'
-		    MPISTOP='echo'
-		    ;;
-
-		*)
-		    echo "Script is not prepared to be run on LiDO with an MPI environment";
-		    echo "named <${MPIENV}>. Benchmark not executed.";
-		    exit 1;
-		    ;;
-	    esac
-	    ;;
-
-	# IBM JUMP p690
-	"JUMP")
-	    echo; # Nothing to be set as on IBM p690 we have to use LoadLeveler.
-		  # The binary is directly executed, no MPIRUN or similar comes
-		  # into action. So, nothing has to be set.
-	    ;;
-
-	# NEC SX with communication only inside of one node (not more than 8 cpus used)
-	"NEC_intranode")
-	    MPIRC='mpirun -np ${ntasks} '
-	    MPICLEAN='echo'
-	    MPISTART='echo'
-	    MPISTOP='echo'
-	    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
-	    # are taken that ensure that all environment variables set by this
-	    # script and referenced in any file read in by the FEAT2 application
-	    # are avaibable on all nodes (via MPIEXPORT)
-	    NECSXMODE=true
-
-#	    F_PROGINF=DETAIL
-#	    export F_PROGINF
-	    MPIPROGINF=YES
-	    export MPIPROGINF
-#	    F_FILEINF=YES
-#	    export F_FILEINF
-	    ;;
-
-	# NEC SX with communication between several nodes (more than 8 cpus used)
-	"NEC_internode")
-	    # a) -nn number of nodes, -nnp number of processors per node
-	    #    -np total number of processes requested
-	    #    Always allocate complete nodes, otherwise performance is
-	    #    affected by misbehaviour of concurrent processes.
-	    # b) $_MPINNODES refers to the number of nodes requested
-	    # with a '#PBS -b <nodes>' directive. This to avoid
-	    # redundance and possible sources of conflicting specifications.
-	    MPIRC='mpirun -nn $_MPINNODES -nnp 8 -np ${ntasks}'
-	    MPICLEAN='echo'
-	    MPISTART='echo'
-	    MPISTOP='echo'
-	    # Set special flag to ensure that in fb_runAndEvalBenchmarkTest measures
-	    # are taken that ensure that all environment variables set by this
-	    # script and referenced in any file read in by the FEAT2 application
-	    # are avaibable on all nodes (via MPIEXPORT)
-	    NECSXMODE=true
-
-#	    F_PROGINF=DETAIL
-#	    export F_PROGINF
-	    MPIPROGINF=YES
-	    export MPIPROGINF
-#	    F_FILEINF=YES
-#	    export F_FILEINF
-	    ;;
-
-	# Unhandled case: Queueing system unknown
-	*)
-	    echo "Script is not prepared to be run on a queueing system named";
-	    echo "<${QUEUEINGSYSTEM}>. Benchmark not executed.";
-	    exit 1;
-	    ;;
-    esac
 
     # ===================================================================
     # Section for variable initialisation
@@ -735,9 +325,9 @@ fb_runAndEvalBenchmarkTest() {
 
     # add some class-specific information, add whatever you want to see for your applications
     case "${CLASS}" in
-    
+
 	# Standard applications. They have a DAT file and some MG-Levels.
-    
+
 	DEFAULT)
 	    echo "DATFILE   = "${DATFILE}
 	    echo "MGLEVELS  = "${MGLEVELS}
@@ -762,13 +352,14 @@ fb_runAndEvalBenchmarkTest() {
 	    # This is a slight extension to the default behaviour.
 	    # Since the flagship application supports command line arguments
 	    # we prepend the contents of APPFLAGS to the variable DATFILE so
-	    # that additional FLAGS and the DAT file are passed to the executable
+	    # that additional FLAGS and the DAT file are passed to the
+	    # executable
 	    #
-	    # Drawback: It breaks the possibility to run this script with anything
-	    #           else than DEBUGGER=0. DEBUGGER=PGI, e.g., will complain
-	    #           because pgdbg will interpret the command line options
-	    #           for the program to be debugged as command line options
-	    #           for the debugger itself.
+	    # Drawback: It breaks the possibility to run this script with
+	    #           anything else than DEBUGGER=0. DEBUGGER=PGI, e.g.,
+	    #           will complain because pgdbg will interpret the command
+	    #           line options for the program to be debugged as command
+	    #           line options for the debugger itself.
 	    DATFILE="${APPFLAGS} ${DATFILE}"
 	    echo "DATFILE   = "${DATFILE}
 	    ;;
@@ -795,6 +386,7 @@ fb_runAndEvalBenchmarkTest() {
     # Execute only of FEAT2 benchmark binary is available
     if test -r ${appname}; then
 	# Test binary for compatibility
+	ARCH="`uname -m`";
 	case ${ARCH} in
 	    sun4u)
 		string="SPARC"
@@ -827,67 +419,14 @@ fb_runAndEvalBenchmarkTest() {
 
 	else
 	    # Binary compatible, run test
-	    # As FEAT2 only supports serial applications, number of tasks is
-	    # always 1.
-	    ntasks=1
-
-	    # In case of MPI execution one more process than
-	    # parallel blocks is needed
-	    EXECMODE="`echo ${EXECMODE} | tr '[a-z]' '[A-Z]'`"
-	    if test "${EXECMODE}" = "MPI"; then
-		ntasks=`expr $ntasks + 1`
-	    fi
-
-#	    if test -n "${NPART}"; then
-#		if test "${NPART}" != "FROM_FILE"; then
-#		    ntasks=${NPART}
-#		    ntasks=`expr $ntasks + 1`
-#		    AUTOPART=YES
-#		    export AUTOPART
-#		fi
-#	    fi
-
-#	    # Automatically detect whether binary has been built with MARMOT 
-#	    # instrumenting. In this case, one additional process is required
-#	    # for the debug server.
-#	    if test -n "`nm ${appname} | grep marmot_`"; then
-#		echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-#		echo
-#		echo "The binary <${appname}> contains MARMOT symbols."
-#		echo "The binary will be run with one additional process."
-#		ntasks=`expr $ntasks + 1`
-#
-#		# Text file output
-#		#MARMOT_LOGFILE_TYPE=0
-#		# HTML format output
-#		#MARMOT_LOGFILE_TYPE=1
-#		# Cube format output
-#		MARMOT_LOGFILE_TYPE=2
-#		# Timeout before deadlock is assumed (in nanoseconds)
-#		MARMOT_MAX_TIMEOUT_DEADLOCK=1000000
-#		export MARMOT_LOGFILE_TYPE MARMOT_MAX_TIMEOUT_DEADLOCK
-#	    fi
 
 	    # Initialise boolean variable
 	    execfailed=0
-
-#	    # ensure VISOUTPUTFILE is set
-#	    if test "${VISOUTPUTFILE+set}" != set ; then
-#		VISOUTPUTFILE=solution
-#	    fi
-#	    if test -z "${VISOUTPUTFILE}"; then
-#		VISOUTPUTFILE=solution
-#	    fi
-#	    export VISOUTPUTFILE
-#	    VISOUTPUTBASE=$VISOUTPUTFILE
-#	    export VISOUTPUTBASE
+	    EXECMODE="`echo ${EXECMODE} | tr '[a-z]' '[A-Z]'`"
 
 	    case "${CLASS}" in
 		# OpenGL tests need write permission to NVIDIA device.
 		# Enable this.
-		DISK*)
-		    test -s /var/spool/gpuauth && xauth nmerge /var/spool/gpuauth
-		    ;;
 		COPROC*)
 		    test -s /var/spool/gpuauth && xauth nmerge /var/spool/gpuauth
 		    ;;
@@ -896,9 +435,6 @@ fb_runAndEvalBenchmarkTest() {
 
 	    # Loop over all multigrid levels
 	    for currentmglevel in `echo ${MGLEVELS} | sed 's/,/ /g'`; do
-#		VISOUTPUTFILE=${VISOUTPUTBASE}-lev${currentmglevel}
-#		export VISOUTPUTFILE
-
 		# If execution failed in a previous loop, exit the loop. Why?
 		# Well, after all: Failed is failed.
 		if test "${KEEPGOING}" = "0" -a ${execfailed} -eq 1; then
@@ -908,31 +444,6 @@ fb_runAndEvalBenchmarkTest() {
 		export MGLEVEL
 
 		\rm ${EXECUTIONLOG} 1>/dev/null 2>&1
-
-		# #########################
-		# Explicitly export those environment variables FEAT2 uses in its dat file
-		if test "${NECSXMODE:=set}" = "true" ; then
-		    MPIEXPORT="$vars2export"
-		    export MPIEXPORT
-		else
-		    if test "${MPIENV}" = "LAMMPI"; then
-			# LAM/MPI on LiDO
-			addEnvVarsWorkingCopy="${addEnvVars} -x `echo $vars2export | sed 's/ /,/g'`"
-		    elif test "${MPIENV}" = "OpenMPI"; then
-			# OpenMPI on LiDO
-			addEnvVarsWorkingCopy="${addEnvVars} -x `echo $vars2export | sed 's/ / -x /g'`"
-		    fi
-		fi
-
-		# Generate hostfile
-		if test ${GENERATE_AND_USE_HOSTFILE} -ne 0; then
-		    if test "${MPIENV}" = "OpenMPI"; then
-			# OpenMPI on LiDO
-			fb_generate_host ${PBS_NODEFILE} > ${LOGDIR}/hostfile
-			addEnvVarsWorkingCopy="${addEnvVarsWorkingCopy} --mca mpi_paffinity_alone 1 --hostfile ${LOGDIR}/hostfile"
-			echo "Will use hostfile ${LOGDIR}/hostfile."
-		    fi
-		fi
 
 
 		# Passing an argument to the program to be debugged does not work.
@@ -950,97 +461,24 @@ fb_runAndEvalBenchmarkTest() {
 		case "${EXECMODE}" in
 		    # ############################
 		    MPI)
-			# boot up MPI universe
-			eval ${MPISTART} ${outputredirect}
-
-			printf "Running "${currentmglevel}".... "
-
-			# DDT settings (w/o PBS)
-			case "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`" in
-			    # MPI, normal execution
-			    0)
-				# Submitted via PBS?
-#				if test "${PBS_ENVIRONMENT+set}" = set ; then
-#				    echo "PBS job found"
-#				    eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-#				else
-#				    echo "non-PBS scheduling"
-#				    eval ${MPIRC} --hostfile ~/hostfile.ib --nolocal ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-#				fi
-
-#				echo ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				;;
-
-			    DDT)
-			        # Issue warning when Intel, PGI or Pathscale compiler are being used.
-			        if test -n "`echo ${BUILDID} | grep intel-`" -o \
-				        -n "`echo ${BUILDID} | grep pgi-`" -o \
-				        -n "`echo ${BUILDID} | grep psc-`"; then
-				    echo
-				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-				    echo
-				    echo "When debugging a program, try not to compile it with Intel Compilers and "
-				    echo "debug it with gdb (plain or as backend in ddt). You will experience very "
-				    echo "serious performance penalties, communication between ddt and gdb will "
-				    echo "time-out very often. Support for idb in ddt exists, but according to the"
-				    echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
-				    echo "debuggers is significantly less than what the GNU community does. Instead"
-				    echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
-				    echo "binary!"
-				    echo
-				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-				    echo
-				fi
-				ddt -np ${ntasks} ${PWD}/${appname} ${DATFILE}
-
-			        # DDT via PBS settings
-#			        mpirun -np NUM_PROCS_TAG ${addEnvVarsWorkingCopy} ddt-debugger PROGRAM_ARGUMENTS_TAG
-				;;
-
-			    RUN_DBX)
-			        # run_dbx settings
-#			        echo ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				;;
-
-			    TOTALVIEW)
-			        # use TotalView
-				eval totalview ${TOTALVIEW_ARGS} -np ${ntasks} ${PWD}/${appname} -a ${DATFILE}
-				;;
-
-			    VALGRIND)
-			        # use valgrind
-#			        eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				;;
-
-			esac
-
-			# Show problems if any occurred
-			if test $? -ne 0; then
-			    execfailed=1
-			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
-				echo "Execution failed:"
-				cat ${EXECUTIONLOG}
-			    else
-				echo "Execution failed."
-			    fi
-			else
-			    echo "Done"
-			fi
+			echo "Unsupported in FEAT2" 1>&2
 			;;
 
 
 		    # ############################
 		    SERIAL)
-			# To select a debugger, (un)comment the appropriate lines. While being uncomfortable,
-			# this approach is considered as 'has to do' by the fb2 developers for the time being.
-			# If you believe that this sucks, please implement this feature properly by allowing
-			# multiple string values for DEBUGGER= and select-case'ing them here.
+			# To select a debugger, (un)comment the appropriate
+			# lines. While being uncomfortable, this approach is
+			# considered as 'has to do' by the fb2 developers for
+			# the time being.  If you believe that this sucks,
+			# please implement this feature properly by allowing
+			# multiple string values for DEBUGGER= and
+			# select-case'ing them here.
 
-			# Please remember that debugging optimised builds requires changing compiler flags
-			# in kernel/arch/templates to include -g which tells the compiler to include
+			# Please remember that debugging optimised builds
+			# requires changing compiler flags in
+			# kernel/arch/templates to include -g which tells the
+			# compiler to include
 			# routine names, variable names etc. in the binary
 
 			case "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`" in
@@ -1050,7 +488,7 @@ fb_runAndEvalBenchmarkTest() {
 				# check if numactl is available
 				if which numactl 1> /dev/null 2>&1; then
 				    # check whether it is usable
-				    if numactl --show 1> /dev/null 2>&1 ; then 
+				    if numactl --show 1> /dev/null 2>&1 ; then
 					use_numactl=1;
 				    fi
 				fi
@@ -1069,8 +507,8 @@ fb_runAndEvalBenchmarkTest() {
 
 				# Issue warning when Intel, PGI or Pathscale compiler are being used.
 				if test -n "`echo ${BUILDID} | grep intel-`" -o \
-				        -n "`echo ${BUILDID} | grep pgi-`" -o \
-				        -n "`echo ${BUILDID} | grep psc-`"; then
+					-n "`echo ${BUILDID} | grep pgi-`" -o \
+					-n "`echo ${BUILDID} | grep psc-`"; then
 				    echo
 				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
 				    echo
@@ -1204,7 +642,7 @@ WARNING! For this application / test class there are no instructions
          compared against a reference output. Resorting as a fail back
          to this program run's complete screen output - which is
          considered lazy and bad practice, because the complete output
-         is prone to frequently change only marginally!
+         is prone to frequently change, but then only marginally!
 "
 			;;
 		esac
@@ -1404,9 +842,6 @@ WARNING! For this application / test class there are no instructions
          }
     }' "$startdate" "$enddate"
 
-    # shut down MPI universe
-    eval ${MPISTOP} ${outputredirect}
-
     # Show test statistics if user presses or has pressed a key - if stdin is a terminal.
     #
     # To accomplish this with shell builtins we would require 'read' to support a
@@ -1442,4 +877,3 @@ WARNING! For this application / test class there are no instructions
 #\rm *.gmv *.gmv.[0-9]* 1> /dev/null 2>&1
 
 fb_initialiseEnv
-
