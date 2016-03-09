@@ -236,6 +236,11 @@ fb_cleanUpPreviousRun() {
 #            Sets $EMAILADDRESS and $DOSENDMAIL (boolean variable whether to send email at all)
 fb_setMailSender() {
     case "$USER" in
+	featflow)
+	    EMAILADDRESS=feat2@math.tu-dortmund.de
+	    DOSENDMAIL=0
+	    ;;
+
 	buijssen|xamsbuij)
 	    EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
 	    DOSENDMAIL=1
