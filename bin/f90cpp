@@ -184,10 +184,12 @@ do
   shift
 done
 
-# Avoid setting preprocessor flags twice
-if test -n "${cppflags}"; then
-    addcppflags=""
-fi
+# Do not clear variable ${addcppflags} if ${cppflags} is set. Yes, we might
+# set preprocessor flags twice, but there is also no guarantee that all flags
+# from ${addcppflags} are actually already in ${cppflags}!
+##if test -n "${cppflags}"; then
+##    addcppflags=""
+##fi
 
 if test -z "${preprocessedfile}"; then
     echo $0": No source file in given command line detected. Aborting..."
