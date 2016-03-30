@@ -36,14 +36,14 @@ endif
 ##############################################################################
 # Commands to get version information from compiler
 ##############################################################################
-F77VERSION = $(F77) -v 2>&1 | cat
-F90VERSION = $(F90) -v 2>&1 | cat
-CCVERSION  = $(CC)  -v 2>&1 | cat
-CXXVERSION = $(CXX) -v 2>&1 | cat
+F77VERSION = $(F77) -v 2>&1 | sed -n -e 'y/GCV-/gcv /; /^gcc version/p'
+F90VERSION = $(F90) -v 2>&1 | sed -n -e 'y/GCV-/gcv /; /^gcc version/p'
+CCVERSION  = $(CC)  -v 2>&1 | sed -n -e 'y/GCV-/gcv /; /^gcc version/p'
+CXXVERSION = $(CXX) -v 2>&1 | sed -n -e 'y/GCV-/gcv /; /^gcc version/p'
 
 # Detect C/C++ compiler version
 GCCVERSION := $(shell eval $(CCVERSION) | \
-		sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+		sed -n -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
 ifneq ($(GCCVERSION),)
 GCCVERSION_MAJOR := $(shell echo $(GCCVERSION) | cut -d. -f1)
 GCCVERSION_MINOR := $(shell echo $(GCCVERSION) | cut -d. -f2)
@@ -65,7 +65,7 @@ gccmaxversion = $(shell if [ $(GCCVERSION_MAJOR) -lt $(1) ] || \
 
 # Detect Fortran compiler version
 GFORTRANVERSION := $(shell eval $(F90VERSION) | \
-		     sed -n -e 'y/GCV-/gcv /; /^gcc.*version/h;' -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
+		     sed -n -e 's/^gcc.* \([0-9]*\.[0-9]\.[0-9]\) .*$$/\1/p')
 
 ifneq ($(GFORTRANVERSION),)
 GFORTRANVERSION_MAJOR := $(shell echo $(GFORTRANVERSION) | cut -d. -f1)
