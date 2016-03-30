@@ -320,6 +320,11 @@ case ${id} in
 		            # Haswell CPU
 			    cpu="haswell"
 			    ;;
+			78)
+		            # Skylake CPU
+		            # (see also https://en.wikipedia.org/wiki/Skylake_%28microarchitecture%29)
+			    cpu="skylake"
+			    ;;
 			28|38|54)
 		            # Intel Atom (Pine, Oak, Cedar)
 			    cpu="atom" core=cpu
