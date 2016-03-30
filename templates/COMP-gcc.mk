@@ -143,6 +143,20 @@ endif
 endif
 
 
+ifeq ($(call gccminversion,4,8),yes)
+# According to
+# http://gcc.gnu.org/gcc-4.8/porting_to.html
+# some default pre-includes have been introduced since GNU cpp
+# 4.8.2. This breaks the use of cpp as pre-processor for Fortran
+# files. As a workaround, the stdc-predef.h preinclude can be
+# disabled with the use of -ffreestanding.
+#
+# Note that the suggested pre-processor flag -P for non C/C++ code
+# should not be used since it removes all comment lines which
+# makes debugging very difficult.
+CPPFLAGS     := -ffreestanding $(CPPFLAGS)
+endif
+
 
 # Specify -flto for all gcc compilers
 ifneq (,$(findstring EXPENSIVE,$(OPT)))
