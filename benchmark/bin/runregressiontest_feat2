@@ -373,7 +373,7 @@ fb_readargs() {
 	AUXILIARYLOG="$AUXILIARYLOG""_""$FORCEBUILDID"
     fi
     if [ -n "$COMPILERVERSION" ]; then
-	AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
     fi
 }
 
@@ -434,7 +434,7 @@ fb_customise() {
 		pc64-penryn-linux-gcc-*4.4)
 		    modules=""
 		    modules="$modules openblas/0.2.17"
-		    modules="$modules gcc/4.4.7"
+		    modules="$modules gcc/4.4.7-centos"
 		    LIDOJOBNAMEPREFIX=ff2-gcc44
 		    COMPILERNAME="GCC 4.4.7"
 		    ;;
@@ -1147,7 +1147,7 @@ fb_initialiseGlobalLogFile() {
 		;;
 	esac
 	if [ -n "$COMPILERVERSION" ]; then
-	    GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	fi
     else
 	GLOBALLOG=$GLOBALLOG"_""$mpi"
@@ -1330,7 +1330,7 @@ fb_prepareForRun() {
 	    esac
 	fi
 	if [ -n "$COMPILERVERSION" ]; then
-	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	fi
 	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
