@@ -22,12 +22,16 @@ LC_ALL=C
 
 # Initialise some variables
 STORAGEGETBASE_CALLS_TO_MACRO=0
-addcppflags=""
+cmdlineoptioncompiler=""
+cmdlineoptionpreprocessor=""
 cppcmd=""
-cppflags=""
-objdir=""
-option=""
+objdir="."
 
+
+# Determine C preprocessor command
+# Note: This value may get reset later on when parsing of the command line
+#       options reveals that we compile with IBM XLF compiler or on a NEC
+#       system!
 if test -n "${CPP}"; then
     cppcmd="${CPP}"
 else
@@ -35,7 +39,7 @@ else
 fi
 
 if test -n "${CPPFLAGS}"; then
-    cppflags="${CPPFLAGS}"
+    cmdlineoptionpreprocessor="${CPPFLAGS}"
 fi
 
 # We really need GNU cpp; clang cpp does not support the command line option -x
@@ -45,7 +49,7 @@ fi
 if echo "" | ${cppcmd} -x assembler-with-cpp - 2>&1 | grep -vqi "\berror\b"; then
   # Avoid that GNU cpp removes C++-style comments which is also the Fortran
   # concatenation operator
-  cppflags="-CC ${cppflags}"
+  cmdlineoptionpreprocessor="-CC ${cppflags}"
 else
   echo "****************************************************************" 1>&2
   echo "ATTENTION: You seem to not be using the GNU C preprocessor cpp." 1>&2
@@ -61,25 +65,75 @@ if test ! -f ${AWK_SCRIPT}; then
 	AWK_SCRIPT=${FEAT2BASEDIR}/bin/postprocess_cppoutput.awk
     fi
     if test ! -f ${AWK_SCRIPT}; then
-	echo $0": The environment variable FEAT2BASEDIR is not set. It is one way of"
-	echo $0": locating \${FEAT2BASEDIR}/bin/postprocess_cppoutput.awk, a script"
-	echo $0": needed by this script. The default locate mechanism did not work"
-	echo $0": either. Aborting compilation..."
+	echo $0": The environment variable FEAT2BASEDIR is not set. It is one way of" 1>&2
+	echo $0": locating \${FEAT2BASEDIR}/bin/postprocess_cppoutput.awk, a script" 1>&2
+	echo $0": needed by this script. The default locate mechanism did not work" 1>&2
+	echo $0": either. Aborting compilation..." 1>&2
 	exit 1
     fi
 fi
 
-# Loop through command line arguments and
-# filter out the Fortran90 source file.
+
+# Loop through command line arguments and figure out where the object files
+# are stored (because we want to store the preprocessed (in other words:
+# wrapped) source files there, too.)
+#
+# case 1: An object file (*.o) is given on the command line. Use its path
+# case 2: No object file given, because compiling and linking happens in one step.
+#         Use the path of the executable, given as argument to '-o'.
+#
+# Note: this loop even supports blanks, backslashes and single/double ticks in
+#       the directory name!
+flagSetFromMinusOArg=0
+for arg
+do
+    if test $flagSetFromMinusOArg -eq 1; then
+	objdir=`dirname "$arg"`;
+	flagSetFromMinusOArg=0;
+	break;
+    fi
+    case "$arg" in
+    *.o)
+	objdir=`dirname "$arg"`;
+	break;
+	;;
+
+    -o)
+	# When not using this script in FEAT2 context (e.g. to test some small
+	# debug program with preprocessor statements), usually no separate
+	# object file needs to be created, the executable name is directly
+	# given on the command line. No *.o file means that the previous
+	# 'case' statement never sets the objdir variable. Which may lead to
+	# problems.
+	# Given that within a for loop over all parameters, we can not simply
+	# use 'shift' nor directly use a variable to access the positional
+	# parameters, we set a flag, continue with next iteration where, due
+	# to the flag being set, a special case treatment is started.
+	flagSetFromMinusOArg=1;
+        continue;
+	;;
+    esac
+done
+if test -z "${objdir}"; then
+    objdir="."
+else
+    cmdlineoptionpreprocessor="${cmdlineoptionpreprocessor} -I${objdir}"
+fi
+unset flagSetFromMinusOArg arg;
+
+
+# Loop again through command line arguments and filter out the name of the
+# Fortran90 source file. We will preprocess it, store it in the object
+# directory and pass this preprocessed file to the compiler. Meaning that the
+# compiler needs to get a different location for the source file. Because the
+# variable $* is read only, the command line options for the compiler call
+# are stored in a new variable, cmdlineoptioncompiler.
 while : true
 do
   # Exit loop if all command line arguments have been parsed
   if test -z "$1"; then break; fi;
 
   case "$1" in
-    # We reached the Fortran90 source file
-    # in the command line arguments given to
-    # the compiler.
     expin*):
 	# Special token FEAT2 compile command contains on NEC SX-8
         # for code optimisation. Add the string back to the command line
@@ -89,9 +143,11 @@ do
 		test -e ${object} || touch ${object};
 	done
 
-	option="${option} $1"
+	cmdlineoptioncompiler="${cmdlineoptioncompiler} $1"
 	;;
 
+    # We reached the Fortran90 source file in the command line arguments given
+    # to the compiler.
     *.f90)
 	# Store name of source file (including path)
 	sourcefile=$1
@@ -104,10 +160,15 @@ do
 	# and discard the ".f90" extension, add "_wrappertmp.f90" suffix
 #	preprocessedfile=`basename ${sourcefile} | sed 's/.f90//'`"_wrappertmp.f90"
 
-	# Replace the original source file in the compile
-	# statement with the preprocessed (wrapped) source
-	# file.
-	option="${option} ${preprocessedfile}"
+
+	# Prepand object directory
+	if test -n "${preprocessedfile}"; then
+	    preprocessedfile="${objdir}/${preprocessedfile}"
+	fi
+
+	# Replace the original source file in the compile statement with the
+	# preprocessed (wrapped) source file, i.e. use ${preprocessedfile}, not $1.
+	cmdlineoptioncompiler="${cmdlineoptioncompiler} ${preprocessedfile}"
 	;;
 
     *.o)
@@ -117,7 +178,7 @@ do
         if test -z "${objdir}"; then
 	    objdir=`dirname $1`
 	fi
-	option="${option} $1"
+	cmdlineoptioncompiler="${cmdlineoptioncompiler} $1"
 	;;
 
     -o)
@@ -134,7 +195,7 @@ do
         if test -z "${objdir}"; then
 	    objdir=`dirname $1`
 	fi
-	option="${option} -o $1"
+	cmdlineoptioncompiler="${cmdlineoptioncompiler} -o $1"
 	;;
 
     -D*)
@@ -143,7 +204,7 @@ do
         # interpreted as something else.
         # Additionally, some preprocessor macros are intended for this
         # script, not for cpp. Deal with them right here.
-        addcppflags="${addcppflags} $1"
+        cmdlineoptionpreprocessor="${cmdlineoptionpreprocessor} $1"
 
         if test "$1" = '-DENABLE_FORTRAN_ALLOCATE'; then
           STORAGEGETBASE_CALLS_TO_MACRO=2
@@ -153,18 +214,23 @@ do
           STORAGEGETBASE_CALLS_TO_MACRO=1
         fi
 
-	# Try to detect IBM system
+
+	# From preprocessor directives like -DUSE_COMPILER_XLF or
+	# -DUSE_COMPILER_NEC we can deduce whether a non-default preprocessor
+	# command is required.
+	#
+	# Try to detect IBM system (where the default cpp command may not be suitable)
         if test "$1" = '-DUSE_COMPILER_XLF'; then
 	  cppcmd="cpp " # previously: "cpp -C "
-	  # Add more include directories to search for
-	  option="${option} -I. -I${objdir}"
+	  # Add more include directories for the compiler to search in
+	  cmdlineoptioncompiler="${cmdlineoptioncompiler} -I."
         fi
 
-	# Try to detect NEC system
+	# Try to detect NEC system (where the default cpp command may not be suitable)
         if test "$1" = '-DUSE_COMPILER_NEC'; then
 	  cppcmd="sxc++ -E "  # -Kkeep_comments
-          # Add more include directories to search for
-#	  option="${option} -I. -I${objdir}"
+#	  # Add more include directories for the compiler to search in
+#	  cmdlineoptioncompiler="${cmdlineoptioncompiler} -I."
         fi
         ;;
 
@@ -172,49 +238,36 @@ do
         # Specific preprocessor flag found to unset a preprocessor macro.
         # Prevent it being passed to a Fortran compiler where it could be
         # interpreted as something else.
-        addcppflags="${addcppflags} $1"
+        cmdlineoptionpreprocessor="${cmdlineoptionpreprocessor} $1"
 	;;
 
     *)
 	# Add string to command line options again
-	option="${option} $1"
+	cmdlineoptioncompiler="${cmdlineoptioncompiler} $1"
 	;;
   esac
   # Step to next string in command line
   shift
 done
-
-# Do not clear variable ${addcppflags} if ${cppflags} is set. Yes, we might
-# set preprocessor flags twice, but there is also no guarantee that all flags
-# from ${addcppflags} are actually already in ${cppflags}!
-##if test -n "${cppflags}"; then
-##    addcppflags=""
-##fi
-
 if test -z "${preprocessedfile}"; then
-    echo $0": No source file in given command line detected. Aborting..."
+    echo $0": No source file in given command line detected. Aborting..." 1>&2
     exit 1;
 fi
 
-# Adjust the path where the preprocessed (wrapped) source
-# files are stored. This is done only now because you can
-# not be sure that "-o objdir/foo.o" is given before
-# or behind "-c srcdir/foo.f90".
-if test -n "${objdir}"; then
-    eval      option=\`"echo ${option} | sed 's^ ${preprocessedfile}^ ${objdir}/${preprocessedfile}^'"\`;
-    preprocessedfile="${objdir}/${preprocessedfile}"
-fi
 
 # Catch case where the file to preprocess and compile is stored
 # locally and no object directory has been given. In this case
 # the preprocessed file would overwrite the source file.
 # Catch also the following case:
 #  sourcefile=fileA,  preprocessedfile = ./fileA
-if test "`dirname ${sourcefile}`"  = "`dirname ${preprocessedfile}`" -a \
-        "`basename ${sourcefile}`" = "`basename ${preprocessedfile}`"; then
-    echo $0": Please do not use the same directory for source and object file."
-    echo $0": Preprocessed file is written to the same directory as the object"
-    echo $0": file and would overwrite the source file. Aborting..."
+if test "`dirname \"${sourcefile}\"`"  = "`dirname \"${preprocessedfile}\"`" -a \
+        "`basename \"${sourcefile}\"`" = "`basename \"${preprocessedfile}\"`"; then
+    (echo $0": Please do not use the same directory for source and object file!";
+     echo $0": Preprocessing and compilation are in this script two separate";
+     echo $0": steps that require a temporary (the preprocessed) file which";
+     echo $0": gets written to the same directory as the object file.";
+     echo $0": With the current settings, the preprocessed file would overwrite";
+     echo $0": the source file. Aborting...") 1>&2
     exit 1;
 fi
 
@@ -287,16 +340,16 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 # 2) Then, call the C preprocessor. That's the main intention of this
 #    script.
 # 3) map 'MYNEWLINE' to '&\n':
-#    Necessary because it is not possible to instruct the C preprocessor to
-#    set explicit carriage returns at distinct places. In C, that's not
+#    Necessary because it is not possible to instruct the C preprocessor
+#    to set explicit carriage returns at distinct places. In C, that's not
 #    necessary as lines may become arbitrarily long. But Fortran 90 accepts
 #    only 132 columns and some compilers really respect and enforce this
 #    restriction! So, for very long lines, as generated by preprocesor
 #    constructs defined in feastdefs.h, the positions where they should be
-#    wrapped around are marked with the (arbitrarily chosen) string MYNEWLINE.
-#    The output of the C preprocessor is postprocessed and any occurrence of
-#    MYNEWLINE is replaced by the Fortran 90 line concatenation operator '&'
-#    followed by a carriage return.
+#    wrapped around are marked with the (arbitrarily chosen) string
+#    MYNEWLINE. The output of the C preprocessor is postprocessed and any
+#    occurrence of MYNEWLINE is replaced by the Fortran 90 line concatenation
+#    operator '&' followed by a carriage return.
 #    This has to be done in a separate perl command as the sed command
 #    on SUN and NEC do not support matching of carriage returns (\n). Hence,
 #    we cannot integrate this substitution with the remaining.
@@ -328,16 +381,16 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
 LC_ALL=C perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
-${cppcmd} ${cppflags} -I${objdir} ${addcppflags} -DUSE_PREPROC_F90CPP ${preprocessedfile} > ${preprocessedfile}".$$"
+${cppcmd} ${cmdlineoptionpreprocessor} -DUSE_PREPROC_F90CPP ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one
 # *must not* directly pipe its output to our postprocessing chain!
 
 # Do not start compilation if the preprocessor reported an error.
 if test ${rc} -ne 0; then
-  echo "****************************************************************" 1>&2
-  echo "ATTENTION: The preprocessor returned a nonzero error code." 1>&2
-  echo "This probably means it tries to signal an error, so we bail out." 1>&2
+  (echo "****************************************************************"
+   echo "ATTENTION: The preprocessor returned a nonzero error code."
+   echo "This probably means it tries to signal an error, so we bail out."
 #   echo "As the author of this funky hack does not have access to"
 #   echo "anything other than the GNU preprocessor (for which nonzero really"
 #   echo "means that an error has occured), then please implement a more"
@@ -346,7 +399,7 @@ if test ${rc} -ne 0; then
 #   echo "compiler output. You might want to try compilation without"
 #   echo "the -j parameter to make."
 #   echo "Cheers, dom [April 1st 2008]"
-  echo "****************************************************************" 1>&2
+   echo "****************************************************************") 2>&1
   \rm ${preprocessedfile} ${preprocessedfile}".$$"
   exit ${rc}
 fi
@@ -363,10 +416,10 @@ LC_ALL=C perl -pe "s/MYNEWLINE/&\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|
 
 # For debugging this script:
 # Show which compile command is actually invoked
-#echo "# Invoking the following compile command:"; echo "${option}"; echo "# End"
+#echo "# Invoking the following compile command:"; echo "${cmdlineoptioncompiler}" | sed "s/~/'/g"; echo "# End"
 
 # Invoke the actual compile command
-eval `echo "${option}" | sed "s/~/'/g"`
+eval `echo "${cmdlineoptioncompiler}" | sed "s/~/'/g"`
 
 # Get return code from compile command
 rc=$?
