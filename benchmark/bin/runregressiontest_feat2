@@ -21,27 +21,18 @@
 #
 #
 # Crontab entries illustrating the current use of this script
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --master --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=10.1
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.0
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.1
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=12.0
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=14.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --master --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=14.0
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=15.0
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=13.5
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=15.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=16.0
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=13.10
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=15.10
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-psc-goto
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.1
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.2
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.4beta
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.3
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.4
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.4
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.5
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.6
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.7
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.8
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.9
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=5.1
-# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-open64-acml --compiler-version=4.5
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=5.2
+# lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=5.3
 # lidong2:      ?  ? * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-open64-acml --compiler-version=5.0
 #
 #
@@ -395,7 +386,7 @@ fb_readargs() {
 fb_customise() {
     case "$HOSTNAME" in
 	# LiDO-2
-	lidong1|lidong2)
+	lidong1|lidong2|lido-gw01|lido-gw02)
 	    # set various parameters
 	    ARCH=LiDO
 	    COMPILEWITHPROCS=13
@@ -442,7 +433,7 @@ fb_customise() {
 		# GNU compiler suite 4.4.7
 		pc64-penryn-linux-gcc-*4.4)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
+		    modules="$modules openblas/0.2.17"
 		    modules="$modules gcc/4.4.7"
 		    LIDOJOBNAMEPREFIX=ff2-gcc44
 		    COMPILERNAME="GCC 4.4.7"
@@ -484,38 +475,57 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.8.2"
 		    ;;
 
-		# GNU compiler suite 4.9.2
+		# GNU compiler suite 4.9.3
 		pc64-penryn-linux-gcc-*4.9)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.9.2"
+		    modules="$modules binutils/2.25 openblas/0.2.17"
+		    modules="$modules gcc/4.9.3"
 		    LIDOJOBNAMEPREFIX=ff2-gcc49
-		    COMPILERNAME="GCC 4.9.2"
+		    COMPILERNAME="GCC 4.9.3"
 		    ;;
 
 		# GNU compiler suite 5.1.0
 		pc64-penryn-linux-gcc-*5.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
+		    modules="$modules binutils/2.25 openblas/0.2.17"
 		    modules="$modules gcc/5.1.0"
 		    LIDOJOBNAMEPREFIX=ff2-gcc51
 		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="GCC 5.1.0"
 		    ;;
 
+		# GNU compiler suite 5.2.0
+		pc64-penryn-linux-gcc-*5.2)
+		    modules=""
+		    modules="$modules binutils/2.25 openblas/0.2.17"
+		    modules="$modules gcc/5.2.0"
+		    LIDOJOBNAMEPREFIX=ff2-gcc52
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
+		    COMPILERNAME="GCC 5.2.0"
+		    ;;
+
+		# GNU compiler suite 5.3.0
+		pc64-penryn-linux-gcc-*5.3)
+		    modules=""
+		    modules="$modules binutils/2.25 openblas/0.2.17"
+		    modules="$modules gcc/5.3.0"
+		    LIDOJOBNAMEPREFIX=ff2-gcc53
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
+		    COMPILERNAME="GCC 5.3.0"
+		    ;;
+
 		# default GNU compiler suite
 		pc64-penryn-linux-gcc-*)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.5.3"
-		    LIDOJOBNAMEPREFIX=ff2-gcc45
-		    COMPILERNAME="GCC 4.5.3"
+		    modules="$modules binutils/2.25 openblas/0.2.17"
+		    modules="$modules gcc/5.3.0"
+		    LIDOJOBNAMEPREFIX=ff2-gcc53
+		    COMPILERNAME="GCC 5.3.0"
 		    ;;
 
 		# default Pathscale compiler suite
 		pc64-penryn-linux-psc-*)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pathscale"
 		    LIDOJOBNAMEPREFIX=ff2-psc
 		    COMPILERNAME="Pathscale 3.2.99"
@@ -524,7 +534,7 @@ fb_customise() {
 		# PGI compiler suite 10.x
 		pc64-penryn-linux-pgi-*10.*)
 		    modules=""
-		    modules="$modules pgi/10.9-0"
+		    modules="$modules pgi/10.9"
 		    LIDOJOBNAMEPREFIX=ff2-pgi10
 		    COMPILERNAME="PGI 10.9"
 		    ;;
@@ -532,7 +542,7 @@ fb_customise() {
 		# PGI compiler suite 11.x
 		pc64-penryn-linux-pgi-*11.*)
 		    modules=""
-		    modules="$modules pgi/11.10-0"
+		    modules="$modules pgi/11.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi11
 		    COMPILERNAME="PGI 11.10"
 		    ;;
@@ -540,7 +550,7 @@ fb_customise() {
 		# PGI compiler suite 12.x
 		pc64-penryn-linux-pgi-*12.*)
 		    modules=""
-		    modules="$modules pgi/12.10-0"
+		    modules="$modules pgi/12.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi12
 		    COMPILERNAME="PGI 12.10"
 		    ;;
@@ -548,32 +558,39 @@ fb_customise() {
 		# PGI compiler suite 13.x
 		pc64-penryn-linux-pgi-*13.*)
 		    modules=""
-		    modules="$modules pgi/13.10-0"
+		    modules="$modules pgi/13.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
 		    COMPILERNAME="PGI 13.10"
+		    ;;
+
+		# PGI compiler suite 14.x
+		pc64-penryn-linux-pgi-*14.*)
+		    modules=""
+		    modules="$modules pgi/14.10"
+		    LIDOJOBNAMEPREFIX=ff2-pgi14
+		    COMPILERNAME="PGI 14.10"
 		    ;;
 
 		# PGI compiler suite 15.x
 		pc64-penryn-linux-pgi-*15.*)
 		    modules=""
-		    modules="$modules pgi/15.5-0"
+		    modules="$modules pgi/15.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi15
-		    COMPILERNAME="PGI 15.5"
+		    COMPILERNAME="PGI 15.10"
 		    ;;
 
 		# default PGI compiler suite
 		pc64-penryn-linux-pgi-*)
 		    modules=""
-		    modules="$modules pgi/15.5-0"
+		    modules="$modules pgi/15.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
-		    COMPILERNAME="PGI 15.5"
+		    COMPILERNAME="PGI 15.10"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
                 # (discouraged: Internal compiler error triggered for optimised builds)
 		pc64-penryn-linux-sunstudio-*12.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules sunstudio/12.1_update_1"
 		    LIDOJOBNAMEPREFIX=ff2-sun121
 		    COMPILERNAME="SunStudio 12.1"
@@ -585,7 +602,6 @@ fb_customise() {
                 #  compilation of module linearsystemscalar.o)
 		pc64-penryn-linux-sunstudio-*12.2)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules oraclestudio/12.2"
 		    LIDOJOBNAMEPREFIX=ff2-sun122
 		    COMPILERNAME="OracleStudio 12.2"
@@ -597,18 +613,17 @@ fb_customise() {
                 #  compilation of module bilinearformevaluation.o)
 		pc64-penryn-linux-sunstudio-*12.3)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules oraclestudio/12.3"
 		    LIDOJOBNAMEPREFIX=ff2-sun123
 		    COMPILERNAME="OracleStudio 12.3"
 		    ;;
 
-		# Oracle Studio compiler suite 12.4beta
-		pc64-penryn-linux-sunstudio-*12.4beta)
+		# Oracle Studio compiler suite 12.4
+		pc64-penryn-linux-sunstudio-*12.4)
 		    modules=""
-		    modules="$modules oraclestudio/12.4beta-201407"
-		    LIDOJOBNAMEPREFIX=ff2-sun124beta
-		    COMPILERNAME="OracleStudio 12.4 Beta (Release 2014-July)"
+		    modules="$modules oraclestudio/12.4"
+		    LIDOJOBNAMEPREFIX=ff2-sun124
+		    COMPILERNAME="OracleStudio 12.4"
 		    ;;
 
 		# default Oracle Studio compiler suite
@@ -619,19 +634,9 @@ fb_customise() {
 		    COMPILERNAME="OracleStudio 12.4"
 		    ;;
 
-		# Open64 compiler suite 4.5.2
-		pc64-penryn-linux-open64-*4.5)
-		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules open64/4.5.2"
-		    LIDOJOBNAMEPREFIX=ff2-open452
-		    COMPILERNAME="Open64 4.5.2"
-		    ;;
-
 		# Open64 compiler suite 5.0
 		pc64-penryn-linux-open64-*5.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules open64/5.0"
 		    LIDOJOBNAMEPREFIX=ff2-open50
 		    COMPILERNAME="Open64 5.0"
@@ -640,7 +645,6 @@ fb_customise() {
 		# default Open64 compiler suite
 		pc64-penryn-linux-open64-*)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules open64/5.0"
 		    LIDOJOBNAMEPREFIX=ff2-open50
 		    COMPILERNAME="Open64 5.0"
@@ -649,7 +653,6 @@ fb_customise() {
 		# Intel compiler suite 10.1.023
 		pc64-penryn-linux-intel-*10.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.026 intel/fce/10.1.026"
 		    LIDOJOBNAMEPREFIX=ff2-intel101
 		    COMPILERNAME="Intel 10.1"
@@ -658,7 +661,6 @@ fb_customise() {
 		# Intel compiler suite 11.0.084
 		pc64-penryn-linux-intel-*11.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.0.084 intel/fce/11.0.084"
 		    LIDOJOBNAMEPREFIX=ff2-intel110
 		    COMPILERNAME="Intel 11.0"
@@ -667,7 +669,6 @@ fb_customise() {
 		# Intel compiler suite 11.1.080
 		pc64-penryn-linux-intel-*11.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
 		    LIDOJOBNAMEPREFIX=ff2-intel111
 		    COMPILERNAME="Intel 11.1"
@@ -676,7 +677,6 @@ fb_customise() {
 		# Intel compiler suite 12.0.5.220
 		pc64-penryn-linux-intel-*12.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/10.3.7 intel/cce/12.0.5.220 intel/fce/12.0.5.220"
 		    LIDOJOBNAMEPREFIX=ff2-intel120
 		    COMPILERNAME="Intel 12.0"
@@ -685,7 +685,6 @@ fb_customise() {
 		# Intel compiler suite 12.1.7.367
 		pc64-penryn-linux-intel-*12.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/10.3.12.361 intel/cce/12.1.7.367 intel/fce/12.1.7.367"
 		    LIDOJOBNAMEPREFIX=ff2-intel121
 		    COMPILERNAME="Intel 12.1"
@@ -694,7 +693,6 @@ fb_customise() {
 		# Intel compiler suite 13.0.1.117
 		pc64-penryn-linux-intel-*13.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/11.0.1.117 intel/cce/13.0.1.117 intel/fce/13.0.1.117"
 		    LIDOJOBNAMEPREFIX=ff2-intel130
 		    COMPILERNAME="Intel 13.0"
@@ -703,39 +701,45 @@ fb_customise() {
 		# Intel compiler suite 13.1.3.192
 		pc64-penryn-linux-intel-*13.1)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl/11.0.5 intel/cce/13.1.3.192 intel/fce/13.1.3.192"
 		    LIDOJOBNAMEPREFIX=ff2-intel131
 		    COMPILERNAME="Intel 13.1"
 		    ;;
 
-		# Intel compiler suite 14.0.3.174
+		# Intel compiler suite 14.0.6.214
 		pc64-penryn-linux-intel-*14.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/11.1.3.174 intel/cce/14.0.3.174 intel/fce/14.0.3.174"
+		    modules="$modules intel/studio-xe/14.0.6.214"
 		    LIDOJOBNAMEPREFIX=ff2-intel140
 		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="Intel 14.0"
 		    ;;
 
-		# Intel compiler suite 15.0.3.187
+		# Intel compiler suite 15.0.6.233
 		pc64-penryn-linux-intel-*15.0)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/11.2.3.187 intel/cce/15.0.3.187 intel/fce/15.0.3.187"
+		    modules="$modules intel/studio-xe/15.0.6.233"
 		    LIDOJOBNAMEPREFIX=ff2-intel150
 		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
 		    COMPILERNAME="Intel 15.0"
 		    ;;
 
+		# Intel compiler suite 16.0.2.181
+		pc64-penryn-linux-intel-*16.0)
+		    modules=""
+		    modules="$modules intel/studio-xe/16.0.2.181"
+		    LIDOJOBNAMEPREFIX=ff2-intel160
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
+		    COMPILERNAME="Intel 16.0"
+		    ;;
+
 		# default Intel compiler suite and default build ID
 		pc64-penryn-linux-intel-*|*)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
-		    LIDOJOBNAMEPREFIX=ff2-intel111
-		    COMPILERNAME="Intel 11.1"
+		    modules="$modules intel/studio-xe/16.0.2.181"
+		    LIDOJOBNAMEPREFIX=ff2-intel160
+		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --int-size=large"
+		    COMPILERNAME="Intel 16.0"
 		    ;;
 	    esac
 
@@ -743,7 +747,7 @@ fb_customise() {
 	    # to the gateway cpus.
 	    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID --force-id"
 
-	    modules="$modules torque maui binutils/64/2.20.1 subversion"
+#	    modules="$modules"
 
 	    # Make 'module' command and modulefiles available
 	    # But Modules Environment is dreadfully implemented, especially 
@@ -1829,7 +1833,6 @@ test $DEBUG -gt 0 && echo "# New logfile created"
 # (now GLOBALLOG is set and can be used)
 
 # Checkout FEAT2 from Subversion
-test $DEBUG -gt 0 && echo "# Checking out from subversion"
 fb_checkoutFromSVN
 
 # Compare current and previous working copy (if any) of FEAT2

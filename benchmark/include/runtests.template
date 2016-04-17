@@ -105,32 +105,6 @@ MPIENV=<SET_VIA_MAKEFILE>
 
 
 ## Type:	string
-## Default:     empty (the appropriate value will be determined automatically)
-#
-# Type of batch system, if any.
-#
-# Possible values are:
-#  * <none>
-#          Don't use a queueing system
-#  * LIDO
-#          OpenPBS jobs, enqueued on LiDO
-#  * JUMP
-#          LoadLeveler jobs, enqueued on JUMP Juelich (p690 system)
-#  * NEC_intranode
-#          NEC SX jobs entailing not more than 8 cpus
-#  * NEC_internode
-#          NEC SX jobs entailing more than 8 cpus
-#  * TORQUE
-#          Torque 4.2.x installation at TU Dortmund Math Faculty
-#
-# The scripts used to set up and start batch job scripts
-# (bin/*schedule_*tests) may set/overwrite this value dynamically when
-# creating the batch script.  Whenever changing the syntax here, do not forget
-# to adapt them!
-QUEUEINGSYSTEM=
-
-
-## Type:	string
 #
 # Name of file a benchmark application is supposed to create when it is run
 # with relevant data in it that can be compared to previous runs in order to

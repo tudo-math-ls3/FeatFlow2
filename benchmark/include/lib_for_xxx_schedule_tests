@@ -79,9 +79,6 @@ submits the job file to the scheduler.
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
-  --noschedule, --no-schedule
-      Creates a job script but does not schedule the job. Used for
-      debugging purposes.
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -243,7 +240,7 @@ fb_setMailSender() {
 
 	buijssen|xamsbuij)
 	    EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
-	    DOSENDMAIL=1
+	    DOSENDMAIL=0
 	    ;;
 
 	goeddeke)
@@ -418,7 +415,7 @@ EOF
 	exit 1010
     fi
 
-    $GNUMAKE COMPILERVERSION=${COMPILERVERSION} `echo $tmpfile | sed 's/.fbconf$//'`
+    $GNUMAKE COMPILERVERSION=${COMPILERVERSION} ${tmpfile%%.fbconf}
     # Purposely do not check for errors!
     # Typically, an error is reported if the test ID is unknown or the
     # according test is configured not to be run on the current host. COPROC
@@ -486,7 +483,7 @@ fb_submitLoadLevelerJobfile() {
 $0: Error while submitting jobfile <$jobfile>:
 $0: qsub returned error code $returncode.
 EOF
-	    exit 1011
+	    exit 1012
 	fi
     done
 
@@ -568,7 +565,7 @@ fb_submitPBSJobfile() {
 $0: Error while submitting jobfile <$jobfile>:
 $0: qsub returned error code $returncode.
 EOF
-	    exit 1012
+	    exit 1013
 	fi
     done
 
@@ -592,7 +589,7 @@ fb_postprocess() {
 $0: Not a single jobfile could be created as no valid test ID was given.
 
 EOF
-	exit 1013
+	exit 1014
     fi
     # Some tests had errors
     if [ -n "$testIDsWithErrors" ]; then
