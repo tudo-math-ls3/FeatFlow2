@@ -49,7 +49,7 @@ fi
 if echo "" | ${cppcmd} -x assembler-with-cpp - 2>&1 | grep -vqi "\berror\b"; then
   # Avoid that GNU cpp removes C++-style comments which is also the Fortran
   # concatenation operator
-  cmdlineoptionpreprocessor="-CC ${cppflags}"
+  cmdlineoptionpreprocessor="-CC ${cmdlineoptionpreprocessor}"
 else
   echo "****************************************************************" 1>&2
   echo "ATTENTION: You seem to not be using the GNU C preprocessor cpp." 1>&2
@@ -381,6 +381,8 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
 LC_ALL=C perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
+#echo ${cppcmd} ${cmdlineoptionpreprocessor} -DUSE_PREPROC_F90CPP ${preprocessedfile}
+#exit 1
 ${cppcmd} ${cmdlineoptionpreprocessor} -DUSE_PREPROC_F90CPP ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one
