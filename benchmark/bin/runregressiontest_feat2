@@ -370,10 +370,11 @@ fb_readargs() {
     #  that otherwise would break the script with unpredictable side effects.)
     AUXILIARYLOG=$HOME"/featflow2benchmark_auxiliarylog_""$HOSTNAME"
     if [ -n "$FORCEBUILDID" ]; then
-	AUXILIARYLOG="$AUXILIARYLOG""_""$FORCEBUILDID"
-    fi
-    if [ -n "$COMPILERVERSION" ]; then
-	AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	suffix="$FORCEBUILDID"
+	if [ -n "$COMPILERVERSION" ]; then
+	    suffix=`echo ${FORCEBUILDID} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	fi
+	AUXILIARYLOG=$AUXILIARYLOG"_""$suffix"
     fi
 }
 
@@ -407,7 +408,11 @@ fb_customise() {
 	    # the appropriate modules need to be loaded within the
 	    # jobfile. Exactly those modules loaded here are hardcoded
 	    # into the jobfile by bin/lido_schedule_tests later on.
-	    case "${FORCEBUILDID}_${COMPILERVERSION}" in
+	    string=${FORCEBUILDID}
+	    if [ -n "$COMPILERVERSION" ]; then
+		string=`echo ${string} | sed -e "s/\(^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    fi
+	    case "${string}" in
 		# G95 compiler suite
 		pc64-penryn-linux-g95-*)
 		    modules=""
@@ -422,7 +427,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.3.5
-		pc64-penryn-linux-gcc-*4.3)
+		pc64-penryn-linux-gcc4.3-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.3.5"
@@ -431,7 +436,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.4.7
-		pc64-penryn-linux-gcc-*4.4)
+		pc64-penryn-linux-gcc4.4-*)
 		    modules=""
 		    modules="$modules openblas/0.2.17"
 		    modules="$modules gcc/4.4.7-centos"
@@ -440,7 +445,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.5.3
-		pc64-penryn-linux-gcc-*4.5)
+		pc64-penryn-linux-gcc4.5-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.5.3"
@@ -449,7 +454,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.6.3
-		pc64-penryn-linux-gcc-*4.6)
+		pc64-penryn-linux-gcc4.6-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.6.3"
@@ -458,7 +463,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.7.3
-		pc64-penryn-linux-gcc-*4.7)
+		pc64-penryn-linux-gcc4.7-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.7.3"
@@ -467,7 +472,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.8.2
-		pc64-penryn-linux-gcc-*4.8)
+		pc64-penryn-linux-gcc4.8-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.8.2"
@@ -476,7 +481,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 4.9.3
-		pc64-penryn-linux-gcc-*4.9)
+		pc64-penryn-linux-gcc4.9-*)
 		    modules=""
 		    modules="$modules binutils/2.25 openblas/0.2.17"
 		    modules="$modules gcc/4.9.3"
@@ -485,7 +490,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 5.1.0
-		pc64-penryn-linux-gcc-*5.1)
+		pc64-penryn-linux-gcc5.1-*)
 		    modules=""
 		    modules="$modules binutils/2.25 openblas/0.2.17"
 		    modules="$modules gcc/5.1.0"
@@ -495,7 +500,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 5.2.0
-		pc64-penryn-linux-gcc-*5.2)
+		pc64-penryn-linux-gcc5.2-*)
 		    modules=""
 		    modules="$modules binutils/2.25 openblas/0.2.17"
 		    modules="$modules gcc/5.2.0"
@@ -505,7 +510,7 @@ fb_customise() {
 		    ;;
 
 		# GNU compiler suite 5.3.0
-		pc64-penryn-linux-gcc-*5.3)
+		pc64-penryn-linux-gcc5.3-*)
 		    modules=""
 		    modules="$modules binutils/2.25 openblas/0.2.17"
 		    modules="$modules gcc/5.3.0"
@@ -532,7 +537,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 10.x
-		pc64-penryn-linux-pgi-*10.*)
+		pc64-penryn-linux-pgi10.*-*)
 		    modules=""
 		    modules="$modules pgi/10.9"
 		    LIDOJOBNAMEPREFIX=ff2-pgi10
@@ -540,7 +545,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 11.x
-		pc64-penryn-linux-pgi-*11.*)
+		pc64-penryn-linux-pgi11.*-*)
 		    modules=""
 		    modules="$modules pgi/11.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi11
@@ -548,7 +553,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 12.x
-		pc64-penryn-linux-pgi-*12.*)
+		pc64-penryn-linux-pgi12.*-*)
 		    modules=""
 		    modules="$modules pgi/12.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi12
@@ -556,7 +561,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 13.x
-		pc64-penryn-linux-pgi-*13.*)
+		pc64-penryn-linux-pgi13.*-*)
 		    modules=""
 		    modules="$modules pgi/13.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
@@ -564,7 +569,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 14.x
-		pc64-penryn-linux-pgi-*14.*)
+		pc64-penryn-linux-pgi14.*-*)
 		    modules=""
 		    modules="$modules pgi/14.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi14
@@ -572,7 +577,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 15.x
-		pc64-penryn-linux-pgi-*15.*)
+		pc64-penryn-linux-pgi15.*-*)
 		    modules=""
 		    modules="$modules pgi/15.10"
 		    LIDOJOBNAMEPREFIX=ff2-pgi15
@@ -589,7 +594,7 @@ fb_customise() {
 
 		# Sun Studio compiler suite 12.1
                 # (discouraged: Internal compiler error triggered for optimised builds)
-		pc64-penryn-linux-sunstudio-*12.1)
+		pc64-penryn-linux-sunstudio12.1-*)
 		    modules=""
 		    modules="$modules sunstudio/12.1_update_1"
 		    LIDOJOBNAMEPREFIX=ff2-sun121
@@ -600,7 +605,7 @@ fb_customise() {
                 # (discouraged: Internal compiler error triggered for optimised
                 #  builds of application feat2benchmark-burgers1d during
                 #  compilation of module linearsystemscalar.o)
-		pc64-penryn-linux-sunstudio-*12.2)
+		pc64-penryn-linux-sunstudio12.2-*)
 		    modules=""
 		    modules="$modules oraclestudio/12.2"
 		    LIDOJOBNAMEPREFIX=ff2-sun122
@@ -611,7 +616,7 @@ fb_customise() {
                 # (discouraged: Internal compiler error triggered for optimised
                 #  builds of application feat2benchmark-cc2d_fbbfs during
                 #  compilation of module bilinearformevaluation.o)
-		pc64-penryn-linux-sunstudio-*12.3)
+		pc64-penryn-linux-sunstudio12.3-*)
 		    modules=""
 		    modules="$modules oraclestudio/12.3"
 		    LIDOJOBNAMEPREFIX=ff2-sun123
@@ -619,7 +624,7 @@ fb_customise() {
 		    ;;
 
 		# Oracle Studio compiler suite 12.4
-		pc64-penryn-linux-sunstudio-*12.4)
+		pc64-penryn-linux-sunstudio12.4-*)
 		    modules=""
 		    modules="$modules oraclestudio/12.4"
 		    LIDOJOBNAMEPREFIX=ff2-sun124
@@ -635,7 +640,7 @@ fb_customise() {
 		    ;;
 
 		# Open64 compiler suite 5.0
-		pc64-penryn-linux-open64-*5.0)
+		pc64-penryn-linux-open645.0-*)
 		    modules=""
 		    modules="$modules open64/5.0"
 		    LIDOJOBNAMEPREFIX=ff2-open50
@@ -651,7 +656,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 10.1.023
-		pc64-penryn-linux-intel-*10.1)
+		pc64-penryn-linux-intel10.1-*)
 		    modules=""
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/10.1.026 intel/fce/10.1.026"
 		    LIDOJOBNAMEPREFIX=ff2-intel101
@@ -659,7 +664,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 11.0.084
-		pc64-penryn-linux-intel-*11.0)
+		pc64-penryn-linux-intel11.0-*)
 		    modules=""
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.0.084 intel/fce/11.0.084"
 		    LIDOJOBNAMEPREFIX=ff2-intel110
@@ -667,7 +672,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 11.1.080
-		pc64-penryn-linux-intel-*11.1)
+		pc64-penryn-linux-intel11.1-*)
 		    modules=""
 		    modules="$modules intel/mkl/10.2.7.041 intel/cce/11.1.080 intel/fce/11.1.080"
 		    LIDOJOBNAMEPREFIX=ff2-intel111
@@ -675,7 +680,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 12.0.5.220
-		pc64-penryn-linux-intel-*12.0)
+		pc64-penryn-linux-intel12.0-*)
 		    modules=""
 		    modules="$modules intel/mkl/10.3.7 intel/cce/12.0.5.220 intel/fce/12.0.5.220"
 		    LIDOJOBNAMEPREFIX=ff2-intel120
@@ -683,7 +688,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 12.1.7.367
-		pc64-penryn-linux-intel-*12.1)
+		pc64-penryn-linux-intel12.1-*)
 		    modules=""
 		    modules="$modules intel/mkl/10.3.12.361 intel/cce/12.1.7.367 intel/fce/12.1.7.367"
 		    LIDOJOBNAMEPREFIX=ff2-intel121
@@ -691,7 +696,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 13.0.1.117
-		pc64-penryn-linux-intel-*13.0)
+		pc64-penryn-linux-intel13.0-*)
 		    modules=""
 		    modules="$modules intel/mkl/11.0.1.117 intel/cce/13.0.1.117 intel/fce/13.0.1.117"
 		    LIDOJOBNAMEPREFIX=ff2-intel130
@@ -699,7 +704,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 13.1.3.192
-		pc64-penryn-linux-intel-*13.1)
+		pc64-penryn-linux-intel13.1-*)
 		    modules=""
 		    modules="$modules intel/mkl/11.0.5 intel/cce/13.1.3.192 intel/fce/13.1.3.192"
 		    LIDOJOBNAMEPREFIX=ff2-intel131
@@ -707,7 +712,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 14.0.6.214
-		pc64-penryn-linux-intel-*14.0)
+		pc64-penryn-linux-intel14.0-*)
 		    modules=""
 		    modules="$modules intel/studio-xe/14.0.6.214"
 		    LIDOJOBNAMEPREFIX=ff2-intel140
@@ -716,7 +721,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 15.0.6.233
-		pc64-penryn-linux-intel-*15.0)
+		pc64-penryn-linux-intel15.0-*)
 		    modules=""
 		    modules="$modules intel/studio-xe/15.0.6.233"
 		    LIDOJOBNAMEPREFIX=ff2-intel150
@@ -725,7 +730,7 @@ fb_customise() {
 		    ;;
 
 		# Intel compiler suite 16.0.2.181
-		pc64-penryn-linux-intel-*16.0)
+		pc64-penryn-linux-intel16.0-*)
 		    modules=""
 		    modules="$modules intel/studio-xe/16.0.2.181"
 		    LIDOJOBNAMEPREFIX=ff2-intel160
@@ -1134,22 +1139,29 @@ fb_initialiseGlobalLogFile() {
 		# Ensure build ID has 6 tokens, then take it.
 		# Otherwise append "_mpi"
 		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
+		if [ -n "$COMPILERVERSION" ]; then
+		    suffix=`echo ${suffix} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+		fi
+		AUXILIARYLOG=$AUXILIARYLOG"_""$suffix"
 		GLOBALLOG=$GLOBALLOG"_""$suffix"
 		;;
 	    no-mpi)
 		# Ensure build ID has at most 5 tokens, then take it.
 		# For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
 		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
+		if [ -n "$COMPILERVERSION" ]; then
+		    suffix=`echo ${suffix} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+		fi
+		AUXILIARYLOG=$AUXILIARYLOG"_""$suffix"
 		GLOBALLOG=$GLOBALLOG"_""$suffix"
 		;;
 	    *)
+		AUXILIARYLOG=$AUXILIARYLOG"_""$mpi"
 		GLOBALLOG=$GLOBALLOG"_""$mpi"
 		;;
 	esac
-	if [ -n "$COMPILERVERSION" ]; then
-	    GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
-	fi
     else
+	AUXILIARYLOG=$AUXILIARYLOG"_""$mpi"
 	GLOBALLOG=$GLOBALLOG"_""$mpi"
     fi
     test -r $GLOBALLOG && \rm -f $GLOBALLOG
@@ -1316,21 +1328,28 @@ fb_prepareForRun() {
 		    # Ensure build ID has 6 tokens, then take it.
 		    # Otherwise append "_mpi"
 		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
+		    if [ -n "$COMPILERVERSION" ]; then
+			suffix=`echo ${suffix} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+		    fi
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
 		no-mpi)
 		    # Ensure build ID has at most 5 tokens, then take it.
 		    # For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
 		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
+		    if [ -n "$COMPILERVERSION" ]; then
+			suffix=`echo ${suffix} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+		    fi
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
 		*)
-		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mpi"
+		    suffix=$FORCEBUILDID
+		    if [ -n "$COMPILERVERSION" ]; then
+			suffix=`echo ${suffix} | sed -e "s/\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+		    fi
+		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix""_""$mpi"
 		    ;;
 	    esac
-	fi
-	if [ -n "$COMPILERVERSION" ]; then
-	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^_][^_]*_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	fi
 	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
