@@ -772,11 +772,11 @@ WARNING! For this application / test class there are no instructions
 	echo
 	echo "FEAT2 benchmark binary <${appname}> not found."
 	case ${BUILDID} in
-	    pc64-.*-linux-pgi*)
-		echo "(Could it be that the build system refused to compile the FEAT2 benchmark";
-		echo " binary <${appname}>, because the object directory prefix path exceeds 104";
-		echo " characters (which is a problem with the PGI compiler as it fails to locate";
-		echo " a header file if the absolute path to said file exceeds 200 characters)?";
+	    *-*-*-pgi*)
+		(echo "(Could it be that the build system refused to compile the FEAT2 benchmark";
+		 echo " binary <${appname}>, because the object directory prefix path exceeds 104";
+		 echo " characters (which is a problem with the PGI compiler as it fails to locate";
+		 echo " a header file if the absolute path to said file exceeds 200 characters)?";) 1>&2
 		;;
 	esac
 	echo "TEST FAILED"
