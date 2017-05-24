@@ -20129,6 +20129,9 @@ contains
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,Kaux)
 
+          rmatrixC%NEQ = rmatrixA%NEQ
+          rmatrixC%NCOLS = rmatrixB%NCOLS
+
           ! Compute number of nonzero matrix entries: NA
           rmatrixC%NA = do_mat79mat79mul_computeNA(KldA,KcolA&
               &,rmatrixA%NEQ,KldB,KcolB,Kaux)
