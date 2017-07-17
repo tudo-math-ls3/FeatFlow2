@@ -315,7 +315,7 @@ include ../unpack.mk
 # Automatically extract BLAS tarball when required.
 #-------------------------------------------------------------------------------
 
-BLAS_TARBALL = ../blas.tgz
+BLAS_TARBALL = ../blas-3.5.0.tgz
 
 # List of required source files from BLAS package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -338,7 +338,7 @@ $(SRC_BLAS): $(LAST_FILE_FROM_BLAS_TARBALL)
 # a locking mechanism.
 $(LAST_FILE_FROM_BLAS_TARBALL):  NAME     = "BLAS reference implementation sources"
 $(LAST_FILE_FROM_BLAS_TARBALL):  TARBALL  = $(BLAS_TARBALL)
-$(LAST_FILE_FROM_BLAS_TARBALL):  LOCKFILE = ../LOCK.unpack.blas.tar.gz
+$(LAST_FILE_FROM_BLAS_TARBALL):  LOCKFILE = ../LOCK.unpack.blas-3.5.0.tgz
 $(LAST_FILE_FROM_BLAS_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_BLAS_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_BLAS_TARBALL):  PATCHCMD = echo
@@ -348,9 +348,9 @@ $(LAST_FILE_FROM_BLAS_TARBALL): | $(BLAS_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(BLAS_TARBALL):  URL      = http://www.netlib.org/blas/blas.tgz
+$(BLAS_TARBALL):  URL      = http://www.netlib.org/blas/blas-3.5.0.tgz
 $(BLAS_TARBALL):  TARBALL  = $(BLAS_TARBALL)
-$(BLAS_TARBALL):  LOCKFILE = ../LOCK.download.blas.tar.gz
+$(BLAS_TARBALL):  LOCKFILE = ../LOCK.download.blas-3.5.0.tgz
 $(BLAS_TARBALL):  WAITTIME = 15
 $(BLAS_TARBALL):  RETRIES  = 24
 $(BLAS_TARBALL):
