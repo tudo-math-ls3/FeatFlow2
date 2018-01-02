@@ -1911,7 +1911,7 @@ contains
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
                                      bexists, iarrayindex)
 
-  write (svalue,'(L1)') bvalue
+  read (svalue,'(L1)') bvalue
 
   end subroutine
 
@@ -1984,7 +1984,7 @@ contains
                                         isubstring=iarrayindex)
   end if
 
-  write (svalue,'(L1)') bvalue
+  read (svalue,'(L1)') bvalue
 
   end subroutine
 
