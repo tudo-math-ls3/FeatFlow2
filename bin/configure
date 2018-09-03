@@ -67,8 +67,8 @@ use 5.006_001;
 # For unicode source files
 #use Encode;
 
-# being able to use tmpname to create temporary files
-use POSIX;
+# being able to use function tmpfile to create temporary files
+use File::Temp qw(tempfile);
 
 # Portably get the pathname of the current working directory
 use Cwd qw(abs_path cwd);
@@ -934,14 +934,12 @@ sub check_make_sets_make_variable {
         $makeInMakefile = "\$(MAKE)";
 
     } else {
-        my $tmpfile = POSIX::tmpnam();
-        open(TMPFILE, ">", $tmpfile) or
-            die "\n$progname: ERROR:\n".
-                "Cannot open file <$tmpfile> for writing: $!\n";
-        print TMPFILE "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
-        close(TMPFILE);
+        my ($fh, $tmpfile) = &File::Temp::tempfile();
+        print $fh "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
+        close($fh);
         my $currentString = `$make -f $tmpfile | grep maketemp=`;
         unlink($tmpfile);
+        undef $fh;
         undef $tmpfile;
 
         # If $(MAKE) variable is set, use $(MAKE) in Makefile rules instead of
