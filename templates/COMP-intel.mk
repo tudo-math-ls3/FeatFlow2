@@ -166,7 +166,14 @@ ifeq ($(call optimise), YES)
 #  -unroll               : enables aggressive loop unrolling
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
 		 -unroll-aggressive -ip -fp-model precise \
-		 -no-prec-div -pad -opt-malloc-options=3
+		 -no-prec-div -pad
+# deprecated in Intel 17: -opt-malloc-options=3
+# removed in Intel 18: -qopt-malloc-options=3
+ifeq ($(call intelmaxversion,16,0),yes)
+CFLAGSF77     := $(CFLAGSF77) -opt-malloc-options=3
+else
+CFLAGSF77     := $(CFLAGSF77) -qopt-malloc-options=3
+endif
 CFLAGSF90     := $(CFLAGSF90) $(CFLAGSF77) \
 		 -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
