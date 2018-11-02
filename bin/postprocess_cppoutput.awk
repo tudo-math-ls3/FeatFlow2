@@ -68,7 +68,7 @@ BEGIN {
 #    if (filename != FILENAME) {
 #	filename = "\"" FILENAME "\"";
 #    }
-    if (filename == "") {
+    if (NR == 1 && filename == "") {
 	filename = $3;
     }
 
