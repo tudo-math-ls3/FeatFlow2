@@ -167,9 +167,9 @@ ifeq ($(call optimise), YES)
 CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
 		 -unroll-aggressive -ip -fp-model precise \
 		 -no-prec-div -pad
-# deprecated in Intel 17: -opt-malloc-options=3
+# deprecated in Intel 16 & 17: -opt-malloc-options=3
 # removed in Intel 18: -qopt-malloc-options=3
-ifeq ($(call intelmaxversion,16,0),yes)
+ifeq ($(call intelmaxversion,15,0),yes)
 CFLAGSF77     := $(CFLAGSF77) -opt-malloc-options=3
 else
 CFLAGSF77     := $(CFLAGSF77) -qopt-malloc-options=3
